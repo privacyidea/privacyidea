@@ -39,7 +39,7 @@ def get_debian_package():
 
 setup(
     name='privacyIDEA',
-    version='1.0dev5',
+    version='1.0dev6',
     description='privacyIDEA: identity, multifactor authentication, authorization, audit',
     author='privacyidea.org',
     license='AGPL v3',
@@ -87,7 +87,7 @@ setup(
 	(get_debian_package()+'etc/apache2/sites-available/',['config/privacyidea',
 				] ),
 	(get_debian_package()+'etc/init.d/',['config/privacyidea-paster']),
-        ('share/doc/privacyidea/', ["tools/README-migrate.txt"]),
+       # ('share/doc/privacyidea/', ["tools/README-migrate.txt"]),
      	('share/man/man1', ["tools/privacyidea-convert-token.1",
 				"tools/privacyidea-create-pwidresolver-user.1",
 				"tools/privacyidea-create-sqlidresolver-user.1",
