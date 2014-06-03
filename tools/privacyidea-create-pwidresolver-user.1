@@ -1,0 +1,51 @@
+.\" Manpage for privacyidea-create-pwidresolver-user
+.\" Contact info@privacyidea.org for any feedback.
+.TH PRIVACYIDEA-CREATE-PWIDRESOLVER-USER  1 "08 May 2014" "1.0" "privacyidea-create-pwidresolver-user man page"
+.SH NAME
+privacyidea-create-pwidresolver-user \- creates a user line to be stored in a usefile.
+.SH SYNOPSIS
+privacyidea-create-pwidresolver-user -u <username> -i <uid> [-p <password>] [-d <description>]
+.SH DESCRIPTION
+This tool creates a line like in /etc/passwd for a user in a userfile.
+Please note, that you can also specify a password, so that logging in to the selfservice portal is also possible.
+.SH COMMON OPTIONS
+.PP
+\fB\-u <username> \fR
+.RS 4
+The loginname of the user.
+.RE
+
+.PP
+\fB\-h\fR
+.RS 4
+Display a help message.
+.RE
+
+.PP
+\fB\-i <uid>\fR
+.RS 4
+The user id of the user.
+.RE
+
+.PP
+\fB\-p <password>\fR
+.RS 4
+The password of the user. If you do not specify it you are asked to type it in.
+The user id of the user.
+.RE
+
+.PP
+\fB\-d <description>\fR
+.RS 4
+An optional description of the user. This will be split into given name and surname.
+.RE
+
+
+.SH INTERNET SOURCES
+http://www.privacyidea.org,  http://www.linotp.org
+.SH SEE ALSO
+
+.SH BUGS
+No known bugs.
+.SH AUTHOR
+LSE Leading Security Experts GmbH <linotp-community@lsexperts.de>

@@ -1,0 +1,51 @@
+#!/usr/bin/python
+import pip
+from subprocess import call
+import getopt, sys
+
+
+def usage():
+    print """
+privacyidea-pip-update
+
+    -f, --force    force the update
+    -h, --help     show this help
+    """
+
+def update():
+    for dist in pip.get_installed_distributions():
+        call("pip install --upgrade " + dist.project_name, shell=True)
+
+
+def main():
+    force = False
+
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "hf", ["help", "force"])
+    except getopt.GetoptError as e:
+        print str(e)
+        sys.exit(1)
+
+    for o, a in opts:
+        if o in ("-f", "--force"):
+            force = True
+        if o in ("-h", "--help"):
+            usage()
+            sys.exit(2)
+
+    if force:
+        update()
+    else:
+        answer = False
+        while not answer:
+            res = raw_input("Do you really want to update your python environment? (y/N)")
+            answer = res.lower() in ['y', 'n', '']
+
+        if res.lower() == 'y':
+            update()
+        else:
+            print "You canceled the update process."
+
+
+if __name__ == "__main__":
+    main()

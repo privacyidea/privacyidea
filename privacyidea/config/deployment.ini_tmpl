@@ -1,0 +1,100 @@
+#
+# privacyIDEA - Pylons development environment configuration
+#
+# The %(here)s variable will be replaced with the parent directory of this file
+#
+[DEFAULT]
+debug = false
+# Uncomment and replace with the address which should receive any error reports
+#email_to = you@yourdomain.com
+smtp_server = localhost
+error_email_from = paste@localhost
+
+
+#################################################################################
+# These are the privacyIDEA specific settings.
+# note that these are loaded into the token database and after that
+# are hold in the table "Config"
+# i.e. changed them afterwards will have no effect.
+#
+
+# You may select several useridresolver by comma seperating
+#privacyidea.useridresolver = useridresolver.PasswdIdResolver.IdResolver,useridresolveree.LDAPIdResolver.IdResolver
+privacyidea.useridresolver = privacyidea.lib.resolvers.PasswdIdResolver.IdResolver
+
+#
+# Settings for LDAPIdResolver
+#
+privacyidea.DefaultSyncWindow = 50 
+privacyidea.DefaultOtpLen = 6
+privacyidea.DefaultCountWindow = 50
+privacyidea.DefaultMaxFailCount = 15
+privacyidea.ldapresolver.LDAPFILTER =  (&(uid=%s)(ObjectClass=inetOrgPerson))
+privacyidea.ldapresolver.LDAPSEARCHFILTER = (uid=*)(ObjectClass=inetOrgPerson)
+privacyidea.ldapresolver.LDAPURI    =  ldaps://themis.az.local
+privacyidea.ldapresolver.LDAPBASE   =  dc=az,dc=local
+privacyidea.ldapresolver.BINDDN     =  cn=admin,dc=az,dc=local
+privacyidea.ldapresolver.BINDPW     =  guessWhat!
+privacyidea.ldapresolver.TIMEOUT     =  5
+privacyidea.ldapresolver.LOGINNAMEATTRIBUTE = uid
+privacyidea.ldapresolver.USERINFO = { "username": "uid", "phone" : "telephoneNumber", "groups" : "o", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }
+
+privacyideaSecretFile = /usr/local/privacyidead/encKey
+
+
+
+[server:main]
+use = egg:Paste#http
+host = localhost
+port = 5000
+# You may activate this, to serve https unless you got no broken distribution ;-)
+#ssl_pem = *
+
+[app:main]
+use = egg:privacyIDEA
+sqlalchemy.url = sqlite:///%(here)s/token.db
+# sqlalchemy.url = postgres://user:password@localhost/otpdb
+# sqlalchemy.url = mysql://user:password@themis/privacyidea
+full_stack = true
+static_files = true
+
+cache_dir = %(here)s/data
+# We do not have cookie. 
+#beaker.session.key = privacyidea
+#beaker.session.secret = somesecret
+
+# If you like to fine-tune the individual locations of the cache data dirs
+# for the Cache data, or the Session saves, un-comment the desired settings
+# here:
+#beaker.cache.data_dir = %(here)s/data/cache
+#beaker.session.data_dir = %(here)s/data/sessions
+
+
+# WARNING: *THE LINE BELOW MUST BE UNCOMMENTED ON A PRODUCTION ENVIRONMENT*
+# Debug mode will enable the interactive debugging tool, allowing ANYONE to
+# execute malicious code after an exception is raised.
+set debug = false
+
+
+# Logging configuration
+[loggers]
+keys = root
+
+[handlers]
+keys = console
+
+[formatters]
+keys = generic
+
+[logger_root]
+level = INFO
+handlers = console
+
+[handler_console]
+class = StreamHandler
+args = (sys.stderr,)
+level = NOTSET
+formatter = generic
+
+[formatter_generic]
+format = %(asctime)s %(levelname)-5.5s [%(name)s] %(message)s

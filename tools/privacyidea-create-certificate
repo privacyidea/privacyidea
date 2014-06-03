@@ -1,0 +1,77 @@
+#!/usr/bin/python
+VERSION = '0.1'
+import os, sys
+from getopt import getopt, GetoptError
+import ConfigParser
+from subprocess import call
+
+CONFIG_FILE="/etc/apache2/sites-available/privacyidea"
+
+def usage():
+    print  '''
+    Parameter:
+    -f <apache config file> (Default: %s)
+    -h : help
+    ''' % CONFIG_FILE
+
+
+def create_keys(file):
+	print "Creating certificate..."
+	'''
+	Read
+    SSLCertificateFile    /etc/ssl/certs/privacyideaserver.pem
+    SSLCertificateKeyFile /etc/ssl/private/privacyideaserver.key
+	'''
+	key=None
+	cert=None
+	f =	open(file, 'r')
+	for l in f:
+		if l.strip()[:18] == "SSLCertificateFile":
+			cert=l.split()[1]
+		elif l.strip()[:21] == "SSLCertificateKeyFile":
+			key=l.split()[1]
+	f.close()
+	
+	if key and cert:
+		command = "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1000 -subj /CN=privacyideaserver -nodes" % (key, cert)
+		r = call(command, shell=True)
+		if r == 0:
+			print "created key and cert..."
+			os.chmod(key, 0x400)
+		else:
+			print "Failed to create key and cert: %i" % r
+			sys.exit(r)
+	
+	else:
+		print "Could not find key and cert!"
+		print "key: %s" % key
+		print "cert: %s" % cert
+		sys.exit(2)
+
+
+def main():
+
+    file = CONFIG_FILE
+    try:
+        opts, args = getopt(sys.argv[1:], "f:", ["file="])
+
+    except GetoptError:
+        print "There is an error in your parameter syntax:"
+        usage()
+        sys.exit(1)
+
+    for opt, arg in opts:
+        if opt in ('-f', '--file'):
+            file = arg
+        elif opt in ('-h', '--help'):
+            usage()
+            sys.exit(1)
+
+    if file:
+        create_keys(file)
+    else:
+        usage()
+        sys.exit(2)
+
+if __name__ == '__main__':
+    main()

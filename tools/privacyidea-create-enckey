@@ -1,0 +1,57 @@
+#!/usr/bin/python
+VERSION = '0.1'
+import os, sys
+from getopt import getopt, GetoptError
+import ConfigParser
+from subprocess import call
+
+
+def usage():
+    print  '''
+    Parameter:
+    -f <privacyidea.ini file>
+    -h : help
+    '''
+
+
+def create_key(file):
+    print "Creating encryption key..."
+    config_file = os.path.basename(file)
+    config_path = os.path.abspath(os.path.dirname(file))
+    config = ConfigParser.ConfigParser()
+    config.read(file)
+    config.set("DEFAULT", "here", config_path)
+    enckey = config.get('DEFAULT', "privacyideaSecretFile")
+
+    r = call("dd if=/dev/urandom of='%s' bs=1 count=96" % enckey, shell=True)
+    if r == 0:
+        print "written enckey: %s" % enckey
+
+
+
+def main():
+
+    file = ""
+    try:
+        opts, args = getopt(sys.argv[1:], "f:", ["file="])
+
+    except GetoptError:
+        print "There is an error in your parameter syntax:"
+        usage()
+        sys.exit(1)
+
+    for opt, arg in opts:
+        if opt in ('-f', '--file'):
+            file = arg
+        elif opt in ('-h', '--help'):
+            usage()
+            sys.exit(1)
+
+    if file:
+        create_key(file)
+    else:
+        usage()
+        sys.exit(2)
+
+if __name__ == '__main__':
+    main()

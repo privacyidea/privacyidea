@@ -1,0 +1,97 @@
+#!/usr/bin/python
+VERSION = '0.1'
+import os, sys
+from getopt import getopt, GetoptError
+import ConfigParser
+from subprocess import call
+import ast
+
+def usage():
+    print  '''
+    Parameter:
+    -f <privacyidea.ini file>
+    -u <privacyidea user>
+    -h : help
+    '''
+
+def fix_rights(file, user):
+
+    config_file = os.path.basename(file)
+    config_path = os.path.abspath(os.path.dirname(file))
+    config = ConfigParser.ConfigParser()
+    config.read(file)
+    config.set("DEFAULT", "here", config_path)
+    config.set("app:main", "here", config_path)
+    cache_dir = config.get('app:main', "cache_dir")
+    enckey = config.get("DEFAULT", "privacyideaSecretFile")
+    logfile = os.path.abspath(ast.literal_eval(config.get("handler_file", "args"))[0])
+
+    # TODO: which home directory?
+    try:
+        call("/usr/sbin/adduser  --no-create-home --system %s" % user, shell=True)
+        print "Created user %s" % user
+    except Exception, e:
+        print "Failed to create user %s: %s" % (user, str(e))
+
+    try:
+        call("mkdir -p %s" % cache_dir, shell=True)
+        call("chmod -R 600 %s" % cache_dir, shell=True)
+        call("find %s -type d -exec chmod 700 {} \;" % cache_dir, shell=True)
+        call("chown -R %s %s" % (user, cache_dir), shell=True)
+        print "Fixed access rights for %s" % cache_dir
+    except Exception, e:
+        print "Failed to fix access rights for %s" % cache_dir
+
+    try:
+        call("chmod 400 %s" % enckey, shell=True)
+        call("chown %s %s" % (user, enckey), shell=True)
+        print "Fixed access rights for %s" % enckey
+    except Exception, e:
+        print "Failed to fix access rights for %s" % enckey
+
+    try:
+        call("chmod 400 %s" % file, shell=True)
+        call("chown %s %s" % (user, file), shell=True)
+        print "Fixed access rights for %s" % file
+    except Exception, e:
+        print "Failed to fix access rights for %s" % file
+
+    try:
+        call("mkdir -p %s" % os.path.dirname(logfile), shell=True)
+        call("chmod -R 644 %s" % os.path.dirname(logfile), shell=True)
+        call("find %s -type d -exec chmod 755 {} \;" % os.path.dirname(logfile), shell=True)
+        call("chown -R %s %s" % (user, os.path.dirname(logfile)), shell=True)
+        print "Fixed access rights for %s" % os.path.dirname(logfile)
+    except Exception, e:
+        print "Failed to fix access rights for %s" % os.path.dirname(logfile)
+
+
+def main():
+
+    file = ""
+    user = ""
+    try:
+        opts, args = getopt(sys.argv[1:], "f:u:h", ["file=", "user=", "help"])
+
+    except GetoptError:
+        print "There is an error in your parameter syntax:"
+        usage()
+        sys.exit(1)
+
+    for opt, arg in opts:
+        if opt in ('-f', '--file'):
+            file = arg
+        elif opt in ('-h', '--help'):
+            usage()
+            sys.exit(1)
+        elif opt in ('-u', '--user'):
+            user = arg
+
+    if file and user:
+        fix_rights(file, user)
+    else:
+        usage()
+        sys.exit(2)
+
+if __name__ == '__main__':
+    main()

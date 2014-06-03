@@ -1,0 +1,150 @@
+#!/usr/bin/perl -w
+# This program converts the Safeword Alpine import Data to the Aladdin XML file format
+
+use strict;
+use Getopt::Std;
+
+my %options;
+my @tokens;
+
+my %token_db;
+my $file;
+my $showdb=0;
+my $type="HOTP";
+my $stepping="30";
+
+sub help() {
+    print STDERR "Usage: $0 [-h] \n";
+    print STDERR "  This program converts the Aladdin XML file format to OATH CSV\n";
+    print STDERR " -h : this help message\n";
+    print STDERR " -f : this is the input file with the XML data. You can also use stdin\n";
+    print STDERR " -d : show the contents of the hash of the parsed input. Don't output the conversion.\n";
+	print STDERR " -t : the type: either HOTP (default) or TOTP.\n";
+ 	print STDERR " -s : the timestep: 30 (default) or 60 seconds.\n\n";
+
+    exit 1;
+}
+
+
+sub getoptions() {
+        my $ok=0;
+        getopts("hf:dt:s:", \%options);
+        if ( $options{h} ) { help(); $ok=1; }
+	if ( $options{f} ) { $file=$options{f}; $ok=1; }
+	if ( $options{d} ) { $showdb=1; }
+        if ( $ok==0 ) {
+                help();
+        }
+	if ( $options{t} ) {
+		$type = $options{t};
+		$ok=1;
+	}
+	if ( $options{s} ) {
+		$stepping = $options{s};
+		$ok=1;
+	}
+}
+
+sub read_tokens() {
+    if ($file) {
+	@tokens=`cat "$file"`;
+    }else{
+	@tokens=<>;
+    }
+}
+
+
+sub read_db() {
+    my $i=0;
+    my $found=0;
+    my $line;
+    my $previous_line;
+    my $summary;
+    my $record_sum=0;
+    my $record_app=0;
+
+#<?xml version="1.0" encoding="utf-8" ?><Tokens>
+#<Token serial="TEST0002">
+#<CaseModel>5</CaseModel>
+#<Model>101</Model>
+#<ProductionDate>02/19/2009</ProductionDate>
+#<ProductName>Safeword Alpine</ProductName>
+#<ProductVersion>2</ProductVersion>
+#<Applications>
+#<Application ConnectorID="{a61c4073-2fc8-4170-99d1-9f5b70a2cec6}">
+#<Seed>EB214F9AE28C1079E4F1D551EB3F2AB49E38603DD9116019B223EF8DE40E0376</Seed>
+#<MovingFactor>1</MovingFactor>
+#</Application>
+#</Applications>
+#</Token>
+
+#<Token serial="TEST0001">
+#<CaseModel>5</CaseModel>
+#<Model>101</Model>
+#<ProductionDate>02/19/2009</ProductionDate>
+#<ProductName>Safeword Alpine</ProductName>
+#<ProductVersion>2</ProductVersion>
+#<Applications>
+#<Application ConnectorID="{a61c4073-2fc8-4170-99d1-9f5b70a2cec6}">
+#<Seed>CDA3A255B1D09B4B5A9D5F2472E2376F1164B717</Seed>
+#<MovingFactor>1</MovingFactor>
+#</Application>
+#</Applications>
+#</Token>
+
+
+    my $found_serial='';
+    foreach $line (@tokens) {
+		# cko: Achtung: Das sind DOS-Files. Da gibt es ein lf und nl. Verwirrt die Regexp
+		if ($line=~/^<Token serial="(\w*)"/ ){
+			# if there is a line starting with <Token serial= we found one.
+		    $found_serial=$1;
+		}
+		if ($line=~/^<Seed>(.*)<\/Seed>/){
+			# We found a token with a Key! :)
+			$token_db{ $found_serial }=$1;
+			$i++;
+		}
+    }
+    return $i;
+}
+
+sub show_db() {
+    my $k;
+    my $v;
+    while ( ($k,$v) = each( %token_db )) {
+	print "----------------------------\n";
+	print "$k => $v\n";
+    }
+}
+
+sub convert_tokens() {
+	my $k;
+	my $v;
+	my $line;
+
+	while  ( ($k,$v) = each %token_db ) {
+		if ( $type 	=~ /^HOTP$/ ) {
+			print "$k, $v, $type\n";
+		} 
+		if ( $type =~ /^TOTP$/ ) {
+			print "$k, $v, $type, $stepping\n";	
+		}
+	}
+}
+
+
+#
+# M A I N
+#
+getoptions();
+
+read_tokens();
+read_db();
+
+if ( $showdb ) { 
+	show_db(); 
+}else{
+	convert_tokens();
+}
+exit 0;

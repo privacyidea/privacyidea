@@ -1,0 +1,92 @@
+#!/usr/bin/python
+VERSION = '0.1'
+import os, sys
+from getopt import getopt, GetoptError
+from subprocess import call
+import ldap
+import ldap.modlist as modlist
+import getpass
+
+def usage():
+    print  '''
+    Parameter:
+    -f <csv file>
+    -h : help
+    -u <ldap uri>
+    -b <base, where to create the user>
+    -d <Bind DN>
+    '''
+
+
+def create_user( l, base, keys, values):
+
+    dn = "%s=%s,%s"  % ( keys[0], values[0], base )
+    attrs = {}
+    attrs['objectclass'] = ['top', 'person', 'organizationalPerson','user']
+    for x in range(1, len(keys)):
+        attrs[keys[x-1]] = values[x-1]    
+    
+    ldif = modlist.addModlist(attrs)
+
+    print "creating user %s with attrs %s" % (values, attrs)
+    l.add_s(dn, ldif)
+    #l.modify(dn, mods)
+
+
+
+
+def main():
+
+    file = None
+    base = None
+    uri = None
+    bind = None
+    password = None
+    
+    try:
+        opts, args = getopt(sys.argv[1:], "f:u:b:d:", ["file="])
+
+    except GetoptError:
+        print "There is an error in your parameter syntax:"
+        usage()
+        sys.exit(1)
+
+    for opt, arg in opts:
+        if opt in ('-f', '--file'):
+            file = arg
+        elif opt in ('-b'):
+            base = arg
+        elif opt in ('-d'):
+            bind = arg
+        elif opt in ('-u'):
+            uri = arg
+        elif opt in ('-h', '--help'):
+            usage()
+            sys.exit(1)
+
+    if not file or not base or not uri or not bind:
+        usage()
+        sys.exit(2)
+    else:
+        password = getpass.getpass("Please enter password for %s: " % bind)
+        
+        # read the first line
+        f = open(file, "r")
+        first_line = f.readline()
+        keys = [ x.strip() for x in first_line.split(',') ]
+        
+        l = ldap.initialize(uri)
+        l.simple_bind_s(bind, password)
+
+        for line in f:
+            values = [ v.strip() for v in line.split(',') ]
+            
+            create_user(l, base, keys, values)
+        
+        l.unbind_s()
+
+        
+    
+
+if __name__ == '__main__':
+    main()

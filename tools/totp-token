@@ -1,0 +1,634 @@
+# -*- coding: utf-8 -*-
+#
+#  privacyIDEA is a fork of LinOTP
+#  May 08, 2014 Cornelius Kölbel
+#  License:  AGPLv3
+#  contact:  http://www.privacyidea.org
+#
+#  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
+#  License:  AGPLv3
+#  contact:  http://www.linotp.org
+#            http://www.lsexperts.de
+#            linotp@lsexperts.de
+'''
+  Description:  This file is part of the privacyIDEA open source project
+
+  Dependencies: -
+  
+
+'''
+
+import os, sys, platform
+import binascii
+import hmac
+from hashlib import sha1, sha256, sha512
+import struct
+from getopt import getopt, GetoptError
+import time
+import copy
+import datetime
+
+
+import ConfigParser
+import urllib2
+import random
+
+CONFIGFILE = "python-totp.cfg"
+__VERSION__ = "2.6.1.1"
+
+
+class HmacOtp(object):
+    '''
+        HMAC Time based OTP token
+    '''
+    def __init__(self, key, digits=6, algo=None):
+        self.key = key
+        self.digits = digits
+        self.hash = sha1
+        if algo != None:
+            if algo.lower() == "sha256":
+                self.hash = sha256
+            if algo.lower() == "sha512":
+                self.hash = sha512
+
+
+    def calc_hmac(self, counter=None):
+        '''
+        calculate the hmac value
+
+        :param key: secret binary key (optional)
+        :param counter: the counter / time input (optional)
+
+        :return: the hmac digest
+        '''
+        digest = hmac.new(self.key, struct.pack(">Q", counter), self.hash)
+        return digest.digest()
+
+    def truncate(self, digest):
+        '''
+        truncate the given digest to the numer of digits
+
+        :param digest: hmac digest
+
+        :return: the truncated digest
+        '''
+        offset = ord(digest[-1:]) & 0x0f
+
+        binary = (ord(digest[offset + 0]) & 0x7f) << 24
+        binary |= (ord(digest[offset + 1]) & 0xff) << 16
+        binary |= (ord(digest[offset + 2]) & 0xff) << 8
+        binary |= (ord(digest[offset + 3]) & 0xff)
+
+        return binary % (10 ** self.digits)
+
+    def generate(self, counter=0):
+        '''
+        generate the otp value from a given key and counter
+
+        :param key: secret binary key (optional)
+        :param counter: the counter / time input (optional)
+
+        :return: the otp value
+        '''
+        digest = self.calc_hmac(counter)
+        otp = str(self.truncate(digest))
+        ## fill in leading zeros
+        otp = (self.digits - len(otp)) * "0" + otp
+        return otp
+
+class TotpToken(object):
+    '''
+        HMAC Time based OTP token
+    '''
+    def __init__(self, key, digits=6, algo=None,
+                 jitter=0, offset=0, timestep=30, url=None):
+
+        self.timestep = int(timestep)
+        self.jitter = int(jitter)
+        self.offset = int(offset)
+        self.url = url
+        self.hmac_otp = HmacOtp(key, digits=digits, algo=algo)
+
+    def get_url(self):
+        '''
+        return the token verification url
+        '''
+        return self.url
+
+    def get_time4counter(self, counter):
+        '''
+        provide the datetime object belongint to an counter
+
+        :param counter: the counter
+        :return: return the datetime, which belongs to the counter
+        '''
+        now_dt = datetime.datetime.fromtimestamp(
+                                    (counter - 0.5) * self.timestep / 1.0)
+        return now_dt
+
+    def generate(self, counter=None):
+        '''
+        generate an otp value for a given counter
+        if no counter is given, the current time is taken
+
+        :param counter: counter (optional)
+        :return: tuple of otp an counter
+        '''
+
+        if counter == None:
+            if self.jitter != 0:
+                jitter = random.randrange(-1 * self.jitter, self.jitter)
+            else:
+                jitter = 0
+            time0 = time.time() + self.offset + jitter
+            counter = int((time0 / self.timestep) + 0.5)
+
+        otp = self.hmac_otp.generate(counter=counter)
+        return (otp, counter)
+
+    def get_totp_info(self, counter=None):
+        '''
+        provide the otp, the counter and the related time
+
+        :param counter: counter (optional)
+        :return: tuple of datetime, counter and otp value
+        '''
+        (otp, _count) = self.generate(counter=counter)
+        now_dt = self.get_time4counter(_count)
+        return (now_dt, _count, otp)
+
+
+def usage():
+    """
+    print the usage info
+    """
+
+    info = '''
+    totp-token - version %s
+
+  token configuration:
+    s, seed:       enter the seed on the command line
+    g, genkey:     generate HMAC key
+
+    l, algo:       hash algorithm: sha1, sha256 or sha512
+    d, digits:     number of digits of the token (default: 6)
+    o, offset:     timeshift in seconds
+    t, timestep:   timestep (default: 60)
+    j, jitter:     this is the maximum variation / jitter, if the otp value is
+                   entered a bit before or after the middle of the given
+                   time interval
+    u, url:        the url for the privacyIDEA service. could be something like
+                    - the current OTP value will be appended to the URL
+                     https://localhost/validate/check?user=USER&pass=PIN
+
+  request parameter:
+    a, add_offset: add seconds to offset
+
+    c, check:      if the otp value should be checked with the privacyIDEA server
+
+    r, range:      calculate several OTP values around the current time.
+                   number of timesteps or absolute numer of <start,stop> timestep.
+
+    q, query:      search for an otp in the defined range (-r)
+
+''' % __VERSION__
+
+    print info
+
+def disclaimer():
+    """
+    print the disclaimer
+    """
+    disc = \
+    "## HMAC time based token - from the privacyIDEA open source otp solution ##"
+    print disc
+
+def genkey(keylen=20):
+    '''
+    generate an hmac key
+
+    :param keylen: length of the to be generated binary key
+
+    :return: the binary key
+    '''
+
+    key = binascii.hexlify(os.urandom(keylen))
+    print "Your OTP Key:\n"
+    print "    ", key
+    print
+    return key
+
+def getpath():
+    '''
+    lookup the hom direcory and return the config filename
+
+    :return: the fully qualified config file name
+    '''
+    system = platform.system()
+    config_path = None
+    if system == "Linux":
+        config_path = os.path.join(os.getenv("HOME"), ".%s" % CONFIGFILE)
+    elif system == "Windows":
+        config_path = os.path.join(os.getenv("HOMEDRIVE"),
+                                   os.getenv("HOMEPATH"), CONFIGFILE)
+    else:
+        print "I do not know your operating system"
+        sys.exit(1)
+    return config_path
+
+def readconfig():
+    '''
+    Read and return the config object
+    :return: return the config dict
+    '''
+    token_config = {}
+
+    config = ConfigParser.SafeConfigParser()
+    config.read(getpath())
+    # print "CONFIG:" , config.items("TOTP")
+    for (key, value) in config.items("TOTP"):
+        token_config[key] = value
+
+    return token_config
+
+def saveconfig(param):
+    '''
+    save config object
+
+    :param param: dict of parameters, which should be saved
+    '''
+    c_file = getpath()
+    print "Config File: %s " % c_file
+
+    config = ConfigParser.SafeConfigParser()
+    config.add_section('TOTP')
+    for key, value in param.items():
+
+        if type(value) == unicode:
+            value = value.encode('utf-8')
+        if type(value) not in [str, unicode]:
+            value = "%r" % value
+
+        print "%s\t%s" % (key, value)
+        config.set('TOTP', key, value)
+
+    with open(c_file, 'wb') as configfile:
+        config.write(configfile)
+
+
+    return
+
+def main():
+    '''
+    totp-token main routine
+    '''
+    disclaimer()
+    try:
+        (the_config, params) = get_configuration_args(sys.argv[1:])
+    except GetoptError:
+        print >> sys.stderr, "There is an error in your parameter syntax:"
+        usage()
+        sys.exit(1)
+    except IOError as io_err:
+        print >> sys.stderr, ":: Error reading or writing your configuration:"
+        print >> sys.stderr, (":: Please try to re-create a new configuration! "
+                              "%r" % io_err)
+        sys.exit(1)
+
+    token = create_token(the_config)
+    result = run_request(token, params)
+
+    return result
+
+def get_configuration_args(the_args):
+    '''
+    take the commandline parameters and
+    merge it with the token configuration file values
+
+    :param the_args: the commandline arguments
+    :return: the token config and the processing parameters
+    '''
+    params = {}
+    opts, _args = getopt(the_args, "vxhgt:o:a:cu:j:r:s:l:q:d:",
+            ["version", "selftest", "help", "genkey", "timestep=",
+             "offset=", "add_offset=", "check", "url=", "jitter=",
+             "range=", "seed=", "algo=",
+             "query=", "digits="])
+    the_config = {}
+
+    try:
+        the_config = readconfig()
+    except ConfigParser.NoSectionError as conf_err:
+        print ":: Error reading your configuration: %r" % conf_err
+
+    for opt, arg in opts:
+
+        if opt in ('-h', '--help'):
+            usage()
+            sys.exit(0)
+
+        elif opt in ('-x', "--selftest"):
+            selftest()
+            sys.exit(0)
+
+        elif opt in ('-v', "--version"):
+            print __VERSION__
+            sys.exit(0)
+
+        elif opt in ('-g', '--genkey'):
+            params['gen_key'] = True
+
+        elif opt in ('-t', "--timestep"):
+            the_config['timestep'] = int(arg)
+
+        elif opt in ('-a', "--add_offset"):
+            offset = int(the_config.get("offset", 0)) + int(arg)
+            the_config["offset"] = offset
+
+        elif opt in ('-o', "--offset"):
+            the_config['offset'] = int(arg)
+
+        elif opt in ('-u', "--url"):
+            the_config['url'] = arg
+
+        elif opt in ('-j', "--jitter"):
+            the_config['jitter'] = arg
+
+        elif opt in ('-l', "--algo"):
+            the_config['algo'] = arg.lower()
+
+        elif opt in ('-s', "--seed"):
+            the_config['key'] = arg
+
+        elif opt in ('-d', "--digits"):
+            the_config['digits'] = arg
+
+        elif opt in ('-q', "--query"):
+            params['query'] = arg
+
+        elif opt in ('-r', "--range"):
+            params['range'] = arg
+
+        elif opt in ('-c', "--check"):
+            params['check'] = True
+
+    if params.has_key('gen_key') and  params.get('gen_key') == True:
+        keylen = 20
+        algo = the_config.get('algo', 'sha1')
+        if algo == 'sha256':
+            keylen = 32
+        elif algo == 'sha51':
+            keylen = 64
+        the_config['algo'] = algo
+        the_config['key'] = genkey(keylen)
+
+    if the_config.has_key("url"):
+        params['url'] = the_config.get("url")
+
+    saveconfig(the_config)
+
+    return (the_config, params)
+
+def create_token(the_config):
+    '''
+    create an totp token from the configuration
+    
+    :param the_config: the configuration data dict
+    :return: the totp token object
+    '''
+
+    binkey = binascii.a2b_hex(the_config['key'])
+
+    token = TotpToken(binkey,
+                    digits=int(the_config.get('digits', 6)),
+                    algo=the_config.get('algo', None),
+                    jitter=the_config.get('jitter', 0),
+                    timestep=int(the_config.get('timestep', 30)),
+                    offset=int(the_config.get('offset', 0)),
+                    url=the_config.get('url', None)
+                    )
+
+    return token
+
+def run_request(token, params):
+    '''
+    dispatch the request on behalf of the parameters
+
+    :param token: the token object
+    :param params: the request parameters
+    '''
+    if params.has_key('range'):
+        start = 0
+        end = 0
+        query = params.get('query', None)
+        window = params.get('range', None)
+        if "," in window:
+            start, end = window.split(',')
+            start = int(start)
+            end = int(end)
+            window = None
+        else:
+            window = int(window)
+
+        range_check(token, window=window, start=start, end=end, query=query)
+
+    else:
+        check = params.get('check', False)
+        simple_check(token, check)
+    return
+
+def simple_check(token, check):
+    '''
+    calculate the current otp and optional do a check
+    '''
+    (otp, counter) = token.generate()
+    check_date = token.get_time4counter(counter)
+
+    print ("\nYour OTP [%s] (%d) is: %s" % (str(check_date), counter, otp))
+
+    url = token.get_url()
+    if url is not None and check is True:
+        ## check if the url conatins a %s, where we paste the otp into
+        ## or old style, where we concat the url and the otp
+        if "%s" in url:
+            request_url = url % otp
+        else:
+            request_url = "%s%s" % (url, otp)
+
+        print "  Requesting %s" % request_url
+        try:
+            response = urllib2.urlopen(request_url)
+            print response.read()
+        except urllib2.URLError as urr:
+            print ("  Sorry, there is a connection problem with \n\t %r" % urr)
+
+    print "Happy Authenticating!\n"
+    return
+
+def range_check(token, window=None, start=0, end=0, query=None):
+    '''
+    print a range of otp value and optionaly check them against
+    an provided otp value
+
+    :param token: the totp token
+    :param range: the counter window to be printed
+    :param start: a start counter (will be overruled, if range is given)
+    :param end: the end counter (will be overruled, if range is given)
+
+    '''
+    if window is not None:
+        (otp, counter) = token.generate()
+        start = counter - window
+        if start <= 0:
+            start = 0
+        end = counter + window
+
+    beg_dt = token.get_time4counter(start)
+    end_dt = token.get_time4counter(end)
+
+    print >> sys.stderr, ("searching in time frame: [%s - %s]"
+          % (str(beg_dt), str(end_dt)))
+
+    found = False
+    i = start
+
+    ## now loop through the range
+    if query is None:
+        while i < end:
+            (now_dt, _count, otp) = token.get_totp_info(counter=i)
+            print '%s : c:%d : otp %r' % (str(now_dt), _count, otp)
+            i = i + 1
+    else:
+        while i < end:
+            (now_dt, _count, otp) = token.get_totp_info(counter=i)
+            if otp == query:
+                for count in range(-1, 2):
+                    l_count = i + count
+                    print l_count
+                    (now_dt, _count, otp) = token.get_totp_info(counter=l_count)
+                    print '%s : c:%d : otp %r' % (str(now_dt), _count, otp)
+                found = True
+            i = i + 1
+
+    if query != None and found == False:
+        print "Sorry, nothing found!"
+
+
+def selftest():
+    """
+    selftest according to the totp specification from
+    """
+
+    desc = """
+    From:    http://tools.ietf.org/html/rfc6238
+
+   The test token shared secret uses the ASCII string value
+   "12345678901234567890".  With Time Step X = 30, and the Unix epoch as
+   the initial value to count time steps, where T0 = 0, the TOTP
+   algorithm will display the following values for specified modes and
+   timestamps.
+
+  +-------------+--------------+------------------+----------+--------+
+  |  Time (sec) |   UTC Time   | Value of T (hex) |   TOTP   |  Mode  |
+  +-------------+--------------+------------------+----------+--------+
+  |      59     |  1970-01-01  | 0000000000000001 | 94287082 |  SHA1  |
+  |             |   00:00:59   |                  |          |        |
+  |      59     |  1970-01-01  | 0000000000000001 | 46119246 | SHA256 |
+  |             |   00:00:59   |                  |          |        |
+  |      59     |  1970-01-01  | 0000000000000001 | 90693936 | SHA512 |
+  |             |   00:00:59   |                  |          |        |
+  |  1111111109 |  2005-03-18  | 00000000023523EC | 07081804 |  SHA1  |
+  |             |   01:58:29   |                  |          |        |
+  |  1111111109 |  2005-03-18  | 00000000023523EC | 68084774 | SHA256 |
+  |             |   01:58:29   |                  |          |        |
+  |  1111111109 |  2005-03-18  | 00000000023523EC | 25091201 | SHA512 |
+  |             |   01:58:29   |                  |          |        |
+  |  1111111111 |  2005-03-18  | 00000000023523ED | 14050471 |  SHA1  |
+  |             |   01:58:31   |                  |          |        |
+  |  1111111111 |  2005-03-18  | 00000000023523ED | 67062674 | SHA256 |
+  |             |   01:58:31   |                  |          |        |
+  |  1111111111 |  2005-03-18  | 00000000023523ED | 99943326 | SHA512 |
+  |             |   01:58:31   |                  |          |        |
+  |  1234567890 |  2009-02-13  | 000000000273EF07 | 89005924 |  SHA1  |
+  |             |   23:31:30   |                  |          |        |
+  |  1234567890 |  2009-02-13  | 000000000273EF07 | 91819424 | SHA256 |
+  |             |   23:31:30   |                  |          |        |
+  |  1234567890 |  2009-02-13  | 000000000273EF07 | 93441116 | SHA512 |
+  |             |   23:31:30   |                  |          |        |
+  |  2000000000 |  2033-05-18  | 0000000003F940AA | 69279037 |  SHA1  |
+  |             |   03:33:20   |                  |          |        |
+  |  2000000000 |  2033-05-18  | 0000000003F940AA | 90698825 | SHA256 |
+  |             |   03:33:20   |                  |          |        |
+  |  2000000000 |  2033-05-18  | 0000000003F940AA | 38618901 | SHA512 |
+  |             |   03:33:20   |                  |          |        |
+  | 20000000000 |  2603-10-11  | 0000000027BC86AA | 65353130 |  SHA1  |
+  |             |   11:33:20   |                  |          |        |
+  | 20000000000 |  2603-10-11  | 0000000027BC86AA | 77737706 | SHA256 |
+  |             |   11:33:20   |                  |          |        |
+  | 20000000000 |  2603-10-11  | 0000000027BC86AA | 47863826 | SHA512 |
+  |             |   11:33:20   |                  |          |        |
+  +-------------+--------------+------------------+----------+--------+
+
+                            Table 1: TOTP Table
+    """
+
+    print desc
+
+    tests = [{'key' : "3132333435363738393031323334353637383930",
+            'hash' : 'sha1',
+            'digits': 8,
+            'timestep' : 30,
+            'values' : [(59, "94287082"), (1111111109, "07081804"),
+                        (1111111111, "14050471"), (1234567890, '89005924'),
+                        (2000000000, '69279037'), (20000000000, '65353130')]
+            }
+            ,
+           {'key' : "313233343536373839303132333435363738393031323334" +
+                    "3536373839303132",
+            'hash' : 'sha256',
+            'digits': 8,
+            'timestep' : 30,
+            'values' : [(59, "46119246"), (1111111109, "68084774"),
+                        (1111111111, "67062674"), (1234567890, '91819424'),
+                        (2000000000, '90698825'), (20000000000, '77737706')]
+            },
+           {'key' : "3132333435363738393031323334353637383930" +
+                    "3132333435363738393031323334353637383930" +
+                    "3132333435363738393031323334353637383930" +
+                    "31323334",
+            'hash' : 'sha512',
+            'digits': 8,
+            'timestep' : 30,
+            'values' : [(59, "90693936"), (1111111109, "25091201"),
+                        (1111111111, "99943326"), (1234567890, '93441116'),
+                        (2000000000, '38618901'), (20000000000, '47863826')]
+
+           }
+        ]
+
+    for test in tests:
+        timestep = test.get('timestep')
+        token = TotpToken(binascii.a2b_hex(test.get('key')),
+                          digits=test.get('digits'),
+                          algo=test.get('hash'),
+                          timestep=timestep)
+        values = test.get('values')
+        conf = copy.deepcopy(test)
+        del conf['values']
+        print "\ntest %r:\n" % conf
+        for value in values:
+            counter = int((value[0] / timestep) + 0.5)
+            c_otp = value[1]
+            (otp, count) = token.generate(counter=counter)
+            print ("verify for time \t %12d T: counter %12d  \ttotp: %s"
+                    % (value[0], counter, c_otp))
+            try:
+                assert otp == c_otp
+            except AssertionError as ass:
+                print "returned values are %r:%r " % (count, otp)
+                raise ass
+
+
+if __name__ == '__main__':
+    main()
+

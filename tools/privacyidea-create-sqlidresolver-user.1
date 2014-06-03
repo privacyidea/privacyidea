@@ -1,0 +1,38 @@
+.\" Manpage for privacyidea-create-sqlidresolver-user
+.\" Contact info@privacyidea.org for any feedback.
+.TH PRIVACYIDEA-CREATE-SQLRESOLVER-USER 1 "08 May 2014" "1.0" "privacyidea-create-sqlidresolver-user man page"
+.SH NAME
+privacyidea-create-sqlidresolver-user \- creates a user line to be stored in a usefile.
+.SH SYNOPSIS
+privacyidea-create-sqlidresolver-user -u <username> [-p <password>]
+.SH DESCRIPTION
+This tool creates an output line to be used as username and crypted password for privacyIDEA SQL Resolvers.
+This tool outputs the values username, crypted password and salt. The password is encrypted using the function crypt(password,salt).
+.SH COMMON OPTIONS
+.PP
+\fB\-u <username> \fR
+.RS 4
+The loginname of the user.
+.RE
+
+.PP
+\fB\-h\fR
+.RS 4
+Display a help message.
+.RE
+
+.PP
+\fB\-p <password>\fR
+.RS 4
+The password of the user. If you do not specify it you are asked to type it in.
+The user id of the user.
+.RE
+
+.SH INTERNET SOURCES
+http://www.privacyidea.org,  http://www.linotp.org
+.SH SEE ALSO
+
+.SH BUGS
+No known bugs.
+.SH AUTHOR
+LSE Leading Security Experts GmbH <linotp-community@lsexperts.de>

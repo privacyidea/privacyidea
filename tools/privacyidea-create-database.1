@@ -1,0 +1,34 @@
+.\" Manpage for privacyidea-create-database.
+.\" Contact info@privacyidea.org for any feedback.
+.TH PRIVACYIDEA-CREATE-DATABASE 1 "08 May 2014" "1.0" "privacyidea-create-database man page"
+.SH NAME
+privacyidea-create-database \- creates the database and a database user.
+.SH SYNOPSIS
+privacyidea-create-database -f <ini file>
+.SH DESCRIPTION
+This tool creates the database and database user for privacyIDEA. 
+It reads the configuration from the privacyidea.ini file
+to determine the necessary values.
+
+You need to provide user credentials with the rights to create a database.
+.SH COMMON OPTIONS
+.PP
+\fB\-f <ini file> \fR
+.RS 4
+The privacyidea.ini file containing the information where the database should be created.
+.RE
+
+.PP
+\fB\-h\fR
+.RS 4
+Display a help message.
+.RE
+
+.SH INTERNET SOURCES
+http://www.privacyidea.org, http://www.linotp.org
+.SH SEE ALSO
+
+.SH BUGS
+No known bugs.
+.SH AUTHOR
+LSE Leading Security Experts GmbH <linotp-community@lsexperts.de>

@@ -1,0 +1,132 @@
+#!/usr/bin/perl -w
+# This program converts the Safeword Alpine import Data to the Aladdin XML file format
+
+use strict;
+use Getopt::Std;
+
+my %options;
+my @tokens;
+
+my %token_db;
+my $file;
+my $showdb=0;
+
+my $token_template= <<EOF;
+<Token serial="SERIAL">
+<CaseModel>5</CaseModel>
+<Model>101</Model>
+<ProductionDate>02/19/2009</ProductionDate>
+<ProductName>Safeword Alpine</ProductName>
+<ProductVersion>2</ProductVersion>
+<Applications>
+<Application ConnectorID="{a61c4073-2fc8-4170-99d1-9f5b70a2cec6}">
+<Seed>SEED</Seed>
+<MovingFactor>1</MovingFactor>
+</Application>
+</Applications>
+</Token>
+EOF
+
+sub help() {
+    print STDERR "Usage: $0 [-h] \n";
+    print STDERR "  This program converts the Safeword Alpine import Data to the Aladdin XML file format\n";
+    print STDERR " -h : this help message\n";
+    print STDERR " -f : this is the input file with the safeword data. You can also use stdin\n";
+    print STDERR " -d : show the contents of the hash of the parsed input. Don't output the conversion.\n\n";
+
+    exit 1;
+}
+
+
+sub getoptions() {
+        my $ok=0;
+        getopts("hf:d", \%options);
+        if ( $options{h} ) { help(); $ok=1; }
+	if ( $options{f} ) { $file=$options{f}; $ok=1; }
+	if ( $options{d} ) { $showdb=1; }
+        if ( $ok==0 ) {
+                help();
+        }
+}
+
+sub read_tokens() {
+    if ($file) {
+	@tokens=`cat "$file"`;
+    }else{
+	@tokens=<>;
+    }
+}
+
+
+sub read_db() {
+    my $i=0;
+    my $found=0;
+    my $line;
+    my $previous_line;
+    my $summary;
+    my $record_sum=0;
+    my $record_app=0;
+
+#dn: sccAuthenticatorId=F722425
+#objectclass: sccCompatibleToken
+#sccAuthenticatorId: F722425
+#sccTokenType: SafeWord-Alpine-ES
+#sccTokenData: sccKey=C8842DADF04F17FD3E5C87039DA39D841DC06C7C;sccMode=E;sccPwLen=6;sccVer=1.1;
+#sccSignature: MC4CFQD1myMBcOQ8voA9xu0DrKedEMr4rAIVAOch+nTAd6Sxgcqw3fLdNhEznCTE
+
+    my $found_token='0';
+    foreach $line (@tokens) {
+	# cko: Achtung: Das sind DOS-Files. Da gibt es ein lf und nl. Verwirrt die Regexp
+	if ($line=~/^sccAuthenticatorId:\s*(\w*)/ ){
+	    # if there is a line, starting with ccAuthenticatorId we have found a token and remember its serial number
+	    $found_token=$1;
+	}
+	if ($line=~/^sccTokenData:\s*sccKey=(.*);sccMode=E/){
+		# We found a token with a Key! :)
+		$token_db{ $found_token }=$1;
+		$i++;
+	}
+    }
+    return $i;
+}
+
+sub show_db() {
+    my $k;
+    my $v;
+    while ( ($k,$v) = each( %token_db )) {
+	print "----------------------------\n";
+	print "$k => $v\n";
+    }
+}
+
+sub convert_tokens() {
+	my $k;
+	my $v;
+	my $line;
+
+	print '<?xml version="1.0" encoding="utf-8" ?>';
+	print "<Tokens>\n";
+	while  ( ($k,$v) = each %token_db ) {
+		$line = $token_template;
+		$line =~ s/SERIAL/$k/g;	
+		$line =~ s/SEED/$v/g;
+		print $line."\n";
+	}
+	print "</Tokens>";
+}
+
+
+#
+# M A I N
+#
+getoptions();
+
+read_tokens();
+read_db();
+
+if ( $showdb ) { 
+	show_db(); 
+}else{
+	convert_tokens();
+}
+exit 0;

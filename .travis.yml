@@ -1,0 +1,47 @@
+language: python
+python:
+  - "2.7"
+  - "2.6"
+# command to install dependencies
+install:
+  - "pip install ."
+  - "pip install mock"
+  - "pip install coveralls"
+# split the test run according to
+# http://blog.travis-ci.com/2012-11-28-speeding-up-your-tests-by-parallelizing-them/
+env:
+  - TESTSCRIPT=privacyidea/tests/functional/test_account.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_admin.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_audit.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_authorize.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_challenge_response.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_emailtoken.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_err_response.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_fixes.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_getotp.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_getserial.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_httpsms.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_importotp.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_ldap.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_manage.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_ocra2.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_ocra.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_orphaned.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_passwdidresolver.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_policy.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_radius_token.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_remote_token.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_replication_sync.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_selfservice.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_system.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_totp.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_validate.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_yubikey.py
+matrix:
+    allow_failures:
+        python: 2.6
+
+# command to run tests
+script: "./test.sh --no-html $TESTSCRIPT"
+after_success: 
+    coveralls --rcfile=coveragerc

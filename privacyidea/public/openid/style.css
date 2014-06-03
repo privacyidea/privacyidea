@@ -1,0 +1,144 @@
+.simple_overlay {
+	
+	/* must be initially hidden */
+	display:none;
+	
+	/* place overlay on top of other elements */
+	z-index:10000;
+	
+	/* styling */
+	background-color:#EEEEEE;
+	
+	width:400px;	
+	min-height:50px;
+	border:1px solid #666;
+	
+	padding-top: 15px;
+	padding-left: 20px;
+	
+	/* CSS3 styling for latest browsers */
+	-moz-box-shadow:0 0 90px 5px #000;
+	-webkit-box-shadow: 0 0 90px #000;	
+	
+	-moz-border-radius:6px;
+	-webkit-border-radius:6px;
+
+}
+
+a.activeToken {
+	color: black;
+	background-color:white;
+}
+a.disabledToken {
+	color: black;
+	text-decoration:line-through;
+}
+
+h1 {
+	color: #8baa2b;
+}
+
+body {
+	font-family: helvetica, impact, sans-serif;
+	}
+
+#wrap {
+ width:95%;
+ margin:0 auto;
+}
+
+
+#main {
+float:right;
+width:68%;
+background: #080808;
+border: 1px solid #8baa2b;
+padding: 3px; 
+}
+
+#sidebar {
+float:left;
+width:30%;
+background:#eeeeee;
+border-right: 1px solid #8baa2b;
+padding: 3px; 
+}
+
+
+ 
+ #header {
+ background:#bcdd56;
+ font-size:large;
+ background-image:url(/images/ui-bg_highlight-soft_75_cccccc_1x100.png);
+ margin: 1px;
+ padding: 3px;
+ border: 1px solid #aaaaaa;
+ }
+ 
+ .float_left {
+ 	float:left;
+ }
+ .float_right{
+ 	float:right;
+	text-align:right;
+ }
+ 
+ .portalname{
+ 	color:white;
+	font-size:200%;
+	text-shadow:black 3px 2px 4px;
+ }
+ 
+ 
+ 
+ #menu {
+ width:100%;
+ }
+ #nav {
+ background:#dddddd;
+ //float:left;
+ }
+ #logout {
+ float:right;
+ }
+ 
+ #main {
+ background:#fefefe;
+ }
+
+
+#footer {
+ clear:both;
+ color: white;
+ background:#080808;
+}
+ 
+ #nav ul {
+   margin:0;
+   padding:0;
+   list-style:none;
+ }
+ #nav li {
+   display:inline;
+   margin:0;
+   padding:0;
+ }
+ 
+ #nav ul li a, 
+ #nav ul li a:visited {
+    color:#333;padding:0 10px; 
+    height:30px;
+    border-right:1px solid #ffffff;
+    line-height:30px;
+    background:#8baa2b;
+    text-decoration: none;
+    }
+ 
+ #nav ul li a:hover {
+ 	color:#ffffff;
+ 	text-decoration:none; 
+ 	border-bottom:3px solid #111111; 
+ 	margin: -3px 0 0 0; 
+	text-shadow:black 2px 1px 2px;
+ }
+

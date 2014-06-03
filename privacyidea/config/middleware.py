@@ -1,0 +1,180 @@
+# -*- coding: utf-8 -*-
+#
+#  privacyIDEA is a fork of LinOTP
+#  May 08, 2014 Cornelius Kölbel
+#  License:  AGPLv3
+#  contact:  http://www.privacyidea.org
+#
+#  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
+#  License:  AGPLv3
+#  contact:  http://www.linotp.org
+#            http://www.lsexperts.de
+#            linotp@lsexperts.de
+'''
+This file is part of the privacyidea service
+'''
+
+"""Pylons middleware initialization"""
+from beaker.middleware import CacheMiddleware
+from paste.cascade import Cascade
+from paste.registry import RegistryManager
+from paste.urlparser import StaticURLParser
+from paste.deploy.converters import asbool
+from pylons import config
+from pylons.middleware import ErrorHandler, StatusCodeRedirect
+from pylons.wsgiapp import PylonsApp
+from routes.middleware import RoutesMiddleware
+from privacyidea.config.environment import load_environment
+
+from repoze.who.middleware import PluggableAuthenticationMiddleware
+from repoze.who.interfaces import IIdentifier
+from repoze.who.interfaces import IChallenger
+from repoze.who.plugins.auth_tkt import AuthTktCookiePlugin
+from privacyidea.lib.repoze_identify import make_redirecting_plugin
+from privacyidea.lib.repoze_auth import UserModelPlugin as auth_privacy_plugin
+from repoze.who.classifiers import default_request_classifier
+from repoze.who.classifiers import default_challenge_decider
+from privacyidea.lib.crypto import geturandom
+import logging
+
+profile_load = False
+try:
+    from repoze.profile.profiler import AccumulatingProfileMiddleware
+    profile_load = True
+except ImportError:
+    pass
+
+COOKIE_TIMEOUT = 600
+COOKIE_REISSUE_TIME = 540
+
+_LEVELS = {'debug': logging.DEBUG,
+           'info': logging.INFO,
+           'warning': logging.WARNING,
+           'error': logging.ERROR,
+          }
+
+def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
+    """
+    Create a Pylons WSGI application and return it
+
+    ``global_conf``
+        The inherited configuration for this application. Normally from
+        the [DEFAULT] section of the Paste ini file.
+
+    ``full_stack``
+        Whether this application provides a full WSGI stack (by default,
+        meaning it handles its own exceptions and errors). Disable
+        full_stack when this application is "managed" by another WSGI
+        middleware.
+
+    ``static_files``
+        Whether this application serves its own static files; disable
+        when another web server is responsible for serving them.
+
+    ``app_conf``
+        The application's local configuration. Normally specified in
+        the [app:<name>] section of the Paste ini file (where <name>
+        defaults to main).
+
+    """
+    # Configure the Pylons environment
+    load_environment(global_conf, app_conf)
+
+    # The Pylons WSGI app
+    app = PylonsApp()
+
+    # Profiling Middleware
+    if profile_load:
+        if asbool(config['profile']):
+            app = AccumulatingProfileMiddleware(
+                app,
+                log_filename='/var/log/privacyidea/profiling.log',
+                cachegrind_filename='/var/log/privacyidea/cachegrind.out',
+                discard_first_request=True,
+                flush_at_shutdown=True,
+                path='/__profile__'
+            )
+
+    # Routing/Session/Cache Middleware
+    app = RoutesMiddleware(app, config['routes.map'])
+    # We do not use beaker sessions! Keep the environment smaller.
+    #app = SessionMiddleware(app, config)
+    app = CacheMiddleware(app, config)
+
+    # CUSTOM MIDDLEWARE HERE (filtered by error handling middlewares)
+
+    if asbool(full_stack):
+        # Handle Python exceptions
+        app = ErrorHandler(app, global_conf, **config['pylons.errorware'])
+
+        # Display error documents for 401, 403, 404 status codes (and
+        # 500 when debug is disabled)
+        if asbool(config['debug']):
+            app = StatusCodeRedirect(app)
+        else:
+            app = StatusCodeRedirect(app, [400, 401, 403, 404, 500])
+
+    # Establish the Registry for this application
+    app = RegistryManager(app)
+
+    if asbool(static_files):
+        # Serve static files
+        static_app = StaticURLParser(config['pylons.paths']['static_files'])
+        app = Cascade([static_app, app])
+
+
+
+    # Add the repoze.who middleware
+    # with a cookie encryption key, that is generated at every server start!
+
+    cookie_key = geturandom(32)    
+    privacyidea_auth = auth_privacy_plugin()
+    privacyidea_md = auth_privacy_plugin()
+    auth_tkt = AuthTktCookiePlugin(cookie_key,
+                                   cookie_name='privacyidea_session',
+                                   secure=True,
+                                   include_ip=False,
+                                   timeout=COOKIE_TIMEOUT,
+                                   reissue_time=COOKIE_REISSUE_TIME)
+    form = make_redirecting_plugin(login_form_url="/account/login",
+                            login_handler_path='/account/dologin',
+                            logout_handler_path='/account/logout',
+                            rememberer_name="auth_tkt")
+    form.classifications = { IIdentifier:['browser'],
+                             IChallenger:['browser'] } # only for browser
+    identifiers = [('form', form),('auth_tkt',auth_tkt)]
+    authenticators = [('privacyidea.lib.repoze_auth:UserModelPlugin', privacyidea_auth)]
+    challengers = [('form',form)]
+    mdproviders = [('privacyidea.lib.repoze_auth:UserModelPlugin', privacyidea_md)]
+
+    #app = make_who_with_config(app, global_conf, app_conf['who.config_file'], app_conf['who.log_file'], app_conf['who.log_level'])
+
+    log_file = app_conf.get("who.log_file")
+    if log_file is not None:
+        if log_file.lower() == 'stdout':
+            log_stream = None
+        else:
+            log_stream = open(log_file, 'wb')
+
+    log_level = app_conf.get("who.log_level")
+    if log_level is None:
+        log_level = logging.INFO
+    else:
+        log_level = _LEVELS[log_level.lower()]
+        
+    app = PluggableAuthenticationMiddleware(
+        app,
+        identifiers,
+        authenticators,
+        challengers,
+        mdproviders,
+        default_request_classifier,
+        default_challenge_decider,
+        log_stream,
+        log_level
+        )
+
+
+
+    return app
+

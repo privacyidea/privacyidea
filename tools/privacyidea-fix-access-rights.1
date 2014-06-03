@@ -1,0 +1,44 @@
+.\" Manpage for privacyidea-fix-access-rights.
+.\" Contact info@privacyidea.org for any feedback.
+.TH PRIVACYIDEA-FIX-ACCESS-RIGHTS 1 "08 May 2014" "1.0" "privacyidea-fix-access-rights man page"
+.SH NAME
+privacyidea-fix-access-rights \- fix the access rights of several files.
+.SH SYNOPSIS
+privacyidea-fix-access-rights -f <ini file> -u <privacyidea user>
+.SH DESCRIPTION
+This tool fixes the access rights of the 
+ - encryption key
+ - template caching directory
+ - log directory
+ - who.ini file
+ - privacyidea.ini file
+
+It reads the locations from the privacyidea.ini file.
+.SH COMMON OPTIONS
+.PP
+\fB\-f <ini file> \fR
+.RS 4
+The privacyidea.ini file containing all necessary information.
+.RE
+
+.PP
+\fB\-u <privacyidea user> \fR
+.RS 4
+This is the user, privacyIDEA runs with. Usually "privacyidea".
+.RE
+
+
+.PP
+\fB\-h\fR
+.RS 4
+Display a help message.
+.RE
+
+.SH INTERNET SOURCES
+http://www.privacyidea.org,  http://www.linotp.org
+.SH SEE ALSO
+
+.SH BUGS
+No known bugs.
+.SH AUTHOR
+LSE Leading Security Experts GmbH <linotp-community@lsexperts.de>

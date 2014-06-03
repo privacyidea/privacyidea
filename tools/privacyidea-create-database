@@ -1,0 +1,116 @@
+#!/usr/bin/python
+VERSION = '0.1'
+import os, sys
+from getopt import getopt, GetoptError
+import ConfigParser
+from subprocess import call
+from getpass import getpass
+import socket
+
+def usage():
+    print  '''
+    Parameter:
+    -f <privacyidea.ini file>
+    -h : help
+    '''
+
+
+def create_database(file):
+    sql_dict={}
+    
+    config_file = os.path.basename(file)
+    config_path = os.path.abspath(os.path.dirname(file))
+    config = ConfigParser.ConfigParser()
+    config.read(file)
+    config.set("DEFAULT", "here", config_path)
+    sqlalchemy = config.get('app:main', "sqlalchemy.url")
+    sqlaudit = config.get('DEFAULT', "privacyideaAudit.sql.url")
+    
+    if not sqlalchemy:
+        print "ERROR: no sqlalchemy.url found!"
+        sys.exit(2)
+    if not sqlaudit:
+        print "WARNING: no privacyideaAudit.sql.url found!"
+
+    for i in [1, 2]:
+        if i == 1:
+            print "Creating privacyIDEA database"
+            print "========================"
+            sqlurl = sqlalchemy
+        elif i == 2:
+            print "Creating Audit database"
+            print "======================="
+            sqlurl = sqlaudit
+            
+        sql = sqlurl.split(":",1)
+        sql_dict["scheme"] = sql[0]
+        
+        sql = sql[1].split("@")
+        (sql_dict["host"], sql_dict["database"]) = sql[1].split("/")
+        (sql_dict["username"], sql_dict["userpass"]) = sql[0].strip("/").split(":")
+            
+        if sql_dict["scheme"].lower() not in ["mysql"]:
+            print "ERROR: At the moment we only support generating mysql!"
+            sys.exit(3)
+        
+        print sql_dict
+        print
+        
+        print "Now enter a database user, who is allowed to create databases!"
+        root_user = raw_input("username: ")    
+        root_pass = getpass(  "password: ")
+    
+        command = "mysql -h %s -u %s --password=%s -e \"create database %s\"" % (sql_dict["host"],
+                                                                                root_user, 
+                                                                                root_pass, 
+                                                                                sql_dict["database"])    
+        r = call(command, shell=True)
+        if r == 0:
+            print "database created."
+    
+        if sql_dict["host"] == "localhost":
+            client_host = "localhost"
+        else:
+            client_host = socket.gethostname()
+        
+        command = "mysql -h %s -u %s --password=%s -e \"grant all privileges on %s.* to '%s'@'%s' identified by '%s'\"" % (sql_dict["host"],
+                                                                                                                         root_user,
+                                                                                                                         root_pass,
+                                                                                                                         sql_dict["database"],
+                                                                                                                         sql_dict["username"],
+                                                                                                                         client_host,
+                                                                                                                         sql_dict["userpass"]) 
+        r = call(command, shell=True)
+        if r == 0:
+            print "user created."
+            
+        print "-------------- done ---------------"
+
+
+
+def main():
+
+    file = ""
+    try:
+        opts, args = getopt(sys.argv[1:], "f:", ["file="])
+
+    except GetoptError:
+        print "There is an error in your parameter syntax:"
+        usage()
+        sys.exit(1)
+
+    for opt, arg in opts:
+        if opt in ('-f', '--file'):
+            file = arg
+        elif opt in ('-h', '--help'):
+            usage()
+            sys.exit(1)
+
+    if file:
+        create_database(file)
+    else:
+        usage()
+        sys.exit(2)
+
+if __name__ == '__main__':
+    main()

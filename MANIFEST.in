@@ -1,0 +1,15 @@
+include LICENSE
+recursive-include privacyidea/public *
+recursive-include privacyidea/templates *
+recursive-include privacyidea/i18n *
+recursive-include config *
+recursive-include tools *
+recursive-include privacyidea/tests *
+recursive-include privacyidea/lib/tokens *.mako
+recursive-include authmodules *
+recursive-exclude privacyidea/tests/testdata/data *
+exclude privacyidea/tests/functional/*.pyc
+recursive-exclude config/data *
+exclude config/token.sqlite
+include DESCRIPTION
+include test.sh

@@ -1,0 +1,128 @@
+.\" Manpage for totp-token
+.\" Contact info@privacyidea.org for any feedback.
+.TH TOTP-TOKEN 1 "08 May 2014" "1.0" "totp-token man page"
+.SH NAME
+totp-token \- software demo TOTP token.
+.SH SYNOPSIS
+totp-token [-g] [-o <seconds>] [-t <seconds>] [-a <seconds>] [-u <url>] [-c] [-j <seconds>] [-s <seed>] [-r range] [-x] [-d digits] [-l hash-algorithm] [-q optval]
+.SH DESCRIPTION
+This tool is ment to simulate a TOTP token, that might have a clock that is wrong in time, a clock that has a time drift or even a jitter.
+Configuration values are stored in the file ~/.python-totp.cfg. Calling the script without any parameters will output the current OTP value.
+.SH COMMON OPTIONS
+.PP
+\fB\--help, -h \fR
+.RS 4
+Display a short help.
+.RE
+
+.PP
+\fB\--version, -v \fR
+.RS 4
+Display the totp-token version.
+.RE
+
+
+.PP
+\fB\-s <seed>, --seed <seed>\fR
+.RS 4
+Take the seed as HMAC key and store it in the configuration file.
+.RE
+
+.PP
+\fB\-g, --genkey\fR
+.RS 4
+Generates a new HMAC key and stores it in the configuration file.
+.RE
+
+.PP
+\fB\-d <digits>, --digits <digits>\fR
+.RS 4
+Define the number of digits of the returned otp.
+.RE
+
+.PP
+\fB\-o <seconds>, --offset=<seconds>\fR
+.RS 4
+Sets a static offset (in seconds) for this TOTP token. This value is stored in the configuration file. Giving a new value will overwrite the old one in the config file.
+.RE
+
+.PP
+\fB\-t <seconds>, --timestep=<seconds>\fR
+.RS 4
+This can either be 60 or 30 seconds. Giving a new value will overwrite the old one in the config file.
+.RE
+
+.PP
+\fB\-a <seconds>, --add_offset=<seconds>\fR
+.RS 4
+The offset is increased by this amount of seconds. The new offset is stored in the configuration file.
+Using this you can simulate a drifting clock, when calling the totp-token over and over again and adding some seconds at each call.
+.RE
+
+.PP
+\fB\-u <url>, --url=<url>\fR
+.RS 4
+This is used with the parameter "check".
+You can specify a URL where the OTP value should be authenticated. Such a URL could be https://localhost/validate/check?user=USER&pass=PIN.
+The calculated TOTP value is just appended to this URL.
+.RE
+
+.PP
+\fB\-j <seconds>, --jitter=<seconds>\fR
+.RS 4
+Here you can specify a time jitter. This value is stored in the configuration file. Note: Successing calls will always use the jitter from the config file!
+This is the maximum jitter. So if you specify 30 (seconds) the script will add random seconds betweend -30 and +30 seconds to the calculation of the TOTP value.
+.RE
+
+.PP
+\fB\-c, --check\fR
+.RS 4
+Tell the script to check the validity of the OTP value.
+.RE
+
+.PP
+\fB\-r, --range=<timesteps>\fR
+.RS 4
+If single numeric value, it return several OTP values around the current time. You can specify how many OTP values should be displayed.
+If specified as <start,end> it will take the absolute timesteps as start and end value
+.RE
+
+.PP
+\fB\-q, --query=<otpvalue>\fR
+.RS 4
+In combination with -r or --range : if the otpvalue is found in the range, the otpvalue with its sibblings will be displayed.
+.RE
+
+.PP
+\fB\-x, --selftest\fR
+.RS 4
+Will run an selftest against the test vector from the hotp specification.
+.RE
+
+
+.SH EXAMPLE
+.RS 4
+totp-token -r 1,2 -s 3132333435363738393031323334353637383930313233343536373839303132 -l sha256 -d 8 -t 30
+
+.RE
+	- set token seed (-s 3132333435363738393031323334353637383930313233343536373839303132) to binary key 12345678901234567890123456789012
+.RE
+	- set token hash algorithm to sha256
+.RE
+	- set timestep to 30
+.RE
+	- set number of returned otp digits to 8
+.RE
+	- look in the range from counter 1 to 2 for all otp values
+
+
+.SH INTERNET SOURCES
+http://www.privacyidea.org,  http://www.linotp.org
+.SH SEE ALSO
+
+privacyideaadm (1)
+
+.SH BUGS
+No known bugs.
+.SH AUTHOR
+LSE Leading Security Experts GmbH <linotp-community@lsexperts.de>

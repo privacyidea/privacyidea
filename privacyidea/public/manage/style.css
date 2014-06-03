@@ -1,0 +1,289 @@
+.simple_overlay {
+
+        /* must be initially hidden */
+        display:block;
+
+        /* place overlay on top of other elements */
+        z-index:1099;
+
+        /* styling */
+        background-color:#EEEEEE;
+
+        width:400px;
+        min-height:50px;
+        border:1px solid #666;
+
+        padding-top: 15px;
+        padding-left: 20px;
+
+	position: fixed;
+
+        /* CSS3 styling for latest browsers */
+        -moz-box-shadow:0 0 90px 5px #000;
+        -webkit-box-shadow: 0 0 90px #000;
+
+        -moz-border-radius:6px;
+        -webkit-border-radius:6px;
+}
+
+.javascript_error {
+	display:block;
+	z-index:2000;
+	background-color: #fe2b25;
+	width: 100%;
+	position: fixed;
+	text-align: center;
+	padding: 10px;
+}
+
+.info_box {
+	display:block;
+	z-index:1;
+	background-color:#e7f325;
+	width:100%-5pt;
+	padding-left:15pt;
+	padding-right:5pt;
+	padding-top: 2pt;
+    padding-bottom: 1pt; 
+}
+
+.error_box {
+	display:block;
+	z-index:1;
+	background-color:#fe2b25;
+	color: white;
+	width:100%-5pt;
+	padding-left:15pt;
+	padding-right:5pt;
+	padding-top: 2pt;
+    padding-bottom: 1pt; 
+}
+
+#button_info_text {
+	padding: -3pt;
+    margin: 5pt;
+    font-size: 7pt;
+}
+.status_line {
+	display:block;
+	z-index:1;
+	background-color:#888888;
+	width:100%;
+	min-height:20px;
+	position:relative;
+}
+
+/*
+ * jqeury selectable stuff for selecting Resolvers
+ * #resolvers_select, realms_select... li { margin: 3px; padding: 0.4em; font-size: 1.4em; height: 18px; }
+ */
+.select_list .ui-selecting { background: #FECA40; }
+/*#realms_select .ui-selected { background: #F39814; color: white; }*/
+.select_list .ui-selected {
+			background: #d5effc url(/css/flexigrid/images/hl.png) repeat-x top;
+			border-right: 1px solid #d2e3ec;
+			border-left: 1px solid #eef8ff;
+			border-bottom: 1px solid #a8d8eb;
+			}
+.select_list { list-style-type: none; margin: 0; padding: 0; width: 95%; }
+.select_list li { margin: 3px; padding: 0.4em; }
+.select_list li:hover { background: #bcdd56; }
+
+
+#logDiv { width: 100%; height: 50px; padding: 0.5em; }
+
+/*
+ * Token stuff
+ */
+a.activeToken {
+	color: black;
+	background-color:white;
+}
+a.disabledToken {
+	color: black;
+	text-decoration:line-through;
+}
+
+label.error { float: none; color: red; padding-left: .5em; vertical-align: top; }
+
+h1 {
+	color: #8baa2b;
+}
+
+body {
+	/*
+	font-family: helvetica, impact, sans-serif;
+	*/
+	font-family: Verdana,Arial,sans-serif; font-size: 1.0em;
+	/*background: #cacee4;
+	 */
+	height: 100%;
+	}
+
+html {
+	height: 100%;
+}
+
+#token {
+  border:1px solid blue;
+}
+#token_even {
+  background: #CCCCCC;
+}
+#token_uneven {
+  background: #DDDDDD;
+}
+
+#wrap {
+ width:98%;
+ height: 100%;
+ margin:0 auto;
+ position: absolute;
+ top: 0;
+ right: 0;
+ bottom: 0;
+ left: 0;
+ z-index: 1;
+ min-width: 900px;
+}
+
+#main {
+float:right;
+width:85%;
+background: #080808;
+border: 1px solid #8baa2b;
+padding: 3px;
+position: relative;
+z-index: 1; 
+}
+
+#sidebar {
+float:left;
+width:13%;
+background:#fefefe;
+border-right: 1px solid #8baa2b;
+padding: 3px;
+position: relative;
+z-index: 1;
+}
+
+
+#selected_tokens {
+	font-size: 100%;
+	font-style:italic;
+}
+#selected_users {
+	font-size: 100%;
+	font-style:italic;
+}
+
+#selected_tokens_header span {
+    font-weight:bold;
+}
+
+#selected_users_header span {
+    font-weight:bold;
+}
+
+#action-menu li {
+    list-style-type: none;
+}
+
+.action-button {
+	//padding:0;
+	//margin:0;
+	width:95%;
+	//font-size:12px;
+	//border: 1px solid #333333;
+	//background-color: #8baa2b;
+	//color:#000000;
+	}
+
+ #logo {
+ 	background-size: 60%;
+ 	background-image:  url("/images/privacyIDEA-logo-klein.png");
+    background-repeat:no-repeat;
+ 	height: 48px;
+ 	width: 330px;
+ }
+ 
+ #menu {
+ width:100%;
+ }
+ #nav {
+ background:#dddddd;
+ //float:left;
+ }
+ #logout {
+ float:right;
+ }
+ 
+ #main {
+ background:#fefefe;
+ }
+
+
+#footer {
+ clear:both;
+ color: white;
+ background:#444444;
+}
+ 
+ #nav ul {
+   margin:0;
+   padding:0;
+   list-style:none;
+ }
+ #nav li {
+   display:inline;
+   margin:0;
+   padding:0;
+ }
+ 
+ #nav ul li a, 
+ #nav ul li a:visited {
+    color:#333;padding:0 10px; 
+    height:30px;
+    border-right:1px solid #ffffff;
+    line-height:30px;
+    background:#8baa2b;
+    text-decoration: none;
+    }
+ 
+ #nav ul li a:hover {
+ 	color:#ffffff;
+ 	text-decoration:none; 
+ 	border-bottom:3px solid #111111; 
+ 	margin: -3px 0 0 0; 
+ }
+
+/*
+ *  Styles for displaying the TokenInfo  
+ */
+  
+.tokeninfoInnerTable   {
+	border-color: #8baa2b;
+    border-width: 1px 0px 1px 0px;
+    border-style: solid;
+	border-collapse:collapse
+}
+
+.tokeninfoOuterTable   {
+	border-collapse:collapse;
+	vertical-align:top;
+	border:1px solid #8baa2b;
+	padding: 0px 3px 0px 3px;
+}
+
+
+.collapsed-table tr {
+  display: none;
+}
+ 
+.italic_label {
+	font-style: italic;
+}
+
+label.error {
+	color: red;
+}

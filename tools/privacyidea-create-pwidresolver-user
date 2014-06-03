@@ -1,0 +1,88 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+#  privacyIDEA is a fork of LinOTP
+#  May 08, 2014 Cornelius Kölbel
+#  contact:  http://www.privacyidea.org
+#
+#  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
+#  License:  GPLv2
+#  contact:  http://www.linotp.org
+#            http://www.lsexperts.de
+#            linotp@lsexperts.de
+'''
+  Description:  This tool generates lines for a PasswdIdResolver user file
+                 
+  Dependencies: ./.
+                
+
+'''
+
+VERSION = '0.1'
+import os, sys
+from getopt import getopt, GetoptError
+import getpass
+import crypt
+import pprint
+import random
+
+
+
+def usage():
+    print  '''
+    Parameter:
+    -u username
+    -i uid (numerical)
+    -p password
+    -d description
+    '''
+
+
+def main():
+
+    user = ""
+    password = ""
+    uid = ""
+    description = ""
+
+    try:
+        opts, args = getopt(sys.argv[1:], "u:i:p:hd:", ["help"])
+
+    except GetoptError:
+        print "There is an error in your parameter syntax:"
+        usage()
+        sys.exit(1)
+
+    for opt, arg in opts:
+        if opt in ('-u'):
+            user = arg
+        elif opt in ('-i'):
+            uid = arg
+        elif opt in ('-p'):
+            password = arg
+        elif opt in ('-d'):
+            description = arg
+        elif opt in ('-h', '--help'):
+            usage()
+            sys.exit(1)
+
+    if password == "":
+        password = getpass.getpass("Please enter a password: ")
+
+    # the salt are two characters from: [./a-zA-Z0-9]
+    pool = "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    salt = pool[random.randrange(0, len(pool))] + pool[random.randrange(0, len(pool))]
+    encryptedPW = crypt.crypt(password, salt)
+
+    gid = uid
+    home = ""
+    shell = ""
+    print("%s:%s:%s:%s:%s:%s:%s" % (user,
+                encryptedPW,
+                uid,
+                gid,
+                description,
+                home,
+                shell))
+
+if __name__ == '__main__':
+    main()

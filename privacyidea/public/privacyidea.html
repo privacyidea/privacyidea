@@ -1,0 +1,98 @@
+<html>
+<head>
+<script type="text/javascript" src="js/prototype.js"></script>
+
+</head>
+<body>
+<script>
+	function ajaxFunction() {
+
+		var user = document.getElementById('user').value;
+		var pass = document.getElementById('pass').value;
+
+		new Ajax.Request('/validate/check',
+			  {
+			    method:'get',
+			    requestHeaders: {Accept: 'application/json'},
+			    parameters: {user: user, pass: pass},
+			    onSuccess: function(transport){
+			      var response = transport.responseText || "no response text";
+
+			 	  obj = transport.responseText.evalJSON();
+
+				  if(typeof(obj.result.status) != "undefined")
+				  { 
+					if (obj.result.status == true) 
+					{
+						alert('Check success :'+ obj.result.value); 
+					}
+					else 
+					{
+						alert('Check failed :'+ obj.result.error.message);
+					}
+				  }
+				  if(typeof(obj.error) != "undefined")
+				  { 
+					  alert('An error occured!'); 
+				  }
+			  
+
+			      
+			      var ajaxDisplay = document.getElementById('ajaxDiv');
+					ajaxDisplay.innerHTML = response;
+								      			      
+			    },
+			    onFailure: function(){ alert('Something went wrong...') }
+			  });
+	}
+	</script>
+
+<!-- left menue -->
+<table>
+<tr><td>
+
+
+<table bgcolor="#bfbfbf">
+<tr><td id=menue>Show Token</td></tr>
+<tr><td id=menue>Create Token</td></tr>
+<tr><td id=menue>Asign Token</td></tr>
+<tr><td id=menue>Enable / Disable Token</td></tr>
+<tr><td id=menue>Reset Token</td></tr>
+<tr><td height=100 id=menue></td></tr>
+</table>
+
+</td>
+<td>
+<b> OTP Valiadtion Check</b>
+<table>
+
+	<form name='myForm'>
+	<tr>
+		<td>User</td>
+		<td><input type='text' id='user' value='user' /></td>
+	</tr>
+	<tr>
+		<td>Pass</td>
+		<td><input type='text' id='pass' value='pin123456'/></td>
+	</tr>
+	<br />
+	<tr>
+		<td></td>
+		<td><input type='button' onclick='ajaxFunction()'
+			value='check' /></td>
+	</tr>
+	</form>
+</table>
+<div id='ajaxDiv'>Your result will display here</div>
+</td>
+</tr>
+</table>
+
+<h1>Upload</h1> 
+        <h1>Upload</h1>
+            <form action="license/setLicense" method="post" enctype="multipart/form-data">
+            Upload file: <input type="file" name="license" /> <br />
+                         <input type="submit" name="submit" value="Submit" />
+            </form>
+</body>
+</html>

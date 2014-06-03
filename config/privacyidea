@@ -1,0 +1,81 @@
+#WSGIPythonHome /path/to/your/installation
+<VirtualHost _default_:443>
+	ServerAdmin webmaster@localhost
+	# You might want to change this
+	ServerName localhost
+
+	Header always edit Set-Cookie ^(.*)$ $1;secure
+
+	DocumentRoot /var/www
+	<Directory />
+		# For Apache 2.4 you need to set this:
+		#Require all granted
+		Options FollowSymLinks
+		AllowOverride None
+	</Directory>
+	<Directory /var/www/>
+		Options Indexes FollowSymLinks MultiViews
+		AllowOverride None
+		# For Apache 2.4 you need to remove the
+		# following two lines
+		Order allow,deny
+		allow from all
+		# For Apache 2.4 you need to set this:
+		#Require all granted
+	</Directory>
+
+	Alias /doc/html         /usr/share/doc/privacyideadoc/html
+	WSGIScriptAlias /       /etc/privacyidea/privacyideaapp.wsgi
+	#
+	# The daemon is running as user 'privacyidea'
+	# This user should have access to the encKey database encryption file
+	WSGIDaemonProcess privacyidea processes=1 threads=15 display-name=%{GROUP} user=privacyidea
+	WSGIProcessGroup privacyidea
+	WSGIPassAuthorization On
+
+#	<LocationMatch /ocra/(request|checkstatus|getActivationCode|calculateOtp)>
+#        AuthType Digest
+#        AuthName "privacyIDEA admin area"
+#        AuthDigestProvider file
+#        AuthUserFile /etc/privacyidea/admins
+#        Require valid-user
+#	</LocationMatch>
+
+	<Location /gettoken>
+		AuthType Digest
+		AuthName "privacyIDEA gettoken"
+		AuthDigestProvider file
+		AuthUserFile /etc/privacyidea/gettoken-api
+		Require valid-user
+	</Location>
+
+	ErrorLog /var/log/apache2/error.log
+
+	LogLevel warn
+	# Do not use %q! This will reveal all parameters, including setting PINs and Keys!
+	# Using SSL_CLINET_S_DN_CN will show you, which administrator did what task
+	LogFormat "%h %l %u %t %>s \"%m %U %H\"  %b \"%{Referer}i\" \"%{User-agent}i\"" privacyIDEA
+	CustomLog /var/log/apache2/ssl_access.log privacyIDEA
+
+	#   SSL Engine Switch:
+	#   Enable/Disable SSL for this virtual host.
+	SSLEngine on
+
+	#   If both key and certificate are stored in the same file, only the
+	#   SSLCertificateFile directive is needed.
+	SSLCertificateFile    /etc/ssl/certs/privacyideaserver.pem
+	SSLCertificateKeyFile /etc/ssl/private/privacyideaserver.key
+
+	<FilesMatch "\.(cgi|shtml|phtml|php)$">
+		SSLOptions +StdEnvVars
+	</FilesMatch>
+	<Directory /usr/lib/cgi-bin>
+		SSLOptions +StdEnvVars
+	</Directory>
+	BrowserMatch ".*MSIE.*" \
+		nokeepalive ssl-unclean-shutdown \
+		downgrade-1.0 force-response-1.0
+
+        ErrorDocument 500 "<h1>Internal Server Error</h1> Possible reasons can be missing modules or bad access rights on privacyIDEA configuration files or log files. Please check the apache logfile <pre>/var/log/apache2/error.log</pre> for more details."
+
+</VirtualHost>
