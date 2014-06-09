@@ -39,7 +39,7 @@ def get_debian_package():
 
 setup(
     name='privacyIDEA',
-    version='1.0dev6',
+    version='1.0dev7',
     description='privacyIDEA: identity, multifactor authentication, authorization, audit',
     author='privacyidea.org',
     license='AGPL v3',

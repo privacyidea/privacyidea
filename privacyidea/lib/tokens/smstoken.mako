@@ -23,6 +23,7 @@ function sms_get_config_val(){
 	ret['SMSProviderConfig'] 	= 'c_sms_provider_config';
 	ret['SMSProviderTimeout'] 	= 'c_sms_timeout';
 	ret['SMSBlockingTimeout'] 	= 'c_sms_blocking';
+	
 	return ret;
 
 }
@@ -43,10 +44,63 @@ function sms_get_config_params(){
 	return ret;
 }
 
+function preset_clickatel() {
+	clickatel_text = '{ "URL" : "http://api.clickatell.com/http/sendmsg",\n\
+"PARAMETER" : {\n\
+"user":"YOU", \n\
+"password":"YOUR PASSWORD", \n\
+"api_id":"YOUR API ID"\n\
+},\n\
+"SMS_TEXT_KEY":"text",\n\
+"SMS_PHONENUMBER_KEY":"to",\n\
+"HTTP_Method":"GET",\n\
+"RETURN_SUCCESS" : "ID"\n\
+}';
+	$('#c_sms_provider_config').html(clickatel_text);
+	return false;
+}
+
 $(document).ready(function () {
+	$('#sms_preset_clickatel').hide();
     $("#form_smsconfig").validate();
+    	availableProviders=["privacyidea.smsprovider.HttpSMSProvider.HttpSMSProviders",
+						"privacyidea.smsprovider.DeviceSMSProvider.DeviceSMSProviders",
+						"privacyidea.smsprovider.SmtpSMSProvider.SmtpSMSProviders",];
+	
+	$( "#c_sms_provider" )
+	// don't navigate away from the field on tab when selecting an item
+	.bind( "keydown", function( event ) {
+		if ( event.keyCode === $.ui.keyCode.TAB &&
+				$( this ).data( "autocomplete" ).menu.active ) {
+			event.preventDefault();
+	}
+	})
+	.autocomplete({
+		minLength: 0,
+		source: function( request, response ) {
+			// delegate back to autocomplete, but extract the last term
+			response( $.ui.autocomplete.filter(
+				availableProviders, extractLast( request.term ) ) );
+		},
+		focus: function() {
+			// prevent value inserted on focus
+			return false;
+		},
+		select: function( event, ui ) {
+			// We can only set one single entry in the provider field
+			this.value = ui.item.value;
+			// Which entry was entered? So we display preset buttons
+			if (this.value.match(/HttpSMSProvider/)) {
+				$('#sms_preset_clickatel').show();
+			}else{
+				$('#sms_preset_clickatel').hide();
+			}
+			return false;
+		}
+	});
 });
- </script>
+
+</script>
 
 <form class="cmxform" id="form_smsconfig"><fieldset>
 <legend>${_("SMS Provider Config")}</legend>
@@ -63,7 +117,10 @@ $(document).ready(function () {
 	<td><label for='c_sms_blocking'>${_("Time between SMS (sec.)")}</label>: </td>
 	<td><input type="text" name="sms_blocking" class="required"  id="c_sms_blocking" size="5" maxlength="5" value"30"></td>
 </tr></table>
+
 </fieldset></form>
+<button id='sms_preset_clickatel' onclick='preset_clickatel();'>
+	${_("preset Clickatel")}</button>
 
 %endif
 
