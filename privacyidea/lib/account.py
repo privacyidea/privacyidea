@@ -17,7 +17,7 @@ def _get_superuser_realms():
     return the list of realms, that contain superusers.
     '''
     superuser_realms = [ "admin" ]
-    ini_su = ini_config.get("privacyideaSuperuserRealms")
+    ini_su = ini_config.get("privacyideaSuperuserRealms", "")
     ini_su_list = [w.strip() for w in ini_su.split(",")]
     for r in ini_su_list:
         superuser_realms.append(r.lower())
