@@ -44,8 +44,11 @@ function sms_get_config_params(){
 	return ret;
 }
 
-function preset_clickatel() {
-	clickatel_text = '{ "URL" : "http://api.clickatell.com/http/sendmsg",\n\
+
+var	sipgate_text = '{ "USERNAME" : "...",\n\
+"PASSWORD" : "..." }';
+
+var	clickatel_text = '{ "URL" : "http://api.clickatell.com/http/sendmsg",\n\
 "PARAMETER" : {\n\
 "user":"YOU", \n\
 "password":"YOUR PASSWORD", \n\
@@ -56,16 +59,23 @@ function preset_clickatel() {
 "HTTP_Method":"GET",\n\
 "RETURN_SUCCESS" : "ID"\n\
 }';
-	$('#c_sms_provider_config').html(clickatel_text);
-	return false;
-}
 
 $(document).ready(function () {
 	$('#sms_preset_clickatel').hide();
+	$('#sms_preset_sipgate').hide();
+	$('#sms_preset_clickatel').click(function(event){
+		$('#c_sms_provider_config').html(clickatel_text);
+		return false;
+	});
+	$('#sms_preset_sipgate').click(function(event){
+		$('#c_sms_provider_config').html(sipgate_text);
+		return false;
+	});
     $("#form_smsconfig").validate();
-    	availableProviders=["privacyidea.smsprovider.HttpSMSProvider.HttpSMSProviders",
-						"privacyidea.smsprovider.DeviceSMSProvider.DeviceSMSProviders",
-						"privacyidea.smsprovider.SmtpSMSProvider.SmtpSMSProviders",];
+    	availableProviders=["privacyidea.smsprovider.HttpSMSProvider.HttpSMSProvider",
+						"privacyidea.smsprovider.DeviceSMSProvider.DeviceSMSProvider",
+						"privacyidea.smsprovider.SmtpSMSProvider.SmtpSMSProvider",
+						"privacyidea.smsprovider.SipgateSMSProvider.SipgateSMSProvider",];
 	
 	$( "#c_sms_provider" )
 	// don't navigate away from the field on tab when selecting an item
@@ -90,10 +100,13 @@ $(document).ready(function () {
 			// We can only set one single entry in the provider field
 			this.value = ui.item.value;
 			// Which entry was entered? So we display preset buttons
+			$('#sms_preset_clickatel').hide();
+			$('#sms_preset_sipgate').hide();
 			if (this.value.match(/HttpSMSProvider/)) {
 				$('#sms_preset_clickatel').show();
-			}else{
-				$('#sms_preset_clickatel').hide();
+			}
+			if (this.value.match(/SipgateSMSProvider/)) {
+				$('#sms_preset_sipgate').show();
 			}
 			return false;
 		}
@@ -119,8 +132,10 @@ $(document).ready(function () {
 </tr></table>
 
 </fieldset></form>
-<button id='sms_preset_clickatel' onclick='preset_clickatel();'>
+<button id='sms_preset_clickatel'>
 	${_("preset Clickatel")}</button>
+<button id='sms_preset_sipgate'>
+	${_("preset Sipgate")}</button>
 
 %endif
 
