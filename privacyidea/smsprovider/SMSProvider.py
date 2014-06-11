@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-#    privacyIDEA id a fork of LinOTP
+#    privacyIDEA is a fork of LinOTP
 #    May 28, 2014 Cornelius Kölbel
 #    E-mail: info@privacyidea.org
 #    Contact: www.privacyidea.org
