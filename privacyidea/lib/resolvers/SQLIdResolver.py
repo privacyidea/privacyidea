@@ -393,17 +393,21 @@ class IdResolver (UserIdResolver):
         
         port = ""
         password = ""
+        conParams = ""
         if param.get("Port"):
             port = ":%s" % param.get("Port")
         if param.get("Password"):
             password = ":%s" % param.get("Password")
-        connect_string = "%s://%s%s@%s%s/%s?%s" % (param.get("Driver"),
+        if param.get("conParams"):
+            conParams = "?%s" % param.get("conParams")
+        connect_string = "%s://%s%s%s%s%s/%s%s" % (param.get("Driver"),
                                                     param.get("User"),
                                                     password,
+                                                    "@" if (param.get("User") or password) else "",
                                                     param.get("Server"),
                                                     port,
                                                     param.get("Database"),
-                                                    param.get("conParams",""))
+                                                    conParams)
         log.info("using the connect string %s" % connect_string)
         engine = create_engine(connect_string)
         # create a configured "Session" class

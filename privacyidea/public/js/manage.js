@@ -3082,6 +3082,13 @@ $(document).ready(function(){
         return false;
     });
     
+    $('#button_preset_sql_owncloud').click(function(event){
+        $('#sql_table').val('oc_users');
+        $('#sql_mapping').val('{ "userid" : "uid", "username": "uid", ' +
+        '"givenname" : "displayname", "password" : "password" }');
+        return false;
+    });
+    
     $('#button_preset_sql_tine20').click(function(event){
     	//alert_info_text("text_preset_sql");
     	alert_box("title_preset_sql", "text_preset_sql");

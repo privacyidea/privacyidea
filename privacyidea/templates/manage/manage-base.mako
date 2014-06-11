@@ -1194,6 +1194,7 @@ ${c.version} | ${c.licenseinfo}
 		<button  id="button_preset_sql_wordpress">${_("Wordpress")}</button>
 		<button  id="button_preset_sql_otrs">${_("OTRS")}</button>
 		<button  id="button_preset_sql_tine20">${_("Tine 2.0")}</button>
+		<button  id="button_preset_sql_owncloud">${_("Owncloud")}</button>
 		</fieldset>
 		</fieldset></form>
 		<div id="progress_test_sql"><img src="/images/ajax-loader.gif" border="0" alt=""> ${_("Testing connections...")} </div>
