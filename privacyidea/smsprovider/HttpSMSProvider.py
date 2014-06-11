@@ -21,9 +21,6 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    E-mail: info@privacyidea.org
-#    Contact: www.privacyidea.org
-#
 
 """
 This is the SMSClass to send SMS via HTTP Gateways

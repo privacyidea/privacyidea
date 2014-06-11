@@ -86,13 +86,13 @@ Yubikeys
 --------
 privacyIDEA supports Yubikeys. To enroll yubikeys you need to install the admin client::
 
-    $ pip install privacyidea-adm
+    $ pip install privacyideaadm
 
 Tests
 -----
 If you want to see, if everything works fine, you can run the functional tests.
 There are roughly 350 sometimes complex tests, running the tests will take about
-10 minutes. Do it like this::
+30 minutes. Do it like this::
 
     $ python setup.py build
     $ ./test.sh
