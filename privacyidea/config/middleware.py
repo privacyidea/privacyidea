@@ -59,7 +59,6 @@ except ImportError:
     pass
 
 COOKIE_TIMEOUT = 600
-COOKIE_REISSUE_TIME = 540
 
 _LEVELS = {'debug': logging.DEBUG,
            'info': logging.INFO,
@@ -140,7 +139,8 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
 
     # Add the repoze.who middleware
     # with a cookie encryption key, that is generated at every server start!
-
+    cookie_timeout = int(global_conf.get("privacyIDEASessionTimout", COOKIE_TIMEOUT))
+    cookie_reissue_time = int(cookie_timeout / 2)
     cookie_key = geturandom(32)    
     privacyidea_auth = auth_privacy_plugin()
     privacyidea_md = auth_privacy_plugin()
@@ -148,8 +148,8 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
                                    cookie_name='privacyidea_session',
                                    secure=True,
                                    include_ip=False,
-                                   timeout=COOKIE_TIMEOUT,
-                                   reissue_time=COOKIE_REISSUE_TIME)
+                                   timeout=cookie_timeout,
+                                   reissue_time=cookie_reissue_time)
     form = make_redirecting_plugin(login_form_url="/account/login",
                             login_handler_path='/account/dologin',
                             logout_handler_path='/account/logout',

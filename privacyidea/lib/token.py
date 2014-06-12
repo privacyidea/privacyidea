@@ -2570,7 +2570,10 @@ def get_policy_definitions(scope=""):
                 'desc': 'Allow the user to view his own token history'},
             'getserial': {
                 'type': 'bool',
-                'desc': 'Allow to search an unassigned token by OTP value.'}
+                'desc': 'Allow to search an unassigned token by OTP value.'},
+            'auth' : {
+                'type' : 'str',
+                'desc' : 'if set to "otp": Users in this realm need to login with OTP to the selfservice.'}
             },
         'system': {
             'read': {'type': 'bool'},
