@@ -1,3 +1,7 @@
+.help_text {
+	font-size: 80%;
+	text-color: #232323;
+}
 .simple_overlay {
 
         /* must be initially hidden */

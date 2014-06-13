@@ -280,30 +280,42 @@ function get_selected_policy(){
         var id = $(this).attr('id');
         var policy = id.replace(/row/, "");
         selectedPolicy.push(policy);
-    });
+	});
     return selectedPolicy;
 }
 
-function get_scope_actions(scope) {
+function get_scope_actions(actionObjects) {
+	/*
+	 * This function returns the allowed actions from the action Objects
+	 * as an array of strings/actionnames
+	 */
+	var actions = Array();
+	for (var k in actionObjects) {
+		action = k;
+		if ("int"==actionObjects[k].type) {
+			action = k+"=<int>";
+		} else
+		if ("str"==actionObjects[k].type) {
+			action = k+"=<string>";
+		};
+		actions.push(action);
+	}
+    return actions.sort();
+}
+
+function get_scope_action_objects(scope) {
 	/*
 	 * This function returns the allowed actions within a scope
+	 * as an array og action objects with "desc" and "type"
+	 *   
 	 */
 	var actions = Array();
 	var resp = clientUrlFetchSync("/system/getPolicyDef",{"scope" : scope, "session" : getsession()}, true, "Error fetching policy definitions:");
     obj = jQuery.parseJSON(resp);
     if (obj.result.status) {
-        	for (var k in obj.result.value) {
-        		action = k;
-        		if ("int"==obj.result.value[k].type) {
-        			action = k+"=<int>";
-        		} else
-        		if ("str"==obj.result.value[k].type) {
-        			action = k+"=<string>";
-        		};
-        		actions.push(action);
-        	}
+		actions = obj.result.value;
     }
-    return actions.sort();
+    return actions;
 }
 
 function get_selected_mobile(){
@@ -4312,14 +4324,15 @@ function renew_policy_actions(){
 	 * This function needs to be called, whenever the scope is changed or loaded.
 	 */
 	var scope=$('#policy_scope_combo').val();
-	var actions=get_scope_actions(scope);
-	define_policy_action_autocomplete( actions );
+	var actionObjects=get_scope_action_objects(scope);
+	define_policy_action_autocomplete( actionObjects );
 }
 
-function define_policy_action_autocomplete(availableActions) {
+function define_policy_action_autocomplete(availableActionObjects) {
 	/*
 	 * This sets the allowed actions in the policy action input
 	 */
+	var availableActions = get_scope_actions(availableActionObjects);
 	$( "#policy_action" )
 		// don't navigate away from the field on tab when selecting an item
 		.bind( "keydown", function( event ) {
@@ -4335,7 +4348,13 @@ function define_policy_action_autocomplete(availableActions) {
 				response( $.ui.autocomplete.filter(
 					availableActions, extractLast( request.term ) ) );
 			},
-			focus: function() {
+			focus: function(event, data) {
+				var focus_action = data.item.value.split("=")[0];
+				var description = "?";
+				if (availableActionObjects[focus_action].hasOwnProperty("desc")) {
+					description = availableActionObjects[focus_action].desc;
+				};
+				$('#action_info').html(description);
 				// prevent value inserted on focus
 				return false;
 			},
