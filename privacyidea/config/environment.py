@@ -170,7 +170,7 @@ def load_environment(global_conf, app_conf):
     if url == None:
         version = pkg_resources.get_distribution("privacyidea").version
         # First try to get the help for this specific version
-        url = "http://privacyidea.org/doc/%s/index.html" % version
+        url = "http://privacyidea.org/doc/%s" % version
     config['help_url'] = url
 
     log.debug("done")

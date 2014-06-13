@@ -102,6 +102,7 @@ class ManageController(BaseController):
             c.tokenArray = []
             c.user = self.authUser.login
             c.realm = self.authUser.realm
+            c.help_url = config.get('help_url')
 
         except webob.exc.HTTPUnauthorized as acc:
             ## the exception, when an abort() is called if forwarded
@@ -149,7 +150,6 @@ class ManageController(BaseController):
 
             log.debug("importers: %s" % IMPORT_TEXT)
             c.importers = IMPORT_TEXT
-            c.help_url = config.get('help_url')
 
             ## add render info for token type config
             confs = _getTokenTypeConfig('config')

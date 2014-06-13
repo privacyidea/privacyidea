@@ -1,8 +1,15 @@
-# -*- coding: utf-8 -*-    
+# -*- coding: utf-8 -*-
+    
 
 <a id=policy_export>${_("Export policies")}</a>
 
 <button id=policy_import>${_("Import policies")}</button>
+
+<a href='${c.help_url}/policies/index.html' target="_blank">
+	<img alt="(?)" width=24
+	src="/images/help32.png"  
+	title='${_("Open help on policies")}'>
+</a>
 
 <table id="policy_table" class="flexme2" style="display:none"></table>
    

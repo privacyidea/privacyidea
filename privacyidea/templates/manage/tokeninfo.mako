@@ -4,6 +4,14 @@
 	ttype = c.tokeninfo.get("privacyIDEA.TokenType").lower()
 %>
 
+<div style="float:right">
+<a href='${c.help_url}/tokenview/index.html#token-info' target="_blank">
+	<img alt="(?)" width=24
+	src="/images/help32.png"  
+	title='${_("help on tokeninfo")}'>
+</a>
+</div>
+
 <table class=tokeninfoOuterTable>
     % for value in c.tokeninfo:
     <tr>
