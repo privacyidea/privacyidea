@@ -2506,202 +2506,250 @@ def get_policy_definitions(scope=""):
 
     pol = {
         'admin': {
-            'enable': {'type': 'bool'},
-            'disable': {'type': 'bool'},
-            'set': {'type': 'bool'},
-            'setOTPPIN': {'type': 'bool'},
-            'setMOTPPIN': {'type': 'bool'},
-            'setSCPIN': {'type': 'bool'},
-            'resync': {'type': 'bool'},
-            'reset': {'type': 'bool'},
-            'assign': {'type': 'bool'},
-            'unassign': {'type': 'bool'},
-            'import': {'type': 'bool'},
-            'remove': {'type': 'bool'},
-            'userlist': {'type': 'bool'},
-            'checkstatus': {'type': 'bool'},
-            'manageToken': {'type': 'bool'},
-            'getserial': {'type': 'bool'},
-            'copytokenpin': {'type': 'bool'},
-            'copytokenuser': {'type': 'bool'},
-            'losttoken': {'type': 'bool'},
+            'enable': {'type': 'bool',
+                       'desc' : _('Admin is allowed to enable tokens.')},
+            'disable': {'type': 'bool',
+                        'desc' : _('Admin is allowed to disable tokens.')},
+            'set': {'type': 'bool',
+                    'desc' : _('Admin is allowed to set token properties.')},
+            'setOTPPIN': {'type': 'bool',
+                          'desc' : _('Admin is allowed to set the OTP PIN of tokens.')},
+            'setMOTPPIN': {'type': 'bool',
+                           'desc' : _('Admin is allowed to set the mOTP PIN of motp tokens.')},
+            'setSCPIN': {'type': 'bool',
+                         'desc' : _('Admin is allowed to set the smartcard PIN of tokens.')},
+            'resync': {'type': 'bool',
+                       'desc' : _('Admin is allowed to resync tokens.')},
+            'reset': {'type': 'bool',
+                      'desc' : _('Admin is allowed to reset the Failcounter of a token.')},
+            'assign': {'type': 'bool',
+                       'desc' : _('Admin is allowed to assign a token to a user.')},
+            'unassign': {'type': 'bool',
+                         'desc' : _('Admin is allowed to remove the token from a user, '
+                         'i.e. unassign a token.')},
+            'import': {'type': 'bool',
+                       'desc' : _('Admin is allowed to import token files.')},
+            'remove': {'type': 'bool',
+                       'desc' : _('Admin is allowed to remove tokens from the database.')},
+            'userlist': {'type': 'bool',
+                         'desc' : _('Admin is allowed to view the list of the users.')},
+            'checkstatus': {'type': 'bool',
+                            'desc' : _('Admin is allowed to check the status of a challenge'
+                                       ' resonse token.')},
+            'manageToken': {'type': 'bool',
+                            'desc' : _('Admin is allowed to manage the realms of a token.')},
+            'getserial': {'type': 'bool',
+                          'desc' : _('Admin is allowed to retrieve a serial for a given OTP value.')},
+            'copytokenpin': {'type': 'bool',
+                             'desc' : _('Admin is allowed to copy the PIN of one token '
+                                        'to another token.')},
+            'copytokenuser': {'type': 'bool',
+                              'desc' : _('Admin is allowed to copy the assigned user to another'
+                                         ' token, i.e. assign a user ot another token.')},
+            'losttoken': {'type': 'bool',
+                          'desc' : _('Admin is allowed to trigger the lost token workflow.')},
             'getotp': {
                 'type': 'bool',
-                'desc': 'allow the administrator to retrieve '
-                        'OTP values for tokens.'
-                }
+                'desc': _('Allow the administrator to retrieve OTP values for tokens.')}
         },
         'gettoken': {
-            'max_count_dpw': {'type': 'int'},
-            'max_count_hotp': {'type': 'int'},
-            'max_count_totp': {'type': 'int'},
-        },
-        'license': {
-            'setlicense': {'type': 'bool'}
+            'max_count_dpw': {'type': 'int',
+                              'desc' : _('When OTP values are retrieved for a DPW token, '
+                                         'this is the maximum number of retrievable OTP values.')},
+            'max_count_hotp': {'type': 'int',
+                               'desc' : _('When OTP values are retrieved for a HOTP token, '
+                                          'this is the maximum number of retrievable OTP values.')},
+            'max_count_totp': {'type': 'int',
+                               'desc' : _('When OTP values are retrieved for a TOTP token, '
+                                          'this is the maximum number of retrievable OTP values.')},
         },
         'selfservice': {
             'assign': {
                 'type': 'bool',
-                'desc': "The user is allowed to assign an existing "
-                        "token using the token serial number."},
-            'disable': {'type': 'bool'},
-            'enable': {'type': 'bool'},
-            'delete': {'type': 'bool'},
-            'unassign': {'type': 'bool'},
-            'resync': {'type': 'bool'},
+                'desc': _("The user is allowed to assign an existing token"
+                          " that is not yet assigned"
+                          " using the token serial number.")},
+            'disable': {'type': 'bool',
+                        'desc': _('The user is allowed to disable his own tokens.')},
+            'enable': {'type': 'bool',
+                       'desc': _("The user is allowed to enable his own tokens.")},
+            'delete': {'type': 'bool',
+                       "desc": _("The user is allowed to delete his own tokens.")},
+            'unassign': {'type': 'bool',
+                         "desc": _("The user is allowed to unassign his own tokens.")},
+            'resync': {'type': 'bool',
+                       "desc": _("The user is allowed to resyncronize his tokens.")},
             'reset': {
                 'type': 'bool',
-                'desc': 'Allow to reset the failcounter of a token.'},
-            'setOTPPIN': {'type': 'bool'},
-            'setMOTPPIN': {'type': 'bool'},
-            'getotp': {'type': 'bool'},
-            'otp_pin_maxlength': {'type': 'int', 'value': range(0, 100)},
-            'otp_pin_minlength': {'type': 'int', 'value': range(0, 100)},
-            'otp_pin_contents': {'type': 'str'},
-            'activateQR': {'type': 'bool'},
-            'webprovisionOATH': {'type': 'bool'},
-            'webprovisionGOOGLE': {'type': 'bool'},
-            'webprovisionGOOGLEtime': {'type': 'bool'},
-            'max_count_dpw': {'type': 'int'},
-            'max_count_hotp': {'type': 'int'},
-            'max_count_totp': {'type': 'int'},
+                'desc': _('The user is allowed to reset the failcounter of his tokens.')},
+            'setOTPPIN': {'type': 'bool',
+                          "desc": _("The user is allowed to set the OTP PIN of his tokens.")},
+            'setMOTPPIN': {'type': 'bool',
+                           "desc": _("The user is allowed to set the mOTP PIN of his mOTP tokens.")},
+            'getotp': {'type': 'bool',
+                       "desc": _("The user is allowed to retrieve OTP values for his own tokens.")},
+            'otp_pin_maxlength': {'type': 'int', 
+                                  'value': range(0, 100),
+                                  "desc": _("Set the maximum allowed length of the OTP PIN.")},
+            'otp_pin_minlength': {'type': 'int', 
+                                  'value': range(0, 100),
+                                  "desc" : _("Set the minimum required lenght of the OTP PIN.")},
+            'otp_pin_contents': {'type': 'str',
+                                 "desc" : _("Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, (s)pecial, (o)thers. [+/-]!")},
+            'activateQR': {'type': 'bool',
+                           "desc": _("The user is allowed to enroll a QR token.")},
+            'webprovisionOATH': {'type': 'bool',
+                                 "desc": _("The user is allowed to enroll an OATH token.")},
+            'webprovisionGOOGLE': {'type': 'bool',
+                                   "desc": _("The user is allowed to enroll a Google Authenticator event based token.")},
+            'webprovisionGOOGLEtime': {'type': 'bool',
+                                       "desc": _("The user is allowed to enroll a Google Authenticator time based token.")},
+            'max_count_dpw': {'type': 'int',
+                              "desc": _("This is the maximum number of OTP values, the user is allowed to retrieve for a DPW token.")},
+            'max_count_hotp': {'type': 'int',
+                               "desc": _("This is the maximum number of OTP values, the user is allowed to retrieve for a HOTP token.")},
+            'max_count_totp': {'type': 'int',
+                               "desc": _("This is the maximum number of OTP values, the user is allowed to retrieve for a TOTP token.")},
             'history': {
                 'type': 'bool',
-                'desc': 'Allow the user to view his own token history'},
+                'desc': _('Allow the user to view his own token history.')},
             'getserial': {
                 'type': 'bool',
-                'desc': 'Allow to search an unassigned token by OTP value.'},
+                'desc': _('Allow the user to search an unassigned token by OTP value.')},
             'auth' : {
                 'type' : 'str',
-                'desc' : 'if set to "otp": Users in this realm need to login with OTP to the selfservice.'}
+                'desc' : _('If set to "otp": Users in this realm need to login with OTP to the selfservice.')}
             },
         'system': {
-            'read': {'type': 'bool'},
-            'write': {'type': 'bool'},
+            'read': {'type': 'bool',
+                     "desc" : _("Admin is allowed to read the system configuration.")},
+            'write': {'type': 'bool',
+                      "desc" : _("Admin is allowed to write and modify the system configuration.")},
             },
         'enrollment': {
             'tokencount': {
                 'type': 'int',
-                'desc': 'Limit the number of tokens in a realm.'},
+                'desc': _('Limit the number of allowed tokens in a realm.')},
             'maxtoken': {
                 'type': 'int',
-                'desc': 'Limit the number of tokens a user in the realm may '
-                        'have assigned.'},
+                'desc': _('Limit the number of tokens a user in this realm may '
+                        'have assigned.')},
             'otp_pin_random': {
                 'type': 'int',
-                'value': range(0, 100)},
+                'value': range(0, 100),
+                "desc": _("Set a random OTP PIN with this lenght for a token.")},
             'otp_pin_encrypt': {
                 'type': 'int',
-                'value': [0, 1]},
+                'value': [0, 1],
+                "desc": _("If set to 1, the OTP PIN is encrypted. The normal behaviour is the PIN is hashed.")},
             'tokenlabel': {
                 'type': 'str',
-                'desc': 'the label for the google authenticator.'},
+                'desc': _("Set label for a new enrolled Google Authenticator. "
+                          "Possible tags are &lt;u&gt; (user), &lt;r&gt; (realm), &lt;s&gt; (serial).")},
             'autoassignment': {
                 'type': 'int',
                 'value': [6, 8],
-                'desc': 'users can assign a token just by using the '
-                        'unassigned token to authenticate.'},
-            'autoassignment': { 
-                'type': 'int',
-                'value': [6, 8, 32, 48],
-                'desc' : 'users can assign a token just by using the unassigned token to authenticate.'},
+                'desc': _("Users can assign a token just by using the "
+                          "unassigned token to authenticate. This is the lenght"
+                          " of the OTP value - either 6, 8, 32, 48.")},
             'ignore_autoassignment_pin': {
                 'type': 'bool',
-                'desc' : "Do not set password from auto assignment as token pin."},
+                'desc' : _("Do not set password from auto assignment as token pin.")},
             'lostTokenPWLen': {
                 'type': 'int',
-                'desc': 'The length of the password in case of '
-                        'temporary token.'},
+                'desc': _('The length of the password in case of '
+                        'temporary token (lost token).')},
             'lostTokenPWContents': {
                 'type': 'str',
-                'desc': 'The contents of the temporary password, '
-                        'described by the characters C, c, n, s.'},
+                'desc': _('The contents of the temporary password, '
+                        'described by the characters C, c, n, s.')},
             'lostTokenValid': {
                 'type': 'int',
-                'desc': 'The length of the validity for the temporary '
-                        'token (in days).'},
+                'desc': _('The length of the validity for the temporary '
+                        'token (in days).')},
             },
         'authentication': {
             'smstext': {
                 'type': 'str',
-                'desc': 'The text that will be send via SMS for an SMS token. '
-                        'Use <otp> and <serial> as parameters.'},
+                'desc': _('The text that will be send via SMS for an SMS token. '
+                        'Use &lt;otp&gt; and &lt;serial&gt; as parameters.')},
             'otppin': {
                 'type': 'int',
                 'value': [0, 1, 2],
-                'desc': 'either use the Token PIN (0), use the Userstore '
+                'desc': _('Either use the Token PIN (0), use the Userstore '
                         'Password (1) or use no fixed password '
-                        'component (2).'},
+                        'component (2).')},
             'autosms': {
                 'type': 'bool',
-                'desc': 'if set, a new SMS OTP will be sent after '
-                        'successful authentication with one SMS OTP'},
+                'desc': _('If set, a new SMS OTP will be sent after '
+                        'successful authentication with one SMS OTP.')},
             'passthru': {
                 'type': 'bool',
-                'desc': 'If set, the user in this realm will be authenticated '
+                'desc': _('If set, the user in this realm will be authenticated '
                         'against the UserIdResolver, if the user has no '
-                        'tokens assigned.'
+                        'tokens assigned.')
                 },
             'passOnNoToken': {
                 'type': 'bool',
-                'desc': 'if the user has no token, the authentication request '
-                        'for this user will always be true.'
+                'desc': _('If the user has no token, the authentication request '
+                        'for this user will always be true.')
                 },
             'qrtanurl': {
                 'type': 'str',
-                'desc': 'The URL for the half automatic mode that should be '
-                        'used in a QR Token'
+                'desc': _('The URL for the half automatic mode that should be '
+                        'used in a QR Token')
                 },
             'challenge_response': {
                 'type': 'str',
-                'desc': 'A list of tokentypes for which challenge response '
-                        'should be used.'
+                'desc': _('A list of tokentypes for which challenge response '
+                        'should be used.')
                 }
             },
         'authorization': {
             'authorize': {
                 'type': 'bool',
-                'desc': 'The user/realm will be authorized to login '
-                        'to the clients IPs.'},
+                'desc': _('The user/realm will be authorized to login '
+                        'to the clients IPs.')},
             'tokentype': {
                 'type': 'str',
-                'desc': 'The user will only be authenticated with this '
-                        'very tokentype.'},
+                'desc': _('The user will only be authenticated with this '
+                        'very tokentype.')},
             'serial': {
                 'type': 'str',
-                'desc': 'The user will only be authenticated if the serial '
-                        'number of the token matches this regexp.'},
+                'desc': _('The user will only be authenticated if the serial '
+                        'number of the token matches this regexp.')},
             'setrealm': {
                 'type': 'str',
-                'desc': 'The Realm of the user is set to this very realm. '
+                'desc': _('The Realm of the user is set to this very realm. '
                         'This is important if the user is not contained in '
-                        'the default realm and can not pass his realm.'},
+                        'the default realm and can not pass his realm.')},
             'detail_on_success': {
                 'type': 'bool',
-                'desc': 'In case of successful authentication additional '
-                        'detail information will be returned.'},
+                'desc': _('In case of successful authentication additional '
+                        'detail information will be returned.')},
             'detail_on_fail': {
                 'type': 'bool',
-                'desc': 'In case of failed authentication additional '
-                        'detail information will be returned.'}
+                'desc': _('In case of failed authentication additional '
+                        'detail information will be returned.')}
             },
         'audit': {
             'view': {
-                'type': 'bool'}
+                'type': 'bool',
+                'desc' : _("Admin is allowed to view the audit log.")}
         },
         'ocra': {
             'request': {
                 'type': 'bool',
-                'desc': 'Allow to do a ocra/request'},
+                'desc': _('Allow to do a ocra/request.')},
             'status': {
                 'type': 'bool',
-                'desc': 'Allow to check the transaction status.'},
+                'desc': _('Allow to check the transaction status.')},
             'activationcode': {
                 'type': 'bool',
-                'desc': 'Allow to do an ocra/getActivationCode.'},
+                'desc': _('Allow to do an ocra/getActivationCode.')},
             'calcOTP': {
                 'type': 'bool',
-                'desc': 'Allow to do an ocra/calculateOtp.'}
+                'desc': _('Allow to do an ocra/calculateOtp.')}
         }
     }
 
@@ -2710,7 +2758,8 @@ def get_policy_definitions(scope=""):
     ## - enroll<TT>, but only, if there is a rendering section
 
     for ttype in get_token_type_list():
-        pol['admin']["init%s" % ttype.upper()] = {'type': 'bool'}
+        pol['admin']["init%s" % ttype.upper()] = {'type': 'bool',
+                                                  'desc': _('Admin is allowed to initalize %s tokens.') % ttype.upper()}
 
         ## TODO: action=initETNG
         ## Cornelius Kölbel        Apr 18 7: 31 PM
@@ -2732,7 +2781,7 @@ def get_policy_definitions(scope=""):
         if 'enroll' in conf:
             pol['selfservice']["enroll%s" % ttype.upper()] = {
                 'type': 'bool',
-                'desc': "The user is allowed to enroll a %s token." % ttype}
+                'desc': _("The user is allowed to enroll a %s token.") % ttype}
 
         ## now merge the dynamic Token policy definition
         ## into the global definitions
