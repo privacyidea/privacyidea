@@ -93,6 +93,7 @@ pygments_style = 'sphinx'
 # a list of builtin themes.
 #html_theme = 'sphinxdoc'
 #html_theme = 'sphinx_rtd_theme'
+#html_theme = 'agogo'
 html_theme = 'nature'
 
 # Theme options are theme-specific and customize the look and feel of a theme
@@ -101,7 +102,7 @@ html_theme = 'nature'
 #html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
-#html_theme_path = ["."]
+html_theme_path = ["."]
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".

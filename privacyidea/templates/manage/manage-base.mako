@@ -729,6 +729,13 @@ ${c.version} | ${c.licenseinfo}
 
 <!-- ##################### realms ##################################### -->
 <div id='dialog_realms'>
+	<div style="float:right">
+	<a href='${c.help_url}/configuration/realms.html' target="_blank">
+	<img alt="(?)" width=24
+	src="/images/help32.png"  
+	title='${_("Open help on realms")}'>
+	</a>
+	</div>
 	<p>${_("Create a new realm or select one available realm")}:</p>
 	<div id='realm_list'> </div>
 </div>
@@ -745,6 +752,13 @@ ${c.version} | ${c.licenseinfo}
 </script>
 <!-- ######################### resolvers ############################## -->
 <div id='dialog_resolvers'>
+	<div style="float:right">
+	<a href='${c.help_url}/configuration/useridresolvers.html' target="_blank">
+	<img alt="(?)" width=24
+	src="/images/help32.png"  
+	title='${_("Open help on UserIdResolvers")}'>
+	</a>
+	</div>
 	<p>${_("Create a new or select one available UserIdResolver")}:</p>
 	<div id='resolvers_list'> </div>
 </div>
@@ -760,6 +774,13 @@ ${c.version} | ${c.licenseinfo}
 
 <!-- ###################### create resolver ########################### -->
 <div id='dialog_resolver_create'>
+	<div style="float:right">
+	<a href='${c.help_url}/configuration/useridresolvers.html' target="_blank">
+	<img alt="(?)" width=24
+	src="/images/help32.png"  
+	title='${_("Open help on UserIdResolvers")}'>
+	</a>
+	</div>
 	${_("Which type of resolver do you want to create?")}
 </div>
 <script>
@@ -775,6 +796,13 @@ ${c.version} | ${c.licenseinfo}
 
 <!-- ################### edit realm ####################################### -->
 <div id='dialog_edit_realms'>
+	<div style="float:right">
+	<a href='${c.help_url}/configuration/realms.html' target="_blank">
+	<img alt="(?)" width=24
+	src="/images/help32.png"  
+	title='${_("Open help on Realms")}'>
+	</a>
+	</div>
 	<!--${_("Here you can add or remove existing resolvers to the realm")}:-->
 	<form class="cmxform" id="form_realmconfig">
 		<div id='realm_intro_new'>
@@ -1101,6 +1129,13 @@ ${c.version} | ${c.licenseinfo}
 <!-- ################## dialog LDAP resolver ######################### -->
 
 <div id='dialog_ldap_resolver'>
+	<div style="float:right">
+	<a href='${c.help_url}/configuration/useridresolvers.html#ldap-resolver' target="_blank">
+	<img alt="(?)" width=24
+	src="/images/help32.png"  
+	title='${_("Open help on LDAP resolver")}'>
+	</a>
+	</div>
 	<form class="cmxform" id="form_ldapconfig"><fieldset name="Server config"><table>
 			<tr><td><label for=ldap_resolvername>${_("Resolver name")}:</label></td>
 				<td><input type="text" name="ldap_resolvername" class="required"  id="ldap_resolvername" size="35" maxlength="20"></td></tr>
@@ -1157,6 +1192,13 @@ ${c.version} | ${c.licenseinfo}
 <!-- #################### dialog SQL resolver #################################### -->
 
 <div id='dialog_sql_resolver'>
+	<div style="float:right">
+	<a href='${c.help_url}/configuration/useridresolvers.html#sql-resolver' target="_blank">
+	<img alt="(?)" width=24
+	src="/images/help32.png"  
+	title='${_("Open help on SQL resolver")}'>
+	</a>
+	</div>
 <form class="cmxform" id="form_sqlconfig"><fieldset name='${_("Server config")}'><table>
 		<tr><td><label for=sql_resolvername>${_("Resolver name")}:</label></td>
 			<td><input type="text" name="sql_resolvername" class="required"  id="sql_resolvername" size="35" maxlength="20"></td></tr>
@@ -1210,6 +1252,13 @@ ${c.version} | ${c.licenseinfo}
 <!-- #################### dialog SCIM resolver #################################### -->
 
 <div id='dialog_scim_resolver'>
+	<div style="float:right">
+	<a href='${c.help_url}/configuration/useridresolvers.html#SCIM-resolver' target="_blank">
+	<img alt="(?)" width=24
+	src="/images/help32.png"  
+	title='${_("Open help on SCIM resolver")}'>
+	</a>
+	</div>
 <form class="cmxform" id="form_scimconfig">
 		<fieldset name='${_("SCIM config")}'><table>
 		<tr><td><label for=scim_resolvername>${_("Resolver name")}:</label></td>
@@ -1242,6 +1291,13 @@ ${c.version} | ${c.licenseinfo}
 
 
 <div id="dialog_file_resolver">
+	<div style="float:right">
+	<a href='${c.help_url}/configuration/useridresolvers.html#flatfile-resolver' target="_blank">
+	<img alt="(?)" width=24
+	src="/images/help32.png"  
+	title='${_("Open help on LDAP resolver")}'>
+	</a>
+	</div>
 <form class="cmxform" id="form_fileconfig"><fieldset name='${_("File configuration")}'><table>
 		<tr><td><label for=file_resolvername>${_("Resolver name")}:</label></td>
 			<td><input type="text" name="file_resolvername" class="required"  id="file_resolvername" size="35" maxlength="20"></td></tr>
