@@ -797,7 +797,7 @@ ${c.version} | ${c.licenseinfo}
 <!-- ################### edit realm ####################################### -->
 <div id='dialog_edit_realms'>
 	<div style="float:right">
-	<a href='${c.help_url}/configuration/realms.html' target="_blank">
+	<a href='${c.help_url}/configuration/realms.html#edit-realm' target="_blank">
 	<img alt="(?)" width=24
 	src="/images/help32.png"  
 	title='${_("Open help on Realms")}'>

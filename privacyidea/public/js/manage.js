@@ -3187,6 +3187,7 @@ $(document).ready(function(){
     $('#menu_edit_resolvers').click(function(){
         resolvers_load();
         $dialog_resolvers.dialog('open');
+        $('#button_resolver_new').focus();
     });
 
 
