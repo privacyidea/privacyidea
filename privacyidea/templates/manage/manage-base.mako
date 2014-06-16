@@ -129,6 +129,13 @@ ${c.version} | ${c.licenseinfo}
 			<li><a href='#tab_content_system_gui'>${_("GUI settings")}</a></li>
 		</ul>
 		<div id="tab_content_system_settings">
+			<div style="float:right">
+			<a href='${c.help_url}/configuration/system_config.html#settings' target="_blank">
+			<img alt="(?)" width=24
+			src="/images/help32.png"  
+			title='${_("Open help on system settings")}'>
+			</a>
+			</div>
 			<fieldset>
 				<table>
          			<tr><td><label for="sys_splitAtSign">${_("splitAtSign")}</label>: </td>
@@ -182,6 +189,13 @@ ${c.version} | ${c.licenseinfo}
 		    </fieldset>
     </div> <!-- tab with settings -->
     	<div id='tab_content_system_defaults'>
+    		<div style="float:right">
+			<a href='${c.help_url}/configuration/system_config.html#token-default-settings' target="_blank">
+			<img alt="(?)" width=24
+			src="/images/help32.png"  
+			title='${_("Open help on system settings")}'>
+			</a>
+			</div>
     		<fieldset>
     			<legend>${_("Misc settings")}</legend>
 				<table>
@@ -219,6 +233,13 @@ ${c.version} | ${c.licenseinfo}
     		</fieldset>
     	</div> <!-- tab with defaults -->
     	<div id='tab_content_system_gui'>
+    		<div style="float:right">
+			<a href='${c.help_url}/configuration/system_config.html#gui-settings' target="_blank">
+			<img alt="(?)" width=24
+			src="/images/help32.png"  
+			title='${_("Open help on system settings")}'>
+			</a>
+			</div>
     		<fieldset>
     				<legend>${_("Selfservice portal")}</legend>
 		    		<table>

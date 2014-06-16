@@ -94,6 +94,13 @@ from sqlalchemy.orm import sessionmaker
 
 
 class Audit(AuditBase):
+    '''
+    This is the SQLAudit module, which writes the audit entries to an SQL database table.
+    It requires the configuration parameters:
+    
+    privacyideaAudit.sql.url (default: sqlalchemy.url)
+    
+    '''
     
     def __init__(self):
         self.name = "sqlaudit"

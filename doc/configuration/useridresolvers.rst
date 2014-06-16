@@ -61,7 +61,7 @@ Create a flat file like this::
 LDAP resolver
 .............
 
-.. index:: LDAP resolver, OpenLDAP, Active Directory, FreeIPA, Penrose, Nevell eDirectory
+.. index:: LDAP resolver, OpenLDAP, Active Directory, FreeIPA, Penrose, Novell eDirectory
 
 The LDAP resolver can be used to access any kind of LDAP service like OpenLDAP, Active Directory,
 FreeIPA, Penrose, Novell eDirectory.
