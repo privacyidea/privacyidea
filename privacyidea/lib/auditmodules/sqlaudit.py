@@ -385,3 +385,110 @@ class Audit(AuditBase):
                 'clearance_level' : audit_entry.clearance_level 
                 }
         return audit_dict
+    
+#########################################################################
+#
+# To be run at the command line to clean the logs
+#    
+
+import os, sys
+from getopt import getopt, GetoptError
+import ConfigParser
+
+
+def usage():
+    print  '''
+    privacyidea-audit-janitor: cleanup audit database according to:
+        privacyideaAudit.sql.highwatermark and
+        privacyideaAudit.sql.lowwatermark
+        
+    Parameter:
+    -f <privacyidea.ini file>
+    '''
+
+def cleanup_db(filename, highwatermark=None, lowwatermark=None):
+
+    config_path = os.path.abspath(os.path.dirname(filename))
+    config = ConfigParser.ConfigParser()
+    config.read(filename)
+    # Set the current path, which we might need, if we are using sqlite
+    config.set("DEFAULT", "here", config_path)
+    config.set("app:main", "here", config_path)
+    # get the type - we only work for sqlaudit
+    audit_type = config.get("DEFAULT", "privacyideaAudit.type")
+    if audit_type != "privacyidea.lib.auditmodules.sqlaudit":
+        raise Exception("We only work with audit type sql. %s given." % audit_type)
+    
+    if not highwatermark:
+        try:
+            highwatermark = config.get("DEFAULT", "privacyideaAudit.sql.highwatermark")
+        except ConfigParser.NoOptionError:
+            highwatermark = 10000
+        
+    if not lowwatermark:
+        try:
+            lowwatermark = config.get("DEFAULT", "privacyideaAudit.sql.lowwatermark")
+        except ConfigParser.NoOptionError:
+            lowwatermark = 5000
+    
+    try:
+        sql_url = config.get("DEFAULT", "privacyideaAudit.sql.url")
+    except ConfigParser.NoOptionError:
+        sql_url = config.get("app:main", "sqlalchemy.url")
+        
+    print "Cleaning up with high: %s, low: %s. %s" % (highwatermark,
+                                                      lowwatermark,
+                                                      sql_url)
+    
+    
+    engine = create_engine(sql_url)
+    # create a configured "Session" class
+    session = sessionmaker(bind=engine)()
+    # create a Session
+    metadata.create_all(engine)
+    count = session.query(LogEntry.id).count()
+    for l in session.query(LogEntry.id).order_by(desc(LogEntry.id)).limit(1):
+        last_id = l[0]
+    print "The log audit log has %i entries, the last one is %i" % (count, last_id)
+    # deleting old entries
+    if count > highwatermark:
+        print "More than %i entries, deleting..." % highwatermark
+        cut_id = last_id - lowwatermark
+        # delete all entries less than cut_id
+        print "Deleting entries smaller than %i" % cut_id
+        session.query(LogEntry.id).filter(LogEntry.id < cut_id).delete()
+        session.commit()
+    
+
+def main():
+
+    filename = None
+    highwatermark = None
+    lowwatermark = None
+    try:
+        opts, _args = getopt(sys.argv[1:], "hf:", [ "help", "file=", "high=", "low=" ])
+
+    except GetoptError:
+        usage()
+        sys.exit(1)
+
+    for opt, arg in opts:
+        if opt in ('-f', '--file'):
+            filename = arg
+        elif opt in ('-h', '--help'):
+            usage()
+            sys.exit(1)
+        elif opt in ('--high'):
+            highwatermark = int(arg)
+        elif opt in ('--low'):
+            lowwatermark = int(arg)
+
+    if filename:
+        cleanup_db(filename, highwatermark=highwatermark, lowwatermark=lowwatermark )
+    else:
+        usage()
+        sys.exit(2)
+
+if __name__ == '__main__':
+    main()
+    

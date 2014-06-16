@@ -20,7 +20,7 @@ privacyideaAudit.key.public = %(here)s/public.pem
 #privacyideaAudit.sql.url = sqlite:///%(here)s/token.sqlite
 # One entry for SQL audit might take about 1K
 privacyideaAudit.sql.highwatermark = 10000
-privacyideaAudit.sql.lowwatermark = 5000
+#privacyideaAudit.sql.lowwatermark = 5000
 
 # If true, OTP values can be retrieved via the getotp controller
 privacyideaGetotp.active = True
