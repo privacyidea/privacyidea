@@ -63,14 +63,16 @@ function yubico_get_config_params(){
 	<td><label for="sys_yubico_id" title='${_("You need to enter a valid API id")}'>
 		${_("Yubico ID")}</label></td>
 	<td><input class="required" type="text" name="sys_yubico_id" id="sys_yubico_id"
-		class="text ui-widget-content ui-corner-all"/></td>
+		class="text ui-widget-content ui-corner-all"
+		value="get-your-own"/></td>
 	</tr>
 
 	<tr>
 	<td><label for="sys_yubico_secret" title='${_("You need to enter a valid API key")}'>
 		${_("Yubico API key")}</label></td>
 	<td><input class="required" type="text" name="sys_yubico_secret" id="sys_yubico_secret"
-		class="text ui-widget-content ui-corner-all"/></td>
+		class="text ui-widget-content ui-corner-all"
+		value="get-your-own"/></td>
 	</tr>
 
 	</table>

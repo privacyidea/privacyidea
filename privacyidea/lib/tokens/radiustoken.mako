@@ -74,7 +74,8 @@ $("#form_config_radius").validate({
 	<tr>
 	<td><label for="sys_radius_server" title='${_("You need to enter the server like myradius:1812")}'>
 		${_("RADIUS server")}</label></td>
-	<td><input class="required" type="text" name="sys_radius_server" id="sys_radius_server" class="text ui-widget-content ui-corner-all"/></td>
+	<td><input class="required" type="text" name="sys_radius_server" id="sys_radius_server" 
+		class="text ui-widget-content ui-corner-all" value="localhost:1812"/></td>
 	</tr>
 
 	<tr><td><label for="sys_radius_local_checkpin" title='${_("The PIN can either be verified on this local privacyIDEA server or forwarded to the RADIUS server")}'>

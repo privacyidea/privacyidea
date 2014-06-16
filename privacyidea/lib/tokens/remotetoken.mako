@@ -75,7 +75,7 @@ $("#form_config_remote").validate({
 	<td><label for="sys_remote_server" title='${_("You need to enter the remote privacyIDEA server like https://remoteprivacyidea")}'>
 		${_("REMOTE server")}</label></td>
 	<td><input class="required" type="text" name="sys_remote_server" id="sys_remote_server"
-		class="text ui-widget-content ui-corner-all"/></td>
+		class="text ui-widget-content ui-corner-all" value="https://localhost"/></td>
 	</tr>
 
 	<tr><td><label for="sys_remote_local_checkpin" title='${_("The PIN can either be verified on this local privacyIDEA server or forwarded to the remote server")}'>

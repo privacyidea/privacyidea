@@ -122,7 +122,7 @@ $(document).ready(function () {
 	<td><input type="text" name="sms_provider" class="required"  id="c_sms_provider" size="37" maxlength="80"></td>
 </tr><tr>
 	<td><label for='c_sms_provider_config'>${_("SMS Provider Config")}</label>: </td>
-	<td><textarea name="sms_provider_config" class="required"  id="c_sms_provider_config" cols='35' rows='6' maxlength="400"> </textarea></td>
+	<td><textarea name="sms_provider_config" class="required"  id="c_sms_provider_config" cols='35' rows='6' maxlength="400">{}</textarea></td>
 </tr><tr>
 	<td><label for='c_sms_timeout'>${_("SMS Timeout")}</label>: </td>
 	<td><input type="text" name="sms_timeout" class="required"  id="c_sms_timeout" size="5" maxlength="5"></td>

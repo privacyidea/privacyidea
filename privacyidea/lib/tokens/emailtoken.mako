@@ -56,7 +56,8 @@ $(document).ready(function () {
         </tr>
         <tr>
 	        <td><label for="c_email_provider_config">${_("E-mail provider config")}</label>: </td>
-	        <td><textarea name="email_provider_config" class="required"  id="c_email_provider_config" cols='35' rows='6' maxlength="400"></textarea></td>
+	        <td><textarea name="email_provider_config" class="required"  id="c_email_provider_config" cols='35' rows='6' maxlength="400">{}	        	
+	        </textarea></td>
         </tr>
         <tr>
 	        <td><label for="c_email_challenge_validity">${_("E-mail challenge validity (sec)")}</label>: </td>
