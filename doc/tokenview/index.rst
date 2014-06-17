@@ -37,6 +37,8 @@ with his old OTP PIN and the long password.
 
 The lost token is deactivated.
 
+.. _tokeninfo:
+
 Token info
 ..........
 

@@ -21,15 +21,15 @@ privacyIDEA knows the scopes:
   * ocra
   * gettoken
 
-You can define as many polcies as you wish to.
-The logic of the polcies in the scopes is additive.
+You can define as many policies as you wish to.
+The logic of the policies in the scopes is additive.
 
 .. figure:: policies.png
    :width: 500
 
    *policy definition*
 
-Each policiy can contain the following attributes:
+Each policy can contain the following attributes:
 
 **policy name**
 
@@ -79,3 +79,18 @@ Each policiy can contain the following attributes:
 
 .. note:: Policies can be active or inactive. So be sure to activate a policy to 
    get the desired effect. 
+
+Read more about the specific policies in the scopes:
+
+.. toctree::
+
+  admin
+  system
+  selfservice
+  enrollment
+  authentication
+  authorization
+  audit
+  ocra
+  gettoken
+
