@@ -21,6 +21,13 @@ Admin Controller
 .. autoclass:: privacyidea.controllers.admin.AdminController
    :members:
 
+.. _system_controller:
+
+System Controller
+.................
+
+.. autoclass:: privacyidea.controllers.system.SystemController
+   :members:
 
 Validate Controller
 ...................

@@ -9,8 +9,8 @@ library functions
 
 .. _code_policy_class:
 
-Policiy Class
-.............
+Policy Class
+............
 
 .. autoclass:: privacyidea.lib.policy.PolicyClass
    :members:
