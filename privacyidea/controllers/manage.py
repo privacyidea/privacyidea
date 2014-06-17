@@ -40,6 +40,7 @@ from pylons import request, response, config, tmpl_context as c
 from privacyidea.lib.base import BaseController
 from pylons.templating import render_mako as render
 from mako.exceptions import CompileException
+from mako.template import Template
 
 # Our Token stuff
 from privacyidea.lib.token   import TokenIterator
@@ -102,7 +103,6 @@ class ManageController(BaseController):
             c.tokenArray = []
             c.user = self.authUser.login
             c.realm = self.authUser.realm
-            c.help_url = config.get('help_url')
 
         except webob.exc.HTTPUnauthorized as acc:
             ## the exception, when an abort() is called if forwarded
@@ -163,7 +163,7 @@ class ManageController(BaseController):
                     tab = confs.get(conf).get('title')
                     #tab = '<li ><a href=#'+loc+'>'+tab+'</a></li>'
 
-                    div = confs.get(conf).get('html')
+                    div = Template(confs.get(conf).get('html')).render()
                     #div = +div+'</div>'
                 except Exception as e:
                     log.debug('no config info for token type %s  (%r)' % (conf, e))

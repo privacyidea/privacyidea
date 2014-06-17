@@ -299,6 +299,8 @@ class BaseController(WSGIController):
         # Add protection against click jacking
         response.headers["X-Frame-Options"] = "SAMEORIGIN"
 
+        c.help_url = config.get('help_url')
+
         return
 
     def __call__(self, environ, start_response):

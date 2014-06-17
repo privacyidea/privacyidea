@@ -5,4 +5,7 @@ Token configuration
 
 .. index:: token configuration
 
-Each token defintion comes with its own 
+Each token type can provide its own configuration dialog.
+
+.. toctree::
+   tokenconfig/sms

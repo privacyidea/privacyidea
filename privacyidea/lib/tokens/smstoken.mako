@@ -116,8 +116,13 @@ $(document).ready(function () {
 </script>
 
 <form class="cmxform" id="form_smsconfig"><fieldset>
-<legend>${_("SMS Provider Config")}</legend>
-<table><tr>
+<legend>${_("SMS Provider Config")} <a href='${c.help_url}/configuration/tokenconfig/sms.html' target="_blank">
+	<img src="/images/help32.png" width="24"
+	title="${_('Open help on SMS OTP token')}">  
+	</a>
+	</legend>
+<table>
+<tr>
 	<td><label for="c_sms_provider">${_("SMS Provider")}</label>: </td>
 	<td><input type="text" name="sms_provider" class="required"  id="c_sms_provider" size="37" maxlength="80"></td>
 </tr><tr>

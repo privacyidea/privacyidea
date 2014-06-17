@@ -73,8 +73,8 @@ class SipgateSMSProvider(ISMSProvider):
         response, content = http.request("https://samurai.sipgate.net/RPC2", "POST",
                                 headers={'content-type':'text/xml'},
                                 body=REQUEST_XML % (phone.strip().strip("+"), message))
-        print("SMS submitted: %s" % response)
-        print("response content: %s" % content)
+        log.debug("SMS submitted: %s" % response)
+        log.debug("response content: %s" % content)
         if response.get("status") == "200":
             ret = True
         else:
