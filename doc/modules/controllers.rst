@@ -29,6 +29,14 @@ System Controller
 .. autoclass:: privacyidea.controllers.system.SystemController
    :members:
 
+.. _selfservice_controller:
+
+Selfservice Controller
+......................
+
+.. autoclass:: privacyidea.controllers.selfservice.SelfserviceController
+   :members:
+
 Validate Controller
 ...................
 .. autoclass:: privacyidea.controllers.admin.AdminController
