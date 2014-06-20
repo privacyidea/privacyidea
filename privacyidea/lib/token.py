@@ -922,7 +922,7 @@ def auto_assignToken(passw, user, pin="", param=None):
     # should the password of the autoassignement be used as pin??
     Policy = PolicyClass(request, config, c,
                          get_privacyIDEA_config())
-    if True == Policy.ignore_autoassignment_pin(user):
+    if Policy.ignore_autoassignment_pin(user):
         pin = None
 
     # if found, assign the found token to the user.login

@@ -62,15 +62,27 @@ Each policy can contain the following attributes:
   This is the user, for whom this policy is valid. Depending on the scope
   the user is either an administrator or a normal authenticating user.
 
+.. note:: In certain scopes the authentication ``user`` 
+   contain a list of users and
+   also resolvers, which are identified by a ":". The notation
+   is *user:resolver*. A policy containing *user=:resolver1* will only
+   be valid for the users in *resolver1*.
+
+
 **realm**
 
   This is the realm, for which this policy is valid.
+
+.. _client_policies:
 
 **client**
 
   This is the requesting client, for which this action is valid.
   I.e. you can define different policies if the user access the
-  selfservice from different IP addresses.
+  selfservice from different IP addresses like the internal
+  network or remotely via the firewall.
+
+  You can enter an IP address or a subnet (like 10.2.0.0/16).
 
 **time**
 
