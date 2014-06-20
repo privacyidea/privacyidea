@@ -13,7 +13,7 @@ and the user
 settings into account.
 
 Technically enrollment policies control the use of the *init* and *assign*-methods
-in the :ref:`admin_controller` and `selfservice_controller`.
+in the :ref:`admin_controller` and :ref:`selfservice_controller`.
 Several functions are used from the :ref:`code_policy_class`.
 
 The following actions are available in the scope 

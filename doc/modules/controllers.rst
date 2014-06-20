@@ -37,6 +37,8 @@ Selfservice Controller
 .. autoclass:: privacyidea.controllers.selfservice.SelfserviceController
    :members:
 
+.. _validate_controller:
+
 Validate Controller
 ...................
 .. autoclass:: privacyidea.controllers.admin.AdminController
