@@ -405,6 +405,13 @@ ${c.version} | ${c.licenseinfo}
 
 <!-- ####################################### get serial ############# -->
 <div id='dialog_get_serial'>
+	<div style="float:right">
+			<a href='${c.help_url}/tools/index.html#get-serial-by-otp-value' target="_blank">
+			<img alt="(?)" width=24
+			src="/images/help32.png"  
+			title='${_("Open help on getting serial")}'>
+			</a>
+			</div>
 	<p>${_("Here you can search for the serial of a token."+
     	"You need to enter the current OTP value, and choose where you want to search for this token.")}</p>
     	<p>${_("Beware: This can be time consuming!")}</p>
@@ -429,6 +436,13 @@ ${c.version} | ${c.licenseinfo}
 
 <!------------------------ check policy ------------------------->
 <div id="dialog_check_policy">
+	<div style="float:right">
+			<a href='${c.help_url}/tools/index.html#check-policy' target="_blank">
+			<img alt="(?)" width=24
+			src="/images/help32.png"  
+			title='${_("Open help on Policy checker")}'>
+			</a>
+			</div>
 	<p>${_("Here you can check your policies.")}</p>
 	<p>${_("You can enter the corresponding values and the system will check, if there is any matching policy for this scenario.")}</p>
 	<form class="cmxform" id="form_check_policy">
@@ -468,6 +482,13 @@ ${c.version} | ${c.licenseinfo}
 <!------------------------ export token ------------------------------->
 
 <div id="dialog_export_token">
+	<div style="float:right">
+			<a href='${c.help_url}/tools/index.html#export-token-information' target="_blank">
+			<img alt="(?)" width=24
+			src="/images/help32.png"  
+			title='${_("Open help on export token information")}'>
+			</a>
+			</div>
 	<p>${_("Here you can export token information of the tokens you are allowed to view to a CSV file.")}</p>
 	<p>${_("You can enter additional attributes, you defined in the user mapping in the UserIdResolver. These attributes will be added to the CSV file.")}</p>
 	<form class="cmxform" id="form_export_token">
@@ -485,6 +506,13 @@ ${c.version} | ${c.licenseinfo}
 <!------------------------ export audit ------------------------------->
 
 <div id="dialog_export_audit">
+	<div style="float:right">
+			<a href='${c.help_url}/tools/index.html#export-audit-information' target="_blank">
+			<img alt="(?)" width=24
+			src="/images/help32.png"  
+			title='${_("Open help on export audit information")}'>
+			</a>
+			</div>
 	<p>${_("Here you can export the audit information to a CSV file.")}</p>
 	<p><label for="export_audit_number">${_("Number of audit entries to export")}:</label>
 		<input id="export_audit_number" size=7 maxlength=6
@@ -506,6 +534,13 @@ ${c.version} | ${c.licenseinfo}
 
 <!-- ###################### copy token ####################### -->
 <div id='dialog_copy_token'>
+	<div style="float:right">
+			<a href='${c.help_url}/tools/index.html#copy-token-pin' target="_blank">
+			<img alt="(?)" width=24
+			src="/images/help32.png"  
+			title='${_("Open help on Copy token PIN tool")}'>
+			</a>
+			</div>
 	<p>${_("Here you can copy the OTP PIN from one token to the other.")}</p>
 	<p>${_("Please enter the serial number of the token with the existing PIN and the serial number of the token, that should get the same PIN.")}</p>
     <p><label for=copy_from_token>${_("from token")}</label> <input id='copy_from_token'></p>
@@ -524,6 +559,13 @@ ${c.version} | ${c.licenseinfo}
 <div id='dialog_import_safenet'>
 	<form id="load_tokenfile_form_aladdin" action="/admin/loadtokens" method="post"
 				enctype="multipart/form-data" onsubmit="return false;">
+			<div style="float:right">
+			<a href='${c.help_url}/import/index.html#safenet-xml' target="_blank">
+			<img alt="(?)" width=24
+			src="/images/help32.png"  
+			title='${_("Open help on XML import")}'>
+			</a>
+			</div>
 		<p>${_("Here you can upload the XML file that came with your SafeNet eToken PASS.")}</p>
   		<p>${_("Please choose the token file")}:<br>
     	<input name="file" type="file" size="30" maxlength="1000000" accept="text/*">
@@ -597,6 +639,13 @@ ${c.version} | ${c.licenseinfo}
 <div id='dialog_import_oath'>
 	<form id="load_tokenfile_form_oathcsv" action="/admin/loadtokens" method="post"
 			enctype="multipart/form-data" onsubmit="return false;">
+		<div style="float:right">
+			<a href='${c.help_url}/import/index.html#oath-csv' target="_blank">
+			<img alt="(?)" width=24
+			src="/images/help32.png"  
+			title='${_("Open help on OATH CSV import")}'>
+			</a>
+			</div>
 		<p>${_("Here you can upload a csv file for your OATH token. The file is supposed to contain one token per line")}:</p>
 		<p>${_("For HOTP and TOTP tokens:")}</p>
 		<p>${_("serial number, seed, type, otplen, timeStep")}</p>
@@ -623,6 +672,13 @@ ${c.version} | ${c.licenseinfo}
 <div id='dialog_import_yubikey'>
 	<form id="load_tokenfile_form_yubikeycsv" action="/admin/loadtokens" method="post"
 			enctype="multipart/form-data" onsubmit="return false;">
+		<div style="float:right">
+			<a href='${c.help_url}/import/index.html#yubikey-csv' target="_blank">
+			<img alt="(?)" width=24
+			src="/images/help32.png"  
+			title='${_("Open help on Yubikey import")}'>
+			</a>
+			</div>
 		<p>${_("Here you can upload a csv file for your Yubikey token. The file is supposed to contain one token per line")}:</p>
   		<p>${_("Please choose the token file")}:
     		<input name="file" type="file" size="30" maxlength="1000000" accept="text/*">
