@@ -43,3 +43,25 @@ Validate Controller
 ...................
 .. autoclass:: privacyidea.controllers.admin.AdminController
    :members:
+
+.. _audit_controller:
+
+Audit Controller
+................
+.. autoclass:: privacyidea.controllers.audit.AuditController
+   :members:
+
+.. _ocra_controller:
+
+OCRA Controller
+...............
+.. autoclass:: privacyidea.controllers.ocra.OcraController
+   :members:
+
+
+.. _gettoken_controller:
+
+Gettoken Controller
+...................
+.. autoclass:: privacyidea.controllers.gettoken.GettokenController
+   :members:

@@ -245,7 +245,8 @@ def getUserFromRequest(request):
     This function first tries to get the user from
      * a DigestAuth and otherwise from
      * basic auth and otherwise from
-     * the client certificate
+     * the client certificate and otherwise from
+     * the repoze who information.
     '''
     d_auth = { 'login' : '' }
 

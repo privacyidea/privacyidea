@@ -11,15 +11,18 @@ Policies can be used to define the reaction and behaviour of the system.
 Each policy defines the behaviour in a certain area, called scope. 
 privacyIDEA knows the scopes:
 
-  * admin
-  * system 
-  * selfservice
-  * enrollment
-  * authentication
-  * authorization
-  * audit
-  * ocra
-  * gettoken
+.. toctree::
+   :maxdepth: 1
+
+   admin
+   system
+   selfservice
+   enrollment
+   authentication
+   authorization
+   audit
+   ocra
+   gettoken
 
 You can define as many policies as you wish to.
 The logic of the policies in the scopes is additive.
@@ -91,18 +94,4 @@ Each policy can contain the following attributes:
 
 .. note:: Policies can be active or inactive. So be sure to activate a policy to 
    get the desired effect. 
-
-Read more about the specific policies in the scopes:
-
-.. toctree::
-
-  admin
-  system
-  selfservice
-  enrollment
-  authentication
-  authorization
-  audit
-  ocra
-  gettoken
 
