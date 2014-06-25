@@ -1,0 +1,6 @@
+Version 1.1, 2014-06-25
+
+* Added documentation and in-UI-context-help.:q
+* Fixed the token config to be filled with sensible data, so 
+  that you do not need to configure ALL token types.
+* Added script to clean up old audit logs.
