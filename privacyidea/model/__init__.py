@@ -4,6 +4,8 @@
 #  May 08, 2014 Cornelius Kölbel, info@privacyidea.org
 #  http://www.privacyidea.org
 #
+#     2014-06-30    Cornelius Kölbel, added tables clientmachine, clienttoken, clientoptions
+#
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  LSE
 #  contact:  http://www.linotp.org
@@ -49,6 +51,7 @@ import sqlalchemy as sa
 from sqlalchemy import orm
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relation
+from sqlalchemy import UniqueConstraint
 
 from privacyidea.model import meta
 from privacyidea.model.meta import Session
@@ -571,7 +574,7 @@ ocra challenges are stored
 log.debug('creating ocra table')
 
 ocra_table = sa.Table('ocra', meta.metadata,
-                sa.Column('id', sa.types.Integer(), sa.Sequence('token_seq_id', optional=True), primary_key=True, nullable=False),
+                sa.Column('id', sa.types.Integer(), sa.Sequence('ocra_seq_id', optional=True), primary_key=True, nullable=False),
                 sa.Column('transid', sa.types.Unicode(20), unique=True,
                                                 nullable=False, index=True),
                 sa.Column('data', sa.types.Unicode(512), default=u''),
@@ -663,7 +666,7 @@ log.debug('creating challenges table')
 
 challenges_table = sa.Table('challenges', meta.metadata,
                 sa.Column('id', sa.types.Integer(),
-                          sa.Sequence('token_seq_id', optional=True),
+                          sa.Sequence('challenges_seq_id', optional=True),
                           primary_key=True, nullable=False),
                 sa.Column('transid', sa.types.Unicode(64),
                                                 unique=True, nullable=False,
@@ -817,10 +820,118 @@ class Challenge(object):
 
     __str__ = __unicode__
 
+#
+# Client machine table
+# This is the table that holds the definition of a client machine
+
+clientmachine_table = sa.Table('ClientMachine', meta.metadata,
+                sa.Column('id', sa.types.Integer(),
+                          sa.Sequence('clientmachine_seq_id', optional=True),
+                          primary_key=True, nullable=False),
+                sa.Column("cm_ip", sa.types.Unicode(64)),
+                sa.Column("cm_name", sa.types.Unicode(64), 
+                          sa.Sequence('clientmachine_seq_name', optional=True),
+                          unique=True, nullable=False),
+                sa.Column("cm_desc", sa.types.Unicode(128)),
+                sa.Column("cm_decommission", sa.types.DateTime),
+                implicit_returning=implicit_returning,
+                )
+
+class Machine(object):
+    
+    @log_with(log)
+    def __init__(self, name, ip=u'', 
+                 desc=u'', 
+                 decommission=None):
+        self.cm_ip = ip
+        self.cm_name = name
+        self.cm_desc = desc
+        self.cm_decommission = decommission
 
 
+    @log_with(log)
+    def store(self):
+        Session.add(self)
+        Session.commit()
+        return True
+
+    def to_json(self):
+        return {'id' : self.id,
+                'ip' : self.cm_ip,
+                'name' : self.cm_name,
+                'desc' : self.cm_desc,
+                'decommission' : str(self.cm_decommission)}
+        
+
+#
+# The clienttoken table is the mapping which tokens belong to which client
+#
+
+machinetoken_table = sa.Table('MachineToken', meta.metadata,
+                             sa.Column('id', sa.types.Integer(),
+                                       sa.Sequence('machinetoken_seq_id', optional=True),
+                                       primary_key=True, nullable=False),
+                             sa.Column("token_id", sa.types.Integer(), ForeignKey('Token.privacyIDEATokenId')),
+                             sa.Column("machine_id", sa.types.Integer(), ForeignKey('ClientMachine.id')),
+                             sa.Column("application", sa.types.Unicode(64)),
+                             UniqueConstraint('token_id', 'machine_id', 'application', name='uix_1'),
+                             implicit_returning=implicit_returning,
+                             )
 
 
+class MachineToken(object):
+    '''
+    The MachineToken maps a token to a client and 
+    an application on this client
+    
+    The tuple of (machine, token, application) is unique.
+    
+    This can be an n:m mapping.
+    '''
+
+    @log_with(log)
+    def __init__(self, machine_id, token_id, application):
+        log.debug("setting machine_id to %r" % machine_id)
+        self.machine_id = machine_id
+        self.token_id = token_id
+        self.application = application
+        
+    @log_with(log)
+    def store(self):
+        Session.add(self)
+        Session.commit()
+        return True
+    
+    def to_json(self):
+        return {'id' : self.id,
+                'token_id' : self.token_id,
+                'machine_id' : self.machine_id,
+                'application' : self.application}
+        
+machineoptions_table = sa.Table('MachineOptions', meta.metadata,
+                                sa.Column('id', sa.types.Integer(),
+                                       sa.Sequence('machineoptions_seq_id', optional=True),
+                                       primary_key=True, nullable=False),
+                                sa.Column('machinetoken_id', sa.types.Integer(), ForeignKey('MachineToken.id')),
+                                sa.Column('mt_key', sa.types.Unicode(64), nullable=False),
+                                sa.Column('mt_value', sa.types.Unicode(64), nullable=False),
+                                implicit_returning=implicit_returning)
+
+class MachineOptions(object):
+    '''
+    This class holds an Option for the token assigned to
+    a certain client machine.
+    Each Token-Clientmachine-Combination can have several
+    options.
+    '''
+    
+    def __init__(self, machinetoken_id, key, value):
+        log.debug("setting %r to %r for MachineToken %s" % (key,
+                                                            value,
+                                                            machinetoken_id))
+        self.machinetoken_id = machinetoken_id
+        self.mt_key = key
+        self.mt_value = value
 
 log.debug('calling ORM Mapper')
 
@@ -844,3 +955,7 @@ orm.mapper(TokenRealm, tokenrealm_table)
 orm.mapper(Config, config_table)
 orm.mapper(OcraChallenge, ocra_table)
 orm.mapper(Challenge, challenges_table)
+
+orm.mapper(MachineToken, machinetoken_table)
+orm.mapper(Machine, clientmachine_table)
+orm.mapper(MachineOptions, machineoptions_table)

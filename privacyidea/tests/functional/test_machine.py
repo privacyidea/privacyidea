@@ -34,45 +34,45 @@ class TestAccountController(TestController):
                     "machine2", 
                     "machine3"]
         for m in machines:
-            self.app.get(url(controller='admin', action='machinecreate'), {'name' : m})
+            self.app.get(url(controller='machine', action='create'), {'name' : m})
             
         # list all machines
-        response = self.app.get(url(controller='admin', action='machineshow'))
+        response = self.app.get(url(controller='machine', action='show'))
         print response
         assert ("machine1" in response)
         assert ("machine2" in response)
         assert ("machine3" in response)
         
-        response = self.app.get(url(controller='admin', action='machineshow'), {'name' : "machine1" })
+        response = self.app.get(url(controller='machine', action='show'), {'name' : "machine1" })
         print response
         assert ("machine1" in response)
         assert ("machine2" not in response)
         assert ("machine3" not in response)
         
         for m in machines:
-            self.app.get(url(controller='admin', action='machinedelete'), {'name' : m })
+            self.app.get(url(controller='machine', action='delete'), {'name' : m })
         
     def test_create_with_description(self):
         '''
         Create a machine with IP and description
         '''
         # cleanup
-        self.app.get(url(controller='admin', action='machinedelete'), {'name' : "newmachine"})
+        self.app.get(url(controller='machine', action='delete'), {'name' : "newmachine"})
                                                                        
-        response = self.app.get(url(controller='admin', action='machinecreate'), {'name' : "newmachine",
+        response = self.app.get(url(controller='machine', action='create'), {'name' : "newmachine",
                                                                                   "ip" : "1.2.3.4",
                                                                                   "desc" : "Some strange machine äää"})
         print response
         assert ('"status": true' in response)
         assert ('"value": true' in response)
         
-        response = self.app.get(url(controller='admin', action='machineshow'), {'name' : "newmachine" })
+        response = self.app.get(url(controller='machine', action='show'), {'name' : "newmachine" })
         print response
         # We do not care about the database encoding here
         assert ('Some strange machine' in response)
         
         
-        response = self.app.get(url(controller='admin', action='machinedelete'), {'name' : "newmachine"} )
+        response = self.app.get(url(controller='machine', action='delete'), {'name' : "newmachine"} )
         print response
         assert ('"status": true' in response)
         assert ('"value": true' in response)
@@ -83,36 +83,156 @@ class TestAccountController(TestController):
         name1 = "machine1"
         name2 = "machine2"
         # cleanup
-        self.app.get(url(controller='admin', action='machinedelete'), {'name' : name1})
+        self.app.get(url(controller='machine', action='delete'), {'name' : name1})
         
-        response = self.app.get(url(controller='admin', action='machinecreate'), {'name' : name1})
+        response = self.app.get(url(controller='machine', action='create'), {'name' : name1})
         print response
         assert ('"status": true' in response)
         assert ('"value": true' in response)
         
         # Creating the machine a second time should not work!
-        response = self.app.get(url(controller='admin', action='machinecreate'), {'name' : name1})
+        response = self.app.get(url(controller='machine', action='create'), {'name' : name1})
         print response
         assert ('"status": false' in response)
         assert ('column cm_name is not unique' in response)
 
-        response = self.app.get(url(controller='admin', action='machineshow'))
+        response = self.app.get(url(controller='machine', action='show'))
         print response
         assert ('"name": "%s"' % name1 in response)
 
         # Try to delete a machine, that does not exist
-        response = self.app.get(url(controller='admin', action='machinedelete'), {'name' : name2})
+        response = self.app.get(url(controller='machine', action='delete'), {'name' : name2})
         print response
         assert ('"status": true' in response)
         assert ('"value": false' in response)
 
         # delete a machine, that does exist.
-        response = self.app.get(url(controller='admin', action='machinedelete'), {'name' : name1})
+        response = self.app.get(url(controller='machine', action='delete'), {'name' : name1})
         print response
         assert ('"status": true' in response)
         assert ('"value": true' in response)
 
         # list the machines.
-        response = self.app.get(url(controller='admin', action='machineshow'))
+        response = self.app.get(url(controller='machine', action='show'))
         print response
         assert ('"name": "%s"' % name1 not in response)
+
+    def test_add_token(self):
+        '''
+        Adding token to a machine
+        '''
+        name1 = "tokenmachine"
+        token1 = "tok123456"
+        # cleanup
+        self.app.get(url(controller='machine', action='delete'), {'name' : name1})
+        
+        response = self.app.get(url(controller='machine', action='create'), {'name' : name1})
+        print response
+        assert ('"status": true' in response)
+        assert ('"value": true' in response)
+        
+        # Creating the machine a second time should not work!
+        response = self.app.get(url(controller='machine', action='addtoken'), {'name' : name1,
+                                                                               'serial' : token1,
+                                                                               'application' : "app"})
+        print response
+        assert ('"status": false' in response)
+        assert ('There is no token with the serial number' in response)
+        
+        # create a token and add this new token to the machine
+        response = self.app.get(url(controller='admin', action='init'), {'type' : "spass",
+                                                                           "serial" : token1,
+                                                                           "pin" :  "123454"})
+        print response
+        assert ('"status": true' in response)
+        assert ('"value": true' in response)
+        
+        response = self.app.get(url(controller='machine', action='addtoken'), {'name' : name1,
+                                                                               'serial' : token1,
+                                                                               'application' : "app"})
+        print response
+        assert ('"status": true' in response)
+        assert ('"value": true' in response)
+        
+        # try to add the same again
+        response = self.app.get(url(controller='machine', action='addtoken'), {'name' : name1,
+                                                                               'serial' : token1,
+                                                                               'application' : "app"})
+        print response
+        assert ('"status": false' in response)
+        assert ('columns token_id, machine_id, application are not unique' in response)
+        
+        # add another application
+        response = self.app.get(url(controller='machine', action='addtoken'), {'name' : name1,
+                                                                               'serial' : token1,
+                                                                               'application' : "app2"})
+        print response
+        assert ('"status": true' in response)
+        assert ('"value": true' in response)
+        
+        # show machinetoken
+        response = self.app.get(url(controller='machine', action='showtoken'), {})
+        print response
+        assert ('"status": true' in response)
+        assert ('"application": "app"' in response)
+        assert ('"application": "app2"' in response)
+        
+        # delete the machines
+        for app in ["app", "app2"]:
+            response = self.app.get(url(controller='machine', action='deltoken'), {'name' : name1,
+                                                                                   'serial' : token1,
+                                                                                   'application' : app})
+            print response
+            assert ('"status": true' in response)
+            assert ('"value": true' in response)
+            
+            
+    def test_delete_token(self):
+        '''
+        Delete a token, that is assigned to a machine
+        '''    
+        name1 = "machineA"
+        token1 = "tokABCD"
+        
+        # create the machine
+        response = self.app.get(url(controller='machine', action='create'), {'name' : name1})
+        print response
+        assert ('"status": true' in response)
+        assert ('"value": true' in response)
+
+        # create the token
+        response = self.app.get(url(controller='admin', action='init'), {'type' : "spass",
+                                                                           "serial" : token1,
+                                                                           "pin" :  "123454"})
+        print response
+        assert ('"status": true' in response)
+        assert ('"value": true' in response)
+        
+        # add the token to the machine
+        response = self.app.get(url(controller='machine', action='addtoken'), {'name' : name1,
+                                                                               'serial' : token1,
+                                                                               'application' : "app3"})
+        print response
+        assert ('"status": true' in response)
+        assert ('"value": true' in response)
+        
+        # show machinetoken
+        response = self.app.get(url(controller='machine', action='showtoken'), {})
+        print response
+        assert ('"status": true' in response)
+        assert ('"application": "app3"' in response)
+        
+        # delete the token
+        response = self.app.get(url(controller='admin', action='remove'), {"serial" : token1})
+        print response
+        assert ('"status": true' in response)
+        assert ('"value": 1' in response)
+        
+        # show machinetoken
+        response = self.app.get(url(controller='machine', action='showtoken'), {})
+        print response
+        assert ('"status": true' in response)
+        assert ('"application": "app3"' not in response)
+        
+        
+        

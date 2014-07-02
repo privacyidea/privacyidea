@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #  May 08, 2014 Cornelius Kölbel
+#  2014-07-02 Cornelius Kölbel, remove references to machines, when a token is deleted 
+#
+#
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
@@ -74,6 +77,7 @@ from privacyidea import model
 from privacyidea.model import Token, createToken, Realm, TokenRealm
 from privacyidea.model.meta import Session
 from privacyidea.model import Challenge
+from privacyidea.model import MachineToken
 
 from privacyidea.lib.config  import getFromConfig
 from privacyidea.lib.resolver import getResolverObject
@@ -836,12 +840,12 @@ def getTokenType(serial):
 @log_with(log)
 def check_serial(serial):
     '''
-    This checks, if a serial number is already contained.
+    This checks, if a serial number already exists
 
     The function returns a tuple:
         (result, new_serial)
 
-    If the serial is already contained a new, modified serial new_serial is returned.
+    If the serial already exists a new, modified serial new_serial is returned.
 
     result: bool: True if the serial does not already exist.
     '''
@@ -1607,6 +1611,8 @@ def removeToken(user=None, serial=None):
         ## so we do this manualy
 
         for t_id in token_ids:
+            # delete references to client machines
+            Session.query(MachineToken).filter(MachineToken.token_id == t_id).delete()
             Session.query(TokenRealm).filter(TokenRealm.token_id == t_id).delete()
 
         Session.commit()
