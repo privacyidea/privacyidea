@@ -25,6 +25,30 @@ log = logging.getLogger(__name__)
 
 class TestAccountController(TestController):
 
+    def _create_token(self, serial=None):
+        # create a token and add this new token to the machine
+        response = self.app.get(url(controller='admin', action='init'), {'type' : "spass",
+                                                                           "serial" : serial,
+                                                                           "pin" :  "123454"})
+        print response
+        assert ('"status": true' in response)
+        assert ('"value": true' in response)
+
+    def _create_machine(self, name, ip=None, desc=None):
+        response = self.app.get(url(controller='machine', action='create'), {'name' : name,
+                                                                                  "ip" : ip,
+                                                                                  "desc" : desc})
+        print response
+        assert ('"status": true' in response)
+        assert ('"value": true' in response)
+        
+    def _add_token(self, name, serial, app):
+        response = self.app.get(url(controller='machine', action='addtoken'), {'name' : name,
+                                                                               'serial' : serial,
+                                                                               'application' : app})
+        print response
+        assert ('"status": true' in response)
+        assert ('"value": true' in response)
 
     def test_filter_show(self):
         '''
@@ -58,13 +82,11 @@ class TestAccountController(TestController):
         '''
         # cleanup
         self.app.get(url(controller='machine', action='delete'), {'name' : "newmachine"})
-                                                                       
-        response = self.app.get(url(controller='machine', action='create'), {'name' : "newmachine",
-                                                                                  "ip" : "1.2.3.4",
-                                                                                  "desc" : "Some strange machine äää"})
-        print response
-        assert ('"status": true' in response)
-        assert ('"value": true' in response)
+                                            
+        self._create_machine(name = "newmachine",
+                             ip = "1.2.3.4",
+                             desc = "Some strange machine äää")                           
+        
         
         response = self.app.get(url(controller='machine', action='show'), {'name' : "newmachine" })
         print response
@@ -139,13 +161,7 @@ class TestAccountController(TestController):
         assert ('"status": false' in response)
         assert ('There is no token with the serial number' in response)
         
-        # create a token and add this new token to the machine
-        response = self.app.get(url(controller='admin', action='init'), {'type' : "spass",
-                                                                           "serial" : token1,
-                                                                           "pin" :  "123454"})
-        print response
-        assert ('"status": true' in response)
-        assert ('"value": true' in response)
+        self._create_token(serial=token1)
         
         response = self.app.get(url(controller='machine', action='addtoken'), {'name' : name1,
                                                                                'serial' : token1,
@@ -201,12 +217,7 @@ class TestAccountController(TestController):
         assert ('"value": true' in response)
 
         # create the token
-        response = self.app.get(url(controller='admin', action='init'), {'type' : "spass",
-                                                                           "serial" : token1,
-                                                                           "pin" :  "123454"})
-        print response
-        assert ('"status": true' in response)
-        assert ('"value": true' in response)
+        self._create_token(token1)
         
         # add the token to the machine
         response = self.app.get(url(controller='machine', action='addtoken'), {'name' : name1,
@@ -234,5 +245,31 @@ class TestAccountController(TestController):
         assert ('"status": true' in response)
         assert ('"application": "app3"' not in response)
         
+    def test_output(self):
+        """
+        Test the json output of the machine-token-config.
+        """
+        self._create_token("t1")
+        self._create_token("t2")
+        self._create_token("t3")
+        self._create_token("t4")
         
+        self._create_machine(name="m1")
+        self._create_machine(name="m2")
+        self._create_machine(name="m3")
+        
+        self._add_token("m1", "t1", "App")
+        self._add_token("m1", "t2", "App")
+        self._add_token("m1", "t3", "App")
+        self._add_token("m2", "t1", "App")
+        self._add_token("m3", "t2", "App")
+        self._add_token("m4", "t3", "App")
+        
+        # show machinetoken
+        response = self.app.get(url(controller='machine', action='showtoken'), {})
+        print response
+        assert ('"status": true' in response)
+        assert ('"application": "App"' in response)
+        assert ('"6": {' in response)
+        assert ('"total": 6' in response)
         

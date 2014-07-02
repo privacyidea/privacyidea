@@ -903,9 +903,21 @@ class MachineToken(object):
         return True
     
     def to_json(self):
+        machinename = ""
+        serial = ""
+        ip = ""
+        if self.token:
+            serial = self.token.privacyIDEATokenSerialnumber
+        
+        if self.machine:
+            machinename = self.machine.cm_name
+            ip = self.machine.cm_ip
         return {'id' : self.id,
                 'token_id' : self.token_id,
+                'serial' : serial,
                 'machine_id' : self.machine_id,
+                'machinename' : machinename,
+                'ip' : ip, 
                 'application' : self.application}
         
 machineoptions_table = sa.Table('MachineOptions', meta.metadata,
@@ -956,6 +968,11 @@ orm.mapper(Config, config_table)
 orm.mapper(OcraChallenge, ocra_table)
 orm.mapper(Challenge, challenges_table)
 
-orm.mapper(MachineToken, machinetoken_table)
+orm.mapper(MachineToken, machinetoken_table,
+           properties={'token':relation(Token, 
+                                        primaryjoin=token_table.c.privacyIDEATokenId == machinetoken_table.c.token_id),
+                       'machine':relation(Machine,
+                                          primaryjoin=clientmachine_table.c.id == machinetoken_table.c.machine_id)
+                       }) 
 orm.mapper(Machine, clientmachine_table)
 orm.mapper(MachineOptions, machineoptions_table)

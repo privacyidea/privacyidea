@@ -18,8 +18,10 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-from privacyidea import model
-from privacyidea.model import Machine, MachineToken, MachineOptions
+from privacyidea.model import Machine
+from privacyidea.model import MachineToken
+from privacyidea.model import MachineOptions
+from privacyidea.model import Token
 from privacyidea.model.meta import Session
 from privacyidea.lib.token import getTokens4UserOrSerial
 from sqlalchemy import and_
@@ -97,7 +99,17 @@ def deltoken(machine_name, serial, application):
     
     
 @log_with(log)
-def showtoken(machine_name=None, serial=None, application=None):
+def showtoken(machine_name=None, 
+              serial=None, 
+              application=None,
+              cleartext=False):
+    '''
+    :param cleartext: whether the output should contain the cleartext information like
+                      name of the machine and serial of the token
+    :type cleartext: bool
+    :return: JSON of all tokens connected to machines with the corresponding
+             application.
+    '''
     res = {}
     machine_id = None
     token_id = None
@@ -116,7 +128,13 @@ def showtoken(machine_name=None, serial=None, application=None):
         condition = and_(condition, MachineToken.application == application)
     
     sqlquery = Session.query(MachineToken).filter(condition)
+    machines = {}
     for row in sqlquery:
-        res[row.id] = row.to_json()
+        machines[row.id] = row.to_json()
+    # TODO: adding pagination
+    res["total"] = len(machines)
+    res["machines"] = machines
+        
+    Session.commit()
     return res
 
