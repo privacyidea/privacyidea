@@ -258,6 +258,7 @@ class TestAccountController(TestController):
         self._create_machine(name="m1")
         self._create_machine(name="m2")
         self._create_machine(name="m3")
+        self._create_machine(name="m4")
         
         self._add_token("m1", "t1", "App")
         self._add_token("m1", "t2", "App")
@@ -279,3 +280,14 @@ class TestAccountController(TestController):
         Testing machine decommission date
         """
         self._create_machine("tokDec", decommission="2014-12-31")
+        
+    def test_wrong_token_and_wrong_machine(self):
+        """
+        Testing adding non existing token to non existing machine must fail
+        """
+        response = self.app.get(url(controller='machine', action='addtoken'), {'name' : "no_machine",
+                                                                               'serial' : "no_token",
+                                                                               'application' : "some app"})
+        print response
+        assert ('"status": false' in response)
+        assert ('No machine with name' in response)

@@ -64,7 +64,7 @@ def show(name=None):
 def _get_machine_id(machine_name):
     # determine the machine_id for the machine name
     machine = show(machine_name)
-    machine_id = machine.get("tokenmachine",{}).get("id")
+    machine_id = machine.get(machine_name,{}).get("id")
     return machine_id
 
 def _get_token_id(serial):
@@ -80,7 +80,11 @@ def _get_token_id(serial):
 @log_with(log)
 def addtoken(machine_name, serial, application):
     machine_id = _get_machine_id(machine_name)
+    if not machine_id:
+        raise Exception("No machine with name %r found!" % machine_name)
     token_id = _get_token_id(serial)
+    if not token_id:
+        raise Exception("No token with serial %r found!" % serial)
     machinetoken = MachineToken(machine_id, token_id, application)
     machinetoken.store()
     return machinetoken
