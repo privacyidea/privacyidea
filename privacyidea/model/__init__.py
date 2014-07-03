@@ -41,6 +41,7 @@ import sys
 import traceback
 
 from datetime import datetime
+from datetime import date
 
 from json import loads, dumps
 
@@ -843,10 +844,20 @@ class Machine(object):
     def __init__(self, name, ip=u'', 
                  desc=u'', 
                  decommission=None):
+        '''
+        Create a new Machine database object
+        
+        :param decommission: This is the date, when the machine should be decommissioned. 2014-07-02
+        :type decommission: string, date or datetime
+        '''
         self.cm_ip = ip
         self.cm_name = name
         self.cm_desc = desc
-        self.cm_decommission = decommission
+        if type(decommission) in [ date, datetime ]:
+            self.cm_decommission = decommission
+        elif type(decommission) == str:
+            # convert the string to datetime:
+            self.cm_decommission = datetime.strptime(decommission, '%Y-%m-%d')
 
 
     @log_with(log)

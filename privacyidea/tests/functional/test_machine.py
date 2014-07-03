@@ -34,10 +34,11 @@ class TestAccountController(TestController):
         assert ('"status": true' in response)
         assert ('"value": true' in response)
 
-    def _create_machine(self, name, ip=None, desc=None):
+    def _create_machine(self, name, ip=None, desc=None, decommission=None):
         response = self.app.get(url(controller='machine', action='create'), {'name' : name,
                                                                                   "ip" : ip,
-                                                                                  "desc" : desc})
+                                                                                  "desc" : desc,
+                                                                                  "decommission" : decommission})
         print response
         assert ('"status": true' in response)
         assert ('"value": true' in response)
@@ -273,3 +274,8 @@ class TestAccountController(TestController):
         assert ('"6": {' in response)
         assert ('"total": 6' in response)
         
+    def test_decommission(self):
+        """
+        Testing machine decommission date
+        """
+        self._create_machine("tokDec", decommission="2014-12-31")
