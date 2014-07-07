@@ -67,6 +67,7 @@ _LEVELS = {'debug': logging.DEBUG,
            'error': logging.ERROR,
           }
 
+
 def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
     """
     Create a Pylons WSGI application and return it
@@ -136,13 +137,12 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
         static_app = StaticURLParser(config['pylons.paths']['static_files'])
         app = Cascade([static_app, app])
 
-
-
     # Add the repoze.who middleware
     # with a cookie encryption key, that is generated at every server start!
-    cookie_timeout = int(global_conf.get("privacyIDEASessionTimout", COOKIE_TIMEOUT))
+    cookie_timeout = int(global_conf.get("privacyIDEASessionTimout",
+                                         COOKIE_TIMEOUT))
     cookie_reissue_time = int(cookie_timeout / 2)
-    cookie_key = geturandom(32)    
+    cookie_key = geturandom(32)
     privacyidea_auth = auth_privacy_plugin()
     basicauth = BasicAuthPlugin('repoze.who')
     privacyidea_md = auth_privacy_plugin()
@@ -156,20 +156,25 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
                             login_handler_path='/account/dologin',
                             logout_handler_path='/account/logout',
                             rememberer_name="auth_tkt")
-    form.classifications = { IIdentifier:['browser'],
-                             IChallenger:['browser'] } # only for browser
-    basicauth.classifications = { IIdentifier:['basic'],
-                                  IChallenger:['basic'] } # basic authentication only for API calls
+    # For authentication for browsers
+    form.classifications = {IIdentifier: ['browser'],
+                            IChallenger: ['browser']}
+    # basic authentication only for API calls
+    basicauth.classifications = {IIdentifier: ['basic'],
+                                 IChallenger: ['basic']}
     identifiers = [('form', form),
-                   ('auth_tkt',auth_tkt),
+                   ('auth_tkt', auth_tkt),
                    ('basicauth', basicauth)]
-    authenticators = [('privacyidea.lib.repoze_auth:UserModelPlugin', privacyidea_auth)]
+    authenticators = [('privacyidea.lib.repoze_auth:UserModelPlugin',
+                       privacyidea_auth)]
     challengers = [('form', form),
                    ('basicauth', basicauth)]
-    
-    mdproviders = [('privacyidea.lib.repoze_auth:UserModelPlugin', privacyidea_md)]
 
-    #app = make_who_with_config(app, global_conf, app_conf['who.config_file'], app_conf['who.log_file'], app_conf['who.log_level'])
+    mdproviders = [('privacyidea.lib.repoze_auth:UserModelPlugin',
+                    privacyidea_md)]
+
+    #app = make_who_with_config(app, global_conf, app_conf['who.config_file'],
+    #                     app_conf['who.log_file'], app_conf['who.log_level'])
 
     log_file = app_conf.get("who.log_file")
     if log_file is not None:
@@ -183,7 +188,7 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
         log_level = logging.INFO
     else:
         log_level = _LEVELS[log_level.lower()]
-        
+
     app = PluggableAuthenticationMiddleware(
         app,
         identifiers,
@@ -196,7 +201,4 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
         log_level
         )
 
-
-
     return app
-
