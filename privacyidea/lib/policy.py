@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #  May 08, 2014 Cornelius Kölbel
+#  Jul 07, 2014 add check_machine_policy, Cornelius Kölbel
+
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
@@ -304,7 +306,31 @@ class PolicyClass(object):
                                     ret = value
     
         return ret
-    
+
+    @log_with(log)
+    def get_machine_manage_policies(self, action):
+        """
+        Return the machine manage policies
+
+        :return: dictionary with the polcies for this administrator
+
+        Todo: Also take care of realms...
+        """
+        policies = {}
+        active = False
+        admin_user = getUserFromRequest(self.request)
+        # Do we have machine policies at all?
+        pol = self.getPolicy({'scope': 'machine'})
+        if len(pol) > 0:
+            active = True
+            client = get_client()            
+            policies = self.get_client_policy(client, scope="machine",
+                            action=action, user=admin_user['login'])
+
+        return {'active': active,
+                'policies': policies,
+                'admin': admin_user['login']}
+
     @log_with(log)
     def getAdminPolicies(self, action, lowerRealms=False):
         """
@@ -978,8 +1004,17 @@ class PolicyClass(object):
             self.tokenrealms = tokenrealms
         if tokentype:
             self.tokentype = tokentype
-    
-        if 'admin' == controller:
+
+        if controller == 'machine':
+            pol = self.get_machine_manage_policies(method)
+            if pol.get("active"):
+                if len(pol.get("policies")) == 0:
+                    log.error("The admin %r does not have"
+                              "the right to %r" % (pol['admin'], method))
+                    raise PolicyException(_("You do not have the right to manage machines with:"
+                                            "%r" % method))
+
+        elif 'admin' == controller:
     
             serial = getParam(param, "serial", optional)
             if user is None:

@@ -68,7 +68,6 @@ privacyideaURL.disable_ssl = False
 # basic_auth!
 # This parameter takes a list of IP-addresses or subnets.
 #privacyideaBasicAuth.clients = 127.0.0.1, 10.0.0.0/24
-privacyideaBasicAuth.clients = 127.0.0.1
 
 # These are the settings for the RADIUS Token
 # The location of the RADIUS dictionary file

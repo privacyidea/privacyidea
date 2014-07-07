@@ -131,7 +131,10 @@ def showtoken(machine_name=None,
     if application:
         condition = and_(condition, MachineToken.application == application)
     
-    sqlquery = Session.query(MachineToken).filter(condition)
+    if condition:
+        sqlquery = Session.query(MachineToken).filter(condition)
+    else:
+        sqlquery = Session.query(MachineToken)
     machines = {}
     for row in sqlquery:
         machines[row.id] = row.to_json()

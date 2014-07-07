@@ -2756,7 +2756,25 @@ def get_policy_definitions(scope=""):
             'calcOTP': {
                 'type': 'bool',
                 'desc': _('Allow to do an ocra/calculateOtp.')}
-        }
+        },
+        'machine': {
+                    'create': {'type': 'bool',
+                               'desc': _("Create a new client "
+                                         "machine definition")
+                               },
+                    'delete': {'type': 'bool',
+                               'desc': _("delete a client machine defintion")},
+                    'show': {'type': 'bool',
+                             'desc': _("list the client machine definitions")},
+                    'addtoken': {'type': 'bool',
+                                 'desc': _("add a token to a client machine")},
+                    'deltoken': {'type': 'bool',
+                                 'desc': _("delete a token from "
+                                           "a client machine")},
+                    'showtoken': {'type': 'bool',
+                                  'desc': _("list the tokens and "
+                                            "client machines")}
+                    }
     }
 
     ## now add generic policies, which every token should provide:

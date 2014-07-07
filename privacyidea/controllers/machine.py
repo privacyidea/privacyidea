@@ -137,7 +137,9 @@ class MachineController(BaseController):
         try:
             res = False
             param = {}
-            
+            # check machine authorization
+            self.Policy.checkPolicyPre('machine', 'create')
+
             param.update(request.params)
             machine_name = getParam(param, "name", required)
             ip = getParam(param, "ip", optional)
@@ -179,9 +181,11 @@ class MachineController(BaseController):
         '''
         try:
             res = {}
-            param = {}            
+            param = {}
+            # check machine authorization
+            self.Policy.checkPolicyPre('machine', 'delete')
             param.update(request.params)
-            machine_name = getParam(param, "name", required)         
+            machine_name = getParam(param, "name", required)
             res = delete_machine(machine_name)
             Session.commit()
             return sendResult(response, res, 1)
@@ -212,7 +216,9 @@ class MachineController(BaseController):
         '''
         try:
             res = {}
-            param = {}            
+            param = {}
+            # check machine authorization
+            self.Policy.checkPolicyPre('machine', 'show')
             param.update(request.params)
             machine_name = getParam(param, "name", optional)
             
@@ -246,7 +252,9 @@ class MachineController(BaseController):
         '''
         try:
             res = False
-            param = {}            
+            param = {}
+            # check machine authorization
+            self.Policy.checkPolicyPre('machine', 'addtoken')
             param.update(request.params)
             machine_name = getParam(param, "name", required)
             serial = getParam(param, "serial", required)
@@ -284,7 +292,9 @@ class MachineController(BaseController):
         '''
         try:
             res = False
-            param = {}            
+            param = {}
+            # check machine authorization
+            self.Policy.checkPolicyPre('machine', 'deltoken')
             param.update(request.params)
             machine_name = getParam(param, "name", required)
             serial = getParam(param, "serial", required)
@@ -318,12 +328,14 @@ class MachineController(BaseController):
         '''
         try:
             res = False
-            param = {}            
+            param = {}
+            # check machine authorization
+            self.Policy.checkPolicyPre('machine', 'showtoken')
             param.update(request.params)
             machine_name = getParam(param, "name", optional)
             serial = getParam(param, "serial", optional)
             application = getParam(param, "application", optional)
-            
+
             res = showtoken(machine_name, serial, application)
             Session.commit()
             return sendResult(response, res, 1)

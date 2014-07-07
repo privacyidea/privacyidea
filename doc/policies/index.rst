@@ -21,6 +21,7 @@ privacyIDEA knows the scopes:
    authentication
    authorization
    audit
+   machine
    ocra
    gettoken
 
