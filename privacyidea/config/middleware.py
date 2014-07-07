@@ -46,7 +46,8 @@ from repoze.who.interfaces import IChallenger
 from repoze.who.plugins.auth_tkt import AuthTktCookiePlugin
 from privacyidea.lib.repoze_identify import make_redirecting_plugin
 from privacyidea.lib.repoze_auth import UserModelPlugin as auth_privacy_plugin
-from repoze.who.classifiers import default_request_classifier
+from repoze.who.plugins.basicauth import BasicAuthPlugin
+from privacyidea.lib.auth import request_classifier
 from repoze.who.classifiers import default_challenge_decider
 from privacyidea.lib.crypto import geturandom
 import logging
@@ -143,6 +144,7 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
     cookie_reissue_time = int(cookie_timeout / 2)
     cookie_key = geturandom(32)    
     privacyidea_auth = auth_privacy_plugin()
+    basicauth = BasicAuthPlugin('repoze.who')
     privacyidea_md = auth_privacy_plugin()
     auth_tkt = AuthTktCookiePlugin(cookie_key,
                                    cookie_name='privacyidea_session',
@@ -156,9 +158,15 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
                             rememberer_name="auth_tkt")
     form.classifications = { IIdentifier:['browser'],
                              IChallenger:['browser'] } # only for browser
-    identifiers = [('form', form),('auth_tkt',auth_tkt)]
+    basicauth.classifications = { IIdentifier:['basic'],
+                                  IChallenger:['basic'] } # basic authentication only for API calls
+    identifiers = [('form', form),
+                   ('auth_tkt',auth_tkt),
+                   ('basicauth', basicauth)]
     authenticators = [('privacyidea.lib.repoze_auth:UserModelPlugin', privacyidea_auth)]
-    challengers = [('form',form)]
+    challengers = [('form', form),
+                   ('basicauth', basicauth)]
+    
     mdproviders = [('privacyidea.lib.repoze_auth:UserModelPlugin', privacyidea_md)]
 
     #app = make_who_with_config(app, global_conf, app_conf['who.config_file'], app_conf['who.log_file'], app_conf['who.log_level'])
@@ -182,7 +190,7 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
         authenticators,
         challengers,
         mdproviders,
-        default_request_classifier,
+        request_classifier,
         default_challenge_decider,
         log_stream,
         log_level

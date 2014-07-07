@@ -180,17 +180,18 @@ def check_session(request):
                                 ]:
         log.info('nothing to check')
     else:
-        try:
-            cookie = request.cookies.get('privacyidea_session')[0:40]
-            session = request.params.get('session')[0:40]
-        except Exception as e:
-            log.warning("failed to check selfservice session: %r" % e)
-            res = False
-        log.info("session: %s" % session)
-        log.info("cookie:  %s" % cookie)
-        if session is None or session != cookie:
-            log.error("The request %s did not pass a valid session!" % request.url)
-            res = False
+        if request.cookies.get('privacyidea_session') != None:
+            try:
+                cookie = request.cookies.get('privacyidea_session')[0:40]
+                session = request.params.get('session')[0:40]
+            except Exception as e:
+                log.warning("failed to check selfservice session: %r" % e)
+                res = False
+            log.info("session: %s" % session)
+            log.info("cookie:  %s" % cookie)
+            if session is None or session != cookie:
+                log.error("The request %s did not pass a valid session!" % request.url)
+                res = False
     return res
 
 def remove_session_from_param(param):

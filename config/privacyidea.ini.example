@@ -59,6 +59,16 @@ privacyideaURL.disable_ssl = False
 # deprecated
 #privacyideaNoSessionCheck = localhost, 127.0.0.1
 
+# The authentication to management and selfservice is
+# a form based authentication including countermeasures 
+# for CSRF.
+# You can change this to basic authentication, which could
+# be used on headless machines, that only call the API.
+# Note: there will be no CSRF countermeasures in case of
+# basic_auth!
+# This parameter takes a list of IP-addresses or subnets.
+#privacyideaBasicAuth.clients = 127.0.0.1, 10.0.0.0/24
+privacyideaBasicAuth.clients = 127.0.0.1
 
 # These are the settings for the RADIUS Token
 # The location of the RADIUS dictionary file
