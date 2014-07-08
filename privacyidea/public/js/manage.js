@@ -154,10 +154,10 @@ function pre_flexi(data){
 function load_flexi(){
     var new_realm = $('#realm').val();
     $('#user_table').flexOptions({
-        params: [{
-            name: 'realm',
-            value: new_realm
-        }]
+        params: [{name: 'realm',
+            	  value: new_realm},
+            	 {name: 'session',
+            	  value: getsession()}]
     });
     return true;
 }
@@ -4373,10 +4373,50 @@ function define_policy_action_autocomplete(availableActionObjects) {
 		});
 }
 
+function view_machine() {
+	$("#machine_table").flexigrid({
+		url : '/machine/showtoken?flexi=1',
+		params: [{name: "session",
+				  value: getsession()}],
+		method: 'POST',
+		dataType : 'json',
+		colModel : [{display: 'machine_id', name : 'machine_id', width : 80, sortable : true},
+					{display: 'machine', name : 'machine', width : 120, sortable : true},
+					{display: 'IP', name : 'IP', width : 120, sortable : true},
+					{display: 'description', name : 'description', width : 180, sortable : true},
+					{display: 'serial', name : 'serial', width : 180, sortable : true},
+                    {display: 'application', name : 'application', width : 120, sortable : true}
+		],
+		height: 400,
+		searchitems : [
+			{display: 'machine', name : 'machine', isdefault: true},
+			{display: 'IP', name : 'IP', isdefault: false},
+			{display: 'description', name : 'description', isdefault: false},
+			{display: 'serial', name : 'serial', isdefault: false},
+			{display: 'application', name: 'application' }
+		],
+		rpOptions: [10,15,30,50],
+		sortname: "machine",
+		sortorder: "desc",
+		useRp: true,
+		singleSelect: true,
+		rp: 15,
+		usepager: true,
+		showTableToggleBtn: true,
+        preProcess: pre_flexi,
+		onError: error_flexi,
+		//onSubmit: load_flexi,
+		addTitleToCell: true,
+		searchbutton: true
+	});
+}
+
 function view_policy() {
 
     $("#policy_table").flexigrid({
-    		url : '/system/policies_flexi?session='+getsession(),
+    		url : '/system/policies_flexi',
+    		params: [{name: "session",
+				  value: getsession()}],
     		method: 'POST',
 			dataType : 'json',
     		colModel : [    {display: 'Active', name : 'active', width : 35, sortable : true},
@@ -4476,7 +4516,9 @@ function view_policy() {
 
 function view_token() {
 	    $("#token_table").flexigrid({
-    		url : '/manage/tokenview_flexi?session='+getsession(),
+    		url : '/manage/tokenview_flexi',
+    		params: [{name: "session",
+  				  value: getsession()}],
     		method: 'POST',
 			dataType : 'json',
     		colModel : [ {display: 'serial number', name : 'TokenSerialnumber', width : 100, sortable : true, align: 'center'},
@@ -4520,7 +4562,9 @@ function view_token() {
 
 function view_user() {
 	    $("#user_table").flexigrid({
-    		url : '/manage/userview_flexi?session='+getsession(),
+    		url : '/manage/userview_flexi',
+    		params: [{name: "session",
+				      value: getsession()}],
     		method: 'POST',
 			dataType : 'json',
     		colModel : [ {display: 'username', name : 'username', width : 90, sortable : true, align:"left"},
@@ -4566,7 +4610,9 @@ function view_user() {
 
 function view_audit() {
 	   $("#audit_table").flexigrid({
-    		url : '/audit/search?session='+getsession(),
+    		url : '/audit/search',
+    		params: [{name: "session",
+				      value: getsession()}],
     		method: 'POST',
 			dataType : 'json',
     		colModel : [ {display: 'number', name : 'number', width : 50, sortable : true},

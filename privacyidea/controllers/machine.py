@@ -46,6 +46,7 @@ from privacyidea.lib.machine import get_token_apps
 
 import traceback
 import webob
+import json
 
 from privacyidea.lib.log import log_with
 
@@ -150,6 +151,7 @@ class MachineController(BaseController):
             if machine:
                 res = True 
             Session.commit()
+            c.audit["success"] = True
             return sendResult(response, res, 1)
 
         except PolicyException as pe:
@@ -185,6 +187,7 @@ class MachineController(BaseController):
             machine_name = getParam(param, "name", required)
             res = delete_machine(machine_name)
             Session.commit()
+            c.audit["success"] = True
             return sendResult(response, res, 1)
 
         except PolicyException as pe:
@@ -221,6 +224,7 @@ class MachineController(BaseController):
             
             res = show_machine(machine_name)
             Session.commit()
+            c.audit["success"] = True
             return sendResult(response, res, 1)
 
         except PolicyException as pe:
@@ -261,6 +265,7 @@ class MachineController(BaseController):
             if mt:
                 res = True
             Session.commit()
+            c.audit["success"] = True
             return sendResult(response, res, 1)
 
         except PolicyException as pe:
@@ -299,6 +304,7 @@ class MachineController(BaseController):
             
             res = deltoken(machine_name, serial, application)
             Session.commit()
+            c.audit["success"] = True
             return sendResult(response, res, 1)
 
         except PolicyException as pe:
@@ -321,6 +327,7 @@ class MachineController(BaseController):
         :param name: Name of the machine
         :param serial: serial number of the token
         :param application: name of the application
+        :param flexi: if set to 1, we do return flexigrid input
         '''
         try:
             res = False
@@ -331,10 +338,20 @@ class MachineController(BaseController):
             machine_name = getParam(param, "name", optional)
             serial = getParam(param, "serial", optional)
             application = getParam(param, "application", optional)
+            # if set, this should be returned for flexigrid
+            flexi = getParam(param, "flexi", optional)
 
-            res = showtoken(machine_name, serial, application)
+            res = showtoken(machine_name,
+                            serial,
+                            application,
+                            flexi=flexi)
             Session.commit()
-            return sendResult(response, res, 1)
+            c.audit["success"] = True
+            if flexi:
+                response.content_type = 'application/json'
+                return json.dumps(res, indent=3)
+            else:
+                return sendResult(response, res, 1)
 
         except PolicyException as pe:
             log.error("policy failed: %r" % pe)
@@ -381,6 +398,7 @@ class MachineController(BaseController):
                                  application=application,
                                  client_ip=client_ip)
             Session.commit()
+            c.audit["success"] = True
             return sendResult(response, res, 1)
 
         except PolicyException as pe:

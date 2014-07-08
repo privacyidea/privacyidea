@@ -294,7 +294,7 @@ class TestMachineController(TestController):
                                  'application': "some app"})
         print response
         assert ('"status": false' in response)
-        assert ('No machine with name' in response)
+        assert ('There is no machine with name' in response)
 
     def test_with_policies(self):
         """

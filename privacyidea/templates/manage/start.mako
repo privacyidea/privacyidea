@@ -54,6 +54,7 @@
 		<li><a href="/manage/tokenview"><span>${_("Token View")}</span></a></li>
 		<li><a href="/manage/userview"><span>${_("User View")}</span></a></li>
 		<li><a href="/manage/policies"><span>${_("Policies")}</span></a></li>
+		<li><a href="/manage/machines"><span>${_("Machines")}</span></a></li>
 		<li><a href="/manage/audittrail"><span>${_("Audit Trail")}</span></a></li>
 	</ul>
 </div>

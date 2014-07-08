@@ -19,6 +19,7 @@
 #
 #
 from privacyidea.model import Machine
+from privacyidea.model import Token
 from privacyidea.model import MachineToken
 from privacyidea.model import MachineOptions
 from privacyidea.model.meta import Session
@@ -62,7 +63,7 @@ def show(name=None, client_ip=None):
     if client_ip:
         condTuple += (and_(Machine.cm_ip == client_ip),)
                   
-    condition = and_(*condTuple)    
+    condition = and_(*condTuple)
     sqlquery = Session.query(Machine).filter(condition)
     for machine in sqlquery:
         res[machine.cm_name] = machine.to_json()
@@ -73,8 +74,9 @@ def _get_machine_id(machine_name, client_ip=None):
     # determine the machine_id for the machine name
     machine = show(machine_name, client_ip)
     machine_id = machine.get(machine_name, {}).get("id")
-    if machine_id == None:
-        raise Exception("There is no machine with name=%r and IP=%r" % (machine_name, client_ip))
+    if machine_id is None:
+        raise Exception("There is no machine with name=%r and IP=%r" %
+                        (machine_name, client_ip))
     return machine_id
 
 
@@ -118,12 +120,11 @@ def deltoken(machine_name, serial, application):
 def showtoken(machine_name=None, 
               serial=None, 
               application=None,
-              cleartext=False,
-              client_ip=None):
+              client_ip=None,
+              flexi=None):
     '''
-    :param cleartext: whether the output should contain the cleartext information like
-                      name of the machine and serial of the token
-    :type cleartext: bool
+    :param flexi: If set, the output will be in flexigrid format and
+            we will output all machines, even if they have no token assigned
     :return: JSON of all tokens connected to machines with the corresponding
              application.
     '''
@@ -131,7 +132,9 @@ def showtoken(machine_name=None,
     machine_id = None
     token_id = None
     condTuple = ()
-    
+  
+    # TODO: adding pagination
+
     if machine_name:
         machine_id = _get_machine_id(machine_name, client_ip)
     if serial:
@@ -143,18 +146,41 @@ def showtoken(machine_name=None,
         condTuple += (and_(MachineToken.token_id == token_id),)
     if application:
         condTuple += (and_(MachineToken.application == application),)
-    
     condition = and_(*condTuple)
-    sqlquery = Session.query(MachineToken).filter(condition)
+    
     machines = {}
-    for row in sqlquery:
-        machines[row.id] = row.to_json()
-    # TODO: adding pagination
-    res["total"] = len(machines)
-    res["machines"] = machines
+    if flexi:
+        sqlquery = Session.query(Machine,
+                                 MachineToken.application,
+                                 Token.privacyIDEATokenSerialnumber)\
+                                        .outerjoin(MachineToken)\
+                                        .outerjoin(Token).filter(condition)
+        rows = []
+        m_id = 0
+        for row in sqlquery:
+            machine, application, serial = row
+            m_id += 1
+            rows.append({'id': m_id,
+                         'cell': [(machine.id),
+                                  (machine.cm_name),
+                                  (machine.cm_ip),
+                                  (machine.cm_desc),
+                                  (serial),
+                                  (application)]})
         
+        res = {"page": 1,
+               "total": len(rows)}
+        res["rows"] = rows
+    else:
+        sqlquery = Session.query(MachineToken).filter(condition)
+        for row in sqlquery:
+            machines[row.id] = row.to_json()
+        res["total"] = len(machines)
+        res["machines"] = machines
+
     Session.commit()
     return res
+
 
 @log_with(log)
 def get_token_apps(machine=None, application=None, client_ip=None):
@@ -164,7 +190,7 @@ def get_token_apps(machine=None, application=None, client_ip=None):
     
     :param machine: the machine name (optional)
     :param application: the name of the application (optional)
-    :param client: the IP of the client (required) 
+    :param client: the IP of the client (required)
     '''
     if not client_ip:
         log.warning("No client IP.")
@@ -177,6 +203,8 @@ def get_token_apps(machine=None, application=None, client_ip=None):
                     client_ip=client_ip,
                     application=application)
     
-    return res
+    # add the authentication item to the result
+    #for config in res.keys:
+    #    res[config]
     
-
+    return res

@@ -245,7 +245,6 @@ class ManageController(BaseController):
 #
 #        return render('/manage/tokentypeinfo.mako')
 
-
     def policies(self):
         '''
         This is the template for the policies TAB
@@ -253,6 +252,12 @@ class ManageController(BaseController):
         c.title = "privacyIDEA Management - Policies"
         return render('/manage/policies.mako')
 
+    def machines(self):
+        '''
+        This is the template for the policies TAB
+        '''
+        c.title = "privacyIDEA Management - Machines"
+        return render('/manage/machines.mako')
 
     def audittrail(self):
         '''

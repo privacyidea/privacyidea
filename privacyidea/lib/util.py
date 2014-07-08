@@ -162,6 +162,7 @@ def check_session(request):
                                 "/manage/userview",
                                 "/manage/policies",
                                 "/manage/audittrail",
+                                "/manage/machines",
                                 "/selfservice/load_form",
                                 "/selfservice/assign",
                                 "/selfservice/resync",
