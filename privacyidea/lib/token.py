@@ -2773,7 +2773,10 @@ def get_policy_definitions(scope=""):
                                            "a client machine")},
                     'showtoken': {'type': 'bool',
                                   'desc': _("list the tokens and "
-                                            "client machines")}
+                                            "client machines")},
+                    'gettokenapps': {'type': 'bool',
+                                  'desc': _("get the authentication items "
+                                            "for a client machine")}
                     }
     }
 

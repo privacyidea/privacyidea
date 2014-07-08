@@ -4,7 +4,9 @@
 #  May 08, 2014 Cornelius Kölbel, info@privacyidea.org
 #  http://www.privacyidea.org
 #
-#     2014-06-30    Cornelius Kölbel, added tables clientmachine, clienttoken, clientoptions
+#     2014-06-30    Cornelius Kölbel, added tables clientmachine,
+#                                                clienttoken,
+#                                                clientoptions
 #
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  LSE
@@ -25,7 +27,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''            
+'''
   Description:  This is part of the privacyidea service
                 This file contains the database definition / database model
 
@@ -71,16 +73,16 @@ implicit_returning = config.get('privacyideaSQL.implicit_returning', True)
 @log_with(log)
 def init_model(engine):
     """Call me before using any of the tables or classes in the model"""
-    ## Reflected tables must be defined and mapped here
-    #global reflected_table
-    #reflected_table = sa.Table("Reflected", meta.metadata, autoload=True,
+    # Reflected tables must be defined and mapped here
+    # global reflected_table
+    # reflected_table = sa.Table("Reflected", meta.metadata, autoload=True,
     #                           autoload_with=engine)
-    #orm.mapper(Reflected, reflected_table)
+    # orm.mapper(Reflected, reflected_table)
     #
-    #sm = orm.sessionmaker(autoflush=True, autocommit=False, bind=engine)
+    # sm = orm.sessionmaker(autoflush=True, autocommit=False, bind=engine)
 
-    #meta.Session = orm.scoped_session(sm)
-    #meta.engine = engine
+    # meta.Session = orm.scoped_session(sm)
+    # meta.engine = engine
 
     meta.Session.configure(bind=engine)
     meta.engine = engine

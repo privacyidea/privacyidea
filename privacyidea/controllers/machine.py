@@ -26,7 +26,6 @@ from pylons import request, response, config, tmpl_context as c
 from privacyidea.lib.base import BaseController
 from privacyidea.lib.token import get_token_type_list, getTokenType
 
-from privacyidea.lib.error import ParameterError
 from privacyidea.lib.util import getParam
 from privacyidea.weblib.util import get_client
 from privacyidea.lib.user import getUserFromRequest
@@ -43,7 +42,7 @@ from privacyidea.lib.machine import show as show_machine
 from privacyidea.lib.machine import addtoken
 from privacyidea.lib.machine import deltoken
 from privacyidea.lib.machine import showtoken
-
+from privacyidea.lib.machine import get_token_apps
 
 import traceback
 import webob
@@ -67,8 +66,8 @@ class MachineController(BaseController):
             c.audit['client'] = get_client()
             self.Policy = PolicyClass(request, config, c,
                                       get_privacyIDEA_config(),
-                                      tokenrealms = request.params.get('serial'),
-                                      token_type_list = get_token_type_list())
+                                      tokenrealms=request.params.get('serial'),
+                                      token_type_list=get_token_type_list())
             self.set_language()
 
             self.before_identity_check(action)
@@ -77,7 +76,7 @@ class MachineController(BaseController):
             return request
 
         except webob.exc.HTTPUnauthorized as acc:
-            ## the exception, when an abort() is called if forwarded
+            # the exception, when an abort() is called if forwarded
             log.info("%r: webob.exception %r" % (action, acc))
             log.info(traceback.format_exc())
             Session.rollback()
@@ -120,7 +119,6 @@ class MachineController(BaseController):
 
         finally:
             Session.close()
-
 
     @log_with(log)
     def create(self, action, **params):
@@ -168,7 +166,6 @@ class MachineController(BaseController):
 
         finally:
             Session.close()
-            
             
     @log_with(log)
     def delete(self, action, **params):
@@ -316,7 +313,6 @@ class MachineController(BaseController):
             Session.rollback()
             return sendError(response, unicode(exx), 0)
 
-
     @log_with(log)
     def showtoken(self, action, **params):
         '''
@@ -337,6 +333,53 @@ class MachineController(BaseController):
             application = getParam(param, "application", optional)
 
             res = showtoken(machine_name, serial, application)
+            Session.commit()
+            return sendResult(response, res, 1)
+
+        except PolicyException as pe:
+            log.error("policy failed: %r" % pe)
+            log.error(traceback.format_exc())
+            Session.rollback()
+            return sendError(response, unicode(pe))
+
+        except Exception as exx:
+            log.error("failed: %r" % exx)
+            log.error(traceback.format_exc())
+            Session.rollback()
+            return sendError(response, unicode(exx), 0)
+
+        finally:
+            Session.close()
+
+    @log_with(log)
+    def gettokenapps(self, action, **params):
+        '''
+        returns the apps and the authentication information
+        for the given machine.
+
+        If an application is given only the authentication item for
+        this application is returned. otherwise the application items
+        for all applications are returned.
+
+        TODO: Authenticate the client machine
+
+        :param name: the machine name -
+                    otherwise the machine is identified by the IP
+        :type name: string, optional
+        :param application: the name of the application
+        :type application: sting, optional
+        '''
+        try:
+            res = False
+            param = {}
+            self.Policy.checkPolicyPre('machine', 'gettokenapps')
+            param.update(request.params)
+            machine_name = getParam(param, "name", optional)
+            application = getParam(param, "application", optional)
+            client_ip = get_client()
+            res = get_token_apps(machine=machine_name,
+                                 application=application,
+                                 client_ip=client_ip)
             Session.commit()
             return sendResult(response, res, 1)
 

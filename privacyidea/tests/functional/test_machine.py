@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #    privacyIDEA Account test suite
-# 
+#
 #    Copyright (C)  2014 Cornelius Kölbel, cornelius@privacyidea.org
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@ class TestMachineController(TestController):
         response = self.app.get(url(controller='admin', action='init'),
                                 {'type': "spass",
                                  "serial": serial,
-                                 "pin":  "123454"})
+                                 "pin": "123454"})
         print response
         assert ('"status": true' in response)
         assert ('"value": true' in response)
@@ -220,7 +220,8 @@ class TestMachineController(TestController):
         self._add_token(name1, token1, "app3")
 
         # show machinetoken
-        response = self.app.get(url(controller='machine', action='showtoken'), {})
+        response = self.app.get(url(controller='machine', action='showtoken'),
+                                {})
         print response
         assert ('"status": true' in response)
         assert ('"application": "app3"' in response)
@@ -251,7 +252,8 @@ class TestMachineController(TestController):
         self._add_token("m4", "t3", "App")
 
         # show machinetoken
-        response = self.app.get(url(controller='machine', action='showtoken'), {})
+        response = self.app.get(url(controller='machine', action='showtoken'),
+                                {})
         print response
         assert ('"status": true' in response)
         assert ('"application": "App"' in response)
@@ -306,7 +308,7 @@ class TestMachineController(TestController):
 
         parameters = {'name': 'ManageAll',
                       'scope': 'machine',
-                      'action': 'create, delete, addtoken',
+                      'action': 'create, delete, addtoken, gettokenapps',
                       'realm': "*",
                       'user': 'superadmin',
                       'selftest_admin': 'superadmin'}
@@ -323,7 +325,13 @@ class TestMachineController(TestController):
 
         self._create_machine(machine2, admin="superadmin")
 
-        #delete the policy
+        response = self.app.get(url(controller='machine',
+                                    action='gettokenapps'),
+                                params={})
+        print response
+        assert '"status": true' in response
+
+        # delete the policy
         parameters = {'name': 'ManageAll',
                       'selftest_admin': 'superadmin'}
         response = self.app.get(url(controller='system', action='delPolicy'),
@@ -334,3 +342,55 @@ class TestMachineController(TestController):
         self._delete_machine(machine1)
         self._delete_machine(machine2)
         self._delete_token(serial)
+
+    def test_get_tokenapps(self):
+        '''
+        testing retrieving apps for a machine
+        '''
+        machine1 = "mach101"
+        machine2 = "mach102"
+        serial = "tok102"
+        self._create_token(serial)
+        self._create_machine(machine1, ip="10.0.0.1")
+        self._create_machine(machine2, ip="10.0.0.2")
+        self._add_token(machine1, serial, "app1")
+        self._add_token(machine1, serial, "app2")
+        self._add_token(machine2, serial, "app3")
+        
+        response = self.app.get(url(controller='machine',
+                                    action='gettokenapps'),
+                                params={"name": machine1,
+                                        "client": "10.0.0.1"})
+        print "=============="
+        print "Get token apps"
+        print "=============="
+        print response
+        print "=============="
+        assert '"total": 2' in response
+        assert '"application": "app1",' in response
+        assert '"application": "app2",' in response
+        
+        response = self.app.get(url(controller='machine',
+                                    action='gettokenapps'),
+                                params={"name": machine1,
+                                        "client": "10.0.0.1",
+                                        "application": "app2"})
+        print response
+        assert '"total": 1' in response
+        assert '"application": "app2",' in response
+        
+        response = self.app.get(url(controller='machine',
+                                    action='gettokenapps'),
+                                params={"name": machine1,
+                                        "client": "10.0.0.2",
+                                        "application": "app2"})
+        print response
+        assert '"status": false' in response
+        assert 'There is no machine with name' in response
+        
+        self._rm_token(machine2, serial, "app3")
+        self._rm_token(machine1, serial, "app2")
+        self._rm_token(machine1, serial, "app1")
+        self._delete_token(serial)
+        self._delete_machine(machine1)
+        self._delete_machine(machine2)

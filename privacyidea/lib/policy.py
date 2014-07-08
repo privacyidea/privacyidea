@@ -323,7 +323,7 @@ class PolicyClass(object):
         pol = self.getPolicy({'scope': 'machine'})
         if len(pol) > 0:
             active = True
-            client = get_client()            
+            client = get_client()
             policies = self.get_client_policy(client, scope="machine",
                             action=action, user=admin_user['login'])
 
@@ -978,10 +978,10 @@ class PolicyClass(object):
     
     ##### Pre and Post checks
     @log_with(log)
-    def checkPolicyPre(self, controller, method, param=None, authUser=None, user=None, 
-                       options = None,
-                       tokenrealms = None,
-                       tokentype = None):
+    def checkPolicyPre(self, controller, method, param=None, authUser=None, user=None,
+                       options=None,
+                       tokenrealms=None,
+                       tokentype=None):
         '''
         This function will check for all policy definition for a certain
         controller/method It is run directly before doing the action in the
@@ -997,7 +997,7 @@ class PolicyClass(object):
         '''
         if options == None:
             options = {}
-        if param ==None:
+        if param == None:
             param = {}
         ret = {}
         if tokenrealms:

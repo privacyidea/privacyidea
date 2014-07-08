@@ -21,14 +21,15 @@
 from privacyidea.model import Machine
 from privacyidea.model import MachineToken
 from privacyidea.model import MachineOptions
-from privacyidea.model import Token
 from privacyidea.model.meta import Session
 from privacyidea.lib.token import getTokens4UserOrSerial
 from sqlalchemy import and_
+from netaddr import IPAddress
 
 import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.log import log_with
+
 
 @log_with(log)
 def create(name, ip=None, desc=None, decommission=None):
@@ -36,6 +37,7 @@ def create(name, ip=None, desc=None, decommission=None):
     machine.store()
     log.info("Machine %r created." % machine)
     return machine
+
 
 @log_with(log)
 def delete(name):
@@ -50,22 +52,31 @@ def delete(name):
     # 1 -> success
     return num == 1
     
-@log_with(log)    
-def show(name=None):
+
+@log_with(log)
+def show(name=None, client_ip=None):
     res = {}
+    condTuple = ()
     if name:
-        sqlquery = Session.query(Machine).filter(Machine.cm_name == name)
-    else:
-        sqlquery = Session.query(Machine)
+        condTuple += (and_(Machine.cm_name == name),)
+    if client_ip:
+        condTuple += (and_(Machine.cm_ip == client_ip),)
+                  
+    condition = and_(*condTuple)    
+    sqlquery = Session.query(Machine).filter(condition)
     for machine in sqlquery:
         res[machine.cm_name] = machine.to_json()
     return res
 
-def _get_machine_id(machine_name):
+
+def _get_machine_id(machine_name, client_ip=None):
     # determine the machine_id for the machine name
-    machine = show(machine_name)
-    machine_id = machine.get(machine_name,{}).get("id")
+    machine = show(machine_name, client_ip)
+    machine_id = machine.get(machine_name, {}).get("id")
+    if machine_id == None:
+        raise Exception("There is no machine with name=%r and IP=%r" % (machine_name, client_ip))
     return machine_id
+
 
 def _get_token_id(serial):
     # determine the token_id for the serial
@@ -89,6 +100,7 @@ def addtoken(machine_name, serial, application):
     machinetoken.store()
     return machinetoken
 
+
 @log_with(log)
 def deltoken(machine_name, serial, application):
     machine_id = _get_machine_id(machine_name)
@@ -106,7 +118,8 @@ def deltoken(machine_name, serial, application):
 def showtoken(machine_name=None, 
               serial=None, 
               application=None,
-              cleartext=False):
+              cleartext=False,
+              client_ip=None):
     '''
     :param cleartext: whether the output should contain the cleartext information like
                       name of the machine and serial of the token
@@ -117,24 +130,22 @@ def showtoken(machine_name=None,
     res = {}
     machine_id = None
     token_id = None
-    condition = None
+    condTuple = ()
     
     if machine_name:
-        machine_id = _get_machine_id(machine_name)
+        machine_id = _get_machine_id(machine_name, client_ip)
     if serial:
         token_id = _get_token_id(serial)
     
     if machine_id:
-        condition = and_(condition, MachineToken.machine_id == machine_id)
+        condTuple += (and_(MachineToken.machine_id == machine_id),)
     if token_id:
-        condition = and_(condition, MachineToken.token_id == token_id)
+        condTuple += (and_(MachineToken.token_id == token_id),)
     if application:
-        condition = and_(condition, MachineToken.application == application)
+        condTuple += (and_(MachineToken.application == application),)
     
-    if condition:
-        sqlquery = Session.query(MachineToken).filter(condition)
-    else:
-        sqlquery = Session.query(MachineToken)
+    condition = and_(*condTuple)
+    sqlquery = Session.query(MachineToken).filter(condition)
     machines = {}
     for row in sqlquery:
         machines[row.id] = row.to_json()
@@ -144,4 +155,28 @@ def showtoken(machine_name=None,
         
     Session.commit()
     return res
+
+@log_with(log)
+def get_token_apps(machine=None, application=None, client_ip=None):
+    '''
+    This method returns the authentication data for the
+    requested application
+    
+    :param machine: the machine name (optional)
+    :param application: the name of the application (optional)
+    :param client: the IP of the client (required) 
+    '''
+    if not client_ip:
+        log.warning("No client IP.")
+        return {}
+    if not IPAddress(client_ip):
+        log.warning("No valid client IP: %r" % client_ip)
+        return {}
+
+    res = showtoken(machine_name=machine,
+                    client_ip=client_ip,
+                    application=application)
+    
+    return res
+    
 

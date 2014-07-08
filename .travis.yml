@@ -37,6 +37,7 @@ env:
   - TESTSCRIPT=privacyidea/tests/functional/test_totp.py
   - TESTSCRIPT=privacyidea/tests/functional/test_validate.py
   - TESTSCRIPT=privacyidea/tests/functional/test_yubikey.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_manchine.py
 matrix:
     allow_failures:
         python: 2.6

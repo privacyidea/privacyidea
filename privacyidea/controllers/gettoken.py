@@ -42,11 +42,11 @@ from pylons.templating import render_mako as render
 
 from privacyidea.lib.base import BaseController
 
-from privacyidea.lib.util import  getParam
-from privacyidea.lib.util import  get_client
-from privacyidea.lib.user import  getUserFromParam
-from privacyidea.lib.user import  getDefaultRealm
-from privacyidea.lib.user import  getUserFromRequest
+from privacyidea.lib.util import getParam
+from privacyidea.lib.util import get_client
+from privacyidea.lib.user import getUserFromParam
+from privacyidea.lib.user import getDefaultRealm
+from privacyidea.lib.user import getUserFromRequest
 
 from privacyidea.lib.token import get_token_type_list
 from privacyidea.lib.token import getTokenType, getOtp, get_multi_otp, getTokens4UserOrSerial
