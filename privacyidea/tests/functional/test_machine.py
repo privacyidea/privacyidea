@@ -146,8 +146,8 @@ class TestMachineController(TestController):
         response = self.app.get(url(controller='machine', action='delete'),
                                 {'name': name2})
         print response
-        assert ('"status": true' in response)
-        assert ('"value": false' in response)
+        assert ('"status": false' in response)
+        assert ('There is no machine with name=' in response)
 
         # delete a machine, that does exist.
         self._delete_machine(name1)
