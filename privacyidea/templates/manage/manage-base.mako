@@ -29,9 +29,6 @@
 <script type="text/javascript" src="/js/flexigrid.js"></script>
 <script type='text/javascript' src='/js/superfish.js'></script>
 
-
-<script type="text/javascript" src="/js/qrcode.js"></script>
-<script type="text/javascript" src="/js/qrcode-helper.js"></script>
 <script type="text/javascript" src="/js/privacyidea_utils.js"></script>
 
 <script type="text/javascript" src="/js/aladdin.js"></script>
@@ -43,6 +40,7 @@
 <script type="text/javascript" src="/js/vasco.js"></script>
 <script type="text/javascript" src="/js/pskc.js"></script>
 <script type="text/javascript" src="/js/tools.js"></script>
+<script type="text/javascript" src="/js/machines.js"></script>
 <script type="text/javascript" src="/js/manage.js"></script>
 
 </head>
@@ -921,6 +919,7 @@ ${c.version} | ${c.licenseinfo}
 	}
 </script>
 
+
 <!-- ########################### token enrollment ############ -->
 <div id='dialog_show_enroll_url'>
 	<p>
@@ -1363,6 +1362,33 @@ ${c.version} | ${c.licenseinfo}
 	}
 </script>
 
+<!-- ################# confirm delete machine ######################### -->
+<div id='dialog_delete_machine_confirm'>
+    <p>${_("The following machine with all assignments will be deleted.")}
+    </p>
+    <span id='delete_machine_info'>    </span>
+</div>
+<script>
+    function translate_dialog_delete_machine_confirm() {
+        $("#dialog_delete_machine_confirm" ).dialog( "option", "title", '${_("Delete selected machine?")}' );
+        $('#button_delete_machine .ui-button-text').html('${_("Delete machine")}');
+        $('#button_delete_machine_cancel .ui-button-text').html('${_("Cancel")}');
+    }
+</script>
+
+<!-- ################# confirm delete application ######################### -->
+<div id='dialog_delete_app_confirm'>
+    <p>${_("The following application and token will be removed from the machine:")}
+    </p>
+    <span id='delete_app_info'>    </span>
+</div>
+<script>
+    function translate_dialog_delete_app_confirm() {
+        $("#dialog_delete_app_confirm" ).dialog( "option", "title", '${_("Remove selected application?")}' );
+        $('#button_delete_app .ui-button-text').html('${_("Remove application")}');
+        $('#button_delete_app_cancel .ui-button-text').html('${_("Cancel")}');
+    }
+</script>
 
 <!-- ################ dialog file resolver #################### -->
 
@@ -1452,6 +1478,8 @@ ${c.version} | ${c.licenseinfo}
 <div id="text_form_validation_error_title">${_("Form Validation Error")}</div>
 <div id="text_preset_sql">${_("Please verify the presetted data. You might need to change the database table name.")}</div>
 <div id="title_preset_sql">${_("SQL preset")}</div>
+<div id="text_delete_machine_success">${_("Machine successfully deleted.")}</span></span></div>
+<div id="text_delete_app_success">${_("Application removed successfully from machine.")}</span></span></div>
 </div> <!--end of hidden-->
 
 <div id="alert_box">

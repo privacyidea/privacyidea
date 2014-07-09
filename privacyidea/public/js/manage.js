@@ -3812,6 +3812,7 @@ $(document).ready(function(){
         }
     });
 
+    init_machine_dialogs();
 
     fill_realms();
 
@@ -4373,43 +4374,6 @@ function define_policy_action_autocomplete(availableActionObjects) {
 		});
 }
 
-function view_machine() {
-	$("#machine_table").flexigrid({
-		url : '/machine/showtoken?flexi=1',
-		params: [{name: "session",
-				  value: getsession()}],
-		method: 'POST',
-		dataType : 'json',
-		colModel : [{display: 'machine_id', name : 'machine_id', width : 80, sortable : true},
-					{display: 'machine', name : 'machine', width : 120, sortable : true},
-					{display: 'IP', name : 'IP', width : 120, sortable : true},
-					{display: 'description', name : 'description', width : 180, sortable : true},
-					{display: 'serial', name : 'serial', width : 180, sortable : true},
-                    {display: 'application', name : 'application', width : 120, sortable : true}
-		],
-		height: 400,
-		searchitems : [
-			{display: 'machine', name : 'machine', isdefault: true},
-			{display: 'IP', name : 'IP', isdefault: false},
-			{display: 'description', name : 'description', isdefault: false},
-			{display: 'serial', name : 'serial', isdefault: false},
-			{display: 'application', name: 'application' }
-		],
-		rpOptions: [10,15,30,50],
-		sortname: "machine",
-		sortorder: "desc",
-		useRp: true,
-		singleSelect: true,
-		rp: 15,
-		usepager: true,
-		showTableToggleBtn: true,
-        preProcess: pre_flexi,
-		onError: error_flexi,
-		//onSubmit: load_flexi,
-		addTitleToCell: true,
-		searchbutton: true
-	});
-}
 
 function view_policy() {
 

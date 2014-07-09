@@ -48,6 +48,9 @@ def delete(name):
     Should always be 1
     Should be 0 if such a machine did not exist.
     '''
+    mid = _get_machine_id(name)
+    _assigns = Session.query(MachineToken)\
+        .filter(MachineToken.machine_id == mid).delete()
     num = Session.query(Machine).filter(Machine.cm_name == name).delete()
     Session.commit()
     # 1 -> success
@@ -224,7 +227,8 @@ def showtoken(machine_name=None,
             machine, application, serial = row
             m_id += 1
             rows.append({'id': m_id,
-                         'cell': [(machine.id),
+                         'cell': [(m_id),
+                                  (machine.id),
                                   (machine.cm_name),
                                   (machine.cm_ip),
                                   (machine.cm_desc),
