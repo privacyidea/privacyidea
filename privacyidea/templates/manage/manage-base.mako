@@ -1480,6 +1480,7 @@ ${c.version} | ${c.licenseinfo}
 <div id="title_preset_sql">${_("SQL preset")}</div>
 <div id="text_delete_machine_success">${_("Machine successfully deleted.")}</span></span></div>
 <div id="text_delete_app_success">${_("Application removed successfully from machine.")}</span></span></div>
+<div id="text_create_machine_success">${_("Machine created successfully.")}</span></span></div>
 </div> <!--end of hidden-->
 
 <div id="alert_box">

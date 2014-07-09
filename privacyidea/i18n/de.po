@@ -5,8 +5,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: privacyIDEA 2\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2014-07-09 12:19+0200\n"
-"PO-Revision-Date: 2014-07-07 13:11+0200\n"
+"POT-Creation-Date: 2014-07-09 14:38+0200\n"
+"PO-Revision-Date: 2014-07-09 13:38+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius@privacyidea.org>\n"
 "Language-Team: Deutsch <>\n"
 "Language: de\n"
@@ -912,9 +912,8 @@ msgid "list the tokens and client machines"
 msgstr "Token und Maschinen anzeigen"
 
 #: privacyidea/lib/token.py:2778
-#, fuzzy
 msgid "get the authentication items for a client machine"
-msgstr "Einen Token von einer Maschine entfernen"
+msgstr "Hole die Authentisierungsinformationen zu einem Client-Computer."
 
 #: privacyidea/lib/token.py:2789
 #, python-format
@@ -999,6 +998,7 @@ msgstr "E-Mail-Adresse"
 #: privacyidea/lib/tokens/totptoken.mako:268
 #: privacyidea/lib/tokens/yubicotoken.mako:122
 #: privacyidea/lib/tokens/yubicotoken.mako:177
+#: privacyidea/templates/manage/machines.mako:37
 #: privacyidea/tests/testdata/data/templates/emailtoken.mako.py:49
 #: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:48
 #: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:82
@@ -2118,25 +2118,66 @@ msgid "OTP value"
 msgstr "OTP-Wert"
 
 #: privacyidea/templates/manage/audit.mako:6
-#, fuzzy
 msgid "Open help on audit"
-msgstr "Hilfe zu Realms"
+msgstr "Hilfe zum Audit"
 
-#: privacyidea/templates/manage/machines.mako:13
-#, fuzzy
+#: privacyidea/templates/manage/machines.mako:12
 msgid "Open help on machines"
-msgstr "Hilfe zu Richtlinien"
+msgstr "Hilde zu Client-Computern"
+
+#: privacyidea/templates/manage/machines.mako:16
+#: privacyidea/templates/manage/manage-base.mako:1374
+msgid "Delete machine"
+msgstr "Client löschen"
 
 #: privacyidea/templates/manage/machines.mako:17
-#: privacyidea/templates/manage/manage-base.mako:1374
-#, fuzzy
-msgid "Delete machine"
-msgstr "Löschen"
-
-#: privacyidea/templates/manage/machines.mako:18
-#, fuzzy
 msgid "Delete application"
-msgstr "Token löschen"
+msgstr "Applikation entfernen"
+
+#: privacyidea/templates/manage/machines.mako:21
+msgid "Client machine"
+msgstr "Client-Computer"
+
+#: privacyidea/templates/manage/machines.mako:23
+msgid "Machine name"
+msgstr "Computername"
+
+#: privacyidea/templates/manage/machines.mako:25
+msgid "The name of the machine"
+msgstr "Der Name des Computers"
+
+#: privacyidea/templates/manage/machines.mako:29
+msgid "Machine IP"
+msgstr "Client IP"
+
+#: privacyidea/templates/manage/machines.mako:32
+msgid "The IP of the machine"
+msgstr "Die IP-Adresse des Computers"
+
+#: privacyidea/templates/manage/machines.mako:40
+msgid "The description for the machine"
+msgstr "Beschreibung des Client-Computers"
+
+#: privacyidea/templates/manage/machines.mako:45
+msgid "Token serial number (optional)"
+msgstr "Token-Seriennummer (optional)"
+
+#: privacyidea/templates/manage/machines.mako:48
+msgid "The serial number of the token"
+msgstr ""
+"Die Seriennummer des Tokens, der diesem Computer zugeordnet werden soll."
+
+#: privacyidea/templates/manage/machines.mako:53
+msgid "Application (optional)"
+msgstr "Applikation (optional)"
+
+#: privacyidea/templates/manage/machines.mako:56
+msgid "The application for this token on the machine"
+msgstr "Die Applikation, die diesem Computer zugeordnet werden soll."
+
+#: privacyidea/templates/manage/machines.mako:61
+msgid "Create machine"
+msgstr "Client-Computer anlegen"
 
 #: privacyidea/templates/manage/manage-base.mako:5
 #: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:26
@@ -4071,25 +4112,26 @@ msgstr "SCIM Resolver"
 #: privacyidea/templates/manage/manage-base.mako:1367
 msgid "The following machine with all assignments will be deleted."
 msgstr ""
+"Der folgende Client-Computer mitsamt der Token- und Applikationszuweisungen "
+"wird gelöscht."
 
 #: privacyidea/templates/manage/manage-base.mako:1373
-#, fuzzy
 msgid "Delete selected machine?"
-msgstr "Ausgewählte Token löschen?"
+msgstr "Ausgewählten Client-Computer löschen?"
 
 #: privacyidea/templates/manage/manage-base.mako:1381
-#, fuzzy
 msgid "The following application and token will be removed from the machine:"
-msgstr "Die Zuweisungen der folgenden Token werden entfernt:"
+msgstr ""
+"Die folgende Applikation- und Token-Zuweisung wird vom Client-Computer "
+"entfernt."
 
 #: privacyidea/templates/manage/manage-base.mako:1387
-#, fuzzy
 msgid "Remove selected application?"
-msgstr "Ausgewählte Token löschen?"
+msgstr "Ausgewählte Applikation entfernen?"
 
 #: privacyidea/templates/manage/manage-base.mako:1388
 msgid "Remove application"
-msgstr ""
+msgstr "Entferne Applikation"
 
 #: privacyidea/templates/manage/manage-base.mako:1404
 #: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:998
@@ -4433,13 +4475,17 @@ msgid "SQL preset"
 msgstr "SQL Vorbelegungen"
 
 #: privacyidea/templates/manage/manage-base.mako:1481
-#, fuzzy
 msgid "Machine successfully deleted."
-msgstr "erfolgreich erzeugt!"
+msgstr "Client-Computer erfolgreich angelegt."
 
 #: privacyidea/templates/manage/manage-base.mako:1482
 msgid "Application removed successfully from machine."
-msgstr ""
+msgstr "Applikation vom Client-Computer erfolgreich entfernt."
+
+#: privacyidea/templates/manage/manage-base.mako:1483
+#, fuzzy
+msgid "Machine created successfully."
+msgstr "Client-Computer erfolgreich angelegt."
 
 #: privacyidea/templates/manage/multiotp_view.mako:5
 #: privacyidea/templates/selfservice/multiotp_view.mako:5
@@ -4604,7 +4650,7 @@ msgstr "Benutzeransicht"
 
 #: privacyidea/templates/manage/start.mako:57
 msgid "Machines"
-msgstr ""
+msgstr "Client-Computer"
 
 #: privacyidea/templates/manage/start.mako:58
 #: privacyidea/tests/testdata/data/templates/manage/start.mako.py:41

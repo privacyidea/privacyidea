@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: privacyIDEA 1.2dev0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2014-07-09 12:19+0200\n"
+"POT-Creation-Date: 2014-07-09 14:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -824,6 +824,7 @@ msgstr ""
 #: privacyidea/lib/tokens/totptoken.mako:268
 #: privacyidea/lib/tokens/yubicotoken.mako:122
 #: privacyidea/lib/tokens/yubicotoken.mako:177
+#: privacyidea/templates/manage/machines.mako:37
 #: privacyidea/tests/testdata/data/templates/emailtoken.mako.py:49
 #: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:48
 #: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:82
@@ -1861,17 +1862,61 @@ msgstr ""
 msgid "Open help on audit"
 msgstr ""
 
-#: privacyidea/templates/manage/machines.mako:13
+#: privacyidea/templates/manage/machines.mako:12
 msgid "Open help on machines"
 msgstr ""
 
-#: privacyidea/templates/manage/machines.mako:17
+#: privacyidea/templates/manage/machines.mako:16
 #: privacyidea/templates/manage/manage-base.mako:1374
 msgid "Delete machine"
 msgstr ""
 
-#: privacyidea/templates/manage/machines.mako:18
+#: privacyidea/templates/manage/machines.mako:17
 msgid "Delete application"
+msgstr ""
+
+#: privacyidea/templates/manage/machines.mako:21
+msgid "Client machine"
+msgstr ""
+
+#: privacyidea/templates/manage/machines.mako:23
+msgid "Machine name"
+msgstr ""
+
+#: privacyidea/templates/manage/machines.mako:25
+msgid "The name of the machine"
+msgstr ""
+
+#: privacyidea/templates/manage/machines.mako:29
+msgid "Machine IP"
+msgstr ""
+
+#: privacyidea/templates/manage/machines.mako:32
+msgid "The IP of the machine"
+msgstr ""
+
+#: privacyidea/templates/manage/machines.mako:40
+msgid "The description for the machine"
+msgstr ""
+
+#: privacyidea/templates/manage/machines.mako:45
+msgid "Token serial number (optional)"
+msgstr ""
+
+#: privacyidea/templates/manage/machines.mako:48
+msgid "The serial number of the token"
+msgstr ""
+
+#: privacyidea/templates/manage/machines.mako:53
+msgid "Application (optional)"
+msgstr ""
+
+#: privacyidea/templates/manage/machines.mako:56
+msgid "The application for this token on the machine"
+msgstr ""
+
+#: privacyidea/templates/manage/machines.mako:61
+msgid "Create machine"
 msgstr ""
 
 #: privacyidea/templates/manage/manage-base.mako:5
@@ -4046,6 +4091,10 @@ msgstr ""
 
 #: privacyidea/templates/manage/manage-base.mako:1482
 msgid "Application removed successfully from machine."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:1483
+msgid "Machine created successfully."
 msgstr ""
 
 #: privacyidea/templates/manage/multiotp_view.mako:5

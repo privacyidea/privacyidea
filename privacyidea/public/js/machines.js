@@ -72,6 +72,28 @@ function get_selected_machine(name){
     return selectedMachine;
 }
 
+function _fix_space(value) {
+	if (value == "&nbsp;") {
+		value = "";
+	}
+	return value;
+}
+
+function view_selected_machine(){
+	machine = get_selected_machine("machine");
+	application = get_selected_machine("application");
+	ip = get_selected_machine("IP");
+	description = get_selected_machine("description");
+	serial = get_selected_machine("serial");
+	
+	$('#machine_name').val(_fix_space(machine));
+	$('#machine_ip').val(_fix_space(ip));
+	$('#machine_application').val(_fix_space(application));
+	$('#machine_serial').val(_fix_space(serial));
+	$('#machine_desc').val(_fix_space(description));
+	
+}
+
 function machine_delete(){
 	$dialog_delete_machine_confirm.dialog('open');
     return false;
@@ -93,6 +115,20 @@ function machine_delete_callback(xhdr, textStatus) {
     }
 }
 
+function machine_create_callback(xhdr, textStatus) {
+	serial = $('#machine_serial').val();
+	application = $('#machine_application').val();
+	resp = xhdr.responseText;
+	obj = jQuery.parseJSON(resp);
+    if (obj.result.status == false) {
+    	if ((serial=="") || (application=="")) 
+    		alert_info_text(obj.result.error.message);
+    }else{
+    	alert_info_text("text_create_machine_success", "", "info");
+    	$('#machine_table').flexReload();
+    } 
+}
+
 function app_delete_callback(xhdr, textStatus) {
 	resp = xhdr.responseText;
 	obj = jQuery.parseJSON(resp);
@@ -102,6 +138,31 @@ function app_delete_callback(xhdr, textStatus) {
     	alert_info_text("text_delete_app_success", "", "info");
     	$('#machine_table').flexReload();
     }
+}
+
+function do_machine_create(){
+	machine = $('#machine_name').val();
+	ip = $('#machine_ip').val();
+	desc = $('#machine_desc').val();
+	serial = $('#machine_serial').val();
+	application = $('#machine_application').val();
+	// Try to create machine
+	clientUrlFetch("/machine/create",
+			{"name": machine,
+			"ip": ip,
+			"desc": desc,
+			"session": getsession()},
+			machine_create_callback);
+	if ((application!="") && (serial!="")) {
+		// add the token
+		clientUrlFetch("/machine/addtoken",
+				{"name": machine,
+				"serial": serial,
+				"application": application,
+				"session": getsession()},
+				machine_create_callback);
+	}
+	return false;
 }
 
 function do_delete_machine(){
@@ -163,4 +224,9 @@ function view_machine() {
 		addTitleToCell: true,
 		searchbutton: true
 	});
+	
+	$('#machine_table').click(function(event){
+    	view_selected_machine();
+	});
+
 }

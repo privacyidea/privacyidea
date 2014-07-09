@@ -136,7 +136,7 @@ class TestMachineController(TestController):
                                 {'name': name1})
         print response
         assert ('"status": false' in response)
-        assert ('UNIQUE' in response)
+        assert ('UNIQUE' in response or "IntegrityError" in response)
 
         response = self.app.get(url(controller='machine', action='show'))
         print response
@@ -184,7 +184,7 @@ class TestMachineController(TestController):
                                  'application': "app"})
         print response
         assert ('"status": false' in response)
-        assert ('UNIQUE' in response)
+        assert ('UNIQUE' in response or "IntegrityError" in response)
 
         # add another application
         self._add_token(name1, token1, "app2")
