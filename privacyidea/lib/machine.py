@@ -57,13 +57,13 @@ def delete(name):
 @log_with(log)
 def show(name=None, client_ip=None):
     res = {}
-    condTuple = ()
+    cond_list = []
     if name:
-        condTuple += (and_(Machine.cm_name == name),)
+        cond_list.append(Machine.cm_name == name)
     if client_ip:
-        condTuple += (and_(Machine.cm_ip == client_ip),)
+        cond_list.append(Machine.cm_ip == client_ip)
                   
-    condition = and_(*condTuple)
+    condition = and_(*cond_list)
     sqlquery = Session.query(Machine).filter(condition)
     for machine in sqlquery:
         res[machine.cm_name] = machine.to_json()
@@ -108,20 +108,22 @@ def deltoken(machine_name, serial, application):
     machine_id = _get_machine_id(machine_name)
     token_id = _get_token_id(serial)
     
-    num = Session.query(MachineToken).filter(and_(MachineToken.token_id == token_id,
-                                             MachineToken.machine_id == machine_id,
-                                             MachineToken.application == application)).delete()
+    num = Session.query(MachineToken).\
+        filter(and_(MachineToken.token_id == token_id,
+                    MachineToken.machine_id == machine_id,
+                    MachineToken.application == application)).delete()
     Session.commit()
     # 1 -> success
     return num == 1
     
     
 @log_with(log)
-def showtoken(machine_name=None, 
-              serial=None, 
+def showtoken(machine_name=None,
+              serial=None,
               application=None,
               client_ip=None,
-              flexi=None):
+              flexi=None,
+              params=None):
     '''
     :param flexi: If set, the output will be in flexigrid format and
             we will output all machines, even if they have no token assigned
@@ -131,9 +133,11 @@ def showtoken(machine_name=None,
     res = {}
     machine_id = None
     token_id = None
-    condTuple = ()
-  
-    # TODO: adding pagination
+    cond_list = []
+    # default
+    order = Machine.cm_name
+    page = 1
+    page_size = 15
 
     if machine_name:
         machine_id = _get_machine_id(machine_name, client_ip)
@@ -141,20 +145,79 @@ def showtoken(machine_name=None,
         token_id = _get_token_id(serial)
     
     if machine_id:
-        condTuple += (and_(MachineToken.machine_id == machine_id),)
+        cond_list.append(MachineToken.machine_id == machine_id)
     if token_id:
-        condTuple += (and_(MachineToken.token_id == token_id),)
+        cond_list.append(MachineToken.token_id == token_id)
     if application:
-        condTuple += (and_(MachineToken.application == application),)
-    condition = and_(*condTuple)
+        cond_list.append(MachineToken.application == application)
     
     machines = {}
+     
+    # For flexigrid we use addtional parameter
     if flexi:
+        if params:
+            # Filtering
+            qtype = params.get("qtype")
+            query = params.get("query")
+            if qtype == "machine":
+                cond_list.append(Machine.cm_name.like("%" + query + "%"))
+            elif qtype == "IP":
+                cond_list.append(Machine.cm_ip.like("%" + query + "%"))
+            elif qtype == "description":
+                cond_list.append(Machine.cm_desc.like("%" + query + "%"))
+            elif qtype == "serial":
+                cond_list.append(Token.privacyIDEATokenSerialnumber.\
+                                 like("%" + query + "%"))
+            elif qtype == "application":
+                cond_list.append(MachineToken.application.like("%" 
+                                                               + query + "%"))
+
+            condition = and_(*cond_list)
+
+            # Flexigrid sorting
+            sort = params.get("sortname")
+            sort_order = params.get("sortorder")
+            if sort == "machine_id":
+                order = MachineToken.machine_id
+            elif sort == "machine":
+                order = Machine.cm_name
+            elif sort == "IP":
+                order = Machine.cm_ip
+            elif sort == "description":
+                order = Machine.cm_desc
+            elif sort == "serial":
+                order = Token.privacyIDEATokenSerialnumber
+            elif sort == "application":
+                order = MachineToken.application
+            
+            if sort_order is not None and sort_order == "desc":
+                order = order.desc()
+            else:
+                order = order.asc()
+                
+            # pagination
+            page = int(params.get("page", 1))
+            page_size = int(params.get("rp", 15))
+
         sqlquery = Session.query(Machine,
                                  MachineToken.application,
                                  Token.privacyIDEATokenSerialnumber)\
                                         .outerjoin(MachineToken)\
-                                        .outerjoin(Token).filter(condition)
+                                        .outerjoin(Token)\
+                                        .filter(condition)\
+                                        .order_by(order)\
+                                        .limit(page_size)\
+                                        .offset(page_size*(page-1))
+        # Fixme: This is not best way to determine the total count.
+        sql_total = Session.query(Machine,
+                              MachineToken.application,
+                              Token.privacyIDEATokenSerialnumber)\
+                                        .outerjoin(MachineToken)\
+                                        .outerjoin(Token)\
+                                        .filter(condition)
+        total = 0
+        for _i in sql_total:
+            total += 1
         rows = []
         m_id = 0
         for row in sqlquery:
@@ -168,10 +231,11 @@ def showtoken(machine_name=None,
                                   (serial),
                                   (application)]})
         
-        res = {"page": 1,
-               "total": len(rows)}
+        res = {"page": page,
+               "total": total}
         res["rows"] = rows
     else:
+        condition = and_(*cond_list)
         sqlquery = Session.query(MachineToken).filter(condition)
         for row in sqlquery:
             machines[row.id] = row.to_json()
@@ -204,7 +268,7 @@ def get_token_apps(machine=None, application=None, client_ip=None):
                     application=application)
     
     # add the authentication item to the result
-    #for config in res.keys:
+    # for config in res.keys:
     #    res[config]
     
     return res

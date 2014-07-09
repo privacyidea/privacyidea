@@ -344,7 +344,8 @@ class MachineController(BaseController):
             res = showtoken(machine_name,
                             serial,
                             application,
-                            flexi=flexi)
+                            flexi=flexi,
+                            params=param)
             Session.commit()
             c.audit["success"] = True
             if flexi:
