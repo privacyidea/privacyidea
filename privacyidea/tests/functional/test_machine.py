@@ -169,25 +169,25 @@ class TestMachineController(TestController):
         response = self.app.get(url(controller='machine', action='addtoken'),
                                 {'name': name1,
                                  'serial': token1,
-                                 'application': "app"})
+                                 'application': "ssh"})
         print response
         assert ('"status": false' in response)
         assert ('There is no token with the serial number' in response)
 
         self._create_token(serial=token1)
 
-        self._add_token(name1, token1, "app")
+        self._add_token(name1, token1, "ssh")
         # try to add the same again
         response = self.app.get(url(controller='machine', action='addtoken'),
                                 {'name': name1,
                                  'serial': token1,
-                                 'application': "app"})
+                                 'application': "ssh"})
         print response
         assert ('"status": false' in response)
         assert ('UNIQUE' in response or "IntegrityError" in response)
 
         # add another application
-        self._add_token(name1, token1, "app2")
+        self._add_token(name1, token1, "luks")
 
         # show machinetoken
         response = self.app.get(url(controller='machine', action='showtoken'),
@@ -195,11 +195,11 @@ class TestMachineController(TestController):
         print "SHOWTOKEN: "
         print response
         assert ('"status": true' in response)
-        assert ('"application": "app"' in response)
-        assert ('"application": "app2"' in response)
+        assert ('"application": "ssh"' in response)
+        assert ('"application": "luks"' in response)
 
         # delete the machines
-        for app in ["app", "app2"]:
+        for app in ["ssh", "luks"]:
             self._rm_token(name1, token1, app)
         self._delete_token(token1)
         self._delete_machine(name1)
@@ -217,14 +217,14 @@ class TestMachineController(TestController):
         self._create_token(token1)
 
         # add the token to the machine
-        self._add_token(name1, token1, "app3")
+        self._add_token(name1, token1, "ssh")
 
         # show machinetoken
         response = self.app.get(url(controller='machine', action='showtoken'),
                                 {})
         print response
         assert ('"status": true' in response)
-        assert ('"application": "app3"' in response)
+        assert ('"application": "ssh"' in response)
 
         # delete the token --- the machine-token binding will also be deleted!
         self._delete_token(token1)
@@ -244,28 +244,28 @@ class TestMachineController(TestController):
         self._create_machine(name="m3")
         self._create_machine(name="m4")
 
-        self._add_token("m1", "t1", "App")
-        self._add_token("m1", "t2", "App")
-        self._add_token("m1", "t3", "App")
-        self._add_token("m2", "t1", "App")
-        self._add_token("m3", "t2", "App")
-        self._add_token("m4", "t3", "App")
+        self._add_token("m1", "t1", "SSH")
+        self._add_token("m1", "t2", "SSH")
+        self._add_token("m1", "t3", "SSH")
+        self._add_token("m2", "t1", "SSH")
+        self._add_token("m3", "t2", "SSH")
+        self._add_token("m4", "t3", "SSH")
 
         # show machinetoken
         response = self.app.get(url(controller='machine', action='showtoken'),
                                 {})
         print response
         assert ('"status": true' in response)
-        assert ('"application": "App"' in response)
+        assert ('"application": "SSH"' in response)
         assert ('"6": {' in response)
         assert ('"total": 6' in response)
 
-        self._rm_token("m1", "t1", "App")
-        self._rm_token("m1", "t2", "App")
-        self._rm_token("m1", "t3", "App")
-        self._rm_token("m2", "t1", "App")
-        self._rm_token("m3", "t2", "App")
-        self._rm_token("m4", "t3", "App")
+        self._rm_token("m1", "t1", "SSH")
+        self._rm_token("m1", "t2", "SSH")
+        self._rm_token("m1", "t3", "SSH")
+        self._rm_token("m2", "t1", "SSH")
+        self._rm_token("m3", "t2", "SSH")
+        self._rm_token("m4", "t3", "SSH")
 
         self._delete_machine(name="m1")
         self._delete_machine(name="m2")
@@ -291,7 +291,7 @@ class TestMachineController(TestController):
         response = self.app.get(url(controller='machine', action='addtoken'),
                                 {'name': "no_machine",
                                  'serial': "no_token",
-                                 'application': "some app"})
+                                 'application': "luks"})
         print response
         assert ('"status": false' in response)
         assert ('There is no machine with name' in response)
@@ -353,9 +353,9 @@ class TestMachineController(TestController):
         self._create_token(serial)
         self._create_machine(machine1, ip="10.0.0.1")
         self._create_machine(machine2, ip="10.0.0.2")
-        self._add_token(machine1, serial, "app1")
-        self._add_token(machine1, serial, "app2")
-        self._add_token(machine2, serial, "app3")
+        self._add_token(machine1, serial, "ssh")
+        self._add_token(machine1, serial, "luks")
+        self._add_token(machine2, serial, "ssh")
         
         response = self.app.get(url(controller='machine',
                                     action='gettokenapps'),
@@ -367,30 +367,52 @@ class TestMachineController(TestController):
         print response
         print "=============="
         assert '"total": 2' in response
-        assert '"application": "app1",' in response
-        assert '"application": "app2",' in response
+        assert '"application": "ssh",' in response
+        assert '"application": "luks",' in response
         
         response = self.app.get(url(controller='machine',
                                     action='gettokenapps'),
                                 params={"name": machine1,
                                         "client": "10.0.0.1",
-                                        "application": "app2"})
+                                        "application": "luks"})
         print response
         assert '"total": 1' in response
-        assert '"application": "app2",' in response
+        assert '"application": "luks",' in response
         
         response = self.app.get(url(controller='machine',
                                     action='gettokenapps'),
                                 params={"name": machine1,
                                         "client": "10.0.0.2",
-                                        "application": "app2"})
+                                        "application": "luks"})
         print response
         assert '"status": false' in response
         assert 'There is no machine with name' in response
         
-        self._rm_token(machine2, serial, "app3")
-        self._rm_token(machine1, serial, "app2")
-        self._rm_token(machine1, serial, "app1")
+        self._rm_token(machine2, serial, "ssh")
+        self._rm_token(machine1, serial, "luks")
+        self._rm_token(machine1, serial, "ssh")
         self._delete_token(serial)
         self._delete_machine(machine1)
         self._delete_machine(machine2)
+        
+    def test_fail_wrong_app(self):
+        '''
+        testing a wrong app will not assign
+        '''
+        machine1 = "mach1"
+        serial = "tok2"
+        app = "does not exist"
+        self._create_token(serial)
+        self._create_machine(machine1)
+        response = self.app.get(url(controller="machine",
+                                    action="addtoken"),
+                                params={"name": machine1,
+                                        "application": app,
+                                        "serial": serial})
+        print response
+        assert "Unkown application" in response
+        
+        self._delete_machine(machine1)
+        self._delete_token(serial)
+        
+        

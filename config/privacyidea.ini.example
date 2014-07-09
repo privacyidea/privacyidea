@@ -76,6 +76,9 @@ radius.dictfile= %(here)s/dictionary
 # that is sent to the RADIUS server
 radius.nas_identifier = privacyIDEA
 
+# This is used to provide a list of application modules.
+#
+privacyideaMachine.applications = privacyidea.lib.applications.ssh, privacyidea.lib.applications.luks 
 
 [server:main]
 use = egg:Paste#http

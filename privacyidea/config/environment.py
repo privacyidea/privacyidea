@@ -162,12 +162,23 @@ def load_environment(global_conf, app_conf):
         g.setResolverTypes(rname)
 
     except Exception as exx:
-        log.error("Faild to load the list of resolvers: %r" % exx)
+        log.error("Failed to load the list of resolvers: %r" % exx)
+        raise exx
+    
+    # load the list of applications
+    try:
+        log.debug('loading application list')
+        config['application_names'] = get_application_names()
+        config['application_modules'] = get_application_modules()
+        g.set_application_names(config['application_names'])
+        g.set_application_modules(config['application_modules'])
+    except Exception as exx:
+        log.error("Failed to load application modules: %r" % exx)
         raise exx
 
     ## get the help url
     url = config.get("privacyideaHelp.url", None)
-    if url == None:
+    if url is None:
         version = pkg_resources.get_distribution("privacyidea").version
         # First try to get the help for this specific version
         url = "http://privacyidea.org/doc/%s" % version
@@ -175,6 +186,45 @@ def load_environment(global_conf, app_conf):
 
     log.debug("done")
     return
+
+
+def get_application_modules():
+    '''
+    Returns the list of application modules
+    that are configured in the ini-file in
+    privacyideaMachine.applications
+    and also loads the modules if necessary
+    
+    :return: list of string with the names of the modules
+    '''
+    app_modules = config.get("privacyideaMachine.applications", "")
+    lines = app_modules.splitlines()
+    app_modules_fixed = ",".join(lines)
+    app_modules_list = [module.strip()
+                        for module in app_modules_fixed.split(",")]
+    
+    for module in app_modules_list:
+        # Import the modules
+        __import__(module)
+        
+    return app_modules_list
+
+
+def get_application_names():
+    '''
+    returns the list of the application names
+    that are configured in the ini-file in
+    privacyideaMachine.applications
+    
+    :return: list of strings with the short names of the applications
+    '''
+    app_module_list = get_application_modules()
+    application_name_list = []
+    for m in app_module_list:
+        module_name = eval(m).MachineApplication.get_name()
+        application_name_list.append(module_name)
+    return application_name_list
+
 
 #######################################
 def get_token_list():
@@ -237,7 +287,7 @@ def get_token_module_list():
             continue
 
         ## load all token class implementations
-        if sys.modules.has_key(mod_name):
+        if mod_name in sys.modules:
             module = sys.modules[mod_name]
             log.debug('module %s loaded' % (mod_name))
         else:
@@ -352,7 +402,7 @@ def get_resolver_module_list():
             continue
 
         ## load all token class implementations
-        if sys.modules.has_key(mod_name):
+        if mod_name in sys.modules:
             module = sys.modules[mod_name]
             log.debug('module %s loaded' % (mod_name))
         else:

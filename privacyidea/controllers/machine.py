@@ -261,6 +261,11 @@ class MachineController(BaseController):
             serial = getParam(param, "serial", required)
             application = getParam(param, "application", required)
             
+            if application.lower() not in config.get("application_names"):
+                log.error("Unknown application %r. Available applications: "
+                          "%r" % (application, config.get("application_names")))
+                raise Exception("Unkown application!")
+            
             mt = addtoken(machine_name, serial, application)
             if mt:
                 res = True
@@ -417,3 +422,25 @@ class MachineController(BaseController):
         finally:
             Session.close()
         
+    @log_with(log)
+    def getapplications(self, action, **params):
+        '''
+        Returns a list of available applications
+        '''
+        try:
+            return sendResult(response, config.get("application_names"))
+        
+        except PolicyException as pe:
+            log.error("policy failed: %r" % pe)
+            log.error(traceback.format_exc())
+            Session.rollback()
+            return sendError(response, unicode(pe))
+
+        except Exception as exx:
+            log.error("failed: %r" % exx)
+            log.error(traceback.format_exc())
+            Session.rollback()
+            return sendError(response, unicode(exx), 0)
+
+        finally:
+            Session.close()

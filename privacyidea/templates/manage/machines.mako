@@ -22,14 +22,14 @@
 <table>
 <tr><td><label for=machine_name>${_("Machine name")}</label></td>
 <td><input type="text" class="required"  id="machine_name" size="40" maxlength="80" 
-          title='${_("The name of the machine")}'
+          title='${_("The name of the machine")}'>
 </td></tr>
 
 <tr>
 <td><label for=machine_ip>${_("Machine IP")}</label></td>
 <td>
 <input type="text" class="required"  id="machine_ip" size="40" maxlength="80" 
-          title='${_("The IP of the machine")}'
+          title='${_("The IP of the machine")}'>
 </td>
 </tr>
 
@@ -37,7 +37,7 @@
 <td><label for=machine_desc>${_("Description")}</label></td>
 <td>
 <input type="text" id="machine_desc" size="40" maxlength="80" 
-          title='${_("The description for the machine")}'
+          title='${_("The description for the machine")}'>
 </td>
 </tr>
 
@@ -45,15 +45,15 @@
 <td><label for=machine_serial>${_("Token serial number (optional)")}</label></td>
 <td>
 <input type="text" id="machine_serial" size="40" maxlength="80" 
-          title='${_("The serial number of the token")}'
+          title='${_("The serial number of the token")}'>
 </td>
 </tr>
 
 <tr>
 <td><label for=machine_application>${_("Application (optional)")}</label></td>
 <td>
-<input type="text" id="machine_application" size="40" maxlength="80" 
-          title='${_("The application for this token on the machine")}'
+<select id="machine_application" 
+          title='${_("The application for this token on the machine")}'>
 </td>
 </tr>
 

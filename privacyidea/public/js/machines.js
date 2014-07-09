@@ -1,6 +1,28 @@
 var $dialog_delete_machine_confirm;
 var $dialog_delete_app_confirm;
 
+function get_applications() {
+	var applications = new Array();
+	resp = clientUrlFetchSync("/machine/getapplications",
+			{"session": getsession()});
+	obj = jQuery.parseJSON(resp);
+    if (obj.result.status) {
+		applications = obj.result.value;
+    }
+	return applications;
+}
+
+function fill_applications() {
+	var apps = get_applications();
+	$('#machine_application').append(
+	        $('<option></option>').val("").html(""));
+	$.each(apps, function(ind, val) {
+	    $('#machine_application').append(
+		        $('<option></option>').val(val).html(val)
+		    );
+		});
+}
+
 function init_machine_dialogs() {
 	$dialog_delete_machine_confirm = $('#dialog_delete_machine_confirm').dialog({
     autoOpen: false,
@@ -228,5 +250,6 @@ function view_machine() {
 	$('#machine_table').click(function(event){
     	view_selected_machine();
 	});
-
+	
+	fill_applications();
 }
