@@ -43,6 +43,8 @@ from privacyidea.lib.machine import addtoken
 from privacyidea.lib.machine import deltoken
 from privacyidea.lib.machine import showtoken
 from privacyidea.lib.machine import get_token_apps
+from privacyidea.lib.selftest import isSelfTest
+
 
 import traceback
 import webob
@@ -261,9 +263,9 @@ class MachineController(BaseController):
             serial = getParam(param, "serial", required)
             application = getParam(param, "application", required)
             
-            if application.lower() not in config.get("application_names"):
+            if application.lower() not in config.get("applications").keys():
                 log.error("Unknown application %r. Available applications: "
-                          "%r" % (application, config.get("application_names")))
+                          "%r" % (application, config.get("applications").keys()))
                 raise Exception("Unkown application!")
             
             mt = addtoken(machine_name, serial, application)
@@ -391,6 +393,7 @@ class MachineController(BaseController):
         :type name: string, optional
         :param application: the name of the application
         :type application: sting, optional
+        :param serial: THe serial number of the token
         '''
         try:
             res = False
@@ -399,10 +402,24 @@ class MachineController(BaseController):
             param.update(request.params)
             machine_name = getParam(param, "name", optional)
             application = getParam(param, "application", optional)
+            serial = getParam(param, "serial", optional)
+            challenge = None
+            if isSelfTest():
+                challenge = getParam(param, "challenge", optional)
             client_ip = get_client()
+            
+            if application:
+                if application not in config.get("applications").keys():
+                    log.error("Unknown application %r. Available applications: "
+                              "%r" % (application, config.get("applications").keys()))
+            application_module = config.get("applications").get(application)
+            
             res = get_token_apps(machine=machine_name,
                                  application=application,
-                                 client_ip=client_ip)
+                                 application_module=application_module,
+                                 serial=serial,
+                                 client_ip=client_ip,
+                                 challenge=challenge)
             Session.commit()
             c.audit["success"] = True
             return sendResult(response, res, 1)
@@ -428,7 +445,7 @@ class MachineController(BaseController):
         Returns a list of available applications
         '''
         try:
-            return sendResult(response, config.get("application_names"))
+            return sendResult(response, config.get("applications").keys())
         
         except PolicyException as pe:
             log.error("policy failed: %r" % pe)

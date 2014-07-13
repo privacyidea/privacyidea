@@ -168,10 +168,8 @@ def load_environment(global_conf, app_conf):
     # load the list of applications
     try:
         log.debug('loading application list')
-        config['application_names'] = get_application_names()
-        config['application_modules'] = get_application_modules()
-        g.set_application_names(config['application_names'])
-        g.set_application_modules(config['application_modules'])
+        config['applications'] = get_applications()
+        g.set_applications(config['applications'])
     except Exception as exx:
         log.error("Failed to load application modules: %r" % exx)
         raise exx
@@ -210,20 +208,21 @@ def get_application_modules():
     return app_modules_list
 
 
-def get_application_names():
+def get_applications():
     '''
-    returns the list of the application names
+    returns a dictionary the application,
+    the names being the key, the module name the value.
     that are configured in the ini-file in
     privacyideaMachine.applications
     
-    :return: list of strings with the short names of the applications
+    :return: dictionary of name:module
     '''
     app_module_list = get_application_modules()
-    application_name_list = []
+    applications = {}
     for m in app_module_list:
         module_name = eval(m).MachineApplication.get_name()
-        application_name_list.append(module_name)
-    return application_name_list
+        applications[module_name] = m
+    return applications
 
 
 #######################################

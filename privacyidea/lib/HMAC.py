@@ -34,6 +34,7 @@
 import hmac
 import logging
 import struct
+import binascii
 
 from hashlib import sha1
 from privacyidea.lib.log import log_with
@@ -54,13 +55,21 @@ class HmacOtp():
         self.digits = digits
         self.hashfunc = hashfunc
 
-
-    def hmac(self, counter=None, key=None):
-        #log.error("hmacSecret()")
+    def hmac(self,
+             counter=None,
+             key=None,
+             challenge=None):
+        # log.error("hmacSecret()")
         counter = counter or self.counter
 
-        data_input = struct.pack(">Q", counter)
-        if key == None:
+        # When using a counter, we can only use 64bit as data_input.
+        # When we allow a raw data_input, we could use 160bit or more.
+        if not challenge:
+            data_input = struct.pack(">Q", counter)
+        else:
+            data_input = binascii.unhexlify(challenge)
+            
+        if key is None:
             dig = str(self.secretObj.hmac_digest(data_input, self.hashfunc))
         else:
             if pver > 2.6:
@@ -69,7 +78,6 @@ class HmacOtp():
                 dig = hmac.new(key, str(data_input), self.hashfunc).digest()
 
         return dig
-
 
     def truncate(self, digest):
         offset = ord(digest[-1:]) & 0x0f
@@ -81,13 +89,26 @@ class HmacOtp():
 
         return binary % (10 ** self.digits)
 
-
-    def generate(self, counter=None, inc_counter=True, key=None):
+    def generate(self,
+                 counter=None,
+                 inc_counter=True,
+                 key=None,
+                 do_truncation=True,
+                 challenge=None):
+        
         counter = counter or self.counter
 
-        otp = str(self.truncate(self.hmac(counter=counter, key=key)))
-        """  fill in the leading zeros  """
-        sotp = (self.digits - len(otp)) * "0" + otp
+        if challenge:
+            hmac = self.hmac(challenge=challenge, key=key)
+        else:
+            hmac = self.hmac(counter=counter, key=key)
+        if do_truncation:
+            otp = str(self.truncate(hmac))
+            """  fill in the leading zeros  """
+            sotp = (self.digits - len(otp)) * "0" + otp
+        else:
+            sotp = binascii.hexlify(hmac)
+            
         if inc_counter:
             self.counter = counter + 1
         return sotp
@@ -97,25 +118,24 @@ class HmacOtp():
         res = -1
         start = self.counter
         end = self.counter + window
-        if symetric == True:
+        if symetric is True:
             # changed window/2 to window for TOTP
             start = self.counter - (window)
             start = 0 if (start < 0) else start
             end = self.counter + (window)
 
         log.debug("OTP range counter: %r - %r" % (start, end))
-        for c in range(start , end):
+        for c in range(start, end):
             otpval = self.generate(c)
             log.debug("calculating counter %r: %r %r"
                       % (c, anOtpVal, otpval))
-            #log.error("otp[%d]: %s : %s",c,otpval,anOtpVal)
+            # log.error("otp[%d]: %s : %s",c,otpval,anOtpVal)
 
             if (unicode(otpval) == unicode(anOtpVal)):
                 # log.debug("Match Pin: %s : %d : %s",otpval,c,anOtpVal)
                 res = c
                 break
-        #return -1 or the counter
+        # return -1 or the counter
         return res
 
 #eof##########################################################################
-

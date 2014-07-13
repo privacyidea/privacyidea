@@ -659,7 +659,11 @@ class TimeHmacTokenClass(HmacTokenClass):
         return timeOut
 
     @log_with(log)
-    def getOtp(self, curTime=None):
+    def getOtp(self,
+               curTime=None,
+               do_truncation=True,
+               tCounter=None,
+               challenge=None):
         '''
         get the next OTP value
 
@@ -676,13 +680,17 @@ class TimeHmacTokenClass(HmacTokenClass):
 
         hmac2Otp = HmacOtp(secretHOtp, self.getOtpCount(), otplen, self.getHashlib(self.hashlibStr))
 
-        tCounter = self.time2float(datetime.datetime.now())
+        if tCounter is None:
+            tCounter = self.time2float(datetime.datetime.now())
         if curTime:
             tCounter = self.time2float(curTime)
 
         ## we don't need to round here as we have alread float
         counter = int(((tCounter - shift) / timeStepping))
-        otpval = hmac2Otp.generate(counter=counter, inc_counter=False)
+        otpval = hmac2Otp.generate(counter=counter,
+                                   inc_counter=False,
+                                   do_truncation=do_truncation,
+                                   challenge=challenge)
 
         pin = self.token.getPin()
         combined = "%s%s" % (otpval, pin)

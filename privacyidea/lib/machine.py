@@ -24,6 +24,8 @@ from privacyidea.model import MachineToken
 from privacyidea.model import MachineOptions
 from privacyidea.model.meta import Session
 from privacyidea.lib.token import getTokens4UserOrSerial
+from privacyidea.lib.token import getTokenType
+from privacyidea.lib.applications import get_auth_item
 from sqlalchemy import and_
 from netaddr import IPAddress
 
@@ -251,14 +253,21 @@ def showtoken(machine_name=None,
 
 
 @log_with(log)
-def get_token_apps(machine=None, application=None, client_ip=None):
+def get_token_apps(machine=None,
+                   application=None,
+                   application_module=None,
+                   serial=None,
+                   client_ip=None,
+                   challenge=None):
     '''
     This method returns the authentication data for the
-    requested application
+    requested application and token
     
     :param machine: the machine name (optional)
     :param application: the name of the application (optional)
     :param client: the IP of the client (required)
+    :param serial: the serial number of a specific token (optional)
+    :param challenge: a challenge parameter, that can be passed in selfTest
     '''
     if not client_ip:
         log.warning("No client IP.")
@@ -269,10 +278,24 @@ def get_token_apps(machine=None, application=None, client_ip=None):
 
     res = showtoken(machine_name=machine,
                     client_ip=client_ip,
-                    application=application)
+                    application=application,
+                    serial=serial)
+    '''
+    depending on the application type we do need to take some action
+    Each application should know, what to provide...
+    Determine this by
+     1. application
+     2. token type
+     3. serial number
+    '''
+    if application and serial:
+        token_type = getTokenType(serial)
+        auth_item = get_auth_item(application,
+                                  application_module,
+                                  token_type,
+                                  serial,
+                                  challenge=challenge)
     
-    # add the authentication item to the result
-    # for config in res.keys:
-    #    res[config]
+        res["auth_item"] = auth_item
     
     return res

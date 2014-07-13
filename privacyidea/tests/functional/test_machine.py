@@ -234,6 +234,15 @@ class TestMachineController(TestController):
         """
         Test the json output of the machine-token-config.
         """
+        import json
+        response = self.app.get(url(controller='machine', action='showtoken'),
+                                {})
+        data = json.loads(response.body)
+        result = data.get("result")
+        print result
+        assert result.get("status") is True
+        start_token_num = int(result.get("value", {}).get("total", 0))
+        
         self._create_token("t1")
         self._create_token("t2")
         self._create_token("t3")
@@ -257,8 +266,13 @@ class TestMachineController(TestController):
         print response
         assert ('"status": true' in response)
         assert ('"application": "SSH"' in response)
-        assert ('"6": {' in response)
-        assert ('"total": 6' in response)
+        
+        data = json.loads(response.body)
+        result = data.get("result")
+        print result
+        assert result.get("status") is True
+        end_token_num = int(result.get("value", {}).get("total", 0))
+        assert (end_token_num - start_token_num == 6)
 
         self._rm_token("m1", "t1", "SSH")
         self._rm_token("m1", "t2", "SSH")
@@ -300,7 +314,7 @@ class TestMachineController(TestController):
         """
         Testing machine management with policies
         """
-        serial = "tok1"
+        serial = "tok1_machine"
         machine1 = "mach1"
         machine2 = "mach2"
         self._create_token(serial)
@@ -400,7 +414,7 @@ class TestMachineController(TestController):
         testing a wrong app will not assign
         '''
         machine1 = "mach1"
-        serial = "tok2"
+        serial = "tok2_machine"
         app = "does not exist"
         self._create_token(serial)
         self._create_machine(machine1)
@@ -415,4 +429,48 @@ class TestMachineController(TestController):
         self._delete_machine(machine1)
         self._delete_token(serial)
         
+    def test_get_authentication_items(self):
+        '''
+        get authentication items
+        '''
+        serial = "UBOM123456_1"
+        otpkey = "a60f076ca60e6d966f3bdcdc96f5e94c3c8efc32"
+        chal_hex = "d1835d598bc20c4ce8312ba94f046a015f7a70c48631b88f29922f1183e77873"
+        resp_hex = "c7f7a081d06a738f913dce36b538091adc6d2e93"
+        client = "10.0.0.1"
+        param = {'type': 'yubikey',
+                 'serial': serial,
+                 'otpkey': otpkey,
+                 'otplen': 8,
+                 'type': "TOTP"}
+        machine1 = "machine1"
+        app = "luks"
+        response = self.app.get(url(controller='admin', action='init'),
+                                params=param)
+        print response
+        assert '"value": true' in response
         
+        self._create_machine(machine1,
+                             ip=client)
+        self._add_token(machine1, serial, app)
+        
+        response = self.app.get(url(controller='machine',
+                                    action='gettokenapps'),
+                                params={"name": machine1,
+                                        "application": app,
+                                        "serial": serial,
+                                        "client": client,
+                                        "challenge": chal_hex})
+        print "============"
+        print "gettokenapps"
+        print "============"
+        print response
+        
+        assert '"auth_item":' in response
+        assert '"challenge": "%s"' % chal_hex in response
+        assert '"response": "%s"' % resp_hex in response 
+        assert '"serial": "UBOM123456_1",' in response
+        assert '"application": "luks",' in response
+        self._delete_machine(machine1)
+        self._delete_token(serial)
+

@@ -100,14 +100,10 @@ class Globals(object):
         self.tokenclasses = tcl
         return
     
-    def set_application_names(self, names):
-        self.application_names = names
+    def set_applications(self, apps):
+        self.applications = apps
         return
     
-    def set_application_modules(self, modules):
-        self.application_modules = modules
-        return
-
     def getTokenclasses(self):
         return self.tokenclasses
 

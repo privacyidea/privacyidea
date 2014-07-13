@@ -448,7 +448,7 @@ def geturandom(len=20):
     '''
     get random - from the security module
 
-    :param len:  len of the returned bytes - defalt is 20 bytes
+    :param len:  len of the returned bytes - default is 20 bytes
     :tyrpe len:    int
 
     :return: buffer of bytes
