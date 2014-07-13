@@ -1,7 +1,17 @@
-import importlib
 import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.log import log_with
+
+try:
+    from importlib import import_module as dyn_import
+except:
+    # importlib is not available in python 2.6
+    def dyn_import(name):
+        mod = __import__(name)
+        components = name.split('.')
+        for comp in components[1:]:
+            mod = getattr(mod, comp)
+        return mod
 
 
 class MachineApplicationBase(object):
@@ -29,7 +39,7 @@ def get_auth_item(application,
                   serial,
                   challenge=None):
     
-    mod = importlib.import_module(application_module)
+    mod = dyn_import(application_module)
     auth_class = mod.MachineApplication()
     auth_item = auth_class.get_authentication_item(token_type,
                                                    serial,
