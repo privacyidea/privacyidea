@@ -925,13 +925,13 @@ class MachineToken(object):
         if self.machine:
             machinename = self.machine.cm_name
             ip = self.machine.cm_ip
-        return {'id' : self.id,
-                'token_id' : self.token_id,
-                'serial' : serial,
-                'machine_id' : self.machine_id,
-                'machinename' : machinename,
-                'ip' : ip, 
-                'application' : self.application}
+        return {'id': self.id,
+                'token_id': self.token_id,
+                'serial': serial,
+                'machine_id': self.machine_id,
+                'machinename': machinename,
+                'ip': ip, 
+                'application': self.application}
         
 machineoptions_table = sa.Table('MachineOptions', meta.metadata,
                                 sa.Column('id', sa.types.Integer(),
@@ -941,6 +941,7 @@ machineoptions_table = sa.Table('MachineOptions', meta.metadata,
                                 sa.Column('mt_key', sa.types.Unicode(64), nullable=False),
                                 sa.Column('mt_value', sa.types.Unicode(64), nullable=False),
                                 implicit_returning=implicit_returning)
+
 
 class MachineOptions(object):
     '''
@@ -957,6 +958,8 @@ class MachineOptions(object):
         self.machinetoken_id = machinetoken_id
         self.mt_key = key
         self.mt_value = value
+        Session.add(self)
+        Session.commit()
 
 log.debug('calling ORM Mapper')
 
@@ -971,9 +974,9 @@ log.debug('calling ORM Mapper')
 #    })
 
 orm.mapper(Token, token_table, properties={
-    'realms':relation(Realm, secondary=tokenrealm_table,
-        primaryjoin=token_table.c.privacyIDEATokenId == tokenrealm_table.c.token_id,
-        secondaryjoin=tokenrealm_table.c.realm_id == realm_table.c.id)
+    'realms': relation(Realm, secondary=tokenrealm_table,
+                       primaryjoin=token_table.c.privacyIDEATokenId == tokenrealm_table.c.token_id,
+                       secondaryjoin=tokenrealm_table.c.realm_id == realm_table.c.id)
     })
 orm.mapper(Realm, realm_table)
 orm.mapper(TokenRealm, tokenrealm_table)
@@ -982,10 +985,12 @@ orm.mapper(OcraChallenge, ocra_table)
 orm.mapper(Challenge, challenges_table)
 
 orm.mapper(MachineToken, machinetoken_table,
-           properties={'token':relation(Token, 
-                                        primaryjoin=token_table.c.privacyIDEATokenId == machinetoken_table.c.token_id),
-                       'machine':relation(Machine,
-                                          primaryjoin=clientmachine_table.c.id == machinetoken_table.c.machine_id)
+           properties={'token': relation(Token, 
+                                         primaryjoin=token_table.c.privacyIDEATokenId == machinetoken_table.c.token_id),
+                       'machine': relation(Machine,
+                                           primaryjoin=clientmachine_table.c.id == machinetoken_table.c.machine_id),
+                       'machineoptions': relation(MachineOptions,
+                                                  primaryjoin=machinetoken_table.c.id == machineoptions_table.c.machinetoken_id)
                        }) 
 orm.mapper(Machine, clientmachine_table)
 orm.mapper(MachineOptions, machineoptions_table)

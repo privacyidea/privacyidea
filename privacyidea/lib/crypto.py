@@ -443,7 +443,7 @@ def decrypt(input, iv, id=0):
     ret = hsm.decrypt(input, iv, id)
     return ret
 
-@log_with(log)
+# @log_with(log)
 def geturandom(len=20):
     '''
     get random - from the security module

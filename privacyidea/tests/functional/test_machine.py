@@ -19,13 +19,44 @@
 
 import logging
 from privacyidea.tests import TestController, url
-
+import json
+import binascii
 
 log = logging.getLogger(__name__)
 
 
 class TestMachineController(TestController):
 
+    def _create_yubikeys(self,
+                         serials=["UBOM123456_1",
+                                  "UBOM234567_1"],
+                         machine="machine1",
+                         ip="10.0.0.1",
+                         otpkey="a60f076ca60e6d966f3bdcdc96f5e94c3c8efc32"):
+        client = ip
+        machine1 = machine
+        self._create_machine(machine1,
+                             ip=client)
+        # create two tokens for the one machine
+        for serial in serials:
+            param = {'type': 'yubikey',
+                     'serial': serial,
+                     'otpkey': otpkey,
+                     'otplen': 8,
+                     'type': "TOTP"}
+            response = self.app.get(url(controller='admin', action='init'),
+                                    params=param)
+            print response
+            assert '"value": true' in response
+            
+    def _delete_yubikeys(self,
+                         serials=["UBOM123456_1",
+                                  "UBOM234567_1"],
+                         machine="machine1"):
+        self._delete_machine(machine)
+        for serial in serials:
+            self._delete_token(serial)
+        
     def _create_token(self, serial=None):
         # create a token and add this new token to the machine
         response = self.app.get(url(controller='admin', action='init'),
@@ -429,40 +460,59 @@ class TestMachineController(TestController):
         self._delete_machine(machine1)
         self._delete_token(serial)
         
+    def test_nist_pub_198_a_2(self):
+        """
+        Yubikey test vector
+        http://opensource.yubico.com/yubikey-personalization/ykchalresp.1.html
+        """
+        machine = "toms_key"
+        serial = "UBOM_toms_token"
+        app = "luks"
+        ip = "10.0.0.1"
+        otpkey = "303132333435363738393a3b3c3d3e3f40414243"
+        challenge = "Sample #2"
+        result_hex = "0922d3405faa3d194f82a45830737d5cc6c75d24"
+        self._create_yubikeys(serials=[serial],
+                              machine=machine,
+                              ip=ip,
+                              otpkey=otpkey)
+        self._add_token(machine, serial, app)
+        print "==================== gettokenapps for yubikey ============"
+        # get all auth_items for LUKS on machine without serial number
+        response = self.app.get(url(controller='machine',
+                                    action='gettokenapps'),
+                                {"name": machine,
+                                 "application": app,
+                                 "serial": serial,
+                                 "client": ip,
+                                 "challenge": binascii.hexlify(challenge)})
+        print response
+        assert result_hex in response
+        self._delete_token(serial)
+        self._delete_machine(machine)
+        
     def test_get_authentication_items(self):
         '''
         get authentication items
         '''
-        serial1 = "UBOM123456_1"
-        serial2 = "UBOM234567_1"
-        otpkey = "a60f076ca60e6d966f3bdcdc96f5e94c3c8efc32"
+        serials = ["UBOM123456_1", "UBOM234567_1"]
+        machine = "machine1"
+        ip = "10.0.0.1"
         chal_hex = "d1835d598bc20c4ce8312ba94f046a015f7a70c48631b88f29922f1183e77873"
         resp_hex = "c7f7a081d06a738f913dce36b538091adc6d2e93"
-        client = "10.0.0.1"
-        machine1 = "machine1"
         app = "luks"
-        self._create_machine(machine1,
-                             ip=client)
-        # create two tokens for the one machine
-        for serial in [serial1, serial2]:
-            param = {'type': 'yubikey',
-                     'serial': serial,
-                     'otpkey': otpkey,
-                     'otplen': 8,
-                     'type': "TOTP"}
-            response = self.app.get(url(controller='admin', action='init'),
-                                    params=param)
-            print response
-            assert '"value": true' in response
-        
-            self._add_token(machine1, serial, app)
+        self._create_yubikeys(serials=serials,
+                              machine=machine,
+                              ip=ip)
+        for serial in serials:
+            self._add_token(machine, serial, app)
         
         # get all auth_items for LUKS on machine without serial number
         response = self.app.get(url(controller='machine',
                                     action='gettokenapps'),
-                                params={"name": machine1,
+                                params={"name": machine,
                                         "application": app,
-                                        "client": client,
+                                        "client": ip,
                                         "challenge": chal_hex})
         print "============"
         print "gettokenapps"
@@ -471,10 +521,110 @@ class TestMachineController(TestController):
         
         assert '"auth_item":' in response
         assert '"challenge": "%s"' % chal_hex in response
-        assert '"response": "%s"' % resp_hex in response 
+        assert '"response": "%s"' % resp_hex in response
         assert '"serial": "UBOM123456_1",' in response
         assert '"serial": "UBOM234567_1",' in response
         assert '"application": "luks",' in response
-        self._delete_machine(machine1)
-        self._delete_token(serial)
+        
+        self._delete_yubikeys(serials=serials)
+        
+    def test_add_machine_options(self):
+        '''
+        Adding MachineOptions, slot for LUKS app...
+        '''
+        serials = ["UBOM123456_1", "UBOM234567_1"]
+        machine = "machine1"
+        ip = "10.0.0.1"
+        app = "luks"
+        self._create_yubikeys(serials=serials,
+                              machine=machine,
+                              ip=ip)
 
+        response = self.app.get(url(controller='machine', action='addtoken'),
+                                {'name': machine,
+                                 'serial': serials[0],
+                                 'application': app,
+                                 'option_slot': 2})
+        print response
+        assert ('"status": true' in response)
+        assert ('"value": true' in response)
+        
+        response = self.app.get(url(controller='machine',
+                                    action='gettokenapps'),
+                                params={"name": machine,
+                                        "application": app,
+                                        "client": ip})
+        print "============"
+        print "slot options"
+        print "============"
+        print response
+        
+        assert '"option_slot": "2"' in response
+        
+        self._delete_yubikeys(serials=serials)
+
+    def test_add_and_remove_options(self):
+        """
+        Add and remove options from a machinetoken definition
+        """
+        serials = ["UBOM123456_1", "UBOM234567_1"]
+        machine = "machine1"
+        ip = "10.0.0.1"
+        app = "luks"
+        self._create_yubikeys(serials=serials,
+                              machine=machine,
+                              ip=ip)
+        # add a token
+        response = self.app.get(url(controller='machine', action='addtoken'),
+                                {'name': machine,
+                                 'serial': serials[1],
+                                 'application': app})
+        assert ('"status": true' in response)
+        assert ('"value": true' in response)
+        # determine the machinetoken_id
+        response = self.app.get(url(controller='machine',
+                                    action='gettokenapps'),
+                                params={"name": machine,
+                                        "application": app,
+                                        "client": ip})
+        data = json.loads(response.body)
+        print response
+        assert "UBOM234567_1" in response
+        
+        print "=========== Add option ==============="
+        mtid = data.get("result").get("value").get("machines").keys()[0]
+        # add the option
+        response = self.app.get(url(controller="machine", action="addoption"),
+                                params={"mtid": mtid,
+                                        "option_slot": 5})
+        print response
+        assert ('"status": true' in response)
+        assert ('"value": 1' in response)
+        
+        print "=========== Check options ==============="
+        response = self.app.get(url(controller='machine',
+                                    action='gettokenapps'),
+                                params={"name": machine,
+                                        "application": app,
+                                        "client": ip})
+        print response
+        assert '"option_slot": "5"' in response
+        
+        print "====== delete option ====================="
+        response = self.app.get(url(controller="machine", action="deloption"),
+                                params={"mtid": mtid,
+                                        "key": "option_slot"})
+        print response
+        assert ('"status": true' in response)
+        assert ('"value": true' in response)
+        
+        print "=========== Check options ==============="
+        response = self.app.get(url(controller='machine',
+                                    action='gettokenapps'),
+                                params={"name": machine,
+                                        "application": app,
+                                        "client": ip})
+        print response
+        assert '"option_slot": "5"' not in response
+        # cleanup
+        self._delete_yubikeys(serials=serials)

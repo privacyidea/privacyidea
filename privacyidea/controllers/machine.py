@@ -43,6 +43,8 @@ from privacyidea.lib.machine import addtoken
 from privacyidea.lib.machine import deltoken
 from privacyidea.lib.machine import showtoken
 from privacyidea.lib.machine import get_token_apps
+from privacyidea.lib.machine import addoption
+from privacyidea.lib.machine import deloption
 from privacyidea.lib.selftest import isSelfTest
 
 
@@ -252,10 +254,15 @@ class MachineController(BaseController):
         :param name: Name of the machine
         :param serial: serial number of the token
         :param application: name of the application
+        :param option_*: parameter is passed as additional option to
+                         the machinetoken to be stored in machineoptions table.
+                         In case of LUKS application this can be
+                         "option_slot"
         '''
         try:
             res = False
             param = {}
+            options = {}
             # check machine authorization
             self.Policy.checkPolicyPre('machine', 'addtoken')
             param.update(request.params)
@@ -268,7 +275,14 @@ class MachineController(BaseController):
                           "%r" % (application, config.get("applications").keys()))
                 raise Exception("Unkown application!")
             
-            mt = addtoken(machine_name, serial, application)
+            for p in param.keys():
+                if p.startswith("option_"):
+                    options[p] = param.get(p)
+            
+            mt = addtoken(machine_name,
+                          serial,
+                          application,
+                          options=options)
             if mt:
                 res = True
             Session.commit()
@@ -289,7 +303,50 @@ class MachineController(BaseController):
 
         finally:
             Session.close()
+
+    @log_with(log)
+    def addoption(self, action, **params):
+        '''
+        Add an option to a machinetoken definition
         
+        :param mtid: id of the machine token definition
+        :param option_*: name of the option.
+                         In case of LUKS application this can be
+                         "option_slot"
+        '''
+        try:
+            num = -1
+            param = {}
+            options = {}
+            # check machine authorization
+            self.Policy.checkPolicyPre('machine', 'addtoken')
+            param.update(request.params)
+            mtid = getParam(param, "mtid", required)
+            for p in param.keys():
+                if p.startswith("option_"):
+                    options[p] = param.get(p)
+            
+            
+            num = addoption(mtid, options=options)
+            Session.commit()
+            c.audit["success"] = True
+            return sendResult(response, num, 1)
+
+        except PolicyException as pe:
+            log.error("policy failed: %r" % pe)
+            log.error(traceback.format_exc())
+            Session.rollback()
+            return sendError(response, unicode(pe))
+
+        except Exception as exx:
+            log.error("failed: %r" % exx)
+            log.error(traceback.format_exc())
+            Session.rollback()
+            return sendError(response, unicode(exx), 0)
+
+        finally:
+            Session.close()
+      
     @log_with(log)
     def deltoken(self, action, **params):
         '''
@@ -325,6 +382,48 @@ class MachineController(BaseController):
             log.error(traceback.format_exc())
             Session.rollback()
             return sendError(response, unicode(exx), 0)
+        finally:
+            Session.close()
+
+
+    @log_with(log)
+    def deloption(self, action, **params):
+        '''
+        delete an option to a machinetoken definition
+        
+        :param mtid: id of the machine token definition
+        :param key: name of the option.
+                     In case of LUKS application this can be
+                     "option_slot"
+        '''
+        try:
+            num = -1
+            param = {}
+            # check machine authorization
+            self.Policy.checkPolicyPre('machine', 'deltoken')
+            param.update(request.params)
+            mtid = getParam(param, "mtid", required)
+            mt_key = getParam(param, "key", required)
+            
+            num = deloption(mtid, mt_key)
+            Session.commit()
+            c.audit["success"] = True
+            return sendResult(response, num, 1)
+
+        except PolicyException as pe:
+            log.error("policy failed: %r" % pe)
+            log.error(traceback.format_exc())
+            Session.rollback()
+            return sendError(response, unicode(pe))
+
+        except Exception as exx:
+            log.error("failed: %r" % exx)
+            log.error(traceback.format_exc())
+            Session.rollback()
+            return sendError(response, unicode(exx), 0)
+        finally:
+            Session.close()
+
 
     @log_with(log)
     def showtoken(self, action, **params):
@@ -457,7 +556,9 @@ class MachineController(BaseController):
 
         finally:
             Session.close()
-        
+     
+    
+       
     @log_with(log)
     def getapplications(self, action, **params):
         '''
@@ -480,3 +581,4 @@ class MachineController(BaseController):
 
         finally:
             Session.close()
+            

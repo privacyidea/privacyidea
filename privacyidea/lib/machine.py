@@ -95,8 +95,77 @@ def _get_token_id(serial):
     return token_id
 
 
+def _get_machinetoken_id(machine_id, token_id, application):
+    sqlquery = Session.query(MachineToken.id)\
+                .filter(and_(MachineToken.token_id == token_id,
+                             MachineToken.machine_id == machine_id,
+                             MachineToken.application == application))
+    for row in sqlquery:
+        r = row.id
+    return r
+    
+
+def get_options(machine_id=None,
+                token_id=None,
+                application=None,
+                machinetoken_id=None):
+    """
+    returns a dictionary of the options for a given tuple
+    of machine, token and application from the table
+    MachineOptions.
+    
+    :param machine_id: id of the machine
+    :param token_id: id ot the token
+    :param application: name of the application
+    :param machinetoken_id: id of the machineToken-entry
+    
+    :return: option dictionary
+     
+    You either need to specify (machine_ind, token_id, application) or
+    the machinetoken_id.
+    """
+    options = {}
+    if machinetoken_id:
+        sqlquery = Session.query(MachineOptions).\
+            filter(MachineOptions.machinetoken_id == machinetoken_id)
+        for option in sqlquery:
+            options[option.mt_key] = option.mt_value
+    elif (machine_id and token_id and application):
+        raise NotImplementedError("the tupple machine_id, token_id, "
+                                  "application is not implemented, yet.")
+    else:
+        raise Exception("You either need to specify the machinetoken_id"
+                        "or the tupple token_id, machine_id, application.")
+    return options
+
+
+def addoption(mtid, options={}):
+    """
+    Add options to the machine token definition
+    :param mtid: id of the machinetoken
+    """
+    for option_name, option_value in options.items():
+            MachineOptions(mtid, option_name, option_value)
+    return len(options)
+
+
+def deloption(mtid, key):
+    """
+    delete option from a machine token definition
+    :param mtid: id of the machinetoken
+    """
+    num = Session.query(MachineOptions).\
+                        filter(and_(MachineOptions.machinetoken_id == mtid,
+                                    MachineOptions.mt_key == key)).delete()
+    Session.commit()
+    return num == 1
+
+
 @log_with(log)
-def addtoken(machine_name, serial, application):
+def addtoken(machine_name,
+             serial,
+             application,
+             options=None):
     machine_id = _get_machine_id(machine_name)
     if not machine_id:
         raise Exception("No machine with name %r found!" % machine_name)
@@ -105,18 +174,29 @@ def addtoken(machine_name, serial, application):
         raise Exception("No token with serial %r found!" % serial)
     machinetoken = MachineToken(machine_id, token_id, application)
     machinetoken.store()
+    # Add options to the machine token
+    if options:
+        addoption(machinetoken.id, options)
+            
     return machinetoken
 
-
+  
 @log_with(log)
 def deltoken(machine_name, serial, application):
+    """
+    Delete a machine token.
+    Also deletes the corresponding MachineOptions
+    """
     machine_id = _get_machine_id(machine_name)
     token_id = _get_token_id(serial)
+    mtid = _get_machinetoken_id(machine_id, token_id, application)
     
     num = Session.query(MachineToken).\
         filter(and_(MachineToken.token_id == token_id,
                     MachineToken.machine_id == machine_id,
                     MachineToken.application == application)).delete()
+    Session.query(MachineOptions).\
+        filter(MachineOptions.machinetoken_id == mtid).delete()
     Session.commit()
     # 1 -> success
     return num == 1
@@ -171,7 +251,7 @@ def showtoken(machine_name=None,
             elif qtype == "description":
                 cond_list.append(Machine.cm_desc.like("%" + query + "%"))
             elif qtype == "serial":
-                cond_list.append(Token.privacyIDEATokenSerialnumber.\
+                cond_list.append(Token.privacyIDEATokenSerialnumber.
                                  like("%" + query + "%"))
             elif qtype == "application":
                 cond_list.append(MachineToken.application.like("%" 
@@ -291,6 +371,7 @@ def get_token_apps(machine=None,
     machines = res.get("machines")
     if application:
         for machine in machines.values():
+            # add token information
             serial = machine.get("serial")
             token_type = getTokenType(serial)
             auth_item = get_auth_item(application,
@@ -299,5 +380,8 @@ def get_token_apps(machine=None,
                                       serial,
                                       challenge=challenge)
             machine["auth_item"] = auth_item
+            # add options
+            machine_options = get_options(machinetoken_id=machine.get("id"))
+            machine["options"] = machine_options
   
     return res
