@@ -34,6 +34,7 @@ from privacyidea.lib.reply import sendResult, sendError
 from privacyidea.model.meta import Session
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.policy import PolicyException
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.config import get_privacyIDEA_config
 
 from privacyidea.lib.machine import delete as delete_machine
@@ -310,9 +311,15 @@ class MachineController(BaseController):
         Add an option to a machinetoken definition
         
         :param mtid: id of the machine token definition
+        :param name: machine_name
+        :param serial: serial number of the token
+        :param application: application
         :param option_*: name of the option.
                          In case of LUKS application this can be
                          "option_slot"
+                         
+        You either need to provide the machine-token-id (mtid) directly or
+        you need to provide the tuple (name, serial, application)
         '''
         try:
             num = -1
@@ -321,13 +328,24 @@ class MachineController(BaseController):
             # check machine authorization
             self.Policy.checkPolicyPre('machine', 'addtoken')
             param.update(request.params)
-            mtid = getParam(param, "mtid", required)
+            mtid = getParam(param, "mtid", optional)
+            machine_name = getParam(param, "name", optional)
+            serial = getParam(param, "serial", optional)
+            application = getParam(param, "application", optional)
+            if not (mtid or (machine_name and serial and application)):
+                raise ParameterError("You need to specify either mtid or"
+                                     "the tuple name, serial, application",
+                                     id=201)
+               
             for p in param.keys():
                 if p.startswith("option_"):
                     options[p] = param.get(p)
             
-            
-            num = addoption(mtid, options=options)
+            num = addoption(mtid,
+                            name=machine_name,
+                            serial=serial,
+                            application=application,
+                            options=options)
             Session.commit()
             c.audit["success"] = True
             return sendResult(response, num, 1)
@@ -346,7 +364,61 @@ class MachineController(BaseController):
 
         finally:
             Session.close()
-      
+
+    @log_with(log)
+    def deloption(self, action, **params):
+        '''
+        Delete an option from a machinetoken definition
+        
+        :param mtid: id of the machine token definition
+        :param name: machine_name
+        :param serial: serial number of the token
+        :param application: application
+        :param key: key of the option to delete
+                         
+        You either need to provide the machine-token-id (mtid) directly or
+        you need to provide the tuple (name, serial, application)
+        '''
+        try:
+            num = -1
+            param = {}
+            options = {}
+            # check machine authorization
+            self.Policy.checkPolicyPre('machine', 'deltoken')
+            param.update(request.params)
+            mtid = getParam(param, "mtid", optional)
+            machine_name = getParam(param, "name", optional)
+            serial = getParam(param, "serial", optional)
+            option_key = getParam(param, "key", required)
+            application = getParam(param, "application", optional)
+            if not (mtid or (machine_name and serial and application)):
+                raise ParameterError("You need to specify either mtid or"
+                                     "the tuple name, serial, application",
+                                     id=201)
+            num = deloption(mtid,
+                            name=machine_name,
+                            serial=serial,
+                            application=application,
+                            key=option_key)
+            Session.commit()
+            c.audit["success"] = True
+            return sendResult(response, num, 1)
+
+        except PolicyException as pe:
+            log.error("policy failed: %r" % pe)
+            log.error(traceback.format_exc())
+            Session.rollback()
+            return sendError(response, unicode(pe))
+
+        except Exception as exx:
+            log.error("failed: %r" % exx)
+            log.error(traceback.format_exc())
+            Session.rollback()
+            return sendError(response, unicode(exx), 0)
+
+        finally:
+            Session.close()
+
     @log_with(log)
     def deltoken(self, action, **params):
         '''
@@ -384,46 +456,6 @@ class MachineController(BaseController):
             return sendError(response, unicode(exx), 0)
         finally:
             Session.close()
-
-
-    @log_with(log)
-    def deloption(self, action, **params):
-        '''
-        delete an option to a machinetoken definition
-        
-        :param mtid: id of the machine token definition
-        :param key: name of the option.
-                     In case of LUKS application this can be
-                     "option_slot"
-        '''
-        try:
-            num = -1
-            param = {}
-            # check machine authorization
-            self.Policy.checkPolicyPre('machine', 'deltoken')
-            param.update(request.params)
-            mtid = getParam(param, "mtid", required)
-            mt_key = getParam(param, "key", required)
-            
-            num = deloption(mtid, mt_key)
-            Session.commit()
-            c.audit["success"] = True
-            return sendResult(response, num, 1)
-
-        except PolicyException as pe:
-            log.error("policy failed: %r" % pe)
-            log.error(traceback.format_exc())
-            Session.rollback()
-            return sendError(response, unicode(pe))
-
-        except Exception as exx:
-            log.error("failed: %r" % exx)
-            log.error(traceback.format_exc())
-            Session.rollback()
-            return sendError(response, unicode(exx), 0)
-        finally:
-            Session.close()
-
 
     @log_with(log)
     def showtoken(self, action, **params):

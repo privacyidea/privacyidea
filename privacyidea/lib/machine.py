@@ -131,29 +131,51 @@ def get_options(machine_id=None,
         for option in sqlquery:
             options[option.mt_key] = option.mt_value
     elif (machine_id and token_id and application):
-        raise NotImplementedError("the tupple machine_id, token_id, "
+        raise NotImplementedError("the tuple machine_id, token_id, "
                                   "application is not implemented, yet.")
     else:
         raise Exception("You either need to specify the machinetoken_id"
-                        "or the tupple token_id, machine_id, application.")
+                        "or the tuple token_id, machine_id, application.")
     return options
 
 
-def addoption(mtid, options={}):
+def addoption(mtid=None,
+              name=None,
+              serial=None,
+              application=None,
+              options={}):
     """
     Add options to the machine token definition
     :param mtid: id of the machinetoken
+    :param name: the machine name
+    :param serial: the serial number of the token
+    :param app: the application
     """
+    if not mtid:
+        mtid = _get_machinetoken_id(_get_machine_id(name),
+                                    _get_token_id(serial),
+                                    application)
     for option_name, option_value in options.items():
             MachineOptions(mtid, option_name, option_value)
     return len(options)
 
 
-def deloption(mtid, key):
+def deloption(mtid=None,
+              name=None,
+              serial=None,
+              application=None,
+              key=None):
     """
     delete option from a machine token definition
     :param mtid: id of the machinetoken
+    :param name: the machine name
+    :param serial: the serial number of the token
+    :param app: the application
     """
+    if not mtid:
+        mtid = _get_machinetoken_id(_get_machine_id(name),
+                                    _get_token_id(serial),
+                                    application)
     num = Session.query(MachineOptions).\
                         filter(and_(MachineOptions.machinetoken_id == mtid,
                                     MachineOptions.mt_key == key)).delete()
@@ -176,7 +198,7 @@ def addtoken(machine_name,
     machinetoken.store()
     # Add options to the machine token
     if options:
-        addoption(machinetoken.id, options)
+        addoption(machinetoken.id, options=options)
             
     return machinetoken
 
@@ -285,6 +307,7 @@ def showtoken(machine_name=None,
             page_size = int(params.get("rp", 15))
 
         sqlquery = Session.query(Machine,
+                                 MachineToken.id,
                                  MachineToken.application,
                                  Token.privacyIDEATokenSerialnumber)\
                                         .outerjoin(MachineToken)\
@@ -306,7 +329,7 @@ def showtoken(machine_name=None,
         rows = []
         m_id = 0
         for row in sqlquery:
-            machine, application, serial = row
+            machine, mtid, application, serial = row
             m_id += 1
             rows.append({'id': m_id,
                          'cell': [(m_id),
@@ -314,8 +337,8 @@ def showtoken(machine_name=None,
                                   (machine.cm_name),
                                   (machine.cm_ip),
                                   (machine.cm_desc),
-                                  (serial),
-                                  (application)]})
+                                  (serial) or "",
+                                  (application) or ""]})
         
         res = {"page": page,
                "total": total}
@@ -325,6 +348,11 @@ def showtoken(machine_name=None,
         sqlquery = Session.query(MachineToken).filter(condition)
         for row in sqlquery:
             machines[row.id] = row.to_json()
+            # add options
+            if application:
+                machine_options = get_options(machinetoken_id=row.id)
+                machines[row.id]["options"] = machine_options
+
         res["total"] = len(machines)
         res["machines"] = machines
 

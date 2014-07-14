@@ -214,7 +214,7 @@ class RemoteTokenClass(TokenClass):
         :param user: the requesting user
         :param options: the additional request parameters
 
-        :return: tupple of (success, otp_count - 0 or -1, reply)
+        :return: tuple of (success, otp_count - 0 or -1, reply)
 
         """
         log.debug("authenticate")
@@ -474,7 +474,7 @@ class RemoteTokenClass(TokenClass):
         Only if it is locally checked and not remotely.
 
         :param passw: the password with pin and otp
-        :return: tupple of the (success, pin and otpvalue)
+        :return: tuple of the (success, pin and otpvalue)
 
         """
         res = 0

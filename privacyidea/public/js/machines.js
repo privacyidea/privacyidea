@@ -89,7 +89,8 @@ function get_selected_machine(name){
     var selectedMachine = "";
     $('#machine_table .trSelected').each(function(){
     	rowid = $(this).attr("id").substr(3);
-    	selectedMachine = $('td[abbr="'+name+'"] >div', this).html();
+    	obj = $('td[abbr="'+name+'"] >div', this);
+    	selectedMachine = obj.html();
     	});
     return selectedMachine;
 }
@@ -102,18 +103,31 @@ function _fix_space(value) {
 }
 
 function view_selected_machine(){
-	machine = get_selected_machine("machine");
-	application = get_selected_machine("application");
-	ip = get_selected_machine("IP");
-	description = get_selected_machine("description");
-	serial = get_selected_machine("serial");
+	/*
+	 * This function is called, when a machine entry
+	 * in the flexigrid is selected
+	 */
+	machine = _fix_space(get_selected_machine("machine"));
+	application = _fix_space(get_selected_machine("application"));
+	ip = _fix_space(get_selected_machine("IP"));
+	description = _fix_space(get_selected_machine("description"));
+	serial = _fix_space(get_selected_machine("serial"));
 	
-	$('#machine_name').val(_fix_space(machine));
-	$('#machine_ip').val(_fix_space(ip));
-	$('#machine_application').val(_fix_space(application));
-	$('#machine_serial').val(_fix_space(serial));
-	$('#machine_desc').val(_fix_space(description));
-	
+	$('#machine_name').val(machine);
+	$('#machine_ip').val(ip);
+	$('#machine_application').val(application);
+	$('#machine_serial').val(serial);
+	$('#machine_desc').val(description);
+	// if we also contain application and serial, we
+	// call all the options...
+	if ((application != "") && (serial != "")) {
+		clientUrlFetch("/machine/showtoken",
+				{"name": machine,
+				"serial": serial,
+				"application": application,
+				"session": getsession()},
+				options_callback);
+	} 
 }
 
 function machine_delete(){
@@ -134,6 +148,39 @@ function machine_delete_callback(xhdr, textStatus) {
     }else{
     	alert_info_text("text_delete_machine_success", "", "info");
     	$('#machine_table').flexReload();
+    }
+}
+
+function options_callback(xhdr, textStatus) {
+	/* This function is called, when the options for a
+	 * selected machinetoken is fetched
+	 */
+	resp = xhdr.responseText;
+	obj = jQuery.parseJSON(resp);
+    if (obj.result.status == false) {
+    	alert_info_text(obj.result.error.message);
+    }else{
+    	// remove old table rows
+    	$('#options_table tr.dynamic').remove();
+    	if (obj.result.value.machines) {
+    		machines = obj.result.value.machines;
+    		id = Object.keys(obj.result.value.machines)[0];
+    		machine = obj.result.value.machines[id];
+    		options = machine.options;
+    		// This machine token has options
+    		for (var key in options) {
+    			new_row = "<tr class=dynamic><td>"+key+"</td><td>"+ options[key] +"</td>";
+    			new_row += "<td><button id='" +key+ "' class='button_delete_option' title='Remove application option' ";
+    			new_row += "onclick='machine_delete_option(this.id);'> </button></td>";
+    			new_row += "</tr>";
+    			$('#options_table tr:last').before(new_row);
+    			$('.button_delete_option').button({
+    		        icons: {
+    		            primary: 'ui-icon-minusthick'
+    		        }
+    		    });
+    		}
+    	}
     }
 }
 
@@ -187,6 +234,69 @@ function do_machine_create(){
 	return false;
 }
 
+function machine_add_option(){
+	/*
+	 * This adds a new option to an existing machine
+	 */
+	var machine = $('#machine_name').val();
+	var serial = $('#machine_serial').val();
+	var application = $('#machine_application').val();
+	var new_option_key = $('#new_option_key').val();
+	// If the key does not start with "option_", we add it!
+	if (new_option_key.indexOf("option_") != 0) {
+		new_option_key = "option_" + new_option_key;
+	}
+	var new_option_value = $('#new_option_value').val();
+	if ((machine == "") ||
+		(serial == "") ||
+		(application == "")) {
+    	alert_info_text("text_add_option_missing_entry", "", "error");		
+	} else {
+		var params = {"session": getsession(),
+				 "name": machine,
+				 "serial": serial,
+				 "application": application};
+		params[new_option_key] = new_option_value;
+		resp = clientUrlFetchSync("/machine/addoption",
+				params);
+		obj = jQuery.parseJSON(resp);
+	    if (obj.result.status) {
+	    	// reload the selected machine.
+			view_selected_machine();
+			// clear the entries
+			$('#new_option_key').val("");
+			$('#new_option_value').val("");
+	    }
+	}
+}
+
+function machine_delete_option(key){
+	/* 
+	 * Deletes this option from a selected machinetoken
+	 */	
+	var machine = $('#machine_name').val();
+	var serial = $('#machine_serial').val();
+	var application = $('#machine_application').val();
+	if ((machine == "") ||
+		(serial == "") ||
+		(application == "")) {
+	    	alert_info_text("text_add_option_missing_entry", "", "error");		
+		} else {
+			var params = {"session": getsession(),
+					 "name": machine,
+					 "serial": serial,
+					 "application": application,
+					 "key": key};
+			resp = clientUrlFetchSync("/machine/deloption",
+					params);
+			obj = jQuery.parseJSON(resp);
+		    if (obj.result.status) {
+		    	// reload the selected machine.
+				view_selected_machine();
+		    }
+		}
+}
+
 function do_delete_machine(){
 	machine = get_selected_machine("machine");
     clientUrlFetch("/machine/delete", 
@@ -230,7 +340,7 @@ function view_machine() {
 			{display: 'IP', name : 'IP', isdefault: false},
 			{display: 'description', name : 'description', isdefault: false},
 			{display: 'serial', name : 'serial', isdefault: false},
-			{display: 'application', name: 'application' }
+			{display: 'application', name: 'application', isdefault: false}
 		],
 		rpOptions: [10,15,30,50],
 		sortname: "machine",

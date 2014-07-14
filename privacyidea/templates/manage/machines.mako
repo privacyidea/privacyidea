@@ -3,6 +3,11 @@
  
 <script type="text/javascript"> 
 	view_machine();
+	$('#button_add_option').button({
+        icons: {
+            primary: 'ui-icon-plusthick'
+        }
+    });
 </script>
 
 <div style="float:right">
@@ -19,6 +24,7 @@
 <div>
 <fieldset>
 <legend>${_("Client machine")}</legend>
+<div style="float:left">
 <table>
 <tr><td><label for=machine_name>${_("Machine name")}</label></td>
 <td><input type="text" class="required"  id="machine_name" size="40" maxlength="80" 
@@ -54,10 +60,40 @@
 <td>
 <select id="machine_application" 
           title='${_("The application for this token on the machine")}'>
+<span id="machine_mtid"
+	title='$_{"This is the identifier in the machine-application-token mapping"}'> 
+</span>
 </td>
 </tr>
 
 </table>
 <button onclick="do_machine_create();">${_("Create machine")}</button>
+</div>
+
+<!--=========== Options ================-->
+<div style="float:right">
+<fieldset>
+<legend>${_("Application options")}</legend>
+<table id="options_table">
+<tr><th>
+${_("Option keys")}
+</th><th>
+${_("Option values")}
+</th><th>
+</th></tr>
+<tr><td>
+<input type="text" id="new_option_key" size="10" maxlenght=40 
+	title='${_("A option key starting with option_")}'>
+</td><td>
+<input type="text" id="new_option_value" size="10" maxlenght=40 
+	title='${_("The option value")}'>
+</td><td>
+<button id="button_add_option" onclick="machine_add_option();"
+   title='${_("Add application option")}'>
+</button>
+</td></tr>
+</table>
+</fieldset>
+</div>
 </fieldset>
 </div>

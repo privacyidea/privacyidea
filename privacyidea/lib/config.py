@@ -581,7 +581,7 @@ def updateConfig(confi):
                 del p_keys[entry + ".desc"]
 
     if typing == True:
-        ## tupple dict containing the additional info
+        ## tuple dict containing the additional info
         t_dict = {}
         for entry in p_keys:
             val = confi.get(entry)

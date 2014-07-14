@@ -315,7 +315,7 @@ def get_token_class_list():
     '''
     provide a dict of token types and their classes
 
-    :return: tupple of two dict
+    :return: tuple of two dict
              -tokenclass_dict  {token type : token class}
              -tokenprefix_dict {token type : token prefix}
     '''
