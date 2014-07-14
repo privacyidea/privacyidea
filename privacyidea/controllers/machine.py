@@ -391,9 +391,28 @@ class MachineController(BaseController):
         :param name: the machine name -
                     otherwise the machine is identified by the IP
         :type name: string, optional
-        :param application: the name of the application
+        :param application: the name of the application. If the application is
+                            given the response will also conatin the auth_item
         :type application: sting, optional
-        :param serial: THe serial number of the token
+        :param serial: The serial number of the token
+        
+        :return: dictionary with machine and authentication information
+        
+        
+        {"total": 2,
+         "machines":  { 1 : {"application": "luks",
+                             "auth_item": {"challenge": "hex...",
+                                           "response":: "hex..."},
+                             "id": 1,
+                             "ip": 10.0.0.1,
+                             "machine_id": 1,
+                             "machinename": "computerABC",
+                             "serial": "<serialnumber of token>",
+                             "token_id": 1
+                            },
+                        2 : ...
+                      }
+        }
         '''
         try:
             res = False

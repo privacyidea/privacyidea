@@ -288,14 +288,16 @@ def get_token_apps(machine=None,
      2. token type
      3. serial number
     '''
-    if application and serial:
-        token_type = getTokenType(serial)
-        auth_item = get_auth_item(application,
-                                  application_module,
-                                  token_type,
-                                  serial,
-                                  challenge=challenge)
-    
-        res["auth_item"] = auth_item
-    
+    machines = res.get("machines")
+    if application:
+        for machine in machines.values():
+            serial = machine.get("serial")
+            token_type = getTokenType(serial)
+            auth_item = get_auth_item(application,
+                                      application_module,
+                                      token_type,
+                                      serial,
+                                      challenge=challenge)
+            machine["auth_item"] = auth_item
+  
     return res

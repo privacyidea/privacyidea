@@ -433,32 +433,35 @@ class TestMachineController(TestController):
         '''
         get authentication items
         '''
-        serial = "UBOM123456_1"
+        serial1 = "UBOM123456_1"
+        serial2 = "UBOM234567_1"
         otpkey = "a60f076ca60e6d966f3bdcdc96f5e94c3c8efc32"
         chal_hex = "d1835d598bc20c4ce8312ba94f046a015f7a70c48631b88f29922f1183e77873"
         resp_hex = "c7f7a081d06a738f913dce36b538091adc6d2e93"
         client = "10.0.0.1"
-        param = {'type': 'yubikey',
-                 'serial': serial,
-                 'otpkey': otpkey,
-                 'otplen': 8,
-                 'type': "TOTP"}
         machine1 = "machine1"
         app = "luks"
-        response = self.app.get(url(controller='admin', action='init'),
-                                params=param)
-        print response
-        assert '"value": true' in response
-        
         self._create_machine(machine1,
                              ip=client)
-        self._add_token(machine1, serial, app)
+        # create two tokens for the one machine
+        for serial in [serial1, serial2]:
+            param = {'type': 'yubikey',
+                     'serial': serial,
+                     'otpkey': otpkey,
+                     'otplen': 8,
+                     'type': "TOTP"}
+            response = self.app.get(url(controller='admin', action='init'),
+                                    params=param)
+            print response
+            assert '"value": true' in response
         
+            self._add_token(machine1, serial, app)
+        
+        # get all auth_items for LUKS on machine without serial number
         response = self.app.get(url(controller='machine',
                                     action='gettokenapps'),
                                 params={"name": machine1,
                                         "application": app,
-                                        "serial": serial,
                                         "client": client,
                                         "challenge": chal_hex})
         print "============"
@@ -470,6 +473,7 @@ class TestMachineController(TestController):
         assert '"challenge": "%s"' % chal_hex in response
         assert '"response": "%s"' % resp_hex in response 
         assert '"serial": "UBOM123456_1",' in response
+        assert '"serial": "UBOM234567_1",' in response
         assert '"application": "luks",' in response
         self._delete_machine(machine1)
         self._delete_token(serial)
