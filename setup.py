@@ -47,9 +47,7 @@ setup(
     url='http://www.privacyidea.org',
     install_requires=[
 	"WebOb>=1.2,<1.4",
-	# repoze.who is not compatible with the pylons 1.0.1 tests.
-	# it will run with 1.0.1 but the tests will fail!
-        "Pylons>=0.9.7,<=1.0",
+        "Pylons>=0.9.7",
         "SQLAlchemy>=0.6",
         "docutils>=0.4",
         "simplejson>=2.0",
