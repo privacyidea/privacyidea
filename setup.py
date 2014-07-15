@@ -44,7 +44,7 @@ setup(
     url='http://www.privacyidea.org',
     install_requires=[
 	"WebOb>=1.2,<1.4",
-        "Pylons>=0.9.7",
+        "Pylons>=0.9.7,<=1.0",
         "SQLAlchemy>=0.6",
         "docutils>=0.4",
         "simplejson>=2.0",

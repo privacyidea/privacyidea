@@ -49,6 +49,8 @@ debianize:
 	rm -fr build
 	mkdir -p DEBUILD/privacyidea.org
 	cp -r * DEBUILD/privacyidea.org || true
+	# pylons TEST ARE BREAKING with pylons 1.0.1! Only allow 1.0.1 for debian package!
+	sed s/'"Pylons>=0.9.7,<=1.0",'/'"Pylons>=0.9.7",'/g setup.py > DEBUILD/privacyidea.org/setup.py
 	# We need to touch this, so that our config files 
 	# are written to /etc
 	touch DEBUILD/privacyidea.org/PRIVACYIDEA_DEBIAN_PACKAGE
