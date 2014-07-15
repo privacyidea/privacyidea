@@ -90,7 +90,7 @@ setup(
                                 "tools/privacyidea-create-certificate.1",
                                 "tools/privacyidea-create-database.1",
                                 "tools/privacyidea-fix-access-rights.1",
-				"doc/_build/man/privacyidea.1"
+#				"doc/_build/man/privacyidea.1"
 				]),
 	('lib/privacyidea/authmodules/FreeRADIUS', ["authmodules/FreeRADIUS/LICENSE",
 						    "authmodules/FreeRADIUS/privacyidea_radius.pm"]),

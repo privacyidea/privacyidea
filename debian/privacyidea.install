@@ -5,3 +5,6 @@ config/debian/default/privacyidea	etc/default/
 # apache config
 config/debian/sites-available/privacyidea	etc/apache2/sites-available/
 config/debian/privacyidea.ini	etc/privacyidea/
+
+# man page
+doc/_build/man/privacyidea.1 	usr/share/man/man1
