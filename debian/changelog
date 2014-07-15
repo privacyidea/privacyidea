@@ -1,5 +1,5 @@
-privacyidea (1.2~dev1-2) trusty; urgency=low
+privacyidea (1.2~dev2-1) trusty; urgency=low
 
-  * initial build
+  * initial ubuntu release
 
  -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 14 Jul 2014 18:56:55 +0200
