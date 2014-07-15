@@ -28,9 +28,6 @@ def get_debian_package():
 	Set the environment variable PRIVACYIDEA_DEBIAN_PACKAGE_PREFIX
 	"""
     check_file = os.path.join(package_directory, "PRIVACYIDEA_DEBIAN_PACKAGE")
-    print
-    print check_file
-    print 
     if os.path.isfile(check_file):
         return "/"
     return ""
@@ -39,7 +36,7 @@ def get_debian_package():
 
 setup(
     name='privacyIDEA',
-    version='1.2dev0',
+    version='1.2dev1',
     description='privacyIDEA: identity, multifactor authentication, authorization, audit',
     author='privacyidea.org',
     license='AGPL v3',
@@ -82,9 +79,6 @@ setup(
 					'config/privacyideaapp.wsgi', 
 					'config/dictionary',
 					'config/dummy-encKey'] ),
-	(get_debian_package()+'etc/apache2/sites-available/',['config/privacyidea',
-				] ),
-	(get_debian_package()+'etc/init.d/',['config/privacyidea-paster']),
        # ('share/doc/privacyidea/', ["tools/README-migrate.txt"]),
      	('share/man/man1', ["tools/privacyidea-convert-token.1",
 				"tools/privacyidea-create-pwidresolver-user.1",
@@ -92,11 +86,15 @@ setup(
 				"tools/totp-token.1",
 				"tools/privacyidea-pip-update.1",
         	                "tools/privacyidea-create-enckey.1",
-                            "tools/privacyidea-create-auditkeys.1",
-                            "tools/privacyidea-create-certificate.1",
-                            "tools/privacyidea-create-database.1",
-                            "tools/privacyidea-fix-access-rights.1",
+                                "tools/privacyidea-create-auditkeys.1",
+                                "tools/privacyidea-create-certificate.1",
+                                "tools/privacyidea-create-database.1",
+                                "tools/privacyidea-fix-access-rights.1",
+				"doc/_build/man/privacyidea.1"
 				]),
+	('lib/privacyidea/authmodules/FreeRADIUS', ["authmodules/FreeRADIUS/LICENSE",
+						    "authmodules/FreeRADIUS/privacyidea_radius.pm"]),
+	('lib/privacyidea/authmodules/OTRS', ["authmodules/OTRS/privacyIDEA.pm"]),
        ],
     classifiers=[
 		"Framework :: Pylons",

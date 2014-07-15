@@ -1,0 +1,32 @@
+#!/bin/sh
+# see: dh_installdeb(1)
+
+set -e
+
+USERNAME=privacyidea
+
+# source debconf library
+. /usr/share/debconf/confmodule
+
+# Source dbconfig-common functions
+if [ -f /usr/share/dbconfig-common/dpkg/postinst.pgsql  ]; then
+  . /usr/share/dbconfig-common/dpkg/postinst.pgsql
+fi
+
+undo_repoze_who () {
+	# FIXME
+	cp -r /usr/share/pyshared/repoze/who /usr/lib/python2.7/dist-packages/repoze/
+	cp -r /usr/share/pyshared/repoze.who-1.0.18.egg-info/ /usr/lib/python2.7/dist-packages/ 
+	touch /usr/lib/python2.7/dist-packages/repoze/who/__init__.py
+	cp -r /usr/share/pyshared/repoze* /usr/lib/python2.7/dist-packages/
+	touch /usr/lib/python2.7/dist-packages/repoze/who/plugins/__init__.py
+}
+
+remove_user() {
+	userdel  $USERNAME 
+}
+
+#remove_user
+
+#DEBHELPER#
+exit 0

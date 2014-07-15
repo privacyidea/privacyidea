@@ -1,0 +1,18 @@
+Source: privacyidea
+Maintainer: Cornelius Kölbel <cornelius@privacyidea.org>
+Section: python
+Priority: optional
+Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.6.6-3), debhelper (>= 7.4.3), python-setuptools, python-pylons, python-qrcode, python-netaddr, python-ldap, python-pyrad, python-yaml, python-configobj, python-repoze.who, python-httplib2, python-crypto, python-docutils, python-repoze.who-plugins, python-sqlsoup
+Standards-Version: 3.9.5
+
+Package: privacyidea
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}
+Description: two-factor authentication system
+ privacyIDEA: identity, multifactor authentication, authorization.
+ privacyIDEA is an open solution for strong two-factor authentication.
+ privacyIDEA aims to not bind you to any decision of the authentication protocol or 
+ it does not dictate you where your user information should be stored. 
+ This is achieved by its totally modular architecture.
+ privacyIDEA is not only open as far as its modular architecture is concerned. 
+ But privacyIDEA is completely licensed under the AGPLv3.

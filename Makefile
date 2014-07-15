@@ -1,8 +1,13 @@
 info:
-	@echo "make translate - collect new strings and translate them"
-	@echo "make clean - remove all automatically created files"
-	@echo "make epydoc - create the API documentation"
-	@echo "make pypi - upload package to pypi"
+	@echo "make translate    - collect new strings and translate them"
+	@echo "make clean        - remove all automatically created files"
+	@echo "make epydoc       - create the API documentation"
+	@echo "make doc-man      - create the documentation as man-page"
+	@echo "make pypi         - upload package to pypi"
+	@echo "make debianzie    - prepare the debian build environment in DEBUILD"
+	@echo "make builddeb     - build .deb file locally on ubuntu 14.04!"
+	@echo "make ppa-dev      - upload to launchpad development repo"
+	
 
 translate:
 	# according to http://docs.pylonsproject.org/projects/pylons-webframework/en/latest/i18n.html#using-babel
@@ -21,8 +26,10 @@ clean:
 	rm -fr privacyIDEA.egg-info/
 	rm -fr API
 	rm -fr privacyidea/tests/testdata/data/
+	rm -fr DEBUILD
 
 pypi:
+	make doc-man
 	python setup.py sdist upload
 
 epydoc:
@@ -31,3 +38,29 @@ epydoc:
 depdoc:
 	#sfood privacyidea | sfood-graph | dot -Tpng -o graph.png	
 	dot -Tpng dependencies.dot -o dependencies.png
+
+doc-man:
+	(cd doc; make man)
+
+VERSION=1.2~dev1
+debianize:
+	make doc-man
+	rm -fr DEBUILD
+	rm -fr build
+	mkdir -p DEBUILD/privacyidea.org
+	cp -r * DEBUILD/privacyidea.org || true
+	# We need to touch this, so that our config files 
+	# are written to /etc
+	touch DEBUILD/privacyidea.org/PRIVACYIDEA_DEBIAN_PACKAGE
+	cp LICENSE DEBUILD/privacyidea.org/debian/copyright
+	(cd DEBUILD; tar -zcf privacyidea_${VERSION}.orig.tar.gz --exclude=privacyidea.org/debian  privacyidea.org)
+
+builddeb:
+	make debianize
+	(cd DEBUILD/privacyidea.org; debuild)
+
+ppa-dev:
+	make debianize
+	(cd DEBUILD/privacyidea.org; debuild -S)
+	# Upload to launchpad:
+	dput ppa:privacyidea/privacyidea-dev DEBUILD/privacyidea_${VERSION}-?_source.changes

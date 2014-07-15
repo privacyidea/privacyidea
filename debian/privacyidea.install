@@ -1,0 +1,7 @@
+#config/debian/peivacyidea.ini		etc/privacyidea/
+# start script
+config/debian/init.d/privacyidea	etc/init.d/
+config/debian/default/privacyidea	etc/default/
+# apache config
+config/debian/sites-available/privacyidea	etc/apache2/sites-available/
+config/debian/privacyidea.ini	etc/privacyidea/

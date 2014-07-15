@@ -1,0 +1,81 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          privacyidea
+# Required-Start:    $remote_fs   
+# Required-Stop:     $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start privacyIDEA daemon at boot time
+# Description:       privacyIDEA provides one time password authentication for many different services
+### END INIT INFO
+#
+# privacyIDEA Startup script for the privacyIDEA Pylons app
+#
+# chkconfig: - 90 15
+# description: privacyIDEA is a Pylons-based web application.
+RETVAL=0
+DESC=privacyidea
+APP_PATH=/etc/privacyidea
+PYTHON=/usr/bin/python
+PASTER=/usr/bin/paster
+CONFIG=/etc/privacyidea/privacyidea.ini
+USER=privacyidea
+GROUP=users
+LOG_FILE=/var/log/privacyidea/privacyidea.log
+PID_FILE=/var/run/privacyidea/privacyidea.pid
+LOCK_FILE=/var/run/privacyidea/privacyidea.lock
+
+OPTIONS=" serve -q --daemon \
+--user=$USER \
+--group=$GROUP \
+--log-file=$LOG_FILE \
+--pid-file=$PID_FILE \
+$CONFIG"
+
+if test -f /etc/default/privacyidea; then
+    . /etc/default/privacyidea
+fi
+
+# source debian functions
+if [ -f /lib/lsb/init-functions ]; then
+. /lib/lsb/init-functions
+fi
+
+case "$1" in
+  start)
+	log_daemon_msg "Starting privacyidea server via paster" "privacyidea" || true
+        if start-stop-daemon --start --quiet --oknodo --pidfile $PID_FILE --exec $PASTER -- $OPTIONS; then
+            log_end_msg 0 || true
+        else
+            log_end_msg 1 || true
+        fi
+        ;;
+  stop) 
+        log_daemon_msg "Stopping privacyidea server" "privacyidea" || true
+        if start-stop-daemon --stop --quiet --oknodo --pidfile $PID_FILE; then
+            log_end_msg 0 || true
+        else
+            log_end_msg 1 || true
+        fi
+        ;;
+  restart)
+        log_daemon_msg "Restarting privacyidea server" "privacyidea" || true
+        start-stop-daemon --stop --quiet --oknodo --retry 30 --pidfile $PID_FILE
+        if start-stop-daemon --start --quiet --oknodo --pidfile $PID_FILE --exec $PASTER -- $OPTIONS; then
+            log_end_msg 0 || true
+        else
+            log_end_msg 1 || true
+        fi
+        ;;
+  status)
+        status_of_proc -p $PID_FILE $PASTER privacyidea && exit 0 || exit $?
+        ;;
+
+  *)
+        log_action_msg "Usage: /etc/init.d/privacyidea {start|stop|restart|status}" || true
+        exit 1
+
+esac
+
+exit 0
+
