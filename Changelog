@@ -1,6 +1,16 @@
+Version 1.2, 2014-07-15
+
+* added application for machines like LUKS and SSH
+* send SMS via sipgate
+* add RADIUS support
+* SQL audit janitor
+* improved SMS provider UI
+* added possibility to do basic authentication instead of session auth.
+
 Version 1.1, 2014-06-25
 
 * Added documentation and in-UI-context-help.:q
 * Fixed the token config to be filled with sensible data, so 
   that you do not need to configure ALL token types.
 * Added script to clean up old audit logs.
+
