@@ -46,7 +46,6 @@ from privacyidea.lib.machine import showtoken
 from privacyidea.lib.machine import get_token_apps
 from privacyidea.lib.machine import addoption
 from privacyidea.lib.machine import deloption
-from privacyidea.lib.selftest import isSelfTest
 
 
 import traceback
@@ -553,9 +552,9 @@ class MachineController(BaseController):
             machine_name = getParam(param, "name", optional)
             application = getParam(param, "application", optional)
             serial = getParam(param, "serial", optional)
-            challenge = None
-            if isSelfTest():
-                challenge = getParam(param, "challenge", optional)
+            # In case of LUKS and Yubikey we need the client to
+            # pass the challenge as the challenge is the Password
+            challenge = getParam(param, "challenge", optional)
             client_ip = get_client()
             
             if application:

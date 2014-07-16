@@ -50,7 +50,7 @@ from paste.deploy import loadapp
 from paste.script.appinstall import SetupCommand
 
 from pylons import config, url
-from  pylons.configuration import config as env
+from pylons.configuration import config as env
 from routes.util import URLGenerator
 from webtest import TestApp
 
@@ -58,6 +58,7 @@ from privacyidea.config.environment import load_environment
 
 import warnings
 warnings.filterwarnings(action='ignore', category=DeprecationWarning)
+
 
 def fxn():
     warnings.warn("deprecated", DeprecationWarning)

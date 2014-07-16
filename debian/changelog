@@ -1,3 +1,10 @@
+privacyidea (1.2.1~dev0-1) trusty; urgency=low
+
+  * machine controller: make the challenge usable also in normal mode
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 16 Jul 2014 14:51:00 +0200
+
+
 privacyidea (1.2-1) trusty; urgency=low
 
   * Added 
