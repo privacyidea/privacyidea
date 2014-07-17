@@ -28,6 +28,7 @@ clean:
 	rm -fr API
 	rm -fr privacyidea/tests/testdata/data/
 	rm -fr DEBUILD
+	rm -fr RHBUILD
 
 pypi:
 	make doc-man
@@ -43,17 +44,36 @@ depdoc:
 doc-man:
 	(cd doc; make man)
 
+redhat:
+	make clean
+	mkdir RHBUILD
+	mkdir -p RHBUILD/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+	# create tarball
+	mkdir -p RHBUILD/SOURCES/privacyidea-${VERSION}
+	rsync -a --exclude=".*" --exclude="privacyIDEA.egg-info" --exclude="RHBUILD" --exclude="debian" --exclude="dist" --exclude="build" . RHBUILD/SOURCES/privacyidea-${VERSION} || true
+	touch    RHBUILD/SOURCES/privacyidea-${VERSION}/PRIVACYIDEA_PACKAGE
+	# We are using the same config file as in debia an replace it in setup.py
+	cp config/debian/privacyidea.ini RHBUILD/SOURCES/privacyidea-${VERSION}/config/
+	sed s/"privacyidea.ini.example"/"privacyidea.ini"/g setup.py > RHBUILD/SOURCES/privacyidea-${VERSION}/setup.py
+	# pack the modified source
+	(cd RHBUILD/SOURCES/; tar -zcf privacyidea-${VERSION}.tar.gz privacyidea-${VERSION})
+	rm -fr RHBUILD/SOURCES/privacyidea-${VERSION}
+	# copy spec file
+	cp config/redhat/privacyidea.spec RHBUILD/SPECS
+	# build it
+	rpmbuild --define "_topdir $(CURDIR)/RHBUILD" -ba RHBUILD/SPECS/privacyidea.spec
+	
+
 debianize:
+	make clean
 	make doc-man
-	rm -fr DEBUILD
-	rm -fr build
 	mkdir -p DEBUILD/privacyidea.org
 	cp -r * DEBUILD/privacyidea.org || true
 	# pylons TEST ARE BREAKING with pylons 1.0.1! Only allow 1.0.1 for debian package!
 	sed s/'"Pylons>=0.9.7,<=1.0",'/'"Pylons>=0.9.7",'/g setup.py > DEBUILD/privacyidea.org/setup.py
 	# We need to touch this, so that our config files 
 	# are written to /etc
-	touch DEBUILD/privacyidea.org/PRIVACYIDEA_DEBIAN_PACKAGE
+	touch DEBUILD/privacyidea.org/PRIVACYIDEA_PACKAGE
 	cp LICENSE DEBUILD/privacyidea.org/debian/copyright
 	(cd DEBUILD; tar -zcf privacyidea_${VERSION}.orig.tar.gz --exclude=privacyidea.org/debian  privacyidea.org)
 

@@ -22,15 +22,16 @@ def get_file_contents(file_path):
         print >> sys.stderr, "### could not open file: %r" % file_path
     return content
 
-def get_debian_package():
+def get_package():
     """
-	returns the slash, if we do a debian installation
-	Set the environment variable PRIVACYIDEA_DEBIAN_PACKAGE_PREFIX
-	"""
-    check_file = os.path.join(package_directory, "PRIVACYIDEA_DEBIAN_PACKAGE")
+    returns a tuple of path.
+    returns ("/", "/usr") if we do a pacakge installation. 
+    Then a file PRIVACYIDEA_PACKAGE needs to be created.
+    """
+    check_file = os.path.join(package_directory, "PRIVACYIDEA_PACKAGE")
     if os.path.isfile(check_file):
-        return "/"
-    return ""
+        return ("/", "/usr/")
+    return ("", "")
 
 
 
@@ -75,12 +76,12 @@ setup(
     packages=find_packages(exclude=['ez_setup']),
     include_package_data=True,
     test_suite='nose.collector',
-    data_files=[(get_debian_package()+'etc/privacyidea/', ['config/privacyidea.ini.example', 
+    data_files=[(get_package()[0]+'etc/privacyidea/', ['config/privacyidea.ini.example', 
 					'config/privacyideaapp.wsgi', 
 					'config/dictionary',
 					'config/dummy-encKey'] ),
        # ('share/doc/privacyidea/', ["tools/README-migrate.txt"]),
-     	('share/man/man1', ["tools/privacyidea-convert-token.1",
+     	(get_package()[1]+'share/man/man1', ["tools/privacyidea-convert-token.1",
 				"tools/privacyidea-create-pwidresolver-user.1",
 				"tools/privacyidea-create-sqlidresolver-user.1",
 				"tools/totp-token.1",
@@ -92,9 +93,9 @@ setup(
                                 "tools/privacyidea-fix-access-rights.1",
 #				"doc/_build/man/privacyidea.1"
 				]),
-	('lib/privacyidea/authmodules/FreeRADIUS', ["authmodules/FreeRADIUS/LICENSE",
+	(get_package()[1]+'lib/privacyidea/authmodules/FreeRADIUS', ["authmodules/FreeRADIUS/LICENSE",
 						    "authmodules/FreeRADIUS/privacyidea_radius.pm"]),
-	('lib/privacyidea/authmodules/OTRS', ["authmodules/OTRS/privacyIDEA.pm"]),
+	(get_package()[1]+'lib/privacyidea/authmodules/OTRS', ["authmodules/OTRS/privacyIDEA.pm"]),
        ],
     classifiers=[
 		"Framework :: Pylons",

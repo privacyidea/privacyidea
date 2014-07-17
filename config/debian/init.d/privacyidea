@@ -58,7 +58,7 @@ case "$1" in
             log_end_msg 1 || true
         fi
         ;;
-  restart)
+  restart|force-reload)
         log_daemon_msg "Restarting privacyidea server" "privacyidea" || true
         start-stop-daemon --stop --quiet --oknodo --retry 30 --pidfile $PID_FILE
         if start-stop-daemon --start --quiet --oknodo --pidfile $PID_FILE --exec $PASTER -- $OPTIONS; then
@@ -72,7 +72,7 @@ case "$1" in
         ;;
 
   *)
-        log_action_msg "Usage: /etc/init.d/privacyidea {start|stop|restart|status}" || true
+        log_action_msg "Usage: /etc/init.d/privacyidea {start|stop|restart|force-reload|status}" || true
         exit 1
 
 esac

@@ -8,7 +8,7 @@ Standards-Version: 3.9.5
 Package: privacyidea
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}
-Description: two-factor authentication system
+Description: two-factor authentication system e.g. for OTP devices
  privacyIDEA: identity, multifactor authentication, authorization.
  privacyIDEA is an open solution for strong two-factor authentication.
  privacyIDEA aims to not bind you to any decision of the authentication protocol or 
