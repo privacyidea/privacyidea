@@ -17,9 +17,24 @@ class MachineApplication(MachineApplicationBase):
                                 token_type,
                                 serial,
                                 challenge=None):
+        '''
+        :param token_type: the type of the token. At the moment
+                           we only support yubikeys, tokentype "TOTP".
+        :param serial:     the serial number of the token.
+                           The challenge response token needs to start with
+                           "UBOM".
+        :param challenge:  A challenge, for which a response get calculated.
+                           If none is presented, we create one.
+        :type challenge:   hex string
+        :return auth_item: For Yubikey token type it
+                           returns a dictionary with a "challenge" and
+                           a "response".
+        '''
         ret = {}
         if (token_type.lower() == "totp" and serial.startswith("UBOM")):
                 # create a challenge of 32 byte
+                # Although the yubikey is capable of doing 64byte challenges
+                # the hmac module calculates different responses for 64 bytes.
                 if challenge is None:
                     challenge = geturandom(32)
                     challenge_hex = binascii.hexlify(challenge)

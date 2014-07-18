@@ -115,10 +115,11 @@ class SecretObj:
         otpKeyEnc = binascii.hexlify(enc_otp_key)
         return (otpKeyEnc == self.val)
 
-
     def hmac_digest(self, data_input, hash_algo):
         self._setupKey_()
         if pver > 2.6:
+            # only for debugging
+            _hex_kex = binascii.hexlify(self.bkey)
             h = hmac.new(self.bkey, data_input, hash_algo).digest()
         else:
             h = hmac.new(self.bkey, str(data_input), hash_algo).digest()
