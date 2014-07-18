@@ -10,6 +10,10 @@ from privacyidea.lib.token import getTokens4UserOrSerial
 class MachineApplication(MachineApplicationBase):
     '''
     This is the application for LUKS.
+    
+    required options:
+        option_slot
+        option_partition
     '''
     application_name = "luks"
     
@@ -56,3 +60,10 @@ class MachineApplication(MachineApplicationBase):
                          "LUKS application module" % (serial, token_type))
             
         return ret
+
+    def get_options(self):
+        '''
+        returns a dictionary with a list of required and optional options
+        '''
+        return {'required': [],
+                'optional': ['option_slot', 'option_partition']}

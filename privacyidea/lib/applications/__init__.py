@@ -29,7 +29,18 @@ class MachineApplicationBase(object):
                                 token_type,
                                 serial,
                                 challenge=None):
+        '''
+        returns a dictionary of authentication items
+        like public keys, challenges, responses...
+        '''
         return "nothing"
+    
+    def get_options(self):
+        '''
+        returns a dictionary with a list of required and optional options
+        '''
+        return {'required': [],
+                'optional': []}
 
 
 @log_with(log)

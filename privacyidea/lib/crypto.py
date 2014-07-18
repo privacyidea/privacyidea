@@ -103,7 +103,7 @@ class SecretObj:
 
     def getKey(self):
         log.warn('Requesting secret key '
-                            '- verify the usage scope and zero + free ')
+                 '- verify the usage scope and zero + free ')
         return decrypt(self.val, self.iv)
 
     def getPin(self):
