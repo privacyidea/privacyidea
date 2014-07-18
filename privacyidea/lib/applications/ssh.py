@@ -9,8 +9,11 @@ class MachineApplication(MachineApplicationBase):
     '''
     This is the application for SSH.
     
-    Required options:
+    Possible options:
         option_user
+    
+    TODO: We could also match the token owner to the ssh user.
+    i.e. return the token owner
     '''
     application_name = "ssh"
     
