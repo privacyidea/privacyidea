@@ -37,7 +37,7 @@ def get_package():
 
 setup(
     name='privacyIDEA',
-    version='1.2.1',
+    version='1.2.2',
     description='privacyIDEA: identity, multifactor authentication, authorization, audit',
     author='privacyidea.org',
     license='AGPL v3',
@@ -58,7 +58,8 @@ setup(
 	"httplib2",
 	"pyyaml",
 	"python-ldap",
-	"Pillow"
+	"Pillow",
+	"sqlsoup"
     ],
     scripts=['tools/privacyidea-convert-token',
              'tools/privacyidea-create-pwidresolver-user',

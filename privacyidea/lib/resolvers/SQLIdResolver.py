@@ -27,7 +27,7 @@ from UserIdResolver import getResolverClass
 from sqlalchemy import and_
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.sqlsoup import SqlSoup
+from sqlsoup import SQLSoup
 
 from privacyidea.lib.phppass import PasswordHash
 import traceback
@@ -36,8 +36,7 @@ from base64 import b64decode
 import binascii
 
 log = logging.getLogger(__name__)
-ENCODING = "utf-8"
-       
+ENCODING = "utf-8" 
 
        
 class IdResolver (UserIdResolver):
@@ -339,7 +338,7 @@ class IdResolver (UserIdResolver):
 
         # create a Session
         self.session = Session()
-        self.db = SqlSoup(self.engine)
+        self.db = SQLSoup(self.engine)
         self.TABLE = self.db.entity(self.table)
         
         return self
@@ -423,7 +422,7 @@ class IdResolver (UserIdResolver):
         engine = create_engine(connect_string)
         # create a configured "Session" class
         session = sessionmaker(bind=engine)()
-        db = SqlSoup(engine)
+        db = SQLSoup(engine)
         TABLE = db.entity(param.get("Table"))
             
         try:    
