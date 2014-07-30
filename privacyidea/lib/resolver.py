@@ -191,9 +191,9 @@ def checkResolverType(resolver):
     :param resolver: full qualified resolver name
                      or optional with trailing conf like:
                        useridresolver.PasswdIdResolver.IdResolver.etc_resl
-    :return: True or False
+    :return: Tuple of bool (True|False) and resolver
     """
-    res = False
+    res = ""
     ret = False
 
     ## prepare
@@ -232,8 +232,10 @@ def checkResolverType(resolver):
     except Exception as exx:
         log.error("Failed to setup resolver %r: %r" % (res, exx))
         log.error("%r" % traceback.format_exc())
-        res = False
-        ret = False
+        # upper layer (controller) will catch
+        raise(exx)
+        # res = False
+        # ret = False
 
     return (ret, res)
 
@@ -426,6 +428,7 @@ def getResolverObject(resolvername):
     ## global context or to local data (where we have no reuse of the resolver)
 
     resolvers_loaded = {}
+    r_obj_class = None
     try:
         if hasattr(context, 'resolvers_loaded') == False:
             setattr(context, 'resolvers_loaded', {})

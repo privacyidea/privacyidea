@@ -590,7 +590,7 @@ scope = gettoken
         response = self.app.get(url(controller='system', action='setRealm') , {"realm" : "errorr",
                                                                                "resolvers" : "asdasd"})
         print response
-        self.assertTrue("unknown resolver u'asdasd'  or invalid resolver class specification" in response)
+        self.assertTrue("Error in resolver u'asdasd' please check the logfile!" in response)
         
     def test_empty_policy_name(self):
         response = self.app.get(url(controller='system', action='setPolicy') , {"name" : "",

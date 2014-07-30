@@ -856,11 +856,11 @@ class SystemController(BaseController):
 
             realm_resolvers = []
             for resolver in resolvers.split(','):
-                ## check resolver returns the correct resolver description
+                # check resolver returns the correct resolver description
                 (res, realm_resolver) = checkResolverType(resolver)
-                if res == False:
-                    raise Exception("unknown resolver %r  or invalid resolver "
-                                    "class specification " % resolver)
+                if res is False:
+                    raise Exception("Error in resolver %r please check the"
+                                    " logfile!" % resolver)
                 realm_resolvers.append(realm_resolver)
 
             resolvers = ",".join(realm_resolvers)
