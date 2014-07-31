@@ -29,19 +29,32 @@ function sshkey_get_enroll_params(){
 
 function sshkey_changed() {
     // Change the ssh key description
+    var pubkey = $('#ssh_key').val();
+    var re = new RegExp("==\\s*(.*)");
+    var m = re.exec(pubkey);
+    var s = "";
+  	if ( m ) {
+  		s=m[1];
+  		$('#enroll_ssh_desc').val(s);
+	}
 }
+
 </script>
 
 <p>${_("Here you can upload your public ssh key.")}</p>
 <table>
 <tr>
 	<td><label for="ssh_key">${_("SSH public key")}</label></td>
-	<td><input type="text" name="ssh_key" id="ssh_key" value="" class="text ui-widget-content ui-corner-all" /></td>
+	<td><textarea name="ssh_key" id="ssh_key" value="" class="text ui-widget-content ui-corner-all"
+		cols="40" rows="8" onChange="sshkey_changed();"
+		onKeyUp="sshkey_changed();"></textarea></td>
 </tr>
 <tr>
     <td><label for="enroll_ssh_desc" id='enroll_ssh_desc_label'>${_("Description")}</label></td>
     <!-- we read the description from the ssh key --> 
-    <td><input type="text" name="enroll_ssh_desc" id="enroll_ssh_desc" value="webGUI imported" class="text" /></td>
+    <td><input type="text" name="enroll_ssh_desc" id="enroll_ssh_desc" 
+    	value="webGUI imported" class="text"
+    	size=40 /></td>
 </tr>
 </table>
 
