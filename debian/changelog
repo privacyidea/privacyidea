@@ -1,3 +1,9 @@
+privacyidea (1.2.2-2) trusty; urgency=low
+
+  * Fixed the removed run-directory
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 31 Jul 2014 09:01:00 +0200
+
 privacyidea (1.2.2-1) trusty; urgency=low
 
   * Fixed the sqlsoup dependency
