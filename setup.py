@@ -124,6 +124,6 @@ setup(
     [nose.plugins]
     pylons = pylons.test:PylonsPlugin
     """,
-    long_description=get_file_contents('DESCRIPTION')
+    long_description=get_file_contents('README.md')
 
 )

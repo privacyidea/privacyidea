@@ -1,3 +1,9 @@
+privacyidea (1.3~dev0-2) trusty; urgency=low
+
+  * Fixed the missing run directory (#23)
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 31 Jul 2014 09:28:00 +0200
+ 
 privacyidea (1.3~dev0-1) trusty; urgency=low
 
   * Fix resolver error #22
