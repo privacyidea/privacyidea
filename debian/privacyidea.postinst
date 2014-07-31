@@ -28,7 +28,6 @@ create_user() {
 create_files() {
 	mkdir -p /var/log/privacyidea
         mkdir -p /var/lib/privacyidea
-	mkdir -p /var/run/privacyidea
 	touch /var/lib/privacyidea/token.sqlite
 	touch /var/log/privacyidea/privacyidea.log
 	if [ ! -e /etc/privacyidea/encKey ]; then
@@ -38,7 +37,6 @@ create_files() {
 	chown -R $USERNAME /var/log/privacyidea
 	chown -R $USERNAME /var/lib/privacyidea
 	chown -R $USERNAME /etc/privacyidea
-	chown -R $USERNAME /var/run/privacyidea
 	chmod 600 /etc/privacyidea/encKey
 }
 

@@ -36,6 +36,11 @@ if test -f /etc/default/privacyidea; then
     . /etc/default/privacyidea
 fi
 
+create_run_dir() {
+	mkdir -p `dirname $PID_FILE`
+	chown $USER `dirname $PID_FILE`
+}
+
 # source debian functions
 if [ -f /lib/lsb/init-functions ]; then
 . /lib/lsb/init-functions
@@ -43,6 +48,7 @@ fi
 
 case "$1" in
   start)
+	create_run_dir
 	log_daemon_msg "Starting privacyidea server via paster" "privacyidea" || true
         if start-stop-daemon --start --quiet --oknodo --pidfile $PID_FILE --exec $PASTER -- $OPTIONS; then
             log_end_msg 0 || true
