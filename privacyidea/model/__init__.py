@@ -8,6 +8,8 @@
 #                                                clienttoken,
 #                                                clientoptions
 #
+#     2014-08-01    Cornelius Kölbel, added table machinetoken, machineuser,
+#                                                 and corresponding options
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  LSE
 #  contact:  http://www.linotp.org
@@ -73,71 +75,70 @@ implicit_returning = config.get('privacyideaSQL.implicit_returning', True)
 @log_with(log)
 def init_model(engine):
     """Call me before using any of the tables or classes in the model"""
-    # Reflected tables must be defined and mapped here
-    # global reflected_table
-    # reflected_table = sa.Table("Reflected", meta.metadata, autoload=True,
-    #                           autoload_with=engine)
-    # orm.mapper(Reflected, reflected_table)
-    #
-    # sm = orm.sessionmaker(autoflush=True, autocommit=False, bind=engine)
-
-    # meta.Session = orm.scoped_session(sm)
-    # meta.engine = engine
 
     meta.Session.configure(bind=engine)
     meta.engine = engine
 
-## Non-reflected tables may be defined and mapped at module level
-#foo_table = sa.Table("Foo", meta.metadata,
-#    sa.Column("id", sa.types.Integer, primary_key=True),
-#    sa.Column("bar", sa.types.String(255), nullable=False),
-#    )
-#
-#class Foo(object):
-#    pass
-#
-#orm.mapper(Foo, foo_table)
-
-
-## Classes for reflected tables may be defined here, but the table and
-## mapping itself must be done in the init_model function
-#reflected_table = None
-#
-#class Reflected(object):
-#    pass
 
 token_table = sa.Table('Token', meta.metadata,
-                sa.Column('privacyIDEATokenId', sa.types.Integer(), sa.Sequence('token_seq_id', optional=True), primary_key=True, nullable=False),
-                sa.Column('privacyIDEATokenDesc', sa.types.Unicode(80), default=u''),
-                sa.Column('privacyIDEATokenSerialnumber', sa.types.Unicode(40), default=u'', unique=True, nullable=False, index=True),
+                       sa.Column('privacyIDEATokenId', sa.types.Integer(),
+                                 sa.Sequence('token_seq_id', optional=True),
+                                 primary_key=True, nullable=False),
+                       sa.Column('privacyIDEATokenDesc', sa.types.Unicode(80),
+                                 default=u''),
+                       sa.Column('privacyIDEATokenSerialnumber',
+                                 sa.types.Unicode(40), default=u'',
+                                 unique=True, nullable=False, index=True),
+                       sa.Column('privacyIDEATokenType', sa.types.Unicode(30),
+                                 default=u'HMAC', index=True),
+                       sa.Column('privacyIDEATokenInfo',
+                                 sa.types.Unicode(2000), default=u''),
+                       sa.Column('privacyIDEATokenPinUser',
+                                 sa.types.Unicode(512),
+                                 default=u''),  # encrypt
+                       sa.Column('privacyIDEATokenPinUserIV',
+                                 sa.types.Unicode(32), default=u''),  # encrypt
+                       sa.Column('privacyIDEATokenPinSO',
+                                 sa.types.Unicode(512),
+                                 default=u''),  # encrypt
+                       sa.Column('privacyIDEATokenPinSOIV',
+                                 sa.types.Unicode(32),
+                                 default=u''),  # encrypt
 
-                sa.Column('privacyIDEATokenType', sa.types.Unicode(30), default=u'HMAC', index=True),
-                sa.Column('privacyIDEATokenInfo', sa.types.Unicode(2000), default=u''),
-                sa.Column('privacyIDEATokenPinUser', sa.types.Unicode(512), default=u''),  ## encrypt
-                sa.Column('privacyIDEATokenPinUserIV', sa.types.Unicode(32), default=u''),  ## encrypt
-                sa.Column('privacyIDEATokenPinSO', sa.types.Unicode(512), default=u''),  ## encrypt
-                sa.Column('privacyIDEATokenPinSOIV', sa.types.Unicode(32), default=u''),  ## encrypt
+                       sa.Column('privacyIDEAIdResolver',
+                                 sa.types.Unicode(120), default=u'',
+                                 index=True),
+                       sa.Column('privacyIDEAIdResClass',
+                                 sa.types.Unicode(120), default=u''),
+                       sa.Column('privacyIDEAUserid',
+                                 sa.types.Unicode(320),
+                                 default=u'', index=True),
+                       
+                       sa.Column('privacyIDEASeed', sa.types.Unicode(32),
+                                 default=u''),
+                       sa.Column('privacyIDEAOtpLen', sa.types.Integer(),
+                                 default=6),
+                       sa.Column('privacyIDEAPinHash', sa.types.Unicode(512),
+                                 default=u''),  # hashed
+                       sa.Column('privacyIDEAKeyEnc', sa.types.Unicode(1024),
+                                 default=u''),  # encrypt
+                       sa.Column('privacyIDEAKeyIV', sa.types.Unicode(32),
+                                 default=u''),
 
-                sa.Column('privacyIDEAIdResolver', sa.types.Unicode(120), default=u'', index=True),
-                sa.Column('privacyIDEAIdResClass', sa.types.Unicode(120), default=u''),
-                sa.Column('privacyIDEAUserid', sa.types.Unicode(320), default=u'', index=True),
-
-
-                sa.Column('privacyIDEASeed', sa.types.Unicode(32), default=u''),
-                sa.Column('privacyIDEAOtpLen', sa.types.Integer(), default=6),
-                sa.Column('privacyIDEAPinHash', sa.types.Unicode(512), default=u''),  ## hashed
-                sa.Column('privacyIDEAKeyEnc', sa.types.Unicode(1024), default=u''),  ## encrypt
-                sa.Column('privacyIDEAKeyIV', sa.types.Unicode(32), default=u''),
-
-                sa.Column('privacyIDEAMaxFail', sa.types.Integer(), default=10),
-                sa.Column('privacyIDEAIsactive', sa.types.Boolean(), default=True),
-                sa.Column('privacyIDEAFailCount', sa.types.Integer(), default=0),
-                sa.Column('privacyIDEACount', sa.types.Integer(), default=0),
-                sa.Column('privacyIDEACountWindow', sa.types.Integer(), default=10),
-                sa.Column('privacyIDEASyncWindow', sa.types.Integer(), default=1000),
-                implicit_returning=implicit_returning,
-                )
-
+                       sa.Column('privacyIDEAMaxFail', sa.types.Integer(),
+                                 default=10),
+                       sa.Column('privacyIDEAIsactive', sa.types.Boolean(),
+                                 default=True),
+                       sa.Column('privacyIDEAFailCount', sa.types.Integer(),
+                                 default=0),
+                       sa.Column('privacyIDEACount', sa.types.Integer(),
+                                 default=0),
+                       sa.Column('privacyIDEACountWindow', sa.types.Integer(),
+                                 default=10),
+                       sa.Column('privacyIDEASyncWindow', sa.types.Integer(),
+                                 default=1000),
+                       implicit_returning=implicit_returning,
+                       )
 
 
 class Token(object):
@@ -145,7 +146,7 @@ class Token(object):
     @log_with(log)
     def __init__(self, serial):
 
-        ## self.privacyIDEATokenId - will be generated DBType serial
+        # self.privacyIDEATokenId - will be generated DBType serial
         self.privacyIDEATokenSerialnumber = u'' + serial
 
         self.privacyIDEATokenType = u''
@@ -165,7 +166,6 @@ class Token(object):
 
         # will be assigned automaticaly
         # self.privacyIDEATokenId      = 0
-
 
     def _fix_spaces(self, data):
         '''
@@ -189,7 +189,7 @@ class Token(object):
     @log_with(log)
     def setHKey(self, hOtpKey, reset_failcount=True):
         iv = geturandom(16)
-        #bhOtpKey            = binascii.unhexlify(hOtpKey)
+        # bhOtpKey            = binascii.unhexlify(hOtpKey)
         enc_otp_key = encrypt(hOtpKey, iv)
         self.privacyIDEAKeyEnc = unicode(binascii.hexlify(enc_otp_key))
         self.privacyIDEAKeyIV = unicode(binascii.hexlify(iv))
@@ -203,7 +203,6 @@ class Token(object):
         enc_userPin = encrypt(userPin, iv)
         self.privacyIDEATokenPinUser = unicode(binascii.hexlify(enc_userPin))
         self.privacyIDEATokenPinUserIV = unicode(binascii.hexlify(iv))
-
 
     @log_with(log)
     def getHOtpKey(self):
@@ -219,9 +218,11 @@ class Token(object):
     @log_with(log)
     def getUserPin(self):
         pu = self.privacyIDEATokenPinUser
-        if pu is None: pu = ''
+        if pu is None:
+            pu = ''
         puiv = self.privacyIDEATokenPinUserIV
-        if puiv is None: puiv = ''
+        if puiv is None:
+            puiv = ''
 
         key = binascii.unhexlify(pu)
         iv = binascii.unhexlify(puiv)
@@ -239,13 +240,16 @@ class Token(object):
         # TODO: we could log the PIN here.
         log.debug('getHashedPin()')
 
-        ## calculate a hash from a pin
+        # calculate a hash from a pin
         # Fix for working with MS SQL servers
-        # MS SQL servers sometimes return a '<space>' when the column is empty: ''
+        # MS SQL servers sometimes return a '<space>' when the
+        # column is empty: ''
         seed_str = self._fix_spaces(self.privacyIDEASeed)
         seed = binascii.unhexlify(seed_str)
         hPin = hash(pin, seed)
-        log.debug("hPin: %s, pin: %s, seed: %s" % (binascii.hexlify(hPin), pin, self.privacyIDEASeed))
+        log.debug("hPin: %s, pin: %s, seed: %s" % (binascii.hexlify(hPin),
+                                                   pin,
+                                                   self.privacyIDEASeed))
         return binascii.hexlify(hPin)
         
     @log_with(log)
@@ -266,10 +270,10 @@ class Token(object):
         upin = ""
         if pin != "" and pin is not None:
             upin = pin
-        if hashed == True:
+        if hashed is True:
             self.setHashedPin(upin)
             log.debug("setPin(HASH:%r)" % self.privacyIDEAPinHash)
-        elif hashed == False:
+        elif hashed is False:
             self.privacyIDEAPinHash = "@@" + encryptPin(upin)
             log.debug("setPin(ENCR:%r)" % self.privacyIDEAPinHash)
         return self.privacyIDEAPinHash
@@ -278,12 +282,12 @@ class Token(object):
         log.debug("entering comparePin")
         res = False
 
-        ## check for a valid input
+        # check for a valid input
         if pin is None:
             log.error("no valid PIN!")
             return res
 
-        if (self.isPinEncrypted() == True):
+        if (self.isPinEncrypted() is True):
             log.debug("we got an encrypted PIN!")
             tokenPin = self.privacyIDEAPinHash[2:]
             decryptTokenPin = decryptPin(tokenPin)
@@ -302,25 +306,24 @@ class Token(object):
 
     @log_with(log)
     def deleteToken(self):
-        ## some DBs (eg. DB2) run in deadlock, if the TokenRealm entry
-        ## is deleteted via foreign key relation
-        ## so we delete it explicit
+        # some DBs (eg. DB2) run in deadlock, if the TokenRealm entry
+        # is deleteted via foreign key relation
+        # so we delete it explicit
         Session.query(TokenRealm).filter(TokenRealm.token_id == self.privacyIDEATokenId).delete()
         Session.delete(self)
         return True
-
 
     def isPinEncrypted(self, pin=None):
         ret = False
         if pin is None:
             pin = self.privacyIDEAPinHash
-        if (pin.startswith("@@") == True):
+        if (pin.startswith("@@") is True):
             ret = True
         return ret
 
     def getPin(self):
         ret = -1
-        if self.isPinEncrypted() == True:
+        if self.isPinEncrypted() is True:
             tokenPin = self.privacyIDEAPinHash[2:]
             ret = decryptPin(tokenPin)
         return ret
@@ -332,7 +335,6 @@ class Token(object):
         enc_soPin = encrypt(soPin, iv)
         self.privacyIDEATokenPinSO = unicode(binascii.hexlify(enc_soPin))
         self.privacyIDEATokenPinSOIV = unicode(binascii.hexlify(iv))
-
 
     def __unicode__(self):
         return self.privacyIDEATokenDesc
@@ -346,11 +348,12 @@ class Token(object):
 
         :param key: the attribute name - in case of key is not provided, a dict
                     of all class attributes are returned
-        :param fallback: if the attribute is not found, the fallback is returned
+        :param fallback: if the attribute is not found,
+                         the fallback is returned
         :param save: in case of all attributes and save==True, the timestamp is
                      converted to a string representation
         '''
-        if key == None:
+        if key is None:
             return self.get_vars(save=save)
 
         if hasattr(self, key):
@@ -422,7 +425,8 @@ class Token(object):
 
     def getInfo(self):
         # Fix for working with MS SQL servers
-        # MS SQL servers sometimes return a '<space>' when the column is empty: ''
+        # MS SQL servers sometimes return a '<space>' when
+        # the column is empty: ''
         return self._fix_spaces(self.privacyIDEATokenInfo)
 
     def setInfo(self, info):
@@ -450,10 +454,10 @@ class Token(object):
         return self.privacyIDEATokenType
 
     def updateType(self, typ):
-        #in case the prevoius has been different type
+        # in case the prevoius has been different type
         # we must reset the counters
         # But be aware, ray, this could also be upper and lower case mixing...
-        if self.privacyIDEATokenType.lower() != typ.lower() :
+        if self.privacyIDEATokenType.lower() != typ.lower():
             self.privacyIDEACount = 0
             self.privacyIDEAFailCount = 0
 
@@ -461,10 +465,10 @@ class Token(object):
         return
 
     def updateOtpKey(self, otpKey):
-        #in case of a new hOtpKey we have to do some more things
+        # in case of a new hOtpKey we have to do some more things
         if (otpKey is not None):
             secretObj = self.getHOtpKey()
-            if secretObj.compare(otpKey) == False:
+            if secretObj.compare(otpKey) is False:
                 log.debug('update token OtpKey - counter reset')
                 self.setHKey(otpKey)
 
@@ -495,6 +499,7 @@ class Token(object):
         else:
             log.error("assigning empty realm!")
 
+
 @log_with(log)
 def createToken(serial):
     serial = u'' + serial
@@ -502,22 +507,27 @@ def createToken(serial):
     return token
 
 
-
 config_table = sa.Table('Config', meta.metadata,
-                sa.Column('Key', sa.types.Unicode(255), primary_key=True, nullable=False),
-                sa.Column('Value', sa.types.Unicode(2000), default=u''),
-                sa.Column('Type', sa.types.Unicode(2000), default=u''),
-                sa.Column('Description', sa.types.Unicode(2000), default=u''),
-                implicit_returning=implicit_returning,
-                )
+                        sa.Column('Key', sa.types.Unicode(255),
+                                  primary_key=True, nullable=False),
+                        sa.Column('Value', sa.types.Unicode(2000),
+                                  default=u''),
+                        sa.Column('Type', sa.types.Unicode(2000),
+                                  default=u''),
+                        sa.Column('Description', sa.types.Unicode(2000),
+                                  default=u''),
+                        implicit_returning=implicit_returning,
+                        )
 
 log.debug('config table append_column')
+
 
 class Config(object):
     
     @log_with(log)
     def __init__(self, Key, Value, Type=u'', Description=u''):
-        if (not Key.startswith("privacyidea.") and not Key.startswith("encprivacyidea.")):
+        if (not Key.startswith("privacyidea.") and
+                not Key.startswith("encprivacyidea.")):
             Key = "privacyidea." + Key
 
         self.Key = unicode(Key)
@@ -533,12 +543,18 @@ class Config(object):
 
 # This table connect a token to several realms
 tokenrealm_table = sa.Table('TokenRealm', meta.metadata,
-                sa.Column('id', sa.types.Integer(), sa.Sequence('tokenrealm_seq_id', optional=True), primary_key=True, nullable=False),
-                sa.Column('token_id', sa.types.Integer(), ForeignKey('Token.privacyIDEATokenId')),
-                #sa.Column('realm_id', sa.types.Integer())
-                sa.Column('realm_id', sa.types.Integer(), ForeignKey('Realm.id')),
-                implicit_returning=implicit_returning,
-                )
+                            sa.Column('id', sa.types.Integer(),
+                                      sa.Sequence('tokenrealm_seq_id',
+                                                  optional=True),
+                                      primary_key=True,
+                                      nullable=False),
+                            sa.Column('token_id', sa.types.Integer(),
+                                      ForeignKey('Token.privacyIDEATokenId')),
+                            sa.Column('realm_id', sa.types.Integer(),
+                                      ForeignKey('Realm.id')),
+                            implicit_returning=implicit_returning,
+                            )
+
 
 class TokenRealm(object):
 
@@ -549,19 +565,23 @@ class TokenRealm(object):
 
 
 realm_table = sa.Table('Realm', meta.metadata,
-                sa.Column('id', sa.types.Integer(), sa.Sequence('realm_seq_id', optional=True), primary_key=True, nullable=False),
-                sa.Column('name', sa.types.Unicode(255), default=u'', unique=True, nullable=False),
-                sa.Column('default', sa.types.Boolean(), default=False),
-                sa.Column('option', sa.types.Unicode(40), default=u''),
-                implicit_returning=implicit_returning,
-                )
+                       sa.Column('id', sa.types.Integer(),
+                                 sa.Sequence('realm_seq_id', optional=True),
+                                 primary_key=True, nullable=False),
+                       sa.Column('name', sa.types.Unicode(255), default=u'',
+                                 unique=True, nullable=False),
+                       sa.Column('default', sa.types.Boolean(), default=False),
+                       sa.Column('option', sa.types.Unicode(40), default=u''),
+                       implicit_returning=implicit_returning,
+                       )
+
 
 class Realm(object):
     
     @log_with(log)
     def __init__(self, realm):
         self.name = realm
-        #self.id     = 0
+        # self.id     = 0
 
     @log_with(log)
     def storeRealm(self):
@@ -577,19 +597,30 @@ ocra challenges are stored
 log.debug('creating ocra table')
 
 ocra_table = sa.Table('ocra', meta.metadata,
-                sa.Column('id', sa.types.Integer(), sa.Sequence('ocra_seq_id', optional=True), primary_key=True, nullable=False),
-                sa.Column('transid', sa.types.Unicode(20), unique=True,
-                                                nullable=False, index=True),
-                sa.Column('data', sa.types.Unicode(512), default=u''),
-                sa.Column('challenge', sa.types.Unicode(256), default=u''),
-                sa.Column('session', sa.types.Unicode(512), default=u''),
-                sa.Column('tokenserial', sa.types.Unicode(64), default=u''),
-                sa.Column('timestamp', sa.types.DateTime, default=datetime.now()),
-                sa.Column('received_count', sa.types.Integer(), default=0),
-                sa.Column('received_tan', sa.types.Boolean, default=False),
-                sa.Column('valid_tan', sa.types.Boolean, default=False),
-                implicit_returning=implicit_returning,
-                )
+                      sa.Column('id', sa.types.Integer(),
+                                sa.Sequence('ocra_seq_id', optional=True),
+                                primary_key=True, nullable=False),
+                      sa.Column('transid', sa.types.Unicode(20), unique=True,
+                                nullable=False, index=True),
+                      sa.Column('data', sa.types.Unicode(512),
+                                default=u''),
+                      sa.Column('challenge', sa.types.Unicode(256),
+                                default=u''),
+                      sa.Column('session', sa.types.Unicode(512),
+                                default=u''),
+                      sa.Column('tokenserial', sa.types.Unicode(64),
+                                default=u''),
+                      sa.Column('timestamp', sa.types.DateTime,
+                                default=datetime.now()),
+                      sa.Column('received_count', sa.types.Integer(),
+                                default=0),
+                      sa.Column('received_tan', sa.types.Boolean,
+                                default=False),
+                      sa.Column('valid_tan', sa.types.Boolean,
+                                default=False),
+                      implicit_returning=implicit_returning,
+                      )
+
 
 class OcraChallenge(object):
     '''
@@ -606,7 +637,6 @@ class OcraChallenge(object):
         self.received_count = 0
         self.received_tan = False
         self.valid_tan = False
-
 
     def setData(self, data):
         self.data = unicode(data)
@@ -643,7 +673,6 @@ class OcraChallenge(object):
         Session.commit()
         return self.transid
 
-
     def __unicode__(self):
         descr = {}
         descr['id'] = self.id
@@ -660,7 +689,6 @@ class OcraChallenge(object):
     __str__ = __unicode__
 
 
-
 ''' ''' '''
 challenges are stored
 ''' ''' '''
@@ -668,30 +696,40 @@ challenges are stored
 log.debug('creating challenges table')
 
 challenges_table = sa.Table('challenges', meta.metadata,
-                sa.Column('id', sa.types.Integer(),
-                          sa.Sequence('challenges_seq_id', optional=True),
-                          primary_key=True, nullable=False),
-                sa.Column('transid', sa.types.Unicode(64),
-                                                unique=True, nullable=False,
-                                                index=True),
-                sa.Column('data', sa.types.Unicode(512), default=u''),
-                sa.Column('challenge', sa.types.Unicode(512), default=u''),
-                sa.Column('session', sa.types.Unicode(512), default=u''),
-                sa.Column('tokenserial', sa.types.Unicode(64), default=u''),
-                sa.Column('timestamp', sa.types.DateTime,
-                                                    default=datetime.now()),
-                sa.Column('received_count', sa.types.Integer(), default=0),
-                sa.Column('received_tan', sa.types.Boolean, default=False),
-                sa.Column('valid_tan', sa.types.Boolean, default=False),
-                implicit_returning=implicit_returning,
-                )
+                            sa.Column('id', sa.types.Integer(),
+                                      sa.Sequence('challenges_seq_id',
+                                                  optional=True),
+                                      primary_key=True, nullable=False),
+                            sa.Column('transid', sa.types.Unicode(64),
+                                      unique=True, nullable=False,
+                                      index=True),
+                            sa.Column('data', sa.types.Unicode(512),
+                                      default=u''),
+                            sa.Column('challenge', sa.types.Unicode(512),
+                                      default=u''),
+                            sa.Column('session', sa.types.Unicode(512),
+                                      default=u''),
+                            sa.Column('tokenserial', sa.types.Unicode(64),
+                                      default=u''),
+                            sa.Column('timestamp', sa.types.DateTime,
+                                      default=datetime.now()),
+                            sa.Column('received_count', sa.types.Integer(),
+                                      default=0),
+                            sa.Column('received_tan', sa.types.Boolean,
+                                      default=False),
+                            sa.Column('valid_tan', sa.types.Boolean,
+                                      default=False),
+                            implicit_returning=implicit_returning,
+                            )
+
 
 class Challenge(object):
     '''
     the generic challenge handling
     '''
     @log_with(log)
-    def __init__(self, transid, tokenserial, challenge=u'', data=u'', session=u''):
+    def __init__(self, transid, tokenserial,
+                 challenge=u'', data=u'', session=u''):
 
         self.transid = u'' + transid
         self.challenge = u'' + challenge
@@ -721,11 +759,12 @@ class Challenge(object):
 
         :param key: the attribute name - in case of key is not provided, a dict
                     of all class attributes are returned
-        :param fallback: if the attribute is not found, the fallback is returned
+        :param fallback: if the attribute is not found, the
+                         fallback is returned
         :param save: in case of all attributes and save==True, the timestamp is
                      converted to a string representation
         '''
-        if key == None:
+        if key is None:
             return self.get_vars(save=save)
 
         if hasattr(self, key):
@@ -828,11 +867,13 @@ class Challenge(object):
 
 clientmachine_table = sa.Table('ClientMachine', meta.metadata,
                                sa.Column('id', sa.types.Integer(),
-                                         sa.Sequence('clientmachine_seq_id', optional=True),
+                                         sa.Sequence('clientmachine_seq_id',
+                                                     optional=True),
                                          primary_key=True, nullable=False),
                                sa.Column("cm_ip", sa.types.Unicode(64)),
-                               sa.Column("cm_name", sa.types.Unicode(64), 
-                                         sa.Sequence('clientmachine_seq_name', optional=True),
+                               sa.Column("cm_name", sa.types.Unicode(64),
+                                         sa.Sequence('clientmachine_seq_name',
+                                                     optional=True),
                                          unique=True, nullable=False),
                                sa.Column("cm_desc", sa.types.Unicode(128)),
                                sa.Column("cm_decommission", sa.types.DateTime),
@@ -849,7 +890,8 @@ class Machine(object):
         '''
         Create a new Machine database object
         
-        :param decommission: This is the date, when the machine should be decommissioned. 2014-07-02
+        :param decommission: This is the date, when the machine should be
+                             decommissioned. 2014-07-02
         :type decommission: string, date or datetime
         '''
         self.cm_ip = ip
@@ -881,10 +923,13 @@ class Machine(object):
 
 machinetoken_table = sa.Table('MachineToken', meta.metadata,
                               sa.Column('id', sa.types.Integer(),
-                                        sa.Sequence('machinetoken_seq_id', optional=True),
+                                        sa.Sequence('machinetoken_seq_id',
+                                                    optional=True),
                                         primary_key=True, nullable=False),
-                              sa.Column("token_id", sa.types.Integer(), ForeignKey('Token.privacyIDEATokenId')),
-                              sa.Column("machine_id", sa.types.Integer(), ForeignKey('ClientMachine.id')),
+                              sa.Column("token_id", sa.types.Integer(),
+                                        ForeignKey('Token.privacyIDEATokenId')),
+                              sa.Column("machine_id", sa.types.Integer(),
+                                        ForeignKey('ClientMachine.id')),
                               sa.Column("application", sa.types.Unicode(64)),
                               UniqueConstraint('token_id', 'machine_id',
                                                'application', name='uix_1'),
@@ -936,12 +981,17 @@ class MachineToken(object):
 
 machineuser_table = sa.Table('MachineUser', meta.metadata,
                              sa.Column('id', sa.types.Integer(),
-                                       sa.Sequence('machineuser_seq_id', optional=True),
+                                       sa.Sequence('machineuser_seq_id',
+                                                   optional=True),
                                        primary_key=True, nullable=False),
-                             sa.Column('resolver', sa.types.Unicode(120), default=u'', index=True),
-                             sa.Column('resclass', sa.types.Unicode(120), default=u''),
-                             sa.Column('user_id', sa.types.Unicode(320), default=u'', index=True),
-                             sa.Column("machine_id", sa.types.Integer(), ForeignKey('ClientMachine.id')),
+                             sa.Column('resolver', sa.types.Unicode(120),
+                                       default=u'', index=True),
+                             sa.Column('resclass', sa.types.Unicode(120),
+                                       default=u''),
+                             sa.Column('user_id', sa.types.Unicode(320),
+                                       default=u'', index=True),
+                             sa.Column("machine_id", sa.types.Integer(),
+                                       ForeignKey('ClientMachine.id')),
                              sa.Column("application", sa.types.Unicode(64)),
                              UniqueConstraint('resolver', 'resclass',
                                               'user_id', 'machine_id',
@@ -999,9 +1049,13 @@ machine_t_options_table = sa.Table('MachineTokenOptions', meta.metadata,
                                    sa.Column('id', sa.types.Integer(),
                                              sa.Sequence('machinetokenoptions_seq_id', optional=True),
                                              primary_key=True, nullable=False),
-                                   sa.Column('machinetoken_id', sa.types.Integer(), ForeignKey('MachineToken.id')),
-                                   sa.Column('mt_key', sa.types.Unicode(64), nullable=False),
-                                   sa.Column('mt_value', sa.types.Unicode(64), nullable=False),
+                                   sa.Column('machinetoken_id',
+                                             sa.types.Integer(),
+                                             ForeignKey('MachineToken.id')),
+                                   sa.Column('mt_key', sa.types.Unicode(64),
+                                             nullable=False),
+                                   sa.Column('mt_value', sa.types.Unicode(64),
+                                             nullable=False),
                                    implicit_returning=implicit_returning)
 
 
@@ -1027,10 +1081,15 @@ class MachineTokenOptions(object):
 machine_u_options_table = sa.Table('MachineUserOptions', meta.metadata,
                                    sa.Column('id', sa.types.Integer(),
                                              sa.Sequence('machineuseroptions_seq_id', optional=True),
-                                             primary_key=True, nullable=False),
-                                   sa.Column('machineuser_id', sa.types.Integer(), ForeignKey('MachineUser.id')),
-                                   sa.Column('mu_key', sa.types.Unicode(64), nullable=False),
-                                   sa.Column('mu_value', sa.types.Unicode(64), nullable=False),
+                                             primary_key=True,
+                                             nullable=False),
+                                   sa.Column('machineuser_id',
+                                             sa.types.Integer(),
+                                             ForeignKey('MachineUser.id')),
+                                   sa.Column('mu_key', sa.types.Unicode(64),
+                                             nullable=False),
+                                   sa.Column('mu_value', sa.types.Unicode(64),
+                                             nullable=False),
                                    implicit_returning=implicit_returning)
 
 
@@ -1055,15 +1114,6 @@ class MachineUserOptions(object):
 
 log.debug('calling ORM Mapper')
 
-# config_table.append_column( sa.Column('IV', sa.types.Unicode(2000), default=u''),)
-# see: http://www.sqlalchemy.org/docs/orm/relationships.html#sqlalchemy.orm.relationship
-#      http://www.sqlalchemy.org/docs/05/reference/orm/mapping.html
-# The realms of a token will be stored in the additional attribute "realms"
-# and the token, to which the realms belong will be stored in the backed "token"
-#orm.mapper(Token, token_table, properties={
-#    #'realms':relation(Realm, secondary=tokenrealm_table)
-#    'realms':relation(TokenRealm, backref=backref('token'))
-#    })
 
 orm.mapper(Token, token_table, properties={
     'realms': relation(Realm, secondary=tokenrealm_table,
