@@ -530,7 +530,7 @@ class TestMachineController(TestController):
         
     def test_add_machine_options(self):
         '''
-        Adding MachineOptions, slot for LUKS app...
+        Adding MachineTokenOptions, slot for LUKS app...
         '''
         serials = ["UBOM123456_1", "UBOM234567_1"]
         machine = "machine1"

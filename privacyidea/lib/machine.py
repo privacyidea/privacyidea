@@ -21,7 +21,7 @@
 from privacyidea.model import Machine
 from privacyidea.model import Token
 from privacyidea.model import MachineToken
-from privacyidea.model import MachineOptions
+from privacyidea.model import MachineTokenOptions
 from privacyidea.model.meta import Session
 from privacyidea.lib.token import getTokens4UserOrSerial
 from privacyidea.lib.token import getTokenType
@@ -112,7 +112,7 @@ def get_options(machine_id=None,
     """
     returns a dictionary of the options for a given tuple
     of machine, token and application from the table
-    MachineOptions.
+    MachineTokenOptions.
     
     :param machine_id: id of the machine
     :param token_id: id ot the token
@@ -126,8 +126,8 @@ def get_options(machine_id=None,
     """
     options = {}
     if machinetoken_id:
-        sqlquery = Session.query(MachineOptions).\
-            filter(MachineOptions.machinetoken_id == machinetoken_id)
+        sqlquery = Session.query(MachineTokenOptions).\
+            filter(MachineTokenOptions.machinetoken_id == machinetoken_id)
         for option in sqlquery:
             options[option.mt_key] = option.mt_value
     elif (machine_id and token_id and application):
@@ -156,7 +156,7 @@ def addoption(mtid=None,
                                     _get_token_id(serial),
                                     application)
     for option_name, option_value in options.items():
-            MachineOptions(mtid, option_name, option_value)
+            MachineTokenOptions(mtid, option_name, option_value)
     return len(options)
 
 
@@ -176,9 +176,9 @@ def deloption(mtid=None,
         mtid = _get_machinetoken_id(_get_machine_id(name),
                                     _get_token_id(serial),
                                     application)
-    num = Session.query(MachineOptions).\
-                        filter(and_(MachineOptions.machinetoken_id == mtid,
-                                    MachineOptions.mt_key == key)).delete()
+    num = Session.query(MachineTokenOptions).\
+                        filter(and_(MachineTokenOptions.machinetoken_id == mtid,
+                                    MachineTokenOptions.mt_key == key)).delete()
     Session.commit()
     return num == 1
 
@@ -207,7 +207,7 @@ def addtoken(machine_name,
 def deltoken(machine_name, serial, application):
     """
     Delete a machine token.
-    Also deletes the corresponding MachineOptions
+    Also deletes the corresponding MachineTokenOptions
     """
     machine_id = _get_machine_id(machine_name)
     token_id = _get_token_id(serial)
@@ -217,8 +217,8 @@ def deltoken(machine_name, serial, application):
         filter(and_(MachineToken.token_id == token_id,
                     MachineToken.machine_id == machine_id,
                     MachineToken.application == application)).delete()
-    Session.query(MachineOptions).\
-        filter(MachineOptions.machinetoken_id == mtid).delete()
+    Session.query(MachineTokenOptions).\
+        filter(MachineTokenOptions.machinetoken_id == mtid).delete()
     Session.commit()
     # 1 -> success
     return num == 1

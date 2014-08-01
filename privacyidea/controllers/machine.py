@@ -255,7 +255,8 @@ class MachineController(BaseController):
         :param serial: serial number of the token
         :param application: name of the application
         :param option_*: parameter is passed as additional option to
-                         the machinetoken to be stored in machineoptions table.
+                         the machinetoken to be stored in 
+                         machine_t_options table.
                          In case of LUKS application this can be
                          "option_slot"
         '''

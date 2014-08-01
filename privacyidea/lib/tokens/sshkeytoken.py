@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-#  privacyIDEA is a fork of LinOTP
+#  privacyIDEA
 #  Jul 18, 2014 Cornelius Kölbel
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org

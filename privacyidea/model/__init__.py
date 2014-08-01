@@ -688,7 +688,7 @@ challenges_table = sa.Table('challenges', meta.metadata,
 
 class Challenge(object):
     '''
-    the generic challange handling
+    the generic challenge handling
     '''
     @log_with(log)
     def __init__(self, transid, tokenserial, challenge=u'', data=u'', session=u''):
@@ -703,9 +703,8 @@ class Challenge(object):
         self.received_tan = False
         self.valid_tan = False
 
-
     @classmethod
-    def createTransactionId(cls , length=20):
+    def createTransactionId(cls, length=20):
         return get_rand_digit_str(length)
 
     def setData(self, data):
@@ -828,23 +827,24 @@ class Challenge(object):
 # This is the table that holds the definition of a client machine
 
 clientmachine_table = sa.Table('ClientMachine', meta.metadata,
-                sa.Column('id', sa.types.Integer(),
-                          sa.Sequence('clientmachine_seq_id', optional=True),
-                          primary_key=True, nullable=False),
-                sa.Column("cm_ip", sa.types.Unicode(64)),
-                sa.Column("cm_name", sa.types.Unicode(64), 
-                          sa.Sequence('clientmachine_seq_name', optional=True),
-                          unique=True, nullable=False),
-                sa.Column("cm_desc", sa.types.Unicode(128)),
-                sa.Column("cm_decommission", sa.types.DateTime),
-                implicit_returning=implicit_returning,
-                )
+                               sa.Column('id', sa.types.Integer(),
+                                         sa.Sequence('clientmachine_seq_id', optional=True),
+                                         primary_key=True, nullable=False),
+                               sa.Column("cm_ip", sa.types.Unicode(64)),
+                               sa.Column("cm_name", sa.types.Unicode(64), 
+                                         sa.Sequence('clientmachine_seq_name', optional=True),
+                                         unique=True, nullable=False),
+                               sa.Column("cm_desc", sa.types.Unicode(128)),
+                               sa.Column("cm_decommission", sa.types.DateTime),
+                               implicit_returning=implicit_returning,
+                               )
+
 
 class Machine(object):
     
     @log_with(log)
-    def __init__(self, name, ip=u'', 
-                 desc=u'', 
+    def __init__(self, name, ip=u'',
+                 desc=u'',
                  decommission=None):
         '''
         Create a new Machine database object
@@ -855,12 +855,11 @@ class Machine(object):
         self.cm_ip = ip
         self.cm_name = name
         self.cm_desc = desc
-        if type(decommission) in [ date, datetime ]:
+        if type(decommission) in [date, datetime]:
             self.cm_decommission = decommission
         elif type(decommission) == str:
             # convert the string to datetime:
             self.cm_decommission = datetime.strptime(decommission, '%Y-%m-%d')
-
 
     @log_with(log)
     def store(self):
@@ -869,11 +868,11 @@ class Machine(object):
         return True
 
     def to_json(self):
-        return {'id' : self.id,
-                'ip' : self.cm_ip,
-                'name' : self.cm_name,
-                'desc' : self.cm_desc,
-                'decommission' : str(self.cm_decommission)}
+        return {'id': self.id,
+                'ip': self.cm_ip,
+                'name': self.cm_name,
+                'desc': self.cm_desc,
+                'decommission': str(self.cm_decommission)}
         
 
 #
@@ -881,20 +880,21 @@ class Machine(object):
 #
 
 machinetoken_table = sa.Table('MachineToken', meta.metadata,
-                             sa.Column('id', sa.types.Integer(),
-                                       sa.Sequence('machinetoken_seq_id', optional=True),
-                                       primary_key=True, nullable=False),
-                             sa.Column("token_id", sa.types.Integer(), ForeignKey('Token.privacyIDEATokenId')),
-                             sa.Column("machine_id", sa.types.Integer(), ForeignKey('ClientMachine.id')),
-                             sa.Column("application", sa.types.Unicode(64)),
-                             UniqueConstraint('token_id', 'machine_id', 'application', name='uix_1'),
-                             implicit_returning=implicit_returning,
-                             )
+                              sa.Column('id', sa.types.Integer(),
+                                        sa.Sequence('machinetoken_seq_id', optional=True),
+                                        primary_key=True, nullable=False),
+                              sa.Column("token_id", sa.types.Integer(), ForeignKey('Token.privacyIDEATokenId')),
+                              sa.Column("machine_id", sa.types.Integer(), ForeignKey('ClientMachine.id')),
+                              sa.Column("application", sa.types.Unicode(64)),
+                              UniqueConstraint('token_id', 'machine_id',
+                                               'application', name='uix_1'),
+                              implicit_returning=implicit_returning,
+                              )
 
 
 class MachineToken(object):
     '''
-    The MachineToken maps a token to a client and 
+    The MachineToken maps a token to a client and
     an application on this client
     
     The tuple of (machine, token, application) is unique.
@@ -930,20 +930,82 @@ class MachineToken(object):
                 'serial': serial,
                 'machine_id': self.machine_id,
                 'machinename': machinename,
-                'ip': ip, 
+                'ip': ip,
                 'application': self.application}
-        
-machineoptions_table = sa.Table('MachineOptions', meta.metadata,
-                                sa.Column('id', sa.types.Integer(),
-                                       sa.Sequence('machineoptions_seq_id', optional=True),
+
+
+machineuser_table = sa.Table('MachineUser', meta.metadata,
+                             sa.Column('id', sa.types.Integer(),
+                                       sa.Sequence('machineuser_seq_id', optional=True),
                                        primary_key=True, nullable=False),
-                                sa.Column('machinetoken_id', sa.types.Integer(), ForeignKey('MachineToken.id')),
-                                sa.Column('mt_key', sa.types.Unicode(64), nullable=False),
-                                sa.Column('mt_value', sa.types.Unicode(64), nullable=False),
-                                implicit_returning=implicit_returning)
+                             sa.Column('resolver', sa.types.Unicode(120), default=u'', index=True),
+                             sa.Column('resclass', sa.types.Unicode(120), default=u''),
+                             sa.Column('user_id', sa.types.Unicode(320), default=u'', index=True),
+                             sa.Column("machine_id", sa.types.Integer(), ForeignKey('ClientMachine.id')),
+                             sa.Column("application", sa.types.Unicode(64)),
+                             UniqueConstraint('resolver', 'resclass',
+                                              'user_id', 'machine_id',
+                                              'application', name='uixu_1'),
+                             implicit_returning=implicit_returning,
+                             )
+        
+        
+class MachineUser(object):
+    '''
+    The MachineUser maps a user to a client and
+    an application on this client
+    
+    The tuple of (machine, USER, application) is unique.
+    
+    This can be an n:m mapping.
+    '''
+
+    @log_with(log)
+    def __init__(self, machine_id,
+                 resolver,
+                 resclass,
+                 user_id,
+                 application):
+        log.debug("setting machine_id to %r" % machine_id)
+        self.machine_id = machine_id
+        self.resolver = resolver
+        self.resclass = resclass
+        self.user_id = user_id
+        self.application = application
+        
+    @log_with(log)
+    def store(self):
+        Session.add(self)
+        Session.commit()
+        return True
+    
+    def to_json(self):
+        machinename = ""
+        ip = ""
+        if self.machine:
+            machinename = self.machine.cm_name
+            ip = self.machine.cm_ip
+        return {'id': self.id,
+                'user_id': self.user_id,
+                'resolver': self.resolver,
+                'resclass': self.resclass,
+                'machine_id': self.machine_id,
+                'machinename': machinename,
+                'ip': ip,
+                'application': self.application}
 
 
-class MachineOptions(object):
+machine_t_options_table = sa.Table('MachineTokenOptions', meta.metadata,
+                                   sa.Column('id', sa.types.Integer(),
+                                             sa.Sequence('machinetokenoptions_seq_id', optional=True),
+                                             primary_key=True, nullable=False),
+                                   sa.Column('machinetoken_id', sa.types.Integer(), ForeignKey('MachineToken.id')),
+                                   sa.Column('mt_key', sa.types.Unicode(64), nullable=False),
+                                   sa.Column('mt_value', sa.types.Unicode(64), nullable=False),
+                                   implicit_returning=implicit_returning)
+
+
+class MachineTokenOptions(object):
     '''
     This class holds an Option for the token assigned to
     a certain client machine.
@@ -960,6 +1022,36 @@ class MachineOptions(object):
         self.mt_value = value
         Session.add(self)
         Session.commit()
+
+
+machine_u_options_table = sa.Table('MachineUserOptions', meta.metadata,
+                                   sa.Column('id', sa.types.Integer(),
+                                             sa.Sequence('machineuseroptions_seq_id', optional=True),
+                                             primary_key=True, nullable=False),
+                                   sa.Column('machineuser_id', sa.types.Integer(), ForeignKey('MachineUser.id')),
+                                   sa.Column('mu_key', sa.types.Unicode(64), nullable=False),
+                                   sa.Column('mu_value', sa.types.Unicode(64), nullable=False),
+                                   implicit_returning=implicit_returning)
+
+
+class MachineUserOptions(object):
+    '''
+    This class holds an Option for the Users assigned to
+    a certain client machine.
+    Each User-Clientmachine-Combination can have several
+    options.
+    '''
+    
+    def __init__(self, machineuser_id, key, value):
+        log.debug("setting %r to %r for MachineUser %s" % (key,
+                                                           value,
+                                                           machineuser_id))
+        self.machineuser_id = machineuser_id
+        self.mu_key = key
+        self.mu_value = value
+        Session.add(self)
+        Session.commit()
+
 
 log.debug('calling ORM Mapper')
 
@@ -984,13 +1076,17 @@ orm.mapper(Config, config_table)
 orm.mapper(OcraChallenge, ocra_table)
 orm.mapper(Challenge, challenges_table)
 
+orm.mapper(Machine, clientmachine_table)
 orm.mapper(MachineToken, machinetoken_table,
            properties={'token': relation(Token, 
                                          primaryjoin=token_table.c.privacyIDEATokenId == machinetoken_table.c.token_id),
                        'machine': relation(Machine,
                                            primaryjoin=clientmachine_table.c.id == machinetoken_table.c.machine_id),
-                       'machineoptions': relation(MachineOptions,
-                                                  primaryjoin=machinetoken_table.c.id == machineoptions_table.c.machinetoken_id)
+                       'machine_t_options': relation(MachineTokenOptions,
+                                                     primaryjoin=machinetoken_table.c.id == machine_t_options_table.c.machinetoken_id)
                        }) 
-orm.mapper(Machine, clientmachine_table)
-orm.mapper(MachineOptions, machineoptions_table)
+orm.mapper(MachineTokenOptions, machine_t_options_table)
+# The MachineUser table is not connected with a non existing user table!
+orm.mapper(MachineUser, machineuser_table,
+           properties={'machine': relation(Machine,
+                                           primaryjoin=clientmachine_table.c.id == machineuser_table.c.machine_id)})
