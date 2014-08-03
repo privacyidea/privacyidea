@@ -3257,6 +3257,14 @@ $(document).ready(function(){
 	$('#menu_tools_exportaudit').click(function(){
         $dialog_tools_exportaudit.dialog('open');
     });
+	
+	/*** 
+	 * About
+	 */
+    $dialog_about = create_about_dialog();
+	$('#menu_help_about').click(function(){
+        $dialog_about.dialog('open');
+    });
 
     /************************************************************
      * Enrollment Dialog with response url
@@ -3869,9 +3877,6 @@ $(document).ready(function(){
 
 	$('#do_waiting').click(reset_waiting());
 
-	$('#button_bar').accordion({
-		heightStyle: "content"
-	});
 });
 //--------------------------------------------------------------------------------------
 // End of document ready

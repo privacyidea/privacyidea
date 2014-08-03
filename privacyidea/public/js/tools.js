@@ -1,3 +1,29 @@
+function create_about_dialog() {
+	/*
+	 * Create the about dialog
+	 */
+	var $dialog = $('#dialog_about').dialog({
+    	autoOpen: false,
+        title: 'About privacyIDEA',
+        width: 600,
+        modal: true,
+        buttons: {
+	            'Close': { click: function(){
+	                			$(this).dialog('close');
+							},
+							id: "button_about_dialog_close",
+							text: "close"
+	            }
+        },
+    	open: function() {
+        	do_dialog_icons();
+        	translate_about_dialog();
+    	}
+	    });
+	    return $dialog;
+  }
+
+
 function create_tools_getserial_dialog() {
 	 var $dialog = $('#dialog_get_serial').dialog({
         autoOpen: false,

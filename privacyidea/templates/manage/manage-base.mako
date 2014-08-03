@@ -4,8 +4,8 @@
 <head>
 <title>${_("privacyIDEA Management")}</title>
 
-<meta name="author" content="Cornelius Kölbel">
-<meta name="date" content="2010-08-21T00:25:13+0200">
+<meta name="author" content="Cornelius Kölbel" >
+<meta name="date" content="2014-08-03T18:39:14+0200" >
 <meta name="copyright" content="LSE Leading Security Experts GmbH">
 <meta name="keywords" content="privacyIDEA manage">
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
@@ -78,7 +78,11 @@
 		% endfor
 		</ul>
     </li>
-    <li><a href='${c.help_url}' target="_blank" id="menu_help">${_("Help")}</a>
+    <li><a href='#' id="menu_help">${_("Help")}</a>
+        <ul>
+        <li><a href='${c.help_url}' target="_blank" id="menu_help_online">${_("Online Help")}</a></li>
+        <li><a href='#' id="menu_help_about">${_("About")}</a></li>
+        </ul>
     </li>
     <li>
       <a href='#'>${c.admin}</a>
@@ -112,11 +116,67 @@ ${self.body()}
 ${c.version} | ${c.licenseinfo}
 </div>
 
+<div id="alert_box">
+    <span id="alert_box_text"> </span>
+</div>
+
 <span id="include_footer"> </span>
-</div>  <!-- end of wrap -->
 
 <div id="all_dialogs" style="display:none; height:0px;">
 <!-- ############ DIALOGS ######################### -->
+<div id=dialog_about>
+<div id=about_tabs>
+<ul>
+  <li><a href="#about1">Trivia</a>
+  <li><a href="#about2">${_("Contact")}</a>
+  <li><a href="#about3">${_("License")}</a>
+</ul>
+<div id=about1>
+<p>
+${_("""privacyIDEA is a modular authentication system. Originally for OTP  
+authentication devices. But other >>devices<< like challenge response 
+and SSH keys are coming up.""")}</p>
+<h2>${_("Openness and Transparency")}</h2>
+<p>
+${_("""privacyIDEA tries to be open in many ways. We try to provide best transparency:
+We host our code on github, so that you can monitor the development. 
+The issue tracker at github is used, so that you can see, which topic is hot, 
+what is coming up in the future and actually add your own requests! 
+New features are planned in the github wiki. We are using travis-ci.org 
+to run our tests. You can see which tests pass and also which test fail!
+Yes, code breaks and tests fail.""")}
+</p><p>
+${_("""privacyIDEA is not ruled by a single company
+(although at the moment only one company is involved).
+Thus when using privacyIDEA or getting involved you are not at the mercy of
+ one single, revenue driven decision maker.""")}
+</p>
+<p>
+<a href="https://www.privacyidea.org/about/about-the-name-privacyidea/"
+    target="_about">${_("Read more about the name privacyIDEA")}</a>
+</p>
+<p class=unimportant>
+${_("""privacyIDEA is a fork of LinOTP""")}<br>
+${_("""(c) 2010-2014 LSE Leading Security Experts GmbH""")}
+</p>
+</div>
+<div id=about2>
+<a href="http://www.privacyidea.org" target="_webpage">http://www.privacyidea.org</a>
+</div>
+<div id=about3>
+<p>
+${_("""The complete code is licensed under AGPLv3.""")}
+</p>
+</div>
+</div>  <!-- about-tabs -->
+</div>  <!-- about-dialog -->
+<script>
+$('#about_tabs').tabs();
+function translate_about_dialog() {
+        $("#dialog_about" ).dialog( "option", "title", '${_("About privacyIDEA")}' );
+        $('#button_about_dialog_close .ui-button-text').html('${_("close")}');
+}
+</script>
 <!-- ############ system settings ################# -->
 <div id=dialog_system_settings>
 <form class="cmxform" id="form_sysconfig">
@@ -138,10 +198,10 @@ ${c.version} | ${c.licenseinfo}
 				<table>
          			<tr><td><label for="sys_splitAtSign">${_("splitAtSign")}</label>: </td>
          				<td><input type="checkbox" name="sys_splitAtSign" id="sys_splitAtSign" value="sys_splitAtSign"
-         					title="${_('This will use the part right of an @-sign as realm')}"></td></tr>\
+         					title="${_('This will use the part right of an @-sign as realm')}"></td></tr>
          			<tr><td><label for="sys_allowSamlAttributes">${_("Return SAML Attributes")}</label>: </td>
 		    			<td><input type="checkbox" name="sys_allowSamlAttributes" id="sys_allowSamlAttributes" value="sys_allowSamlAttributes"
-		    				title="${_('The /validate/samlcheck controller will also return user attributes')}"></td></tr>\
+		    				title="${_('The /validate/samlcheck controller will also return user attributes')}"></td></tr>
          			<tr><td><label for="sys_failCounterInc">${_("FailCounterIncOnFalsePin")}</label>: </td>
          				<td><input type="checkbox" name="sys_failCounterInc" id="sys_failCounterInc" value="sys_failCounterInc"
          					title="${_('This will increase the failcounter, if the user provided a wrong PIN.')}"></td></tr>
@@ -162,7 +222,7 @@ ${c.version} | ${c.licenseinfo}
     			<table>
     				<tr><td><label for=sys_passOnUserNotFound>${_("Pass on user not found")}: </label></td>
          				<td><input type="checkbox" name="sys_passOnUserNotFound" id="sys_passOnUserNotFound" value="sys_passOnUserNotFound"
-         					title="${_('If checked, users who are not found in the useridresolvers are authenticated successfully. USE WITH CAUTION!')}"></td></tr>\
+         					title="${_('If checked, users who are not found in the useridresolvers are authenticated successfully. USE WITH CAUTION!')}"></td></tr>
 		   			<tr><td><label for=sys_passOnUserNoToken>${_("Pass on user no token")}: </label></td>
          				<td><input type="checkbox" name="sys_passOnUserNoToken" id="sys_passOnUserNoToken" value="sys_passOnUserNoToken"
 							title="${_('If checked, users who have no token get authenticated automatically successful. USE WITH CAUTION!')}"></td></tr>
@@ -619,9 +679,6 @@ ${c.version} | ${c.licenseinfo}
 			<input id='pskc_preshared' name='pskc_preshared' size='32'>
 			</p>
 			<input name="session" id="loadtokens_session_pskc" type="hidden" value="">
-
-    	</p>
-
 	</form>
 </div>
 
@@ -720,7 +777,7 @@ ${c.version} | ${c.licenseinfo}
     <form id="load_tokenfile_form_dat" action="/admin/loadtokens" method="post"
             enctype="multipart/form-data" onsubmit="return false;">
         <p>${_("Here you can upload the data file that came with your eToken.")}</p>
-        <p>${_("Please choose the token file")}:
+        <p>${_("Please choose the token file")}:</p>
             <input name="file" type="file" size="30" maxlength="1000000" accept="text/* data/*">
             <p>
                 <label for='startdate'>Startdate</label>
@@ -728,7 +785,6 @@ ${c.version} | ${c.licenseinfo}
             </p>
             <input name="type" type="hidden" value="dat">
             <input name="session" id="loadtokens_session_dat" type="hidden" value="">
-        </p>
     </form>
 </div>
 
@@ -743,7 +799,7 @@ ${c.version} | ${c.licenseinfo}
 <!-- ######################## import Feitian ############################# -->
 
 <div id='dialog_import_feitian'>
-	<form id="load_tokenfile_form_feitian" action="/admin/loadtokens" method="post"\
+	<form id="load_tokenfile_form_feitian" action="/admin/loadtokens" method="post"
 				enctype="multipart/form-data" onsubmit="return false;">
   				<p>${_("Here you can upload the XML file that came with your Feitian tokens.")}</p>
 				<p>${_("Please choose the token file")}:<br>
@@ -762,7 +818,7 @@ ${c.version} | ${c.licenseinfo}
 
 <!-- ################ import VASCO ################################## -->
 <div id='dialog_import_vasco'>
-	<form id="load_tokenfile_form_vasco" action="/admin/loadtokens" method="post"\
+	<form id="load_tokenfile_form_vasco" action="/admin/loadtokens" method="post"
 				enctype="multipart/form-data" onsubmit="return false;">
   				<p>${_("Here you can upload your Vasco dpx file.")}</p>
 				<p>${_("Please choose the token file")}:<br>
@@ -784,7 +840,7 @@ ${c.version} | ${c.licenseinfo}
 
 <!-- ################### dialog import policies ################# -->
 <div id='dialog_import_policy'>
-	<form id="load_policies" action="/system/importPolicy" method="post"\
+	<form id="load_policies" action="/system/importPolicy" method="post"
 				enctype="multipart/form-data" onsubmit="return false;">
   				<p>${_("Here you can import your policy file.")}</p>
 				<p>${_("Please choose the policy file")}:<br>
@@ -1292,8 +1348,9 @@ ${c.version} | ${c.licenseinfo}
 			<td><input type="password" autocomplete="off" name="sql_password"  id="sql_password" size="35" maxlength="60"></td></tr>
 		</table>
 		</fieldset>
-		<fieldset name='${_("SQL attributes")}'><table>
+		<fieldset name='${_("SQL attributes")}'>
 			<legend>${_("SQL attributes")}</legend>
+		<table>
 		<tr><td><label for=sql_table>${_("Database table")}:</label></td>
 			<td><input type="text" name="sql_table" class="required"  id="sql_table" size="35" maxlength="60"></td></tr>
 		<tr><td><label for=sql_limit>${_("Limit")}:</label></td>
@@ -1414,8 +1471,6 @@ ${c.version} | ${c.licenseinfo}
 	}
 </script>
 
-</div> <!-- end of all dialogs -->
-
 
 <!-- ################ Alert ################################### -->
 <div id="all_alerts" style="display:none; height:0px;">
@@ -1482,11 +1537,10 @@ ${c.version} | ${c.licenseinfo}
 <div id="text_delete_app_success">${_("Application removed successfully from machine.")}</span></span></div>
 <div id="text_create_machine_success">${_("Machine created successfully.")}</span></span></div>
 <div id="text_add_option_missing_entry">${_("Machine name, serial and application must not be emptry!")}</span></span></div>
-</div> <!--end of hidden-->
 
-<div id="alert_box">
-	<span id="alert_box_text"> </span>
-</div>
+</div> <!-- all alerts -->
+</div> <!--end of hidden-->
+</div>  <!-- end of wrap -->
 
 </body>
 </html>

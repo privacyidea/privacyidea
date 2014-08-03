@@ -75,7 +75,7 @@ def get_copyright_info():
     '''
     This returns the copyright information displayed in the WebUI and selfservice portal.
     '''
-    return "privacyidea.org [forked from LinOTP (c) 2010-2014 LSE Leading Security Experts GmbH]"
+    return "privacyidea.org"
 
 def getParam(param, which, optional=True):
     """
