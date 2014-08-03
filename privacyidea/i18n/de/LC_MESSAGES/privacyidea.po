@@ -5,8 +5,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: privacyIDEA 2\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2014-07-15 14:54+0200\n"
-"PO-Revision-Date: 2014-07-15 14:55+0200\n"
+"POT-Creation-Date: 2014-08-03 17:03+0200\n"
+"PO-Revision-Date: 2014-08-03 16:48+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius@privacyidea.org>\n"
 "Language-Team: Deutsch <>\n"
 "Language: de\n"
@@ -985,6 +985,7 @@ msgstr "E-Mail-Adresse"
 #: privacyidea/lib/tokens/smstoken.mako:188
 #: privacyidea/lib/tokens/smstoken.mako:285
 #: privacyidea/lib/tokens/spasstoken.mako:35
+#: privacyidea/lib/tokens/sshkeytoken.mako:53
 #: privacyidea/lib/tokens/tagespassworttoken.mako:38
 #: privacyidea/lib/tokens/totptoken.mako:142
 #: privacyidea/lib/tokens/totptoken.mako:268
@@ -1588,6 +1589,23 @@ msgstr ""
 "Sie können aber dennoch eine OTP PIN setzen, so dass dieser Token aufgrund "
 "der OTP PIN wie ein einfaches Passwort funktioniert."
 
+#: privacyidea/lib/tokens/sshkeytoken.mako:4
+msgid "SSH Token"
+msgstr "SSH Token"
+
+#: privacyidea/lib/tokens/sshkeytoken.mako:44
+msgid "Here you can upload your public ssh key."
+msgstr "Hier können Sie den Öffentlichen SSH Schlüssel hochladen."
+
+#: privacyidea/lib/tokens/sshkeytoken.mako:47
+msgid "SSH public key"
+msgstr "Öffentlichen SSH Schlüssel"
+
+#: privacyidea/lib/tokens/sshkeytoken.py:76
+msgid "SSH public key to be provided for usein authorized_keys."
+msgstr ""
+"Öffentlicher SSH Schlüssel, der in der authorized_keys verwendet werden soll."
+
 #: privacyidea/lib/tokens/tagespassworttoken.mako:4
 msgid "Day OTP Token / Tagespasswort"
 msgstr "Tagespasswort"
@@ -1964,27 +1982,35 @@ msgstr "Die Applikation, die diesem Computer zugeordnet werden soll."
 msgid "Create machine"
 msgstr "Client-Computer anlegen"
 
-#: privacyidea/templates/manage/machines.mako:76
+#: privacyidea/templates/manage/machines.mako:73
+msgid "Create applications with selected tokens."
+msgstr "Applikationen zu diesem Client mit allen ausgewählten Token anlegen."
+
+#: privacyidea/templates/manage/machines.mako:74
+msgid "create with all selected tokens"
+msgstr "anlegen mit allen ausgewählten Token"
+
+#: privacyidea/templates/manage/machines.mako:82
 msgid "Application options"
 msgstr "Applikationsoptionen"
 
-#: privacyidea/templates/manage/machines.mako:79
+#: privacyidea/templates/manage/machines.mako:85
 msgid "Option keys"
 msgstr "Schlüssel"
 
-#: privacyidea/templates/manage/machines.mako:81
+#: privacyidea/templates/manage/machines.mako:87
 msgid "Option values"
 msgstr "Wert"
 
-#: privacyidea/templates/manage/machines.mako:86
+#: privacyidea/templates/manage/machines.mako:92
 msgid "A option key starting with option_"
 msgstr "Ein Schlüssel, der mit option_ beginnt"
 
-#: privacyidea/templates/manage/machines.mako:89
+#: privacyidea/templates/manage/machines.mako:95
 msgid "The option value"
 msgstr "Der Wert der Option"
 
-#: privacyidea/templates/manage/machines.mako:92
+#: privacyidea/templates/manage/machines.mako:98
 msgid "Add application option"
 msgstr "Option hinzufügen"
 
@@ -2013,7 +2039,7 @@ msgid "Token Config"
 msgstr "Token-konfiguration"
 
 #: privacyidea/templates/manage/manage-base.mako:58
-#: privacyidea/templates/manage/start.mako:56
+#: privacyidea/templates/manage/start.mako:60
 msgid "Policies"
 msgstr "Richtlinien"
 
@@ -2865,7 +2891,7 @@ msgstr ""
 "Hier können Sie einen neuen Realm anlegen oder einen existierenden bearbeiten"
 
 #: privacyidea/templates/manage/manage-base.mako:819
-#: privacyidea/templates/manage/start.mako:15
+#: privacyidea/templates/manage/start.mako:8
 msgid "Realms"
 msgstr "Realms"
 
@@ -3801,9 +3827,10 @@ msgid "Machine created successfully."
 msgstr "Client-Computer erfolgreich angelegt."
 
 #: privacyidea/templates/manage/manage-base.mako:1484
-#, fuzzy
 msgid "Machine name, serial and application must not be emptry!"
-msgstr "Der Name der Richtlinie darf nicht leer sein."
+msgstr ""
+"Der Maschinenname, die Seriennummer und die Applalation dürfen nicht leer "
+"sein!"
 
 #: privacyidea/templates/manage/multiotp_view.mako:5
 #: privacyidea/templates/selfservice/multiotp_view.mako:5
@@ -3888,61 +3915,65 @@ msgstr "Richtlinie speichern"
 msgid "delete policy"
 msgstr "Richtlinie löschen"
 
-#: privacyidea/templates/manage/start.mako:7
+#: privacyidea/templates/manage/start.mako:11
 msgid "selected tokens"
 msgstr "ausgewählte Token"
 
-#: privacyidea/templates/manage/start.mako:11
+#: privacyidea/templates/manage/start.mako:14
 msgid "selected users"
 msgstr "ausgewählte Benutzer"
 
-#: privacyidea/templates/manage/start.mako:18
+#: privacyidea/templates/manage/start.mako:17
+msgid "selected machine"
+msgstr "ausgewählter Client"
+
+#: privacyidea/templates/manage/start.mako:21
 msgid "enroll"
 msgstr "ausrollen"
 
-#: privacyidea/templates/manage/start.mako:20
+#: privacyidea/templates/manage/start.mako:23
 msgid "assign"
 msgstr "zuweisen"
 
-#: privacyidea/templates/manage/start.mako:22
+#: privacyidea/templates/manage/start.mako:25
 msgid "unassign"
 msgstr "Zuweisung aufheben"
 
-#: privacyidea/templates/manage/start.mako:24
+#: privacyidea/templates/manage/start.mako:27
 msgid "enable"
 msgstr "aktivieren"
 
-#: privacyidea/templates/manage/start.mako:26
+#: privacyidea/templates/manage/start.mako:29
 msgid "disable"
 msgstr "deaktivieren"
 
-#: privacyidea/templates/manage/start.mako:28
+#: privacyidea/templates/manage/start.mako:31
 #: privacyidea/templates/selfservice/base.mako:112
 #: privacyidea/templates/selfservice/setpin.mako:23
 msgid "set PIN"
 msgstr "PIN setzen"
 
-#: privacyidea/templates/manage/start.mako:30
+#: privacyidea/templates/manage/start.mako:33
 msgid "Reset failcounter"
 msgstr "Fehlzähler zurücksetzen"
 
-#: privacyidea/templates/manage/start.mako:32
+#: privacyidea/templates/manage/start.mako:35
 msgid "delete"
 msgstr "löschen"
 
-#: privacyidea/templates/manage/start.mako:54
+#: privacyidea/templates/manage/start.mako:58
 msgid "Token View"
 msgstr "Tokenansicht"
 
-#: privacyidea/templates/manage/start.mako:55
+#: privacyidea/templates/manage/start.mako:59
 msgid "User View"
 msgstr "Benutzeransicht"
 
-#: privacyidea/templates/manage/start.mako:57
+#: privacyidea/templates/manage/start.mako:61
 msgid "Machines"
 msgstr "Client-Computer"
 
-#: privacyidea/templates/manage/start.mako:58
+#: privacyidea/templates/manage/start.mako:62
 msgid "Audit Trail"
 msgstr "Audit"
 

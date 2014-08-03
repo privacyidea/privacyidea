@@ -181,12 +181,21 @@ z-index: 1;
 	font-style:italic;
 }
 
+#selected_machine {
+	font-size: 100%;
+	font-style:italic;
+}
+
 #selected_tokens_header span {
     font-weight:bold;
 }
 
 #selected_users_header span {
     font-weight:bold;
+}
+
+#selected_machine_header span {
+	font-weight:bold;
 }
 
 #action-menu li {
@@ -202,6 +211,10 @@ z-index: 1;
 	//background-color: #8baa2b;
 	//color:#000000;
 	}
+
+#button_bar_token, #button_bar_machine {
+	padding: 2px;
+}
 
  #logo {
  	background-size: 60%;

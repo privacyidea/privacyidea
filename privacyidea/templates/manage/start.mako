@@ -4,17 +4,20 @@
 
 
 <%def name="sidebar()">
-    <span id="selected_tokens_header">${_("selected tokens")}</span>
-    <div id="selected_tokens"></div>
-    
-    
-    <span id="selected_users_header">${_("selected users")}</span>
-    <div id="selected_users"></div>
-
     <div id="realms">
     ${_("Realms")}: <select id=realm></select>
     </div>
-
+    
+    <span id="selected_tokens_header">${_("selected tokens")}</span>
+    <div id="selected_tokens"></div>
+    
+    <span id="selected_users_header">${_("selected users")}</span>
+    <div id="selected_users"></div>
+    
+    <span id="selected_machine_header">${_("selected machine")}</span>
+    <div id="selected_machine"></div>
+    
+	<div class=button_bar_token id=button_bar_token>
     <button class='action-button' id='button_enroll'>${_("enroll")}</button>
    
     <button class='action-button' id='button_assign'>${_("assign")}</button>
@@ -30,7 +33,8 @@
     <button class='action-button' id='button_resetcounter'>${_("Reset failcounter")}</button>
 
     <button class='action-button' id='button_delete'>${_("delete")}</button>
-
+	</div>
+	
 </%def>
 
 
@@ -51,11 +55,11 @@
 
 <div id="tabs">
 	<ul>
-		<li><a href="/manage/tokenview"><span>${_("Token View")}</span></a></li>
-		<li><a href="/manage/userview"><span>${_("User View")}</span></a></li>
-		<li><a href="/manage/policies"><span>${_("Policies")}</span></a></li>
-		<li><a href="/manage/machines"><span>${_("Machines")}</span></a></li>
-		<li><a href="/manage/audittrail"><span>${_("Audit Trail")}</span></a></li>
+		<li><a href="/manage/tokenview" onclick="view_clicked('tokenview');"><span>${_("Token View")}</span></a></li>
+		<li><a href="/manage/userview" onclick="view_clicked('userview');"><span>${_("User View")}</span></a></li>
+		<li><a href="/manage/policies" onclick="view_clicked('policies');"><span>${_("Policies")}</span></a></li>
+		<li><a href="/manage/machines" onclick="view_clicked('machines');"><span>${_("Machines")}</span></a></li>
+		<li><a href="/manage/audittrail" onclick="view_clicked('audit');"><span>${_("Audit Trail")}</span></a></li>
 	</ul>
 </div>
 

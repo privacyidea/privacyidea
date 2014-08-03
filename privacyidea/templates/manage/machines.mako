@@ -68,6 +68,12 @@
 
 </table>
 <button onclick="do_machine_create();">${_("Create machine")}</button>
+
+<button id="button_client_token" 
+	  	title='${_("Create applications with selected tokens.")}'>
+  ${_("create with all selected tokens")}
+</button>
+
 </div>
 
 <!--=========== Options ================-->

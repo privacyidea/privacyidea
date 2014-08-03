@@ -359,7 +359,82 @@ function view_machine() {
 	
 	$('#machine_table').click(function(event){
     	view_selected_machine();
+    	get_selected();
+	});
+	
+	// Button functions
+	$('#button_client_token').click(function(event){
+	    token_assign_machine();
+	    return false;
 	});
 	
 	fill_applications();
 }
+
+function get_selected_machines(){
+	/*
+	 * This function returns the list of selected machines
+	 * Each list element is an object with
+	 *  - machine_id
+	 *  - name
+	 *  - id
+	 */
+    var selectedMachineItems = new Array();
+    var tt = $("#machine_table");
+    var selected = $('.trSelected', tt);
+    selected.each(function(){
+    	var machine = new Object();
+    	machine = { machine_id: "" , name: "", id: "" };
+    	column = $('td', $(this));
+    	column.each(function(){
+    		var attr = $(this).attr("abbr");
+    		if (attr == "machine") {
+    			var name = $('div', $(this)).html();
+    			machine.name = name;
+    		}
+    		else if (attr == "machine_id") {
+    			var machine_id = $('div', $(this)).html();
+    			machine.machine_id = machine_id;
+    		}
+    	});
+
+        var id = $(this).attr('id');
+        machine.id = id.replace(/row/, "");
+        selectedMachineItems.push(machine);
+    });
+    return selectedMachineItems;
+}
+
+
+
+function token_assign_machine() {
+	/*
+	 * Create the applications with the selected tokens
+	 */
+    tokens = get_selected_tokens();  
+	machine = $('#machine_name').val();
+	ip = $('#machine_ip').val();
+	desc = $('#machine_desc').val();
+	application = $('#machine_application').val();
+	// Try to create machine
+	clientUrlFetch("/machine/create",
+					{"name": machine,
+					 "ip": ip,
+					 "desc": desc,
+					 "session": getsession()},
+					 machine_create_callback);
+	if ((application!="") && (tokens.length > 0)) {
+		// add the token
+		count = tokens.length;
+	    for (i = 0; i < count; i++) {
+	        serial = tokens[i];
+	        clientUrlFetch("/machine/addtoken",
+	        		{"name": machine,
+					"serial": serial,
+					"application": application,
+					"session": getsession()},
+					machine_create_callback);
+	    }
+	}
+	return false;
+};

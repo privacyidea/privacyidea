@@ -133,6 +133,33 @@ function log(text){
     $('#logText').html(datum + ": " + text + '<br>' + $('#logText').html());
 }
 
+function view_clicked(view) {
+	/*
+	 * This function is called, when a view/tab is clicked.
+	 */
+    switch (view) {
+	case 'tokenview':
+		$('.button_bar_token').show();
+		$('.button_bar_machine').show();
+        break;
+	case 'userview':
+		$('.button_bar_token').show();
+		$('.button_bar_machine').show();
+        break;
+	case 'policies':
+		$('.button_bar_token').hide();
+		$('.button_bar_machine').hide();
+        break;
+	case 'machines':
+		$('.button_bar_token').hide();
+		$('.button_bar_machine').show();
+        break;
+	case 'audit':
+		$('.button_bar_token').hide();
+		$('.button_bar_machine').hide();
+        break;
+    }
+}
 
 function error_flexi(data){
     // we might do some mods here...
@@ -273,6 +300,7 @@ function get_selected_users(){
     return selectedUserItems;
 }
 
+
 function get_selected_policy(){
     var selectedPolicy = new Array();
     var pt = $('#policy_table');
@@ -351,12 +379,18 @@ function get_selected_email() {
 function get_selected(){
     var selectedUserItems = get_selected_users();
     var selectedTokenItems = get_selected_tokens();
+    var selectedMachineItems = get_selected_machines();
     document.getElementById('selected_tokens').innerHTML = selectedTokenItems.join(", ");
     // we can only select a single user
     if ( selectedUserItems.length > 0 )
     	document.getElementById('selected_users').innerHTML = selectedUserItems[0].login;
     else
     	document.getElementById('selected_users').innerHTML = "";
+    // we can only select one machine
+    if ( selectedMachineItems.length > 0 )
+    	document.getElementById('selected_machine').innerHTML = selectedMachineItems[0].name;
+    else
+    	document.getElementById('selected_machine').innerHTML = "";
 
     if (selectedTokenItems.length > 0) {
         if (selectedUserItems.length == 1) {
@@ -3835,6 +3869,9 @@ $(document).ready(function(){
 
 	$('#do_waiting').click(reset_waiting());
 
+	$('#button_bar').accordion({
+		heightStyle: "content"
+	});
 });
 //--------------------------------------------------------------------------------------
 // End of document ready
