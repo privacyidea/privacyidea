@@ -96,6 +96,7 @@ def _get_token_id(serial):
 
 
 def _get_machinetoken_id(machine_id, token_id, application):
+    r = None
     sqlquery = Session.query(MachineToken.id)\
                 .filter(and_(MachineToken.token_id == token_id,
                              MachineToken.machine_id == machine_id,
