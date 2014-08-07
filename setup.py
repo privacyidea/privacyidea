@@ -38,7 +38,7 @@ def get_package():
 
 setup(
     name='privacyIDEA',
-    version='1.3dev0',
+    version='1.3dev1',
     description='privacyIDEA: identity, multifactor authentication, '
                 'authorization, audit',
     author='privacyidea.org',
