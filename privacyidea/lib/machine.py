@@ -253,6 +253,8 @@ def showtoken(machine_name=None,
               flexi=None,
               params=None):
     '''
+    Returns a dictionary of tokens assigned to machines.
+    
     :param flexi: If set, the output will be in flexigrid format and
             we will output all machines, even if they have no token assigned
     :type flexi: boolean
@@ -331,17 +333,18 @@ def showtoken(machine_name=None,
         sqlquery = Session.query(Machine,
                                  MachineToken.id,
                                  MachineToken.application,
-                                 Token.privacyIDEATokenSerialnumber)\
+                                 Token.privacyIDEATokenSerialnumber,
+                                 Token.privacyIDEAIsactive)\
                                         .outerjoin(MachineToken)\
                                         .outerjoin(Token)\
                                         .filter(condition)\
                                         .order_by(order)\
                                         .limit(page_size)\
-                                        .offset(page_size*(page-1))
+                                        .offset(page_size*(page - 1))
         # Fixme: This is not best way to determine the total count.
         sql_total = Session.query(Machine,
-                              MachineToken.application,
-                              Token.privacyIDEATokenSerialnumber)\
+                                  MachineToken.application,
+                                  Token.privacyIDEATokenSerialnumber)\
                                         .outerjoin(MachineToken)\
                                         .outerjoin(Token)\
                                         .filter(condition)
@@ -351,7 +354,7 @@ def showtoken(machine_name=None,
         rows = []
         m_id = 0
         for row in sqlquery:
-            machine, mtid, application, serial = row
+            machine, _mtid, application, serial, is_active = row
             m_id += 1
             rows.append({'id': m_id,
                          'cell': [(m_id),
@@ -360,6 +363,7 @@ def showtoken(machine_name=None,
                                   (machine.cm_ip),
                                   (machine.cm_desc),
                                   (serial) or "",
+                                  (is_active),
                                   (application) or ""]})
         
         res = {"page": page,

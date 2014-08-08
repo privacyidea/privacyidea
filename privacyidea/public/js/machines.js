@@ -332,6 +332,7 @@ function view_machine() {
 					{display: 'IP', name : 'IP', width : 120, sortable : true},
 					{display: 'description', name : 'description', width : 180, sortable : true},
 					{display: 'serial', name : 'serial', width : 180, sortable : true},
+					{display: 'active', name : 'is_active', width : 90, sortable : false},
                     {display: 'application', name : 'application', width : 120, sortable : true}
 		],
 		height: 400,

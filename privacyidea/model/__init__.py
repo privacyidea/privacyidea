@@ -971,6 +971,7 @@ class MachineToken(object):
         ip = ""
         if self.token:
             serial = self.token.privacyIDEATokenSerialnumber
+            is_active = self.token.privacyIDEAIsactive
         
         if self.machine:
             machinename = self.machine.cm_name
@@ -978,6 +979,7 @@ class MachineToken(object):
         return {'id': self.id,
                 'token_id': self.token_id,
                 'serial': serial,
+                'is_active': is_active,
                 'machine_id': self.machine_id,
                 'machinename': machinename,
                 'ip': ip,
