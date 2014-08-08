@@ -670,22 +670,23 @@ class TimeHmacTokenClass(HmacTokenClass):
         :return: next otp value
         :rtype: string
         '''
-        res = (-1, 0, 0, 0)
-
         otplen = int(self.token.privacyIDEAOtpLen)
         secretHOtp = self.token.getHOtpKey()
         self.hashlibStr = self.getFromTokenInfo("hashlib", "sha1")
         timeStepping = int(self.getFromTokenInfo("timeStep", 30))
         shift = int(self.getFromTokenInfo("timeShift", 0))
 
-        hmac2Otp = HmacOtp(secretHOtp, self.getOtpCount(), otplen, self.getHashlib(self.hashlibStr))
+        hmac2Otp = HmacOtp(secretHOtp,
+                           self.getOtpCount(),
+                           otplen,
+                           self.getHashlib(self.hashlibStr))
 
         if tCounter is None:
             tCounter = self.time2float(datetime.datetime.now())
         if curTime:
             tCounter = self.time2float(curTime)
 
-        ## we don't need to round here as we have alread float
+        # we don't need to round here as we have alread float
         counter = int(((tCounter - shift) / timeStepping))
         otpval = hmac2Otp.generate(counter=counter,
                                    inc_counter=False,
@@ -694,23 +695,25 @@ class TimeHmacTokenClass(HmacTokenClass):
 
         pin = self.token.getPin()
         combined = "%s%s" % (otpval, pin)
-        if getFromConfig("PrependPin") == "True" :
+        if getFromConfig("PrependPin") == "True":
             combined = "%s%s" % (pin, otpval)
             
         return (1, pin, otpval, combined)
 
     @log_with(log)
-    def get_multi_otp(self, count=0, epoch_start=0, epoch_end=0, curTime=None, timestamp=None):
+    def get_multi_otp(self, count=0, epoch_start=0, epoch_end=0,
+                      curTime=None, timestamp=None):
         '''
-        return a dictionary of multiple future OTP values of the HOTP/HMAC token
+        return a dictionary of multiple future OTP values
+        of the HOTP/HMAC token
 
-        :param count:   how many otp values should be returned
-        :type count:    int
+        :param count: how many otp values should be returned
+        :type count: int
 
-        :return:     tuple of status: boolean, error: text and the OTP dictionary
+        :return: tuple of status: boolean, error: text and the OTP dictionary
 
         '''
-        otp_dict = {"type" : "TOTP", "otp": {}}
+        otp_dict = {"type": "TOTP", "otp": {}}
         ret = False
         error = "No count specified"
         try:

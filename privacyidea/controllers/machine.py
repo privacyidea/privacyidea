@@ -130,9 +130,10 @@ class MachineController(BaseController):
         '''
         Create a new client machine entry
 
-        :param name: the unique name of the machine (required). Can be the FQDN.
+        :param name: the unique name of the machine (required).
+                     Can be the FQDN.
         :param desc: description of the machine
-        :param ip: The IP address of the machine
+        :param ip: The IP address of the machine (required)
         :param decommission: A date when the machine will not be valid anymore
 
         :return: True or False if the creation was successful.
@@ -145,15 +146,15 @@ class MachineController(BaseController):
 
             param.update(request.params)
             machine_name = getParam(param, "name", required)
-            ip = getParam(param, "ip", optional)
+            ip = getParam(param, "ip", required)
             desc = getParam(param, "desc", optional)
             decommission = getParam(param, "decommission", optional)
-            machine = create_machine(machine_name, 
-                                     ip=ip, 
-                                     desc=desc, 
+            machine = create_machine(machine_name,
+                                     ip=ip,
+                                     desc=desc,
                                      decommission=decommission)
             if machine:
-                res = True 
+                res = True
             Session.commit()
             c.audit["success"] = True
             return sendResult(response, res, 1)
@@ -524,7 +525,7 @@ class MachineController(BaseController):
         :type name: string, optional
         :param application: the name of the application. If the application is
                             given the response will also conatin the auth_item
-        :type application: sting, optional
+        :type application: string, optional
         :param serial: The serial number of the token
         
         :return: dictionary with machine and authentication information
@@ -560,8 +561,9 @@ class MachineController(BaseController):
             
             if application:
                 if application not in config.get("applications").keys():
-                    log.error("Unknown application %r. Available applications: "
-                              "%r" % (application, config.get("applications").keys()))
+                    log.error("Unknown application %r. Available applications:"
+                              "%r" % (application,
+                                      config.get("applications").keys()))
             application_module = config.get("applications").get(application)
             
             res = get_token_apps(machine=machine_name,

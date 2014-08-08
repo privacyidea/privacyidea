@@ -37,6 +37,11 @@ except:
 class MachineApplicationBase(object):
 
     application_name = "base"
+    '''If bulk_call is false, the administrator may
+    only retrieve authentication items for the
+    very host he is starting the request.
+    '''
+    allow_bulk_call = False
         
     @classmethod
     def get_name(self):
@@ -76,3 +81,10 @@ def get_auth_item(application,
                                                    serial,
                                                    challenge=challenge)
     return auth_item
+
+
+@log_with(log)
+def is_application_allow_bulk_call(application_module):
+    mod = dyn_import(application_module)
+    auth_class = mod.MachineApplication()
+    return auth_class.allow_bulk_call

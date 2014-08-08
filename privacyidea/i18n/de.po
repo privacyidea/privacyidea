@@ -5,8 +5,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: privacyIDEA 2\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2014-08-06 14:40+0200\n"
-"PO-Revision-Date: 2014-08-03 18:06+0200\n"
+"POT-Creation-Date: 2014-08-08 10:35+0200\n"
+"PO-Revision-Date: 2014-08-06 14:40+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius@privacyidea.org>\n"
 "Language-Team: Deutsch <>\n"
 "Language: de\n"
@@ -2194,7 +2194,7 @@ msgstr "(c) 2010-2014 LSE Leading Security Experts GmbH"
 
 #: privacyidea/templates/manage/manage-base.mako:168
 msgid "The complete code is licensed under AGPLv3."
-msgstr "Der gesammte Quellcode steht unter der AGPLv3 lizensiert."
+msgstr "Der gesammte Quellcode steht unter der AGPLv3."
 
 #: privacyidea/templates/manage/manage-base.mako:176
 msgid "About privacyIDEA"

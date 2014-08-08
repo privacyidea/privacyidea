@@ -36,6 +36,13 @@ class MachineApplication(MachineApplicationBase):
     i.e. return the token owner
     '''
     application_name = "ssh"
+    '''as the autentication item is no sensitive information,
+    we can set bulk_call to True. Thus the admin can call
+    all public keys to distribute them via salt.
+    FIXME: THis is only true for SSH pub keys.
+    If we would support OTP with SSH, this might be sensitive information!
+    '''
+    allow_bulk_call = True
     
     def get_authentication_item(self,
                                 token_type,

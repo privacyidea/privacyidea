@@ -26,6 +26,7 @@ from privacyidea.model.meta import Session
 from privacyidea.lib.token import getTokens4UserOrSerial
 from privacyidea.lib.token import getTokenType
 from privacyidea.lib.applications import get_auth_item
+from privacyidea.lib.applications import is_application_allow_bulk_call
 from sqlalchemy import and_
 from netaddr import IPAddress
 
@@ -61,6 +62,16 @@ def delete(name):
 
 @log_with(log)
 def show(name=None, client_ip=None):
+    '''
+    Returns a dictionaries of machines matching name and client_ip
+    
+    :param name: the name of the machine
+    :type name: string
+    :param client_ip: the IP of the machine
+    :type client_ip: sting
+    :return: dictionary of machines, where the key is the machine name
+             and the value is a dictionary with machine information.
+    '''
     res = {}
     cond_list = []
     if name:
@@ -78,7 +89,16 @@ def show(name=None, client_ip=None):
 def _get_machine_id(machine_name, client_ip=None):
     # determine the machine_id for the machine name
     machine = show(machine_name, client_ip)
-    machine_id = machine.get(machine_name, {}).get("id")
+    if len(machine.keys()) > 1:
+        raise Exception("Can not get ID for name=%r and IP=%r. "
+                        "More than one machine found." %
+                        (machine_name, client_ip))
+    if len(machine.keys()) == 0:
+        machine_id = None
+    else:
+        # There is only one machine in the dictionary and we get its ID
+        machine_id = machine.values()[0].get("id")
+        
     if machine_id is None:
         raise Exception("There is no machine with name=%r and IP=%r" %
                         (machine_name, client_ip))
@@ -235,6 +255,7 @@ def showtoken(machine_name=None,
     '''
     :param flexi: If set, the output will be in flexigrid format and
             we will output all machines, even if they have no token assigned
+    :type flexi: boolean
     :return: JSON of all tokens connected to machines with the corresponding
              application.
     '''
@@ -247,7 +268,7 @@ def showtoken(machine_name=None,
     page = 1
     page_size = 15
 
-    if machine_name:
+    if machine_name or client_ip:
         machine_id = _get_machine_id(machine_name, client_ip)
     if serial:
         token_id = _get_token_id(serial)
@@ -385,6 +406,11 @@ def get_token_apps(machine=None,
         log.warning("No valid client IP: %r" % client_ip)
         return {}
 
+    # if the application has allow_bulk_action set, we need to
+    # remove the IP filer.
+    if application_module:
+        if is_application_allow_bulk_call(application_module):
+            client_ip = None
     res = showtoken(machine_name=machine,
                     client_ip=client_ip,
                     application=application,

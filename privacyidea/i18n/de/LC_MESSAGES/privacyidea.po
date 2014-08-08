@@ -5,8 +5,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: privacyIDEA 2\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2014-08-06 14:40+0200\n"
-"PO-Revision-Date: 2014-08-06 14:40+0200\n"
+"POT-Creation-Date: 2014-08-08 10:35+0200\n"
+"PO-Revision-Date: 2014-08-08 10:35+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius@privacyidea.org>\n"
 "Language-Team: Deutsch <>\n"
 "Language: de\n"
@@ -3908,14 +3908,13 @@ msgstr "SQL Vorbelegungen"
 
 #: privacyidea/templates/manage/manage-base.mako:1536
 msgid "Machine successfully deleted."
-msgstr "Client-Computer erfolgreich angelegt."
+msgstr "Client-Computer erfolgreich gelöscht."
 
 #: privacyidea/templates/manage/manage-base.mako:1537
 msgid "Application removed successfully from machine."
 msgstr "Applikation vom Client-Computer erfolgreich entfernt."
 
 #: privacyidea/templates/manage/manage-base.mako:1538
-#, fuzzy
 msgid "Machine created successfully."
 msgstr "Client-Computer erfolgreich angelegt."
 

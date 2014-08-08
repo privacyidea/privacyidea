@@ -116,11 +116,11 @@ class TestMachineController(TestController):
         '''
         Testing the filtering of the machine listing
         '''
-        machines = ["machine1",
-                    "machine2",
-                    "machine3"]
-        for m in machines:
-            self._create_machine(name=m)
+        machines = {"machine1": "1.2.3.4",
+                    "machine2": "1.2.3.5",
+                    "machine3": "1.2.3.6"}
+        for m in machines.keys():
+            self._create_machine(name=m, ip=machines[m])
 
         # list all machines
         response = self.app.get(url(controller='machine', action='show'))
@@ -136,7 +136,7 @@ class TestMachineController(TestController):
         assert ("machine2" not in response)
         assert ("machine3" not in response)
 
-        for m in machines:
+        for m in machines.keys():
             self._delete_machine(name=m)
 
     def test_create_with_description(self):
@@ -159,12 +159,14 @@ class TestMachineController(TestController):
         '''Testing creating and deleting client machines'''
         name1 = "machine1"
         name2 = "machine2"
+        ip1 = "2.3.4.5"
 
-        self._create_machine(name1)
+        self._create_machine(name1, ip1)
 
         # Creating the machine a second time should not work!
         response = self.app.get(url(controller='machine', action='create'),
-                                {'name': name1})
+                                {'name': name1,
+                                 'ip': ip1})
         print response
         assert ('"status": false' in response)
         assert ('UNIQUE' in response or "IntegrityError" in response)
@@ -279,10 +281,10 @@ class TestMachineController(TestController):
         self._create_token("t3")
         self._create_token("t4")
 
-        self._create_machine(name="m1")
-        self._create_machine(name="m2")
-        self._create_machine(name="m3")
-        self._create_machine(name="m4")
+        self._create_machine(name="m1", ip="1.2.3.4")
+        self._create_machine(name="m2", ip="1.2.3.5")
+        self._create_machine(name="m3", ip="1.2.3.6")
+        self._create_machine(name="m4", ip="1.2.3.7")
 
         self._add_token("m1", "t1", "SSH")
         self._add_token("m1", "t2", "SSH")
@@ -349,7 +351,7 @@ class TestMachineController(TestController):
         machine1 = "mach1"
         machine2 = "mach2"
         self._create_token(serial)
-        self._create_machine(machine1)
+        self._create_machine(machine1, ip="10.0.0.1")
 
         parameters = {'name': 'ManageAll',
                       'scope': 'machine',
@@ -364,11 +366,12 @@ class TestMachineController(TestController):
 
         response = self.app.get(url(controller='machine', action='create'),
                                 {'name': "newmachine",
+                                 'ip': '2.3.4.5',
                                  'selftest_admin': 'looser'})
         print response
         assert "You do not have the right to manage machines" in response
 
-        self._create_machine(machine2, admin="superadmin")
+        self._create_machine(machine2, ip='10.0.0.2', admin="superadmin")
 
         response = self.app.get(url(controller='machine',
                                     action='gettokenapps'),
