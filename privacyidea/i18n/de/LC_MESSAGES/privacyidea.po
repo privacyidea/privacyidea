@@ -5,8 +5,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: privacyIDEA 2\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2014-08-08 10:35+0200\n"
-"PO-Revision-Date: 2014-08-08 10:35+0200\n"
+"POT-Creation-Date: 2014-08-11 10:42+0200\n"
+"PO-Revision-Date: 2014-08-11 10:42+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius@privacyidea.org>\n"
 "Language-Team: Deutsch <>\n"
 "Language: de\n"
@@ -2101,7 +2101,9 @@ msgstr "Über..."
 #: privacyidea/templates/manage/manage-base.mako:90
 #: privacyidea/templates/selfservice/base.mako:51
 msgid "Selfservice"
-msgstr "Selbstverwaltungsportal"
+msgstr ""
+"Selbstverwaltungs\\-\n"
+"portal"
 
 #: privacyidea/templates/manage/manage-base.mako:91
 #: privacyidea/templates/selfservice/base.mako:47
