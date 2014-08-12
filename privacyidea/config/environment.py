@@ -252,7 +252,8 @@ def get_token_list():
                         privacyidea.lib.tokens.yubikeytoken, \
                         privacyidea.lib.tokens.ocra2token, \
                         privacyidea.lib.tokens.emailtoken, \
-                        privacyidea.lib.tokens.sshkeytoken"
+                        privacyidea.lib.tokens.sshkeytoken, \
+                        privacyidea.lib.tokens.daplugtoken"
 
     config_modules = config.get("privacyideaTokenModules", fallback_tokens)
     log.debug("%s " % config_modules)
