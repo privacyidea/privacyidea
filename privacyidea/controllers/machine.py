@@ -462,6 +462,7 @@ class MachineController(BaseController):
     def showtoken(self, action, **params):
         '''
         show a token and a application from a machine
+        This function is used in the flexigrid management
         
         :param name: Name of the machine
         :param serial: serial number of the token

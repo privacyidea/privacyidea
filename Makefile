@@ -29,6 +29,7 @@ clean:
 	rm -fr privacyidea/tests/testdata/data/
 	rm -fr DEBUILD
 	rm -fr RHBUILD
+	(cd doc; make clean)
 
 pypi:
 	make doc-man

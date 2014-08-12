@@ -444,7 +444,7 @@ class SmsTokenClass(HmacTokenClass):
     @log_with(log)
     def getNextOtp(self):
         '''
-        access the nex validf otp
+        access the next valid otp
 
         :return: otpval
         :rtype: string
