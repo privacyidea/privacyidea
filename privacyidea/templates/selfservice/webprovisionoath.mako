@@ -8,8 +8,7 @@
 		${_("1. You first need to install the oathtoken to your iPhone.")}
 		<ul>
 		<li><a href='http://itunes.apple.com/us/app/oath-token/id364017137?mt=8' target='extern'>${_("link for iPhone")}</a><br>
-			${_("Using the QR Code you can directly go to install the oath token on your iPhone.")}     
-		     <span id=qr_code_iphone_download_oath></span>
+			${_("Following the above link, you can directly go to install the oath token on your iPhone.")}     
 			</li>
 		</ul>
 		<p>${_("2. Then you may create a profile.")}<br>
@@ -31,6 +30,4 @@
 
 <script>
 	    $('#provisionresultDiv').hide();
-	    $('#qr_code_iphone_download_oath').show();
-	   	$('#qr_code_iphone_download_oath').html(generate_qrcode(10,"http://itunes.apple.com/us/app/oath-token/id364017137?mt=8"));
 </script>

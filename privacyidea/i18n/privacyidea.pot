@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: privacyIDEA 1.3dev3\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2014-08-13 17:19+0200\n"
+"POT-Creation-Date: 2014-08-13 17:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -3971,51 +3971,51 @@ msgstr ""
 
 #: privacyidea/templates/selfservice/webprovisiongoogle.mako:12
 msgid ""
-"Using the QR code you can directly go to install the google authenticator on "
-"your iPhone."
+"Following the above link, you can directly go to install the google "
+"authenticator on your iPhone."
 msgstr ""
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:16
-#: privacyidea/templates/selfservice/webprovisionoath.mako:15
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:15
+#: privacyidea/templates/selfservice/webprovisionoath.mako:14
 msgid "2. Then you may create a profile."
 msgstr ""
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:20
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:19
 msgid "event based"
 msgstr ""
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:23
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:22
 msgid "time based"
 msgstr ""
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:27
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:26
 msgid "enroll Google Authenticator"
 msgstr ""
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:31
-#: privacyidea/templates/selfservice/webprovisionoath.mako:21
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:30
+#: privacyidea/templates/selfservice/webprovisionoath.mako:20
 msgid "3."
 msgstr ""
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:31
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:30
 msgid "Google Authenticator"
 msgstr ""
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:31
-#: privacyidea/templates/selfservice/webprovisionoath.mako:21
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:30
+#: privacyidea/templates/selfservice/webprovisionoath.mako:20
 msgid "successfully created!"
 msgstr ""
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:32
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:31
 msgid "Click on this link to install the profile to your Android or iPhone:"
 msgstr ""
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:33
-#: privacyidea/templates/selfservice/webprovisionoath.mako:23
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:32
+#: privacyidea/templates/selfservice/webprovisionoath.mako:22
 msgid "install profile"
 msgstr ""
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:35
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:34
 msgid ""
 "Or you can scan the QR code below with your Android phone to import the "
 "secret."
@@ -4031,19 +4031,19 @@ msgstr ""
 
 #: privacyidea/templates/selfservice/webprovisionoath.mako:11
 msgid ""
-"Using the QR Code you can directly go to install the oath token on your "
-"iPhone."
+"Following the above link, you can directly go to install the oath token on "
+"your iPhone."
 msgstr ""
 
-#: privacyidea/templates/selfservice/webprovisionoath.mako:17
+#: privacyidea/templates/selfservice/webprovisionoath.mako:16
 msgid "enroll OATH Token"
 msgstr ""
 
-#: privacyidea/templates/selfservice/webprovisionoath.mako:22
+#: privacyidea/templates/selfservice/webprovisionoath.mako:21
 msgid "Click on this link to install the oathtoken profile to your iPhone:"
 msgstr ""
 
-#: privacyidea/templates/selfservice/webprovisionoath.mako:25
+#: privacyidea/templates/selfservice/webprovisionoath.mako:24
 msgid "Or you can scan the QR code below with your iPhone to import the secret."
 msgstr ""
 

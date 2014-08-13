@@ -5,8 +5,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: privacyIDEA 2\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2014-08-13 17:19+0200\n"
-"PO-Revision-Date: 2014-08-13 17:21+0200\n"
+"POT-Creation-Date: 2014-08-13 17:38+0200\n"
+"PO-Revision-Date: 2014-08-13 17:39+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius@privacyidea.org>\n"
 "Language-Team: Deutsch <>\n"
 "Language: de\n"
@@ -4397,55 +4397,55 @@ msgstr "Link für iPhone"
 
 #: privacyidea/templates/selfservice/webprovisiongoogle.mako:12
 msgid ""
-"Using the QR code you can directly go to install the google authenticator on "
-"your iPhone."
+"Following the above link, you can directly go to install the google "
+"authenticator on your iPhone."
 msgstr ""
-"Indem Sie mit Ihrem iPhone den QR Code einscannen, können Sie direkt den "
-"Google Authenticator auf Ihrem iPhone installieren."
+"Indem Sie dem obigen Link folgen, können Sie direkt den Google Authenticator "
+"auf Ihrem iPhone installieren."
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:16
-#: privacyidea/templates/selfservice/webprovisionoath.mako:15
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:15
+#: privacyidea/templates/selfservice/webprovisionoath.mako:14
 msgid "2. Then you may create a profile."
 msgstr "2. Dann können Sie Ihren Token/das Profil erzeugen."
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:20
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:19
 msgid "event based"
 msgstr "HMAC ereignisbasiert"
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:23
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:22
 msgid "time based"
 msgstr "HMAC zeitbasiert"
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:27
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:26
 msgid "enroll Google Authenticator"
 msgstr "Google Authenticator registrieren"
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:31
-#: privacyidea/templates/selfservice/webprovisionoath.mako:21
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:30
+#: privacyidea/templates/selfservice/webprovisionoath.mako:20
 msgid "3."
 msgstr "3."
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:31
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:30
 msgid "Google Authenticator"
 msgstr "Google Authenticator"
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:31
-#: privacyidea/templates/selfservice/webprovisionoath.mako:21
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:30
+#: privacyidea/templates/selfservice/webprovisionoath.mako:20
 msgid "successfully created!"
 msgstr "erfolgreich erzeugt!"
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:32
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:31
 msgid "Click on this link to install the profile to your Android or iPhone:"
 msgstr ""
 "Klicken Sie auf Ihrem Smartphone auf diesen Link, um das Profil auf Ihrem "
 "Android oder iPhone zu installieren:"
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:33
-#: privacyidea/templates/selfservice/webprovisionoath.mako:23
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:32
+#: privacyidea/templates/selfservice/webprovisionoath.mako:22
 msgid "install profile"
 msgstr "Profil installieren"
 
-#: privacyidea/templates/selfservice/webprovisiongoogle.mako:35
+#: privacyidea/templates/selfservice/webprovisiongoogle.mako:34
 msgid ""
 "Or you can scan the QR code below with your Android phone to import the "
 "secret."
@@ -4463,23 +4463,23 @@ msgstr "1. Sie müssen zuerst die oathtoken App auf Ihrem iPhone installieren."
 
 #: privacyidea/templates/selfservice/webprovisionoath.mako:11
 msgid ""
-"Using the QR Code you can directly go to install the oath token on your "
-"iPhone."
+"Following the above link, you can directly go to install the oath token on "
+"your iPhone."
 msgstr ""
-"Mit dem QR Code können Sie direkt die oathtoken App auf Ihrem iPhone "
-"installieren."
+"Indem Sie dem obigen Link folgen, können Sie direkt die oathtoken App auf "
+"Ihrem iPhone installieren."
 
-#: privacyidea/templates/selfservice/webprovisionoath.mako:17
+#: privacyidea/templates/selfservice/webprovisionoath.mako:16
 msgid "enroll OATH Token"
 msgstr "OATH Token erzeugen"
 
-#: privacyidea/templates/selfservice/webprovisionoath.mako:22
+#: privacyidea/templates/selfservice/webprovisionoath.mako:21
 msgid "Click on this link to install the oathtoken profile to your iPhone:"
 msgstr ""
 "Klicken Sie ihn Ihrem Smartphone auf diesen Link, um das Profil auf Ihrem "
 "iPhone zu installieren:"
 
-#: privacyidea/templates/selfservice/webprovisionoath.mako:25
+#: privacyidea/templates/selfservice/webprovisionoath.mako:24
 msgid ""
 "Or you can scan the QR code below with your iPhone to import the secret."
 msgstr ""

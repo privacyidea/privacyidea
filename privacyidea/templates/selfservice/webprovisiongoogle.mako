@@ -9,8 +9,7 @@
 		<ul>
 		<li><a href='https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2' target='extern'>${_("link for Android")}</a></li>
 		<li><a href='http://itunes.apple.com/de/app/google-authenticator/id388497605?mt=8' target='extern'>${_("link for iPhone")}</a><br>
-			${_("Using the QR code you can directly go to install the google authenticator on your iPhone.")}     
-		     <span id=qr_code_iphone_download></span>
+			${_("Following the above link, you can directly go to install the google authenticator on your iPhone.")}     
 			</li>
 		</ul>
 		<p>${_("2. Then you may create a profile.")}<br>
@@ -41,6 +40,4 @@
 
 <script>
 	   	$('#provisionGoogleResultDiv').hide();
-	   	$('#qr_code_iphone_download').show();
-	   	$('#qr_code_iphone_download').html(generate_qrcode(10,"http://itunes.apple.com/de/app/google-authenticator/id388497605?mt=8"));
 </script>
