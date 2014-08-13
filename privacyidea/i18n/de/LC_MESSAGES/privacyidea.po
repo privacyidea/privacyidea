@@ -5,8 +5,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: privacyIDEA 2\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2014-08-11 10:42+0200\n"
-"PO-Revision-Date: 2014-08-11 10:42+0200\n"
+"POT-Creation-Date: 2014-08-13 17:19+0200\n"
+"PO-Revision-Date: 2014-08-13 17:21+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius@privacyidea.org>\n"
 "Language-Team: Deutsch <>\n"
 "Language: de\n"
@@ -2101,9 +2101,7 @@ msgstr "Über..."
 #: privacyidea/templates/manage/manage-base.mako:90
 #: privacyidea/templates/selfservice/base.mako:51
 msgid "Selfservice"
-msgstr ""
-"Selbstverwaltungs\\-\n"
-"portal"
+msgstr "Benutzerportal"
 
 #: privacyidea/templates/manage/manage-base.mako:91
 #: privacyidea/templates/selfservice/base.mako:47
@@ -2436,7 +2434,7 @@ msgstr ""
 
 #: privacyidea/templates/manage/manage-base.mako:302
 msgid "Selfservice portal"
-msgstr "Selbstverwaltungsportal"
+msgstr "Benutzerportal"
 
 #: privacyidea/templates/manage/manage-base.mako:304
 msgid "display realm select box"
@@ -2448,7 +2446,7 @@ msgid ""
 "logon page."
 msgstr ""
 "Eine Dropdown Liste wird angezeigt, aus der der Benutzer den Realm auswählen "
-"kann, in dem er sich im Selbstverwaltungsportal anmelden will."
+"kann, in dem er sich im Benutzerportal anmelden will."
 
 #: privacyidea/templates/manage/manage-base.mako:316
 msgid "System config"
