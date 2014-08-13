@@ -142,9 +142,10 @@ padding: 3px;
 
 
 #footer {
+ padding: 4px;
  clear:both;
- color: white;
- background:#080808;
+ color: lightgrey;
+ background:#8baa2b;
 }
  
  #nav ul {
