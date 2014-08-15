@@ -1,3 +1,9 @@
+privacyidea (1.3~dev5-1) trusty; urgency=low
+
+  * Allow login with admin@realm, even with RealmBox.  (#26)
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 15 Aug 2014 15:37:00 +0200
+
 privacyidea (1.3~dev4-1) trusty; urgency=low
 
   * fix minor bugs in selfservice portal

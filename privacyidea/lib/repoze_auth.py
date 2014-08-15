@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #  May 08, 2014 Cornelius Kölbel
+#  Aug 15, 2014 Cornelius Kölbel: CHange login behaviour
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
@@ -36,15 +37,36 @@ from privacyidea.lib.account import check_admin_password
 from privacyidea.lib.account import authenticate_privacyidea_user
 from privacyidea.lib.account import is_admin_identity
 from privacyidea.lib.user import check_user_password
+from privacyidea.lib.user import splitUser
 from privacyidea.lib.log import log_with
 
 from pylons import request, config, tmpl_context as c
 from privacyidea.lib.config import get_privacyIDEA_config
+from privacyidea.lib.config import getFromConfig
 from privacyidea.lib.policy import PolicyClass
 ENCODING = "utf-8"
 
 
 class UserModelPlugin(object):
+
+    def _get_user_from_login(self, login, default_realm=True):
+        '''
+        take the login and return a username and a realm name
+        :default_realm: If set to True and no realm is found, the
+                        default realm will be returned
+        :return: tuple (username, realm)
+        '''
+        username = login
+        realm = ""
+        
+        splitAtSign = getFromConfig("splitAtSign", "true")
+        if splitAtSign.lower() == "true":
+            (username, realm) = splitUser(login)
+
+        if realm == "" and default_realm:
+                realm = getDefaultRealm()
+            
+        return (username, realm)
 
     @log_with(log)
     def authenticate(self, environ, identity):
@@ -53,26 +75,19 @@ class UserModelPlugin(object):
         success = None
         try:
             if isSelfTest():
-                if identity.has_key('login') == False and identity.has_key('repoze.who.plugins.auth_tkt.userid') == True:
+                if ('login' not in identity and 'repoze.who.plugins.auth_tkt.userid' in identity):
                     u = identity.get('repoze.who.plugins.auth_tkt.userid')
                     identity['login'] = u
                     identity['password'] = u
 
-            if getRealmBox():
-                username = identity['login']
+            username, realm = self._get_user_from_login(identity['login'],
+                                                        default_realm=False)
+            if getRealmBox() and realm == "":
+                # The login name contained no realm
                 realm = identity['realm']
-            else:
-                log.debug("no realmbox, so we are trying to split the loginname")
-                m = re.match("(.*)\@(.*)", identity['login'])
-                if m:
-                    if 2 == len(m.groups()):
-                        username = m.groups()[0]
-                        realm = m.groups()[1]
-                        log.debug("found @: username: %r, realm: %r" % (username, realm))
-                else:
-                    username = identity['login']
-                    realm = getDefaultRealm()
-                    log.debug("using default Realm: username: %r, realm: %r" % (username, realm))
+            if realm == "":
+                # The realm is still empty
+                realm = getDefaultRealm()
 
             password = identity['password']
         except KeyError as e:
@@ -85,16 +100,19 @@ class UserModelPlugin(object):
             success = "%s@%s" % (unicode(username), unicode(realm))
         else:
             Policy = PolicyClass(request, config, c,
-                             get_privacyIDEA_config())
+                                 get_privacyIDEA_config())
             if Policy.is_auth_selfservice_otp(username, realm):
                 # check the OTP
-                success = authenticate_privacyidea_user(username, realm, password) 
+                success = authenticate_privacyidea_user(username,
+                                                        realm,
+                                                        password)
             else:
                 # We do authentication against the user store
                 success = check_user_password(username, realm, password)
 
-        if not success and is_admin_identity("%s@%s" % (username, realm), exception=False):
-            # user not found or authenticated in resolver. 
+        if not success and is_admin_identity("%s@%s" % (username, realm),
+                                             exception=False):
+            # user not found or authenticated in resolver.
             # So let's see, if this is an administrative user.
             success = check_admin_password(username, password, realm)
 
@@ -104,15 +122,14 @@ class UserModelPlugin(object):
 
     @log_with(log)
     def add_metadata(self, environ, identity):
-        #username = identity.get('repoze.who.userid')
-        #user = User.get(username)
-        #user = "conelius koelbel"
-        #log.info( "add_metadata: %s" % identity )
+        # username = identity.get('repoze.who.userid')
+        # user = User.get(username)
+        # user = "conelius koelbel"
+        # log.info( "add_metadata: %s" % identity )
 
-        #pp = pprint.PrettyPrinter(indent=4)
+        # pp = pprint.PrettyPrinter(indent=4)
 
-        #if identity.has_key('realm'):
+        # if identity.has_key('realm'):
         #    identity.update( { 'realm' : identity['realm'] } )
-
 
         return identity
