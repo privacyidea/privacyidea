@@ -5,7 +5,7 @@ Tools
 
 .. index:: tools
 
-The menu tools contains some helpful tools to manage your tokens.
+The menu ``tools`` contains some helpful tools to manage your tokens.
 
 Get Serial by OTP value
 -----------------------

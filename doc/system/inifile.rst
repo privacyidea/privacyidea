@@ -70,7 +70,7 @@ server context but you can call the module to do it::
 You can need to add the parameter ``--file`` and you can add
 the parameters ``--high`` and ``-low``. If these parameters are
 not specified, the values ``hightwatermark`` and the ``lowwatermark``
-are read from the ini-file.
+are read from the ini-file. (also see :ref:`audit`)
 
 If the audit table reaches the number of entries specified in ``highwatermark``
 old entries will be deleted, so that only ``lowwatermark`` entries remain.

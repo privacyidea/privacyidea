@@ -23,7 +23,9 @@ Even if a realm contains several useridresolvers all users from all
 resolvers within this realm are displayed.
 
 As privacyIDEA only reads users from user sources the actions you can 
-perform on the users are very limited.
+perform on the users are limited.
+
+.. note:: You can not create or modify users in privacyIDEA!
 
 Enroll tokens
 -------------

@@ -3,6 +3,8 @@
 Audit
 =====
 
+.. index: Audit
+
 The systems provides a sophisticated audit log, that can be viewed in the 
 WebUI.
 
