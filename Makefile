@@ -8,7 +8,8 @@ info:
 	@echo "make builddeb     - build .deb file locally on ubuntu 14.04!"
 	@echo "make ppa-dev      - upload to launchpad development repo"
 	
-VERSION=1.3~dev5
+#VERSION=1.3~dev5
+VERSION=1.3
 
 translate:
 	# according to http://docs.pylonsproject.org/projects/pylons-webframework/en/latest/i18n.html#using-babel

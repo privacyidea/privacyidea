@@ -1,3 +1,15 @@
+privacyidea (1.3) trusty; urgency=low
+
+  * add support for Daplug dongle in keyboard mode
+  * Allow login with admin@realm, even with RealmBox.  (#26)
+  * inactive tokens will not work with the machine-app
+  * Added MachineUser database moduel
+  * PEP8 beautify
+  * Add about dialog
+  * added recommends for mysql and salt
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 18 Aug 2014 17:00:00 +0200
+
 privacyidea (1.3~dev5-1) trusty; urgency=low
 
   * Allow login with admin@realm, even with RealmBox.  (#26)
