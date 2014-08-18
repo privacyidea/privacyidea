@@ -5,7 +5,7 @@ Userview
 
 .. index:: userview
 
-The administrator can sell all users in **realms** he is allowed 
+The administrator can see all users in **realms** he is allowed 
 to manage. 
 
 .. note:: Users are only visible, if the useridresolver is located 
