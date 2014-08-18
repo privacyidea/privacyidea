@@ -1,3 +1,13 @@
+Version 1.3, 2014-08-18
+
+ * add support for Daplug dongle in keyboard mode
+ * Allow login with admin@realm, even with RealmBox.  (#26)
+ * inactive tokens will not work with the machine-app
+ * Added MachineUser database model
+ * PEP8 beautify
+ * Add about dialog
+ * added recommends for mysql and salt
+
 Version 1.2, 2014-07-15
 
 * added application for machines like LUKS and SSH
