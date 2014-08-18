@@ -5,7 +5,12 @@ The ini file
 
 .. index:: init file
 
-privacyIDEA is a pylons application that uses an ini-file.
+privacyIDEA is a pylons application that uses an ini-file. 
+The default location of the ini-file is ``/etc/privacyidea/privacyidea.ini``, but
+depending on your installation it can reside anywhere else.
+
+Common config
+-------------
 
 The ini file looks like this::
 
@@ -27,6 +32,9 @@ The parameters ``email_to``, ``smtp_server`` and ``error_email_from`` can be use
 to send email in cases of severe error.
 
 .. index:: audit
+
+Audit
+-----
 
 There are audit specific parameter::
 
@@ -50,7 +58,27 @@ be written. privacyIDEA comes with an SQLAudit module
 an SQL database table. You could also create your own audit module.
 Take a look at :ref:`code_audit`.
 
-``hightwatermark`` and the ``lowwatermark``: TODO
+Audit log rotation
+..................
+
+The SQL audit module can do audit log rotation.
+To optimize performace log rotation is not performed within the 
+server context but you can call the module to do it::
+
+   python /usr/lib/python2.7/dist-packages/privacyidea/lib/auditmodules/sqlaudit.py
+
+You can need to add the parameter ``--file`` and you can add
+the parameters ``--high`` and ``-low``. If these parameters are
+not specified, the values ``hightwatermark`` and the ``lowwatermark``
+are read from the ini-file.
+
+If the audit table reaches the number of entries specified in ``highwatermark``
+old entries will be deleted, so that only ``lowwatermark`` entries remain.
+
+You should set up a cron job to rotate the audit log.
+
+Other paramters
+---------------
 
 Finally there are several other parameters::
 
@@ -108,6 +136,9 @@ Finally there are some settings for the use of RADIUS tokens ``radius.dictfile``
 ``radius.nas_identifier`` which you usually do not need to change.
 
 
+Database connection
+-------------------
+
 You need to specify what database you want to use::
 
    [app:main]
@@ -117,6 +148,9 @@ You need to specify what database you want to use::
 Take a look at 
 `SQLAlchemy <http://docs.sqlalchemy.org/en/rel_0_9/core/engines.html>`_, 
 how the connect string needs to look like.
+
+Logfiles
+--------
 
 privacyIDEA uses *repoze.who* to do the authentication to the WebUI.
 You can specify, where the logfile should be located::

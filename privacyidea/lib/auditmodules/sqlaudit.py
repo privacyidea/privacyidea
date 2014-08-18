@@ -23,55 +23,58 @@ log = logging.getLogger(__name__)
 from privacyidea.lib.audit import AuditBase
 
 
-from sqlalchemy import Table, MetaData, Column, Integer, String, DateTime, asc, desc, and_
+from sqlalchemy import Table, MetaData, Column
+from sqlalchemy import Integer, String, DateTime, asc, desc, and_
 from sqlalchemy.orm import mapper
 import datetime
-#from privacyidea.lib.config  import get_privacyIDEA_config
+# from privacyidea.lib.config  import get_privacyIDEA_config
 from pylons import config as ini_config
 import traceback
 from Crypto.Hash import SHA256 as HashFunc
-from Crypto.PublicKey import RSA       
+from Crypto.PublicKey import RSA
 from sqlalchemy.exc import OperationalError
 from privacyidea.lib.log import log_with
 
 metadata = MetaData()
 
-logentry = Table('pidea_audit', metadata,
-            Column('id', Integer, primary_key=True),
-            Column('date', DateTime),
-            Column('signature', String(620)),
-            Column('action', String(50)),
-            Column('success', Integer),
-            Column('serial', String(20)),
-            Column('token_type', String(12)),
-            Column('user', String(20)),
-            Column('realm', String(20)),
-            Column('administrator', String(20)),
-            Column('action_detail', String(50)),
-            Column('info', String(50)),
-            Column('privacyidea_server', String(20)),
-            Column('client', String(20)),
-            Column('loglevel', String(12)),
-            Column('clearance_level', String(12))
-        )
+logentry = Table('pidea_audit',
+                 metadata,
+                 Column('id', Integer, primary_key=True),
+                 Column('date', DateTime),
+                 Column('signature', String(620)),
+                 Column('action', String(50)),
+                 Column('success', Integer),
+                 Column('serial', String(20)),
+                 Column('token_type', String(12)),
+                 Column('user', String(20)),
+                 Column('realm', String(20)),
+                 Column('administrator', String(20)),
+                 Column('action_detail', String(50)),
+                 Column('info', String(50)),
+                 Column('privacyidea_server', String(20)),
+                 Column('client', String(20)),
+                 Column('loglevel', String(12)),
+                 Column('clearance_level', String(12))
+                 )
 
 
 class LogEntry(object):
-    def __init__(self, action="", 
-                        success=0,
-                        serial="",
-                        token_type="",
-                        user="",
-                        realm="",
-                        administrator="",
-                        action_detail="",
-                        info="",
-                        privacyidea_server="",
-                        client="",
-                        loglevel="default",
-                        clearance_level="default"
-                        ):
-        self.signature=""
+    def __init__(self,
+                 action="",
+                 success=0,
+                 serial="",
+                 token_type="",
+                 user="",
+                 realm="",
+                 administrator="",
+                 action_detail="",
+                 info="",
+                 privacyidea_server="",
+                 client="",
+                 loglevel="default",
+                 clearance_level="default"
+                 ):
+        self.signature = ""
         self.date = datetime.datetime.now()
         self.action = action
         self.success = success
@@ -95,7 +98,8 @@ from sqlalchemy.orm import sessionmaker
 
 class Audit(AuditBase):
     '''
-    This is the SQLAudit module, which writes the audit entries to an SQL database table.
+    This is the SQLAudit module, which writes the audit entries
+    to an SQL database table.
     It requires the configuration parameters:
     
     privacyideaAudit.sql.url (default: sqlalchemy.url)
@@ -106,10 +110,11 @@ class Audit(AuditBase):
         self.name = "sqlaudit"
         self.readKeys()
         
-        #conf = get_privacyIDEA_config()      
+        # conf = get_privacyIDEA_config()
         # an Engine, which the Session will use for connection
         # resources
-        connect_string = ini_config.get("privacyideaAudit.sql.url", ini_config.get("sqlalchemy.url"))
+        connect_string = ini_config.get("privacyideaAudit.sql.url",
+                                        ini_config.get("sqlalchemy.url"))
         log.info("using the connect string %s" % connect_string)
         self.engine = create_engine(connect_string)
 
@@ -124,8 +129,6 @@ class Audit(AuditBase):
             log.info("%r" % exx)
             pass
             
-
-
     def getAuditId(self):
         return self.name
 
@@ -138,9 +141,13 @@ class Audit(AuditBase):
             search_value = param.get(search_key)
             if search_value.strip() != '':
                 try:
-                    conditions.append( getattr(LogEntry, search_key).like("%"+search_value+"%") )
+                    conditions.append(getattr(LogEntry,
+                                              search_key).like("%" +
+                                                               search_value +
+                                                               "%"))
                 except:
-                    # The search_key was no search key but some bullshit stuff in the param
+                    # The search_key was no search key but some
+                    # bullshit stuff in the param
                     pass
         # Combine them with or to a BooleanClauseList
         filter_condition = and_(*conditions)
@@ -148,12 +155,13 @@ class Audit(AuditBase):
 
     def getTotal(self, param, AND=True, display_error=True):
         '''
-        This method returns the total number of audit entries in the audit store
+        This method returns the total number of audit entries
+        in the audit store
         '''
         count = 0
 
         # if param contains search filters, we build the search filter
-        # to only return the number of those entries        
+        # to only return the number of those entries
         filter_condition = self._create_filter(param)
         
         try:
@@ -171,20 +179,20 @@ class Audit(AuditBase):
         It should hash the data and do a hash chain and sign the data
         '''
         try:
-            le = LogEntry(action=param.get("action"), 
-                        success=param.get("success"),
-                        serial=param.get("serial"),
-                        token_type=param.get("token_type"),
-                        user=param.get("user"),
-                        realm=param.get("realm"),
-                        administrator=param.get("administrator"),
-                        action_detail=param.get("action_detail"),
-                        info=param.get("info"),
-                        privacyidea_server=param.get("privacyidea_server"),
-                        client=param.get("client",""),
-                        loglevel=param.get("log_level"),
-                        clearance_level=param.get("clearance_level")
-                        )
+            le = LogEntry(action=param.get("action"),
+                          success=param.get("success"),
+                          serial=param.get("serial"),
+                          token_type=param.get("token_type"),
+                          user=param.get("user"),
+                          realm=param.get("realm"),
+                          administrator=param.get("administrator"),
+                          action_detail=param.get("action_detail"),
+                          info=param.get("info"),
+                          privacyidea_server=param.get("privacyidea_server"),
+                          client=param.get("client", ""),
+                          loglevel=param.get("log_level"),
+                          clearance_level=param.get("clearance_level")
+                          )
             self.session.add(le)
             self.session.commit()
             # Add the signature
@@ -213,7 +221,6 @@ class Audit(AuditBase):
         signature = RSAkey.sign(hashvalue, 1)
         s_signature = str(signature[0])
         return s_signature
-
     
     def _verify_sig(self, audit_entry):
         '''
@@ -232,7 +239,7 @@ class Audit(AuditBase):
 
     def _check_missing(self, audit_id):
         '''
-        Check if the audit log contains the entries before and after 
+        Check if the audit log contains the entries before and after
         the given id.
         
         TODO: We can not check at the moment if the first or the last entries
@@ -243,31 +250,32 @@ class Audit(AuditBase):
         '''
         res = False
         try:
-            id_bef = self.session.query(LogEntry.id).filter(LogEntry.id == int(audit_id)-1).count()
-            id_aft = self.session.query(LogEntry.id).filter(LogEntry.id == int(audit_id)+1).count()
+            id_bef = self.session.query(LogEntry.id
+                                        ).filter(LogEntry.id ==
+                                                 int(audit_id) - 1).count()
+            id_aft = self.session.query(LogEntry.id
+                                        ).filter(LogEntry.id ==
+                                                 int(audit_id) + 1).count()
             # We may not do a commit!
-            #self.session.commit()
+            # self.session.commit()
             if id_bef and id_aft:
                 res = True
         except Exception as exx:
             log.error("exception %r" % exx)
             log.error("%s" % traceback.format_exc())
-            #self.session.rollback()
+            # self.session.rollback()
         finally:
-            #self.session.close()
+            # self.session.close()
             pass
             
         return res
-    
-        
-    
     
     def _log_to_string(self, le):
         '''
         This function creates a string from the logentry so
         that this string can be signed.
         
-        Note: Not all elements of the LogEntry are used to generate the 
+        Note: Not all elements of the LogEntry are used to generate the
         string (the Signature is not!), otherwise we could have used pickle
         '''
         s = "id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s,ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % ( 
@@ -290,23 +298,23 @@ class Audit(AuditBase):
         
     def _get_logentry_attribute(self, key):
         '''
-        This function returns the LogEntry attribute for the given key value 
+        This function returns the LogEntry attribute for the given key value
         '''
-        sortname = { 'number' : LogEntry.id,
-                         'action' : LogEntry.action,
-                         'success' : LogEntry.success,
-                         'serial' : LogEntry.serial,
-                         'date' : LogEntry.date,
-                         'token_type' : LogEntry.token_type,
-                         'user' : LogEntry.user,
-                         'realm' : LogEntry.realm,
-                         'administrator' : LogEntry.administrator,
-                         'action_detail' : LogEntry.action_detail,
-                         'info' : LogEntry.info,
-                         'privacyidea_server' : LogEntry.privacyidea_server,
-                         'client' : LogEntry.client,
-                         'loglevel' : LogEntry.loglevel,
-                         'clearance_level' : LogEntry.clearance_level}
+        sortname = {'number': LogEntry.id,
+                    'action': LogEntry.action,
+                    'success': LogEntry.success,
+                    'serial': LogEntry.serial,
+                    'date': LogEntry.date,
+                    'token_type': LogEntry.token_type,
+                    'user': LogEntry.user,
+                    'realm': LogEntry.realm,
+                    'administrator': LogEntry.administrator,
+                    'action_detail': LogEntry.action_detail,
+                    'info': LogEntry.info,
+                    'privacyidea_server': LogEntry.privacyidea_server,
+                    'client': LogEntry.client,
+                    'loglevel': LogEntry.loglevel,
+                    'clearance_level': LogEntry.clearance_level}
         return sortname.get(key)
         
     def search(self, search_dict, rp_dict):
@@ -331,24 +339,24 @@ class Audit(AuditBase):
         '''
         logentries = None
         try:
-            limit = int(rp_dict.get('rp',15))
-            offset = (int(rp_dict.get('page',1))-1) * limit
+            limit = int(rp_dict.get('rp', 15))
+            offset = (int(rp_dict.get('page', 1)) - 1) * limit
             
             # create filter condition
             filter_condition = self._create_filter(search_dict)
             
             if rp_dict.get("sortorder") == "desc":
                 logentries = self.session.query(LogEntry)\
-                                .filter(filter_condition)\
-                                .order_by(desc(self._get_logentry_attribute(rp_dict.get("sortname"))))\
-                                .limit(limit)\
-                                .offset(offset)
+                                         .filter(filter_condition)\
+                                         .order_by(desc(self._get_logentry_attribute(rp_dict.get("sortname"))))\
+                                         .limit(limit)\
+                                         .offset(offset)
             else:
                 logentries = self.session.query(LogEntry)\
-                                .filter(filter_condition)\
-                                .order_by(asc(self._get_logentry_attribute(rp_dict.get("sortname"))))\
-                                .limit(limit)\
-                                .offset(offset)
+                                         .filter(filter_condition)\
+                                         .order_by(asc(self._get_logentry_attribute(rp_dict.get("sortname"))))\
+                                         .limit(limit)\
+                                         .offset(offset)
 
         except Exception as exx:
             log.error("exception %r" % exx)
@@ -357,7 +365,7 @@ class Audit(AuditBase):
         finally:
             self.session.close()
 
-        if logentries == None:
+        if logentries is None:
             return iter([])
         else:
             return iter(logentries)
@@ -365,46 +373,49 @@ class Audit(AuditBase):
     def audit_entry_to_dict(self, audit_entry):
         sig = self._verify_sig(audit_entry)
         is_not_missing = self._check_missing(int(audit_entry.id))
-        #is_not_missing = True
-        audit_dict = { 'number' : audit_entry.id,
-                'date' : audit_entry.date.isoformat(),
-                'sig_check' : "OK" if sig else "FAIL",
-                'missing_line' : "OK" if is_not_missing else "FAIL",
-                'action' : audit_entry.action,
-                'success' : audit_entry.success,
-                'serial' : audit_entry.serial,
-                'token_type' : audit_entry.token_type,
-                'user' : audit_entry.user,
-                'realm' : audit_entry.realm,
-                'administrator' : audit_entry.administrator,
-                'action_detail' : audit_entry.action_detail,
-                'info' : audit_entry.info,
-                'privacyidea_server' : audit_entry.privacyidea_server,
-                'client' : audit_entry.client,
-                'log_level' : audit_entry.loglevel,
-                'clearance_level' : audit_entry.clearance_level 
-                }
+        # is_not_missing = True
+        audit_dict = {'number': audit_entry.id,
+                      'date': audit_entry.date.isoformat(),
+                      'sig_check': "OK" if sig else "FAIL",
+                      'missing_line': "OK" if is_not_missing else "FAIL",
+                      'action': audit_entry.action,
+                      'success': audit_entry.success,
+                      'serial': audit_entry.serial,
+                      'token_type': audit_entry.token_type,
+                      'user': audit_entry.user,
+                      'realm': audit_entry.realm,
+                      'administrator': audit_entry.administrator,
+                      'action_detail': audit_entry.action_detail,
+                      'info': audit_entry.info,
+                      'privacyidea_server': audit_entry.privacyidea_server,
+                      'client': audit_entry.client,
+                      'log_level': audit_entry.loglevel,
+                      'clearance_level': audit_entry.clearance_level
+                      }
         return audit_dict
     
 #########################################################################
 #
 # To be run at the command line to clean the logs
-#    
+#
 
-import os, sys
+import os
+import sys
 from getopt import getopt, GetoptError
 import ConfigParser
 
 
 def usage():
-    print  '''
-    privacyidea-audit-janitor: cleanup audit database according to:
+    print('''cleanup audit database according to:
         privacyideaAudit.sql.highwatermark and
         privacyideaAudit.sql.lowwatermark
         
     Parameter:
-    -f <privacyidea.ini file>
-    '''
+    -f, --file <privacyidea.ini file>
+    --high <high watermark>
+    --low  <low wartermark>
+    ''')
+
 
 def cleanup_db(filename, highwatermark=None, lowwatermark=None):
 
@@ -417,17 +428,20 @@ def cleanup_db(filename, highwatermark=None, lowwatermark=None):
     # get the type - we only work for sqlaudit
     audit_type = config.get("DEFAULT", "privacyideaAudit.type")
     if audit_type != "privacyidea.lib.auditmodules.sqlaudit":
-        raise Exception("We only work with audit type sql. %s given." % audit_type)
+        raise Exception("We only work with audit type sql. %s given."
+                        % audit_type)
     
     if not highwatermark:
         try:
-            highwatermark = config.get("DEFAULT", "privacyideaAudit.sql.highwatermark")
+            highwatermark = config.get("DEFAULT",
+                                       "privacyideaAudit.sql.highwatermark")
         except ConfigParser.NoOptionError:
             highwatermark = 10000
         
     if not lowwatermark:
         try:
-            lowwatermark = config.get("DEFAULT", "privacyideaAudit.sql.lowwatermark")
+            lowwatermark = config.get("DEFAULT",
+                                      "privacyideaAudit.sql.lowwatermark")
         except ConfigParser.NoOptionError:
             lowwatermark = 5000
     
@@ -440,7 +454,6 @@ def cleanup_db(filename, highwatermark=None, lowwatermark=None):
                                                       lowwatermark,
                                                       sql_url)
     
-    
     engine = create_engine(sql_url)
     # create a configured "Session" class
     session = sessionmaker(bind=engine)()
@@ -449,7 +462,8 @@ def cleanup_db(filename, highwatermark=None, lowwatermark=None):
     count = session.query(LogEntry.id).count()
     for l in session.query(LogEntry.id).order_by(desc(LogEntry.id)).limit(1):
         last_id = l[0]
-    print "The log audit log has %i entries, the last one is %i" % (count, last_id)
+    print "The log audit log has %i entries, the last one is %i" % (count,
+                                                                    last_id)
     # deleting old entries
     if count > highwatermark:
         print "More than %i entries, deleting..." % highwatermark
@@ -466,7 +480,10 @@ def main():
     highwatermark = None
     lowwatermark = None
     try:
-        opts, _args = getopt(sys.argv[1:], "hf:", [ "help", "file=", "high=", "low=" ])
+        opts, _args = getopt(sys.argv[1:], "hf:", ["help",
+                                                   "file=",
+                                                   "high=",
+                                                   "low="])
 
     except GetoptError:
         usage()
@@ -484,7 +501,9 @@ def main():
             lowwatermark = int(arg)
 
     if filename:
-        cleanup_db(filename, highwatermark=highwatermark, lowwatermark=lowwatermark )
+        cleanup_db(filename,
+                   highwatermark=highwatermark,
+                   lowwatermark=lowwatermark)
     else:
         usage()
         sys.exit(2)
