@@ -53,6 +53,7 @@ You need to create the first administrator to login. This administrator than can
 * create UserIdResolvers
 * a realm 
 * and enroll tokens.
+
 To create an administrator do this:
 
     $ privacyidea-create-pwidresolver-user -u admin_name -p secret_password -i 1000 >> etc/privacyidea/admin-users
