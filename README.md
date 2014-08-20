@@ -25,25 +25,26 @@ Tests are running on travis-ci.org. See the test coverage at coveralls.io.
 Installation
 ------------
 
-Installing privacyIDEA can be performed easily by issuing the commands::
+You can install privacyIDEA into a python virtualenv.
+Installing privacyIDEA can be performed easily by issuing the pip command:
 
     $ pip install privacyidea
 
 privacyIDEA comes with its own user authentication for administrators and 
 normal users. Thus you can start directly by creating the database.
-In the example configuration file the database is an SQLite database::
-located at::
+In the example configuration file the database is an SQLite database
+located at:
 
-    $ paster setup-app config/privacyidea.ini.example
+    $ paster setup-app etc/privacyidea/privacyidea.ini.example
 
 In the config file privacyidea.ini.example the already shipped encryption key "dummy-encKey" is referenced.
 Of course, you should create an encryption key and change in in the privacyidea.ini.example:
 
     $ dd if=/dev/random of=etc/privacyidea/encKey bs=1 count=96
 
-Then start the webserver by issuing::
+Then start the webserver by issuing:
 
-    $ paster serve config/privacyidea.ini.example
+    $ paster serve etc/privacyidea/privacyidea.ini.example
 
 Authentication
 --------------
@@ -54,9 +55,9 @@ You need to create the first administrator to login. This administrator than can
 * and enroll tokens.
 To create an administrator do this:
 
-    $ privacyidea-create-pwidresolver-user -u <admin-name> -p <secret-password> -i 1000 >> config/admin-users
+    $ privacyidea-create-pwidresolver-user -u admin_name -p secret_password -i 1000 >> etc/privacyidea/admin-users
 
-You then can login with the user <admin-name> and the password <secret-password>. 
+You then can login with the user ``admin-name`` and the password ``secret-password``. 
 All the administrators are stored in the file defined in the privacyIDEA.ini entry "privacyideaSuperuserFile".
 
 Options
@@ -78,7 +79,7 @@ You can change the location of your log file:
 Authentication
 --------------
 You can use the web API to authenticate users. If you enrolled a token for a user, you can authenticate
-the user by calling the URL::
+the user by calling the URL:
 
     http://yourserver:5001/validate/check?user=you&pass=pin123456
 
