@@ -631,3 +631,32 @@ class TestMachineController(TestController):
         assert '"option_slot": "5"' not in response
         # cleanup
         self._delete_yubikeys(serials=serials)
+        
+    def test_delete_token_withoptions(self):
+        name1 = "mach1"
+        ip1 = "1.2.3.4"
+        serial = "123456"
+        self._create_machine(name1, ip1)
+        self._create_token(serial)
+        
+        self._add_token(name1, serial, "ssh")
+        response = self.app.get(url(controller="machine", action="addoption"),
+                                params={"name": name1,
+                                        "serial": serial,
+                                        "application": "ssh",
+                                        "option_user": "root"})
+        print response
+        assert('"status": true' in response)
+        assert('"value": 1' in response)
+        
+        # Now, we can successfully delete the token!
+        response = self.app.get(url(controller="machine", action="deltoken"),
+                                params={"name": name1,
+                                        "serial": serial,
+                                        "application": "ssh"})
+        print response
+        assert('"status": true' in response)
+        assert('"value": true' in response)
+        
+        self._delete_token(serial)
+        self._delete_machine(name1)

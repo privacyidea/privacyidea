@@ -234,12 +234,13 @@ def deltoken(machine_name, serial, application):
     token_id = _get_token_id(serial)
     mtid = _get_machinetoken_id(machine_id, token_id, application)
     
+    Session.query(MachineTokenOptions).\
+        filter(MachineTokenOptions.machinetoken_id == mtid).delete()
     num = Session.query(MachineToken).\
         filter(and_(MachineToken.token_id == token_id,
                     MachineToken.machine_id == machine_id,
                     MachineToken.application == application)).delete()
-    Session.query(MachineTokenOptions).\
-        filter(MachineTokenOptions.machinetoken_id == mtid).delete()
+    
     Session.commit()
     # 1 -> success
     return num == 1
