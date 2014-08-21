@@ -5,6 +5,13 @@ set -e
 
 USERNAME=privacyidea
 
+if test -f /etc/default/privacyidea; then
+    . /etc/default/privacyidea
+    # If the daemon user was changed,
+    # we set other access rights
+    USERNAME=$USER
+fi
+
 # source debconf library
 . /usr/share/debconf/confmodule
 

@@ -1,8 +1,14 @@
+privacyidea (1.3.2~dev0-1) trusty; urgency=low
+
+  * Add uwsgi and nginx configuration
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 21 Aug 2014 12:04:00 +0200
+
 privacyidea (1.3.1-1) trusty; urgency=low
 
   * Fixed bug, that avoided to delete MachineTokens with options (#27)
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 20 Aug 2014 18:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 20 Aug 2014 18:30:00 +0200
 
 privacyidea (1.3-1) trusty; urgency=low
 

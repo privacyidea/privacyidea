@@ -38,7 +38,7 @@ def get_package():
 
 setup(
     name='privacyIDEA',
-    version='1.3.1',
+    version='1.3.2dev0',
     description='privacyIDEA: identity, multifactor authentication, '
                 'authorization, audit',
     author='privacyidea.org',
@@ -81,6 +81,7 @@ setup(
     data_files=[(get_package()[0] + 'etc/privacyidea/',
                  ['config/privacyidea.ini.example',
                   'config/privacyideaapp.wsgi',
+                  'config/privacyideaapp.py',
                   'config/dictionary',
                   'config/dummy-encKey']),
                 (get_package()[1] + 'share/man/man1',
