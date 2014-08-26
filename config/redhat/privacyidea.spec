@@ -1,6 +1,6 @@
 %define name privacyidea
-%define version 1.2.1~dev0
-%define unmangled_version 1.2.1-dev0
+%define version 1.3.1~dev0
+%define unmangled_version 1.3.1-dev0
 %define release 1
 
 Summary: two-factor authentication system e.g. for OTP devices
