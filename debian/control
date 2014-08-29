@@ -31,11 +31,7 @@ Description: Requirements to run privacyIDEA with freeradius
  But privacyIDEA is completely licensed under the AGPLv3.
 
 Package: privacyidea-all
-<<<<<<< HEAD
 Architecture: all
-=======
-Architecure: all
->>>>>>> 73ceadb56cdc2eb4b13e60a3260702f44b41a0fc
 Depends: privacyidea, privacyidea-radius, privacyideaadm
 Description: two-factor authenticaion system. Meta package to install everything.
  privacyIDEA: identity, multifactor authentication, authorization.
