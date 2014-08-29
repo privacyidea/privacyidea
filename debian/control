@@ -17,3 +17,28 @@ Description: two-factor authentication system e.g. for OTP devices
  This is achieved by its totally modular architecture.
  privacyIDEA is not only open as far as its modular architecture is concerned. 
  But privacyIDEA is completely licensed under the AGPLv3.
+
+Package: privacyidea-radius
+Architecture: all
+Depends: libwww-perl, libconfig-inifiles-perl, libdata-dump-perl, libtry-tiny-perl, freeradius
+Description: Requirements to run privacyIDEA with freeradius
+ privacyIDEA: identity, multifactor authentication, authorization.
+ privacyIDEA is an open solution for strong two-factor authentication.
+ privacyIDEA aims to not bind you to any decision of the authentication protocol or
+ it does not dictate you where your user information should be stored.
+ This is achieved by its totally modular architecture.
+ privacyIDEA is not only open as far as its modular architecture is concerned.
+ But privacyIDEA is completely licensed under the AGPLv3.
+
+Package: privacyidea-all
+Architecure: all
+Depends: privacyidea, privacyidea-radius, privacyideaadm
+Description: two-factor authenticaion system. Meta package to install everything.
+ privacyIDEA: identity, multifactor authentication, authorization.
+ privacyIDEA is an open solution for strong two-factor authentication.
+ privacyIDEA aims to not bind you to any decision of the authentication protocol or
+ it does not dictate you where your user information should be stored.
+ This is achieved by its totally modular architecture.
+ privacyIDEA is not only open as far as its modular architecture is concerned.
+ But privacyIDEA is completely licensed under the AGPLv3.
+
