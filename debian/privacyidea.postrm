@@ -28,5 +28,8 @@ remove_user() {
 
 #remove_user
 
+update-rc.d -f privacyidea remove
+
+
 #DEBHELPER#
 exit 0

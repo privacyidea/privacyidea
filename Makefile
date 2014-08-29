@@ -77,6 +77,9 @@ debianize:
 	# are written to /etc
 	touch DEBUILD/privacyidea.org/PRIVACYIDEA_PACKAGE
 	cp LICENSE DEBUILD/privacyidea.org/debian/copyright
+	cp LICENSE DEBUILD/privacyidea.org/debian/privacyidea.copyright
+	cp LICENSE DEBUILD/privacyidea.org/debian/privacyidea-all.copyright
+	cp authmodules/FreeRADIUS/copyright DEBUILD/privacyidea.org/debian/privacyidea-radius.copyright
 	(cd DEBUILD; tar -zcf privacyidea_${VERSION}.orig.tar.gz --exclude=privacyidea.org/debian  privacyidea.org)
 
 builddeb:
@@ -85,12 +88,12 @@ builddeb:
 
 ppa-dev:
 	make debianize
-	(cd DEBUILD/privacyidea.org; debuild -S)
+	(cd DEBUILD/privacyidea.org; debuild -sa -S)
 	# Upload to launchpad:
 	dput ppa:privacyidea/privacyidea-dev DEBUILD/privacyidea_${VERSION}-?_source.changes
 
 ppa:
 	make debianize
-	(cd DEBUILD/privacyidea.org; debuild -S)
+	(cd DEBUILD/privacyidea.org; debuild -sa -S)
 	dput ppa:privacyidea/privacyidea DEBUILD/privacyidea_${VERSION}-?_source.changes
 	

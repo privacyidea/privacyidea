@@ -40,7 +40,7 @@ create_files() {
 	if [ ! -e /etc/privacyidea/encKey ]; then
 		dd if=/dev/urandom of=/etc/privacyidea/encKey bs=1 count=96
 	fi
-	paster setup-app /etc/privacyidea/privacyidea.ini
+	paster setup-app /etc/privacyidea/privacyidea.ini || true
 	chown -R $USERNAME /var/log/privacyidea
 	chown -R $USERNAME /var/lib/privacyidea
 	chown -R $USERNAME /etc/privacyidea
@@ -79,6 +79,7 @@ case "$1" in
 	create_user
 	create_files
 	create_certificate
+	update-rc.d -n privacyidea defaults
 	show_info
   ;;
 
