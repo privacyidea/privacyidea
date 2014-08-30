@@ -1,8 +1,10 @@
-privacyidea (1.3.2~dev1-3) trusty; urgency=low
+privacyidea (1.3.2~dev2-1) trusty; urgency=low
 
   * fix the missing python modules in the deb package
+  * Added privacyidea-otrs and remove the authmodules from the
+    core package
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 29 Aug 2014 08:00:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Sat, 30 Aug 2014 23:15:00 +0200
 
 privacyidea (1.3.2~dev1-2) trusty; urgency=low
 

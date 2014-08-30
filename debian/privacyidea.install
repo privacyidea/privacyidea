@@ -14,6 +14,7 @@ config/nginx/sites-available/privacyidea	etc/nginx/sites-available/
 config/uwsgi/apps-available/privacyidea.xml	etc/uwsgi/apps-available/
 
 # This is needed, when we create more than one binary package
-debian/tmp/usr/lib/python2.7/dist-packages/privacyidea/* usr/lib/python2.7/dist-packages/privacyidea/
-debian/tmp/usr/* usr/
+debian/tmp/usr/bin/* usr/bin/
+debian/tmp/usr/share/* usr/share/
+debian/tmp/usr/lib/python* usr/lib/
 debian/tmp/etc/* etc/
