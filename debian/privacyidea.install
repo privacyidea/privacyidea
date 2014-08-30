@@ -12,3 +12,8 @@ doc/_build/man/privacyidea-server.1 	usr/share/man/man1
 # uwsgi and nginx config
 config/nginx/sites-available/privacyidea	etc/nginx/sites-available/
 config/uwsgi/apps-available/privacyidea.xml	etc/uwsgi/apps-available/
+
+# This is needed, when we create more than one binary package
+debian/tmp/usr/lib/python2.7/dist-packages/privacyidea/* usr/lib/python2.7/dist-packages/privacyidea/
+debian/tmp/usr/* usr/
+debian/tmp/etc/* etc/
