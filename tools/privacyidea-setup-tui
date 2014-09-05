@@ -1,0 +1,519 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+#  copyright 2014 Cornelius Kölbel
+#  License:  AGPLv3
+#  contact:  http://www.privacyidea.org
+#
+# This code is free software; you can redistribute it and/or
+# License as published by the Free Software Foundation; either
+# version 3 of the License, or any later version.
+#
+# This code is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+text dialog based setup tool to configure the privacyIDEA basics.
+"""
+
+import locale, dialog
+import argparse
+import sys
+from dialog import Dialog
+from privacyidea.lib.appliance import NginxConfig
+from privacyidea.lib.appliance import PrivacyIDEAConfig
+
+DEFAULT_CONFIG = "/etc/privacyidea/privacyidea.ini"
+DESCRIPTION = __doc__
+VERSION = "1.3"
+
+
+class pSetup(object):
+    
+    def __init__(self, config=None):
+        if config:
+            self.config_file = config
+        else:
+            self.config_file = DEFAULT_CONFIG
+            
+        self.pConfig = PrivacyIDEAConfig(self.config_file)
+        self.d = Dialog(dialog="dialog")
+        
+    def main_menu(self):
+        code, tags = self.d.menu("Which subject do you want to configure?",
+                                 choices=[("privacyidea", "",
+                                           "Configure privacyIDEA application "
+                                           "stuff like administrators."),
+                                          ("Webserver","",
+                                           "Configure settings concerning "
+                                           "the webservice like the SSL "
+                                           "certificates."),
+                                          ("FreeRADIUS","",
+                                           "Configure RADIUS settings like "
+                                           "the RADIUS clients.")
+                                          ],
+                                 backtitle="privacyIDEA configuration",
+                                 cancel="Exit",
+                                 item_help=1)
+        if code == self.d.DIALOG_OK:
+            print tags
+            if tags == "Webserver":
+                self.webserver_menu()
+            elif tags == "privacyidea":
+                self.privacyidea_menu()
+            elif tags == "FreeRADIUS":
+                self.radius_menu()
+    
+    def privacyidea_menu(self):
+        while 1:
+            code, tags = self.d.menu("Configure privacyidea",
+                                     choices=[("view config",
+                                               "",""),
+                                              ("initialize ini-file",
+                                               "",
+                                               "Create a new ini-file with "
+                                               "default values."),
+                                              ("loglevel",
+                                               "",
+                                               ""),
+                                              ("getotp", "", ""),
+                                              ("admin realms", "", ""),
+                                              ("manage admins", "", ""),
+                                              ("database", "", ""),
+                                              ("encryption key", "", ""),
+                                              ("signing key", "", "")],                                     
+                                     menu_height=22,
+                                     backtitle="privacyIDEA configuration",
+                                     item_help=1)
+        
+            if code == self.d.DIALOG_OK:
+                if tags.startswith("loglevel"):
+                    self.privacyidea_loglevel()
+                elif tags.startswith("getotp"):
+                    self.privacyidea_getotp()
+                elif tags.startswith("view"):
+                    self.privacyidea_view()
+                elif tags.startswith("initialize"):
+                    self.privacyidea_initialize()
+                elif tags.startswith("admin realms"):
+                    self.privacyidea_adminrealms()
+                elif tags.startswith("admin file"):
+                    self.privacyidea_adminfile()
+                elif tags.startswith("manage admins"):
+                    self.privacyidea_admins()
+                elif tags.startswith("encryption"):
+                    self.privacyidea_enckey()
+                elif tags.startswith("signing"):
+                    self.privacyidea_sign()
+                elif tags.startswith("database"):
+                    self.privacyidea_database()
+            else:
+                break
+            
+        self.main_menu()
+       
+       
+    def privacyidea_database(self):
+        bt="Configure the database connection"
+        while 1:
+            current_config = self.pConfig.get_DB()
+            code, tags = self.d.menu("The current database configuration "
+                                     "string is %s" % current_config,
+                                     choices=[("reset locally",
+                                               "let privacyidea recreate the config"),
+                                              ("---", "-------------------"),
+                                              ("type",
+                                               "set the driver like mysql or psql"),
+                                              ("user",
+                                               "set the database user"),
+                                              ("password",
+                                               "set the database password"),
+                                              ("host",
+                                               "set the database host"),
+                                              ("name",
+                                               "set the database name"),
+                                              ("---", "-------------------"),
+                                              ("init tables", "create tables")],
+                                     backtitle=bt)
+            if code == self.d.DIALOG_OK:
+                if tags.startswith("reset"):
+                    self.privacyidea_db_reset()
+                elif tags.startswith("init"):
+                    self.privacyidea_db_init()
+                elif tags.startswith("type"):
+                    self.privacyidea_db_type()
+                elif tags.startswith("user"):
+                    self.privacyidea_db_user()
+                elif tags.startswith("password"):
+                    self.privacyidea_db_password()
+                elif tags.startswith("host"):
+                    self.privacyidea_db_host()
+                elif tags.startswith("name"):
+                    self.privacyidea_db_name()
+            else:
+                break
+            
+    def privacyidea_db_init(self):
+        db_connect = self.pConfig.get_DB()
+        code = self.d.yesno("Do you want to recreate the tables? "
+                            "Existing data will not be lost. Only new tables " 
+                            "in the database scheme will be created on %s" %
+                            db_connect,
+                            width=70,
+                            backtitle="Create database tables")
+        if code == self.d.DIALOG_OK:
+            r, out = self.pConfig.DB_init()
+            if r:
+                self.d.msgbox("Created database tables.")
+            else:
+                self.d.scrollbox("Error creating database tables: %s" % out)
+        
+    def privacyidea_db_reset(self):
+        code = self.d.yesno("Do you want to reset the database configuration? "
+                            "This will create a new user on the locally "
+                            "running mysql server.",
+                            backtitle="Reset database configuration",
+                            defaultno=1)
+        if code == self.d.DIALOG_OK:
+            res, dbconfig = self.pConfig.DB_create()
+            if res:
+                self.pConfig.set_DB({"type": "mysql",
+                                     "host": "localhost",
+                                     "user": dbconfig[1],
+                                     "password": dbconfig[2],
+                                     "database": dbconfig[0]})
+                self.pConfig.save()
+                r, out = self.pConfig.DB_init()
+                if r:
+                    self.d.msgbox("Database created.")
+                else:
+                    self.d.scrollbox("Error creating database tables: %s" % out)
+            else:
+                self.d.scrollbox("Failed to create database.\n %s" % dbconfig)
+        
+        
+    def privacyidea_db_type(self):
+        db_connect = self.pConfig.get_DB()
+        try:
+            dialect = db_connect.split(":")[0]
+        except IndexError:
+            dialect = mysql
+        
+        code, tags = self.d.radiolist("Select the database dialect you want "
+                                "the token data to be stored at (%s)" %
+                                db_connect,
+                                choices=[("mysql", "",
+                                          int(dialect=="mysql")),
+                                         ("sqlite", "",
+                                          int(dialect=="sqlite")),
+                                         ("postgresql", "",
+                                          int(dialect=="postgresql")),
+                                         ("postgtresql+psycopg2", "",
+                                          int(dialect=="postgtresql+psycopg2")),
+                                         ("oracle", "",
+                                          int(dialect=="oracle"))],
+                                backtitle="Select database dialect")
+        
+        if code == self.d.DIALOG_OK:
+            self.pConfig.set_DB({"type" : tags})
+            self.pConfig.save()
+        
+    def privacyidea_db_user(self):
+        db_dict = self.pConfig.get_DB_dict()
+        code, tags = self.d.inputbox("Enter the name of the database user",
+                                     init=db_dict.get("user") or "",
+                                     backtitle="Configure database connection")
+        if code == self.d.DIALOG_OK:
+            self.pConfig.set_DB({"user": tags})
+            self.pConfig.save()
+    
+    
+    def privacyidea_db_password(self):
+        db_dict = self.pConfig.get_DB_dict()
+        code, tags = self.d.inputbox("Enter the password of the database user",
+                                     init=db_dict.get("password") or "",
+                                     backtitle="Configure database connection")
+        if code == self.d.DIALOG_OK:
+            self.pConfig.set_DB({"password": tags})
+            self.pConfig.save()
+    
+    def privacyidea_db_host(self):
+        db_dict = self.pConfig.get_DB_dict()
+        code, tags = self.d.inputbox("Enter the hostname of the database",
+                                     init=db_dict.get("host") or "",
+                                     backtitle="Configure database connection")
+        if code == self.d.DIALOG_OK:
+            self.pConfig.set_DB({"host": tags})
+            self.pConfig.save()
+    
+    def privacyidea_db_name(self):
+        db_dict = self.pConfig.get_DB_dict()
+        code, tags = self.d.inputbox("Enter the name of the database",
+                                     init=db_dict.get("database") or "",
+                                     backtitle="Configure database connection")
+        if code == self.d.DIALOG_OK:
+            self.pConfig.set_DB({"database": tags})
+            self.pConfig.save()
+            
+    def privacyidea_admins(self):
+        while 1:
+            admins = [("Add new admin", "Add a new administrator")]
+            admins_from_file = self.pConfig.get_admins()
+            for admin in admins_from_file:
+                admins.append( admin )
+            code, tags = self.d.menu("You can select an existing administrator "
+                                     "to either delete it or change the " 
+                                     "password or create a new admin",
+                                     choices=admins,
+                                     backtitle="Manage administrators")
+            
+            if code == self.d.DIALOG_OK:
+                if tags == "Add new admin":
+                    self.privacyidea_admin_add()
+                else:
+                    self.privacyidea_admin_manage(tags)
+            else:
+                break
+            
+    def privacyidea_admin_manage(self, admin_name):
+        bt="Manage administrator"
+        code, tags = self.d.menu("Manage admin %s" % admin_name,
+                                 choices=[("Delete admin", ""),
+                                          ("Change password", "")],
+                                 backtitle=bt)
+        if code == self.d.DIALOG_OK:
+            if tags.startswith("Delete"):
+                self.d.yesno("Do you really want to delete the "
+                             "administrator %s?" % admin_name)
+                self.pConfig.delete_admin(admin_name)
+                
+            if tags.startswith("Change"):
+                password = self.privacyidea_admin_password(admin_name)
+                pass
+            
+    def privacyidea_admin_password(self, admin_name, create=False):
+        bt = "Setting password for administrator %s" % admin_name
+        password = None
+        while 1:
+            code, password1 = self.d.passwordbox("Enter the password for the "
+                                                 "administrator %s" % admin_name,
+                                                 backtitle=bt)
+                
+            if code == self.d.DIALOG_OK:
+                code, password2 = self.d.passwordbox("Repeat the password",
+                                                     backtitle=bt)
+                if code == self.d.DIALOG_OK:
+                    if password1 != password2:
+                        self.d.msgbox("The passwords do not match. "
+                                      "Please try again.")
+                    else:
+                        password = password1
+                        if create:
+                            self.pConfig.set_admin(admin_name,
+                                                   password,
+                                                   description="")
+                        else:
+                            self.pConfig.update_admin(admin_name,
+                                                      password,
+                                                      description="")
+                        break
+                else:
+                    break
+            else:
+                break
+        return password 
+            
+    def privacyidea_admin_add(self):
+        bt="Add a new administrator"
+        code, admin_name = self.d.inputbox("The username of the new "
+                                     "administrator",
+                                     backtitle=bt)
+        
+        if code == self.d.DIALOG_OK:
+            password = self.privacyidea_admin_password(admin_name,
+                                                       create=True)
+            
+       
+    def privacyidea_adminrealms(self):
+        adminrealms = self.pConfig.get_adminrealms()
+        code, tags = self.d.inputbox("You may enter a comma seperated list "
+                                     "of realms that are recognized as "
+                                     "admin realms.",
+                                     init=adminrealms,
+                                     width=40,
+                                     backtitle="configure admin realms")
+        if code == self.d.DIALOG_OK:
+            self.pConfig.set_adminrealms(tags)
+            self.pConfig.save()
+         
+    def privacyidea_initialize(self):
+        code = self.d.yesno("Do you want to initialize "
+                            "the config file? Old privacyIDEA "
+                            "configurations will be overwritten!",
+                            backtitle="Initialize privacyIDEA configuration",
+                            defaultno=1)
+        if code == self.d.DIALOG_OK:
+            self.pConfig.initialize()
+            self.pConfig.save()
+            
+    def privacyidea_enckey(self):
+        code = self.d.yesno("Do you want to create a new encryption key? "
+                            "All token keys will not be readable anymore!",
+                            backtitle="Create a new encryption key.",
+                            defaultno=1)
+        if code == self.d.DIALOG_OK:
+            r, f = self.pConfig.create_encryption_key()
+            if r:
+                self.d.msgbox("Successfully created new encryption key %s." %
+                              f)
+            else:
+                self.d.msgbox("Failed to create new encryption key %s!" %
+                              f)
+            
+    def privacyidea_sign(self):
+        code = self.d.yesno("Do you want to create a new audit trail "
+                            "signing key? "
+                            "Older audit entries can not be verified anymore.",
+                            backtitle="Create a new signing key.",
+                            defaultno=1)
+        if code == self.d.DIALOG_OK:
+            r, f = self.pConfig.create_audit_keys()
+            if r:
+                self.d.msgbox("Successfully created new audit keys %s." %
+                              f)
+            else:
+                self.d.msgbox("Failed to create new audit keys %s!" %
+                              f)
+        
+    def privacyidea_loglevel(self):
+        loglevel = self.pConfig.get_loglevel()
+        code, tags = self.d.radiolist("choose a loglevel",
+                                      choices=[("DEBUG", "", 
+                                                int(loglevel=="DEBUG")),
+                                               ("INFO", "",
+                                                int(loglevel=="INFO")),
+                                               ("WARN", "Warnings",
+                                                int(loglevel=="WARN")),
+                                               ("ERROR", "",
+                                                int(loglevel=="ERROR"))],
+                                      backtitle="privacyIDEA loglevel.")
+        if code == self.d.DIALOG_OK:
+            self.pConfig.set_loglevel(tags)
+            self.pConfig.save()
+
+    
+    def privacyidea_getotp(self):
+        otp = self.pConfig.get_getotp()
+        code, tags = self.d.radiolist("Allow retrieving OTP values",
+                                      choices=[("Allow",
+                                                "OTP values can be retrieved",
+                                                int(otp)),
+                                               ("Deny",
+                                                "OTP values can not be "
+                                                "retreived",
+                                                int(not otp))],
+                                      backtitle="getOTP configuration")
+        if code == self.d.DIALOG_OK:
+            self.pConfig.set_getotp(tags == "Allow")
+            self.pConfig.save()
+    
+    def privacyidea_view(self):
+        text = """
+    Retrieving OTP values is allowed: %s
+    The secret key file             : %s
+    The administrator file          : %s
+    List of the admin realms        : %s
+    Database configuration          : %s
+    Loglevel                        : %s
+    """ % (self.pConfig.get_getotp(),
+           self.pConfig.get_keyfile(),
+           self.pConfig.get_adminfile(),
+           self.pConfig.get_adminrealms(),
+           self.pConfig.get_DB(),
+           self.pConfig.get_loglevel())
+        self.d.scrollbox(text)
+    
+    def webserver_menu(self):
+        bt = "Webervice configuration"
+        while 1:
+            code, tags = self.d.menu("Configure Webserver",
+                                     choices=[("view config",""),
+                                              ("enable or disable webserver", "enable"),
+                                              ("create new certificates", "")
+                                         ],
+                                     backtitle=bt)
+            if code == self.d.DIALOG_OK:
+                if tags.startswith("enable"):
+                    self.webserver_enable()
+                elif tags == "create new certificates":
+                    self.webserver_certificate()
+                elif tags.startswith("view"):
+                    self.webserver_view()
+            else:
+                break
+            
+        self.main_menu()
+        
+        
+    def webserver_view(self):
+        text = "TODO: here is the view output"
+        self.d.scrollbox(text)
+        
+    def webserver_certificate(self):
+        code = self.d.yesno("This will overwrite the existing "
+                            "certificate. Create new?",
+                            backtitle="Create webserver certificate",
+                            defaultno=1)
+        # TODO
+        print code
+        
+    def webserver_enable(self):
+        # TODO get the status of the webservice
+        code, tags = self.d.radiolist("enable or disable the webservice", 
+                                      choices=[("enable",
+                                                "privacyIDEA "
+                                                "will start automatically "
+                                                "at boot time", 1),
+                                               ("disable",
+                                                "privacyIDEA "
+                                                "will not start automatically.",
+                                                0)],
+                                      width=70,
+                                      backtitle="Enable or disable webservice")
+    
+    def radius_menu(self):
+        code, tags = self.d.menu("Configure FreeRADIUS",
+                                 choices=[("view config",""),
+                                          ("client config", "")
+                                     
+                                     ])
+        self.main_menu()
+
+
+def create_arguments():
+    parser = argparse.ArgumentParser(description=DESCRIPTION,
+                                     fromfile_prefix_chars='@')
+    parser.add_argument("-f", "--file",
+                        help="The privacyidea.ini file.",
+                        required=False)
+    parser.add_argument("-v", "--version",
+                        help="Print the version of the program.",
+                        action='version', version='%(prog)s ' + VERSION)
+       
+    args = parser.parse_args()
+    return args
+
+
+
+def main():
+    locale.setlocale(locale.LC_ALL, '')
+    args = create_arguments()
+    pS = pSetup(config=args.file)
+    pS.main_menu()
+
+if __name__ == '__main__':
+    main()
+

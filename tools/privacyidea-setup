@@ -33,177 +33,30 @@ import sys
 import os
 import re
 import StringIO
+from privacyidea.lib.ext import nginxparser
+from privacyidea.lib.appliance import NginxConfig
+from privacyidea.lib.appliance import PrivacyIDEAConfig
+import os.path
+import pprint
+from subprocess import call 
 
+def nginx_enable(args):
+    nconfig = NginxConfig()
+    nconfig.enable()
 
-class PrivacyIDEAConfig(object):
+def nginx_disable(args):
+    nconfig = NginxConfig()
+    nconfig.disable()
+
+def nginx_view(args):
+    nconfig = NginxConfig()
+    print "privacyidea config is active: %s, %s " % nconfig.is_active()
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(nconfig.get())
     
-    ini_template = """[DEFAULT]
-debug = false
-profile = false
-smtp_server = localhost
-error_email_from = paste@localhost
-privacyideaaudit.type = privacyidea.lib.auditmodules.sqlaudit
-privacyideaaudit.key.private = %(here)s/private.pem
-privacyideaaudit.key.public = %(here)s/public.pem
-privacyideaaudit.sql.highwatermark = 10000
-privacyideagetotp.active = False
-privacyideasecretfile = %(here)s/encKey
-privacyideasuperuserfile = %(here)s/admin-users
-privacyideasuperuserrealms = superuser, 2ndsuperusers
-privacyideasessiontimout = 1200
-privacyideaurl = http://localhost:5001
-privacyideaurl.disable_ssl = False
-radius.dictfile = %(here)s/dictionary
-radius.nas_identifier = privacyIDEA
-privacyideamachine.applications = privacyidea.lib.applications.ssh, privacyidea.lib.applications.luks
-
-[server:main]
-use = egg:Paste#http
-host = 0.0.0.0
-port = 5001
-
-[app:main]
-use = egg:privacyIDEA
-sqlalchemy.url = sqlite:///%(here)s/token.sqlite
-sqlalchemy.pool_recycle = 3600
-full_stack = true
-static_files = true
-who.log_level = debug
-who.log_file = %(here)s/privacyidea.log
-cache_dir = %(here)s/data
-custom_templates = %(here)s/custom-templates/
-
-[loggers]
-keys = root, privacyidea, sqlalchemy
-
-[logger_root]
-level = WARNING
-handlers = file
-
-[logger_privacyidea]
-level = INFO
-handlers = file
-qualname = privacyidea
-
-[logger_sqlalchemy]
-level = ERROR
-handlers = file
-qualname = sqlalchemy.engine
-
-[handlers]
-keys = file
-
-[handler_file]
-class = handlers.RotatingFileHandler
-args = ('%(here)s/privacyidea.log','a', 10000000, 4)
-level = INFO
-formatter = generic
-
-[formatters]
-keys = generic
-
-[formatter_generic]
-class = privacyidea.lib.log.SecureFormatter
-format = %(asctime)s %(levelname)-5.5s {%(thread)d} [%(name)s][%(funcName)s #%(lineno)d] %(message)s
-datefmt = %Y/%m/%d - %H:%M:%S
-"""
-    
-    
-    
-    def __init__(self,
-                 file="/etc/privacyidea/privacyidea.ini",
-                 init=False):
-        self.file = file
-        self.config = ConfigParser.RawConfigParser()
-        if init:
-            self.config.readfp(StringIO.StringIO(self.ini_template))
-        else:
-            self.config.read(self.file)
-    
-    def get_getotp(self):
-        getotp = self.config.get("DEFAULT", "privacyideaGetotp.active")
-        return getotp.upper() == "TRUE"
-    
-    def get_keyfile(self):
-        return self.config.get("DEFAULT", "privacyideaSecretFile")
-
-    def get_adminfile(self):
-        return self.config.get("DEFAULT", "privacyideaSuperuserFile")
-
-    def set_adminfile(self, afile):
-        self.config.set("DEFAULT", "privacyideaSuperuserFile", afile)
-    
-    def get_adminrealms(self):
-        return self.config.get("DEFAULT", "privacyideaSuperuserRealms")
-
-    def set_adminrealms(self, arealms):
-        self.config.set("DEFAULT", "privacyideaSuperuserRealms", arealms)
-
-    def get_DB(self):
-        return self.config.get("app:main", "sqlalchemy.url")
-   
-    def set_DB(self, db_config):
-        """
-        :param db_config: sets the database parameters (type, host, user,
-                          password, database)
-        :type db_config: dictionary
-        """
-        db_str = self.config.get("app:main", "sqlalchemy.url")
-        if not db_str:
-            db_str = "mysql://privacyidea:privacyidea@localhost/privacyidea"
-        print db_config
-        # compile hostname
-        pattern = "^(.*)://(.*)/(.*)$"
-        m = re.match(pattern, db_str)
-        if m:
-            hostpart = m.group(2)
-            dbtype = m.group(1)
-            dbname = m.group(3)
-            password = None
-            user = None
-            hostparts = hostpart.split('@')
-            if len(hostparts) == 2:
-                user, password = hostparts[0].split(':')
-                host = hostparts[1] 
-            elif len(hostparts) == 1:
-                host = hostparts[0]
-
-            if db_config.get("type"):
-                dbtype = db_config.get("type")
-            if db_config.get("database"):
-                 dbname = db_config.get("database")
-            if db_config.get("password"):
-                password = db_config.get("password")
-            if db_config.get("user"):
-                user = db_config.get("user")
-            if db_config.get("host"):
-                host = db_config.get("host")
-            
-            if password:
-                hostpart = "%s:%s@%s" % (user, password, host)
-            elif user:
-                hostpart = "%s@%s" % (user, host)
-            else:
-                hostpart = host
-            db_str = "%s://%s/%s" % (dbtype, hostpart, dbname)
-            
-            self.config.set("app:main", "sqlalchemy.url", db_str )
-     
-    def get_loglevel(self):
-        return self.config.get("handler_file", "level") 
-    
-    def set_loglevel(self, level):
-        self.config.set("handler_file", "level", level)
-        
-    def toggle_getotp(self):
-        getotp = self.get_getotp()
-        self.config.set("DEFAULT", "privacyideaGetotp.active", not getotp)
-        
-    def save(self):
-        with open(self.file, 'wb') as configfile:
-            self.config.write(configfile)
-        print "Config file %s saved." % self.file
-
+def create_certificates(args):
+    nconfig = NginxConfig()
+    nconfig.create_certificates()
 
 def privacyidea_view(args):
     pConfig = PrivacyIDEAConfig(args.file)
@@ -313,6 +166,27 @@ def create_arguments():
                          action="store_true",
                          help="Toggle if retrieving OTP values is allowed "
                          "or not.")
+    
+    # nginx
+    nginx_parser = subparsers.add_parser("nginx",
+                                         help="configure webserver "
+                                         "nginx.")
+    token_sub = nginx_parser.add_subparsers()
+    p_pidea = token_sub.add_parser("enable",
+                                   help="Enable privacyidea server")
+    p_pidea.set_defaults(func=nginx_enable)
+    p_pidea = token_sub.add_parser("disable",
+                                   help="Disable privacyidea server")
+    p_pidea.set_defaults(func=nginx_disable)
+    p_pidea = token_sub.add_parser("view",
+                                   help="View the nginx config")
+    p_pidea.set_defaults(func=nginx_view)
+    
+    p_pidea = token_sub.add_parser("createcert",
+                                   help="Create certificates")
+    p_pidea.set_defaults(func=create_certificates)
+    
+    
     args = parser.parse_args()
     return args
 

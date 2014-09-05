@@ -72,7 +72,8 @@ setup(
              'tools/privacyidea-create-database',
              'tools/privacyidea-fix-access-rights',
              'tools/totp-token',
-             'tools/privacyidea-create-ad-users'
+             'tools/privacyidea-create-ad-users',
+	     'tools/privacyidea-setup'
              ],
     setup_requires=["PasteScript>=1.6.3"],
     packages=find_packages(exclude=['ez_setup']),

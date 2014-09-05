@@ -24,6 +24,7 @@ def create_key(file):
     enckey = config.get('DEFAULT', "privacyideaSecretFile")
 
     r = call("dd if=/dev/urandom of='%s' bs=1 count=96" % enckey, shell=True)
+    print r
     if r == 0:
         print "written enckey: %s" % enckey
 
