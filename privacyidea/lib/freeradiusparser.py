@@ -78,6 +78,16 @@ class ClientConfParser(object):
             f.close()
 
 
+class UserConfParser(object):
+    
+    def __init__(self, infile="/etc/freeradius/users"):
+        self.file = infile
+        f = codecs.open(self.file, "r", "utf-8")
+        self.content = f.read()
+        f.close()
+        
+        
+
 def main():
     CP = ClientConfParser()
     config = CP.get_dict()

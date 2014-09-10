@@ -580,7 +580,7 @@ class NginxConfig(object):
 
 
 class FreeRADIUSConfig(object):
-    
+       
     def __init__(self, client="/etc/freeradius/clients.conf"):
         '''
         Clients are always kept persistent on the file system
@@ -588,6 +588,9 @@ class FreeRADIUSConfig(object):
         '''
         # clients
         self.ccp = ClientConfParser(infile=client)
+        self.config_path = os.path.dirname(client)
+        self.dir_enabled = self.config_path + "/sites-enabled"
+        self.dir_available = self.config_path + "/sites-available"
         
     def clients_get(self):
         clients = self.ccp.get_dict()
@@ -614,3 +617,59 @@ class FreeRADIUSConfig(object):
             clients = self.clients_get()
             clients.pop(clientname, None)
             self.ccp.save(clients)
+
+    def set_module_perl(self):
+        '''
+        Set the perl module
+        '''
+        f = open(self.config_path + "/modules/perl", "w")
+        f.write("""perl {
+        module = /usr/share/privacyidea/freeradius/privacyidea_radius.pm
+}
+        """)
+        
+    def enable_sites(self, sites):
+        """
+        :param sites: list of activated links
+        :type sitess: list
+        """
+        if not os.path.exists(self.dir_enabled):
+            os.mkdir(self.dir_enabled)
+
+        active_list = os.listdir(self.dir_enabled)
+        # deactivate site
+        for site in active_list:
+            if site not in sites:
+                # disable site
+                os.unlink(self.dir_enabled +
+                          "/" + site)
+        # activate site
+        for site in sites:
+            # enable site
+            if not os.path.exists(self.dir_enabled +
+                                  "/" + site):
+                os.symlink(self.dir_available +
+                           "/" + site,
+                           self.dir_enabled +
+                           "/" + site)
+    
+    def get_sites(self):
+        '''
+        returns the contents of /etc/freeradius/sites-available
+        '''
+        ret = []
+        file_list = os.listdir(self.dir_available)
+        active_list = os.listdir(self.dir_enabled)
+        for k in file_list:
+            if k in active_list:
+                ret.append((k, "", 1))
+            else:
+                ret.append((k, "", 0))
+        return ret
+        
+#
+#  users:
+#     DEFAULT Auth-Type := perl
+#
+#
+#

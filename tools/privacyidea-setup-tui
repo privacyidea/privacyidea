@@ -52,34 +52,36 @@ class pSetup(object):
         
         
     def main_menu(self):
-        code, tags = self.d.menu("Which subject do you want to configure?",
-                                 choices=[("privacyidea", "",
-                                           "Configure privacyIDEA application "
-                                           "stuff like administrators."),
-                                          ("Webserver","",
-                                           "Configure settings concerning "
-                                           "the webservice like the SSL "
-                                           "certificates."),
-                                          ("FreeRADIUS","",
-                                           "Configure RADIUS settings like "
-                                           "the RADIUS clients.")
-                                          ],
-                                 backtitle="privacyIDEA configuration",
-                                 cancel="Exit",
-                                 item_help=1)
-        if code == self.d.DIALOG_OK:
-            print tags
-            if tags == "Webserver":
-                self.webserver_menu()
-            elif tags == "privacyidea":
-                self.privacyidea_menu()
-            elif tags == "FreeRADIUS":
-                self.radius_menu()
-                
-        else:
-            # End
-            if self.data_changed:
-                self.webserver_restart()
+        while 1:
+            code, tags = self.d.menu("Which subject do you want to configure?",
+                                     choices=[("privacyidea", "",
+                                               "Configure privacyIDEA application "
+                                               "stuff like administrators."),
+                                              ("Webserver","",
+                                               "Configure settings concerning "
+                                               "the webservice like the SSL "
+                                               "certificates."),
+                                              ("FreeRADIUS","",
+                                               "Configure RADIUS settings like "
+                                               "the RADIUS clients.")
+                                              ],
+                                     backtitle="privacyIDEA configuration",
+                                     cancel="Exit",
+                                     item_help=1)
+            if code == self.d.DIALOG_OK:
+                print tags
+                if tags == "Webserver":
+                    self.webserver_menu()
+                elif tags == "privacyidea":
+                    self.privacyidea_menu()
+                elif tags == "FreeRADIUS":
+                    self.radius_menu()
+                    
+            else:
+                # End
+                if self.data_changed:
+                    self.webserver_restart()
+                break
     
     def privacyidea_menu(self):
         while 1:
@@ -126,9 +128,6 @@ class pSetup(object):
                     self.privacyidea_database()
             else:
                 break
-            
-        self.main_menu()
-       
        
     def privacyidea_database(self):
         bt="Configure the database connection"
@@ -483,8 +482,6 @@ class pSetup(object):
                     self.webserver_restart()
             else:
                 break
-            
-        self.main_menu()
         
     def webserver_certificate(self):
         code = self.d.yesno("This will overwrite the existing "
@@ -549,15 +546,32 @@ class pSetup(object):
                 self.data_changed = True
     
     def radius_menu(self):
-        code, tags = self.d.menu("Configure FreeRADIUS",
-                                 choices=[("view config",""),
-                                          ("client config", "")
-                                     
-                                     ])
+        while 1:
+            code, tags = self.d.menu("Configure FreeRADIUS",
+                                     choices=[("view config",""),
+                                              ("client config", ""),
+                                              ("sites", "Enable and disable RADIUS" 
+                                                        " sites")
+                                         ])
+            if code == self.d.DIALOG_OK:
+                if tags.startswith("client"):
+                    self.radius_clients()
+                if tags.startswith("sites"):
+                    self.radius_sites()
+            else:
+                break
+    
+    def radius_sites(self):
+        sites = self.RadiusConfig.get_sites()
+        code, tags = self.d.checklist("The FreeRADIUS sites you want to "
+                                      "enable. You should only enable "
+                                      "'privacyidea' unless you know "
+                                      "exactly what you are doing!",
+                                      choices=sites,
+                                      backtitle="Enable sites")
         if code == self.d.DIALOG_OK:
-            if tags.startswith("client"):
-                self.radius_clients()
-        
+            self.RadiusConfig.enable_sites(tags)    
+    
     def radius_clients(self):
         while 1:
             clients = [("Add new client", "Add a new RADIUS client")]

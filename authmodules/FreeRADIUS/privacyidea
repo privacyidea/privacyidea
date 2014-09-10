@@ -1,0 +1,67 @@
+authorize {
+	preprocess
+	chap
+	mschap
+	digest
+	suffix
+	eap {
+		ok = return
+	}
+	files
+	expiration
+	logintime
+	pap
+}
+
+
+authenticate {
+	perl
+	Auth-Type PAP {
+		pap
+	}
+	Auth-Type CHAP {
+		chap
+	}
+	Auth-Type MS-CHAP {
+		mschap
+	}
+	digest
+	unix
+	eap
+}
+
+
+preacct {
+	preprocess
+	acct_unique
+	suffix
+	files
+}
+
+accounting {
+	detail
+	unix
+	radutmp
+	exec
+	attr_filter.accounting_response
+}
+
+
+session {
+	radutmp
+}
+
+
+post-auth {
+	exec
+	Post-Auth-Type REJECT {
+		attr_filter.access_reject
+	}
+}
+
+pre-proxy {
+}
+
+post-proxy {
+	eap
+}
