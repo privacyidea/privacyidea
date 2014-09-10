@@ -11,8 +11,8 @@ server {
         ssl_certificate_key /etc/ssl/private/privacyidea.key;
         ssl_ciphers ALL:!aNULL:!ADH:!eNULL:!LOW:!EXP:RC4+RSA:+HIGH:+MEDIUM;
 
-        access_log      /srv/www/privacyidea/logs/access.log;
-        error_log       /srv/www/privacyidea/logs/error.log info;
+        access_log      /var/log/privacyidea/access.log;
+        error_log       /var/log/privacyidea/error.log info;
 
         location / {
                 uwsgi_pass      unix:/run/uwsgi/app/privacyidea/privacyidea.socket;

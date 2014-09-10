@@ -4,10 +4,12 @@ import ConfigParser
 import StringIO
 import re
 import sys
-from privacyidea.lib.ext import nginxparser
+#from privacyidea.lib.ext import nginxparser
+from privacyidea.lib.freeradiusparser import ClientConfParser
 import crypt
 import random
 import fileinput
+import socket
 from subprocess import Popen, PIPE
 from privacyidea.lib.util import generate_password
 
@@ -76,7 +78,7 @@ keys = file
 
 [handler_file]
 class = handlers.RotatingFileHandler
-args = ('%(here)s/privacyidea.log','a', 10000000, 4)
+args = ('/var/log/privacyidea/privacyidea.log','a', 10000000, 4)
 level = INFO
 formatter = generic
 
@@ -101,13 +103,13 @@ datefmt = %Y/%m/%d - %H:%M:%S
             self.raw_config.read(self.file)
             
         self.config = ConfigParser.ConfigParser()
+        self.config.optionxform = str
         if init:
             self.config.readfp(StringIO.StringIO(self.ini_template))
         else:
             self.config.read(self.file)
             
         config_path = os.path.abspath(os.path.dirname(self.file))
-        self.config.optionxform = str
         self.config.set("DEFAULT", "here", config_path)
 
     def initialize(self):
@@ -429,11 +431,13 @@ class NginxConfig(object):
     default_dir_available = ["/etc/nginx/sites-available",
                              "/etc/uwsgi/apps-available"]
     
-    def __init__(self, files=default_file):
+    def __init__(self, files=None):
         '''
         :param files: The default config files for nginx and uwsgi
         :type files: list of two files
         '''
+        if files is None:
+            files = self.default_file
         self.configfile = files
 
     def is_active(self):
@@ -456,9 +460,53 @@ class NginxConfig(object):
         for i in [self.NGINX, self.UWSGI]:
             if not os.path.exists(self.default_dir_enabled[i]):
                 os.mkdir(self.default_dir_enabled[i])
-            os.symlink(self.default_dir_available[i] + "/" + self.configfile[i],
-                       self.default_dir_enabled[i] + "/" + self.configfile[i])
+
+            if not os.path.exists(self.default_dir_enabled[i] +
+                                  "/" + self.configfile[i]):
+                os.symlink(self.default_dir_available[i] +
+                           "/" + self.configfile[i],
+                           self.default_dir_enabled[i] +
+                           "/" + self.configfile[i])
         return
+    
+    def enable_webservice(self, webservices):
+        """
+        :param webservices: list of activated links
+        :type webservices: list
+        """
+        if not os.path.exists(self.default_dir_enabled[self.NGINX]):
+            os.mkdir(self.default_dir_enabled[self.NGINX])
+
+        active_list = os.listdir(self.default_dir_enabled[self.NGINX])
+        # deactivate services
+        for service in active_list:
+            if service not in webservices:
+                # disable webservice
+                os.unlink(self.default_dir_enabled[self.NGINX] +
+                          "/" + service)
+        # activate services
+        for service in webservices:
+            # enable webservice
+            if not os.path.exists(self.default_dir_enabled[self.NGINX] +
+                                  "/" + service):
+                os.symlink(self.default_dir_available[self.NGINX] +
+                           "/" + service,
+                           self.default_dir_enabled[self.NGINX] +
+                           "/" + service)
+    
+    def get_webservices(self):
+        '''
+        returns the contents of /etc/nginx/sites-available
+        '''
+        ret = []
+        file_list = os.listdir(self.default_dir_available[self.NGINX])
+        active_list = os.listdir(self.default_dir_enabled[self.NGINX])
+        for k in file_list:
+            if k in active_list:
+                ret.append((k, "", 1))
+            else:
+                ret.append((k, "", 0))
+        return ret
     
     def disable(self):
         for i in [self.NGINX, self.UWSGI]:
@@ -492,12 +540,15 @@ class NginxConfig(object):
     
     def create_certificates(self):
         certificates = self.get_certificates()
+        hostname = socket.gethostname()
         print("Generating SSL certificate %s and key %s" % certificates)
         if certificates[0] and certificates[1]:
             # FIXME: fix the CN
             command = ("openssl req -x509 -newkey rsa:2048 -keyout %s -out"
-                       " %s -days 1000 -subj /CN=privacyideaserver -nodes" %
-                       (certificates[1], certificates[0]))
+                       " %s -days 1000 -subj /CN=%s -nodes" %
+                       (certificates[1],
+                        certificates[0],
+                        hostname))
             r = call(command, shell=True)
             if r == 0:
                 print "Created the certificate and the key."
@@ -505,3 +556,61 @@ class NginxConfig(object):
             else:
                 print "Failed to create key and certificate: %i" % r
                 sys.exit(r)
+                
+    def restart(self,
+                service,
+                do_print=False):
+        '''
+        Restart the nginx and uwsgi
+        '''
+        p = Popen(['service',
+                   service,
+                   'restart'],
+                  stdin=PIPE,
+                  stdout=PIPE,
+                  stderr=PIPE)
+        _output, _err = p.communicate()
+        r = p.returncode
+        if r == 0:
+            if do_print:
+                print "Service %s restarted" % service
+        else:
+            if do_print:
+                print _err
+
+
+class FreeRADIUSConfig(object):
+    
+    def __init__(self, client="/etc/freeradius/clients.conf"):
+        '''
+        Clients are always kept persistent on the file system
+        :param client: clients.conf file.
+        '''
+        # clients
+        self.ccp = ClientConfParser(infile=client)
+        
+    def clients_get(self):
+        clients = self.ccp.get_dict()
+        return clients
+    
+    def client_add(self, client=None):
+        '''
+        :param client: dictionary with a key as the client name and attributes
+        :type client: dict
+        '''
+        if client:
+            clients = self.clients_get()
+            for client, attributes in client.iteritems():
+                clients[client] = attributes
+            
+            self.ccp.save(clients)
+        
+    def client_delete(self, clientname=None):
+        '''
+        :param clientname: name of the client to be deleted
+        :type clientname: string
+        '''
+        if clientname:
+            clients = self.clients_get()
+            clients.pop(clientname, None)
+            self.ccp.save(clients)

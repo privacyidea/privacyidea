@@ -22,9 +22,11 @@ text dialog based setup tool to configure the privacyIDEA basics.
 import locale, dialog
 import argparse
 import sys
+import time
 from dialog import Dialog
 from privacyidea.lib.appliance import NginxConfig
 from privacyidea.lib.appliance import PrivacyIDEAConfig
+from privacyidea.lib.appliance import FreeRADIUSConfig
 
 DEFAULT_CONFIG = "/etc/privacyidea/privacyidea.ini"
 DESCRIPTION = __doc__
@@ -34,13 +36,20 @@ VERSION = "1.3"
 class pSetup(object):
     
     def __init__(self, config=None):
+        self.data_changed = False
         if config:
             self.config_file = config
         else:
             self.config_file = DEFAULT_CONFIG
             
         self.pConfig = PrivacyIDEAConfig(self.config_file)
+        
+        self.NginxConfig = NginxConfig()
+        
+        self.RadiusConfig = FreeRADIUSConfig()
+                
         self.d = Dialog(dialog="dialog")
+        
         
     def main_menu(self):
         code, tags = self.d.menu("Which subject do you want to configure?",
@@ -66,6 +75,11 @@ class pSetup(object):
                 self.privacyidea_menu()
             elif tags == "FreeRADIUS":
                 self.radius_menu()
+                
+        else:
+            # End
+            if self.data_changed:
+                self.webserver_restart()
     
     def privacyidea_menu(self):
         while 1:
@@ -124,6 +138,7 @@ class pSetup(object):
                                      "string is %s" % current_config,
                                      choices=[("reset locally",
                                                "let privacyidea recreate the config"),
+                                              ("init tables", "create tables"),
                                               ("---", "-------------------"),
                                               ("type",
                                                "set the driver like mysql or psql"),
@@ -135,8 +150,7 @@ class pSetup(object):
                                                "set the database host"),
                                               ("name",
                                                "set the database name"),
-                                              ("---", "-------------------"),
-                                              ("init tables", "create tables")],
+                                              ],
                                      backtitle=bt)
             if code == self.d.DIALOG_OK:
                 if tags.startswith("reset"):
@@ -186,6 +200,7 @@ class pSetup(object):
                                      "password": dbconfig[2],
                                      "database": dbconfig[0]})
                 self.pConfig.save()
+                self.data_changed = True
                 r, out = self.pConfig.DB_init()
                 if r:
                     self.d.msgbox("Database created.")
@@ -220,6 +235,7 @@ class pSetup(object):
         if code == self.d.DIALOG_OK:
             self.pConfig.set_DB({"type" : tags})
             self.pConfig.save()
+            self.data_changed = True
         
     def privacyidea_db_user(self):
         db_dict = self.pConfig.get_DB_dict()
@@ -229,6 +245,7 @@ class pSetup(object):
         if code == self.d.DIALOG_OK:
             self.pConfig.set_DB({"user": tags})
             self.pConfig.save()
+            self.data_changed = True
     
     
     def privacyidea_db_password(self):
@@ -239,6 +256,7 @@ class pSetup(object):
         if code == self.d.DIALOG_OK:
             self.pConfig.set_DB({"password": tags})
             self.pConfig.save()
+            self.data_changed = True
     
     def privacyidea_db_host(self):
         db_dict = self.pConfig.get_DB_dict()
@@ -248,6 +266,7 @@ class pSetup(object):
         if code == self.d.DIALOG_OK:
             self.pConfig.set_DB({"host": tags})
             self.pConfig.save()
+            self.data_changed = True
     
     def privacyidea_db_name(self):
         db_dict = self.pConfig.get_DB_dict()
@@ -257,6 +276,7 @@ class pSetup(object):
         if code == self.d.DIALOG_OK:
             self.pConfig.set_DB({"database": tags})
             self.pConfig.save()
+            self.data_changed = True
             
     def privacyidea_admins(self):
         while 1:
@@ -348,6 +368,7 @@ class pSetup(object):
         if code == self.d.DIALOG_OK:
             self.pConfig.set_adminrealms(tags)
             self.pConfig.save()
+            self.data_changed = True
          
     def privacyidea_initialize(self):
         code = self.d.yesno("Do you want to initialize "
@@ -358,6 +379,7 @@ class pSetup(object):
         if code == self.d.DIALOG_OK:
             self.pConfig.initialize()
             self.pConfig.save()
+            self.data_changed = True
             
     def privacyidea_enckey(self):
         code = self.d.yesno("Do you want to create a new encryption key? "
@@ -403,6 +425,7 @@ class pSetup(object):
         if code == self.d.DIALOG_OK:
             self.pConfig.set_loglevel(tags)
             self.pConfig.save()
+            self.data_changed = True
 
     
     def privacyidea_getotp(self):
@@ -419,6 +442,7 @@ class pSetup(object):
         if code == self.d.DIALOG_OK:
             self.pConfig.set_getotp(tags == "Allow")
             self.pConfig.save()
+            self.data_changed = True
     
     def privacyidea_view(self):
         text = """
@@ -440,9 +464,10 @@ class pSetup(object):
         bt = "Webervice configuration"
         while 1:
             code, tags = self.d.menu("Configure Webserver",
-                                     choices=[("view config",""),
-                                              ("enable or disable webserver", "enable"),
-                                              ("create new certificates", "")
+                                     choices=[("enable or disable webserver", ""),
+                                              ("nginx webservices", ""),
+                                              ("create new certificates", ""),
+                                              ("restart services", "")
                                          ],
                                      backtitle=bt)
             if code == self.d.DIALOG_OK:
@@ -452,37 +477,76 @@ class pSetup(object):
                     self.webserver_certificate()
                 elif tags.startswith("view"):
                     self.webserver_view()
+                elif tags.startswith("nginx"):
+                    self.webserver_services()
+                elif tags.startswith("restart"):
+                    self.webserver_restart()
             else:
                 break
             
         self.main_menu()
-        
-        
-    def webserver_view(self):
-        text = "TODO: here is the view output"
-        self.d.scrollbox(text)
         
     def webserver_certificate(self):
         code = self.d.yesno("This will overwrite the existing "
                             "certificate. Create new?",
                             backtitle="Create webserver certificate",
                             defaultno=1)
-        # TODO
-        print code
+        if code == self.d.DIALOG_OK:
+            self.NginxConfig.create_certificates()
+            self.data_changed = True
+        
+        
+    def webserver_services(self):
+        webservices = self.NginxConfig.get_webservices()
+        code, tags = self.d.checklist("Enable nginx webservices. Only enable "
+                                      "'privacyidea' unless you exactly know, "
+                                      "what you are doing!",
+                                      choices=webservices,
+                                      backtitle="Enable webserives")
+        if code == self.d.DIALOG_OK:
+            self.NginxConfig.enable_webservice(tags)
+            self.data_changed = True
+            
+    def webserver_restart(self):
+        code = self.d.yesno("Do you want to restart the services for the "
+                            "changes to take effect?")
+        if code == self.d.DIALOG_OK:
+            #self.d.gauge_start("Restarting uwsgi",
+            #                   title="Restarting services")
+            self.NginxConfig.restart("uwsgi")
+            #self.d.gauge_update(50,
+            #                    "Restarting nginx...",
+            #                    update_text=True)
+            self.NginxConfig.restart("nginx")
+            #self.d.gauge_update(100,
+            #                    "Restarted services",
+            #                    update_text=True)
+            #self.d.gauge_stop()
+            self.data_changed = False
+        
         
     def webserver_enable(self):
-        # TODO get the status of the webservice
+        nginx, uwsgi = self.NginxConfig.is_active()
+        
         code, tags = self.d.radiolist("enable or disable the webservice", 
                                       choices=[("enable",
                                                 "privacyIDEA "
                                                 "will start automatically "
-                                                "at boot time", 1),
+                                                "at boot time",
+                                                int(nginx and uwsgi)),
                                                ("disable",
                                                 "privacyIDEA "
                                                 "will not start automatically.",
-                                                0)],
+                                                int(not(nginx and uwsgi)))],
                                       width=70,
                                       backtitle="Enable or disable webservice")
+        if code == self.d.DIALOG_OK:
+            if tags == "enable":
+                self.NginxConfig.enable()
+                self.data_changed = True
+            elif tags == "disable":
+                self.NginxConfig.disable()
+                self.data_changed = True
     
     def radius_menu(self):
         code, tags = self.d.menu("Configure FreeRADIUS",
@@ -490,7 +554,71 @@ class pSetup(object):
                                           ("client config", "")
                                      
                                      ])
-        self.main_menu()
+        if code == self.d.DIALOG_OK:
+            if tags.startswith("client"):
+                self.radius_clients()
+        
+    def radius_clients(self):
+        while 1:
+            clients = [("Add new client", "Add a new RADIUS client")]
+            clients_from_file = self.RadiusConfig.clients_get()
+            for client in clients_from_file.keys():
+                clients.append( (client, "") )
+            code, tags = self.d.menu("You can select an existing RADIUS client "
+                                     "to either delete it or change it " 
+                                     "or create a new client",
+                                     choices=clients,
+                                     backtitle="Manage RADIUS clients")
+            
+            if code == self.d.DIALOG_OK:
+                if tags.startswith("Add new"):
+                    self.radius_client_add()
+                else:
+                    self.radius_client_manage(tags)
+            else:
+                break
+
+    def radius_client_add(self):
+        bt="Add a new RADIUS client"
+        code, clientname = self.d.inputbox("The name of the new client",
+                                           backtitle=bt)
+        if code != self.d.DIALOG_OK:
+            return
+        code, ip = self.d.inputbox("The IP address of the new client %s" %
+                                   clientname,
+                                   backtitle=bt)
+        if code != self.d.DIALOG_OK:
+            return
+        code, secret = self.d.inputbox("The secret of the new client %s" %
+                                       clientname,
+                                       backtitle=bt)
+        
+        code, shortname = self.d.inputbox("The shortname of the new client %s" %
+                                          clientname,
+                                          backtitle=bt)
+         
+        if code == self.d.DIALOG_OK:
+            client = {}
+            if ip:
+                client["ipaddr"] = ip
+            if secret:
+                client["secret"] = secret
+            if shortname:
+                client["shortname"] = shortname
+            self.RadiusConfig.client_add({clientname: client})
+            
+    
+    def radius_client_manage(self, clientname):
+        bt="Manage client %s" % clientname
+        code, tags = self.d.menu("Manage client %s" % clientname,
+                                 choices=[("Delete client", "")],
+                                 backtitle=bt)
+        if code == self.d.DIALOG_OK:
+            if tags.startswith("Delete"):
+                self.d.yesno("Do you really want to delete the "
+                             "RADIUS client %s?" % clientname)
+                self.RadiusConfig.client_delete(clientname)
+                
 
 
 def create_arguments():
@@ -513,6 +641,7 @@ def main():
     args = create_arguments()
     pS = pSetup(config=args.file)
     pS.main_menu()
+    
 
 if __name__ == '__main__':
     main()
