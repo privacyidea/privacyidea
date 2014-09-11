@@ -9,9 +9,9 @@ from pyparsing import pythonStyleComment
 class ClientConfParser(object):
 
     key = Word(alphanums + "_")
-    client_key = Word(alphanums + "_/.:")
+    client_key = Word(alphanums + "-_/.:")
     space = White().suppress()
-    value = CharsNotIn("{}\n#")
+    value = CharsNotIn("{}\n# ")
     comment = ("#")
     assignment = (key
                   + Optional(space)
@@ -33,11 +33,17 @@ class ClientConfParser(object):
     
     file_header = """# File parsed and saved by privacyidea.\n\n"""
     
-    def __init__(self, infile="/etc/freeradius/clients.conf"):
-        self.file = infile
-        f = codecs.open(self.file, "r", "utf-8")
-        self.content = f.read()
-        f.close()
+    def __init__(self,
+                 infile="/etc/freeradius/clients.conf",
+                 content=None):
+        self.file = None
+        if content:
+            self.content = content
+        else:
+            self.file = infile
+            f = codecs.open(self.file, "r", "utf-8")
+            self.content = f.read()
+            f.close()
 
     def get(self):
         """
@@ -64,17 +70,27 @@ class ClientConfParser(object):
         for client in conf:
             print "%s: %s" % (client[0], client[1])
 
+    def format(self, dict_config):
+        '''
+        :return: The formatted data as it would be written to a file
+        '''
+        output = ""
+        output += self.file_header
+        for client, attributes in dict_config.iteritems():
+            output += "client %s {\n" % client
+            for k, v in attributes.iteritems():
+                output += "    %s = %s\n" % (k, v)
+            output += "}\n\n"
+        return output
+
     def save(self, dict_config=None, outfile=None):
         if not outfile:
             outfile = self.file
         if dict_config:
+            output = self.format(dict_config)
             f = codecs.open(outfile, 'w', 'utf-8')
-            f.write(self.file_header)
-            for client, attributes in dict_config.iteritems():
-                f.write("client %s {\n" % client)
-                for k, v in attributes.iteritems():
-                    f.write("    %s = %s\n" % (k, v))
-                f.write("}\n\n")
+            for line in output.splitlines():
+                f.write(line + "\n")
             f.close()
 
 

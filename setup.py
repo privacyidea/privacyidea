@@ -60,7 +60,8 @@ setup(
                       "pyyaml",
                       "python-ldap",
                       "Pillow",
-                      "sqlsoup"
+                      "sqlsoup",
+                      "pyparsing"
                       ],
     scripts=['tools/privacyidea-convert-token',
              'tools/privacyidea-create-pwidresolver-user',
@@ -73,7 +74,8 @@ setup(
              'tools/privacyidea-fix-access-rights',
              'tools/totp-token',
              'tools/privacyidea-create-ad-users',
-	     'tools/privacyidea-setup'
+             'tools/privacyidea-setup',
+             'tools/privacyidea-setup-tui'
              ],
     setup_requires=["PasteScript>=1.6.3"],
     packages=find_packages(exclude=['ez_setup']),
