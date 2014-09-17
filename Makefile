@@ -9,7 +9,7 @@ info:
 	@echo "make ppa-dev      - upload to launchpad development repo"
 	
 #VERSION=1.3~dev5
-VERSION=1.3.2~dev3
+VERSION=1.3.2~dev4
 
 translate:
 	# according to http://docs.pylonsproject.org/projects/pylons-webframework/en/latest/i18n.html#using-babel
@@ -90,6 +90,7 @@ ppa-dev:
 	make debianize
 	(cd DEBUILD/privacyidea.org; debuild -sa -S)
 	# Upload to launchpad:
+	dput ppa:privacyidea/privacyidea-dev DEBUILD/privacyidea_${VERSION}-?_source.changes
 	dput ppa:privacyidea/privacyidea-dev DEBUILD/privacyidea_${VERSION}-?_source.changes
 
 ppa:
