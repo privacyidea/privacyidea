@@ -30,7 +30,7 @@ function hmac_get_enroll_params(){
     url['type'] = 'hmac';
    	url['description'] = $('#enroll_hmac_desc').val();
 
-    // If we got to generate the hmac key, we do it here:
+    // If we have got to generate the hmac key, we do it here:
     if  ( $('#hmac_key_cb').attr('checked') ) {
     	url['genkey'] = 1;
 
@@ -170,7 +170,7 @@ function self_hmac_submit(){
 	<form class="cmxform" id='form_enroll_hmac'>
 	<fieldset>
 		<table><tr>
-			<td><label for='hmac_key_cb'>${_("Generate HMAC key.")+':'}</label></td>
+			<td><label for='hmac_key_cb' id='hmac_key_label2'>${_("Generate HMAC key")+':'}</label></td>
 			<td><input type='checkbox' name='hmac_key_cb2' id='hmac_key_cb2' onclick="cb_changed('hmac_key_cb2',['hmac_secret','hmac_key_label2']);"></td>
 		</tr><tr>
 			<td><label id='hmac_key_label2' for='hmac_secret'>${_("Seed for HOTP token")}</label></td>

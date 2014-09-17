@@ -2,6 +2,8 @@
 #
 #  privacyIDEA is a fork of LinOTP
 #  May 08, 2014 Cornelius Kölbel
+#  * 2014-09-12 added Motp URL. Cornelius Kölbel
+#
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
@@ -41,6 +43,28 @@ from privacyidea.lib.config import get_privacyIDEA_config
 from pylons import request, config, tmpl_context as c
 from urllib import quote
 from privacyidea.lib.log import log_with
+
+
+@log_with(log)
+def create_motp_url(user, realm, key, serial=""):
+    '''
+    This creates the motp url as described at
+    http://huseynov.com/index.php?post=motp-vs-google-authenticator-and-a-new-otp-app
+    
+    The format is:
+    motp://SecureSite:alice@wonder.land?secret=JBSWY3DPEHPK3PXP
+    '''
+    key_bin = binascii.unhexlify(key)
+    otpkey = base64.b32encode(key_bin).strip('=')
+    
+    Policy = PolicyClass(request, config, c,
+                         get_privacyIDEA_config())
+    label = Policy.get_tokenlabel(user, realm, serial)
+    allowed_label_len = 20
+    label = label[0:allowed_label_len]
+    url_label = quote(label)
+    
+    return "motp://privacyidea:%s?secret=%s" % (url_label, otpkey)
 
 
 @log_with(log)

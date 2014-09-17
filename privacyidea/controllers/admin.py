@@ -693,6 +693,8 @@ class AdminController(BaseController):
             c.audit['success'] = ret
             c.audit['user'] = user.login
             c.audit['realm'] = user.realm
+            c.audit['serial'] = serial
+            c.audit['token_type'] = tok_type
 
             logTokenNum()
 
@@ -704,7 +706,7 @@ class AdminController(BaseController):
                               "%s and user: %s" % (serial, user))
                 setPin(newpin, None, serial)
                 
-            c.audit['success'] = ret
+            c.audit['success'] = ret            
 
             Session.commit()
 

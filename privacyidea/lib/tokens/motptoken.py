@@ -2,6 +2,8 @@
 #
 #  privacyIDEA is a fork of LinOTP
 #  May 08, 2014 Cornelius Kölbel
+#  Sept 16, 2014 Cornelius Kölbel, added key generation for Token2
+#
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
@@ -24,7 +26,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''    
+'''
   Description:  This file containes the mOTP token implementation:
               - http://motp.sourceforge.net/ -
 
@@ -32,12 +34,15 @@
 
 '''
 
-from privacyidea.lib.util        import getParam
-from privacyidea.lib.util        import required
+from privacyidea.lib.util import getParam
+from privacyidea.lib.util import required
+from privacyidea.lib.util import optional
+from privacyidea.lib.util import generate_otpkey
+
 from privacyidea.lib.log import log_with
 
-from privacyidea.lib.mOTP        import mTimeOtp
-from privacyidea.lib.tokenclass  import TokenClass
+from privacyidea.lib.mOTP import mTimeOtp
+from privacyidea.lib.tokenclass import TokenClass
 
 
 import logging
@@ -81,38 +86,31 @@ class MotpTokenClass(TokenClass):
 
         '''
 
-        res = {
-               'type'           : 'motp',
-               'title'          : 'mOTP Token',
-               'description'    : ('mobile otp token'),
-
-               'init'         : {'page' : {'html'      : 'motptoken.mako',
-                                            'scope'      : 'enroll', },
-                                   'title'  : {'html'      : 'motptoken.mako',
-                                             'scope'     : 'enroll.title', },
-                                   },
-
-               'config'        : { 'page' : {'html'      : 'motptoken.mako',
-                                            'scope'      : 'config', },
-                                   'title'  : {'html'      : 'motptoken.mako',
-                                             'scope'     : 'config.title', },
-                                 },
-
-               'selfservice'   :  { 'enroll' :
-                                   {'page' :
-                                    {'html'       : 'motptoken.mako',
-                                     'scope'      : 'selfservice.enroll', },
-                                   'title'  :
-                                     { 'html'      : 'motptoken.mako',
-                                      'scope'      : 'selfservice.title.enroll', },
-                                    },
-                                  },
-
-
+        res = {'type': 'motp',
+               'title': 'mOTP Token',
+               'description': ('mobile otp token'),
+               'init': {'page': {'html': 'motptoken.mako',
+                                 'scope': 'enroll', },
+                        'title': {'html': 'motptoken.mako',
+                                  'scope': 'enroll.title'},
+                        },
+               'config': {'page': {'html': 'motptoken.mako',
+                                   'scope': 'config'},
+                          'title': {'html': 'motptoken.mako',
+                                    'scope': 'config.title', },
+                          },
+               'selfservice': {'enroll': {'page':
+                                          {'html': 'motptoken.mako',
+                                           'scope': 'selfservice.enroll'},
+                                          'title':
+                                          {'html': 'motptoken.mako',
+                                           'scope': 'selfservice.title.enroll'
+                                           },
+                                          },
+                               },
                }
 
-
-        if key is not None and res.has_key(key):
+        if key is not None and key in res:
             ret = res.get(key)
         else:
             if ret == 'all':
@@ -130,9 +128,9 @@ class MotpTokenClass(TokenClass):
         '''
         TokenClass.__init__(self, a_token)
         self.setType(u"mOTP")
+        self.hKeyRequired = True
 
         return
-
 
     @log_with(log)
     def update(self, param, reset_failcount=True):
@@ -145,9 +143,21 @@ class MotpTokenClass(TokenClass):
         :return: nothing
 
         '''
-        getParam(param, "otpkey", required)
+        if (self.hKeyRequired is True):
+            genkey = int(getParam(param, "genkey", optional) or 0)
+            if not param.get('keysize'):
+                param['keysize'] = 16
+            if 1 == genkey:
+                otpKey = generate_otpkey(param['keysize'])
+                del param['genkey']
+            else:
+                # genkey not set: check otpkey is given
+                # this will raise an exception if otpkey is not present
+                otpKey = getParam(param, "otpkey", required)
 
-        ## motp token specific
+            param['otpkey'] = otpKey
+            
+        # motp token specific
         otpPin = getParam(param, "otppin", required)
         self.token.setUserPin(otpPin)
 
@@ -178,7 +188,7 @@ class MotpTokenClass(TokenClass):
         '''
         otplen = self.token.privacyIDEAOtpLen
 
-        #otime contains the previous verification time
+        # otime contains the previous verification time
         # the new one must be newer than this!
         otime = self.token.privacyIDEACount
         secretHOtp = self.token.getHOtpKey()
@@ -191,7 +201,7 @@ class MotpTokenClass(TokenClass):
         res = mtimeOtp.checkOtp(anOtpVal, window, options=options)
 
         if (res != -1):
-            res = res - 1  ## later on this will be incremented by 1
+            res = res - 1  # later on this will be incremented by 1
         if res == -1:
             msg = "verification failed"
         else:
@@ -199,5 +209,3 @@ class MotpTokenClass(TokenClass):
 
         log.debug("%s :res %r" % (msg, res))
         return res
-
-

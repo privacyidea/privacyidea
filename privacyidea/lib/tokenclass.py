@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
-#  May 08, 2014 Cornelius Kölbel
+#  * May 08, 2014 Cornelius Kölbel
+#  * Sep 17, 2014 Cornelius Kölbel, cornelius@privacyidea.org
+#                 Improve the return value of the InitDetail
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
@@ -77,8 +79,9 @@ from privacyidea.model       import OcraChallenge
 
 from privacyidea.model.meta  import Session
 from privacyidea.lib.reply   import create_img
-from privacyidea.lib.apps    import create_google_authenticator_url
-from privacyidea.lib.apps    import create_oathtoken_url
+from privacyidea.lib.apps import create_google_authenticator_url as cr_google
+from privacyidea.lib.apps import create_oathtoken_url as cr_oath
+from privacyidea.lib.apps import create_motp_url
 
 from privacyidea.lib.validate import check_pin
 from privacyidea.lib.validate import check_otp
@@ -1009,7 +1012,6 @@ class TokenClass(object):
         '''
         return -1
 
-
     def splitPinPass(self, passw):
 
         res = 0
@@ -1029,7 +1031,6 @@ class TokenClass(object):
 
         return (res, pin, otpval)
 
-
     def checkPin(self, pin, options=None):
         '''
         checkPin - test is the pin is matching
@@ -1043,19 +1044,18 @@ class TokenClass(object):
         res = False
         log.debug("entering checkPin function")
 
-        if self.token.comparePin(pin) == True:
+        if self.token.comparePin(pin) is True:
             res = True
 
         log.debug("result %r" % res)
         return res
 
     def statusValidationFail(self):
-        ##  callback to enable a status change, if auth failed
+        #  callback to enable a status change, if auth failed
         return
 
-
     def statusValidationSuccess(self):
-        ##  callback to enable a status change, if auth failed
+        #  callback to enable a status change, if auth failed
         return
 
     def __repr__(self):
@@ -1090,7 +1090,7 @@ class TokenClass(object):
                 ldict[key] = "%r" % val
         return ldict
 
-    def getInitDetail(self, params , user=None):
+    def getInitDetail(self, params, user=None):
         '''
         to complete the token normalisation, the response of the initialiastion
         should be build by the token specific method, the getInitDetails
@@ -1107,38 +1107,51 @@ class TokenClass(object):
         if 'otpkey' in info:
             otpkey = info.get('otpkey')
 
-        if otpkey != None:
-            response_detail["otpkey"] = {
-                  "description": _("OTP seed"),
-                  "value"      :  "seed://%s" % otpkey,
-                  "img"        :  create_img(otpkey, width=200),
-                     }
+        if otpkey is not None:
+            response_detail["otpkey"] = {"description": _("OTP seed"),
+                                         "value": "seed://%s" % otpkey,
+                                         "img": create_img(otpkey, width=200)}
             if user is not None:
                 try:
-
-                    goo_url = create_google_authenticator_url(user.login,
-                                                  user.realm, otpkey,
-                                                  tok_type.lower(),
-                                                  serial=self.getSerial())
-                    response_detail["googleurl"] = {
-                          "description": _("URL for google Authenticator"),
-                          "value" :     goo_url,
-                          "img"   :     create_img(goo_url, width=250)
-                          }
-
-                    oath_url = create_oathtoken_url(user.login, user.realm,
-                                                    otpkey, tok_type,
-                                                    serial=self.getSerial())
-                    response_detail["oathurl"] = {
-                          "description" : _("URL for OATH token"),
-                           "value" : oath_url,
-                           "img"   : create_img(oath_url, width=250)
-                           }
+                    # TODO: This needs to be put into the token classes.
+                    if tok_type.lower() in ["hmac", "totp"]:
+                        goo_url = cr_google(user.login,
+                                            user.realm, otpkey,
+                                            tok_type.lower(),
+                                            serial=self.getSerial())
+                        response_detail["googleurl"] = {"description": 
+                                                        _("URL for google "
+                                                          "Authenticator"),
+                                                        "value": goo_url,
+                                                        "img": create_img(goo_url,
+                                                                          width=250)
+                                                        }
+    
+                        oath_url = cr_oath(user.login,
+                                           user.realm,
+                                           otpkey, tok_type,
+                                           serial=self.getSerial())
+                        response_detail["oathurl"] = {"description": _("URL for"
+                                                                       " OATH token"),
+                                                      "value": oath_url,
+                                                      "img": create_img(oath_url,
+                                                                        width=250)
+                                                      }
+                    
+                    if tok_type.lower() in ["motp"]:
+                        motp_url = create_motp_url(user.login, user.realm,
+                                                   otpkey,
+                                                   serial=self.getSerial())
+                        response_detail["motpurl"] = {"description": _("URL for MOTP token"),
+                                                      "value": motp_url,
+                                                      "img": create_img(motp_url,
+                                                                        width=250)
+                                                      }
+                    
                 except Exception as ex:
                     log.info('failed to set oath or google url: %r' % ex)
 
         return response_detail
-
 
     def getQRImageData(self, response_detail):
         '''

@@ -167,7 +167,7 @@ def motp_test():
     otps = ["6ed4e4", "502a59", "bd94a4", "fb596e", "7abf75", "4d4ac4"]
 
     i = 0
-    motp1 = mTimeOtp(key=key, pin=pins[0])
+    motp1 = mTimeOtp(key=key, pin=pins[0])  
     for e in epoch:
         pin = pins[i]
         otp = otps[i]
