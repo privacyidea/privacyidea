@@ -6,6 +6,9 @@ config/debian/default/privacyidea	etc/default/
 config/debian/sites-available/privacyidea	etc/apache2/sites-available/
 config/debian/privacyidea.ini	etc/privacyidea/
 
+# rotate audit
+config/debian/cron.daily/privacyidea-rotate-audit etc/cron.daily/
+
 # man page
 doc/_build/man/privacyidea-server.1 	usr/share/man/man1
 

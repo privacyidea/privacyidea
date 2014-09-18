@@ -79,7 +79,7 @@ case "$1" in
 	create_user
 	create_files
 	create_certificate
-	update-rc.d -n privacyidea defaults
+	#update-rc.d -n privacyidea defaults
 	show_info
   ;;
 
