@@ -38,7 +38,7 @@ def get_package():
 
 setup(
     name='privacyIDEA',
-    version='1.3.2dev4',
+    version='1.3.2dev9',
     description='privacyIDEA: identity, multifactor authentication, '
                 'authorization, audit',
     author='privacyidea.org',
@@ -74,8 +74,7 @@ setup(
              'tools/privacyidea-fix-access-rights',
              'tools/totp-token',
              'tools/privacyidea-create-ad-users',
-             'tools/privacyidea-setup',
-             'tools/privacyidea-setup-tui'
+             'tools/privacyidea-setup'
              ],
     setup_requires=["PasteScript>=1.6.3"],
     packages=find_packages(exclude=['ez_setup']),

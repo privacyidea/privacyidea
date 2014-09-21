@@ -93,7 +93,7 @@ Finally there are several other parameters::
    privacyideaSuperuserFile = %(here)s/admin-users
    # list of realms, that are admins
    privacyideaSuperuserRealms = superuser, 2ndsuperusers
-   privacyIDEASessionTimout = 1200
+   privacyIDEASessionTimeout = 1200
    # This is the server, where this system is running.
    # This is need to issue a request during login to the 
    # management with an OTP token.

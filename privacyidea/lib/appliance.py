@@ -4,7 +4,7 @@ import ConfigParser
 import StringIO
 import re
 import sys
-#from privacyidea.lib.ext import nginxparser
+from privacyidea.lib.ext import nginxparser
 from privacyidea.lib.freeradiusparser import ClientConfParser
 import crypt
 import random
@@ -25,20 +25,20 @@ debug = false
 profile = false
 smtp_server = localhost
 error_email_from = paste@localhost
-privacyideaaudit.type = privacyidea.lib.auditmodules.sqlaudit
-privacyideaaudit.key.private = %(here)s/private.pem
-privacyideaaudit.key.public = %(here)s/public.pem
-privacyideaaudit.sql.highwatermark = 10000
-privacyideagetotp.active = False
-privacyideasecretfile = %(here)s/encKey
-privacyideasuperuserfile = %(here)s/admin-users
-privacyideasuperuserrealms = superuser, 2ndsuperusers
-privacyideasessiontimout = 1200
-privacyideaurl = http://localhost:5001
-privacyideaurl.disable_ssl = False
+privacyideaAudit.type = privacyidea.lib.auditmodules.sqlaudit
+privacyideaAudit.key.private = %(here)s/private.pem
+privacyideaAudit.key.public = %(here)s/public.pem
+privacyideaAudit.sql.highwatermark = 10000
+privacyideaGetotp.active = False
+privacyideaSecretFile = %(here)s/encKey
+privacyideaSuperuserFile = %(here)s/admin-users
+privacyideaSuperuserRealms = superuser, 2ndsuperusers
+privacyIDEASessionTimeout = 1200
+privacyideaURL = https://localhost
+privacyideaURL.disable_ssl = False
 radius.dictfile = %(here)s/dictionary
 radius.nas_identifier = privacyIDEA
-privacyideamachine.applications = privacyidea.lib.applications.ssh, privacyidea.lib.applications.luks
+privacyideaMachine.applications = privacyidea.lib.applications.ssh, privacyidea.lib.applications.luks
 
 [server:main]
 use = egg:Paste#http
@@ -143,13 +143,20 @@ datefmt = %Y/%m/%d - %H:%M:%S
         '''
         admins = []
         admin_file = self.config.get("DEFAULT", "privacyideaSuperuserFile")
-        f = open(admin_file, "r")
-        for line in f:
-            try:
-                admins.append((line.split(":")[0], line.split(":")[4]))
-            except IndexError:
-                pass
-        f.close()
+        
+        try:
+            f = open(admin_file, "r")
+        except:
+            f = None
+        
+        if f:
+            for line in f:
+                try:
+                    admins.append((line.split(":")[0], line.split(":")[4]))
+                except IndexError:
+                    pass
+            f.close()
+        
         return admins
         
     def set_admin(self,
@@ -160,17 +167,22 @@ datefmt = %Y/%m/%d - %H:%M:%S
         create a new admin
         '''
         admin_file = self.config.get("DEFAULT", "privacyideaSuperuserFile")
-        f = open(admin_file, "r")
+        try:
+            f = open(admin_file, "r")
+        except:
+            f = None
         max_id = 0
-        for line in f:
-            try:
-                uid = int(line.split(":")[2])
-                if uid > max_id:
-                    max_id = uid
-            except IndexError:
-                pass
-        f.close()
         
+        if f:
+            for line in f:
+                try:
+                    uid = int(line.split(":")[2])
+                    if uid > max_id:
+                        max_id = uid
+                except IndexError:
+                    pass
+            f.close()
+            
         salt = (POOL[random.randrange(0, len(POOL))]
                 + POOL[random.randrange(0, len(POOL))])
         encryptedPW = crypt.crypt(password, salt)

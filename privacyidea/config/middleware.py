@@ -139,7 +139,7 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
 
     # Add the repoze.who middleware
     # with a cookie encryption key, that is generated at every server start!
-    cookie_timeout = int(global_conf.get("privacyIDEASessionTimout",
+    cookie_timeout = int(global_conf.get("privacyIDEASessionTimeout",
                                          COOKIE_TIMEOUT))
     cookie_reissue_time = int(cookie_timeout / 2)
     cookie_key = geturandom(32)

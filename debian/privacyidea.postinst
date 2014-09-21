@@ -40,15 +40,20 @@ create_files() {
 	if [ ! -e /etc/privacyidea/encKey ]; then
 		dd if=/dev/urandom of=/etc/privacyidea/encKey bs=1 count=96
 	fi
+	if [ ! -e /etc/privacyidea/private.pem ]; then
+		privacyidea-create-auditkeys -f /etc/privacyidea/privacyidea.ini
+	fi 
 	paster setup-app /etc/privacyidea/privacyidea.ini || true
 	chown -R $USERNAME /var/log/privacyidea
 	chown -R $USERNAME /var/lib/privacyidea
 	chown -R $USERNAME /etc/privacyidea
 	chmod 600 /etc/privacyidea/encKey
+	chmod 600 /etc/privacyidea/private.pem
 }
 
 create_certificate() {
 if [ ! -e /etc/privacyidea/server.pem ]; then
+	# This is the certificate when running with paster...
 	cd /etc/privacyidea
 	openssl genrsa -out server.key 2048
 	openssl req -new -key server.key -out server.csr -subj "/CN=privacyidea"
@@ -57,6 +62,18 @@ if [ ! -e /etc/privacyidea/server.pem ]; then
 	rm -f server.crt server.key
 	chown privacyidea server.pem
 	chmod 400 server.pem
+fi
+
+if [ ! -e /etc/ssl/certs/privacyideaserver.pem ]; then
+	# This is the certificate when running with apache or nginx
+	KEY=/etc/ssl/private/privacyideaserver.key
+	CSR=/tmp/server.csr
+	CERT=/etc/ssl/certs/privacyideaserver.pem
+	openssl genrsa -out $KEY 2048
+	openssl req -new -key $KEY -out $CSR -subj "/CN=`hostname`"
+	openssl x509 -req -days 365 -in $CSR -signkey $KEY -out $CERT
+	rm -f $CSR
+	chmod 400 $KEY
 fi
 }
 

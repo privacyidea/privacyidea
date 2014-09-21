@@ -19,7 +19,7 @@
 text dialog based setup tool to configure the privacyIDEA basics.
 """
 
-import locale, dialog
+import locale
 import argparse
 import sys
 import time
@@ -46,25 +46,30 @@ class pSetup(object):
         
         self.NginxConfig = NginxConfig()
         
-        self.RadiusConfig = FreeRADIUSConfig()
+        try:
+            self.RadiusConfig = FreeRADIUSConfig()
+        except:
+            # No Radius Server available
+            self.RadiusConfig = None
                 
         self.d = Dialog(dialog="dialog")
         
         
     def main_menu(self):
+        choices=[("privacyidea", "",
+                  "Configure privacyIDEA application "
+                  "stuff like administrators."),
+                  ("Webserver","",
+                  "Configure settings concerning "
+                  "the webservice like the SSL "
+                  "certificates.")]
+        if self.RadiusConfig:
+            choices.append( ("FreeRADIUS","",
+                             "Configure RADIUS settings like "
+                             "the RADIUS clients.") )
         while 1:
             code, tags = self.d.menu("Which subject do you want to configure?",
-                                     choices=[("privacyidea", "",
-                                               "Configure privacyIDEA application "
-                                               "stuff like administrators."),
-                                              ("Webserver","",
-                                               "Configure settings concerning "
-                                               "the webservice like the SSL "
-                                               "certificates."),
-                                              ("FreeRADIUS","",
-                                               "Configure RADIUS settings like "
-                                               "the RADIUS clients.")
-                                              ],
+                                     choices=choices,
                                      backtitle="privacyIDEA configuration",
                                      cancel="Exit",
                                      item_help=1)
