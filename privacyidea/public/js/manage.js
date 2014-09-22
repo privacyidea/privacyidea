@@ -255,7 +255,7 @@ function alert_box(title, s, param1) {
 
 // ####################################################
 //
-//  functions for seletected tokens and selected users
+//  functions for selected tokens and selected users
 //
 
 function get_selected_tokens(){

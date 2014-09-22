@@ -5,6 +5,9 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2014-09-22 Cornelius Kölbel, cornelius@privacyidea.org
+#             some PEP8 things
+#
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  AGPLv3
 #  contact:  http://www.linotp.org
@@ -52,10 +55,10 @@ from privacyidea import model
 
 from privacyidea.lib.selftest import isSelfTest
 from pylons.controllers.util import abort
-from privacyidea.lib.util    import check_session
-from privacyidea.lib.account    import is_admin_identity
-from privacyidea.lib.user    import User
-from privacyidea.lib.util    import getParam
+from privacyidea.lib.util import check_session
+from privacyidea.lib.account import is_admin_identity
+from privacyidea.lib.user import User
+from privacyidea.lib.util import getParam
 from privacyidea.lib.log import log_with
 from privacyidea.lib.audit import getAudit
 
@@ -77,14 +80,18 @@ def set_config(key, value, typ, description=None):
     :return: nothing
     '''
 
-    count = Session.query(model.Config).filter(
-                        model.Config.Key == "privacyidea." + key).count()
+    count = Session.query(model.Config).filter(model.Config.Key ==
+                                               "privacyidea." + key).count()
 
     if count == 0:
-        config_entry = model.Config(key, value, Type=typ, Description=description)
+        config_entry = model.Config(key,
+                                    value,
+                                    Type=typ,
+                                    Description=description)
         Session.add(config_entry)
 
     return
+
 
 @log_with(log)
 def set_defaults():
@@ -94,40 +101,45 @@ def set_defaults():
     :return: - nothing -
     '''
     set_config(key=u"DefaultMaxFailCount",
-        value=u"10", typ=u"int",
-        description=u"The default maximum count for unsuccessful logins")
+               value=u"10", typ=u"int",
+               description=u"The default maximum count for "
+               "unsuccessful logins")
 
     set_config(key=u"DefaultCountWindow",
-        value=u"10", typ=u"int",
-        description=u"The default lookup window for tokens out of sync ")
+               value=u"10", typ=u"int",
+               description=u"The default lookup window for "
+               "tokens out of sync ")
 
     set_config(key=u"DefaultSyncWindow",
-        value=u"1000", typ=u"int",
-        description=u"The default lookup window for tokens out of sync ")
+               value=u"1000", typ=u"int",
+               description=u"The default lookup window for "
+               "tokens out of sync ")
 
     set_config(key=u"DefaultChallengeValidityTime",
-        value=u"120", typ=u"int",
-        description=u"The default time, a challenge is regarded as valid.")
+               value=u"120", typ=u"int",
+               description=u"The default time, a challenge is "
+               "regarded as valid.")
 
     set_config(key=u"DefaultResetFailCount",
-        value=u"True", typ=u"bool",
-        description=u"The default maximum count for unsucessful logins")
+               value=u"True", typ=u"bool",
+               description=u"The default maximum count for unsucessful logins")
 
     set_config(key=u"DefaultOtpLen",
-        value=u"6", typ=u"int",
-        description=u"The default len of the otp values")
+               value=u"6", typ=u"int",
+               description=u"The default len of the otp values")
 
     set_config(key=u"PrependPin",
-        value=u"True", typ=u"bool",
-        description=u"is the pin prepended - most cases")
+               value=u"True", typ=u"bool",
+               description=u"is the pin prepended - most cases")
 
     set_config(key=u"FailCounterIncOnFalsePin",
-        value=u"True", typ=u"bool",
-        description=u"increment the FailCounter, if pin did not match")
+               value=u"True", typ=u"bool",
+               description=u"increment the FailCounter, if pin did not match")
 
     set_config(key=u"SMSProvider",
-        value=u"smsprovider.HttpSMSProvider.HttpSMSProvider", typ=u"text",
-        description=u"SMS Default Provider via HTTP")
+               value=u"smsprovider.HttpSMSProvider.HttpSMSProvider",
+               typ=u"text",
+               description=u"SMS Default Provider via HTTP")
 
     set_config(key=u"SMSProviderTimeout",
                value=u"300", typ=u"int",
@@ -141,57 +153,59 @@ def set_defaults():
                value=u"0", typ=u"int",
                description=u"Delay until next challenge is created")
 
-
-    ## setup for totp defaults
+    # setup for totp defaults
     # "privacyidea.totp.timeStep";"60";"None";"None"
     # "privacyidea.totp.timeWindow";"600";"None";"None"
     # "privacyidea.totp.timeShift";"240";"None";"None"
 
     set_config(key=u"totp.timeStep",
-        value=u"30", typ=u"int",
-        description=u"Time stepping of the time based otp token ")
+               value=u"30", typ=u"int",
+               description=u"Time stepping of the time based otp token ")
 
     set_config(key=u"totp.timeWindow",
-        value=u"300", typ=u"int",
-        description=u"Lookahead time window of the time based otp token ")
+               value=u"300", typ=u"int",
+               description=u"Lookahead time window of the time based "
+               "otp token ")
 
     set_config(key=u"totp.timeShift",
-        value=u"0", typ=u"int",
-        description=u"Shift between server and totp token")
+               value=u"0", typ=u"int",
+               description=u"Shift between server and totp token")
 
     set_config(key=u"AutoResyncTimeout",
-        value=u"240", typ=u"int",
-        description=u"Autosync timeout for an totp token")
+               value=u"240", typ=u"int",
+               description=u"Autosync timeout for an totp token")
 
-    ## setup for ocra defaults
+    # setup for ocra defaults
     # OcraDefaultSuite
     # QrOcraDefaultSuite
     # OcraMaxChallenges
     # OcraChallengeTimeout
 
     set_config(key=u"OcraDefaultSuite",
-        value=u"OCRA-1:HOTP-SHA256-8:C-QN08", typ=u"string",
-        description=u"Default OCRA suite for an ocra token ")
+               value=u"OCRA-1:HOTP-SHA256-8:C-QN08", typ=u"string",
+               description=u"Default OCRA suite for an ocra token ")
 
     set_config(key=u"QrOcraDefaultSuite",
-        value=u"OCRA-1:HOTP-SHA256-8:C-QA64", typ=u"int",
-        description=u"Default OCRA suite for an ocra qr token ")
+               value=u"OCRA-1:HOTP-SHA256-8:C-QA64", typ=u"int",
+               description=u"Default OCRA suite for an ocra qr token ")
 
     set_config(key=u"OcraMaxChallenges",
-        value=u"4", typ=u"int",
-        description=u"Maximum open ocra challenges")
+               value=u"4", typ=u"int",
+               description=u"Maximum open ocra challenges")
 
     set_config(key=u"OcraChallengeTimeout",
-        value=u"300", typ=u"int",
-        description=u"Timeout for an open ocra challenge")
+               value=u"300", typ=u"int",
+               description=u"Timeout for an open ocra challenge")
 
     # emailtoken defaults
     set_config(key=u"EmailProvider",
-               value="privacyidea.lib.emailprovider.SMTPEmailProvider", typ=u"string",
+               value="privacyidea.lib.emailprovider.SMTPEmailProvider",
+               typ=u"string",
                description=u"Default EmailProvider class")
     set_config(key=u"EmailChallengeValidityTime",
                value="600", typ=u"int",
-               description=u"Time that an e-mail token challenge stays valid (seconds)")
+               description=u"Time that an e-mail token challenge stays "
+               "valid (seconds)")
     set_config(key=u"EmailBlockingTimeout",
                value="120", typ=u"int",
                description=u"Time during which no new e-mail is sent out")
@@ -207,7 +221,7 @@ def setup_app(conf, conf_global=None, unitTest=False):
     :return: - nothing -
     '''
     if conf_global is not None:
-        if conf_global.has_key("sqlalchemy.url"):
+        if "sqlalchemy.url" in conf_global:
             log.info("sqlalchemy.url")
     else:
         conf.get("sqlalchemy.url", None)
@@ -216,11 +230,11 @@ def setup_app(conf, conf_global=None, unitTest=False):
         log.info("Deleting previous tables...")
         meta.metadata.drop_all(bind=meta.engine)
 
-    ## Create the tables if they don't already exist
+    # Create the tables if they don't already exist
     log.info("Creating tables...")
     meta.metadata.create_all(bind=meta.engine)
 
-    if conf.has_key("privacyideaSecretFile"):
+    if "privacyideaSecretFile" in conf:
         filename = conf.get("privacyideaSecretFile")
         try:
             with open(filename):
@@ -238,8 +252,6 @@ def setup_app(conf, conf_global=None, unitTest=False):
     set_defaults()
     Session.commit()
     log.info("Successfully set up.")
-
-
 
 
 class BaseController(WSGIController):
@@ -309,7 +321,7 @@ class BaseController(WSGIController):
         # the request is routed to. This routing information is
         # available in environ['pylons.routes_dict']
 
-        from privacyidea.lib.config      import getGlobalObject
+        from privacyidea.lib.config import getGlobalObject
 
         glo = getGlobalObject()
         sep = glo.security_provider
@@ -320,7 +332,7 @@ class BaseController(WSGIController):
             ret = WSGIController.__call__(self, environ, start_response)
         finally:
             meta.Session.remove()
-            ## free the lock on the scurityPovider if any
+            # free the lock on the scurityPovider if any
             sep.dropSecurityModule()
             closeResolvers()
 
@@ -329,7 +341,8 @@ class BaseController(WSGIController):
     @log_with(log)
     def before_identity_check(self, action="", check_admin=True):
         '''
-        This is a function that can be called in the __before__ method to check the identity
+        This is a function that can be called in the __before__ method
+        to check the identity
         '''
         param = request.params
         if isSelfTest():
@@ -365,7 +378,8 @@ class BaseController(WSGIController):
                 is_admin_identity(identity)
             self.authUser = User(c.user, c.realm, '')
 
-            log.debug("set the self.authUser to: %s, %s " % (self.authUser.login, self.authUser.realm))
+            log.debug("set self.authUser to: %s, %s" % (self.authUser.login,
+                                                        self.authUser.realm))
             log.debug('param for action %s: %s' % (action, param))
 
             # checking the session
@@ -384,7 +398,7 @@ class BaseController(WSGIController):
         for language in languages:
             for lang in language.split(','):
                 try:
-                    if lang == "en":
+                    if lang == "en" or lang == "en-gb" or lang == "en-GB":
                         found_lang = True
                         break
                     set_lang(lang)
@@ -403,7 +417,6 @@ class BaseController(WSGIController):
 
     def __enter__(self):
         pass
+    
     def __exit__(self, typ, value, traceback):
         pass
-
-###eof#########################################################################

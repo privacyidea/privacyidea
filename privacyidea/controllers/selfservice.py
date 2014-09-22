@@ -5,6 +5,9 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2014-09-22 Cornelius Kölbel, cornelius@privacyidea.org
+#             Some typos and PEP8
+#
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  AGPLv3
 #  contact:  http://www.linotp.org
@@ -1767,7 +1770,7 @@ def add_dynamic_selfservice_enrollment(actions):
         :return: hash of {tokentype : html for tab}
     '''
 
-    dynanmic_actions = {}
+    dynamic_actions = {}
     g = config['pylons.app_globals']
     tokenclasses = g.tokenclasses
 
@@ -1777,43 +1780,47 @@ def add_dynamic_selfservice_enrollment(actions):
         if hasattr(tclass_object, 'getClassInfo'):
 
             try:
-                selfservice = tclass_object.getClassInfo('selfservice', ret=None)
-                ## check if we have a policy in the token definition for the enroll
-                if selfservice.has_key('enroll') and 'enroll' + tok.upper() in actions:
+                selfservice = tclass_object.getClassInfo('selfservice',
+                                                         ret=None)
+                # check if we have a policy in the token
+                # definition for the enroll
+                if ("enroll" in selfservice and 'enroll' + tok.upper() in actions):
                     service = selfservice.get('enroll')
                     tab = service.get('title')
                     c.scope = tab.get('scope')
                     t_file = tab.get('html')
                     t_html = render(t_file)
                     ''' remove empty lines '''
-                    t_html = '\n'.join([line for line in t_html.split('\n') if line.strip() != ''])
+                    t_html = '\n'.join([line for line in t_html.split('\n')
+                                        if line.strip() != ''])
                     e_name = "%s.%s.%s" % (tok, 'selfservice', 'enroll')
-                    dynanmic_actions[e_name] = t_html
+                    dynamic_actions[e_name] = t_html
 
-                ## check if there are other selfserive policy actions
+                # check if there are other selfserive policy actions
                 policy = tclass_object.getClassInfo('policy', ret=None)
                 if 'selfservice' in policy:
                     selfserv_policies = policy.get('selfservice').keys()
                     for action in actions:
                         if action in selfserv_policies:
-                            ## now lookup, if there is an additional section
-                            ## in the selfservice to render
+                            # now lookup, if there is an additional section
+                            # in the selfservice to render
                             service = selfservice.get(action)
                             tab = service.get('title')
                             c.scope = tab.get('scope')
                             t_file = tab.get('html')
                             t_html = render(t_file)
                             ''' remove empty lines '''
-                            t_html = '\n'.join([line for line in t_html.split('\n') if line.strip() != ''])
+                            t_html = '\n'.join([line
+                                                for line in t_html.split('\n')
+                                                if line.strip() != ''])
                             e_name = "%s.%s.%s" % (tok, 'selfservice', action)
-                            dynanmic_actions[e_name] = t_html
-
+                            dynamic_actions[e_name] = t_html
 
             except Exception as e:
                 log.info('no policy for tokentype '
                          '%s found (%r)' % (unicode(tok), e))
 
-    return dynanmic_actions
+    return dynamic_actions
 
 
 @log_with(log)
@@ -1831,7 +1838,6 @@ def add_dynamic_selfservice_policies(actions):
     dynamic_policies = []
     g = config['pylons.app_globals']
     tokenclasses = g.tokenclasses
-
 
     defined_policies = []
 
