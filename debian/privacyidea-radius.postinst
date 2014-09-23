@@ -19,6 +19,15 @@ perl {
 HERE
 }
 
+set_not_thread_safe() {
+# The perl module is not thread safe.
+# So we need to set the option -t
+cat > /etc/default/freeradius << HERE
+# Options for the FreeRADIUS daemon adapted by privacyidea-radius
+FREERADIUS_OPTIONS="-t"
+HERE
+}
+
 activate_site() {
 	rm /etc/freeradius/sites-enabled/*
 	ln -s /etc/freeradius/sites-available/privacyidea /etc/freeradius/sites-enabled/	
