@@ -117,7 +117,7 @@ perl(1).
 =cut
 
 use strict;
-use LWP 5.64;
+use LWP 6;
 use Config::IniFiles;
 use Data::Dump;
 use Try::Tiny;
@@ -192,7 +192,7 @@ if ( -e $CONFIG_FILE ) {
 }
 else {
     $Config->{FSTAT} = "not found!";
-    $Config->{URL}     = 'https://localhost/validate/simplecheck';
+    $Config->{URL}     = 'https://127.0.0.1/validate/simplecheck';
     $Config->{REALM}   = '';
     $Config->{RESCONF} = "";
     $Config->{Debug}   = "FALSE";
@@ -239,7 +239,7 @@ sub authenticate {
         }
       }
       catch {
-        &radiusd::radlog( Error, "error: $@" );
+        &radiusd::radlog( Info, "Warning: $@" );
       };
 
     if ( $debug == true ) {
@@ -287,7 +287,8 @@ sub authenticate {
 	if ($check_ssl == false) {
 		try {
 			# This is only availble with with LWP version 6
-			$ua->ssl_opts( verify_hostname => 0 );	
+        		&radiusd::radlog( Info, "Not verifying SSL certificate!" );
+			$ua->ssl_opts( verify_hostname => 0, SSL_verify_mode => 0x00 );
 		} catch {
 		        &radiusd::radlog( Error, "ssl_opts only supported with LWP 6. error: $@" );
 		}

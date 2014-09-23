@@ -28,6 +28,12 @@ FREERADIUS_OPTIONS="-t"
 HERE
 }
 
+set_user() {
+cat > /etc/freeradius/users << HERE
+DEFAULT Auth-Type := Perl
+HERE
+}
+
 activate_site() {
 	rm /etc/freeradius/sites-enabled/*
 	ln -s /etc/freeradius/sites-available/privacyidea /etc/freeradius/sites-enabled/	
@@ -38,6 +44,8 @@ case "$1" in
   configure)
 	set_perl
 	activate_site
+	set_not_thread_safe
+	set_user
 	service freeradius restart
   ;;
 
