@@ -84,14 +84,22 @@ class ClientConfParser(BaseParser):
             self.content = content
         else:
             self.file = infile
-            f = codecs.open(self.file, "r", "utf-8")
-            self.content = f.read()
-            f.close()
+            self._read()
 
+    def _read(self):
+        """
+        Reread the contents from the disk
+        """
+        f = codecs.open(self.file, "r", "utf-8")
+        self.content = f.read()
+        f.close()
+        
     def get(self):
         """
         return the grouped config
         """
+        if self.file:
+            self._read()
         config = self.client_file.parseString(self.content)
         return config
     

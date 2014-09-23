@@ -608,11 +608,11 @@ class pSetup(object):
                                    backtitle=bt)
         if code != self.d.DIALOG_OK:
             return
-        code, ip = self.d.inputbox("The netmask of the new client %s. "
-                                   "The netmask should be in CIDR notation, "
-                                   "i.e. use 24, NOT 255.255.255.0" %
-                                   clientname,
-                                   backtitle=bt)
+        code, netmask = self.d.inputbox("The netmask of the new client %s. "
+                                        "The netmask should be in CIDR notation, "
+                                        "i.e. use 24, NOT 255.255.255.0" %
+                                        clientname,
+                                        backtitle=bt)
         if code != self.d.DIALOG_OK:
             return
         code, secret = self.d.inputbox("The secret of the new client %s" %
@@ -627,6 +627,8 @@ class pSetup(object):
             client = {}
             if ip:
                 client["ipaddr"] = ip
+            if netmask:
+                client["netmask"] = netmask
             if secret:
                 client["secret"] = secret
             if shortname:

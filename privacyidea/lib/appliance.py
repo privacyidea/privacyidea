@@ -14,7 +14,7 @@ from subprocess import Popen, PIPE
 from privacyidea.lib.util import generate_password
 
 DATABASE = "privacyidea"
-DBUSER = "privacyidea" 
+DBUSER = "privacyidea"
 POOL = "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
