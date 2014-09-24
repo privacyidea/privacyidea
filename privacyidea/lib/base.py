@@ -364,7 +364,14 @@ class BaseController(WSGIController):
             identity = request.environ.get('repoze.who.identity')
             if identity is None:
                 abort(401, "You are not authenticated")
-
+                
+            # checking the session
+            if (False == check_session(request)):
+                c.audit['action'] = request.path[1:]
+                c.audit['info'] = "session expired"
+                self.audit.log(c.audit)
+                abort(401, "No valid session")
+                
             log.debug("doing getAuthFromIdentity in action %s" % action)
 
             user_id = request.environ.get('repoze.who.identity').get('repoze.who.userid')
@@ -382,12 +389,7 @@ class BaseController(WSGIController):
                                                         self.authUser.realm))
             log.debug('param for action %s: %s' % (action, param))
 
-            # checking the session
-            if (False == check_session(request)):
-                c.audit['action'] = request.path[1:]
-                c.audit['info'] = "session expired"
-                self.audit.log(c.audit)
-                abort(401, "No valid session")
+
             
     @log_with(log)
     def set_language(self):

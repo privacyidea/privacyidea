@@ -22,7 +22,7 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#  
+#
 '''
 several independent functions
 contains utility functions
@@ -52,7 +52,6 @@ optional = True
 required = False
 
 
-
 def get_version_number():
     '''
     returns the privacyidea version
@@ -64,18 +63,23 @@ def get_version_number():
         pass
     return version
 
+
 def get_version():
     '''
-    This returns the version, that is displayed in the WebUI and self service portal.
+    This returns the version, that is displayed in the WebUI and
+    self service portal.
     '''
     version = get_version_number()
     return "privacyIDEA %s" % version
 
+
 def get_copyright_info():
     '''
-    This returns the copyright information displayed in the WebUI and selfservice portal.
+    This returns the copyright information displayed in the WebUI and
+    selfservice portal.
     '''
     return "privacyidea.org"
+
 
 def getParam(param, which, optional=True):
     """
@@ -93,13 +97,14 @@ def getParam(param, which, optional=True):
     """
     ret = None
 
-    if param.has_key(which):
+    if which in param:
         ret = param[which]
     else:
-        if (optional == False):
+        if (optional is False):
             raise ParameterError("Missing parameter: %r" % which, id=905)
 
     return ret
+
 
 @log_with(log)
 def getLowerParams(param):
@@ -128,6 +133,7 @@ def uniquify(doubleList):
 
     return uniqueList
 
+
 def generate_otpkey(key_size=20):
     '''
     generates the HMAC key of keysize. Should be 20 or 32
@@ -137,13 +143,14 @@ def generate_otpkey(key_size=20):
     return binascii.hexlify(geturandom(key_size))
 
 
-def generate_password(size=6, characters=string.ascii_lowercase + string.ascii_uppercase + string.digits):
+def generate_password(size=6, characters=string.ascii_lowercase +
+                      string.ascii_uppercase + string.digits):
     return ''.join(urandom.choice(characters) for _x in range(size))
 
 
 def check_session(request):
     '''
-    This function checks the session cookie 
+    This function checks the session cookie
     
     '''
     res = True
@@ -151,8 +158,8 @@ def check_session(request):
     session = None
     log.debug(request.path.lower())
     # GUI function get not passed the session key.
-    if request.path.lower() in ["/manage", 
-                                "/manage/", 
+    if request.path.lower() in ["/manage",
+                                "/manage/",
                                 "/manage/custom-style.css",
                                 "/selfservice/custom-style.css",
                                 "/",
@@ -177,11 +184,11 @@ def check_session(request):
                                 "/selfservice/history",
                                 "/selfservice/webprovisionoathtoken",
                                 "/selfservice/activateqrtoken",
-                                "/selfservice/webprovisiongoogletoken"                               
+                                "/selfservice/webprovisiongoogletoken"
                                 ]:
         log.info('nothing to check')
     else:
-        if request.cookies.get('privacyidea_session') != None:
+        if request.cookies.get('privacyidea_session') is not None:
             try:
                 cookie = request.cookies.get('privacyidea_session')[0:40]
                 session = request.params.get('session')[0:40]
@@ -191,9 +198,11 @@ def check_session(request):
             log.info("session: %s" % session)
             log.info("cookie:  %s" % cookie)
             if session is None or session != cookie:
-                log.error("The request %s did not pass a valid session!" % request.url)
+                log.error("The request %s did not pass a valid session!" %
+                          request.url)
                 res = False
     return res
+
 
 def remove_session_from_param(param):
     '''
@@ -209,7 +218,7 @@ def remove_session_from_param(param):
     return return_param
 
 
-#########################################################################################
+# -------------------------------------------------------------------------
 # Client overwriting stuff
 #
 
@@ -226,38 +235,43 @@ def get_client_from_request(request):
         log.warning("%r" % exx)
     return client
 
+
 @log_with(log)
 def get_client_from_param(param):
     '''
-    This function returns the client, that is passed with the GET/POST parameter "client"
+    This function returns the client, that is passed with
+    the GET/POST parameter "client"
     '''
     client = getParam(param, "client", optional)
     return client
+
 
 def get_client():
     '''
     This function returns the client.
 
-    It first tries to get the client as it is passed as the HTTP Client via REMOTE_ADDR.
+    It first tries to get the client as it is passed as the HTTP Client
+    via REMOTE_ADDR.
 
-    If this client Address is in a list, that is allowed to overwrite its client address (like e.g.
-    a FreeRADIUS server, which will always pass the FreeRADIUS address but not the address of the
-    RADIUS client) it checks for the existance of the client parameter.
+    If this client Address is in a list, that is allowed to overwrite its
+    client address (like e.g. a FreeRADIUS server, which will always pass
+    the FreeRADIUS address but not the address of the
+    RADIUS client) it checks for the existence of the client parameter.
     '''
-    #FIXME pylons dependency!
+    # FIXME pylons dependency!
     from pylons import request
     may_overwrite = []
     over_client = getFromConfig("mayOverwriteClient", "")
     log.debug("config entry mayOverwriteClient: %s" % over_client)
     try:
-        may_overwrite = [ c.strip() for c in over_client.split(',') ]
+        may_overwrite = [c.strip() for c in over_client.split(',')]
     except Exception as e:
         log.warning("evaluating config entry 'mayOverwriteClient': %r" % e)
 
     client = get_client_from_request(request)
     log.debug("got the original client %s" % client)
 
-    if client in may_overwrite or client == None:
+    if client in may_overwrite or client is None:
         log.debug("client %s may overwrite!" % client)
         if get_client_from_param(request.params):
             client = get_client_from_param(request.params)
@@ -266,7 +280,11 @@ def get_client():
     log.debug("returning %s" % client)
     return client
 
-def normalize_activation_code(activationcode, upper=True, convert_o=True, convert_0=True):
+
+def normalize_activation_code(activationcode,
+                              upper=True,
+                              convert_o=True,
+                              convert_0=True):
     '''
     This normalizes the activation code.
     1. lower letters are capitaliezed
@@ -276,9 +294,11 @@ def normalize_activation_code(activationcode, upper=True, convert_o=True, conver
     if upper:
         activationcode = activationcode.upper()
     if convert_o:
-        activationcode = activationcode[:-2] + activationcode[-2:].replace("O", "0")
+        activationcode = activationcode[:-2] + activationcode[-2:].replace("O",
+                                                                           "0")
     if convert_0:
-        activationcode = activationcode[:-2].replace("0", "O") + activationcode[-2:]
+        activationcode = activationcode[:-2].replace("0",
+                                                     "O") + activationcode[-2:]
 
     return activationcode
 
@@ -292,7 +312,8 @@ def is_valid_fqdn(hostname, split_port=False):
     if len(hostname) > 255:
         return False
     if hostname[-1:] == ".":
-        hostname = hostname[:-1]  # strip exactly one dot from the right, if present
+        # strip exactly one dot from the right, if present
+        hostname = hostname[:-1]
     allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
     return all(allowed.match(x) for x in hostname.split("."))
 
@@ -311,29 +332,32 @@ def remove_empty_lines(doc):
     data = '\n'.join([line for line in doc.split('\n') if line.strip() != ''])
     return data
 
-##
-## Modhex calculations for Yubikey
-##
+#
+# Modhex calculations for Yubikey
+#
 hexHexChars = '0123456789abcdef'
 modHexChars = 'cbdefghijklnrtuv'
 
 hex2ModDict = dict(zip(hexHexChars, modHexChars))
 mod2HexDict = dict(zip(modHexChars, hexHexChars))
 
+
 def modhex_encode(s):
     return ''.join(
-        [ hex2ModDict[c] for c in s.encode('hex') ]
+        [hex2ModDict[c] for c in s.encode('hex')]
     )
 # end def modhex_encode
 
+
 def modhex_decode(m):
     return ''.join(
-        [ mod2HexDict[c] for c in m ]
+        [mod2HexDict[c] for c in m]
     ).decode('hex')
 # end def modhex_decode
 
+
 def checksum(msg):
-    crc = 0xffff;
+    crc = 0xffff
     for i in range(0, len(msg) / 2):
         b = int(msg[i * 2] + msg[(i * 2) + 1], 16)
         crc = crc ^ (b & 0xff)
@@ -344,7 +368,8 @@ def checksum(msg):
                 crc = crc ^ 0x8408
     return crc
 
-########################## base token ##############################
+# ######################### base token ##############################
+
 
 def get_token_in_realm(realm, active=True):
     '''
@@ -353,15 +378,16 @@ def get_token_in_realm(realm, active=True):
     You can either query only active token or also disabled tokens.
     '''
     if active:
-        sqlQuery = Session.query(TokenRealm, Realm, Token).filter(and_(
-                            TokenRealm.realm_id == Realm.id,
-                            Realm.name == u'' + realm,
-                            Token.privacyIDEAIsactive == True,
-                            TokenRealm.token_id == Token.privacyIDEATokenId)).count()
+        sqlQuery = Session.query(TokenRealm,
+                                 Realm,
+                                 Token).filter(and_(TokenRealm.realm_id == Realm.id,
+                                                    Realm.name == u'' + realm,
+                                                    Token.privacyIDEAIsactive == True,
+                                                    TokenRealm.token_id == Token.privacyIDEATokenId)).count()
     else:
-        sqlQuery = Session.query(TokenRealm, Realm).filter(and_(
-                            TokenRealm.realm_id == Realm.id,
-                            Realm.name == realm)).count()
+        sqlQuery = Session.query(TokenRealm,
+                                 Realm).filter(and_(TokenRealm.realm_id == Realm.id,
+                                                    Realm.name == realm)).count()
     return sqlQuery
 
 ####################################################################

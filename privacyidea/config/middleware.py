@@ -153,9 +153,9 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
                                    timeout=cookie_timeout,
                                    reissue_time=cookie_reissue_time)
     form = make_redirecting_plugin(login_form_url="/account/login",
-                            login_handler_path='/account/dologin',
-                            logout_handler_path='/account/logout',
-                            rememberer_name="auth_tkt")
+                                   login_handler_path='/account/dologin',
+                                   logout_handler_path='/account/logout',
+                                   rememberer_name="auth_tkt")
     # For authentication for browsers
     form.classifications = {IIdentifier: ['browser'],
                             IChallenger: ['browser']}

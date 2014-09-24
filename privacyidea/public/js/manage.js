@@ -737,7 +737,7 @@ function check_serial(serial){
 //
 
 function reset_buttons() {
-	$("#token_table").flexReload();
+	$("#token_table").flexOptions({params: [{name: "session", value: getsession()}]}).flexReload();
     $('#selected_tokens').html('');
     disable_all_buttons();
 }
@@ -870,7 +870,7 @@ function losttoken_callback(xhdr, textStatus){
     } else {
     	alert_info_text("text_losttoken_failed", obj.result.error.message, ERROR);
     }
-    $("#token_table").flexReload();
+    $("#token_table").flexOptions({params: [{name: "session", value: getsession()}]}).flexReload();
     $('#selected_tokens').html('');
     disable_all_buttons();
     log('Token ' + tokens + ' lost.');
@@ -1104,7 +1104,7 @@ function enroll_callback(xhdr, textStatus, p_serial) {
     else {
         alert_info_text("text_error_creating_token", obj.result.error.message, ERROR);
     }
-    $('#token_table').flexReload();
+    $('#token_table').flexOptions({params: [{name: "session", value: getsession()}]}).flexReload();
 }
 
 
@@ -1474,7 +1474,7 @@ function parseXML(xml, textStatus){
         }
         else {
             // reload the token_table
-            $('#token_table').flexReload();
+            $('#token_table').flexOptions({params: [{name: "session", value: getsession()}]}).flexReload();
             $('#selected_tokens').html('');
             disable_all_buttons();
             alert_info_text("text_token_import_result", value);
@@ -1499,7 +1499,7 @@ function parsePolicyImport(xml, textStatus) {
         }
         else {
             // reload the token_table
-            $('#policy_table').flexReload();
+            $('#policy_table').flexOptions({params: [{name: "session", value: getsession()}]}).flexReload();
             alert_info_text("text_policy_import_result", value);
         }
     }
@@ -1818,7 +1818,7 @@ function save_tokenrealm_config(){
                 alert_info_text("text_error_set_realm", data.result.error.message, ERROR);
             }
             else {
-                $('#token_table').flexReload();
+                $('#token_table').flexOptions({params: [{name: "session", value: getsession()}]}).flexReload();
             }
          });
     }
@@ -3654,7 +3654,7 @@ $(document).ready(function(){
                 value: new_realm
             }]
         });
-        $('#user_table').flexReload();
+        $('#user_table').flexOptions({params: [{name: "session", value: getsession()}]}).flexReload();
     });
 
     $dialog_setpin_token = $('#dialog_set_pin').dialog({
@@ -4487,7 +4487,7 @@ function view_policy() {
 		 function(data, textStatus, XMLHttpRequest){
 			if (data.result.status == true) {
 				alert_info_text("text_policy_set");
-				$('#policy_table').flexReload();
+				$('#policy_table').flexOptions({params: [{name: "session", value: getsession()}]}).flexReload();
 			}else {
 				alert_info_text(data.result.error.message,"" , ERROR);
 			}
@@ -4501,7 +4501,7 @@ function view_policy() {
 			 function(data, textStatus, XMLHttpRequest){
 				if (data.result.status == true) {
 					alert_info_text("text_policy_deleted");
-			        $('#policy_table').flexReload();
+			        $('#policy_table').flexOptions({params: [{name: "session", value: getsession()}]}).flexReload();
 				} else {
 					alert_info_text(data.result.error.message, "", ERROR);
 				}

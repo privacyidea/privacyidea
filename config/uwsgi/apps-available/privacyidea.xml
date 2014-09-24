@@ -4,7 +4,7 @@
     <chdir>/etc/privacyidea/</chdir>
     <module>privacyideaapp</module>
     <master/>
-    <processes>4</processes>
+    <processes>1</processes>
     <harakiri>60</harakiri>
     <reload-mercy>8</reload-mercy>
     <cpu-affinity>1</cpu-affinity>

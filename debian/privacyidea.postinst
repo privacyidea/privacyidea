@@ -39,6 +39,7 @@ create_files() {
 	touch /var/log/privacyidea/privacyidea.log
 	if [ ! -e /etc/privacyidea/encKey ]; then
 		dd if=/dev/urandom of=/etc/privacyidea/encKey bs=1 count=96
+		INSTALL="NEW_INSTALL"
 	fi
 	if [ ! -e /etc/privacyidea/private.pem ]; then
 		privacyidea-create-auditkeys -f /etc/privacyidea/privacyidea.ini
@@ -78,14 +79,16 @@ fi
 }
 
 show_info() {
-	echo
-	echo "=================================================================================================="
-	echo " 1. start privacyidea "
-	echo "    service privacyidea start"
-	echo " 2. Create your administrator like this: "
-	echo "    privacyidea-create-pwidresolver-user -u admin -p test -i 1000 >> /etc/privacyidea/admin-users"
-	echo " 3. and login at https://localhost:5001 with the user admin@admin"
-	echo "=================================================================================================="
+	if [ "$INSTALL" = "NEW_INSTALL" ]; then
+		echo
+		echo "=================================================================================================="
+		echo " 1. start privacyidea "
+		echo "    service privacyidea start"
+		echo " 2. Create your administrator like this: "
+		echo "    privacyidea-create-pwidresolver-user -u admin -p test -i 1000 >> /etc/privacyidea/admin-users"
+		echo " 3. and login at https://localhost:5001 with the user admin@admin"
+		echo "=================================================================================================="
+	fi	
 }
 
 

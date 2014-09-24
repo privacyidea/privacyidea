@@ -61,6 +61,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
+
 @log_with(log)
 def load_environment(global_conf, app_conf):
     """
@@ -75,7 +76,7 @@ def load_environment(global_conf, app_conf):
                  static_files=os.path.join(root, 'public'),
                  templates=[app_conf.get('custom_templates',
                                          os.path.join(root, 'templates')),
-                            os.path.join(root, 'templates') ])
+                            os.path.join(root, 'templates')])
 
     # Initialize config with the basic options
     config.init_app(global_conf, app_conf, package='privacyidea', paths=paths)
