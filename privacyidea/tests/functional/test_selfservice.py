@@ -491,7 +491,7 @@ class TestSelfserviceController(TestController):
         self.deleteToken('token01')
 
         response = self.app.get(url(controller='selfservice', action='userinit'),
-                                params={'serial':'token01',
+                                params={'serial': 'token01',
                                         'type': 'hmac',
                                         'otpkey': 'c4a3923c8d97e03af6a12fa40264c54b8429cf0d',
                                         'selftest_user': 'root@myDefRealm'
@@ -516,7 +516,6 @@ class TestSelfserviceController(TestController):
         assert '"privacyIDEA.TokenSerialnumber": "token01",' in response
         assert '"privacyIDEA.Isactive": true' in response
 
-
     def test_webprovision(self):
         '''
         selfservice: testing user webprovision
@@ -540,8 +539,9 @@ class TestSelfserviceController(TestController):
 
         self.createPolicy('webprovisionGOOGLE')
 
-        response = self.app.get(url(controller='selfservice', action='userwebprovision'),
-                                params={'prefix':'LSGO',
+        response = self.app.get(url(controller='selfservice',
+                                    action='userwebprovision'),
+                                params={'prefix': 'LSGO',
                                         'type': 'googleauthenticator',
                                         'selftest_user': 'root@myDefRealm'
                                         })
@@ -557,18 +557,45 @@ class TestSelfserviceController(TestController):
 
         # UI
 
-        response = self.app.get(url(controller='selfservice', action='webprovisiongoogletoken'),
+        response = self.app.get(url(controller='selfservice',
+                                    action='webprovisiongoogletoken'),
                                 params={'selftest_user': 'root@myDefRealm'})
         print response
         assert "<div id='googletokenform'>" in response
 
+    def test_webprovision_motp(self):
+        '''
+        selfservice: testing user webprovision for MOTP token
+        '''
+        self.deleteToken('token01')
+        response = self.app.get(url(controller='selfservice',
+                                    action='userinit'),
+                                params={'type': 'motp',
+                                        'genkey': "1",
+                                        'selftest_user': 'root@myDefRealm',
+                                        "otppin": "1234"
+                                        })
+        print response
+        assert('ERR410: The policy settings do not allow you to'
+               ' issue this request!' in response)
+
+        self.createPolicy('motp_webprovision')
+        response = self.app.get(url(controller='selfservice',
+                                    action='userinit'),
+                                params={'type': 'motp',
+                                        'genkey': "1",
+                                        'selftest_user': 'root@myDefRealm',
+                                        'otppin': "1234"
+                                        })
+        print response
+        assert '"value": true' in response
+        assert '"motpurl": {' in response
 
     def test_ocra(self):
         '''
         TODO selfservice: testing ocra
         '''
         pass
-
 
     def test_getmultiotp(self):
         '''
