@@ -282,6 +282,11 @@ function enroll_token(params) {
 									details = details + '<p>' + detail.googleurl.img + '</p>';
 									details = details + '<li>' + detail.googleurl.value + '</li>';
 								}
+								if (detail.hasOwnProperty('motpurl')) {
+									details = details + '<li>TOKEN2 mOTP QR Code</li>';
+									details = details + '<p>' + detail.motpurl.img + '</p>';
+									details = details + '<li>' + detail.motpurl.value + '</li>';
+								}
 							}
 							catch (e){
 								details = details + '<li> otpkey: ' + detail.otpkey + '</li>';

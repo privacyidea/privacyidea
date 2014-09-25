@@ -54,8 +54,8 @@ def create_motp_url(user, realm, key, serial=""):
     The format is:
     motp://SecureSite:alice@wonder.land?secret=JBSWY3DPEHPK3PXP
     '''
-    key_bin = binascii.unhexlify(key)
-    otpkey = base64.b32encode(key_bin).strip('=')
+    # For Token2 the OTPKEY is hexencoded, not base32!
+    otpkey = key
     
     Policy = PolicyClass(request, config, c,
                          get_privacyIDEA_config())

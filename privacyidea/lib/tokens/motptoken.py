@@ -107,7 +107,17 @@ class MotpTokenClass(TokenClass):
                                            'scope': 'selfservice.title.enroll'
                                            },
                                           },
+                               'motp_webprovision': {'page':
+                                                     {'html': 'motptoken.mako',
+                                                      'scope': 'selfservice.provision'},
+                                                     'title':
+                                                     {'html': 'motptoken.mako',
+                                                      'scope': 'selfservice.title.provision'}
+                                                     }
                                },
+               'policy': {'selfservice': {'motp_webprovision': {'type': 'bool',
+                                                                'desc': 'Enroll mOTP token via QR-Code.'}
+                                          }}
                }
 
         if key is not None and key in res:

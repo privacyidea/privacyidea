@@ -84,6 +84,10 @@ function motp_get_enroll_params(){
 ${_("Register mOTP")}
 %endif
 
+%if c.scope == 'selfservice.title.provision':
+${_("Webprovisioning mOTP")}
+%endif
+
 
 %if c.scope == 'selfservice.enroll':
 <script>
@@ -95,13 +99,19 @@ ${_("Register mOTP")}
 	});
 
 	jQuery.validator.addMethod("motp_secret", function(value, element, param){
-        return value.match(/^[a-fA-F0-9]+$/i);
+		if ( $('#motp_key_cb').attr('checked') ) {
+			return true
+		} else {
+			if (value.length < 16) {
+				return false
+			}
+        	return value.match(/^[a-fA-F0-9]+$/i);
+		}
     }, '${_("Please enter a valid init secret. It may only contain numbers and the letters A-F.")}' );
 
 	$('#form_registermotp').validate({
         rules: {
             motp_secret: {
-                required: true,
                 minlength: 16,
                 maxlength: 32,
                 number: false,
@@ -115,8 +125,8 @@ function self_motp_get_param()
 	var urlparam = {};
 
 	urlparam['type'] 		= 'motp';
-	urlparam['description'] = $("#motp_self_desc").val();
-    urlparam['otpkey'] 		= $('#motp_secret').val();
+	urlparam['description'] = $("#motp_self_desc").val();  
+    urlparam['otpkey'] 	= $('#motp_secret').val();
 	urlparam['otppin']		= $('#motp_s_pin1').val();
 
 	return urlparam;
@@ -133,7 +143,7 @@ function self_motp_submit(){
 	if ($('#form_registermotp').valid()) {
 		var params =  self_motp_get_param();
 		enroll_token( params );
-		//self_motp_clear();
+		self_motp_clear();
 		ret = true;
 	} else {
 		alert('${_("Form data not valid.")}');
@@ -149,14 +159,9 @@ function self_motp_submit(){
 	<fieldset>
 		<table>
 		<tr>
-			<td><label for='motp_key_cb' id='motp_key_cb2_label'>${_("Generate MOTP key")+':'}</label></td>
-			<td><input type='checkbox' name='motp_key_cb2' id='motp_key_cb2' onclick="cb_changed('motp_key_cb2',['motp_secret','motp_secret_label']);"></td>
-		</tr>
-		<tr>
 		<td><label for='secret' id='motp_secret_label'>${_("Init Secret of motp-Token")}</label></td>
-		<td><input id='motp_secret' name='secret' class="required ui-widget-content ui-corner-all"
-			pattern="[a-fA-F0-9]{16,32}"
-			minlength="16"
+		<td><input id='motp_secret' name='secret' class="ui-widget-content ui-corner-all"
+			pattern="[a-fA-F0-9]{0,16,32}"
 			maxlength="32" />
 		</td>
 		</tr>
@@ -175,6 +180,84 @@ function self_motp_submit(){
         </table>
         <button class='action-button' id='button_register_motp'
         		onclick="self_motp_submit();">${_("register mOTP Token")}</button>
+    </fieldset>
+    </form>
+</div>
+
+
+% endif
+
+
+%if c.scope == 'selfservice.provision':
+<script>
+
+function self_motp_provision_get_param()
+{
+	var urlparam = {};
+
+	urlparam['type'] 		= 'motp';
+	urlparam['description'] = $("#motpP_self_desc").val();  
+   	urlparam['genkey'] = 1;
+	urlparam['otppin']		= $('#motpP_s_pin1').val();
+
+	return urlparam;
+}
+function self_motp_provision_clear()
+{
+	$('#motpP_s_pin1').val('');
+	$('#motpP_s_pin2').val('');
+}
+function self_motp_provision_submit(){
+
+	var ret = false;
+	if ($('#form_provisionmotp').valid()) {
+		var params =  self_motp_provision_get_param();
+		enroll_token( params );
+		self_motp_provision_clear();
+		ret = true;
+	} else {
+		alert('${_("Form data not valid.")}');
+	}
+	return ret;
+
+}
+</script>
+
+<h1>${_("Webprovisioning your mOTP Token")}</h1>
+<div id='provisionmotpform'>
+	<form class="cmxform" id='form_provisionmotp'>
+	<fieldset>
+		<table>
+		<tr> <td colspan=2>
+		${_("Your mOTP secret will be created by the server.")}
+		</td>
+		</tr>
+        <tr>
+        <td><label for='motpP_s_pin1'>${_("mOTP PIN")}</label></td>
+        <td><input autocomplete="off" type="password" 
+        	onkeyup="checkpins('motpP_s_pin1', 'motpP_s_pin2');" 
+        	id="motpP_s_pin1" 
+        	class="required text ui-widget-content ui-corner-all" /></td>
+        </tr>
+        <tr>
+        <td><label for='motpP_s_pin2'>${_("mOTP PIN (again)")}</label></td>
+        <td><input autocomplete="off" type="password"
+        	onkeyup="checkpins('motpP_s_pin1', 'motpP_s_pin2');"
+        	id="motpP_s_pin2"
+        	class="required text ui-widget-content ui-corner-all" /></td>
+        </tr>
+		<tr>
+	    <td><label for="motpP_self_desc"
+	    	id='motpP_self_desc_label'>${_("Description")}</label></td>
+	    <td><input type="text"
+	    	name="motpP_self_desc"
+	    	id="motpP_self_desc"
+	    	value="self enrolled" class="text" /></td>
+		</tr>
+        </table>
+        <button class='action-button'
+        		id='button_provision_motp'
+        		onclick="self_motp_provision_submit();">${_("provision mOTP Token")}</button>
     </fieldset>
     </form>
 </div>

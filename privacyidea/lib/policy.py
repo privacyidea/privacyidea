@@ -1756,9 +1756,16 @@ class PolicyClass(object):
     
                 allowed_actions = self.getSelfserviceActions(authUser)
                 typ = param['type'].lower()
-                meth = 'enroll' + typ.upper()
+                meth_enroll = 'enroll' + typ.upper()
+                meth_provision = typ + '_webprovision'
     
-                if meth not in allowed_actions:
+                if ((param.get('genkey') == "1" and
+                     meth_provision in allowed_actions)
+                    or
+                    (param.get('genkey') is None and
+                     meth_enroll in allowed_actions)):
+                    pass
+                else:
                     log.warning("userinit: user %r@%r is not allowed to "
                                 "enroll %s!" % (authUser.login,
                                                 authUser.realm, typ))
