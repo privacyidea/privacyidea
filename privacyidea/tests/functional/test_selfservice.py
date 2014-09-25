@@ -52,7 +52,7 @@ class TestSelfserviceController(TestController):
         assert '"status": true' in response
         assert '"setPolicy self01": {' in response
 
-
+    
     def deleteToken(self, serial):
         response = self.app.get(url(controller='admin', action='remove'),
                                 params={'serial': serial,

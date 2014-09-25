@@ -46,15 +46,18 @@ class TestGetSerialController(TestController):
 
     @classmethod
     def tearDownClass(cls):
-        print
-
+        cls.__deleteAllRealms__()
+        cls.__deleteAllResolvers__()
 
 
     def setUp(self):
+        self.__createResolvers__()
+        self.__createRealms__()
         self.initToken()
 
-    def tearDown(self):
-        pass
+    #def tearDown(self):
+    #    pass
+    
 
     ###############################################################################
 

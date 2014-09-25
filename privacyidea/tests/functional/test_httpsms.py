@@ -44,7 +44,6 @@ class TestHttpSmsController(TestController):
     Here the HTTP SMS Gateway functionality is tested.
     '''
 
-
     def setUp(self):
         '''
         This sets up all the resolvers and realms

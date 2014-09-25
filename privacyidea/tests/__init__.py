@@ -144,14 +144,10 @@ class TestController(TestCase):
         LOG.info("######## teardown_class: %r" % cls)
         return
 
-
     def setUp(self):
         ''' here we do the system test init per test method '''
-        self.__deleteAllRealms__()
-        self.__deleteAllResolvers__()
         self.__createResolvers__()
         self.__createRealms__()
-
         return
 
     def tearDown(self):
@@ -161,33 +157,30 @@ class TestController(TestCase):
 
     def __deleteAllRealms__(self):
         ''' get al realms and delete them '''
-
         response = self.app.get(url(controller='system', action='getRealms'))
         jresponse = json.loads(response.body)
         result = jresponse.get("result")
         values = result.get("value", {})
         for realmId in values:
-            print realmId
             realm_desc = values.get(realmId)
             realm_name = realm_desc.get("realmname")
-            parameters = {"realm":realm_name}
+            parameters = {"realm": realm_name}
             resp = self.app.get(url(controller='system', action='delRealm'),
                                 params=parameters)
             assert('"result": true' in resp)
 
-
     def __deleteAllResolvers__(self):
         ''' get all resolvers and delete them '''
 
-        response = self.app.get(url(controller='system', action='getResolvers'))
+        response = self.app.get(url(controller='system',
+                                    action='getResolvers'))
         jresponse = json.loads(response.body)
         result = jresponse.get("result")
         values = result.get("value", {})
         for realmId in values:
-            print realmId
             resolv_desc = values.get(realmId)
             resolv_name = resolv_desc.get("resolvername")
-            parameters = {"resolver" : resolv_name}
+            parameters = {"resolver": resolv_name}
             resp = self.app.get(url(controller='system', action='delResolver'),
                                 params=parameters)
             assert('"status": true' in resp)
@@ -218,7 +211,6 @@ class TestController(TestCase):
             response = do_http(r_url, params=parameters)
         else:
             response = self.app.get(r_url, params=parameters)
-
 
         return response
 
@@ -255,22 +247,22 @@ class TestController(TestCase):
         '''
         create all base test resolvers
         '''
-        parameters = {
-            'name'      : 'myDefRes',
-            'fileName'  : '%(here)s/tests/testdata/def-passwd',
-            'type'      : 'passwdresolver'
-            }
-        resp = self.app.get(url(controller='system', action='setResolver'),
-                                                            params=parameters)
+        parameters = {'name': 'myDefRes',
+                      'fileName': '%(here)s/tests/testdata/def-passwd',
+                      'type': 'passwdresolver'
+                      }
+        resp = self.app.get(url(controller='system',
+                                action='setResolver'),
+                            params=parameters)
         assert('"value": true' in resp)
 
-        parameters = {
-            'name'      : 'myOtherRes',
-            'fileName'  : '%(here)s/tests/testdata/myDom-passwd',
-            'type'      : 'passwdresolver'
-            }
-        resp = self.app.get(url(controller='system', action='setResolver'),
-                                                            params=parameters)
+        parameters = {'name': 'myOtherRes',
+                      'fileName': '%(here)s/tests/testdata/myDom-passwd',
+                      'type': 'passwdresolver'
+                      }
+        resp = self.app.get(url(controller='system',
+                                action='setResolver'),
+                            params=parameters)
         assert('"value": true' in resp)
 
     def __createRealms__(self):
@@ -283,46 +275,34 @@ class TestController(TestCase):
                 search in the mix for the user root must find 2 users
         '''
 
-        parameters = {
-            'realm'     :'myDefRealm',
-            'resolvers' :'privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.myDefRes'
-        }
-        resp = self.app.get(url(controller='system', action='setRealm'),
-                                                            params=parameters)
-        assert('"value": true' in resp)
-
-        resp = self.app.get(url(controller='system', action='getRealms'))
-        assert('"default": "true"' in resp)
-
-        parameters = {
-            'realm'     :'myOtherRealm',
-            'resolvers' :'privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.myOtherRes'
-        }
-        resp = self.app.get(url(controller='system', action='setRealm'),
-                                                             params=parameters)
-        assert('"value": true' in resp)
-
-        parameters = {
-            'realm'     :'myMixRealm',
-            'resolvers' :'privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.' +
-                         'myOtherRes,privacyidea.lib.resolvers.PasswdIdResolver.' +
-                         'IdResolver.myDefRes'
-        }
-        resp = self.app.get(url(controller='system', action='setRealm'),
+        parameters = {'realm': 'myDefRealm',
+                      'resolvers': 'privacyidea.lib.resolvers.'
+                      'PasswdIdResolver.IdResolver.myDefRes'
+                      }
+        resp = self.app.get(url(controller='system',
+                                action='setRealm'),
                             params=parameters)
         assert('"value": true' in resp)
 
+        parameters = {'realm': 'myOtherRealm',
+                      'resolvers': 'privacyidea.lib.resolvers.'
+                      'PasswdIdResolver.IdResolver.myOtherRes'
+                      }
+        resp = self.app.get(url(controller='system',
+                                action='setRealm'),
+                            params=parameters)
+        assert('"value": true' in resp)
 
-        resp = self.app.get(url(controller='system', action='getRealms'))
-        #assert('"default": "true"' in resp)
-
-        resp = self.app.get(url(controller='system', action='getDefaultRealm'))
-        #assert('"default": "true"' in resp)
-
-        resp = self.app.get(url(controller='system', action='getConfig'))
-        #assert('"default": "true"' in resp)
-
-
+        parameters = {'realm': 'myMixRealm',
+                      'resolvers': 'privacyidea.lib.resolvers.'
+                      'PasswdIdResolver.IdResolver.'
+                      'myOtherRes,privacyidea.lib.resolvers.PasswdIdResolver.'
+                      'IdResolver.myDefRes'
+                      }
+        resp = self.app.get(url(controller='system',
+                                action='setRealm'),
+                            params=parameters)
+        assert('"value": true' in resp)
 
 
 ###eof#########################################################################
