@@ -56,6 +56,32 @@ class TestMachineController(TestController):
         self._delete_machine(machine)
         for serial in serials:
             self._delete_token(serial)
+            
+    def _create_ssh(self,
+                    otpkey,
+                    serials=["SSH1"],
+                    machine="machine1",
+                    ip="10.0.0.1"):
+        client = ip
+        machine1 = machine
+        self._create_machine(machine1,
+                             ip=client)
+        # create two tokens for the one machine
+        for serial in serials:
+            param = {'type': 'sshkey',
+                     'serial': serial,
+                     'otpkey': otpkey}
+            response = self.app.get(url(controller='admin', action='init'),
+                                    params=param)
+            print response
+            assert '"value": true' in response
+        
+    def _delete_ssh(self,
+                    serials=["SSH1"],
+                    machine="machine1"):
+        self._delete_machine(machine)
+        for serial in serials:
+            self._delete_token(serial)
         
     def _create_token(self, serial=None):
         # create a token and add this new token to the machine
@@ -566,9 +592,9 @@ class TestMachineController(TestController):
         
         self._delete_yubikeys(serials=serials)
 
-    def test_add_and_remove_options(self):
+    def test_add_and_remove_luks_options(self):
         """
-        Add and remove options from a machinetoken definition
+        Add and remove luks options from a machinetoken definition
         """
         serials = ["UBOM123456_1", "UBOM234567_1"]
         machine = "machine1"
@@ -660,3 +686,76 @@ class TestMachineController(TestController):
         
         self._delete_token(serial)
         self._delete_machine(name1)
+        
+    def test_add_and_remove_ssh_options(self):
+        """
+        Add and remove ssh options from a machinetoken definition
+        """
+        serials = ["SSH1"]
+        machine = "machine1"
+        ip = "10.0.0.1"
+        app = "ssh"
+        otpkey = ("ssh-rsa AAAAB3NzaC1yc2EA+i1g7pmaNdiWiOYp2CJ/rx"
+                  "ltkWVRqOwkjSIZsV1s6jdEQuEzREbYHZSsCvVi/WKp104bI"
+                  "VjE3ORSv1R2HHt9+/cHUfoCXNKPszlM/dwBH4A6yKcSDv5+D"
+                  "qvYsZjYMwdNj9ldxaidtYo4ohohgpvPGjamGsXKQlaDmeORE"
+                  "pH2Fc/0eZWG5vAzzsw7/qCp2ydnZISLIJ6sdjDoNybHh4iq8"
+                  "hZyGtAeHN7fESc1MGkJ/eTkxD2v4IFP5MbGJOlbmy+JR56Tuq"
+                  "Ko/de9AnytvztqrMTD3+Y5ac4aZ7kSsufbOvaV1FI2+1wvJ2D"
+                  "64xeJXE90naGJzTFVIeqQ330jw== corny@az.local")
+
+        self._create_ssh(otpkey)
+        # add a token
+        response = self.app.get(url(controller='machine', action='addtoken'),
+                                {'name': machine,
+                                 'serial': serials[0],
+                                 'application': app})
+        assert ('"status": true' in response)
+        assert ('"value": true' in response)
+        # determine the machinetoken_id
+        response = self.app.get(url(controller='machine',
+                                    action='gettokenapps'),
+                                params={"name": machine,
+                                        "application": app,
+                                        "client": ip})
+        data = json.loads(response.body)
+        print response
+        assert "SSH1" in response
+        
+        print "=========== Add option ==============="
+        mtid = data.get("result").get("value").get("machines").keys()[0]
+        # add the option
+        response = self.app.get(url(controller="machine", action="addoption"),
+                                params={"mtid": mtid,
+                                        "option_user": "root"})
+        print response
+        assert ('"status": true' in response)
+        assert ('"value": 1' in response)
+        
+        print "=========== Check options ==============="
+        response = self.app.get(url(controller='machine',
+                                    action='gettokenapps'),
+                                params={"name": machine,
+                                        "application": app,
+                                        "client": ip})
+        print response
+        assert '"option_user": "root"' in response
+        
+        print "====== delete option ====================="
+        response = self.app.get(url(controller="machine", action="deloption"),
+                                params={"mtid": mtid,
+                                        "key": "option_user"})
+        print response
+        assert ('"status": true' in response)
+        assert ('"value": true' in response)
+        
+        print "=========== Check options ==============="
+        response = self.app.get(url(controller='machine',
+                                    action='gettokenapps'),
+                                params={"name": machine,
+                                        "application": app,
+                                        "client": ip})
+        print response
+        assert '"option_user": "root"' not in response
+        # cleanup
+        self._delete_ssh(serials=serials)
