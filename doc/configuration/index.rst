@@ -15,3 +15,4 @@ It also contains a shortcut to the policy tab (see :ref:`policies`).
    realms
    system_config
    token_config
+   privacyidea-setup

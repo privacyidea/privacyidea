@@ -20,6 +20,8 @@ Thanks a lot!
 .. toctree::
    :maxdepth: 2
 
+   overview/index
+   installation/index
    system/inifile   
    configuration/index
    tokenview/index
