@@ -5,6 +5,9 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2013 Sep 29, Cornelius Kölbel, cornelius@privacyidea.org
+#               Added uselist test and PEP8 stuff
+#
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  AGPLv3
 #  contact:  http://www.linotp.org
@@ -35,106 +38,106 @@ from privacyidea.tests import TestController, url
 
 log = logging.getLogger(__name__)
 
+
 class TestAdminController(TestController):
 
-
     def createToken3(self):
-        parameters = {
-                      "serial": "003e808e",
-                      "otpkey" : "e56eb2bcbafb2eea9bce9463f550f86d587d6c71",
-                      "description" : "my EToken",
+        parameters = {"serial": "003e808e",
+                      "otpkey": "e56eb2bcbafb2eea9bce9463f550f86d587d6c71",
+                      "description": "my EToken",
                       }
 
-        response = self.app.get(url(controller='admin', action='init'), params=parameters)
+        response = self.app.get(url(controller='admin', action='init'),
+                                params=parameters)
         self.assertTrue('"value": true' in response, response)
 
     def createToken2(self, serial="F722362"):
-        parameters = {
-                      "serial"  : serial,
-                      "otpkey"  : "AD8EABE235FC57C815B26CEF3709075580B44738",
-                      "description" : "TestToken" + serial,
+        parameters = {"serial": serial,
+                      "otpkey": "AD8EABE235FC57C815B26CEF3709075580B44738",
+                      "description": "TestToken" + serial,
                       }
 
-        response = self.app.get(url(controller='admin', action='init'), params=parameters)
+        response = self.app.get(url(controller='admin', action='init'),
+                                params=parameters)
         self.assertTrue('"value": true' in response, response)
         return serial
 
     def createTokenSHA256(self, serial="SHA256"):
-        parameters = {
-                      "serial" : serial,
-                      "otpkey" : "47F6EE05C06FA1CDB8B9AADF520FCF86221DB0A107731452AE140EED0EB518B0",
-                      "type" : "hmac",
-                      "hashlib" : "sha256"
+        parameters = {"serial": serial,
+                      "otpkey": "47F6EE05C06FA1CDB8B9AADF520FCF86221DB0A"
+                                "107731452AE140EED0EB518B0",
+                      "type": "hmac",
+                      "hashlib": "sha256"
                       }
-        response = self.app.get(url(controller='admin', action='init'), params=parameters)
+        response = self.app.get(url(controller='admin', action='init'),
+                                params=parameters)
         self.assertTrue('"value": true' in response, response)
         return serial
 
     def createToken(self):
-        parameters = {
-                      "serial"  : "F722362",
-                      "otpkey"  : "AD8EABE235FC57C815B26CEF3709075580B44738",
-                      "user"    : "root",
-                      "pin"     : "pin",
-                      "description" : "TestToken1",
-                      }
-
-        response = self.app.get(url(controller='admin', action='init'), params=parameters)
-        self.assertTrue('"value": true' in response, response)
-
-        parameters = {
-                      "serial": "F722363",
-                      "otpkey" : "AD8EABE235FC57C815B26CEF3709075580B4473880B44738",
-                      "user" : "root",
+        parameters = {"serial": "F722362",
+                      "otpkey": "AD8EABE235FC57C815B26CEF3709075580B44738",
+                      "user": "root",
                       "pin": "pin",
-                      "description" : "TestToken2",
+                      "description": "TestToken1",
                       }
 
-        response = self.app.get(url(controller='admin', action='init'), params=parameters)
+        response = self.app.get(url(controller='admin', action='init'),
+                                params=parameters)
         self.assertTrue('"value": true' in response, response)
 
-        parameters = {
-                      "serial": "F722364",
-                      "otpkey" : "AD8EABE235FC57C815B26CEF37090755",
-                      "user" : "root",
+        parameters = {"serial": "F722363",
+                      "otpkey": "AD8EABE235FC57C815B26CEF"
+                                "3709075580B4473880B44738",
+                      "user": "root",
                       "pin": "pin",
-                      "description" : "TestToken3",
+                      "description": "TestToken2",
                       }
 
-        response = self.app.get(url(controller='admin', action='init'), params=parameters)
+        response = self.app.get(url(controller='admin', action='init'),
+                                params=parameters)
         self.assertTrue('"value": true' in response, response)
 
-        ## test the update
-        parameters = {
-                      "serial": "F722364",
-                      "otpkey" : "AD8EABE235FC57C815B26CEF37090755",
-                      "user" : "root",
+        parameters = {"serial": "F722364",
+                      "otpkey": "AD8EABE235FC57C815B26CEF37090755",
+                      "user": "root",
+                      "pin": "pin",
+                      "description": "TestToken3",
+                      }
+
+        response = self.app.get(url(controller='admin', action='init'),
+                                params=parameters)
+        self.assertTrue('"value": true' in response, response)
+
+        # test the update
+        parameters = {"serial": "F722364",
+                      "otpkey": "AD8EABE235FC57C815B26CEF37090755",
+                      "user": "root",
                       "pin": "Pin3",
-                      "description" : "TestToken3",
+                      "description": "TestToken3",
                       }
 
-        response = self.app.get(url(controller='admin', action='init'), params=parameters)
-        #log.error("response %s\n",response)
+        response = self.app.get(url(controller='admin', action='init'),
+                                params=parameters)
         self.assertTrue('"value": true' in response, response)
 
     def removeTokenBySerial(self, serial):
 
-        parameters = {
-                      "serial": serial,
+        parameters = {"serial": serial,
                       }
 
-        response = self.app.get(url(controller='admin', action='remove'), params=parameters)
+        response = self.app.get(url(controller='admin', action='remove'),
+                                params=parameters)
         return response
 
     def removeTokenByUser(self, user):
-        ### final delete all tokens of user root
-        parameters = {
-                      "user": user,
+        # final delete all tokens of user root
+        parameters = {"user": user,
                       }
 
-        response = self.app.get(url(controller='admin', action='remove'), params=parameters)
+        response = self.app.get(url(controller='admin', action='remove'),
+                                params=parameters)
         return response
-
 
     def showToken(self):
         response = self.app.get(url(controller='admin', action='show'))
@@ -146,33 +149,31 @@ class TestAdminController(TestController):
     def test_set(self):
         self.createToken()
 
-        parameters = {
-                      "serial": "F722364",
+        parameters = {"serial": "F722364",
                       "pin": "pin",
-                      "MaxFailCount" : "20",
-                      "SyncWindow" : "400",
-                      "OtpLen" : "6",
-                      "hashlib" : "sha256"
+                      "MaxFailCount": "20",
+                      "SyncWindow": "400",
+                      "OtpLen": "6",
+                      "hashlib": "sha256"
                       }
 
-        response = self.app.get(url(controller='admin', action='set'), params=parameters)
-        #log.debug("response %s",response)
+        response = self.app.get(url(controller='admin', action='set'),
+                                params=parameters)
         self.assertTrue('"set pin": 1' in response, response)
         self.assertTrue('"set SyncWindow": 1' in response, response)
         self.assertTrue('"set OtpLen": 1' in response, response)
         self.assertTrue('"set MaxFailCount": 1' in response, response)
         self.assertTrue('"set hashlib": 1' in response, response)
 
-        parameters = {
-                      "user": "root",
+        parameters = {"user": "root",
                       "pin": "pin",
-                      "MaxFailCount" : "20",
-                      "SyncWindow" : "400",
-                      "OtpLen" : "6",
+                      "MaxFailCount": "20",
+                      "SyncWindow": "400",
+                      "OtpLen": "6",
                       }
 
-        response = self.app.get(url(controller='admin', action='set'), params=parameters)
-        #log.error("response %s",response)
+        response = self.app.get(url(controller='admin', action='set'),
+                                params=parameters)
         self.assertTrue('"set pin": 3' in response, response)
         self.assertTrue('"set SyncWindow": 3' in response, response)
         self.assertTrue('"set OtpLen": 3' in response, response)
@@ -183,7 +184,6 @@ class TestAdminController(TestController):
         response = self.removeTokenByUser("root")
         self.assertTrue('"value": 2' in response, response)
 
-
     def test_remove(self):
         self.createToken()
         response = self.removeTokenByUser("root")
@@ -192,21 +192,25 @@ class TestAdminController(TestController):
     def test_enable(self):
         self.createToken()
         parameters = {"serial": "F722364"}
-        response = self.app.get(url(controller='admin', action='disable'), params=parameters)
+        response = self.app.get(url(controller='admin', action='disable'),
+                                params=parameters)
         self.assertTrue('"value": 1' in response, response)
 
         parameters = {"serial": "F722364"}
-        response = self.app.get(url(controller='admin', action='show'), params=parameters)
+        response = self.app.get(url(controller='admin', action='show'),
+                                params=parameters)
 
         self.assertTrue('false' in response, response)
         self.assertTrue('F722364' in response, response)
 
         parameters = {"serial": "F722364"}
-        response = self.app.get(url(controller='admin', action='enable'), params=parameters)
+        response = self.app.get(url(controller='admin', action='enable'),
+                                params=parameters)
         self.assertTrue('"value": 1' in response, response)
 
         parameters = {"serial": "F722364"}
-        response = self.app.get(url(controller='admin', action='show'), params=parameters)
+        response = self.app.get(url(controller='admin', action='show'),
+                                params=parameters)
 
         self.assertTrue('true' in response, response)
         self.assertTrue('F722364' in response, response)
@@ -215,106 +219,132 @@ class TestAdminController(TestController):
         
     def test_show_csv(self):
         '''
-        testing token csv export 
+        testing token csv export
         '''
-        response = self.app.get(url(controller='admin', action='show'), params={"outform" : "csv"})
+        response = self.app.get(url(controller='admin', action='show'),
+                                params={"outform": "csv"})
         print response.headers
-        assert response.headers.get("Content-Disposition") == "attachment; filename=privacyidea-tokendata.csv"
-
+        assert(response.headers.get("Content-Disposition") ==
+               "attachment; filename=privacyidea-tokendata.csv")
 
     def test_show_with_realm(self):
         '''
         testing admin/show with filterrealm
         '''
-        response = self.app.get(url(controller='system', action='getRealms'), params=None)
+        response = self.app.get(url(controller='system', action='getRealms'),
+                                params=None)
         self.assertTrue("mydefrealm" in response, response)
         
-        response = self.app.get(url(controller='admin', action='show'), params={"viewrealm" : "mydefrealm"})
+        response = self.app.get(url(controller='admin', action='show'),
+                                params={"viewrealm": "mydefrealm"})
         self.assertTrue('"status": true,' in response, response)
         
     def test_token_realm(self):
         '''
         testing setting the tokenrealm
         '''
-        response = self.app.get(url(controller="admin", action="init"), params={"serial" : "TR_001",
-                                                                                "type" : "spass"})
+        response = self.app.get(url(controller="admin", action="init"),
+                                params={"serial": "TR_001",
+                                        "type": "spass"})
         self.assertTrue('"status": true,' in response, response)
         
         # successful set token realm
-        response = self.app.get(url(controller="admin", action="tokenrealm"), params={"serial" : "TR_001",
-                                                                                "realms" : "mydefrealm, myotherrealm"})
+        response = self.app.get(url(controller="admin", action="tokenrealm"),
+                                params={"serial": "TR_001",
+                                        "realms": "mydefrealm, myotherrealm"})
         self.assertTrue('"status": true,' in response, response)
         
         # set tokenrealm of token, that does not exist.
-        response = self.app.get(url(controller="admin", action="tokenrealm"), params={"serial" : "TR_001XXX",
-                                                                                "realms" : "mydefrealm, myotherrealm"})
-        self.assertTrue('No token with serial TR_001XXX found' in response, response)
+        response = self.app.get(url(controller="admin", action="tokenrealm"),
+                                params={"serial": "TR_001XXX",
+                                        "realms": "mydefrealm, myotherrealm"})
+        self.assertTrue('No token with serial TR_001XXX found' in response,
+                        response)
         
     def test_reset(self):
-        response = self.app.get(url(controller="admin", action="init"), params={"serial" : "RE_001",
-                                                                                "type" : "hmac",
-                                                                                "otpkey" : "123456123456123456"})
+        response = self.app.get(url(controller="admin", action="init"),
+                                params={"serial": "RE_001",
+                                        "type": "hmac",
+                                        "otpkey": "123456123456123456"})
         self.assertTrue('"status": true,' in response, response)
         
-        response = self.app.get(url(controller="admin", action="reset"), params={"serial" : "RE_001"})
+        response = self.app.get(url(controller="admin", action="reset"),
+                                params={"serial": "RE_001"})
         self.assertTrue('"status": true,' in response, response)
         self.assertTrue('"value": 1' in response, response)
         
-        response = self.app.get(url(controller="admin", action="reset"), params={"serial" : "RE_001XXXX"})
+        response = self.app.get(url(controller="admin", action="reset"),
+                                params={"serial": "RE_001XXXX"})
         self.assertTrue('"status": true,' in response, response)
         self.assertTrue('"value": 0' in response, response)
         
-        
     def test_losttoken(self):
-        response = self.app.get(url(controller="admin", action="init"), params={"serial" : "LOST_001",
-                                                                                "type" : "hmac",
-                                                                                "otpkey" : "123456123456123456"})
+        response = self.app.get(url(controller="admin", action="init"),
+                                params={"serial": "LOST_001",
+                                        "type": "hmac",
+                                        "otpkey": "123456123456123456"})
         self.assertTrue('"status": true,' in response, response)
         
-        response = self.app.get(url(controller="admin", action="losttoken"), params={"serial" : "LOST_001"})
+        response = self.app.get(url(controller="admin", action="losttoken"),
+                                params={"serial": "LOST_001"})
         self.assertTrue('"status": false,' in response, response)
-        self.assertTrue('You can only define a lost token for an assigned token.' in response, response)
+        self.assertTrue('You can only define a lost token for'
+                        ' an assigned token.' in response, response)
         
-        response = self.app.get(url(controller="admin", action="assign"), params={"serial" : "LOST_001",
-                                                                                  "user" : "root"})
+        response = self.app.get(url(controller="admin", action="assign"),
+                                params={"serial": "LOST_001",
+                                        "user": "root"})
         self.assertTrue('"status": true,' in response, response)
         
-        response = self.app.get(url(controller="admin", action="losttoken"), params={"serial" : "LOST_001"})
+        response = self.app.get(url(controller="admin", action="losttoken"),
+                                params={"serial": "LOST_001"})
         self.assertTrue('"serial": "lostLOST_001",' in response, response)
         self.assertTrue('"password": "' in response, response)
         
-        response = self.app.get(url(controller="admin", action="unassign"), params={"serial" : "LOST_001"})
+        response = self.app.get(url(controller="admin", action="unassign"),
+                                params={"serial": "LOST_001"})
         self.assertTrue('"status": true,' in response, response)
         
-        response = self.app.get(url(controller="admin", action="remove"), params={"serial" : "LOST_001"})
+        response = self.app.get(url(controller="admin", action="remove"),
+                                params={"serial": "LOST_001"})
         self.assertTrue('"status": true,' in response, response)
         
     def test_userlist(self):
-        response = self.app.get(url(controller='admin', action='userlist'), params={"username" : "*"})
+        response = self.app.get(url(controller='admin', action='userlist'),
+                                params={"username": "*"})
         self.assertTrue("passthru_user2" in response, response)
         self.assertTrue("passthru_user1" in response, response)
         self.assertTrue("remoteuser" in response, response)
         self.assertTrue("user1" in response, response)
         self.assertTrue("user2" in response, response)
         
+        response = self.app.get(url(controller='admin', action='userlist'),
+                                params={"username": "p*"})
+        self.assertTrue('"username": "passthru_user1"' in response, response)
+        self.assertTrue('"username": "passthru_user2"' in response, response)
+        self.assertTrue('"username": "remoteuser"' not in response, response)
+        self.assertTrue('"username": "user1"' not in response, response)
+        self.assertTrue('"username": "user2"' not in response, response)
 
     def test_resync(self):
 
         self.createToken()
 
-        ## test resync of token 2
-        parameters = {"user": "root", "otp1": "359864", "otp2": "348449" }
-        response = self.app.get(url(controller='admin', action='resync'), params=parameters)
-        #log.error("response %s\n",response)
+        # test resync of token 2
+        parameters = {"user": "root", "otp1": "359864", "otp2": "348449"}
+        response = self.app.get(url(controller='admin', action='resync'),
+                                params=parameters)
+
         self.assertTrue('"value": false' in response, response)
 
-
-        parameters = {"user": "root", "otp1": "359864", "otp2": "348448" }
-        response = self.app.get(url(controller='admin', action='resync'), params=parameters)
+        parameters = {"user": "root",
+                      "otp1": "359864",
+                      "otp2": "348448"}
+        response = self.app.get(url(controller='admin', action='resync'),
+                                params=parameters)
         # Test response...
         log.error("response %s\n", response)
         self.assertTrue('"value": true' in response, response)
-
 
         self.removeTokenBySerial("F722364")
         self.removeTokenBySerial("F722363")
@@ -323,19 +353,24 @@ class TestAdminController(TestController):
     def test_resync_sha256(self):
         self.createTokenSHA256(serial="SHA256")
 
-        parameters = {"serial":"SHA256", "otp1":"778729" , "otp2":"094573" }
-        response = self.app.get(url(controller="admin", action="resync"), params=parameters)
+        parameters = {"serial": "SHA256",
+                      "otp1": "778729",
+                      "otp2": "094573"}
+        response = self.app.get(url(controller="admin", action="resync"),
+                                params=parameters)
 
         self.assertTrue('"value": true' in response, response)
         self.removeTokenBySerial("SHA256")
 
-
     def test_setPin(self):
         self.createToken3()
 
-        ## test resync of token 2
-        parameters = {"serial":"003e808e", "userpin":"123456", "sopin":"123234" }
-        response = self.app.get(url(controller='admin', action='setPin'), params=parameters)
+        # test resync of token 2
+        parameters = {"serial": "003e808e",
+                      "userpin": "123456",
+                      "sopin": "123234"}
+        response = self.app.get(url(controller='admin', action='setPin'),
+                                params=parameters)
         # log.error("response %s\n",response)
         # Test response...
         self.assertTrue('"set sopin": 1' in response, response)
@@ -343,61 +378,63 @@ class TestAdminController(TestController):
 
         self.removeTokenBySerial("003e808e")
 
-
     def test_assign(self):
 
         serial = self.createToken2(serial="F722362")
 
-        response = self.app.get(url(controller='admin', action='show'))
+        # response = self.app.get(url(controller='admin', action='show'))
 
-
-        respRealms = self.app.get(url(controller='system', action='getRealms'), params=None)
+        respRealms = self.app.get(url(controller='system', action='getRealms'),
+                                  params=None)
         log.debug(respRealms)
 
-        ## test initial assign
-        parameters = {"serial":serial, "user": "root" }
-        response = self.app.get(url(controller='admin', action='assign'), params=parameters)
+        # test initial assign
+        parameters = {"serial": serial,
+                      "user": "root"}
+        response = self.app.get(url(controller='admin', action='assign'),
+                                params=parameters)
         # log.error("response %s\n",response)
         # Test response...
         self.assertTrue('"value": true' in response, response)
 
-        ## test initial assign update
-        parameters = {"serial": serial, "user": "root", "pin":"NewPin" }
-        response = self.app.get(url(controller='admin', action='assign'), params=parameters)
-        #log.error("response %s\n",response)
+        # test initial assign update
+        parameters = {"serial": serial, "user": "root", "pin": "NewPin"}
+        response = self.app.get(url(controller='admin', action='assign'),
+                                params=parameters)
         # Test response...
         self.assertTrue('"value": true' in response, response)
 
         response = self.app.get(url(controller='admin', action='show'))
-        #log.error("response %s\n",response)
+
         self.assertTrue('"User.userid": "0", ' in response, response)
 
-
-        ## test initial assign update
-        parameters = {"serial": serial , "user": "root"}
-        response = self.app.get(url(controller='admin', action='unassign'), params=parameters)
-        #log.error("response %s\n",response)
+        # test initial assign update
+        parameters = {"serial": serial, "user": "root"}
+        response = self.app.get(url(controller='admin', action='unassign'),
+                                params=parameters)
+        # log.error("response %s\n",response)
         self.assertTrue('"value": true' in response, response)
 
-        ## test wrong assign
-        parameters = {"serial": serial, "user": "NoBody" }
-        response = self.app.get(url(controller='admin', action='assign'), params=parameters)
-        #log.error("response %s\n",response)
-        self.assertTrue('getUserId failed: no user >NoBody< found!' in response, response)
+        # test wrong assign
+        parameters = {"serial": serial, "user": "NoBody"}
+        response = self.app.get(url(controller='admin', action='assign'),
+                                params=parameters)
+        # log.error("response %s\n",response)
+        self.assertTrue('getUserId failed: no user '
+                        '>NoBody< found!' in response, response)
 
         response = self.app.get(url(controller='admin', action='show'))
-        #log.error("response %s\n",response)
+
         self.assertTrue('"User.userid": "",' in response, response)
-
-
 
         self.removeTokenBySerial(serial)
 
     def test_assign_umlaut(self):
         self.createTokenSHA256(serial="umlauttoken")
 
-        parameters = {"serial":"umlauttoken", "user":"kölbel" }
-        response = self.app.get(url(controller="admin", action="assign"), params=parameters)
+        parameters = {"serial": "umlauttoken", "user": "kölbel"}
+        response = self.app.get(url(controller="admin", action="assign"),
+                                params=parameters)
 
         self.assertTrue('"value": true' in response, response)
 
@@ -405,14 +442,15 @@ class TestAdminController(TestController):
 
     def test_enroll_umlaut(self):
 
-        parameters = {
-                      "serial" : "umlauttoken",
-                      "otpkey" : "47F6EE05C06FA1CDB8B9AADF520FCF86221DB0A107731452AE140EED0EB518B0",
-                      "type" : "hmac",
-                      "hashlib" : "sha256",
-                      "user" : "kölbel"
+        parameters = {"serial": "umlauttoken",
+                      "otpkey": "47F6EE05C06FA1CDB8B9AADF520FCF86"
+                                "221DB0A107731452AE140EED0EB518B0",
+                      "type": "hmac",
+                      "hashlib": "sha256",
+                      "user": "kölbel"
                       }
-        response = self.app.get(url(controller='admin', action='init'), params=parameters)
+        response = self.app.get(url(controller='admin', action='init'),
+                                params=parameters)
         self.assertTrue('"value": true' in response, response)
         self.removeTokenBySerial("umlauttoken")
 
@@ -424,41 +462,44 @@ class TestAdminController(TestController):
         
         response = self.app.get("http://localhost:5001/account/dologin",
                                 params={'login': 'admin2@admin',
-                                        'realm':'',
-                                        'password':'secret'})
+                                        'realm': '',
+                                        'password': 'secret'})
         
         self.assertTrue('302 Found' in response.body, response.body)
-        self.assertTrue('you should be redirected automatically.' in response.body, response.body)
+        self.assertTrue('you should be redirected automatically.'
+                        in response.body, response.body)
         
         response = self.app.get("http://localhost:5001/account/logout",
                                 params={})
 
         print response.body
         self.assertTrue('302 Found' in response.body, response.body)
-        self.assertTrue('you should be redirected automatically.' in response.body, response.body)
-
+        self.assertTrue('you should be redirected automatically.'
+                        in response.body, response.body)
 
     def test_check_serial(self):
         '''
         Checking what happens if serial exists
         '''
         response = self.app.get(url(controller='admin', action='init'),
-                                params={"serial" : 'unique_serial_001',
-                                        "type" : 'spass'})
+                                params={"serial": 'unique_serial_001',
+                                        "type": 'spass'})
 
         self.assertTrue('"value": true' in response, response)
 
         response = self.app.get(url(controller='admin', action='check_serial'),
-                                params={'serial' : 'unique_serial_002'})
+                                params={'serial': 'unique_serial_002'})
 
         self.assertTrue('"unique": true' in response, response)
-        self.assertTrue('"new_serial": "unique_serial_002"' in response, response)
+        self.assertTrue('"new_serial": "unique_serial_002"' in response,
+                        response)
 
         response = self.app.get(url(controller='admin', action='check_serial'),
-                                params={'serial' : 'unique_serial_001'})
+                                params={'serial': 'unique_serial_001'})
 
         self.assertTrue('"unique": false' in response, response)
-        self.assertTrue('"new_serial": "unique_serial_001_01"' in response, response)
+        self.assertTrue('"new_serial": "unique_serial_001_01"' in response,
+                        response)
 
     def test_setPin_empty(self):
         '''
@@ -478,8 +519,7 @@ class TestAdminController(TestController):
 
         response = self.app.get(url(controller='admin', action='setPin'),
                                 params={'serial': 'setpin_01',
-                                        'sopin' : 'geheim'})
-
+                                        'sopin': 'geheim'})
 
         self.assertTrue('"set sopin": 1' in response, response)
 
@@ -499,7 +539,6 @@ class TestAdminController(TestController):
                                         'timeWindow': '180',
                                         'timeStep': '30',
                                         'timeShift': '0'})
-
 
         self.assertTrue('set CounterWindow": 1' in response, response)
         self.assertTrue('"set timeShift": 1' in response, response)
@@ -522,7 +561,6 @@ class TestAdminController(TestController):
                                         'countAuthMax': '180',
                                         'countAuthSuccess': '0',
                                         'countAuthSuccessMax': '10'})
-
 
         self.assertTrue('"set countAuthSuccess": 1' in response, response)
         self.assertTrue('"set countAuthSuccessMax": 1' in response, response)
@@ -547,16 +585,15 @@ class TestAdminController(TestController):
                                         'validityPeriodEnd': '2013-12-30',
                                         })
 
-
         self.assertTrue('"status": false' in response, response)
         self.assertTrue('does not match format' in response, response)
 
+        params = {'serial': 'token_set_validity',
+                  'validityPeriodStart': '12/12/12 10:00',
+                  'validityPeriodEnd': '30/12/13 13:00',
+                  }
         response = self.app.get(url(controller='admin', action='set'),
-                                params={'serial': 'token_set_validity',
-                                        'validityPeriodStart': '12/12/12 10:00',
-                                        'validityPeriodEnd': '30/12/13 13:00',
-                                        })
-
+                                params=params)
 
         self.assertTrue('"status": true' in response, response)
         self.assertTrue('"set validityPeriodStart": 1' in response, response)
@@ -576,10 +613,8 @@ class TestAdminController(TestController):
                                 params={'serial': 'token_set_empty',
                                         })
 
-
         self.assertTrue('"status": false' in response, response)
         self.assertTrue('"code": 77' in response, response)
-
 
     def test_copy_token_pin(self):
         '''
@@ -651,7 +686,8 @@ class TestAdminController(TestController):
 
         self.assertTrue('"value": true' in response, response)
 
-        response = self.app.get(url(controller='admin', action='copyTokenUser'),
+        response = self.app.get(url(controller='admin',
+                                    action='copyTokenUser'),
                                 params={'from': 'copy_user_1',
                                         'to': 'copy_user_2'})
 
@@ -668,32 +704,33 @@ class TestAdminController(TestController):
         test to enroll another token with the same serial number
         '''
         response = self.app.get(url(controller='admin', action='init'),
-                                params={'serial' : 'token01',
-                                        'type' : 'hmac',
-                                        'otpkey' : '123456'})
+                                params={'serial': 'token01',
+                                        'type': 'hmac',
+                                        'otpkey': '123456'})
 
         self.assertTrue('"value": true' in response, response)
 
         # enrolling the token of the same type is possible
         response = self.app.get(url(controller='admin', action='init'),
-                                params={'serial' : 'token01',
-                                        'type' : 'hmac',
-                                        'otpkey' : '567890'})
+                                params={'serial': 'token01',
+                                        'type': 'hmac',
+                                        'otpkey': '567890'})
 
         self.assertTrue('"value": true' in response, response)
 
         # enrolling of another type is not possible
         response = self.app.get(url(controller='admin', action='init'),
-                                params={'serial' : 'token01',
-                                        'type' : 'spass',
-                                        'otpkey' : '123456'})
+                                params={'serial': 'token01',
+                                        'type': 'spass',
+                                        'otpkey': '123456'})
 
         self.assertTrue("already exist with type" in response, response)
-        self.assertTrue("Can not initialize token with new type" in response, response)
+        self.assertTrue("Can not initialize token with new type" in response,
+                        response)
 
         # clean up
         response = self.app.get(url(controller='admin', action='remove'),
-                                params={'serial' : 'token01'})
+                                params={'serial': 'token01'})
 
         self.assertTrue('"status": true' in response, response)
 
@@ -702,61 +739,64 @@ class TestAdminController(TestController):
         Test gettoken/multiotp and admin/getSerialByOtp
         '''
         response = self.app.get(url(controller='admin', action='init'),
-                                params={'serial' : 'gsbo001',
-                                        'type' : 'hmac',
-                                        'otpkey' : '12345678901234567890123456789012',
-                                        'user' : 'root',
-                                        'selftest_admin' : 'superadmin'})
+                                params={'serial': 'gsbo001',
+                                        'type': 'hmac',
+                                        'otpkey': '12345678901234'
+                                                  '567890123456789012',
+                                        'user': 'root',
+                                        'selftest_admin': 'superadmin'})
         self.assertTrue('"value": true' in response, response)
 
         response = self.app.get(url(controller='system', action='setPolicy'),
-                                params={'name' : 'gettoken',
-                                        'scope' : 'gettoken',
-                                        'realm' : 'myDefRealm',
-                                        'action' : 'max_count_hotp=20'})
+                                params={'name': 'gettoken',
+                                        'scope': 'gettoken',
+                                        'realm': 'myDefRealm',
+                                        'action': 'max_count_hotp=20'})
         self.assertTrue('"setPolicy gettoken"' in response, response)
         
-        response = self.app.get(url(controller='gettoken', action='getmultiotp'),
-                                params={'serial' : 'gsbo001',
-                                        'count' : '10'})
+        response = self.app.get(url(controller='gettoken',
+                                    action='getmultiotp'),
+                                params={'serial': 'gsbo001',
+                                        'count': '10'})
         self.assertTrue('"3": "180096"' in response, response)
         
-        response = self.app.get(url(controller='admin', action='getSerialByOtp'),
-                                params={'otp' : '180096'})
+        response = self.app.get(url(controller='admin',
+                                    action='getSerialByOtp'),
+                                params={'otp': '180096'})
         self.assertTrue('"serial": "gsbo001"' in response, response)
         
         response = self.app.get(url(controller='admin', action='remove'),
-                                params={'serial' : 'gsbo001'})
+                                params={'serial': 'gsbo001'})
         self.assertTrue('"value": 1' in response, response)
         
-
     def test_setting_description(self):
         '''
         Test setting the description and phone of a token
         '''
         response = self.app.get(url(controller='admin', action='init'),
-                                params={'serial' : 'desc001',
-                                        'type' : 'hmac',
-                                        'otpkey' : '12345678901234567890123456789012',
-                                        'selftest_admin' : 'superadmin'})
+                                params={'serial': 'desc001',
+                                        'type': 'hmac',
+                                        'otpkey': '1234567890'
+                                                  '1234567890123456789012',
+                                        'selftest_admin': 'superadmin'})
         self.assertTrue('"value": true' in response, response)
         
         response = self.app.get(url(controller='admin', action='set'),
-                                params={'serial' : 'desc001',
-                                        'description' : 'something',
-                                        'phone' : '1234560'})
+                                params={'serial': 'desc001',
+                                        'description': 'something',
+                                        'phone': '1234560'})
         
         self.assertTrue('"set description": 1' in response, response)
         self.assertTrue('"set phone": 1' in response, response)
         
         response = self.app.get(url(controller='admin', action='show'),
-                                params={'serial' : 'desc001'})
+                                params={'serial': 'desc001'})
         self.assertTrue('phone' in response, response)
         self.assertTrue('1234560' in response, response)
         self.assertTrue('TokenDesc": "something"' in response, response)
 
         response = self.app.get(url(controller='admin', action='remove'),
-                                params={'serial' : 'desc001'})
+                                params={'serial': 'desc001'})
         self.assertTrue('"value": 1' in response, response)
         
     def test_load_tokens(self):

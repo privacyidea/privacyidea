@@ -4,6 +4,9 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2014 Sep 29 Cornelius Kölbel, cornelius@privacyidea.org
+#              added tests for getRealmsOfTokenOrUser and getAllTokenUsers
+#
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  AGPLv3
 #  contact:  http://www.linotp.org
@@ -212,6 +215,16 @@ class TestManageController(TestController):
         assert '"total": 1' in response.testbody
         testbody = response.body.replace('\n', ' ').replace('\r', '').replace("  ", " ")
         assert '"token2",       true,       "nick"' in testbody
+
+        # with wildcard
+        response = self.app.get(url(controller='manage', action='tokenview_flexi'),
+                                params={"qtype": "loginname",
+                                        "query": "r*"})
+        testbody = response.body.replace('\n', ' ').replace('\r', '').replace("  ", " ")
+        print "=== Testing with wildcard ==="
+        print testbody
+        assert '"total": 1' in testbody
+        assert 'token3' in testbody
 
     def test_userflexi(self):
         '''

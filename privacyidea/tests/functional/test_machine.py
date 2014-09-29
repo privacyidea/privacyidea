@@ -293,7 +293,6 @@ class TestMachineController(TestController):
         """
         Test the json output of the machine-token-config.
         """
-        import json
         response = self.app.get(url(controller='machine', action='showtoken'),
                                 {})
         data = json.loads(response.body)

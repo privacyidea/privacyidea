@@ -204,35 +204,6 @@ def get_token_type_list():
     return token_type_list
 
 
-#######################################
-@log_with(log)
-def _create_google_authenticator(param):
-    '''
-    create url for google authenticator
-
-    :param param: request dictionary
-    :return: string with google url
-    '''
-
-    otpkey = getParam(param, "otpkey", required)
-    serial = getParam(param, "serial", required)
-    digits = getParam(param, "otplen", required)
-    algo = param.get("hashlib", "sha1") or "sha1"
-    algo = algo.upper()
-
-    typ = getParam(param, "type", required)
-    key = base64.b32encode(binascii.unhexlify(otpkey))
-    key = key.strip("=")
-
-    if typ.lower() == "totp":
-        ga = ("otpauth://totp/%s?secret=%s&digits=%s&algorithm=%s" %
-                                            (serial, key, digits, algo))
-    else:
-        ga = ("otpauth://hotp/%s?secret=%s&digits=%s&algorithm=%s&counter=0"
-                                            % (serial, key, digits, algo))
-
-    return ga
-
 
 @log_with(log)
 def getRealms4Token(user, tokenrealm=None):
