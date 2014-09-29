@@ -49,7 +49,7 @@
 <div id="wrap">
 
 <ul id='menu' class='sf-menu sf-vertical ui-widget-header ui-widget ui-widget-content ui-corner-all'>
-    <li><a href='#'>${_("privacyIDEA Config")}</a>
+    <li><a href='#'>${_("Config")}</a>
         <ul>
             <li><a href='#' id='menu_edit_resolvers'>${_("useridresolvers")}</a></li>
             <li><a href='#' id='menu_edit_realms'>${_("realms")}</a></li>
@@ -65,6 +65,7 @@
             <li><a href='#' id='menu_tools_checkpolicy'>${_("Check Policy")}</a></li>
             <li><a href='#' id='menu_tools_exporttoken'>${_("Export Token information")}</a></li>
             <li><a href='#' id='menu_tools_exportaudit'>${_("Export Audit information")}</a></li>
+            <li><a href='#' id='menu_tools_init'>${_("Create default realm with local users")}</a></li>
         </ul>
     </li>
     <li><a href='#'>${_("Import Token File")}</a>

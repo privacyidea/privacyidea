@@ -619,23 +619,6 @@ function save_token_config(){
 }
 
 
-/*
- * Retrieve session cookie if it does not exist
- */
-
-
-function getsession(){
-	var session = "";
-	if (document.cookie) {
-		session = getcookie("privacyidea_session");
-		if (session == "") {
-			alert("there is no privacyidea_session cookie");
-		}
-	}
-	return session;
-}
-
-
 function reset_waiting() {
 	g.running_requests = 0;
 	hide_waiting();
@@ -1785,22 +1768,11 @@ function save_ldap_config(){
 
 function save_realm_config(){
     var realm = $('#realm_name').val();
-    show_waiting();
-    $.post('/system/setRealm', {
-    	'realm' :realm,
-    	'resolvers' : g.resolvers_in_realm_to_edit,
-    	'session':getsession() },
-     function(data, textStatus, XMLHttpRequest){
-        hide_waiting();
-        if (data.result.status == false) {
-        	alert_info_text("text_error_realm", data.result.error.message, ERROR);
-        } else {
-        	fill_realms();
-        	realms_load();
-        	alert_info_text("text_realm_created", realm);
-        }
-    });
+    params = {'realm': realm,
+  		  'resolvers': g.resolvers_in_realm_to_edit}
+    save_realm_config_action(params)
 }
+
 
 function save_tokenrealm_config(){
     var tokens = get_selected_tokens();
@@ -1835,18 +1807,7 @@ function save_file_config(){
     params['name'] = resolvername;
     params['type'] = resolvertype;
     params['fileName'] = fileName;
-    params['session'] = getsession();
-    show_waiting();
-    $.post('/system/setResolver', params,
-     function(data, textStatus, XMLHttpRequest){
-        hide_waiting();
-        if (data.result.status == false) {
-            alert_info_text("text_error_save_file", data.result.error.message, ERROR);
-        } else {
-            resolvers_load();
-            $dialog_file_resolver.dialog('close');
-        }
-    });
+    save_file_config_actions(params);
 }
 
 
@@ -3257,6 +3218,10 @@ $(document).ready(function(){
 	$('#menu_tools_exportaudit').click(function(){
         $dialog_tools_exportaudit.dialog('open');
     });
+	
+	$('#menu_tools_init').click(function(){
+		create_initial_realm();
+	})
 	
 	/*** 
 	 * About

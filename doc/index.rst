@@ -18,7 +18,7 @@ This will help us a lot to improve documentation to your needs.
 Thanks a lot!
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    overview/index
    installation/index

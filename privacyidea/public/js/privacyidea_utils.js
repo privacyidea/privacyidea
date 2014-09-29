@@ -82,3 +82,89 @@ function console_log(msg) {
         window.opera.postError(msg);
     }
 }
+
+
+/*
+ * Retrieve session cookie if it does not exist
+ */
+
+
+function getsession(){
+	var session = "";
+	if (document.cookie) {
+		session = getcookie("privacyidea_session");
+		if (session == "") {
+			alert("there is no privacyidea_session cookie");
+		}
+	}
+	return session;
+}
+
+
+function save_realm_config_action(params) {
+	/* Save the realm configuration with
+	 * params: realm, resolvers
+	 */
+	params['session'] = getsession();
+	show_waiting();
+    $.post('/system/setRealm', params,
+     function(data, textStatus, XMLHttpRequest){
+        hide_waiting();
+        if (data.result.status == false) {
+        	alert_info_text("text_error_realm", data.result.error.message, ERROR);
+        } else {
+        	fill_realms();
+        	realms_load();
+        	alert_info_text("text_realm_created", realm);
+        }
+    });
+}
+
+
+function save_file_config_action(params) {
+	/* Save the file resolver with params
+	 * name, type, filename
+	 */
+    show_waiting();
+	params['session'] = getsession();
+	$.post('/system/setResolver', params,
+	     function(data, textStatus, XMLHttpRequest){
+	        hide_waiting();
+	        if (data.result.status == false) {
+	            alert_info_text("text_error_save_file", data.result.error.message, ERROR);
+	        } else {
+	            resolvers_load();
+	            $dialog_file_resolver.dialog('close');
+	        }
+	    });
+}
+
+function create_initial_realm() {
+    show_waiting();
+    params = {"type": "passwdresolver",
+            "name": "deflocal",
+            "fileName": "/etc/passwd"};
+	params['session'] = getsession();
+	$.post('/system/setResolver', params,
+	     function(data, textStatus, XMLHttpRequest){
+	        hide_waiting();
+	        if (data.result.status == false) {
+	            alert_info_text("text_error_save_file", data.result.error.message, ERROR);
+	        } else {
+	            show_waiting();
+	        	params = {"realm": "defrealm",
+	        	         "resolvers": "privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.deflocal"}
+	        	params['session'] = getsession();
+	        	$.post('/system/setRealm', params,
+        		     function(data, textStatus, XMLHttpRequest){
+        		        hide_waiting();
+        		        if (data.result.status == false) {
+        		        	alert_info_text("text_error_realm", data.result.error.message, ERROR);
+        		        } else {
+        		        	alert_info_text("text_realm_created", "defrealm");
+        		        	fill_realms();
+        		        }
+        		    });
+	        }
+	    });
+}
