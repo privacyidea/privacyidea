@@ -1,0 +1,75 @@
+privacyidea module
+==================
+
+This module provides an authentication module for simpleSAMLphp to talk
+to the privacyIDEA authentication server.
+
+`privacyidea:privacyidea`
+: Authenticate a user against a privacyidea server.
+
+The module contacts the privacyIDEA server via the API
+
+  https://privacyidea/validate/samlcheck
+ 
+and authenticates the user according to the token assigned to the user.
+
+The response can also contain some attributes.
+
+To enable this module, create a file 'enable' in the
+directorpy 'modules/privacyidea/'.
+Then you need to add the authentication source 'privacyidea:privacyidea' to
+'config/authsources.php'. Do it like this:
+
+    'example-privacyidea' => array(
+        'privacyidea:privacyidea',
+
+        /* 
+         * The URI (including protocol and port) of the privacyidea server
+         * Required.
+         */
+        'privacyideaserver' => 'https://your.server.com',
+
+        /*
+         * Check if the hostname matches the name in the certificate
+         * Optional.
+         */
+        'sslverifyhost' => False,
+
+        /*
+         * Check if the certificate is valid, signed by a trusted CA
+         * Optional.
+         */
+        'sslverifypeer' => False,
+        
+        /*
+         * The realm where the user is located in.
+         * Optional.
+         */
+        'realm' => '',
+        
+        /*
+         * This is the translation from privacyIDEA attribute names to 
+         * SAML attribute names.
+         * Optional.
+         */
+         'attributemap' => array('username' => 'samlLoginName',
+         			 'surname' => 'surName',
+         			 'givenname' => 'givenName',
+         			 'email' => 'emailAddress',
+         			 'phone' => 'telePhone',
+         			 'mobile' => 'mobilePhone'),
+    ),
+
+
+User attributes
+---------------
+At the moment privacyIDEA will know and return the following attributes, 
+that can be mapped to SAML attributes:
+
+username:	The login name
+surname:	The real world name of the user as it is retrieved from the user source
+givenname:	The real world name of the user as it is retrieved from the user source
+mobile:		The mobile phone number of the user as it is retrieved from the user source
+phone:		The phone number of the user as it is retrieved from the user source
+email:		The email address of the user as it is retrieved from the user source                                
+                                

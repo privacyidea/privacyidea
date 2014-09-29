@@ -4,6 +4,9 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2014-09-29 Cornelius Kölbel, cornelius@privacyidea.org
+#             Added saml tests
+#
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  AGPLv3
 #  contact:  http://www.linotp.org
@@ -1420,35 +1423,41 @@ class TestValidateController(TestController):
         assert '"privacyIDEA.Count": 8' in response
         assert '"privacyIDEA.FailCount": 0' in response
 
-
         self.removeTokenBySerial("F722362")
 
     def test_samlcheck(self):
         """
         Test the /validate/samlcheck
         """
-        parameters = {
-                      "serial"  : "saml0001",
-                      "otpkey"  : "AD8EABE235FC57C815B26CEF3709075580B44738",
-                      "user"    : "root",
-                      "pin"     : "test",
-                      "type"    : "spass"
+        parameters = {"serial": "saml0001",
+                      "otpkey": "AD8EABE235FC57C815B26CEF3709075580B44738",
+                      "user": "samluser",
+                      "pin": "test",
+                      "type": "spass"
                       }
 
-        response = self.app.get(url(controller='admin', action='init'), params=parameters)
+        response = self.app.get(url(controller='admin', action='init'),
+                                params=parameters)
         assert '"value": true' in response
 
-        parameters = {"allowSamlAttributes" : "True"}
-        response = self.app.get(url(controller='system', action='setConfig'), params=parameters)
+        parameters = {"allowSamlAttributes": "True"}
+        response = self.app.get(url(controller='system', action='setConfig'),
+                                params=parameters)
 
-        parameters = {"user": "root", "pass": "test"}
-        response = self.app.get(url(controller='validate', action='samlcheck'), params=parameters)
-        #log.error("response %s\n",response)
+        parameters = {"user": "samluser", "pass": "test"}
+        response = self.app.get(url(controller='validate', action='samlcheck'),
+                                params=parameters)
+        print response
         # Test response...
         if '"auth": true' not in response:
             log.error(response)
         assert '"auth": true' in response
-        assert '"username": "root"' in response
+        assert '"username": "samluser"' in response
+        assert '"surname": "Schenk",' in response
+        assert '"mobile": " +4917011111",' in response
+        assert '"phone": " 0897777",' in response
+        assert '"givenname": "Heinz",' in response
+        assert '"email": " h.schenk@witzig.com"' in response
 
         self.removeTokenBySerial("saml0001")
 

@@ -335,7 +335,6 @@ class ValidateController(BaseController):
         finally:
             Session.close()
 
-            
     @log_with(log)
     def check_url(self, action, **params):
         '''
@@ -380,12 +379,12 @@ class ValidateController(BaseController):
         finally:
             Session.close()
 
-
     @log_with(log)
     def samlcheck(self, action, **params):
         '''
-        This function is used to validate the username and the otp value/password
-        in a SAML environment. If ``privacyidea.allowSamlAttributes = True``
+        This function is used to validate the username and the otp
+        value/password in a SAML environment.
+        If ``privacyidea.allowSamlAttributes = True``
         then the attributes of the authenticated users are also contained
         in the response.
 
@@ -394,7 +393,8 @@ class ValidateController(BaseController):
 
         arguments:
             * user:    username / loginname
-            * pass:    the password that consists of a possible fixes password component and the OTP value
+            * pass:    the password that consists of a possible fixes password
+                       component and the OTP value
             * realm:   optional realm to match the user to a useridresolver
 
         returns:
@@ -412,13 +412,13 @@ class ValidateController(BaseController):
                 try:
                     allowSAML = getFromConfig("allowSamlAttributes")
                 except:
-                    log.warning("Calling controller samlcheck. But allowSamlAttributes == False.")
-                if "True" == allowSAML:
-                    ## Now we get the attributes of the user
+                    log.warning("Calling controller samlcheck. "
+                                "But allowSamlAttributes == False.")
+                if allowSAML:
+                    # Now we get the attributes of the user
                     user = getUserFromParam(param, optional)
                     (uid, resId, resIdC) = getUserId(user)
                     userInfo = getUserInfo(uid, resId, resIdC)
-                    #users   = getUserList({ 'username':user.getUser()} , user)
                     log.debug("getting attributes for: %s@%s"
                               % (user.getUser(), user.getRealm()))
 
@@ -433,7 +433,10 @@ class ValidateController(BaseController):
                             attributes[key] = res[key]
 
             Session.commit()
-            return sendResult(response, { 'auth': ok, 'attributes' : attributes } , 0, opt)
+            return sendResult(response, {'auth': ok,
+                                         'attributes': attributes},
+                              0,
+                              opt)
 
         except Exception as exx:
             log.error("validate/check failed: %r" % exx)
@@ -458,7 +461,7 @@ class ValidateController(BaseController):
             passw = getParam(param, "pass", required)
 
             transid = param.get('state', None)
-            if transid is not  None:
+            if transid is not None:
                 param['transactionid'] = transid
                 del param['state']
 

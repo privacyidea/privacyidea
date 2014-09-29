@@ -1,3 +1,9 @@
+privacyidea (1.4~dev2-1) trusty; urgency=low
+
+  * Add simplesamlphp module and deb package
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 29 Sep 2014 11:40:00 +0200
+
 privacyidea (1.4~dev1-1) trusty; urgency=low
 
   * Fixed the session timeout bug in the management UI

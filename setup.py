@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+VERSION = "1.4dev2"
 try:
     from setuptools import setup, find_packages
 except ImportError:
@@ -38,7 +39,7 @@ def get_package():
 
 setup(
     name='privacyIDEA',
-    version='1.4dev1',
+    version=VERSION,
     description='privacyIDEA: identity, multifactor authentication, '
                 'authorization, audit',
     author='privacyidea.org',
