@@ -168,3 +168,48 @@ function create_initial_realm() {
 	        }
 	    });
 }
+
+
+function get_realms(){
+    var realms = new Array();
+    var resp = $.ajax({
+        	url: '/system/getRealms',
+        	async: false,
+        	data: { 'session':getsession()},
+        	type: "POST"
+    	}).responseText;
+    var data = jQuery.parseJSON(resp);
+	for (var i in data.result.value) {
+		realms.push(i);
+    };
+    return realms;
+}
+
+function ask_autocreate_realm() {
+	var realms = get_realms();
+	var cook = get_cookie("privacyidea_autocreate");
+	if ((realms.length == 0) && (cook == "")) {
+		$dialog_autocreate_realm.dialog('open');
+	}
+}
+
+function get_cookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0; i<ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1);
+        if (c.indexOf(name) != -1) return c.substring(name.length,c.length);
+    }
+    return "";
+}
+
+function autocreate_realm(answer) {
+	var remember = $('#cb_autocreate_realm').is(':checked');
+	if (remember == true) {
+		document.cookie="privacyidea_autocreate=done";
+	}
+	if (answer == "yes") {
+		create_initial_realm();
+	}
+}

@@ -1,3 +1,9 @@
+privacyidea (1.4~dev3-1) trusty; urgency=low
+
+  * Add helper dialog to setup first realm
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Tue, 30 Sep 2014 11:10:00 +0200
+
 privacyidea (1.4~dev2-1) trusty; urgency=low
 
   * Add simplesamlphp module and deb package

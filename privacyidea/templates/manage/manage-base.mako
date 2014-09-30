@@ -63,8 +63,12 @@
             <li><a href='#' id='menu_tools_getserial'>${_("Get Serial by OTP")}</a></li>
             <li><a href='#' id='menu_tools_copytokenpin'>${_("Copy Token PIN")}</a></li>
             <li><a href='#' id='menu_tools_checkpolicy'>${_("Check Policy")}</a></li>
-            <li><a href='#' id='menu_tools_exporttoken'>${_("Export Token information")}</a></li>
-            <li><a href='#' id='menu_tools_exportaudit'>${_("Export Audit information")}</a></li>
+            <li><a href="#">${_("Export")}</a>
+            	<ul>
+            	<li><a href='#' id='menu_tools_exporttoken'>${_("Token information")}</a></li>
+            	<li><a href='#' id='menu_tools_exportaudit'>${_("Audit information")}</a></li>
+            	</ul>
+            </li>
             <li><a href='#' id='menu_tools_init'>${_("Create default realm with local users")}</a></li>
         </ul>
     </li>
@@ -1450,7 +1454,6 @@ function translate_about_dialog() {
 
 <!-- ################ dialog file resolver #################### -->
 
-
 <div id="dialog_file_resolver">
 	<div style="float:right">
 	<a href='${c.help_url}/configuration/useridresolvers.html#flatfile-resolver' target="_blank">
@@ -1472,6 +1475,44 @@ function translate_about_dialog() {
 	}
 </script>
 
+<!--  ################## dialog create default realm ################## -->
+
+<div id="dialog_autocreate_realm">
+	<div style="float:right">
+	<a href='${c.help_url}/configuration/realms.html#autocreate-realm' target="_blank">	
+	<img alt="(?)" width=24
+	src="/images/help32.png"  
+	title='${_("Open help on auto creating default realm")}'>
+	</a>
+	</div>
+	<form class="cmxform" id="form_autocreate_realm">
+		<p>
+		${_("""You have no user realm configured, yet. You will not be able 
+		       to assign tokens to users. If you wish to, the system can create a 
+		       default realm for you with the local users on the server.""")}
+		</p>
+		<p>
+		${_("""To learn more about realms and resolvers, click the question mark
+			   in the green circle.""")}
+		</p>
+		<p>
+		<br>
+		${_("Shall the system create this realm?")}
+		</p>
+		<p>
+		<input type=checkbox id=cb_autocreate_realm 
+		       name=cb_autocreate_realm value="remember"> 
+		       ${_("Do not ask again.")}
+		</p>
+	</form>
+</div>
+<script>
+	function translate_dialog_autocreate_realm() {
+		$("#dialog_autocreate_realm").dialog( "option", "title", '${_("Create default realm")}' );
+		$('#button_autocreate_realm_yes .ui-button-text').html('${_("Create realm")}');
+		$('#button_autocreate_realm_no .ui-button-text').html('${_("No")}');
+	}
+</script>
 
 <!-- ################ Alert ################################### -->
 <div id="all_alerts" style="display:none; height:0px;">

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-VERSION = "1.4dev2"
+VERSION = "1.4dev3"
 try:
     from setuptools import setup, find_packages
 except ImportError:

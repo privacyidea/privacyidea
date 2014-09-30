@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: privacyIDEA 1.4dev2\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2014-09-29 18:07+0200\n"
+"POT-Creation-Date: 2014-09-30 10:35+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1026,7 +1026,7 @@ msgid "OCRA2 challenge timeout"
 msgstr ""
 
 #: privacyidea/lib/tokens/ocra2token.mako:17
-#: privacyidea/templates/manage/manage-base.mako:246
+#: privacyidea/templates/manage/manage-base.mako:250
 msgid ""
 "After this time a challenge can not be used anymore. Valid entries are like "
 "1D, 2H or 5M where D=day, H=hour, M=minute."
@@ -1568,7 +1568,7 @@ msgid "enroll yubico token"
 msgstr ""
 
 #: privacyidea/templates/auth-base.mako:34
-#: privacyidea/templates/manage/manage-base.mako:222
+#: privacyidea/templates/manage/manage-base.mako:226
 msgid "Authentication"
 msgstr ""
 
@@ -1688,7 +1688,7 @@ msgid "password/PIN"
 msgstr ""
 
 #: privacyidea/templates/auth3.mako:34
-#: privacyidea/templates/manage/manage-base.mako:484
+#: privacyidea/templates/manage/manage-base.mako:488
 msgid "OTP value"
 msgstr ""
 
@@ -1701,7 +1701,7 @@ msgid "Open help on machines"
 msgstr ""
 
 #: privacyidea/templates/manage/machines.mako:21
-#: privacyidea/templates/manage/manage-base.mako:1432
+#: privacyidea/templates/manage/manage-base.mako:1436
 msgid "Delete machine"
 msgstr ""
 
@@ -1823,95 +1823,101 @@ msgid "Get Serial by OTP"
 msgstr ""
 
 #: privacyidea/templates/manage/manage-base.mako:64
-#: privacyidea/templates/manage/manage-base.mako:611
+#: privacyidea/templates/manage/manage-base.mako:615
 msgid "Copy Token PIN"
 msgstr ""
 
 #: privacyidea/templates/manage/manage-base.mako:65
-#: privacyidea/templates/manage/manage-base.mako:535
-#: privacyidea/templates/manage/manage-base.mako:536
+#: privacyidea/templates/manage/manage-base.mako:539
+#: privacyidea/templates/manage/manage-base.mako:540
 msgid "Check Policy"
 msgstr ""
 
 #: privacyidea/templates/manage/manage-base.mako:66
-msgid "Export Token information"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:67
-msgid "Export Audit information"
+#: privacyidea/templates/manage/manage-base.mako:565
+#: privacyidea/templates/manage/manage-base.mako:593
+msgid "Export"
 msgstr ""
 
 #: privacyidea/templates/manage/manage-base.mako:68
+msgid "Token information"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:69
+msgid "Audit information"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:72
 msgid "Create default realm with local users"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:71
+#: privacyidea/templates/manage/manage-base.mako:75
 msgid "Import Token File"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:73
+#: privacyidea/templates/manage/manage-base.mako:77
 msgid "SafeNet/ Aladdin XML"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:74
+#: privacyidea/templates/manage/manage-base.mako:78
 msgid "OATH csv"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:75
+#: privacyidea/templates/manage/manage-base.mako:79
 msgid "Yubikey csv"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:82
+#: privacyidea/templates/manage/manage-base.mako:86
 msgid "Help"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:84
+#: privacyidea/templates/manage/manage-base.mako:88
 msgid "Online Help"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:85
+#: privacyidea/templates/manage/manage-base.mako:89
 msgid "About"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:91
+#: privacyidea/templates/manage/manage-base.mako:95
 #: privacyidea/templates/selfservice/base.mako:51
 msgid "Selfservice"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:92
+#: privacyidea/templates/manage/manage-base.mako:96
 #: privacyidea/templates/selfservice/base.mako:47
 msgid "Logout"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:98
+#: privacyidea/templates/manage/manage-base.mako:102
 msgid "You need to enable Javascript to use the privacyIDEA Management Web UI."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:103
+#: privacyidea/templates/manage/manage-base.mako:107
 #: privacyidea/templates/selfservice/base.mako:56
 msgid "Communicating with privacyIDEA server..."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:132
+#: privacyidea/templates/manage/manage-base.mako:136
 msgid "Contact"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:133
+#: privacyidea/templates/manage/manage-base.mako:137
 msgid "License"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:137
+#: privacyidea/templates/manage/manage-base.mako:141
 msgid ""
 "privacyIDEA is a modular authentication system. Originally for OTP  \n"
 "authentication devices. But other >>devices<< like challenge response \n"
 "and SSH keys are coming up."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:140
+#: privacyidea/templates/manage/manage-base.mako:144
 msgid "Openness and Transparency"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:142
+#: privacyidea/templates/manage/manage-base.mako:146
 msgid ""
 "privacyIDEA tries to be open in many ways. We try to provide best "
 "transparency:\n"
@@ -1924,7 +1930,7 @@ msgid ""
 "Yes, code breaks and tests fail."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:150
+#: privacyidea/templates/manage/manage-base.mako:154
 msgid ""
 "privacyIDEA is not ruled by a single company\n"
 "(although at the moment only one company is involved).\n"
@@ -1932,858 +1938,263 @@ msgid ""
 " one single, revenue driven decision maker."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:157
+#: privacyidea/templates/manage/manage-base.mako:161
 msgid "Read more about the name privacyIDEA"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:160
+#: privacyidea/templates/manage/manage-base.mako:164
 msgid "privacyIDEA is a fork of LinOTP"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:161
+#: privacyidea/templates/manage/manage-base.mako:165
 msgid "(c) 2010-2014 LSE Leading Security Experts GmbH"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:169
+#: privacyidea/templates/manage/manage-base.mako:173
 msgid "The complete code is licensed under AGPLv3."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:177
+#: privacyidea/templates/manage/manage-base.mako:181
 msgid "About privacyIDEA"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:178
+#: privacyidea/templates/manage/manage-base.mako:182
 msgid "close"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:186
+#: privacyidea/templates/manage/manage-base.mako:190
 msgid "Settings"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:187
+#: privacyidea/templates/manage/manage-base.mako:191
 msgid "Token defaults"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:188
+#: privacyidea/templates/manage/manage-base.mako:192
 msgid "GUI settings"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:195
-#: privacyidea/templates/manage/manage-base.mako:255
-#: privacyidea/templates/manage/manage-base.mako:299
+#: privacyidea/templates/manage/manage-base.mako:199
+#: privacyidea/templates/manage/manage-base.mako:259
+#: privacyidea/templates/manage/manage-base.mako:303
 msgid "Open help on system settings"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:200
+#: privacyidea/templates/manage/manage-base.mako:204
 msgid "splitAtSign"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:202
+#: privacyidea/templates/manage/manage-base.mako:206
 msgid "This will use the part right of an @-sign as realm"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:203
+#: privacyidea/templates/manage/manage-base.mako:207
 msgid "Return SAML Attributes"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:205
+#: privacyidea/templates/manage/manage-base.mako:209
 msgid "The /validate/samlcheck controller will also return user attributes"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:206
+#: privacyidea/templates/manage/manage-base.mako:210
 msgid "FailCounterIncOnFalsePin"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:208
+#: privacyidea/templates/manage/manage-base.mako:212
 msgid "This will increase the failcounter, if the user provided a wrong PIN."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:209
+#: privacyidea/templates/manage/manage-base.mako:213
 msgid "PrependPin"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:211
+#: privacyidea/templates/manage/manage-base.mako:215
 msgid ""
 "This will prepend the PIN to the OTP value. Otherwise the PIN will be "
 "appended."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:212
+#: privacyidea/templates/manage/manage-base.mako:216
 msgid "Auto resync"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:214
+#: privacyidea/templates/manage/manage-base.mako:218
 msgid "This will automatically resync OTP counter of HMAC based tokens."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:215
+#: privacyidea/templates/manage/manage-base.mako:219
 msgid "Auto resync timeout"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:217
+#: privacyidea/templates/manage/manage-base.mako:221
 msgid ""
 "The time in which the two successive OTP values need to be entered (in "
 "seconds)"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:224
+#: privacyidea/templates/manage/manage-base.mako:228
 msgid "Pass on user not found"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:226
+#: privacyidea/templates/manage/manage-base.mako:230
 msgid ""
 "If checked, users who are not found in the useridresolvers are authenticated "
 "successfully. USE WITH CAUTION!"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:227
+#: privacyidea/templates/manage/manage-base.mako:231
 msgid "Pass on user no token"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:229
+#: privacyidea/templates/manage/manage-base.mako:233
 msgid ""
 "If checked, users who have no token get authenticated automatically "
 "successful. USE WITH CAUTION!"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:233
+#: privacyidea/templates/manage/manage-base.mako:237
 msgid "Authorization"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:234
+#: privacyidea/templates/manage/manage-base.mako:238
 msgid "Override Authentication client"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:236
+#: privacyidea/templates/manage/manage-base.mako:240
 msgid ""
 "This is a comma separated list of clients, that may send another client IP "
 "for authorization policies."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:239
-#: privacyidea/templates/manage/manage-base.mako:283
+#: privacyidea/templates/manage/manage-base.mako:243
+#: privacyidea/templates/manage/manage-base.mako:287
 msgid "OCRA settings"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:241
+#: privacyidea/templates/manage/manage-base.mako:245
 msgid "maximum concurrent OCRA challenges"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:243
+#: privacyidea/templates/manage/manage-base.mako:247
 msgid "This is the maximum concurrent challenges per OCRA Token."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:244
+#: privacyidea/templates/manage/manage-base.mako:248
 msgid "OCRA challenge timeout"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:259
+#: privacyidea/templates/manage/manage-base.mako:263
 msgid "Misc settings"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:261
+#: privacyidea/templates/manage/manage-base.mako:265
 msgid "DefaultResetFailCount"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:263
+#: privacyidea/templates/manage/manage-base.mako:267
 msgid "Will reset the fail counter when the user authenticated successfully"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:264
+#: privacyidea/templates/manage/manage-base.mako:268
 msgid "DefaultMaxFailCount"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:266
+#: privacyidea/templates/manage/manage-base.mako:270
 msgid "This is the maximum allowed failed logins for a new enrolled token."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:267
+#: privacyidea/templates/manage/manage-base.mako:271
 msgid "DefaultSyncWindow"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:269
+#: privacyidea/templates/manage/manage-base.mako:273
 msgid "A new token will have this windows to do the manual or automatic OTP sync."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:270
+#: privacyidea/templates/manage/manage-base.mako:274
 msgid "DefaultOtpLen"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:272
+#: privacyidea/templates/manage/manage-base.mako:276
 msgid "A new token will be set to this OTP length."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:273
+#: privacyidea/templates/manage/manage-base.mako:277
 msgid "DefaultCountWindow"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:275
+#: privacyidea/templates/manage/manage-base.mako:279
 msgid "This is the default look ahead window for counter based tokens."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:276
+#: privacyidea/templates/manage/manage-base.mako:280
 msgid "DefaultChallengeValidityTime"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:278
+#: privacyidea/templates/manage/manage-base.mako:282
 msgid "Default validity timeframe of a challenge."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:285
+#: privacyidea/templates/manage/manage-base.mako:289
 msgid "default OCRA suite"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:287
+#: privacyidea/templates/manage/manage-base.mako:291
 msgid ""
 "This is the suite for newly enrolled OCRA tokens. Default is OCRA-1:HOTP-"
 "SHA256-8:C-QA08"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:288
+#: privacyidea/templates/manage/manage-base.mako:292
 msgid "default QR suite"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:290
+#: privacyidea/templates/manage/manage-base.mako:294
 msgid ""
 "This is the suite for newly enrolled QR tokens. Default is OCRA-1:HOTP-"
 "SHA256-6:C-QA64"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:303
+#: privacyidea/templates/manage/manage-base.mako:307
 msgid "Selfservice portal"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:305
+#: privacyidea/templates/manage/manage-base.mako:309
 msgid "display realm select box"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:307
+#: privacyidea/templates/manage/manage-base.mako:311
 msgid ""
 "If checked a realm dropdown box will be displayed on the selfservice portal "
 "logon page."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:317
+#: privacyidea/templates/manage/manage-base.mako:321
 msgid "System config"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:318
-#: privacyidea/templates/manage/manage-base.mako:343
+#: privacyidea/templates/manage/manage-base.mako:322
+#: privacyidea/templates/manage/manage-base.mako:347
 msgid "Save config"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:319
-#: privacyidea/templates/manage/manage-base.mako:344
-#: privacyidea/templates/manage/manage-base.mako:387
-#: privacyidea/templates/manage/manage-base.mako:460
-#: privacyidea/templates/manage/manage-base.mako:650
-#: privacyidea/templates/manage/manage-base.mako:690
-#: privacyidea/templates/manage/manage-base.mako:723
-#: privacyidea/templates/manage/manage-base.mako:751
-#: privacyidea/templates/manage/manage-base.mako:772
-#: privacyidea/templates/manage/manage-base.mako:796
-#: privacyidea/templates/manage/manage-base.mako:816
-#: privacyidea/templates/manage/manage-base.mako:838
-#: privacyidea/templates/manage/manage-base.mako:856
-#: privacyidea/templates/manage/manage-base.mako:925
-#: privacyidea/templates/manage/manage-base.mako:960
-#: privacyidea/templates/manage/manage-base.mako:975
-#: privacyidea/templates/manage/manage-base.mako:1019
-#: privacyidea/templates/manage/manage-base.mako:1053
-#: privacyidea/templates/manage/manage-base.mako:1058
-#: privacyidea/templates/manage/manage-base.mako:1063
-#: privacyidea/templates/manage/manage-base.mako:1068
-#: privacyidea/templates/manage/manage-base.mako:1073
-#: privacyidea/templates/manage/manage-base.mako:1078
-#: privacyidea/templates/manage/manage-base.mako:1083
-#: privacyidea/templates/manage/manage-base.mako:1088
-#: privacyidea/templates/manage/manage-base.mako:1093
-#: privacyidea/templates/manage/manage-base.mako:1098
-#: privacyidea/templates/manage/manage-base.mako:1103
-#: privacyidea/templates/manage/manage-base.mako:1108
-#: privacyidea/templates/manage/manage-base.mako:1113
-#: privacyidea/templates/manage/manage-base.mako:1118
-#: privacyidea/templates/manage/manage-base.mako:1123
-#: privacyidea/templates/manage/manage-base.mako:1128
-#: privacyidea/templates/manage/manage-base.mako:1133
-#: privacyidea/templates/manage/manage-base.mako:1138
-#: privacyidea/templates/manage/manage-base.mako:1166
-#: privacyidea/templates/manage/manage-base.mako:1184
-#: privacyidea/templates/manage/manage-base.mako:1199
-#: privacyidea/templates/manage/manage-base.mako:1214
-#: privacyidea/templates/manage/manage-base.mako:1225
-#: privacyidea/templates/manage/manage-base.mako:1240
-#: privacyidea/templates/manage/manage-base.mako:1433
-#: privacyidea/templates/manage/manage-base.mako:1447
-msgid "Cancel"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:342
-msgid "Tokentype Configuration"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:352
-msgid "You may reset the PINs for the tokens"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:361
-msgid "PIN type"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:374
-msgid "PIN (again)"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:385
-#: privacyidea/templates/manage/manage-base.mako:386
-msgid "Set PIN"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:396
-msgid "The token will be enrolled for user"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:402
-msgid "Currently this token will not be assigned to any users."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:403
-msgid "[?]"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:408
-msgid ""
-"If you select one user, this token will be automatically assigned to this "
-"user. Anyhow, you can assign this token to any user later on."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:413
-msgid ""
-"You selected more than one user. If you want to assign the token to a user "
-"during enrollment, you need to select only one user.  Anyhow, you can assign "
-"this token to any user later on."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:421
-msgid "Token type"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:423
-msgid "OCRA - challenge/response Token"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:438
-msgid "Please enter or copy the OCRA key."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:440
-msgid "OCRA key"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:444
-msgid "Generate OCRA key."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:458
-msgid "Enroll token"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:459
-msgid "Enroll"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:471
-msgid "Open help on getting serial"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:474
-msgid ""
-"Here you can search for the serial of a token.You need to enter the current "
-"OTP value, and choose where you want to search for this token."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:476
-msgid "Beware: This can be time consuming!"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:477
-#: privacyidea/templates/manage/manage-base.mako:1233
-msgid "Type"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:478
-msgid "Assigned Token"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:480
-msgid "assigned"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:481
-msgid "not assigned"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:483
-#: privacyidea/templates/manage/policies.mako:52
-#: privacyidea/templates/selfservice/login.mako:53
-msgid "Realm"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:489
-msgid "Get Serial by OTP value"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:490
-msgid "Get Serial"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:491
-#: privacyidea/templates/manage/manage-base.mako:537
-#: privacyidea/templates/manage/manage-base.mako:613
-#: privacyidea/templates/manage/manage-base.mako:880
-#: privacyidea/templates/manage/manage-base.mako:903
-#: privacyidea/templates/manage/manage-base.mako:1030
-#: privacyidea/templates/manage/manage-base.mako:1258
-msgid "Close"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:502
-msgid "Open help on Policy checker"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:505
-msgid "Here you can check your policies."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:506
-msgid ""
-"You can enter the corresponding values and the system will check, if there is"
-" any matching policy for this scenario."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:509
-msgid "scope"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:517
-msgid "realm"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:519
-msgid "action"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:521
-msgid "user"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:523
-msgid "client"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:527
-msgid "This action is allowed by the following policy:"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:528
-msgid "This action is not allowed by any policy!"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:548
-msgid "Open help on export token information"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:551
-msgid ""
-"Here you can export token information of the tokens you are allowed to view "
-"to a CSV file."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:552
-msgid ""
-"You can enter additional attributes, you defined in the user mapping in the "
-"UserIdResolver. These attributes will be added to the CSV file."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:560
-msgid "Export token information"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:561
-#: privacyidea/templates/manage/manage-base.mako:589
-msgid "Export"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:572
-msgid "Open help on export audit information"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:575
-msgid "Here you can export the audit information to a CSV file."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:576
-msgid "Number of audit entries to export"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:578
-msgid "Enter the number of audit entries you want to export."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:580
-msgid "Page to export"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:582
-msgid "Enter the page of the audit entries you want to export."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:588
-msgid "Export audit information"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:600
-msgid "Open help on Copy token PIN tool"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:603
-msgid "Here you can copy the OTP PIN from one token to the other."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:604
-msgid ""
-"Please enter the serial number of the token with the existing PIN and the "
-"serial number of the token, that should get the same PIN."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:605
-msgid "from token"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:606
-msgid "to token"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:612
-msgid "Copy PIN"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:625
-msgid "Open help on XML import"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:628
-msgid "Here you can upload the XML file that came with your SafeNet eToken PASS."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:629
-#: privacyidea/templates/manage/manage-base.mako:664
-#: privacyidea/templates/manage/manage-base.mako:711
-#: privacyidea/templates/manage/manage-base.mako:739
-#: privacyidea/templates/manage/manage-base.mako:760
-#: privacyidea/templates/manage/manage-base.mako:781
-#: privacyidea/templates/manage/manage-base.mako:806
-#: privacyidea/templates/manage/manage-base.mako:825
-msgid "Please choose the token file"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:632
-msgid "Hash Algorithm"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:634
-msgid "automatic detection"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:648
-msgid "Aladdin XML Token file"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:649
-#: privacyidea/templates/manage/manage-base.mako:689
-#: privacyidea/templates/manage/manage-base.mako:722
-#: privacyidea/templates/manage/manage-base.mako:750
-#: privacyidea/templates/manage/manage-base.mako:771
-#: privacyidea/templates/manage/manage-base.mako:795
-#: privacyidea/templates/manage/manage-base.mako:815
-#: privacyidea/templates/manage/manage-base.mako:837
-msgid "load token file"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:659
-msgid ""
-"Here you may upload the XML file of any OATH compliant OTP Token.The "
-"privacyIDEA server will automatically recognize if the token is an HOTP "
-"(event based) or a TOTP (time based) token. If the HMAC secrets are encrypted"
-" you either need - depending on the encryption - the password or the "
-"encryption key."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:670
-msgid ""
-"Check the serial numbers for OATH compliance (non-compliant serial numbers "
-"will be ignored)"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:675
-msgid "plain value"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:676
-msgid "preshared key"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:677
-msgid "password protected"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:688
-msgid "PSKC Key file"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:702
-msgid "Open help on OATH CSV import"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:705
-msgid ""
-"Here you can upload a csv file for your OATH token. The file is supposed to "
-"contain one token per line"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:706
-msgid "For HOTP and TOTP tokens:"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:707
-msgid "serial number, seed, type, otplen, timeStep"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:708
-msgid "For OCRA tokens:"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:709
-msgid "serial number, seed, type, ocrasuite"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:710
-msgid ""
-"type (default hotp), otplen (default 6), timeStep (default 30) and ocrasuite "
-"are optional."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:721
-msgid "OATH csv Token file"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:735
-msgid "Open help on Yubikey import"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:738
-msgid ""
-"Here you can upload a csv file for your Yubikey token. The file is supposed "
-"to contain one token per line"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:749
-msgid "Yubikey csv Token file"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:759
-msgid "Here you can upload the data file that came with your Tagespasswort tokens."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:770
-msgid "Tagespasswort Token file"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:780
-msgid "Here you can upload the data file that came with your eToken."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:794
-msgid "eToken dat file"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:805
-msgid "Here you can upload the XML file that came with your Feitian tokens."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:814
-msgid "Feitian XML Token file"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:824
-msgid "Here you can upload your Vasco dpx file."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:828
-#: privacyidea/templates/manage/manage-base.mako:1031
-msgid "OTP length"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:836
-msgid "Vasco dpx file"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:846
-msgid "Here you can import your policy file."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:847
-msgid "Please choose the policy file"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:854
-#: privacyidea/templates/manage/policies.mako:6
-msgid "Import policies"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:855
-msgid "Import policy file"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:868
-msgid "Open help on realms"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:871
-msgid "Create a new realm or select one available realm"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:876
-#: privacyidea/templates/manage/start.mako:8
-msgid "Realms"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:877
-#: privacyidea/templates/manage/manage-base.mako:900
-msgid "New"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:878
-#: privacyidea/templates/manage/manage-base.mako:901
-msgid "Edit"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:879
-#: privacyidea/templates/manage/manage-base.mako:902
-#: privacyidea/templates/manage/manage-base.mako:1224
-#: privacyidea/templates/manage/manage-base.mako:1239
-msgid "Delete"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:881
-msgid "Set Default"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:882
-msgid "Clear Default"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:891
-#: privacyidea/templates/manage/manage-base.mako:913
-msgid "Open help on UserIdResolvers"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:894
-msgid "Create a new or select one available UserIdResolver"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:899
-msgid "Resolver"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:916
-msgid "Which type of resolver do you want to create?"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:920
-msgid "Creating a new UserIdResolver"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:921
-msgid "LDAP"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:922
-msgid "SQL"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:923
-msgid "SCIM"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:924
-msgid "Flatfile"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:935
-msgid "Open help on Realms"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:938
-msgid "Here you can add or remove existing resolvers to the realm"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:941
-msgid "You are creating a new realm."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:942
-#: privacyidea/templates/manage/manage-base.mako:950
-msgid "You may add resolvers by holding down Ctrl-Key and left-clicking."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:943
-msgid "Realm name"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:948
-msgid "Here you may define the resolvers belonging to the realm"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:959
-msgid "Edit Realm"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:961
-#: privacyidea/templates/manage/manage-base.mako:1183
-msgid "Save"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:967
-msgid "The following tokens will be permanently deleted and can not be recovered."
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:973
-msgid "Delete selected tokens?"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:974
-msgid "Delete tokens"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:983
-#: privacyidea/templates/manage/manage-base.mako:998
-msgid "Enrolled the token"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:984
-#: privacyidea/templates/manage/manage-base.mako:999
-msgid "for user"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:991
-#: privacyidea/templates/manage/manage-base.mako:1005
-msgid "token enrollment"
-msgstr ""
-
-#: privacyidea/templates/manage/manage-base.mako:992
-#: privacyidea/templates/manage/manage-base.mako:1006
-#: privacyidea/templates/manage/manage-base.mako:1052
+#: privacyidea/templates/manage/manage-base.mako:323
+#: privacyidea/templates/manage/manage-base.mako:348
+#: privacyidea/templates/manage/manage-base.mako:391
+#: privacyidea/templates/manage/manage-base.mako:464
+#: privacyidea/templates/manage/manage-base.mako:654
+#: privacyidea/templates/manage/manage-base.mako:694
+#: privacyidea/templates/manage/manage-base.mako:727
+#: privacyidea/templates/manage/manage-base.mako:755
+#: privacyidea/templates/manage/manage-base.mako:776
+#: privacyidea/templates/manage/manage-base.mako:800
+#: privacyidea/templates/manage/manage-base.mako:820
+#: privacyidea/templates/manage/manage-base.mako:842
+#: privacyidea/templates/manage/manage-base.mako:860
+#: privacyidea/templates/manage/manage-base.mako:929
+#: privacyidea/templates/manage/manage-base.mako:964
+#: privacyidea/templates/manage/manage-base.mako:979
+#: privacyidea/templates/manage/manage-base.mako:1023
 #: privacyidea/templates/manage/manage-base.mako:1057
 #: privacyidea/templates/manage/manage-base.mako:1062
 #: privacyidea/templates/manage/manage-base.mako:1067
@@ -2801,749 +2212,1377 @@ msgstr ""
 #: privacyidea/templates/manage/manage-base.mako:1127
 #: privacyidea/templates/manage/manage-base.mako:1132
 #: privacyidea/templates/manage/manage-base.mako:1137
-#: privacyidea/templates/manage/manage-base.mako:1198
+#: privacyidea/templates/manage/manage-base.mako:1142
+#: privacyidea/templates/manage/manage-base.mako:1170
+#: privacyidea/templates/manage/manage-base.mako:1188
+#: privacyidea/templates/manage/manage-base.mako:1203
+#: privacyidea/templates/manage/manage-base.mako:1218
+#: privacyidea/templates/manage/manage-base.mako:1229
+#: privacyidea/templates/manage/manage-base.mako:1244
+#: privacyidea/templates/manage/manage-base.mako:1437
+#: privacyidea/templates/manage/manage-base.mako:1451
+msgid "Cancel"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:346
+msgid "Tokentype Configuration"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:356
+msgid "You may reset the PINs for the tokens"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:365
+msgid "PIN type"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:378
+msgid "PIN (again)"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:389
+#: privacyidea/templates/manage/manage-base.mako:390
+msgid "Set PIN"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:400
+msgid "The token will be enrolled for user"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:406
+msgid "Currently this token will not be assigned to any users."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:407
+msgid "[?]"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:412
+msgid ""
+"If you select one user, this token will be automatically assigned to this "
+"user. Anyhow, you can assign this token to any user later on."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:417
+msgid ""
+"You selected more than one user. If you want to assign the token to a user "
+"during enrollment, you need to select only one user.  Anyhow, you can assign "
+"this token to any user later on."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:425
+msgid "Token type"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:427
+msgid "OCRA - challenge/response Token"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:442
+msgid "Please enter or copy the OCRA key."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:444
+msgid "OCRA key"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:448
+msgid "Generate OCRA key."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:462
+msgid "Enroll token"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:463
+msgid "Enroll"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:475
+msgid "Open help on getting serial"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:478
+msgid ""
+"Here you can search for the serial of a token.You need to enter the current "
+"OTP value, and choose where you want to search for this token."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:480
+msgid "Beware: This can be time consuming!"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:481
+#: privacyidea/templates/manage/manage-base.mako:1237
+msgid "Type"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:482
+msgid "Assigned Token"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:484
+msgid "assigned"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:485
+msgid "not assigned"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:487
+#: privacyidea/templates/manage/policies.mako:52
+#: privacyidea/templates/selfservice/login.mako:53
+msgid "Realm"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:493
+msgid "Get Serial by OTP value"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:494
+msgid "Get Serial"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:495
+#: privacyidea/templates/manage/manage-base.mako:541
+#: privacyidea/templates/manage/manage-base.mako:617
+#: privacyidea/templates/manage/manage-base.mako:884
+#: privacyidea/templates/manage/manage-base.mako:907
+#: privacyidea/templates/manage/manage-base.mako:1034
+#: privacyidea/templates/manage/manage-base.mako:1262
+msgid "Close"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:506
+msgid "Open help on Policy checker"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:509
+msgid "Here you can check your policies."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:510
+msgid ""
+"You can enter the corresponding values and the system will check, if there is"
+" any matching policy for this scenario."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:513
+msgid "scope"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:521
+msgid "realm"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:523
+msgid "action"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:525
+msgid "user"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:527
+msgid "client"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:531
+msgid "This action is allowed by the following policy:"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:532
+msgid "This action is not allowed by any policy!"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:552
+msgid "Open help on export token information"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:555
+msgid ""
+"Here you can export token information of the tokens you are allowed to view "
+"to a CSV file."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:556
+msgid ""
+"You can enter additional attributes, you defined in the user mapping in the "
+"UserIdResolver. These attributes will be added to the CSV file."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:564
+msgid "Export token information"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:576
+msgid "Open help on export audit information"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:579
+msgid "Here you can export the audit information to a CSV file."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:580
+msgid "Number of audit entries to export"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:582
+msgid "Enter the number of audit entries you want to export."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:584
+msgid "Page to export"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:586
+msgid "Enter the page of the audit entries you want to export."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:592
+msgid "Export audit information"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:604
+msgid "Open help on Copy token PIN tool"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:607
+msgid "Here you can copy the OTP PIN from one token to the other."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:608
+msgid ""
+"Please enter the serial number of the token with the existing PIN and the "
+"serial number of the token, that should get the same PIN."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:609
+msgid "from token"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:610
+msgid "to token"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:616
+msgid "Copy PIN"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:629
+msgid "Open help on XML import"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:632
+msgid "Here you can upload the XML file that came with your SafeNet eToken PASS."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:633
+#: privacyidea/templates/manage/manage-base.mako:668
+#: privacyidea/templates/manage/manage-base.mako:715
+#: privacyidea/templates/manage/manage-base.mako:743
+#: privacyidea/templates/manage/manage-base.mako:764
+#: privacyidea/templates/manage/manage-base.mako:785
+#: privacyidea/templates/manage/manage-base.mako:810
+#: privacyidea/templates/manage/manage-base.mako:829
+msgid "Please choose the token file"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:636
+msgid "Hash Algorithm"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:638
+msgid "automatic detection"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:652
+msgid "Aladdin XML Token file"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:653
+#: privacyidea/templates/manage/manage-base.mako:693
+#: privacyidea/templates/manage/manage-base.mako:726
+#: privacyidea/templates/manage/manage-base.mako:754
+#: privacyidea/templates/manage/manage-base.mako:775
+#: privacyidea/templates/manage/manage-base.mako:799
+#: privacyidea/templates/manage/manage-base.mako:819
+#: privacyidea/templates/manage/manage-base.mako:841
+msgid "load token file"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:663
+msgid ""
+"Here you may upload the XML file of any OATH compliant OTP Token.The "
+"privacyIDEA server will automatically recognize if the token is an HOTP "
+"(event based) or a TOTP (time based) token. If the HMAC secrets are encrypted"
+" you either need - depending on the encryption - the password or the "
+"encryption key."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:674
+msgid ""
+"Check the serial numbers for OATH compliance (non-compliant serial numbers "
+"will be ignored)"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:679
+msgid "plain value"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:680
+msgid "preshared key"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:681
+msgid "password protected"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:692
+msgid "PSKC Key file"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:706
+msgid "Open help on OATH CSV import"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:709
+msgid ""
+"Here you can upload a csv file for your OATH token. The file is supposed to "
+"contain one token per line"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:710
+msgid "For HOTP and TOTP tokens:"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:711
+msgid "serial number, seed, type, otplen, timeStep"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:712
+msgid "For OCRA tokens:"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:713
+msgid "serial number, seed, type, ocrasuite"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:714
+msgid ""
+"type (default hotp), otplen (default 6), timeStep (default 30) and ocrasuite "
+"are optional."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:725
+msgid "OATH csv Token file"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:739
+msgid "Open help on Yubikey import"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:742
+msgid ""
+"Here you can upload a csv file for your Yubikey token. The file is supposed "
+"to contain one token per line"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:753
+msgid "Yubikey csv Token file"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:763
+msgid "Here you can upload the data file that came with your Tagespasswort tokens."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:774
+msgid "Tagespasswort Token file"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:784
+msgid "Here you can upload the data file that came with your eToken."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:798
+msgid "eToken dat file"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:809
+msgid "Here you can upload the XML file that came with your Feitian tokens."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:818
+msgid "Feitian XML Token file"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:828
+msgid "Here you can upload your Vasco dpx file."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:832
+#: privacyidea/templates/manage/manage-base.mako:1035
+msgid "OTP length"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:840
+msgid "Vasco dpx file"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:850
+msgid "Here you can import your policy file."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:851
+msgid "Please choose the policy file"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:858
+#: privacyidea/templates/manage/policies.mako:6
+msgid "Import policies"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:859
+msgid "Import policy file"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:872
+msgid "Open help on realms"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:875
+msgid "Create a new realm or select one available realm"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:880
+#: privacyidea/templates/manage/start.mako:8
+msgid "Realms"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:881
+#: privacyidea/templates/manage/manage-base.mako:904
+msgid "New"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:882
+#: privacyidea/templates/manage/manage-base.mako:905
+msgid "Edit"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:883
+#: privacyidea/templates/manage/manage-base.mako:906
+#: privacyidea/templates/manage/manage-base.mako:1228
+#: privacyidea/templates/manage/manage-base.mako:1243
+msgid "Delete"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:885
+msgid "Set Default"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:886
+msgid "Clear Default"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:895
+#: privacyidea/templates/manage/manage-base.mako:917
+msgid "Open help on UserIdResolvers"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:898
+msgid "Create a new or select one available UserIdResolver"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:903
+msgid "Resolver"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:920
+msgid "Which type of resolver do you want to create?"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:924
+msgid "Creating a new UserIdResolver"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:925
+msgid "LDAP"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:926
+msgid "SQL"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:927
+msgid "SCIM"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:928
+msgid "Flatfile"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:939
+msgid "Open help on Realms"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:942
+msgid "Here you can add or remove existing resolvers to the realm"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:945
+msgid "You are creating a new realm."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:946
+#: privacyidea/templates/manage/manage-base.mako:954
+msgid "You may add resolvers by holding down Ctrl-Key and left-clicking."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:947
+msgid "Realm name"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:952
+msgid "Here you may define the resolvers belonging to the realm"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:963
+msgid "Edit Realm"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:965
+#: privacyidea/templates/manage/manage-base.mako:1187
+msgid "Save"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:971
+msgid "The following tokens will be permanently deleted and can not be recovered."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:977
+msgid "Delete selected tokens?"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:978
+msgid "Delete tokens"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:987
+#: privacyidea/templates/manage/manage-base.mako:1002
+msgid "Enrolled the token"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:988
+#: privacyidea/templates/manage/manage-base.mako:1003
+msgid "for user"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:995
+#: privacyidea/templates/manage/manage-base.mako:1009
+msgid "token enrollment"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:996
+#: privacyidea/templates/manage/manage-base.mako:1010
+#: privacyidea/templates/manage/manage-base.mako:1056
+#: privacyidea/templates/manage/manage-base.mako:1061
+#: privacyidea/templates/manage/manage-base.mako:1066
+#: privacyidea/templates/manage/manage-base.mako:1071
+#: privacyidea/templates/manage/manage-base.mako:1076
+#: privacyidea/templates/manage/manage-base.mako:1081
+#: privacyidea/templates/manage/manage-base.mako:1086
+#: privacyidea/templates/manage/manage-base.mako:1091
+#: privacyidea/templates/manage/manage-base.mako:1096
+#: privacyidea/templates/manage/manage-base.mako:1101
+#: privacyidea/templates/manage/manage-base.mako:1106
+#: privacyidea/templates/manage/manage-base.mako:1111
+#: privacyidea/templates/manage/manage-base.mako:1116
+#: privacyidea/templates/manage/manage-base.mako:1121
+#: privacyidea/templates/manage/manage-base.mako:1126
+#: privacyidea/templates/manage/manage-base.mako:1131
+#: privacyidea/templates/manage/manage-base.mako:1136
+#: privacyidea/templates/manage/manage-base.mako:1141
+#: privacyidea/templates/manage/manage-base.mako:1202
 msgid "OK"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1012
+#: privacyidea/templates/manage/manage-base.mako:1016
 msgid "Token serial"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1013
+#: privacyidea/templates/manage/manage-base.mako:1017
 msgid ""
 "The token was lost? You may enroll a temporary token and automatically "
 "disable the lost token."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1017
+#: privacyidea/templates/manage/manage-base.mako:1021
 msgid "Lost Token"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1018
+#: privacyidea/templates/manage/manage-base.mako:1022
 msgid "Get temporary token"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1028
+#: privacyidea/templates/manage/manage-base.mako:1032
 #: privacyidea/templates/manage/tokenview.mako:4
 msgid "Token info"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1029
+#: privacyidea/templates/manage/manage-base.mako:1033
 msgid "Hashlib"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1032
+#: privacyidea/templates/manage/manage-base.mako:1036
 msgid "Counter Window"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1033
+#: privacyidea/templates/manage/manage-base.mako:1037
 msgid "Max Fail Counter"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1034
+#: privacyidea/templates/manage/manage-base.mako:1038
 msgid "Max Auth Count"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1035
+#: privacyidea/templates/manage/manage-base.mako:1039
 msgid "Max Successful Auth Count"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1036
-#: privacyidea/templates/manage/manage-base.mako:1081
-#: privacyidea/templates/manage/manage-base.mako:1101
+#: privacyidea/templates/manage/manage-base.mako:1040
+#: privacyidea/templates/manage/manage-base.mako:1085
+#: privacyidea/templates/manage/manage-base.mako:1105
 msgid "Validity start"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1037
-#: privacyidea/templates/manage/manage-base.mako:1086
-#: privacyidea/templates/manage/manage-base.mako:1106
+#: privacyidea/templates/manage/manage-base.mako:1041
+#: privacyidea/templates/manage/manage-base.mako:1090
+#: privacyidea/templates/manage/manage-base.mako:1110
 msgid "Validity end"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1038
+#: privacyidea/templates/manage/manage-base.mako:1042
 msgid "Sync Window"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1039
+#: privacyidea/templates/manage/manage-base.mako:1043
 msgid "Time Window"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1040
+#: privacyidea/templates/manage/manage-base.mako:1044
 msgid "Time Shift"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1041
+#: privacyidea/templates/manage/manage-base.mako:1045
 msgid "Time Step"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1051
+#: privacyidea/templates/manage/manage-base.mako:1055
 msgid "set Hashlib"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1056
+#: privacyidea/templates/manage/manage-base.mako:1060
 msgid "set OTP length"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1061
+#: privacyidea/templates/manage/manage-base.mako:1065
 msgid "set Counter Window"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1066
+#: privacyidea/templates/manage/manage-base.mako:1070
 msgid "set Max Failcount"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1071
-#: privacyidea/templates/manage/manage-base.mako:1091
+#: privacyidea/templates/manage/manage-base.mako:1075
+#: privacyidea/templates/manage/manage-base.mako:1095
 msgid "set Max Auth Count"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1076
-#: privacyidea/templates/manage/manage-base.mako:1096
+#: privacyidea/templates/manage/manage-base.mako:1080
+#: privacyidea/templates/manage/manage-base.mako:1100
 msgid "set Max Successful Auth Count"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1111
+#: privacyidea/templates/manage/manage-base.mako:1115
 msgid "Mobile phone number"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1116
+#: privacyidea/templates/manage/manage-base.mako:1120
 msgid "set Sync Window"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1121
+#: privacyidea/templates/manage/manage-base.mako:1125
 msgid "set Time Window"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1126
+#: privacyidea/templates/manage/manage-base.mako:1130
 msgid "set Time Shift"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1131
+#: privacyidea/templates/manage/manage-base.mako:1135
 msgid "set Time Step"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1136
+#: privacyidea/templates/manage/manage-base.mako:1140
 msgid "set Description"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1146
+#: privacyidea/templates/manage/manage-base.mako:1150
 msgid "You may resync the token:"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1147
+#: privacyidea/templates/manage/manage-base.mako:1151
 msgid "Therefor please enter two OTP values."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1164
+#: privacyidea/templates/manage/manage-base.mako:1168
 #: privacyidea/templates/manage/tokenview.mako:5
 #: privacyidea/templates/selfservice/base.mako:106
 msgid "Resync Token"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1165
+#: privacyidea/templates/manage/manage-base.mako:1169
 msgid "Resync"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1173
+#: privacyidea/templates/manage/manage-base.mako:1177
 msgid "Here you may define to which realms the token shall belong to:"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1175
+#: privacyidea/templates/manage/manage-base.mako:1179
 msgid "You may add realms by holding down Ctrl-Key and left-clicking."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1182
+#: privacyidea/templates/manage/manage-base.mako:1186
 msgid "Edit Realms of Token"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1190
+#: privacyidea/templates/manage/manage-base.mako:1194
 msgid "You may get OTP values for token:"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1191
+#: privacyidea/templates/manage/manage-base.mako:1195
 msgid "Enter the number, how many OTP values you want to retrieve:"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1197
+#: privacyidea/templates/manage/manage-base.mako:1201
 msgid "Get OTP values"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1205
+#: privacyidea/templates/manage/manage-base.mako:1209
 msgid "The following Tokens will be unassigned from the their users:"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1207
+#: privacyidea/templates/manage/manage-base.mako:1211
 msgid ""
 "The users will not be able to authenticate with this token anymore. Are you "
 "sure?"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1212
+#: privacyidea/templates/manage/manage-base.mako:1216
 msgid "Unassign selected tokens?"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1213
+#: privacyidea/templates/manage/manage-base.mako:1217
 msgid "Unassign"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1219
+#: privacyidea/templates/manage/manage-base.mako:1223
 msgid "Do you want to delete the realm"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1223
+#: privacyidea/templates/manage/manage-base.mako:1227
 msgid "Deleting realm"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1230
+#: privacyidea/templates/manage/manage-base.mako:1234
 msgid "Do you want to delete the resolver?"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1232
+#: privacyidea/templates/manage/manage-base.mako:1236
 msgid "Name"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1238
+#: privacyidea/templates/manage/manage-base.mako:1242
 msgid "Deleting resolver"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1247
+#: privacyidea/templates/manage/manage-base.mako:1251
 msgid "Token enrolled. Use the old PIN with the password new password."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1248
+#: privacyidea/templates/manage/manage-base.mako:1252
 msgid "The temporary token can be used till the end date."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1251
+#: privacyidea/templates/manage/manage-base.mako:1255
 msgid "Serial"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1252
-#: privacyidea/templates/manage/manage-base.mako:1348
+#: privacyidea/templates/manage/manage-base.mako:1256
+#: privacyidea/templates/manage/manage-base.mako:1352
 #: privacyidea/templates/selfservice/login.mako:65
 msgid "Password"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1253
+#: privacyidea/templates/manage/manage-base.mako:1257
 msgid "End date"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1257
+#: privacyidea/templates/manage/manage-base.mako:1261
 msgid "New temporary token"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1269
-#: privacyidea/templates/manage/manage-base.mako:1459
+#: privacyidea/templates/manage/manage-base.mako:1273
+#: privacyidea/templates/manage/manage-base.mako:1462
 msgid "Open help on LDAP resolver"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1273
-#: privacyidea/templates/manage/manage-base.mako:1336
-#: privacyidea/templates/manage/manage-base.mako:1398
-#: privacyidea/templates/manage/manage-base.mako:1463
+#: privacyidea/templates/manage/manage-base.mako:1277
+#: privacyidea/templates/manage/manage-base.mako:1340
+#: privacyidea/templates/manage/manage-base.mako:1402
+#: privacyidea/templates/manage/manage-base.mako:1466
 msgid "Resolver name"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1275
+#: privacyidea/templates/manage/manage-base.mako:1279
 msgid "Server-URI"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1279
+#: privacyidea/templates/manage/manage-base.mako:1283
 msgid "CA Certificate"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1281
+#: privacyidea/templates/manage/manage-base.mako:1285
 msgid "If you are using LDAPS you can enter the CA certificate in PEM format here."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1283
+#: privacyidea/templates/manage/manage-base.mako:1287
 msgid "BaseDN"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1285
+#: privacyidea/templates/manage/manage-base.mako:1289
 msgid "BindDN"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1287
+#: privacyidea/templates/manage/manage-base.mako:1291
 msgid "Bind Password"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1289
+#: privacyidea/templates/manage/manage-base.mako:1293
 msgid "Timeout"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1291
+#: privacyidea/templates/manage/manage-base.mako:1295
 msgid "Sizelimit"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1295
+#: privacyidea/templates/manage/manage-base.mako:1299
 msgid "No anonymous referral chasing"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1298
+#: privacyidea/templates/manage/manage-base.mako:1302
 msgid "LDAP attributes"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1299
+#: privacyidea/templates/manage/manage-base.mako:1303
 msgid "LoginName Attribute"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1301
+#: privacyidea/templates/manage/manage-base.mako:1305
 msgid "Searchfilter"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1303
+#: privacyidea/templates/manage/manage-base.mako:1307
 msgid "Userfilter"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1305
-#: privacyidea/templates/manage/manage-base.mako:1359
+#: privacyidea/templates/manage/manage-base.mako:1309
+#: privacyidea/templates/manage/manage-base.mako:1363
 msgid "Attribute mapping"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1307
+#: privacyidea/templates/manage/manage-base.mako:1311
 msgid "UID Type"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1310
-#: privacyidea/templates/manage/manage-base.mako:1320
+#: privacyidea/templates/manage/manage-base.mako:1314
+#: privacyidea/templates/manage/manage-base.mako:1324
 msgid "Preset AD"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1311
-#: privacyidea/templates/manage/manage-base.mako:1321
+#: privacyidea/templates/manage/manage-base.mako:1315
+#: privacyidea/templates/manage/manage-base.mako:1325
 msgid "Preset LDAP"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1313
-#: privacyidea/templates/manage/manage-base.mako:1376
-#: privacyidea/templates/manage/manage-base.mako:1413
+#: privacyidea/templates/manage/manage-base.mako:1317
+#: privacyidea/templates/manage/manage-base.mako:1380
+#: privacyidea/templates/manage/manage-base.mako:1417
 msgid "Testing connections..."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1314
-#: privacyidea/templates/manage/manage-base.mako:1319
+#: privacyidea/templates/manage/manage-base.mako:1318
+#: privacyidea/templates/manage/manage-base.mako:1323
 msgid "Test LDAP connection"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1318
+#: privacyidea/templates/manage/manage-base.mako:1322
 msgid "LDAP Resolver"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1332
+#: privacyidea/templates/manage/manage-base.mako:1336
 msgid "Open help on SQL resolver"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1335
+#: privacyidea/templates/manage/manage-base.mako:1339
 msgid "Server config"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1338
+#: privacyidea/templates/manage/manage-base.mako:1342
 msgid "Driver"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1340
+#: privacyidea/templates/manage/manage-base.mako:1344
 msgid "Server"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1342
+#: privacyidea/templates/manage/manage-base.mako:1346
 msgid "Port"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1344
+#: privacyidea/templates/manage/manage-base.mako:1348
 msgid "Database"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1346
+#: privacyidea/templates/manage/manage-base.mako:1350
 #: privacyidea/templates/manage/policies.mako:47
 msgid "User"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1352
-#: privacyidea/templates/manage/manage-base.mako:1353
+#: privacyidea/templates/manage/manage-base.mako:1356
+#: privacyidea/templates/manage/manage-base.mako:1357
 msgid "SQL attributes"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1355
+#: privacyidea/templates/manage/manage-base.mako:1359
 msgid "Database table"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1357
+#: privacyidea/templates/manage/manage-base.mako:1361
 msgid "Limit"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1361
+#: privacyidea/templates/manage/manage-base.mako:1365
 msgid "Where statement"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1363
+#: privacyidea/templates/manage/manage-base.mako:1367
 msgid "Database encoding"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1365
+#: privacyidea/templates/manage/manage-base.mako:1369
 msgid "Additional connection parameters"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1368
-#: privacyidea/templates/manage/manage-base.mako:1369
+#: privacyidea/templates/manage/manage-base.mako:1372
+#: privacyidea/templates/manage/manage-base.mako:1373
 msgid "Preset database attributes"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1370
+#: privacyidea/templates/manage/manage-base.mako:1374
 msgid "Wordpress"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1371
+#: privacyidea/templates/manage/manage-base.mako:1375
 msgid "OTRS"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1372
+#: privacyidea/templates/manage/manage-base.mako:1376
 msgid "Tine 2.0"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1373
+#: privacyidea/templates/manage/manage-base.mako:1377
 msgid "Owncloud"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1377
-#: privacyidea/templates/manage/manage-base.mako:1382
+#: privacyidea/templates/manage/manage-base.mako:1381
+#: privacyidea/templates/manage/manage-base.mako:1386
 msgid "Test SQL connection"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1381
+#: privacyidea/templates/manage/manage-base.mako:1385
 msgid "SQL Resolver"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1393
+#: privacyidea/templates/manage/manage-base.mako:1397
 msgid "Open help on SCIM resolver"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1397
+#: privacyidea/templates/manage/manage-base.mako:1401
 msgid "SCIM config"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1400
+#: privacyidea/templates/manage/manage-base.mako:1404
 msgid "URI auth server"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1402
+#: privacyidea/templates/manage/manage-base.mako:1406
 msgid "URI resource server"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1404
+#: privacyidea/templates/manage/manage-base.mako:1408
 #: privacyidea/templates/manage/policies.mako:57
 msgid "Client"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1406
+#: privacyidea/templates/manage/manage-base.mako:1410
 msgid "Secret"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1408
+#: privacyidea/templates/manage/manage-base.mako:1412
 msgid "Mapping"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1414
-#: privacyidea/templates/manage/manage-base.mako:1419
+#: privacyidea/templates/manage/manage-base.mako:1418
+#: privacyidea/templates/manage/manage-base.mako:1423
 msgid "Test SCIM connection"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1418
+#: privacyidea/templates/manage/manage-base.mako:1422
 msgid "SCIM Resolver"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1425
+#: privacyidea/templates/manage/manage-base.mako:1429
 msgid "The following machine with all assignments will be deleted."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1431
+#: privacyidea/templates/manage/manage-base.mako:1435
 msgid "Delete selected machine?"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1439
+#: privacyidea/templates/manage/manage-base.mako:1443
 msgid "The following application and token will be removed from the machine:"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1445
+#: privacyidea/templates/manage/manage-base.mako:1449
 msgid "Remove selected application?"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1446
+#: privacyidea/templates/manage/manage-base.mako:1450
 msgid "Remove application"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1462
+#: privacyidea/templates/manage/manage-base.mako:1465
 msgid "File configuration"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1465
+#: privacyidea/templates/manage/manage-base.mako:1468
 msgid "filename"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1471
+#: privacyidea/templates/manage/manage-base.mako:1474
 msgid "File Resolver"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1478
+#: privacyidea/templates/manage/manage-base.mako:1485
+msgid "Open help on auto creating default realm"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:1490
+msgid ""
+"You have no user realm configured, yet. You will not be able \n"
+"\t\t       to assign tokens to users. If you wish to, the system can create a"
+" \n"
+"\t\t       default realm for you with the local users on the server."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:1495
+msgid ""
+"To learn more about realms and resolvers, click the question mark\n"
+"\t\t\t   in the green circle."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:1500
+msgid "Shall the system create this realm?"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:1505
+msgid "Do not ask again."
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:1511
+msgid "Create default realm"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:1512
+msgid "Create realm"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:1513
+msgid "No"
+msgstr ""
+
+#: privacyidea/templates/manage/manage-base.mako:1519
 msgid "Resyncing of token failed"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1479
+#: privacyidea/templates/manage/manage-base.mako:1520
 msgid "Resynced token successfully"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1480
+#: privacyidea/templates/manage/manage-base.mako:1521
 msgid "set PIN successfully"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1481
+#: privacyidea/templates/manage/manage-base.mako:1522
 msgid "When displaying Token information you may only select one single Token."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1482
+#: privacyidea/templates/manage/manage-base.mako:1523
 msgid "When retrieving the token type you may only select one single Token."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1483
+#: privacyidea/templates/manage/manage-base.mako:1524
 msgid "Error: unknown tokentype in function token_enroll()"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1484
+#: privacyidea/templates/manage/manage-base.mako:1525
 msgid "Could not find a token for this OTP value."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1485
+#: privacyidea/templates/manage/manage-base.mako:1526
 msgid "Error finding a token to this OTP value."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1486
+#: privacyidea/templates/manage/manage-base.mako:1527
 msgid "Failed to communicate to privacyIDEA server"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1487
+#: privacyidea/templates/manage/manage-base.mako:1528
 msgid "unknown token type to load!"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1488
+#: privacyidea/templates/manage/manage-base.mako:1529
 msgid ""
 "Error saving SMS configuration. Please check your configuration and your "
 "server"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1489
+#: privacyidea/templates/manage/manage-base.mako:1530
 msgid ""
 "Error saving system configuration. Please check your configuration and your "
 "server"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1490
+#: privacyidea/templates/manage/manage-base.mako:1531
 msgid ""
 "Error saving system checkboxes configuration. Please check your configuration"
 " and your server"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1491
+#: privacyidea/templates/manage/manage-base.mako:1532
 msgid "Regexp error in realm. You need to select ONE realm to set it as default."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1492
+#: privacyidea/templates/manage/manage-base.mako:1533
 msgid "There is an error in the realm name!"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1493
+#: privacyidea/templates/manage/manage-base.mako:1534
 msgid "Policy set."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1494
+#: privacyidea/templates/manage/manage-base.mako:1535
 msgid "Policy name is not defined!"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1495
+#: privacyidea/templates/manage/manage-base.mako:1536
 msgid "Policy deleted."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1496
+#: privacyidea/templates/manage/manage-base.mako:1537
 msgid "Error fetching list!"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1497
+#: privacyidea/templates/manage/manage-base.mako:1538
 msgid "created token with serial"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1498
+#: privacyidea/templates/manage/manage-base.mako:1539
 msgid "losttoken failed"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1499
+#: privacyidea/templates/manage/manage-base.mako:1540
 msgid "set token PIN failed"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1500
+#: privacyidea/templates/manage/manage-base.mako:1541
 msgid "Error while fetching the tokentype"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1501
+#: privacyidea/templates/manage/manage-base.mako:1542
 msgid "Error creating token"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1502
+#: privacyidea/templates/manage/manage-base.mako:1543
 msgid "Failed"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1503
+#: privacyidea/templates/manage/manage-base.mako:1544
 msgid "Failed to import token"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1504
+#: privacyidea/templates/manage/manage-base.mako:1545
 msgid "Token import result"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1505
+#: privacyidea/templates/manage/manage-base.mako:1546
 msgid "Failed to import policies"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1506
+#: privacyidea/templates/manage/manage-base.mako:1547
 msgid "Policy import result"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1507
+#: privacyidea/templates/manage/manage-base.mako:1548
 msgid "Error saving ldap configuration."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1508
+#: privacyidea/templates/manage/manage-base.mako:1549
 msgid "Error saving realm configuration."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1509
+#: privacyidea/templates/manage/manage-base.mako:1550
 msgid "Realm created"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1510
+#: privacyidea/templates/manage/manage-base.mako:1551
 msgid "Error setting Token realms"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1511
+#: privacyidea/templates/manage/manage-base.mako:1552
 msgid "Error saving file configuration"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1512
+#: privacyidea/templates/manage/manage-base.mako:1553
 msgid "Error saving sql configuration"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1513
+#: privacyidea/templates/manage/manage-base.mako:1554
 msgid "Error saving SCIM configuration"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1514
+#: privacyidea/templates/manage/manage-base.mako:1555
 msgid "Resolver deleted successfully"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1515
+#: privacyidea/templates/manage/manage-base.mako:1556
 msgid "Failed deleting resolver"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1516
+#: privacyidea/templates/manage/manage-base.mako:1557
 msgid "Realm deleted"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1517
+#: privacyidea/templates/manage/manage-base.mako:1558
 msgid "Failed deleting Realm"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1518
+#: privacyidea/templates/manage/manage-base.mako:1559
 msgid "Error in regular expression for"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1519
+#: privacyidea/templates/manage/manage-base.mako:1560
 msgid "LDAP config seems to be OK! Number of users found"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1520
+#: privacyidea/templates/manage/manage-base.mako:1561
 msgid "Error loading LDAP resolver"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1521
+#: privacyidea/templates/manage/manage-base.mako:1562
 msgid "Error loading SQL resolver"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1522
+#: privacyidea/templates/manage/manage-base.mako:1563
 msgid "Error loading SCIM resolver"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1523
+#: privacyidea/templates/manage/manage-base.mako:1564
 msgid "SQL config seems to be OK! Number of users found"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1524
+#: privacyidea/templates/manage/manage-base.mako:1565
 msgid "SQL config contains errors"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1525
+#: privacyidea/templates/manage/manage-base.mako:1566
 msgid "SCIM config seems to be OK! Number of users found"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1526
+#: privacyidea/templates/manage/manage-base.mako:1567
 msgid "SCIM config contains errors"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1527
+#: privacyidea/templates/manage/manage-base.mako:1568
 msgid "Unknown PIN type"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1528
+#: privacyidea/templates/manage/manage-base.mako:1569
 msgid "You entered invalid data. Please check all the Tabs!"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1529
+#: privacyidea/templates/manage/manage-base.mako:1570
 msgid "Error occurred during processing"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1530
+#: privacyidea/templates/manage/manage-base.mako:1571
 msgid ""
 "You have defined UserIdResolvers. But you need to create at least one realm "
 "that contains some of your UserIdResolvers. The realm Dialog will now open to"
 " do this."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1531
+#: privacyidea/templates/manage/manage-base.mako:1572
 msgid "This realm is already the default realm."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1532
+#: privacyidea/templates/manage/manage-base.mako:1573
 msgid "Incorrect or missing input at"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1533
+#: privacyidea/templates/manage/manage-base.mako:1574
 msgid "Please have a look at each of the forms for more details."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1534
+#: privacyidea/templates/manage/manage-base.mako:1575
 msgid "Form Validation Error"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1535
+#: privacyidea/templates/manage/manage-base.mako:1576
 msgid ""
 "Please verify the presetted data. You might need to change the database table"
 " name."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1536
+#: privacyidea/templates/manage/manage-base.mako:1577
 msgid "SQL preset"
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1537
+#: privacyidea/templates/manage/manage-base.mako:1578
 msgid "Machine successfully deleted."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1538
+#: privacyidea/templates/manage/manage-base.mako:1579
 msgid "Application removed successfully from machine."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1539
+#: privacyidea/templates/manage/manage-base.mako:1580
 msgid "Machine created successfully."
 msgstr ""
 
-#: privacyidea/templates/manage/manage-base.mako:1540
+#: privacyidea/templates/manage/manage-base.mako:1581
 msgid "Machine name, serial and application must not be emptry!"
 msgstr ""
 

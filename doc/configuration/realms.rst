@@ -35,6 +35,8 @@ You can delete or edit an existing realm or create a new realm.
 Edit realm
 ..........
 
+.. index:: realm edit
+
 Each realm has to have a unique name. The name of the realm is 
 case insensitive. If you create a new realm with the same name
 like an existing realm, the existing realm gets overwritten.
@@ -44,4 +46,33 @@ You can click on the resolvers to mark it to be added to this realm.
 Holding the Ctrl-key while clicking lets you select multiple
 resolvers.
 
+.. _autocreate_realm:
 
+Autocreate realm
+................
+
+.. index:: realm autocreation
+
+.. figure:: images/ask-create-realm.png
+   :scale: 40 %
+
+If you have a fresh installation, no resolver and no realm is
+defined. To get you up and running faster, the system
+will ask you, if it should create the first realm for you.
+
+If you answer "yes", it will create a resolver named "deflocal"
+that contains all users from /etc/passwd and a realm named
+"defrealm" with this very resolver.
+
+Thus you can immediately start assigning and enrolling tokens.
+
+If you check "Do not ask again" this will be stored in 
+a cookie in your browser.
+
+.. note:: The realm "defrealm" will be the default realm. 
+   So if you create a new realm manually and want this new
+   realm to be the default realm, you need to set this new
+   realm to be default manually.
+
+.. note:: You can also create this local defrealm via the
+   menu at "Tools" -> "Create default realm with local users".

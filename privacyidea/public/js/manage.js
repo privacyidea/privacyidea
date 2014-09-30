@@ -87,6 +87,7 @@ var $dialog_setpin_token;
 var $dialog_view_temporary_token;
 var $dialog_import_policy;
 var $dialog_tokeninfo_set;
+var $dialog_autocreate_realm;
 
 var $tokentypes;
 
@@ -1354,20 +1355,6 @@ function fill_realms() {
 	return defaultRealm;
 }
 
-function get_realms(){
-    var realms = new Array();
-    var resp = $.ajax({
-        	url: '/system/getRealms',
-        	async: false,
-        	data: { 'session':getsession()},
-        	type: "POST"
-    	}).responseText;
-    var data = jQuery.parseJSON(resp);
-	for (var i in data.result.value) {
-		realms.push(i);
-    };
-    return realms;
-}
 
 // ####################################################
 //
@@ -1887,6 +1874,10 @@ function save_sql_config(){
 // ----------------------------------------------------------------
 //   Realms
 function realms_load(){
+	/*
+	 * This function is called, each time the realms are changed,
+	 * after a new realm is created or deleted.
+	 */
     g.realm_to_edit = "";
     show_waiting();
     $.post('/system/getRealms', { 'session': getsession() },
@@ -3820,27 +3811,41 @@ $(document).ready(function(){
     });
 
     init_machine_dialogs();
-
     fill_realms();
-
-    //$("#token_table").flexigrid();
-    //$("#user_table").flexigrid();
-	//$("#audit_table").flexigrid();
 
     // Log Div
     $("#logAccordion").accordion({
         fillSpace: true
     });
-    /*
-     $("#logAccordionResizer").resizable({
-     resize: function(){
-     $("#accordion").accordion("resize");
-     },
-     minHeight: 60
-     });
-     */
-
 	$('#do_waiting').click(reset_waiting());
+	
+	$dialog_autocreate_realm = $('#dialog_autocreate_realm').dialog({
+        autoOpen: false,
+        resizeable: true,
+        width: 600,
+        modal: true,
+        open: function(){
+        	translate_dialog_autocreate_realm();
+        	do_dialog_icons();
+        },
+        buttons: {
+            OK: {click: function(){
+                $(this).dialog('close');
+                autocreate_realm("yes");
+            	},
+				id: "button_autocreate_realm_yes",
+				text: "Create realm"
+				},
+            Cancel: {click: function(){            	
+                $(this).dialog('close');
+                autocreate_realm("no");
+            	},
+				id: "button_autocreate_realm_no",
+				text: "No"
+				}
+        }
+	});
+    ask_autocreate_realm();
 
 });
 //--------------------------------------------------------------------------------------

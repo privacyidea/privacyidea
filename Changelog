@@ -1,3 +1,11 @@
+Version 1.4, 2014-10-XX
+
+  * Add simplesamlphp module and deb package
+  * Add helper dialog to easily setup first realm
+  * Add QR enrollment of mOTP token (Token2)
+  * Fixed the session timeout bug in the management UI
+
+
 Version 1.3.2, 2014-09-22
 
  * Add uwsgi and nginx configuration
