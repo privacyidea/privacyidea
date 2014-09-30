@@ -30,6 +30,7 @@ clean:
 	rm -fr privacyidea/tests/testdata/data/
 	rm -fr DEBUILD
 	rm -fr RHBUILD
+	rm -fr cover
 	(cd doc; make clean)
 
 pypi:

@@ -24,7 +24,7 @@ else
 fi
 
 if [ "$NO_COVERAGE" == "0" ]; then
-	PARAM="$PARM --with-coverage --cover-package=privacyidea"
+	PARAM="$PARAM --with-coverage --cover-package=privacyidea"
 fi
 
 PARAM="$PARAM $ADD_PARAM"
