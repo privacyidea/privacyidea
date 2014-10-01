@@ -3,6 +3,7 @@ Version 1.4, 2014-10-XX
   * Add simplesamlphp module and deb package
   * Add helper dialog to easily setup first realm
   * Add QR enrollment of mOTP token (Token2)
+  * Add admin/checkserial policy
   * Fixed the session timeout bug in the management UI
 
 

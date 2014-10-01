@@ -122,7 +122,7 @@ class AdminController(BaseController):
             Session.commit()
             return request
 
-        except webob.exc.HTTPUnauthorized as acc:
+        except webob.exc.HTTPUnauthorized as acc:  # pragma: no cover
             # the exception, when an abort() is called if forwarded
             log.info("%r: webob.exception %r" % (action, acc))
             log.info(traceback.format_exc())
@@ -575,10 +575,7 @@ class AdminController(BaseController):
             serial = getParam(param, "serial", required)
 
             # check admin authorization
-            # try:
-            #    self.Policy.checkPolicyPre('admin', 'disable', param )
-            # except PolicyException as pe:
-            #    return sendError(response, str(pe), 1)
+            self.Policy.checkPolicyPre('admin', 'checkserial', param)
 
             log.info("checking serial %s" % serial)
             (unique, new_serial) = check_serial(serial)

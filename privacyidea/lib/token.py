@@ -2519,6 +2519,8 @@ def get_policy_definitions(scope=""):
                             'desc' : _('Admin is allowed to manage the realms of a token.')},
             'getserial': {'type': 'bool',
                           'desc' : _('Admin is allowed to retrieve a serial for a given OTP value.')},
+            'checkserial': {'type': 'bool',
+                            'desc': _('Admin is allowed to check if a serial is unique')},
             'copytokenpin': {'type': 'bool',
                              'desc' : _('Admin is allowed to copy the PIN of one token '
                                         'to another token.')},

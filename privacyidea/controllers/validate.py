@@ -457,6 +457,8 @@ class ValidateController(BaseController):
                                 'email']:
                         if key in res:
                             attributes[key] = res[key]
+                    attributes['realm'] = user.realm
+                    attributes['resolver'] = resId
 
             Session.commit()
             return sendResult(response, {'auth': ok,

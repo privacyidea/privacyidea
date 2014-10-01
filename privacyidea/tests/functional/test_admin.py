@@ -41,6 +41,31 @@ log = logging.getLogger(__name__)
 
 class TestAdminController(TestController):
 
+    def set_tmp_policy(self, action, user="*"):
+        parameters = {'name': 'tmp_admin_pol',
+                      'scope': 'admin',
+                      'realm': '*',
+                      'action': action,
+                      'user': user,
+                      'selftest_admin': 'superadmin'
+                      }
+
+        response = self.app.get(url(controller='system',
+                                    action='setPolicy'),
+                                params=parameters)
+        self.assertTrue('"setPolicy tmp_admin_pol"' in response, response)
+        
+    def del_tmp_policy(self, action):
+        parameters = {'name': 'tmp_admin_pol',
+                      'selftest_admin': 'superadmin'
+                      }
+
+        response = self.app.get(url(controller='system',
+                                    action='delPolicy'),
+                                params=parameters)
+        self.assertTrue('"status": true' in response, response)
+        self.assertTrue('delPolicy' in response, response)
+        
     def createToken3(self):
         parameters = {"serial": "003e808e",
                       "otpkey": "e56eb2bcbafb2eea9bce9463f550f86d587d6c71",
@@ -226,6 +251,19 @@ class TestAdminController(TestController):
         print response.headers
         assert(response.headers.get("Content-Disposition") ==
                "attachment; filename=privacyidea-tokendata.csv")
+        
+    def test_show_policy_fail(self):
+        '''
+        testing show with failing policy
+        '''
+        self.set_tmp_policy("show", user="superadmin")
+        response = self.app.get(url(controller='admin', action='show'),
+                                params={'selftest_admin': 'looser_admin'})
+        print response
+        assert '"status": false' in response
+        assert("ERR410: You do not have any rights in any realm! "
+               "Check the policies." in response)
+        self.del_tmp_policy("show")
 
     def test_show_with_realm(self):
         '''
@@ -325,6 +363,18 @@ class TestAdminController(TestController):
         self.assertTrue('"username": "remoteuser"' not in response, response)
         self.assertTrue('"username": "user1"' not in response, response)
         self.assertTrue('"username": "user2"' not in response, response)
+        
+    def test_unassign_policy_fail(self):
+        self.set_tmp_policy("unassign", user="superadmin")
+        response = self.app.get(url(controller='admin',
+                                    action='unassign'),
+                                params={'serial': 'S123456',
+                                        'selftest_admin': 'looser_admin'})
+        print response
+        assert '"status": false' in response
+        assert("ERR410: You do not have the administrative right to "
+               "unassign token S123456." in response)
+        self.del_tmp_policy("unassign")
 
     def test_resync(self):
 
@@ -377,7 +427,20 @@ class TestAdminController(TestController):
         self.assertTrue('"set userpin": 1' in response, response)
 
         self.removeTokenBySerial("003e808e")
-
+        
+    def test_setpin_policy_fail(self):
+        self.set_tmp_policy("setPin", user="superadmin")
+        response = self.app.get(url(controller='admin',
+                                    action='setPin'),
+                                params={'serial': 'S123456',
+                                        'userpin': '1111',
+                                        'selftest_admin': 'looser_admin'})
+        print response
+        assert '"status": false' in response
+        assert("ERR410: You do not have the administrative right to set "
+               "MOTP PIN/ SC UserPIN for token S123456" in response)
+        self.del_tmp_policy("setPin")
+        
     def test_assign(self):
 
         serial = self.createToken2(serial="F722362")
@@ -428,6 +491,125 @@ class TestAdminController(TestController):
         self.assertTrue('"User.userid": "",' in response, response)
 
         self.removeTokenBySerial(serial)
+
+    def test_assign_policy_fail(self):
+        self.set_tmp_policy("assign", user="superadmin")
+        response = self.app.get(url(controller='admin',
+                                    action='assign'),
+                                params={'serial': 'S123456',
+                                        'user': 'root',
+                                        'selftest_admin': 'looser_admin'})
+        print response
+        assert '"status": false' in response
+        assert("ERR410: You do not have the administrative right" in response)
+        self.del_tmp_policy("assign")
+        
+    def test_init_policy_fail(self):
+        self.set_tmp_policy("initHMAC", user="superadmin")
+        response = self.app.get(url(controller='admin',
+                                    action='init'),
+                                params={'serial': 'S123456',
+                                        'otpkey': '1234',
+                                        'type': 'hmac',
+                                        'selftest_admin': 'looser_admin'})
+        print response
+        assert '"status": false' in response
+        assert("ERR410: You do not have the administrative right" in response)
+        self.del_tmp_policy("initHMAC")
+        
+    def test_set_policy_fail(self):
+        self.set_tmp_policy("set", user="superadmin")
+        response = self.app.get(url(controller='admin',
+                                    action='set'),
+                                params={'serial': 'S123456',
+                                        'phone': '1234',
+                                        'selftest_admin': 'looser_admin'})
+        print response
+        assert '"status": false' in response
+        assert("ERR410: You do not have the administrative right" in response)
+        self.del_tmp_policy("set")
+        
+    def test_resync_policy_fail(self):
+        self.set_tmp_policy("resync", user="superadmin")
+        response = self.app.get(url(controller='admin',
+                                    action='resync'),
+                                params={'serial': 'S123456',
+                                        'otp1': '1234',
+                                        'otp2': '1234',
+                                        'selftest_admin': 'looser_admin'})
+        print response
+        assert '"status": false' in response
+        assert("ERR410: You do not have the administrative right" in response)
+        self.del_tmp_policy("resync")
+        
+    def test_userlist_policy_fail(self):
+        self.set_tmp_policy("userlist", user="superadmin")
+        response = self.app.get(url(controller='admin',
+                                    action='userlist'),
+                                params={'username': '*',
+                                        'selftest_admin': 'looser_admin'})
+        print response
+        assert '"status": false' in response
+        assert("ERR410: You do not have the administrative right" in response)
+        self.del_tmp_policy("userlist")
+        
+    def test_tokenrealm_policy_fail(self):
+        self.set_tmp_policy("tokenrealm", user="superadmin")
+        response = self.app.get(url(controller='admin',
+                                    action='tokenrealm'),
+                                params={'serial': 'S123456',
+                                        'realms': 'r1,r2,r3',
+                                        'selftest_admin': 'looser_admin'})
+        print response
+        assert '"status": false' in response
+        assert("ERR410: You do not have the administrative right" in response)
+        self.del_tmp_policy("tokenrealm")
+        
+    def test_reset_policy_fail(self):
+        self.set_tmp_policy("reset", user="superadmin")
+        response = self.app.get(url(controller='admin',
+                                    action='reset'),
+                                params={'serial': 'S123456',
+                                        'selftest_admin': 'looser_admin'})
+        print response
+        assert '"status": false' in response
+        assert("ERR410: You do not have the administrative right" in response)
+        self.del_tmp_policy("reset")
+        
+    def test_copytokenpin_policy_fail(self):
+        self.set_tmp_policy("copytokenpin", user="superadmin")
+        response = self.app.get(url(controller='admin',
+                                    action='copyTokenPin'),
+                                params={'from': 'S123456',
+                                        'to': 'S234567',
+                                        'selftest_admin': 'looser_admin'})
+        print response
+        assert '"status": false' in response
+        assert("ERR410: You do not have the administrative right" in response)
+        self.del_tmp_policy("copytokenpin")
+
+    def test_copytokenuser_policy_fail(self):
+        self.set_tmp_policy("copytokenuser", user="superadmin")
+        response = self.app.get(url(controller='admin',
+                                    action='copyTokenUser'),
+                                params={'from': 'S123456',
+                                        'to': 'S234567',
+                                        'selftest_admin': 'looser_admin'})
+        print response
+        assert '"status": false' in response
+        assert("ERR410: You do not have the administrative right" in response)
+        self.del_tmp_policy("copytokenuser")
+
+    def test_losttoken_policy_fail(self):
+        self.set_tmp_policy("losttoken", user="superadmin")
+        response = self.app.get(url(controller='admin',
+                                    action='losttoken'),
+                                params={'serial': 'S123456',
+                                        'selftest_admin': 'looser_admin'})
+        print response
+        assert '"status": false' in response
+        assert("ERR410: You do not have the administrative right" in response)
+        self.del_tmp_policy("losttoken")
 
     def test_assign_umlaut(self):
         self.createTokenSHA256(serial="umlauttoken")
@@ -500,6 +682,18 @@ class TestAdminController(TestController):
         self.assertTrue('"unique": false' in response, response)
         self.assertTrue('"new_serial": "unique_serial_001_01"' in response,
                         response)
+        
+    def test_checkserial_policy_fail(self):
+        self.set_tmp_policy("checkserial", user="superadmin")
+        response = self.app.get(url(controller='admin',
+                                    action='check_serial'),
+                                params={'serial': 'S123456',
+                                        'selftest_admin': 'looser_admin'})
+        print response
+        assert '"status": false' in response
+        assert("ERR410: You do not have the administrative right to"
+               " run checkserial. Check the policies." in response)
+        self.del_tmp_policy("checkserial")
 
     def test_setPin_empty(self):
         '''
@@ -768,6 +962,18 @@ class TestAdminController(TestController):
         response = self.app.get(url(controller='admin', action='remove'),
                                 params={'serial': 'gsbo001'})
         self.assertTrue('"value": 1' in response, response)
+        
+    def test_getserialbyotp_policy_fail(self):
+        self.set_tmp_policy("getserial", user="superadmin")
+        response = self.app.get(url(controller='admin',
+                                    action='getSerialByOtp'),
+                                params={'otp': '180096',
+                                        'selftest_admin': 'looser_admin'})
+        print response
+        assert '"status": false' in response
+        assert("ERR410: You do not have the administrative right to get"
+               " serials by OTPs in this realm!" in response)
+        self.del_tmp_policy("getserial")
         
     def test_setting_description(self):
         '''

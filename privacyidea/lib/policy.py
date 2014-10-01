@@ -1136,6 +1136,19 @@ class PolicyClass(object):
                     raise PolicyException(_("You do not have the administrative "
                                           "right to run the getotp workflow for "
                                           "token %s. Check the policies.") % serial)
+                    
+            elif 'checkserial' == method:
+                policies = self.getAdminPolicies("checkserial")
+                if (policies['active'] and not
+                        self._checkAdminAuthorization(policies, serial, user)):
+                    log.warning("the admin >%s< is not allowed to run "
+                                "checkserial for token %s for user %s@%s"
+                                % (policies['admin'], serial, user.login,
+                                   user.realm))
+                    raise PolicyException(_("You do not have the "
+                                            "administrative right to run "
+                                            "checkserial."
+                                            " Check the policies."))
     
             elif 'getserial' == method:
                 policies = self.getAdminPolicies("getserial")
@@ -1337,9 +1350,9 @@ class PolicyClass(object):
                             or (policies2['active'] and not
                             (self._checkAdminAuthorization(policies2, serial,
                                                      User("", "", ""))))):
-                        log.warning("the admin >%s< is not allowed to "
+                        log.warning("The admin is not allowed to "
                                     "set MOTP PIN/SC UserPIN for token %s."
-                                    % (policies['admin'], serial))
+                                    % serial)
                         raise PolicyException(_("You do not have the administrative "
                                               "right to set MOTP PIN/ SC UserPIN "
                                               "for token %s. Check the policies.")
@@ -1374,10 +1387,7 @@ class PolicyClass(object):
                                               "right to set OTP PIN for token %s. "
                                               "Check the policies.") % serial)
     
-                if ("MaxFailCount".lower() in param or
-                        "SyncWindow".lower() in param or
-                        "CounterWindow".lower() in param or
-                        "OtpLen".lower() in param):
+                else:
                     policies = self.getAdminPolicies("set")
                     if (policies['active'] and not
                             self._checkAdminAuthorization(policies, serial, user)):
