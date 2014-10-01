@@ -610,6 +610,39 @@ class TestAdminController(TestController):
         assert '"status": false' in response
         assert("ERR410: You do not have the administrative right" in response)
         self.del_tmp_policy("losttoken")
+        
+    def test_checkstatus_policy_fail(self):
+        self.set_tmp_policy("checkstatus", user="superadmin")
+        response = self.app.get(url(controller='admin',
+                                    action='checkstatus'),
+                                params={'serial': 'S123456',
+                                        'selftest_admin': 'looser_admin'})
+        print response
+        assert '"status": false' in response
+        assert("ERR410: You do not have the administrative right" in response)
+        self.del_tmp_policy("checkstatus")
+        
+    def test_checkstatus(self):
+        response = self.app.get(url(controller='admin',
+                                    action='checkstatus'),
+                                params={'serial': 'S123456',
+                                        'selftest_admin': 'looser_admin'})
+        print response
+        assert '"values": {}' in response
+        
+        response = self.app.get(url(controller='admin',
+                                    action='checkstatus'),
+                                params={'selftest_admin': 'looser_admin'})
+        print response
+        assert 'ERR77' in response
+        assert 'admin/checkstatus: check the token status' in response
+        
+        response = self.app.get(url(controller='admin',
+                                    action='checkstatus'),
+                                params={'user': 'root',
+                                        'selftest_admin': 'looser_admin'})
+        print response
+        assert '"values": {}' in response
 
     def test_assign_umlaut(self):
         self.createTokenSHA256(serial="umlauttoken")

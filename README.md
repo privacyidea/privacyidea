@@ -25,31 +25,21 @@ Tests are running on travis-ci.org. See the test coverage at coveralls.io.
 Installation
 ------------
 
-You can install privacyIDEA into a python virtualenv.
-Installing privacyIDEA can be performed easily by issuing the pip command:
+For installation instructions you can see the internal documentation,
+which is also contained in this git repository at
 
-    $ pip install privacyidea
+https://github.com/privacyidea/privacyidea/blob/master/doc/installation/index.rst
 
-privacyIDEA comes with its own user authentication for administrators and 
-normal users. Thus you can start directly by creating the database.
-In the example configuration file the database is an SQLite database
-located at:
+You can also browse the documentation on the web site, which contains the
+latest released documentation and might not be the bleeding edge
 
-    $ paster setup-app etc/privacyidea/privacyidea.ini.example
+https://www.privacyidea.org/doc/current/
 
-In the config file privacyidea.ini.example the already shipped encryption key "dummy-encKey" is referenced.
-Of course, you should create an encryption key and change in in the privacyidea.ini.example:
+Token management
+----------------
 
-    $ dd if=/dev/random of=etc/privacyidea/encKey bs=1 count=96
-
-Then start the webserver by issuing:
-
-    $ paster serve etc/privacyidea/privacyidea.ini.example
-
-Authentication
---------------
-privacyIDEA has one login window at https://localhost:5001 to login for either as normal users or administrators.
-You need to create the first administrator to login. This administrator than can
+privacyIDEA has a web management interface to login for either as normal users or administrators.
+You need to create the first administrator to login. This administrator then can
 * create UserIdResolvers
 * a realm 
 * and enroll tokens.
@@ -61,22 +51,6 @@ To create an administrator do this:
 You then can login with the user ``admin-name`` and the password ``secret-password``. 
 All the administrators are stored in the file defined in the privacyIDEA.ini entry "privacyideaSuperuserFile".
 
-Options
--------
-
-You can adapt the file **etc/privacyidea/privacyidea.ini.example**. There you need to configure the database connection
-with an existing database and user:
-
-    sqlalchemy.url = mysql://user:password@localhost/privacyIDEA
-
-Then  you can create the database like above:
-
-    $ paster setup-app etc/privacyidea/privacyidea.ini.example
-
-You can change the location of your log file:
-
-    $ mkdir /var/log/privacyidea
-
 Authentication
 --------------
 You can use the web API to authenticate users. If you enrolled a token for a user, you can authenticate
@@ -86,9 +60,7 @@ the user by calling the URL:
 
 Yubikeys
 --------
-privacyIDEA supports Yubikeys. To enroll yubikeys you need to install the admin client::
-
-    $ pip install privacyideaadm
+privacyIDEA supports Yubikeys. To enroll yubikeys you need to install the admin client "privacyideaadm".
 
 Tests
 -----
