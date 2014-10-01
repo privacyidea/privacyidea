@@ -31,6 +31,7 @@ clean:
 	rm -fr DEBUILD
 	rm -fr RHBUILD
 	rm -fr cover
+	rm -f .coverage
 	(cd doc; make clean)
 
 pypi:

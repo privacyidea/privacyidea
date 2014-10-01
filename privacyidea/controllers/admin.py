@@ -34,12 +34,17 @@ from pylons import request, response, config, tmpl_context as c
 
 from privacyidea.lib.base import BaseController
 
-from privacyidea.lib.token import enableToken, assignToken , unassignToken, removeToken
-from privacyidea.lib.token import setPin, setMaxFailCount, setOtpLen, setSyncWindow, setCounterWindow
+from privacyidea.lib.token import enableToken, assignToken
+from privacyidea.lib.token import unassignToken, removeToken
+from privacyidea.lib.token import setPin, setMaxFailCount, setOtpLen
+from privacyidea.lib.token import setSyncWindow, setCounterWindow
 from privacyidea.lib.token import setDescription
-from privacyidea.lib.token import resyncToken, resetToken, setPinUser, setPinSo, setHashLib, addTokenInfo
-from privacyidea.lib.token import TokenIterator, initToken, setRealms, getTokenType, get_serial_by_otp
-from privacyidea.lib.token import getTokens4UserOrSerial, copyTokenPin, copyTokenUser, losttoken, check_serial
+from privacyidea.lib.token import resyncToken, resetToken, setPinUser
+from privacyidea.lib.token import setPinSo, setHashLib, addTokenInfo
+from privacyidea.lib.token import TokenIterator, initToken, setRealms
+from privacyidea.lib.token import getTokenType, get_serial_by_otp
+from privacyidea.lib.token import getTokens4UserOrSerial, copyTokenPin
+from privacyidea.lib.token import copyTokenUser, losttoken, check_serial
 from privacyidea.lib.token import getTokenRealms
 from privacyidea.lib.token import genSerial
 from privacyidea.lib.token import newToken
@@ -49,11 +54,13 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.util import getParam, getLowerParams
 from privacyidea.weblib.util import get_client
 from privacyidea.lib.util import remove_session_from_param
-from privacyidea.lib.user import getSearchFields, getUserList, User, getUserFromParam, getUserFromRequest
+from privacyidea.lib.user import getSearchFields, getUserList, User
+from privacyidea.lib.user import getUserFromParam, getUserFromRequest
 
 from privacyidea.lib.realm import getDefaultRealm
 
-from privacyidea.lib.reply import sendResult, sendError, sendXMLResult, sendXMLError, sendCSVResult
+from privacyidea.lib.reply import sendResult, sendError, sendXMLResult
+from privacyidea.lib.reply import sendXMLError, sendCSVResult
 from privacyidea.lib.reply import sendQRImageResult
 
 from privacyidea.lib.validate import get_challenges
@@ -64,7 +71,8 @@ from privacyidea.lib.policy import PolicyException
 from privacyidea.lib.audit import logTokenNum
 from privacyidea.lib.config import get_privacyIDEA_config
 # for loading XML file
-from privacyidea.lib.ImportOTP import parseSafeNetXML, parseOATHcsv, ImportException, parseYubicoCSV
+from privacyidea.lib.ImportOTP import parseSafeNetXML, parseOATHcsv
+from privacyidea.lib.ImportOTP import ImportException, parseYubicoCSV
 
 
 from tempfile import mkstemp
@@ -73,9 +81,6 @@ import traceback
 import webob
 
 from privacyidea.lib.log import log_with
-
-# For logout
-from webob.exc import HTTPUnauthorized
 
 
 log = logging.getLogger(__name__)
@@ -87,8 +92,10 @@ required = False
 class AdminController(BaseController):
 
     '''
-    The privacyidea.controllers are the implementation of the web-API to talk to the privacyIDEA server.
-    The AdminController is used for administrative tasks like adding tokens to privacyIDEA,
+    The privacyidea.controllers are the implementation of the web-API to talk
+    to the privacyIDEA server.
+    The AdminController is used for administrative tasks like adding tokens
+    to privacyIDEA,
     assigning tokens or revoking tokens.
     The functions of the AdminController are invoked like this
 
@@ -106,8 +113,8 @@ class AdminController(BaseController):
             c.audit['client'] = get_client()
             self.Policy = PolicyClass(request, config, c,
                                       get_privacyIDEA_config(),
-                                      tokenrealms = request.params.get('serial'),
-                                      token_type_list = get_token_type_list())
+                                      tokenrealms=request.params.get('serial'),
+                                      token_type_list=get_token_type_list())
             self.set_language()
 
             self.before_identity_check(action)
@@ -116,14 +123,14 @@ class AdminController(BaseController):
             return request
 
         except webob.exc.HTTPUnauthorized as acc:
-            ## the exception, when an abort() is called if forwarded
+            # the exception, when an abort() is called if forwarded
             log.info("%r: webob.exception %r" % (action, acc))
             log.info(traceback.format_exc())
             Session.rollback()
             Session.close()
             raise acc
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("exception %r" % (action, exx))
             log.error(traceback.format_exc())
             Session.rollback()
@@ -151,7 +158,7 @@ class AdminController(BaseController):
             Session.commit()
             return request
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error("unable to create a session cookie: %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -159,7 +166,6 @@ class AdminController(BaseController):
 
         finally:
             Session.close()
-
 
     @log_with(log)
     def show(self, action, **params):
@@ -172,17 +178,24 @@ class AdminController(BaseController):
 
         arguments:
             * serial  - optional: only this serial will be displayed
-            * user    - optional: only the tokens of this user will be displayed. If the user does not exist,
-              privacyidea will search tokens of users, who contain this substring.
-              **TODO:** This can be very time consuming an will be changed in the next release to use wildcards.
-            * filter  - optional: takes a substring to search in table token columns
-            * viewrealm - optional: takes a realm, only the tokens in this realm will be displayed
+            * user    - optional: only the tokens of this user will be
+                                  displayed. If the user does not exist,
+                                  privacyidea will search tokens of users,
+                                  who contain this substring.
+              **TODO:** This can be very time consuming and will be changed
+                        in the next release to use wildcards.
+            * filter  - optional: takes a substring to search in table token
+                                  columns
+            * viewrealm - optional: takes a realm, only the tokens in this
+                                    realm will be displayed
             * sortby  - optional: sort the output by column
             * sortdir - optional: asc/desc
             * page    - optional: reqeuest a certain page
             * pagesize- optional: limit the number of returned tokens
-            * user_fields - optional: additional user fields from the userid resolver of the owner (user)
-            * outform - optional: if set to "csv", than the token list will be given in CSV
+            * user_fields - optional: additional user fields from the userid
+                                      resolver of the owner (user)
+            * outform - optional: if set to "csv", than the token list will be
+                                  given in CSV
 
         returns:
             a json result with:
@@ -198,9 +211,9 @@ class AdminController(BaseController):
         try:
             serial = getParam(param, "serial", optional)
             page = getParam(param, "page", optional)
-            filter = getParam(param, "filter", optional)
+            filt = getParam(param, "filter", optional)
             sort = getParam(param, "sortby", optional)
-            dir = getParam(param, "sortdir", optional)
+            sdir = getParam(param, "sortdir", optional)
             psize = getParam(param, "pagesize", optional)
             realm = getParam(param, "viewrealm", optional)
             ufields = getParam(param, "user_fields", optional)
@@ -214,7 +227,7 @@ class AdminController(BaseController):
 
             filterRealm = []
             # check admin authorization
-            res = self.Policy.checkPolicyPre('admin', 'show', param , user=user)
+            res = self.Policy.checkPolicyPre('admin', 'show', param, user=user)
 
             filterRealm = res['realms']
             # check if policies are active at all
@@ -230,13 +243,16 @@ class AdminController(BaseController):
                 if realm in filterRealm or '*' in filterRealm:
                     filterRealm = [realm]
 
-            log.info("admin >%s< may display the following realms: %s" % (res['admin'], filterRealm))
-            log.debug("displaying tokens: serial: %s, page: %s, filter: %s, user: %s", serial, page, filter, user.login)
+            log.info("admin >%s< may display the following realms: %s" %
+                     (res['admin'], filterRealm))
+            log.debug("displaying tokens: serial: %s, page: %s, filter: %s,"
+                      " user: %s", serial, page, filt, user.login)
 
-            toks = TokenIterator(user, serial, page, psize, filter, sort, dir, filterRealm, user_fields)
+            toks = TokenIterator(user, serial, page, psize, filt,
+                                 sort, sdir, filterRealm, user_fields)
 
             c.audit['success'] = True
-            c.audit['info'] = "realm: %s, filter: %r" % (filterRealm, filter)
+            c.audit['info'] = "realm: %s, filter: %r" % (filterRealm, filt)
 
             # put in the result
             result = {}
@@ -264,7 +280,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error('failed: %r' % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -272,8 +288,6 @@ class AdminController(BaseController):
 
         finally:
             Session.close()
-
-
 
 ########################################################
     @log_with(log)
@@ -283,7 +297,8 @@ class AdminController(BaseController):
             admin/remove
 
         description:
-            deletes either a certain token given by serial or all tokens of a user
+            deletes either a certain token given by serial or all tokens
+            of a user
 
         arguments:
             * serial  - optional
@@ -306,7 +321,8 @@ class AdminController(BaseController):
             # check admin authorization
             self.Policy.checkPolicyPre('admin', 'remove', param)
 
-            log.info("removing token with serial %s for user %s", serial, user.login)
+            log.info("removing token with serial %s for user %s" %
+                     (serial, user.login))
             ret = removeToken(user, serial)
 
             c.audit['user'] = user.login
@@ -323,7 +339,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error("failed! %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -335,7 +351,7 @@ class AdminController(BaseController):
 
 ########################################################
     @log_with(log)
-    def enable (self, action, **params):
+    def enable(self, action, **params):
         """
         method:
             admin/enable
@@ -365,9 +381,10 @@ class AdminController(BaseController):
             tokenrealms = []
             if serial:
                 tokenrealms = getTokenRealms(serial)
-            self.Policy.checkPolicyPre('admin', 'enable', param , user=user,
-                                        tokenrealms = tokenrealms)
-            log.info("enable token with serial %s for user %s@%s.", serial, user.login, user.realm)
+            self.Policy.checkPolicyPre('admin', 'enable', param, user=user,
+                                       tokenrealms=tokenrealms)
+            log.info("enable token with serial %s for user %s@%s.",
+                     serial, user.login, user.realm)
             ret = enableToken(True, user, serial)
 
             c.audit['success'] = ret
@@ -383,7 +400,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error("failed: %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -396,7 +413,7 @@ class AdminController(BaseController):
 
 ########################################################
     @log_with(log)
-    def getSerialByOtp (self, action, **params):
+    def getSerialByOtp(self, action, **params):
         """
         method:
             admin/getSerialByOtp
@@ -406,10 +423,12 @@ class AdminController(BaseController):
             The search can be restricted by several critterions
 
         arguments:
-            * otp      - required. Will search for the token, that produces this OTP value
+            * otp      - required. Will search for the token, that produces
+                                   this OTP value
             * type     - optional, will only search in tokens of type
             * realm    - optional, only search in this realm
-            * assigned - optional. 1: only search assigned tokens, 0: only search unassigned tokens
+            * assigned - optional. 1: only search assigned tokens, 0: only
+                                   search unassigned tokens
 
         returns:
             a json result with the serial
@@ -434,11 +453,16 @@ class AdminController(BaseController):
             # check admin authorization
             self.Policy.checkPolicyPre('admin', 'getserial', param)
 
-            serial, username, resolverClass = get_serial_by_otp(None, otp, 10, typ=typ, realm=realm, assigned=assigned)
+            serial, username, resClass = get_serial_by_otp(None, otp, 10,
+                                                           typ=typ,
+                                                           realm=realm,
+                                                           assigned=assigned)
             log.debug("found %s with user %s" % (serial, username))
 
             if "" != serial:
-                self.Policy.checkPolicyPost('admin', 'getserial', {'serial' : serial})
+                self.Policy.checkPolicyPost('admin',
+                                            'getserial',
+                                            {'serial': serial})
 
             c.audit['success'] = 1
             c.audit['serial'] = serial
@@ -446,7 +470,7 @@ class AdminController(BaseController):
             ret['success'] = True
             ret['serial'] = serial
             ret['user_login'] = username
-            ret['user_resolver'] = resolverClass
+            ret['user_resolver'] = resClass
 
             Session.commit()
             return sendResult(response, ret, 1)
@@ -457,7 +481,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:    # pragma: no cover
             c.audit['success'] = 0
             Session.rollback()
             log.error('error: %r' % e)
@@ -468,10 +492,9 @@ class AdminController(BaseController):
             Session.close()
 
 
-
 ########################################################
     @log_with(log)
-    def disable (self, action, **params):
+    def disable(self, action, **params):
         """
         method:
             admin/disable
@@ -499,7 +522,8 @@ class AdminController(BaseController):
             # check admin authorization
             self.Policy.checkPolicyPre('admin', 'disable', param, user=user)
 
-            log.info("disable token with serial %s for user %s@%s.", serial, user.login, user.realm)
+            log.info("disable token with serial %s for user %s@%s.",
+                     serial, user.login, user.realm)
             ret = enableToken(False, user, serial)
 
             c.audit['success'] = ret
@@ -514,7 +538,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:    # pragma: no cover
             log.error("failed! %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -551,9 +575,9 @@ class AdminController(BaseController):
             serial = getParam(param, "serial", required)
 
             # check admin authorization
-            #try:
+            # try:
             #    self.Policy.checkPolicyPre('admin', 'disable', param )
-            #except PolicyException as pe:
+            # except PolicyException as pe:
             #    return sendError(response, str(pe), 1)
 
             log.info("checking serial %s" % serial)
@@ -564,7 +588,8 @@ class AdminController(BaseController):
             c.audit['action_detail'] = "%r - %r" % (unique, new_serial)
 
             Session.commit()
-            return sendResult(response, {"unique":unique, "new_serial":new_serial}, 1)
+            return sendResult(response, {"unique": unique,
+                                         "new_serial": new_serial}, 1)
 
         except PolicyException as pe:
             log.error("policy failed %r" % pe)
@@ -572,7 +597,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:    # pragma: no cover
             log.error("failed! %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -594,9 +619,10 @@ class AdminController(BaseController):
 
         arguments:
             * otpkey    - required - the hmac Key of the token
-            * genkey    - required - =1, if key should be generated. We either need otpkey or genkey
+            * genkey    - required - =1, if key should be generated. We either
+                                    need otpkey or genkey
             * keysize   - optional - either 20 or 32. Default is 20
-            * serial    - required - the serial number / identifier of the token
+            * serial    - required - the serial number/identifier of the token
             * description - optional
             * pin        - optional - the pin of the user pass
             * user       - optional - login user name
@@ -607,13 +633,16 @@ class AdminController(BaseController):
             * hashlib    - optional  - used hashlib sha1 oder sha256
 
         ocra arguments:
-            for generating OCRA Tokens type=ocra you can specify the following parameters:
-
-            * ocrasuite    - optional - if you do not want to use the default ocra suite OCRA-1:HOTP-SHA256-8:QA64
-            * sharedsecret - optional - if you are in Step0 of enrolling an OCRA/QR token the
+            for generating OCRA Tokens type=ocra you can specify the following
+                                    parameters:
+            * ocrasuite    - optional - if you do not want to use the default
+                                    ocra suite OCRA-1:HOTP-SHA256-8:QA64
+            * sharedsecret - optional - if you are in Step0 of enrolling an
+                                    OCRA/QR token the
               sharedsecret=1 specifies,
               that you want to generate a shared secret
-            * activationcode - optional - if you are in Step1 of enrolling an OCRA token you need to pass the
+            * activationcode - optional - if you are in Step1 of enrolling an
+                                    OCRA token you need to pass the
               activation code, that was generated in the QRTAN-App
 
         returns:
@@ -636,14 +665,15 @@ class AdminController(BaseController):
             user = getUserFromParam(param, optional)
 
             # check admin authorization
+            user_tnum = len(getTokens4UserOrSerial(user))
             res = self.Policy.checkPolicyPre('admin', 'init', param, user=user,
-                                             options={'token_num' : len(getTokens4UserOrSerial(user))})
+                                             options={'token_num': user_tnum})
 
             if user is not None:
                 helper_param['user.login'] = user.login
                 helper_param['user.realm'] = user.realm
 
-            ## for genkey, we have to transfer this to the lowest level
+            # for genkey, we have to transfer this to the lowest level
             key_size = getParam(param, "keysize", optional) or 20
             helper_param['key_size'] = key_size
 
@@ -654,13 +684,12 @@ class AdminController(BaseController):
                 log.debug("setting tokenrealm %s" % res['realms'])
                 tokenrealm = res['realms']
 
-
-            ## look for the tokenclass to support a class init
-            ## the classInit could do a rewrite of the request parameters
-            ## which are then used in the tokenInit as parameters
-            ## this is for example
-            ##   to find all open init challenges of a token type and set the
-            ##   serial number in the parameter list
+            # look for the tokenclass to support a class init
+            # the classInit could do a rewrite of the request parameters
+            # which are then used in the tokenInit as parameters
+            # this is for example
+            #   to find all open init challenges of a token type and set the
+            #   serial number in the parameter list
 
             g = config['pylons.app_globals']
             tokenclasses = g.tokenclasses
@@ -673,20 +702,21 @@ class AdminController(BaseController):
                     h_params = tclass_object.classInit(param, user=user)
                     helper_param.update(h_params)
 
-
             serial = helper_param.get('serial', None)
             prefix = helper_param.get('prefix', None)
             if serial is None or len(serial) == 0:
                 serial = genSerial(tok_type, prefix)
                 helper_param['serial'] = serial
 
+            log.info("initialize token. user: %s, serial: %s" % (user.login,
+                                                                 serial))
+            (ret, tokenObj) = initToken(helper_param,
+                                        user,
+                                        tokenrealm=tokenrealm)
 
-            log.info("initialize token. user: %s, serial: %s" % (user.login, serial))
-            (ret, tokenObj) = initToken(helper_param, user, tokenrealm=tokenrealm)
-
-            ## result enrichment - if the token is sucessfully created,
-            ## some processing info is added to the result document,
-            ##  e.g. the otpkey :-) as qr code
+            # result enrichment - if the token is sucessfully created,
+            # some processing info is added to the result document,
+            #  e.g. the otpkey :-) as qr code
             initDetail = tokenObj.getInitDetail(helper_param, user)
             response_detail.update(initDetail)
 
@@ -703,15 +733,15 @@ class AdminController(BaseController):
             if randomPINLength > 0:
                 newpin = self.Policy.getRandomPin(randomPINLength)
                 log.debug("setting random pin for token with serial "
-                              "%s and user: %s" % (serial, user))
+                          "%s and user: %s" % (serial, user))
                 setPin(newpin, None, serial)
                 
-            c.audit['success'] = ret            
+            c.audit['success'] = ret
 
             Session.commit()
 
-            ## finally we render the info as qr immage, if the qr parameter
-            ## is provided and if the token supports this
+            # finally we render the info as qr immage, if the qr parameter
+            # is provided and if the token supports this
             if 'qr' in param and tokenObj is not None:
                 (rdata, hparam) = tokenObj.getQRImageData(response_detail)
                 hparam.update(response_detail)
@@ -726,7 +756,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:    # pragma: no cover
             log.error("token initialization failed! %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -748,7 +778,7 @@ class AdminController(BaseController):
             and the user is removed
 
         arguments:
-            * serial    - required - the serial number / identifier of the token
+            * serial    - required - the serial number/identifier of the token
             * user      - optional
 
         returns:
@@ -786,7 +816,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:    # pragma: no cover
             log.error("failed! %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -808,7 +838,7 @@ class AdminController(BaseController):
             the user is created.
 
         arguments:
-            * serial     - required - the serial number / identifier of the token
+            * serial     - required - the serial number/identifier of the token
             * user       - required - login user name
             * pin        - optional - the pin of the user pass
 
@@ -831,7 +861,8 @@ class AdminController(BaseController):
             # check admin authorization
             self.Policy.checkPolicyPre('admin', 'assign', param)
 
-            log.info("assigning token with serial %s to user %s@%s" % (serial, user.login, user.realm))
+            log.info("assigning token with serial %s to user %s@%s" %
+                     (serial, user.login, user.realm))
             res = assignToken(serial, user, upin, param)
 
             c.audit['success'] = res
@@ -847,7 +878,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e :
+        except Exception as e:    # pragma: no cover
             log.error('token assignment failed! %r' % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -855,8 +886,6 @@ class AdminController(BaseController):
 
         finally:
             Session.close()
-
-
 
 ########################################################
     @log_with(log)
@@ -894,8 +923,8 @@ class AdminController(BaseController):
         try:
             param = getLowerParams(request.params)
 
-            ## if there is a pin
-            if param.has_key("userpin"):
+            # if there is a pin
+            if "userpin" in param:
                 msg = "setting userPin failed"
                 userPin = getParam(param, "userpin", required)
                 serial = getParam(param, "serial", required)
@@ -909,7 +938,7 @@ class AdminController(BaseController):
                 count = count + 1
                 c.audit['action_detail'] += "userpin, "
 
-            if param.has_key("sopin"):
+            if "sopin" in param:
                 msg = "setting soPin failed"
                 soPin = getParam(param, "sopin", required)
                 serial = getParam(param, "serial", required)
@@ -923,9 +952,11 @@ class AdminController(BaseController):
                 count = count + 1
                 c.audit['action_detail'] += "sopin, "
 
-            if count == 0 :
+            if count == 0:
                 Session.rollback()
-                return sendError(response, ParameterError("Usage: %s" % description, id=77))
+                return sendError(response,
+                                 ParameterError("Usage: %s" % description,
+                                                id=77))
 
             c.audit['success'] = count
 
@@ -938,8 +969,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-
-        except Exception as e :
+        except Exception as e:    # pragma: no cover
             log.error('%s :%r' % (msg, e))
             log.error(traceback.format_exc())
             Session.rollback()
@@ -947,8 +977,6 @@ class AdminController(BaseController):
 
         finally:
             Session.close()
-
-
 
 ########################################################
     @log_with(log)
@@ -963,21 +991,31 @@ class AdminController(BaseController):
         arguments:
             * serial     - optional
             * user       - optional
-            * pin        - optional - set the OTP PIN
-            * MaxFailCount  - optional - set the maximum fail counter of a token
-            * SyncWindow    - optional - set the synchronization window of the token
-            * OtpLen        - optional - set the OTP Lenght of the token
-            * CounterWindow - optional - set the counter window (blank presses)
-            * hashlib       - optioanl - set the hashing algo for HMAC tokens. This can be sha1, sha256, sha512
-            * timeWindow    - optional - set the synchronize window for timebased tokens (in seconds)
-            * timeStep      - optional - set the timestep for timebased tokens (usually 30 or 60 seconds)
-            * timeShift     - optional - set the shift or timedrift of this token
-            * countAuthSuccessMax    - optional    - set the maximum allowed successful authentications
-            * countAuthSuccess\      - optional    - set the counter of the successful authentications
-            * countAuth        - optional - set the counter of authentications
-            * countAuthMax     - optional - set the maximum allowed authentication tries
-            * validityPeriodStart    - optional - set the start date of the validity period. The token can not be used before this date
-            * validityPeriodEnd      - optional - set the end date of the validaity period. The token can not be used after this date
+            * pin        - optional - set OTP PIN
+            * MaxFailCount  - optional - set maximum fail counter of a token
+            * SyncWindow    - optional - set synchronization window of a token
+            * OtpLen        - optional - set OTP Lenght of the token
+            * CounterWindow - optional - set counter window (blank presses)
+            * hashlib       - optioanl - set hashing algo for HMAC tokens.
+                                         This can be sha1, sha256, sha512
+            * timeWindow    - optional - set synchronize window for timebased
+                                         tokens (in seconds)
+            * timeStep      - optional - set timestep for timebased tokens
+                                         (usually 30 or 60 seconds)
+            * timeShift     - optional - set shift or timedrift of this token
+            * countAuthSuccessMax    - optional    - set maximum allowed
+                                                    successful authentications
+            * countAuthSuccess\      - optional    - set counter of the
+                                                    successful authentications
+            * countAuth        - optional - set counter of authentications
+            * countAuthMax     - optional - set maximum allowed authentication
+                                            tries
+            * validityPeriodStart - optional - set start date of the
+                                               validity period. The token can
+                                               not be used before this date
+            * validityPeriodEnd   - optional - set end date of the validaity
+                                               period. The token can not be
+                                               used after this date
             * phone - set the phone number for an SMS token
 
         returns:
@@ -1021,16 +1059,16 @@ class AdminController(BaseController):
             # check admin authorization
             self.Policy.checkPolicyPre('admin', 'set', param, user=user)
 
-            ## if there is a pin
-            if param.has_key("pin"):
+            # if there is a pin
+            if "pin" in param:
                 msg = "setting pin failed"
                 upin = getParam(param, "pin", required)
                 log.info("setting pin for token with serial %r" % serial)
                 if serial is not None:
-                    tokenrealms=getTokenRealms(serial)
+                    tokenrealms = getTokenRealms(serial)
                 else:
-                    tokenrealms=[]
-                if 1 == self.Policy.getOTPPINEncrypt(serial=serial, user=user, 
+                    tokenrealms = []
+                if 1 == self.Policy.getOTPPINEncrypt(serial=serial, user=user,
                                                      tokenrealms=tokenrealms):
                     param['encryptpin'] = "True"
                 ret = setPin(upin, user, serial, param)
@@ -1038,91 +1076,105 @@ class AdminController(BaseController):
                 count = count + 1
                 c.audit['action_detail'] += "pin, "
 
-            if param.has_key("MaxFailCount".lower()):
+            if "MaxFailCount".lower() in param:
                 msg = "setting MaxFailCount failed"
-                maxFail = int(getParam(param, "MaxFailCount".lower(), required))
-                log.info("setting maxFailCount (%r) for token with serial %r" % (maxFail, serial))
+                maxFail = int(getParam(param, "MaxFailCount".lower(),
+                                       required))
+                log.info("setting maxFailCount (%r) for token with "
+                         "serial %r" % (maxFail, serial))
                 ret = setMaxFailCount(maxFail, user, serial)
                 res["set MaxFailCount"] = ret
                 count = count + 1
                 c.audit['action_detail'] += "maxFailCount=%d, " % maxFail
 
-            if param.has_key("SyncWindow".lower()):
+            if "SyncWindow".lower() in param:
                 msg = "setting SyncWindow failed"
-                syncWindow = int(getParam(param, "SyncWindow".lower(), required))
-                log.info("setting syncWindow (%r) for token with serial %r" % (syncWindow, serial))
+                syncWindow = int(getParam(param, "SyncWindow".lower(),
+                                          required))
+                log.info("setting syncWindow (%r) for token with serial %r" %
+                         (syncWindow, serial))
                 ret = setSyncWindow(syncWindow, user, serial)
                 res["set SyncWindow"] = ret
                 count = count + 1
                 c.audit['action_detail'] += "syncWindow=%d, " % syncWindow
 
-            if param.has_key("description".lower()):
+            if "description" in param:
                 msg = "setting description failed"
                 description = getParam(param, "description".lower(), required)
-                log.info("setting description (%r) for token with serial %r" % (description, serial))
+                log.info("setting description (%r) for token with serial %r" %
+                         (description, serial))
                 ret = setDescription(description, user, serial)
                 res["set description"] = ret
                 count = count + 1
                 c.audit['action_detail'] += "description=%r, " % description
 
-            if param.has_key("CounterWindow".lower()):
+            if "CounterWindow".lower() in param:
                 msg = "setting CounterWindow failed"
-                counterWindow = int(getParam(param, "CounterWindow".lower(), required))
-                log.info("setting counterWindow (%r) for token with serial %r" % (counterWindow, serial))
-                ret = setCounterWindow(counterWindow, user, serial)
+                cWindow = int(getParam(param, "CounterWindow".lower(),
+                                       required))
+                log.info("setting counterWindow (%r) for token with "
+                         "serial %r" % (cWindow, serial))
+                ret = setCounterWindow(cWindow, user, serial)
                 res["set CounterWindow"] = ret
                 count = count + 1
-                c.audit['action_detail'] += "counterWindow=%d, " % counterWindow
+                c.audit['action_detail'] += "counterWindow=%d, " % cWindow
 
-            if param.has_key("OtpLen".lower()):
+            if "OtpLen".lower() in param:
                 msg = "setting OtpLen failed"
                 otpLen = int(getParam(param, "OtpLen".lower(), required))
-                log.info("setting OtpLen (%r) for token with serial %r" % (otpLen, serial))
+                log.info("setting OtpLen (%r) for token with serial %r" %
+                         (otpLen, serial))
                 ret = setOtpLen(otpLen, user, serial)
                 res["set OtpLen"] = ret
                 count = count + 1
                 c.audit['action_detail'] += "otpLen=%d, " % otpLen
 
-            if param.has_key("hashlib".lower()):
+            if "hashlib" in param:
                 msg = "setting hashlib failed"
                 hashlib = getParam(param, "hashlib".lower(), required)
-                log.info("setting hashlib (%r) for token with serial %r" % (hashlib, serial))
+                log.info("setting hashlib (%r) for token with serial %r" %
+                         (hashlib, serial))
                 ret = setHashLib(hashlib, user, serial)
                 res["set hashlib"] = ret
                 count = count + 1
                 c.audit['action_detail'] += "hashlib=%s, " % unicode(hashlib)
 
-            if param.has_key("timeWindow".lower()):
+            if "timeWindow".lower() in param:
                 msg = "setting timeWindow failed"
-                timeWindow = int(getParam(param, "timeWindow".lower(), required))
-                log.info("setting timeWindow (%r) for token with serial %r" % (timeWindow, serial))
-                ret = addTokenInfo("timeWindow", timeWindow , user, serial)
+                timeWindow = int(getParam(param, "timeWindow".lower(),
+                                          required))
+                log.info("setting timeWindow (%r) for token with serial %r" %
+                         (timeWindow, serial))
+                ret = addTokenInfo("timeWindow", timeWindow, user, serial)
                 res["set timeWindow"] = ret
                 count = count + 1
                 c.audit['action_detail'] += "timeWindow=%d, " % timeWindow
 
-            if param.has_key("timeStep".lower()):
+            if "timeStep".lower() in param:
                 msg = "setting timeStep failed"
                 timeStep = int(getParam(param, "timeStep".lower(), required))
-                log.info("setting timeStep (%r) for token with serial %r" % (timeStep, serial))
-                ret = addTokenInfo("timeStep", timeStep , user, serial)
+                log.info("setting timeStep (%r) for token with serial %r" %
+                         (timeStep, serial))
+                ret = addTokenInfo("timeStep", timeStep, user, serial)
                 res["set timeStep"] = ret
                 count = count + 1
                 c.audit['action_detail'] += "timeStep=%d, " % timeStep
 
-            if param.has_key("timeShift".lower()):
+            if "timeShift".lower() in param:
                 msg = "setting timeShift failed"
                 timeShift = int(getParam(param, "timeShift".lower(), required))
-                log.info("setting timeShift (%r) for token with serial %r" % (timeShift, serial))
-                ret = addTokenInfo("timeShift", timeShift , user, serial)
+                log.info("setting timeShift (%r) for token with serial %r" %
+                         (timeShift, serial))
+                ret = addTokenInfo("timeShift", timeShift, user, serial)
                 res["set timeShift"] = ret
                 count = count + 1
                 c.audit['action_detail'] += "timeShift=%d, " % timeShift
 
-            if param.has_key("countAuth".lower()):
+            if "countAuth".lower() in param:
                 msg = "setting countAuth failed"
                 ca = int(getParam(param, "countAuth".lower(), required))
-                log.info("setting count_auth (%r) for token with serial %r" % (ca, serial))
+                log.info("setting count_auth (%r) for token with serial %r" %
+                         (ca, serial))
                 tokens = getTokens4UserOrSerial(user, serial)
                 ret = 0
                 for tok in tokens:
@@ -1132,10 +1184,11 @@ class AdminController(BaseController):
                 res["set countAuth"] = ret
                 c.audit['action_detail'] += "countAuth=%d, " % ca
 
-            if param.has_key("countAuthMax".lower()):
+            if "countAuthMax".lower() in param:
                 msg = "setting countAuthMax failed"
                 ca = int(getParam(param, "countAuthMax".lower(), required))
-                log.info("setting count_auth_max (%r) for token with serial %r" % (ca, serial))
+                log.info("setting count_auth_max (%r) for token with "
+                         "serial %r" % (ca, serial))
                 tokens = getTokens4UserOrSerial(user, serial)
                 ret = 0
                 for tok in tokens:
@@ -1145,10 +1198,11 @@ class AdminController(BaseController):
                 res["set countAuthMax"] = ret
                 c.audit['action_detail'] += "countAuthMax=%d, " % ca
 
-            if param.has_key("countAuthSuccess".lower()):
+            if "countAuthSuccess".lower() in param:
                 msg = "setting countAuthSuccess failed"
                 ca = int(getParam(param, "countAuthSuccess".lower(), required))
-                log.info("setting count_auth_success (%r) for token with serial %r" % (ca, serial))
+                log.info("setting count_auth_success (%r) for token with"
+                         " serial %r" % (ca, serial))
                 tokens = getTokens4UserOrSerial(user, serial)
                 ret = 0
                 for tok in tokens:
@@ -1158,10 +1212,12 @@ class AdminController(BaseController):
                 res["set countAuthSuccess"] = ret
                 c.audit['action_detail'] += "countAuthSuccess=%d, " % ca
 
-            if param.has_key("countAuthSuccessMax".lower()):
+            if "countAuthSuccessMax".lower() in param:
                 msg = "setting countAuthSuccessMax failed"
-                ca = int(getParam(param, "countAuthSuccessMax".lower(), required))
-                log.info("setting count_auth_success_max (%r) for token with serial %r" % (ca, serial))
+                ca = int(getParam(param, "countAuthSuccessMax".lower(),
+                                  required))
+                log.info("setting count_auth_success_max (%r) for token with"
+                         " serial %r" % (ca, serial))
                 tokens = getTokens4UserOrSerial(user, serial)
                 ret = 0
                 for tok in tokens:
@@ -1171,10 +1227,11 @@ class AdminController(BaseController):
                 res["set countAuthSuccessMax"] = ret
                 c.audit['action_detail'] += "countAuthSuccessMax=%d, " % ca
 
-            if param.has_key("validityPeriodStart".lower()):
+            if "validityPeriodStart".lower() in param:
                 msg = "setting validityPeriodStart failed"
                 ca = getParam(param, "validityPeriodStart".lower(), required)
-                log.info("setting validity_period_start (%r) for token with serial %r" % (ca, serial))
+                log.info("setting validity_period_start (%r) for token "
+                         "with serial %r" % (ca, serial))
                 tokens = getTokens4UserOrSerial(user, serial)
                 ret = 0
                 for tok in tokens:
@@ -1184,10 +1241,11 @@ class AdminController(BaseController):
                 res["set validityPeriodStart"] = ret
                 c.audit['action_detail'] += u"validityPeriodStart=%s, " % unicode(ca)
 
-            if param.has_key("validityPeriodEnd".lower()):
+            if "validityPeriodEnd".lower() in param:
                 msg = "setting validityPeriodEnd failed"
                 ca = getParam(param, "validityPeriodEnd".lower(), required)
-                log.info("setting validity_period_end (%r) for token with serial %r" % (ca, serial))
+                log.info("setting validity_period_end (%r) for token with"
+                         " serial %r" % (ca, serial))
                 tokens = getTokens4UserOrSerial(user, serial)
                 ret = 0
                 for tok in tokens:
@@ -1200,7 +1258,8 @@ class AdminController(BaseController):
             if "phone" in param:
                 msg = "setting phone failed"
                 ca = getParam(param, "phone".lower(), required)
-                log.info("setting phone (%r) for token with serial %r" % (ca, serial))
+                log.info("setting phone (%r) for token with serial %r" %
+                         (ca, serial))
                 tokens = getTokens4UserOrSerial(user, serial)
                 ret = 0
                 for tok in tokens:
@@ -1210,9 +1269,11 @@ class AdminController(BaseController):
                 res["set phone"] = ret
                 c.audit['action_detail'] += "phone=%s, " % unicode(ca)
 
-            if count == 0 :
+            if count == 0:
                 Session.rollback()
-                return sendError(response, ParameterError("Usage: %s" % description, id=77))
+                return sendError(response,
+                                 ParameterError("Usage: %s" % description,
+                                                id=77))
 
             c.audit['success'] = count
             c.audit['user'] = user.login
@@ -1227,7 +1288,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e :
+        except Exception as e:    # pragma: no cover
             log.error('%s :%r' % (msg, e))
             log.error(traceback.format_exc())
             Session.rollback()
@@ -1235,8 +1296,6 @@ class AdminController(BaseController):
 
         finally:
             Session.close()
-
-
 
 ########################################################
     @log_with(log)
@@ -1246,8 +1305,8 @@ class AdminController(BaseController):
             admin/resync - resync a token to a new counter
 
         description:
-            this function resync the token, if the counter on server side is out of sync
-            with the physica token.
+            this function resync the token, if the counter on server side
+            is out of sync with the physical token.
 
         arguments:
             * serial     - serial or user required
@@ -1279,7 +1338,8 @@ class AdminController(BaseController):
 
             options = None
             if chall1 is not None and chall2 is not None:
-                options = {'challenge1' : chall1, 'challenge2':chall2 }
+                options = {'challenge1': chall1,
+                           'challenge2': chall2}
 
             # check admin authorization
             self.Policy.checkPolicyPre('admin', 'resync', param)
@@ -1303,7 +1363,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:    # pragma: no cover
             log.error('resyncing token failed %r' % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -1382,7 +1442,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:    # pragma: no cover
             log.error("failed %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -1430,7 +1490,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:    # pragma: no cover
             log.error('error setting realms for token %r' % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -1492,7 +1552,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as exx:
+        except Exception as exx:    # pragma: no cover
             log.error("Error resetting failcounter %r" % exx)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -1565,7 +1625,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:    # pragma: no cover
             log.error("Error copying token pin")
             Session.rollback()
             return sendError(response, e)
@@ -1637,7 +1697,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:    # pragma: no cover
             log.error("Error copying token user")
             Session.rollback()
             return sendError(response, e)
@@ -1694,7 +1754,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:    # pragma: no cover
             log.error("Error doing losttoken %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -1925,7 +1985,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:    # pragma: no cover
             log.error("failed! %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -2048,7 +2108,7 @@ class AdminController(BaseController):
             Session.commit()
             return sendResult(response, res)
 
-        except Exception as e:
+        except Exception as e:    # pragma: no cover
             log.error("failed: %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -2150,7 +2210,7 @@ class AdminController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe))
 
-        except Exception as exx:
+        except Exception as exx:    # pragma: no cover
             log.error("failed: %r" % exx)
             log.error(traceback.format_exc())
             Session.rollback()

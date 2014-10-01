@@ -43,7 +43,6 @@ import webob
 
 
 from pylons import request, response, config, tmpl_context as c
-from pylons.controllers.util import abort
 from mako.exceptions import CompileException
 
 from privacyidea.lib.base import BaseController
@@ -83,8 +82,8 @@ from privacyidea.lib.apps import create_oathtoken_url
 from privacyidea.lib.reply import sendResult, sendError
 
 from privacyidea.lib.audit import logTokenNum
-from privacyidea.lib.util    import get_version
-from privacyidea.lib.util    import get_copyright_info
+from privacyidea.lib.util import get_version
+from privacyidea.lib.util import get_copyright_info
 from privacyidea.weblib.util import get_client
 from privacyidea.lib.account import is_admin_identity
 from privacyidea.lib.realm import getDefaultRealm
@@ -100,7 +99,7 @@ from privacyidea.lib.user import getUserInfo, User
 from privacyidea.lib.error import SelfserviceException
 
 import traceback
-#import datetime, random
+# import datetime, random
 import copy
 
 from privacyidea.lib.selftest import isSelfTest
@@ -117,6 +116,7 @@ ENCODING = "utf-8"
 
 optional = True
 required = False
+
 
 @log_with(log)
 def getTokenForUser(user):
@@ -139,14 +139,12 @@ class SelfserviceController(BaseController):
     def __before__(self, action, **params):
         '''
         This is the authentication to self service
-        If you want to do ANYTHING with selfservice, you need to be authenticated
+        If you want to do ANYTHING with selfservice, you need to be
+        authenticated
         The _before_ is executed before any other function in this controller.
         '''
 
         try:
-
-            param = request.params
-
             # Call the __before__ from the parents class to do the translation
             self.set_language()
 
@@ -158,9 +156,9 @@ class SelfserviceController(BaseController):
                 tokentype = None
             self.Policy = PolicyClass(request, config, c,
                                       get_privacyIDEA_config(),
-                                      tokenrealms = request.params.get('serial'),
-                                      tokentype = tokentype,
-                                      token_type_list = get_token_type_list())
+                                      tokenrealms=request.params.get('serial'),
+                                      tokentype=tokentype,
+                                      token_type_list=get_token_type_list())
 
             c.version = get_version()
             c.licenseinfo = get_copyright_info()
@@ -172,19 +170,19 @@ class SelfserviceController(BaseController):
 
             c.user = self.authUser.login
             c.realm = self.authUser.realm
-            c.tokenArray = getTokenForUser (self.authUser)
+            c.tokenArray = getTokenForUser(self.authUser)
 
-            ## only the defined actions should be displayed
-            ## - remark: the generic actions like enrollTT are already approved
-            ##   to have a rendering section and included
+            # only the defined actions should be displayed
+            # - remark: the generic actions like enrollTT are already approved
+            #   to have a rendering section and included
             actions = self.Policy.getSelfserviceActions(self.authUser)
             c.actions = actions
             for policy in actions:
                 if "=" in policy:
                     (name, val) = policy.split('=')
                     val = val.strip()
-                    ## try if val is a simple numeric -
-                    ## w.r.t. javascript evaluation
+                    # try if val is a simple numeric -
+                    # w.r.t. javascript evaluation
                     try:
                         nval = int(val)
                     except:
@@ -193,7 +191,8 @@ class SelfserviceController(BaseController):
 
             c.dynamic_actions = add_dynamic_selfservice_enrollment(c.actions)
 
-            ## we require to establish all token local defined policies to be initialiezd
+            # we require to establish all token local defined
+            # policies to be initialiezd
             additional_policies = add_dynamic_selfservice_policies(actions)
             for policy in additional_policies:
                 c.__setattr__(policy, -1)
@@ -203,15 +202,15 @@ class SelfserviceController(BaseController):
 
             return response
 
-        except webob.exc.HTTPUnauthorized as acc:
-            ## the exception, when an abort() is called if forwarded
+        except webob.exc.HTTPUnauthorized as acc:  # pragma: no cover
+            # the exception, when an abort() is called if forwarded
             log.info("%r: webob.exception %r" % (action, acc))
             log.info(traceback.format_exc())
             Session.rollback()
             Session.close()
             raise acc
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error("failed with error: %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -220,7 +219,6 @@ class SelfserviceController(BaseController):
 
         finally:
             pass
-
 
     @log_with(log)
     def __after__(self, action, **params):
@@ -231,32 +229,37 @@ class SelfserviceController(BaseController):
 
         try:
             if c.audit['action'] in ['selfservice/userassign',
-                                    'selfservice/userdisable',
-                                    'selfservice/userinit',
-                                    'selfservice/userdelete',
-                                    'selfservice/userenable',
-                                    'selfservice/userresync',
-                                    'selfservice/usersetmpin',
-                                    'selfservice/usersetpin',
-                                    'selfservice/userwebprovision',
-                                    'selfservice/usergetmultiotp',
-                                    'selfservice/userhistory',
-                                    'selfservice/index']:
+                                     'selfservice/userdisable',
+                                     'selfservice/userinit',
+                                     'selfservice/userdelete',
+                                     'selfservice/userenable',
+                                     'selfservice/userresync',
+                                     'selfservice/usersetmpin',
+                                     'selfservice/usersetpin',
+                                     'selfservice/userwebprovision',
+                                     'selfservice/usergetmultiotp',
+                                     'selfservice/userhistory',
+                                     'selfservice/index']:
                 if isSelfTest():
                     log.debug("Doing selftest!")
                     suser = getParam(param, "selftest_user", True)
                     if suser is not None:
-                        (c.user, _foo, c.realm) = getParam(param, "selftest_user", True).rpartition('@')
+                        (c.user, _foo, c.realm) = getParam(param,
+                                                           "selftest_user",
+                                                           True).rpartition('@')
                     else:
-                        raise SelfserviceException("When running in selftest, you need to specify a selftsest_user!")
+                        raise SelfserviceException("When running in selftest,"
+                                                   " you need to specify a "
+                                                   "selftest_user!")
 
-                log.debug("authenticating as %s in realm %s!" % (c.user, c.realm))
+                log.debug("authenticating as %s in realm %s!" % (c.user,
+                                                                 c.realm))
 
                 c.audit['user'] = c.user
                 c.audit['realm'] = c.realm
                 c.audit['success'] = True
 
-                if param.has_key('serial'):
+                if 'serial' in param:
                     c.audit['serial'] = param['serial']
                     c.audit['token_type'] = getTokenType(param['serial'])
 
@@ -264,15 +267,15 @@ class SelfserviceController(BaseController):
 
             return response
 
-        except webob.exc.HTTPUnauthorized as acc:
-            ## the exception, when an abort() is called if forwarded
+        except webob.exc.HTTPUnauthorized as acc:  # pragma: no cover
+            # the exception, when an abort() is called if forwarded
             log.error("%r: webob.exception %r" % (action, acc))
             log.error(traceback.format_exc())
             Session.rollback()
             Session.close()
             raise acc
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error("failed with error: %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -290,7 +293,8 @@ class SelfserviceController(BaseController):
         http_host = request.environ.get("HTTP_HOST")
         url_scheme = request.environ.get("wsgi.url_scheme")
         c.logout_url = "%s://%s/account/logout" % (url_scheme, http_host)
-        c.is_admin = is_admin_identity(request.environ.get('repoze.who.identity'), exception=False)
+        c.is_admin = is_admin_identity(request.environ.get('repoze.who.identity'),
+                                       exception=False)
         ren = render('/selfservice/base.mako')
         return ren
 
@@ -342,25 +346,23 @@ class SelfserviceController(BaseController):
             Session.commit()
             return res
 
-        except CompileException as exx:
-            log.error("compile error while processing %r.%r:" %
-                                                                (tok, scope))
+        except CompileException as exx:  # pragma: no cover
+            log.error("compile error while processing %r.%r:" % (tok, scope))
             log.error(exx)
             log.error(traceback.format_exc())
             Session.rollback()
             raise Exception(exx)
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             Session.rollback()
             error = ('error (%r) accessing form data for: tok:%r, scope:%r'
-                                ', section:%r' % (exx, tok, scope, section))
+                     ', section:%r' % (exx, tok, scope, section))
             log.error(error)
             log.error(traceback.format_exc())
             return '<pre>%s</pre>' % error
 
         finally:
             Session.close()
-
 
     def custom_style(self):
         '''
@@ -425,7 +427,6 @@ class SelfserviceController(BaseController):
         '''
         return render('/selfservice/delete.mako')
 
-
     def setpin(self):
         '''
         In this form the user may set the OTP PIN, which is the static password
@@ -468,7 +469,7 @@ class SelfserviceController(BaseController):
             Session.commit()
             return render('/selfservice/webprovisiongoogle.mako')
 
-        except Exception as exx:
+        except Exception as exx:    # pragma: no cover
             log.error("failed with error: %r" % exx)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -477,8 +478,7 @@ class SelfserviceController(BaseController):
         finally:
             Session.close()
 
-
-###### API functions
+# ##### API functions
     @log_with(log)
     def userhistory(self, action, **params):
         '''
@@ -508,21 +508,27 @@ class SelfserviceController(BaseController):
         res = {}
         try:
 
-            self.Policy.checkPolicyPre('selfservice', 'userhistory', param, self.authUser)
+            self.Policy.checkPolicyPre('selfservice',
+                                       'userhistory', param, self.authUser)
 
             lines, total, page = audit_search(param, user=self.authUser,
-                                columns=['date', 'action', 'success', 'serial',
-                                        'token_type', 'administrator',
-                                        'action_detail', 'info'])
+                                              columns=['date',
+                                                       'action',
+                                                       'success',
+                                                       'serial',
+                                                       'token_type',
+                                                       'administrator',
+                                                       'action_detail',
+                                                       'info'])
 
             response.content_type = 'application/json'
 
             if not total:
                 total = len(lines)
 
-            res = { "page" : page,
-                "total" : total,
-                "rows" : lines }
+            res = {"page": page,
+                   "total": total,
+                   "rows": lines}
 
             c.audit['success'] = True
 
@@ -535,16 +541,15 @@ class SelfserviceController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("audit/search failed: %r" % exx)
             log.error(traceback.format_exc())
             Session.rollback()
-            return sendError(response, u"audit/search failed: %s"
-                                                        % unicode(exx), 0)
+            return sendError(response, u"audit/search failed: %s" %
+                             unicode(exx), 0)
 
         finally:
             Session.close()
-
 
     def usertokenlist(self):
         '''
@@ -563,14 +568,17 @@ class SelfserviceController(BaseController):
         serial = None
 
         try:
-            self.Policy.checkPolicyPre('selfservice', 'userreset', param, self.authUser)
+            self.Policy.checkPolicyPre('selfservice',
+                                       'userreset',
+                                       param,
+                                       self.authUser)
 
             serial = getParam(param, "serial", required)
 
             if (True == isTokenOwner(serial, self.authUser)):
                 log.info("user %s@%s is resetting the failcounter"
-                                " of his token with serial %s"
-                        % (self.authUser.login, self.authUser.realm, serial))
+                         " of his token with serial %s"
+                         % (self.authUser.login, self.authUser.realm, serial))
                 ret = resetToken(serial=serial)
                 res["reset Failcounter"] = ret
 
@@ -585,7 +593,7 @@ class SelfserviceController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error("error resetting token with serial %s: %r"
                       % (serial, e))
             log.error(traceback.format_exc())
@@ -598,7 +606,8 @@ class SelfserviceController(BaseController):
     @log_with(log)
     def userresync(self, action, **params):
         '''
-        This is the internal resync function that is called from within the self service portal
+        This is the internal resync function that is called from
+        within the self service portal
         '''
 
         res = {}
@@ -607,7 +616,10 @@ class SelfserviceController(BaseController):
 
         try:
             # check selfservice authorization
-            self.Policy.checkPolicyPre('selfservice', 'userresync', param, self.authUser)
+            self.Policy.checkPolicyPre('selfservice',
+                                       'userresync',
+                                       param,
+                                       self.authUser)
 
             serial = getParam(param, "serial", required)
             otp1 = getParam(param, "otp1", required)
@@ -615,8 +627,8 @@ class SelfserviceController(BaseController):
 
             if (True == isTokenOwner(serial, self.authUser)):
                 log.info("user %s@%s is resyncing his "
-                          "token with serial %s"
-                        % (self.authUser.login, self.authUser.realm, serial))
+                         "token with serial %s"
+                         % (self.authUser.login, self.authUser.realm, serial))
                 ret = resyncToken(otp1, otp2, None, serial)
                 res["resync Token"] = ret
 
@@ -631,16 +643,15 @@ class SelfserviceController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error("error resyncing token with serial %s:%r"
-                       % (serial, e))
+                      % (serial, e))
             log.error(traceback.format_exc())
             Session.rollback()
             return sendError(response, e, 1)
 
         finally:
             Session.close()
-
 
     @log_with(log)
     def usersetmpin(self, action, **params):
@@ -649,12 +660,14 @@ class SelfserviceController(BaseController):
         '''
         res = {}
 
-        ## if there is a pin
         try:
             param = getLowerParams(request.params)
 
             # check selfservice authorization
-            self.Policy.checkPolicyPre('selfservice', 'usersetmpin', param, self.authUser)
+            self.Policy.checkPolicyPre('selfservice',
+                                       'usersetmpin',
+                                       param,
+                                       self.authUser)
 
             pin = getParam(param, "pin", required)
             serial = getParam(param, "serial", required)
@@ -662,7 +675,7 @@ class SelfserviceController(BaseController):
             if (True == isTokenOwner(serial, self.authUser)):
                 log.info("user %s@%s is setting the mOTP PIN"
                          " for token with serial %s"
-                          % (self.authUser.login, self.authUser.realm, serial))
+                         % (self.authUser.login, self.authUser.realm, serial))
                 ret = setPinUser(pin, serial)
                 res["set userpin"] = ret
 
@@ -677,7 +690,7 @@ class SelfserviceController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pex), 1)
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("Error setting the mOTP PIN %r" % exx)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -693,12 +706,14 @@ class SelfserviceController(BaseController):
         '''
         res = {}
 
-        ## if there is a pin
         try:
             param = getLowerParams(request.params)
 
             # check selfservice authorization
-            self.Policy.checkPolicyPre('selfservice', 'usersetpin', param, self.authUser)
+            self.Policy.checkPolicyPre('selfservice',
+                                       'usersetpin',
+                                       param,
+                                       self.authUser)
 
             userPin = getParam(param, "userpin", required)
             serial = getParam(param, "serial", required)
@@ -708,18 +723,20 @@ class SelfserviceController(BaseController):
                          "for token with serial %s" %
                          (self.authUser.login, self.authUser.realm, serial))
 
-                check_res = self.Policy.checkOTPPINPolicy(userPin, self.authUser)
+                check_res = self.Policy.checkOTPPINPolicy(userPin,
+                                                          self.authUser)
 
                 if not check_res['success']:
                     log.warning("Setting of OTP PIN for Token %s"
                                 " by user %s failed: %s" %
-                                        (serial, c.user, check_res['error']))
+                                (serial, c.user, check_res['error']))
                     return sendError(response, u"Setting OTP PIN failed: %s"
-                                                        % check_res['error'])
+                                     % check_res['error'])
 
                 if 1 == self.Policy.getOTPPINEncrypt(serial=serial,
-                                         user=User(c.user, "", c.realm),
-                                         tokenrealms = getTokenRealms(serial)):
+                                                     user=User(login=c.user,
+                                                               realm=c.realm),
+                                                     tokenrealms=getTokenRealms(serial)):
                     param['encryptpin'] = "True"
                 ret = setPin(userPin, None, serial, param)
                 res["set userpin"] = ret
@@ -735,7 +752,7 @@ class SelfserviceController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pex), 1)
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("Error setting OTP PIN: %r" % exx)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -774,16 +791,22 @@ class SelfserviceController(BaseController):
         try:
             # check selfservice authorization
 
-            self.Policy.checkPolicyPre('selfservice', 'usergetserialbyotp', param,
-                                                                self.authUser)
+            self.Policy.checkPolicyPre('selfservice',
+                                       'usergetserialbyotp',
+                                       param,
+                                       self.authUser)
 
             otp = getParam(param, "otp", required)
             ttype = getParam(param, "type", optional)
 
             c.audit['token_type'] = ttype
-            serial, _username, _resolverClass = get_serial_by_otp(None,
-                    otp, 10, typ=ttype, realm=self.authUser.realm, assigned=0)
-            res = {'serial' : serial}
+            serial, _user, _rCls = get_serial_by_otp(None,
+                                                     otp,
+                                                     10,
+                                                     typ=ttype,
+                                                     realm=self.authUser.realm,
+                                                     assigned=0)
+            res = {'serial': serial}
 
             c.audit['success'] = 1
             c.audit['serial'] = serial
@@ -797,7 +820,7 @@ class SelfserviceController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("token assignment failed! %r" % exx)
             Session.rollback()
             return sendError(response, exx, 1)
@@ -816,7 +839,10 @@ class SelfserviceController(BaseController):
 
         try:
             # check selfservice authorization
-            self.Policy.checkPolicyPre('selfservice', 'userassign', param, self.authUser)
+            self.Policy.checkPolicyPre('selfservice',
+                                       'userassign',
+                                       param,
+                                       self.authUser)
 
             upin = getParam(param, "pin", optional)
             serial = getParam(param, "serial", required)
@@ -824,16 +850,16 @@ class SelfserviceController(BaseController):
             # check if token is in another realm
             realm_list = getTokenRealms(serial)
             if (not self.authUser.realm.lower() in realm_list
-                        and len(realm_list)):
+                and len(realm_list)):
                 # if the token is assigned to realms, then the user must be in
                 # one of the realms, otherwise the token can not be assigned
                 raise SelfserviceException(_("The token you want to assign is "
                                              " not contained in your realm!"))
 
-            if (False == hasOwner(serial)):
+            if hasOwner(serial) is False:
                 log.info("user %s@%s is assign the token with "
-                                                    "serial %s to himself."
-                        % (self.authUser.login, self.authUser.realm, serial))
+                         "serial %s to himself."
+                         % (self.authUser.login, self.authUser.realm, serial))
                 ret = assignToken(serial, self.authUser, upin)
                 res["assign token"] = ret
 
@@ -873,14 +899,17 @@ class SelfserviceController(BaseController):
         try:
             # check selfservice authorization
 
-            self.Policy.checkPolicyPre('selfservice', 'userunassign', param, self.authUser)
+            self.Policy.checkPolicyPre('selfservice',
+                                       'userunassign',
+                                       param,
+                                       self.authUser)
 
             serial = getParam(param, "serial", optional)
             upin = getParam(param, "pin", optional)
 
             if (True == isTokenOwner(serial, self.authUser)):
                 log.info("user %s@%s is unassigning his "
-                                                        "token with serial %s."
+                         "token with serial %s."
                          % (self.authUser.login, self.authUser.realm, serial))
                 # TODO: In what realm will the unassigned token be? We should
                 # handle this in the unassign Function
@@ -898,7 +927,7 @@ class SelfserviceController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error("unassigning token %s of user %s failed! %r"
                        % (serial, c.user, e))
             log.error(traceback.format_exc())
@@ -908,11 +937,11 @@ class SelfserviceController(BaseController):
         finally:
             Session.close()
 
-
     @log_with(log)
     def userdelete(self, action, **params):
         '''
-        This is the internal delete token function that is called from within the self service portal
+        This is the internal delete token function that is called from within
+        the self service portal
         The user is only allowed to delete token, that belong to him.
         '''
         param = request.params
@@ -920,13 +949,16 @@ class SelfserviceController(BaseController):
 
         try:
             # check selfservice authorization
-            self.Policy.checkPolicyPre('selfservice', 'userdelete', param, self.authUser)
+            self.Policy.checkPolicyPre('selfservice',
+                                       'userdelete',
+                                       param,
+                                       self.authUser)
 
             serial = getParam(param, "serial", optional)
 
             if (True == isTokenOwner(serial, self.authUser)):
                 log.info("user %s@%s is deleting his token with serial %s."
-                            % (self.authUser.login, self.authUser.realm, serial))
+                         % (self.authUser.login, self.authUser.realm, serial))
                 ret = removeToken(serial=serial)
                 res["delete token"] = ret
 
@@ -941,7 +973,7 @@ class SelfserviceController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error("deleting token %s of user %s failed! %r"
                       % (serial, c.user, e))
             log.error(traceback.format_exc())
@@ -951,23 +983,26 @@ class SelfserviceController(BaseController):
         finally:
             Session.close()
 
-
     @log_with(log)
     def userdisable(self, action, **params):
         '''
-        This is the internal disable function that is called from within the self service portal
+        This is the internal disable function that is called from within
+        the self service portal
         '''
         param = request.params
         res = {}
         try:
             # check selfservice authorization
-            self.Policy.checkPolicyPre('selfservice', 'userdisable', param, self.authUser)
+            self.Policy.checkPolicyPre('selfservice',
+                                       'userdisable',
+                                       param,
+                                       self.authUser)
 
             serial = getParam(param, "serial", optional)
 
             if (True == isTokenOwner(serial, self.authUser)):
                 log.info("user %s@%s is disabling his token with serial %s."
-                            % (self.authUser.login, self.authUser.realm, serial))
+                         % (self.authUser.login, self.authUser.realm, serial))
                 ret = enableToken(False, None, serial)
                 res["disable token"] = ret
 
@@ -981,7 +1016,7 @@ class SelfserviceController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error("disabling token %s of user %s failed! %r"
                       % (serial, c.user, e))
             log.error(traceback.format_exc())
@@ -990,7 +1025,6 @@ class SelfserviceController(BaseController):
 
         finally:
             Session.close()
-
 
     @log_with(log)
     def userenable(self, action, **params):
@@ -1003,13 +1037,16 @@ class SelfserviceController(BaseController):
 
         try:
             # check selfservice authorization
-            self.Policy.checkPolicyPre('selfservice', 'userenable', param, self.authUser)
+            self.Policy.checkPolicyPre('selfservice',
+                                       'userenable',
+                                       param,
+                                       self.authUser)
 
             serial = getParam(param, "serial", optional)
 
             if (True == isTokenOwner(serial, self.authUser)):
                 log.info("user %s@%s is enabling his token with serial %s."
-                            % (self.authUser.login, self.authUser.realm, serial))
+                         % (self.authUser.login, self.authUser.realm, serial))
                 ret = enableToken(True, None, serial)
                 res["enable token"] = ret
 
@@ -1024,7 +1061,7 @@ class SelfserviceController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error("enabling token %s of user %s failed! %r"
                       % (serial, c.user, e))
             log.error(traceback.format_exc())
@@ -1034,20 +1071,19 @@ class SelfserviceController(BaseController):
         finally:
             Session.close()
 
-
     @log_with(log)
-    def token_call(self, action, **params):
+    def token_call(self, action, **params):  # pragma: no cover (not used, yet)
         '''
             the generic method call for an dynamic token
         '''
         param = {}
-
+        typ = ""
         res = {}
 
         try:
             param.update(request.params)
 
-            ## method could be part of the virtual url
+            # method could be part of the virtual url
             context = request.path_info.split('/')
             if len(context) > 2:
                 method = context[2]
@@ -1059,34 +1095,40 @@ class SelfserviceController(BaseController):
 
             # check selfservice authorization
             #
-            #TODO: use get_client_policy instead
-            #Cornelius Kölbel        Apr 18 7:31 PM
+            # TODO: use get_client_policy instead
+            # Cornelius Kölbel        Apr 18 7:31 PM
             #
-            #Hier sollte nicht mehr die Funktion getPolicy verwendet werden sondern die Funktion
+            # Hier sollte nicht mehr die Funktion getPolicy verwendet
+            # werden sondern die Funktion
             #
-            #get_client_policy
+            # get_client_policy
             #
-            #Wenn ich genau wüsste, was die Funktion token_call macht (gräßlicher Name) dann könnte ich mehr dazu sagen.
+            # Wenn ich genau wüsste, was die Funktion token_call macht
+            # (gräßlicher Name) dann könnte ich mehr dazu sagen.
             #
-            #Die Funktion getPolicy ist zu grobschlächtig ;-) get_client_policy liefert die Policies auch in Abhängigkeit vom Benutzer, vom Realm und vom anfragenden Client zurück.
+            # Die Funktion getPolicy ist zu grobschlächtig ;-)
+            # get_client_policy liefert die Policies auch in
+            # Abhängigkeit vom Benutzer, vom Realm und vom
+            # anfragenden Client zurück.
 
-            pols = self.Policy.getPolicy({ "realm" : self.authUser.realm,
-                                "scope" : "selfservice" })
+            pols = self.Policy.getPolicy({"realm": self.authUser.realm,
+                                          "scope": "selfservice"})
             found = False
             for policy in pols.values():
                 action = u'' + policy.get('action')
                 actions_in = action.split(',')
 
-                ## TODO: verify
-                ## Cornelius Kölbel        Apr 18 7:31 PM
-                ##
-                ## Das könnte schlecht sein, wenn es eine Action gibt, die irgendwie so lautet:
-                ##
-                ## sms_string="Hallo und viel Freude"
-                ##
-                ## dann wird daraus
-                ##
-                ## HalloundvielFreude
+                # TODO: verify
+                # Cornelius Kölbel        Apr 18 7:31 PM
+                #
+                # Das könnte schlecht sein, wenn es eine Action gibt,
+                # die irgendwie so lautet:
+                #
+                # sms_string="Hallo und viel Freude"
+                #
+                # dann wird daraus
+                #
+                # HalloundvielFreude
 
                 actions = []
                 for act in actions_in:
@@ -1096,7 +1138,7 @@ class SelfserviceController(BaseController):
                     found = True
                     break
 
-            if found == False:
+            if found is False:
                 log.error('user %r not authorized to call %s'
                           % (self.authUser, method))
                 raise PolicyException('user %r not authorized to call %s'
@@ -1113,10 +1155,10 @@ class SelfserviceController(BaseController):
                     tokenNum = len(toks)
                     if tokenNum == 1:
                         token = toks[0]
-                        ## object method call
+                        # object method call
                         tclt = newToken(tclass)(token)
 
-                ## static method call
+                # static method call
                 if tclt is None:
                     tclt = newToken(tclass)
                 method = '' + method.strip()
@@ -1127,7 +1169,8 @@ class SelfserviceController(BaseController):
                     if len(ret) > 1:
                         res = ret[1]
                 else:
-                    res['status'] = 'method %s.%s not supported!' % (typ, method)
+                    res['status'] = 'method %s.%s not supported!' % (typ,
+                                                                     method)
 
             Session.commit()
             return sendResult(response, res, 1)
@@ -1147,7 +1190,6 @@ class SelfserviceController(BaseController):
 
         finally:
             Session.close()
-
 
     @log_with(log)
     def usergetmultiotp(self, action, **params):
@@ -1180,18 +1222,26 @@ class SelfserviceController(BaseController):
             view = getParam(param, "view", optional)
 
             if (True != isTokenOwner(serial, self.authUser)):
-                log.error("The serial %s does not belong to user %s@%s" % (serial, self.authUser.login, self.authUser.realm))
-                return sendError(response, "The serial %s does not belong to user %s@%s" % (serial, self.authUser.login, self.authUser.realm), 1)
+                log.error("The serial %s does not belong to user %s@%s"
+                          % (serial, self.authUser.login, self.authUser.realm))
+                return sendError(response, "The serial %s does not belong "
+                                 "to user %s@%s"
+                                 % (serial, self.authUser.login,
+                                    self.authUser.realm), 1)
 
-            max_count = self.Policy.checkPolicyPre('selfservice', 'max_count', param, self.authUser)
+            max_count = self.Policy.checkPolicyPre('selfservice',
+                                                   'max_count',
+                                                   param,
+                                                   self.authUser)
             log.debug("checkpolicypre returned %s" % max_count)
             if count > max_count:
                 count = max_count
 
-
-
             log.debug("retrieving OTP value for token %s" % serial)
-            ret = get_multi_otp(serial, count=int(count), curTime=curTime, timestamp=timestamp)
+            ret = get_multi_otp(serial,
+                                count=int(count),
+                                curTime=curTime,
+                                timestamp=timestamp)
             ret["serial"] = serial
             c.audit['success'] = True
 
@@ -1200,7 +1250,7 @@ class SelfserviceController(BaseController):
                 c.ret = ret
                 return render('/selfservice/multiotp_view.mako')
             else:
-                return sendResult(response, ret , 0)
+                return sendResult(response, ret, 0)
 
         except PolicyException as pe:
             log.error("policy failed: %r" % pe)
@@ -1208,16 +1258,15 @@ class SelfserviceController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error("gettoken/getmultiotp failed: %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
-            return sendError(response, u"selfservice/usergetmultiotp failed: %s"
+            return sendError(response, u"selfservice/usergetmultiotp failed:%s"
                              % unicode(e), 0)
 
         finally:
             Session.close()
-
 
     @log_with(log)
     def userinit(self, action, **params):
@@ -1232,8 +1281,12 @@ class SelfserviceController(BaseController):
 
             # check selfservice authorization
 
-            self.Policy.checkPolicyPre('selfservice', 'userinit', param, self.authUser,
-                                       options={'token_num':len(getTokens4UserOrSerial(self.authUser))})
+            user_token_count = len(getTokens4UserOrSerial(self.authUser))
+            self.Policy.checkPolicyPre('selfservice',
+                                       'userinit',
+                                       param,
+                                       self.authUser,
+                                       options={'token_num': user_token_count})
 
             tok_type = getParam(param, "type", required)
 
@@ -1248,11 +1301,15 @@ class SelfserviceController(BaseController):
 
             log.info("initialize a token with serial %s "
                      "and type %s by user %s@%s"
-                % (serial, tok_type, self.authUser.login, self.authUser.realm))
+                     % (serial, tok_type,
+                        self.authUser.login,
+                        self.authUser.realm))
 
             log.debug("Initializing the token serial: %s,"
                       " desc: %s, otppin: %s for user %s @ %s." %
-            (serial, desc, otppin, self.authUser.login, self.authUser.realm))
+                      (serial, desc, otppin,
+                       self.authUser.login,
+                       self.authUser.realm))
             log.debug(param)
 
             (ret, tokenObj) = initToken(param, self.authUser)
@@ -1260,9 +1317,9 @@ class SelfserviceController(BaseController):
                 info = tokenObj.getInfo()
                 response_detail.update(info)
 
-            ## result enrichment - if the token is sucessfully created,
-            ## some processing info is added to the result document,
-            ##  e.g. the otpkey :-) as qr code
+            # result enrichment - if the token is sucessfully created,
+            # some processing info is added to the result document,
+            #  e.g. the otpkey :-) as qr code
             initDetail = tokenObj.getInitDetail(param, self.authUser)
             response_detail.update(initDetail)
 
@@ -1271,18 +1328,18 @@ class SelfserviceController(BaseController):
 
             # check if we are supposed to genereate a random OTP PIN
             randomPINLength = self.Policy.getRandomOTPPINLength(self.authUser)
-            if  randomPINLength > 0:
+            if randomPINLength > 0:
                 newpin = self.Policy.getRandomPin(randomPINLength)
                 log.debug("setting random pin for token "
-                                                    "with serial %s" % serial)
+                          "with serial %s" % serial)
                 # TODO: This random PIN could be processed.
                 # TODO: handle result of setPin
                 setPin(newpin, None, serial)
 
             Session.commit()
 
-            ## finally we render the info as qr image, if the qr parameter
-            ## is provided and if the token supports this
+            # finally we render the info as qr image, if the qr parameter
+            # is provided and if the token supports this
             if 'qr' in param and tokenObj is not None:
                 (rdata, hparam) = tokenObj.getQRImageData(response_detail)
                 hparam.update(response_detail)
@@ -1297,7 +1354,7 @@ class SelfserviceController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error("token initialization failed! %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -1305,7 +1362,6 @@ class SelfserviceController(BaseController):
 
         finally:
             Session.close()
-
 
     @log_with(log)
     def userwebprovision(self, action, **params):
@@ -1317,7 +1373,8 @@ class SelfserviceController(BaseController):
             http://code.google.com/p/google-authenticator/wiki/KeyUriFormat
 
         in param:
-            type: valid values are "oathtoken" and "googleauthenticator" and "googleauthenticator_time"
+            type: valid values are "oathtoken" and "googleauthenticator" and
+            "googleauthenticator_time"
         It returns the data and the URL containing the HMAC key
         '''
         param = {}
@@ -1329,20 +1386,24 @@ class SelfserviceController(BaseController):
             ret2 = False
             param.update(request.params)
 
+            user_token_count = len(getTokens4UserOrSerial(self.authUser))
             # check selfservice authorization
-            self.Policy.checkPolicyPre('selfservice', 'userwebprovision', param, self.authUser,
-                                       options={'token_num':len(getTokens4UserOrSerial(self.authUser))})
+            self.Policy.checkPolicyPre('selfservice',
+                                       'userwebprovision',
+                                       param,
+                                       self.authUser,
+                                       options={'token_num': user_token_count})
 
-            type = getParam(param, "type", required)
+            typ = getParam(param, "type", required)
 
             serial = param.get('serial', None)
             prefix = param.get('prefix', None)
 
             desc = ""
-            #date = datetime.datetime.now().strftime("%y%m%d%H%M%S")
-            #rNum = random.randrange(1000, 9999)
+            # date = datetime.datetime.now().strftime("%y%m%d%H%M%S")
+            # rNum = random.randrange(1000, 9999)
 
-            if type.lower() == "oathtoken":
+            if typ.lower() == "oathtoken":
                 t_type = 'hmac'
                 desc = "OATHtoken web provisioning"
 
@@ -1357,39 +1418,45 @@ class SelfserviceController(BaseController):
                 # Usually the URL is 106 bytes long
                 otpkey = generate_otpkey(20)
 
-                log.debug("Initializing the token serial: %s, desc: %s for user %s @ %s." %
-                        (serial, desc, self.authUser.login, self.authUser.realm))
-                (ret1, tokenObj) = initToken({ 'type': t_type,
-                                'serial': serial,
-                                'description' : desc,
-                                'otpkey' : otpkey,
-                                'otplen' : 6,
-                                'timeStep' : 30,
-                                'timeWindow' : 180,
-                                'hashlib' : "sha1"
-                                }, self.authUser)
+                log.debug("Initializing the token serial: %s, desc: %s "
+                          "for user %s @ %s." %
+                          (serial, desc,
+                           self.authUser.login,
+                           self.authUser.realm))
+                (ret1, _tokenObj) = initToken({'type': t_type,
+                                               'serial': serial,
+                                               'description': desc,
+                                               'otpkey': otpkey,
+                                               'otplen': 6,
+                                               'timeStep': 30,
+                                               'timeWindow': 180,
+                                               'hashlib': "sha1"
+                                               }, self.authUser)
 
                 if ret1:
-                    url = create_oathtoken_url(self.authUser.login, self.authUser.realm , otpkey, serial=serial)
-                    ret = {
-                        'url' : url,
-                        'img' : create_img(url, width=300, alt=serial),
-                        'key' : otpkey,
-                        'name' : serial,
-                        'serial' : serial,
-                        'timeBased' : False,
-                        'counter' : 0,
-                        'numDigits': 6,
-                        'lockdown' : True
-                    }
+                    url = create_oathtoken_url(self.authUser.login,
+                                               self.authUser.realm,
+                                               otpkey,
+                                               serial=serial)
+                    ret = {'url': url,
+                           'img': create_img(url, width=300, alt=serial),
+                           'key': otpkey,
+                           'name': serial,
+                           'serial': serial,
+                           'timeBased': False,
+                           'counter': 0,
+                           'numDigits': 6,
+                           'lockdown': True
+                           }
 
-            elif type.lower() in [ "googleauthenticator", "googleauthenticator_time"]:
-                desc	 = "Google Authenticator web prov"
+            elif typ.lower() in ["googleauthenticator",
+                                 "googleauthenticator_time"]:
+                desc = "Google Authenticator web prov"
 
                 # ideal: 32 byte.
                 otpkey = generate_otpkey(32)
                 t_type = "hmac"
-                if type.lower() == "googleauthenticator_time":
+                if typ.lower() == "googleauthenticator_time":
                     t_type = "totp"
 
                 if prefix is None:
@@ -1397,32 +1464,41 @@ class SelfserviceController(BaseController):
                 if serial is None:
                     serial = genSerial(t_type, prefix)
 
-                log.debug("Initializing the token serial: %s, desc: %s for user %s @ %s." %
-                        (serial, desc, self.authUser.login, self.authUser.realm))
-                (ret1, tokenObj) = initToken({ 'type': t_type,
-                                'serial': serial,
-                                'otplen': 6,
-                                'description' : desc,
-                                'otpkey' : otpkey,
-                                'timeStep' : 30,
-                                'timeWindow' : 180,
-                                'hashlib' : "sha1"
-                                }, self.authUser)
+                log.debug("Initializing the token serial: %s, desc: %s for"
+                          " user %s @ %s." %
+                          (serial, desc, self.authUser.login,
+                           self.authUser.realm))
+                (ret1, _tokenObj) = initToken({'type': t_type,
+                                               'serial': serial,
+                                               'otplen': 6,
+                                               'description': desc,
+                                               'otpkey': otpkey,
+                                               'timeStep': 30,
+                                               'timeWindow': 180,
+                                               'hashlib': "sha1"
+                                               }, self.authUser)
 
                 if ret1:
-                        url = create_google_authenticator_url(self.authUser.login, self.authUser.realm, otpkey, serial=serial, type=t_type)
-                        label = "%s@%s" % (self.authUser.login, self.authUser.realm)
-                        ret = {
-                            'url' :     url,
-                            'img' :     create_img(url, width=300, alt=serial),
-                            'key' :     otpkey,
-                            'label' :   label,
-                            'serial' :  serial,
-                            'counter' : 0,
-                            'digits':   6,
-                        }
+                        url = create_google_authenticator_url(self.authUser.login,
+                                                              self.authUser.realm,
+                                                              otpkey,
+                                                              serial=serial,
+                                                              type=t_type)
+                        label = "%s@%s" % (self.authUser.login,
+                                           self.authUser.realm)
+                        ret = {'url': url,
+                               'img': create_img(url, width=300, alt=serial),
+                               'key': otpkey,
+                               'label': label,
+                               'serial': serial,
+                               'counter': 0,
+                               'digits': 6,
+                               }
             else:
-                return sendError(response, "valid types are 'oathtoken' and 'googleauthenticator' and 'googleauthenticator_time'. You provided %s" % type)
+                return sendError(response, "valid types are 'oathtoken' and"
+                                 " 'googleauthenticator' and "
+                                 "'googleauthenticator_time'. "
+                                 "You provided %s" % typ)
 
             logTokenNum()
             c.audit['serial'] = serial
@@ -1432,14 +1508,17 @@ class SelfserviceController(BaseController):
 
             # check if we are supposed to genereate a random OTP PIN
             randomPINLength = self.Policy.getRandomOTPPINLength(self.authUser)
-            if  randomPINLength > 0:
+            if randomPINLength > 0:
                 newpin = self.Policy.getRandomPin(randomPINLength)
-                log.debug("setting random pin for token with serial %s" % serial)
+                log.debug("setting random pin for token with serial %s"
+                          % serial)
                 ret2 = setPin(newpin, None, serial)
                 # TODO: This random PIN could be processed.
 
             Session.commit()
-            return sendResult(response, { 'init': ret1, 'setpin' : ret2, 'oathtoken' : ret})
+            return sendResult(response, {'init': ret1,
+                                         'setpin': ret2,
+                                         'oathtoken': ret})
 
         except PolicyException as pe:
             log.error("policy failed: %r" % pe)
@@ -1447,7 +1526,7 @@ class SelfserviceController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error("token initialization failed! %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -1462,7 +1541,8 @@ class SelfserviceController(BaseController):
     def userfinshocratoken(self, action, **params):
         '''
 
-        userfinshocratoken - called from the selfservice web ui to finish the  OCRA token to
+        userfinshocratoken - called from the selfservice web ui to finish the
+                             OCRA token to
                              run the final check_t for the token
 
         :param passw: the calculated verificaton otp
@@ -1481,8 +1561,10 @@ class SelfserviceController(BaseController):
         try:
             ''' check selfservice authorization '''
 
-            self.Policy.checkPolicyPre('selfservice', 'userwebprovision',
-                                                    param, self.authUser)
+            self.Policy.checkPolicyPre('selfservice',
+                                       'userwebprovision',
+                                       param,
+                                       self.authUser)
 
             transid = getParam(param, 'transactionid', required)
             passw = getParam(param, 'pass', required)
@@ -1493,14 +1575,15 @@ class SelfserviceController(BaseController):
             ocraChallenge = OcraTokenClass.getTransaction(transid)
             if ocraChallenge is None:
                 error = ('[userfinshocratoken] No challenge for transaction'
-                            ' %s found' % unicode(transid))
+                         ' %s found' % unicode(transid))
                 log.error(error)
                 raise SelfserviceException(error)
 
             serial = ocraChallenge.tokenserial
             if serial != p_serial:
                 error = ('[userfinshocratoken] token mismatch for token '
-                      'serial: %s - %s' % (unicode(serial), unicode(p_serial)))
+                         'serial: %s - %s' % (unicode(serial),
+                                              unicode(p_serial)))
                 log.error(error)
                 raise SelfserviceException(error)
 
@@ -1520,12 +1603,13 @@ class SelfserviceController(BaseController):
             elif len(realms) > 0:
                 realm = realms[0]
 
-            userInfo = getUserInfo(tok.privacyIDEAUserid, tok.privacyIDEAIdResolver,
-                                                        tok.privacyIDEAIdResClass)
+            userInfo = getUserInfo(tok.privacyIDEAUserid,
+                                   tok.privacyIDEAIdResolver,
+                                   tok.privacyIDEAIdResClass)
             user = User(login=userInfo.get('username'), realm=realm)
 
             (ok, opt) = checkSerialPass(serial, passw, user=user,
-                                            options={'transactionid': transid})
+                                        options={'transactionid': transid})
 
             failcount = tokens[0].getFailCount()
             typ = tokens[0].type
@@ -1546,7 +1630,7 @@ class SelfserviceController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             error = "[userfinshocratoken] token initialization failed! %r" % e
             log.error(traceback.format_exc())
             log.error(error)
@@ -1556,9 +1640,6 @@ class SelfserviceController(BaseController):
         finally:
             Session.close()
 
-
-
-##--
     @log_with(log)
     def userfinshocra2token(self, action, **params):
         '''
@@ -1589,8 +1670,10 @@ class SelfserviceController(BaseController):
         try:
             ''' check selfservice authorization '''
 
-            self.Policy.checkPolicyPre('selfservice', 'userwebprovision',
-                                                        param, self.authUser)
+            self.Policy.checkPolicyPre('selfservice',
+                                       'userwebprovision',
+                                       param,
+                                       self.authUser)
             passw = getParam(param, "pass", required)
 
             transid = param.get('state', None)
@@ -1602,21 +1685,22 @@ class SelfserviceController(BaseController):
                 transid = param.get('transactionid', None)
 
             if transid is None:
-                raise SelfserviceException("missing parameter: state or transactionid!")
+                raise SelfserviceException("missing parameter: "
+                                           "state or transactionid!")
 
             serial = get_tokenserial_of_transaction(transId=transid)
             if serial is None:
                 value['value'] = False
-                value['failure'] = 'No challenge for transaction %r found'\
-                                    % transid
+                value['failure'] = 'No challenge for transaction %r found' % transid
 
             else:
                 param['serial'] = serial
 
                 tokens = getTokens4UserOrSerial(serial=serial)
                 if len(tokens) == 0 or len(tokens) > 1:
-                    raise SelfserviceException('tokenmismatch for token serial: %s'
-                                    % (unicode(serial)))
+                    raise SelfserviceException('tokenmismatch for token '
+                                               'serial: %s'
+                                               % (unicode(serial)))
 
                 theToken = tokens[0]
                 tok = theToken.token
@@ -1627,11 +1711,15 @@ class SelfserviceController(BaseController):
                 elif len(realms) > 0:
                     realm = realms[0]
 
-                userInfo = getUserInfo(tok.privacyIDEAUserid, tok.privacyIDEAIdResolver, tok.privacyIDEAIdResClass)
+                userInfo = getUserInfo(tok.privacyIDEAUserid,
+                                       tok.privacyIDEAIdResolver,
+                                       tok.privacyIDEAIdResClass)
                 user = User(login=userInfo.get('username'), realm=realm)
 
-                (ok, opt) = checkSerialPass(serial, passw, user=user,
-                                     options=param)
+                (ok, opt) = checkSerialPass(serial,
+                                            passw,
+                                            user=user,
+                                            options=param)
 
                 value['value'] = ok
                 failcount = theToken.getFailCount()
@@ -1653,7 +1741,7 @@ class SelfserviceController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             error = "token initialization failed! %r" % e
             log.error(traceback.format_exc())
             log.error(error)
@@ -1663,12 +1751,11 @@ class SelfserviceController(BaseController):
         finally:
             Session.close()
 
-
     @log_with(log)
     def useractivateocratoken(self, action, **params):
         '''
-
-        useractivateocratoken - called from the selfservice web ui to activate the  OCRA token
+        useractivateocratoken - called from the selfservice web ui to activate
+        the  OCRA token
 
         :param type:    'ocra'
         :type type:     string
@@ -1693,13 +1780,15 @@ class SelfserviceController(BaseController):
             param.update(request.params)
 
             # check selfservice authorization
-            self.Policy.checkPolicyPre('selfservice', 'useractivateocratoken',
-                                                    param, self.authUser)
+            self.Policy.checkPolicyPre('selfservice',
+                                       'useractivateocratoken',
+                                       param,
+                                       self.authUser)
 
             typ = getParam(param, "type", required)
             if typ.lower() not in ["ocra", "ocra2"]:
                 return sendError(response, "valid types are 'ocra'. "
-                                                    "You provided %s" % typ)
+                                 "You provided %s" % typ)
 
             helper_param = {}
             helper_param['type'] = typ
@@ -1723,14 +1812,13 @@ class SelfserviceController(BaseController):
             url = info.get('app_import')
             trans = info.get('transactionid')
 
-            ret = {
-                'url'       : url,
-                'img'       : create_img(url, width=400, alt=url),
-                'label'     : "%s@%s" % (self.authUser.login,
-                                            self.authUser.realm),
-                'serial'    : serial,
-                'transaction' : trans,
-            }
+            ret = {'url': url,
+                   'img': create_img(url, width=400, alt=url),
+                   'label': "%s@%s" % (self.authUser.login,
+                                       self.authUser.realm),
+                   'serial': serial,
+                   'transaction': trans,
+                   }
 
             logTokenNum()
 
@@ -1747,7 +1835,7 @@ class SelfserviceController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error("token initialization failed! %r"
                       % e)
             log.error(traceback.format_exc())
@@ -1816,7 +1904,7 @@ def add_dynamic_selfservice_enrollment(actions):
                             e_name = "%s.%s.%s" % (tok, 'selfservice', action)
                             dynamic_actions[e_name] = t_html
 
-            except Exception as e:
+            except Exception as e:  # pragma: no cover
                 log.info('no policy for tokentype '
                          '%s found (%r)' % (unicode(tok), e))
 
@@ -1845,16 +1933,16 @@ def add_dynamic_selfservice_policies(actions):
         tclass = tokenclasses.get(tok)
         tclt = newToken(tclass)
         if hasattr(tclt, 'getClassInfo'):
-            ## check if we have a policy in the token definition
+            # check if we have a policy in the token definition
             try:
                 policy = tclt.getClassInfo('policy', ret=None)
-                if policy is not None and policy.has_key('selfservice'):
+                if policy is not None and 'selfservice' in policy:
                     scope_policies = policy.get('selfservice').keys()
                     ''' initialize the policies '''
                     if len(defined_policies) == 0:
                         for pol in actions:
                             if '=' in pol:
-                                (name, val) = pol.split('=')
+                                (name, _val) = pol.split('=')
                                 defined_policies.append(name)
 
                     for local_policy in scope_policies:
@@ -1866,9 +1954,8 @@ def add_dynamic_selfservice_policies(actions):
 
     return dynamic_policies
 
-def add_local_policies():
 
+def add_local_policies():
     return
 
-#eof##########################################################################
-
+# eof#######################################################################

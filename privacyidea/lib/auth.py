@@ -36,10 +36,10 @@ def get_basic_auth_client_list():
     :rtype: list of strings
     '''
 
-
     clients = ini_config.get("privacyideaBasicAuth.clients", "")
-    client_list = [ c.strip() for c in clients.split("," )]
+    client_list = [c.strip() for c in clients.split(",")]
     return client_list
+
 
 def is_client_in_basic_auth(client):
     '''
@@ -51,13 +51,15 @@ def is_client_in_basic_auth(client):
     try:
         client_list = get_basic_auth_client_list()
         for network in client_list:
-            if IPAddress(client) in IPNetwork(network):
-                res = True
+            if network:
+                if IPAddress(client) in IPNetwork(network):
+                    res = True
     except Exception as exx:
         # THe client IPs could be misconfigured
         log.error("Can not be determined: %r" % exx)
         
     return res
+
 
 def request_classifier(environ):
     '''

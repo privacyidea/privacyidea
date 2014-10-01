@@ -37,14 +37,14 @@ from pylons.controllers.util import abort
 from privacyidea.lib.base import BaseController
 
 from privacyidea.weblib.util import get_client
-from privacyidea.lib.util import  getParam
-from privacyidea.lib.user import  getUserFromParam
-from privacyidea.lib.realm import  getDefaultRealm
-from privacyidea.lib.user import  getUserInfo
-from privacyidea.lib.user import  getUserId
-from privacyidea.lib.user    import User
+from privacyidea.lib.util import getParam
+from privacyidea.lib.user import getUserFromParam
+from privacyidea.lib.realm import getDefaultRealm
+from privacyidea.lib.user import getUserInfo
+from privacyidea.lib.user import getUserId
+from privacyidea.lib.user import User
 
-from privacyidea.lib.config  import getFromConfig
+from privacyidea.lib.config import getFromConfig
 
 from privacyidea.lib.token import checkUserPass, checkSerialPass
 from privacyidea.lib.token import get_tokenserial_of_transaction
@@ -69,17 +69,17 @@ optional = True
 required = False
 
 log = logging.getLogger(__name__)
-
-
-#from paste.debug.profile import profile_decorator
+# from paste.debug.profile import profile_decorator
 
 
 class ValidateController(BaseController):
 
     '''
-    The privacyidea.controllers are the implementation of the web-API to talk to the privacyIDEA server.
-    The ValidateController is used to validate the username with its given OTP value.
-    An Authentication module like pam_privacyidea or rlm_privacyidea uses this ValidateController.
+    The privacyidea.controllers are the implementation of the web-API to talk
+    to the privacyIDEA server.
+    The ValidateController is used to validate the username with its given
+    OTP value. An Authentication module like pam_privacyidea or rlm_privacyidea
+    uses this ValidateController.
     The functions of the ValidateController are invoked like this
 
         https://server/validate/<functionname>
@@ -93,10 +93,10 @@ class ValidateController(BaseController):
             c.audit['client'] = get_client()
             self.Policy = PolicyClass(request, config, c,
                                       get_privacyIDEA_config(),
-                                      token_type_list = get_token_type_list())
+                                      token_type_list=get_token_type_list())
             return response
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("exception %r" % (action, exx))
             log.error(traceback.format_exc())
             Session.rollback()
@@ -105,7 +105,6 @@ class ValidateController(BaseController):
 
         finally:
             pass
-
 
     @log_with(log)
     def __after__(self, action, **params):
@@ -124,14 +123,12 @@ class ValidateController(BaseController):
         :rtype: Tuple(boolean, opt)
 
         '''
-        opt = None
-
         options = {}
 
-        ## put everythin in the options but the user, pass, init
+        # put everythin in the options but the user, pass, init
         options.update(param)
         for para in ["pass", "user", "init"]:
-            if options.has_key(para):
+            if para in options:
                 del options[para]
 
         passw = getParam(param, "pass", optional)
@@ -148,11 +145,14 @@ class ValidateController(BaseController):
         c.audit['realm'] = realm
 
         # AUTHORIZATION Pre Check
-        # we need to overwrite the user.realm in case the user does not exist in the original realm (setrealm-policy)
+        # we need to overwrite the user.realm in case the user does not exist
+        # in the original realm (setrealm-policy)
         user.realm = self.Policy.set_realm(user.login, realm, exception=True)
-        self.Policy.check_user_authorization(user.login, user.realm, exception=True)
+        self.Policy.check_user_authorization(user.login,
+                                             user.realm,
+                                             exception=True)
 
-        if isSelfTest() == True:
+        if isSelfTest() is True:
             initTime = getParam(param, "init", optional)
             if initTime is not None:
                 if options is None:
@@ -169,12 +169,16 @@ class ValidateController(BaseController):
             if len(toks) > 0 and c.audit["serial"]:
                 # This might be empty in case of passOnNoToken
                 ttype = toks[0].getType().lower()
-                self.Policy.check_auth_tokentype(ttype, exception=True, user=user)
-                self.Policy.check_auth_serial(c.audit['serial'], exception=True, user=user)
+                self.Policy.check_auth_tokentype(ttype,
+                                                 exception=True,
+                                                 user=user)
+                self.Policy.check_auth_serial(c.audit['serial'],
+                                              exception=True,
+                                              user=user)
 
         # add additional details
         if self.Policy.is_auth_return(ok, user=user):
-            if opt == None:
+            if opt is None:
                 opt = {}
             if ok:
                 opt['realm'] = c.audit.get('realm')
@@ -186,26 +190,35 @@ class ValidateController(BaseController):
 
         return (ok, opt)
 
-
     # @profile_decorator(log_file="/tmp/validate.prof")
     @log_with(log)
     def check(self, action, **params):
 
         '''
-        This function is used to validate the username and the otp value/password.
+        This function is used to validate the username and the
+        otp value/password.
 
         method:
             validate/check
 
         arguments:
 
-           * user:    The username or loginname
-           * pass:    The password that consist of a possible fixed password component and the OTP value
-           * realm (optional): An optional realm to match the user to a useridresolver
-           * challenge (optional): optional challenge + otp verification for challenge response token. This indicates, that tis request is a challenge request.
-           * data (optional): optional challenge + otp verification for challenge response token.  This indicates, that tis request is a challenge request.
-           * state (optional): The optional id to respond to a previous challenge.
-           * transactionid (optional): The optional id to respond to a previous challenge.
+        :param user: The username or loginname
+        :param pass: The password that consist of a possible fixed password
+                     component and the OTP value
+        :param realm: A realm to match the user to a useridresolver
+        :type realm: optional
+        :param challenge: challenge + otp verification for challenge response
+                          token. This indicates, that tis request is a
+                          challenge request.
+        :type challenge: optional
+        :param data: challenge + otp verification for challenge response token.
+                     This indicates, that tis request is a challenge request.
+        :type data: optional
+        :param state: The id to respond to a previous challenge.
+        :type state: optional
+        :param transactionid: The id to respond to a previous challenge.
+        :type transactionid: optional
 
         returns:
             JSON response::
@@ -243,14 +256,14 @@ class ValidateController(BaseController):
                 c.audit['info'] = unicode(exx)
                 ok = False
                 if self.Policy.is_auth_return(ok):
-                    if opt == None:
+                    if opt is None:
                         opt = {}
                     opt['error'] = c.audit.get('info')
 
             Session.commit()
 
             qr = getParam(param, 'qr', optional)
-            if qr is not None and opt is not None and opt.has_key('message'):
+            if qr is not None and opt is not None and 'message' in opt:
                 try:
                     dataobj = opt.get('message')
                     param['alt'] = "%s" % opt
@@ -261,10 +274,11 @@ class ValidateController(BaseController):
             else:
                 return sendResult(response, ok, 0, opt=opt)
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("validate/check failed: %r" % exx)
             log.error(traceback.format_exc())
-            # If an internal error occurs or the SMS gateway did not send the SMS, we write this to the detail info.
+            # If an internal error occurs or the SMS gateway did not send
+            # the SMS, we write this to the detail info.
             c.audit['info'] = unicode(exx)
 
             Session.rollback()
@@ -282,7 +296,8 @@ class ValidateController(BaseController):
         method:
             validate/check_yubikey
 
-        :param pass: The password that consist of the static yubikey prefix and the otp
+        :param pass: The password that consist of the static yubikey prefix
+                     and the otp
         :type pass: string
 
         :return: JSON Object
@@ -312,11 +327,21 @@ class ValidateController(BaseController):
             ok = False
             try:
                 ok, opt = checkYubikeyPass(passw)
+                if ok:
+                    serial = opt.get('serial')
+                    user = User(login=opt.get('user'),
+                                realm=opt.get('realm'))
+                    self.Policy.check_auth_tokentype("yubikey",
+                                                     exception=True,
+                                                     user=user)
+                    self.Policy.check_auth_serial(serial,
+                                                  exception=True,
+                                                  user=user)
                 c.audit['success'] = ok
 
             except AuthorizeException as exx:
-                log.warning("authorization failed for validate/check_yubikey: %r"
-                            % exx)
+                log.warning("authorization failed for "
+                            "validate/check_yubikey: %r" % exx)
                 c.audit['success'] = False
                 c.audit['info'] = unicode(exx)
                 ok = False
@@ -324,7 +349,7 @@ class ValidateController(BaseController):
             Session.commit()
             return sendResult(response, ok, 0, opt=opt)
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("validate/check_yubikey failed: %r" % exx)
             log.error(traceback.format_exc())
             c.audit['info'] = unicode(exx)
@@ -346,9 +371,10 @@ class ValidateController(BaseController):
             param.update(request.params)
 
             try:
-                (ok, opt) = self._check(param)
+                (ok, _opt) = self._check(param)
             except AuthorizeException as acc:
-                log.warning("authorization failed for validate/check_url: %r" % acc)
+                log.warning("authorization failed for validate/check_url: %r"
+                            % acc)
                 c.audit['success'] = False
                 c.audit['action_detail'] = unicode(acc)
                 ok = False
@@ -356,20 +382,20 @@ class ValidateController(BaseController):
             Session.commit()
             response.headers['blablafoo'] = 'application/json'
 
-            ## TODO: this code seems not to be finished
+            # TODO: this code seems not to be finished
             if not ok:
                 abort(403)
             else:
                 return "Preshared Key Todo"
 
         except webob.exc.HTTPUnauthorized as acc:
-            ## the exception, when an abort() is called if forwarded
+            # the exception, when an abort() is called if forwarded
             log.error("webob.exception %r" % acc)
             log.error(traceback.format_exc())
             Session.rollback()
             raise acc
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("validate/check_url failed: %r" % exx)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -438,7 +464,7 @@ class ValidateController(BaseController):
                               0,
                               opt)
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("validate/check failed: %r" % exx)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -474,9 +500,8 @@ class ValidateController(BaseController):
             serial = get_tokenserial_of_transaction(transId=transid)
             if serial is None:
                 value['value'] = False
-                value['failure'] = 'No challenge for transaction %r found'\
-                                    % transid
-
+                value['failure'] = ('No challenge for transaction %r found' %
+                                    transid)
 
             else:
                 param['serial'] = serial
@@ -494,22 +519,26 @@ class ValidateController(BaseController):
                 elif len(realms) > 0:
                     realm = realms[0]
 
-                userInfo = getUserInfo(tok.privacyIDEAUserid, tok.privacyIDEAIdResolver, tok.privacyIDEAIdResClass)
+                userInfo = getUserInfo(tok.privacyIDEAUserid,
+                                       tok.privacyIDEAIdResolver,
+                                       tok.privacyIDEAIdResClass)
                 user = User(login=userInfo.get('username'), realm=realm)
 
-                (ok, opt) = checkSerialPass(serial, passw, user=user,
-                                     options=param)
+                (ok, opt) = checkSerialPass(serial,
+                                            passw,
+                                            user=user,
+                                            options=param)
 
                 value['value'] = ok
                 failcount = theToken.getFailCount()
                 value['failcount'] = int(failcount)
 
             c.audit['success'] = ok
-            #c.audit['info'] += "%s=%s, " % (k, value)
+            # c.audit['info'] += "%s=%s, " % (k, value)
             Session.commit()
 
             qr = getParam(param, 'qr', optional)
-            if qr is not None and opt is not None and opt.has_key('message'):
+            if qr is not None and opt is not None and 'message' in opt:
                 try:
                     dataobj = opt.get('message')
                     param['alt'] = "%s" % opt
@@ -520,7 +549,7 @@ class ValidateController(BaseController):
             else:
                 return sendResult(response, value, 1, opt=opt)
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("validate/check_t failed: %r" % exx)
             log.error(traceback.format_exc())
             c.audit['info'] = unicode(exx)
@@ -534,15 +563,16 @@ class ValidateController(BaseController):
     @log_with(log)
     def check_s(self, action, **params):
         '''
-        This function is used to validate the serial and the otp value/password.
+        This function is used to validate the serial and the
+        otp value/password.
 
         method:
             validate/check_s
 
         arguments:
             * serial:  the serial number of the token
-            * pass:    the password that consists of a possible fixes password component
-                        and the OTP value
+            * pass:    the password that consists of a possible fixes password
+                       component and the OTP value
 
         returns:
             JSON response
@@ -557,7 +587,7 @@ class ValidateController(BaseController):
                 del options[k]
 
         if 'init' in param:
-            if isSelfTest() == True:
+            if isSelfTest() is True:
                 options['initTime'] = param.get('init')
 
         try:
@@ -565,7 +595,7 @@ class ValidateController(BaseController):
             serial = getParam(param, 'serial', optional)
             if serial is None:
                 user = getParam(param, 'user', optional)
-                if user is  not None:
+                if user is not None:
                     user = getUserFromParam(param, optional)
                     toks = getTokens4UserOrSerial(user=user)
                     if len(toks) == 0:
@@ -581,14 +611,17 @@ class ValidateController(BaseController):
                         elif len(realms) > 0:
                             realm = realms[0]
 
-                        userInfo = getUserInfo(tok.privacyIDEAUserid, tok.privacyIDEAIdResolver, tok.privacyIDEAIdResClass)
-                        user = User(login=userInfo.get('username'), realm=realm)
+                        userInfo = getUserInfo(tok.privacyIDEAUserid,
+                                               tok.privacyIDEAIdResolver,
+                                               tok.privacyIDEAIdResClass)
+                        user = User(login=userInfo.get('username'),
+                                    realm=realm)
 
                         serial = tok.getSerial()
 
             c.audit['serial'] = serial
 
-            if isSelfTest() == True:
+            if isSelfTest() is True:
                 initTime = getParam(param, "init", optional)
                 if initTime is not None:
                     if options is None:
@@ -601,7 +634,7 @@ class ValidateController(BaseController):
             Session.commit()
 
             qr = getParam(param, 'qr', optional)
-            if qr is not None and opt is not None and opt.has_key('message'):
+            if qr is not None and opt is not None and 'message' in opt:
                 try:
                     dataobj = opt.get('message')
                     param['alt'] = "%s" % opt
@@ -612,7 +645,7 @@ class ValidateController(BaseController):
             else:
                 return sendResult(response, ok, 0, opt=opt)
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("validate/check_s failed: %r" % exx)
             log.error(traceback.format_exc())
             c.audit['info'] = unicode(exx)
@@ -623,19 +656,19 @@ class ValidateController(BaseController):
         finally:
             Session.close()
 
-
     @log_with(log)
     def simplecheck(self, action, **params):
         '''
-        This function is used to validate the username and the otp value/password.
+        This function is used to validate the username and the otp
+        value/password.
 
         method:
             validate/simplecheck
 
         arguments:
             * user:    username / loginname
-            * pass:    the password that consists of a possible fixes password component
-                        and the OTP value
+            * pass:    the password that consists of a possible fixes password
+                       component and the OTP value
             * realm:   additional realm to match the user to a useridresolver
 
         returns:
@@ -663,13 +696,13 @@ class ValidateController(BaseController):
 
             Session.commit()
 
-            if ok == True:
+            if ok is True:
                 ret = u":-)"
             else:
                 ret = u":-("
             res.append(ret)
 
-            if opt != None:
+            if opt is not None:
 
                 stat = opt.get('transactionid') or opt.get('state') or ""
                 res.append(stat)
@@ -677,11 +710,11 @@ class ValidateController(BaseController):
                 msg = opt.get('data') or opt.get('message') or ""
                 res.append(msg)
 
-                #TODO: implement serialize additional info of check
+                # TODO: implement serialize additional info of check
 
             return " ".join(res)
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("failed: %r" % exx)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -689,7 +722,6 @@ class ValidateController(BaseController):
 
         finally:
             Session.close()
-
 
     def ok(self):
         return sendResult(response, "TRUE", 0)
@@ -728,15 +760,14 @@ class ValidateController(BaseController):
 
             (ret, opt) = self._check(param)
 
-            ## here we build some backward compatibility
+            # here we build some backward compatibility
             if type(opt) is dict:
                 state = opt.get('state', '') or ''
                 message = opt.get('message', '') or 'No sms message defined!'
 
             # sucessfull submit
             if (message in ['sms with otp already submitted',
-                            'sms submitted']
-                and len(state) > 0):
+                            'sms submitted'] and len(state) > 0):
                 ret = True
                 c.audit['success'] = 1
 
@@ -752,10 +783,11 @@ class ValidateController(BaseController):
             Session.commit()
             return sendResult(response, ret, opt)
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("validate/smspin failed: %r" % exx)
             log.error(traceback.format_exc())
-            # If an internal error occurs or the SMS gateway did not send the SMS, we write this to the detail info.
+            # If an internal error occurs or the SMS gateway did not send
+            # the SMS, we write this to the detail info.
             c.audit['info'] = unicode(exx)
             Session.rollback()
             return sendError(response, "validate/smspin failed: %s"
@@ -763,7 +795,3 @@ class ValidateController(BaseController):
 
         finally:
             Session.close()
-
-
-#eof###########################################################################
-

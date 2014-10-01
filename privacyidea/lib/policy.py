@@ -2399,12 +2399,11 @@ class PolicyClass(object):
     
         return res
     
-
     @log_with(log)
     def check_auth_serial(self, serial, exception=False, user=None):
         '''
         Checks if the token with the serial number matches the serial
-        authorize policy scope=authoriztaion, action=serial
+        authorize policy scope=authorizaion, action=serial
     
         :param serial: The serial number of the token to check
         :type serial: string
@@ -2428,23 +2427,26 @@ class PolicyClass(object):
         login = user.login
         realm = user.realm or getDefaultRealm()
         res = False
-    
-        pol = self.get_client_policy(client, scope="authorization", action="serial",
-                                realm=realm, user=login, userObj=user)
+        
+        pol = self.get_client_policy(client, scope="authorization",
+                                     action="serial",
+                                     realm=realm, user=login, userObj=user)
+        log.error(pol)
         if len(pol) == 0:
             # No policy found, so we skip the rest
-            log.debug("No policy scope=authorize, action=serial for user %r, realm %r, client %r"  % (login, 
-                                                                                                      realm, 
-                                                                                                      client))
+            log.error("No policy scope=authorize, action=serial for user %r, "
+                      "realm %r, client %r" % (login, realm, client))
             return True
     
-        log.debug("got policy %s for user %s@%s  client %s" % (pol, 
-                                                               login, 
-                                                               realm, 
+        log.debug("got policy %s for user %s@%s  client %s" % (pol,
+                                                               login,
+                                                               realm,
                                                                client))
     
         # extract the value from the policy
-        serial_regexp = self.getPolicyActionValue(pol, "serial", max=False, String=True)
+        serial_regexp = self.getPolicyActionValue(pol, "serial",
+                                                  max=False,
+                                                  String=True)
         log.debug("found this regexp /%r/ for the serial %r"
                   % (serial_regexp, serial))
     
@@ -2454,8 +2456,9 @@ class PolicyClass(object):
     
         if res is False and exception:
             self.c.audit["action_detail"] = "failed due to authorization/serial policy"
-            raise AuthorizeException(_("Authorization for token %s failed on client %s") % (serial,
-                                                                                         client))
+            raise AuthorizeException(_("Authorization for token %s failed"
+                                       " on client %s") % (serial,
+                                                           client))
     
         return res
     

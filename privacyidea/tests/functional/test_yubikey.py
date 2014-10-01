@@ -23,7 +23,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''     
+'''
   Description:  functional tests
                 
   Dependencies: -
@@ -51,11 +51,14 @@ class TestYubikeyController(TestController):
         }
         public_uid = "ecebeeejedecebeg"
 
-        response = self.app.get(url(controller='admin', action='init'), params=parameters)
+        response = self.app.get(url(controller='admin', action='init'),
+                                params=parameters)
         assert '"value": true' in response
-        ## test initial assign
-        parameters = {"serial":serial, "user": "root" }
-        response = self.app.get(url(controller='admin', action='assign'), params=parameters)
+        # test initial assign
+        parameters = {"serial": serial,
+                      "user": "root"}
+        response = self.app.get(url(controller='admin', action='assign'),
+                                params=parameters)
         # Test response...
         assert '"value": true' in response
 
@@ -76,7 +79,8 @@ class TestYubikeyController(TestController):
         ]
 
         for otp in valid_otps:
-            response = self.app.get(url(controller='validate', action='check_s'),
+            response = self.app.get(url(controller='validate',
+                                        action='check_s'),
                                     params={'serial': serial, 'pass': otp})
             assert '"value": true' in response
 
@@ -85,3 +89,64 @@ class TestYubikeyController(TestController):
         response = self.app.get(url(controller='validate', action='check_s'),
                                 params={'serial': serial, 'pass': invalid_otp})
         assert '"value": false' in response
+        
+        response = self.app.get(url(controller="admin", action="remove"),
+                                params={'serial': serial})
+        assert '"value": 1' in response
+
+    def test_check_yubikey(self):
+        '''
+        Test the /validate/check_yubikey without user
+        '''
+        serialnum = "01382015"
+        yubi_slot = 1
+        serial = "UBAM%s_%s" % (serialnum, yubi_slot)
+        otpkey = "9163508031b20d2fbb1868954e041729"
+        parameters = {
+            'type': 'yubikey',
+            'serial': serial,
+            'otpkey': otpkey,
+            'otplen': 48,
+            'description': "Yubikey enrolled in functional tests"
+        }
+        public_uid = "ecebeeejedecebeg"
+
+        response = self.app.get(url(controller='admin', action='init'),
+                                params=parameters)
+        assert '"value": true' in response
+        # test initial assign
+        parameters = {"serial": serial,
+                      "user": "root"}
+        response = self.app.get(url(controller='admin', action='assign'),
+                                params=parameters)
+        # Test response...
+        assert '"value": true' in response
+
+        valid_otps = [
+            public_uid + "fcniufvgvjturjgvinhebbbertjnihit",
+            public_uid + "tbkfkdhnfjbjnkcbtbcckklhvgkljifu",
+            public_uid + "ktvkekfgufndgbfvctgfrrkinergbtdj",
+            public_uid + "jbefledlhkvjjcibvrdfcfetnjdjitrn",
+            public_uid + "druecevifbfufgdegglttghghhvhjcbh",
+            public_uid + "nvfnejvhkcililuvhntcrrulrfcrukll",
+            public_uid + "kttkktdergcenthdredlvbkiulrkftuk",
+            public_uid + "hutbgchjucnjnhlcnfijckbniegbglrt",
+            public_uid + "vneienejjnedbfnjnnrfhhjudjgghckl",
+            public_uid + "krgevltjnujcnuhtngjndbhbiiufbnki",
+            public_uid + "kehbefcrnlfejedfdulubuldfbhdlicc",
+            public_uid + "ljlhjbkejkctubnejrhuvljkvglvvlbk",
+            public_uid + "eihtnehtetluntirtirrvblfkttbjuih",
+        ]
+
+        for otp in valid_otps:
+            response = self.app.get(url(controller='validate',
+                                        action='check_yubikey'),
+                                    params={'pass': otp})
+            print response
+            assert '"value": true' in response
+            assert '"user": "root"' in response
+
+        response = self.app.get(url(controller="admin", action="remove"),
+                                params={'serial': serial})
+        print response
+        assert '"value": 1' in response

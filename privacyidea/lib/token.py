@@ -1030,6 +1030,7 @@ def checkSerialPass(serial, passw, options=None, user=None):
 
     return (res, opt)
 
+
 @log_with(log)
 def checkYubikeyPass(passw):
     '''
@@ -1055,7 +1056,7 @@ def checkYubikeyPass(passw):
         log.error("Failed to convert serialnumber: %r" % exx)
         return res, opt
 
-    ## build list of possible yubikey tokens
+    # build list of possible yubikey tokens
     serials = [serialnum]
     for i in range(1, 3):
         serials.append("%s_%s" % (serialnum, i))
@@ -1069,10 +1070,10 @@ def checkYubikeyPass(passw):
                                     % serialnum)
         return res, opt
 
-    ## FIXME if the Token has set a PIN and the User does not want to enter the PIN
-    ## for authentication, we need to do something different here...
-    ## and avoid PIN checking in __checkToken.
-    ## We could pass an "option" to __checkToken.
+    # FIXME if the Token has set a PIN and the User does not want to enter the PIN
+    # for authentication, we need to do something different here...
+    # and avoid PIN checking in __checkToken.
+    # We could pass an "option" to __checkToken.
     (res, opt) = checkTokenList(tokenList, passw)
 
     # Now we need to get the user
@@ -1085,6 +1086,7 @@ def checkYubikeyPass(passw):
             opt = {}
             opt['user'] = user.login
             opt['realm'] = user.realm
+            opt['serial'] = serial
 
     return res, opt
 

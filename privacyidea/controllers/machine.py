@@ -47,7 +47,6 @@ from privacyidea.lib.machine import get_token_apps
 from privacyidea.lib.machine import addoption
 from privacyidea.lib.machine import deloption
 
-
 import traceback
 import webob
 import json
@@ -88,7 +87,7 @@ class MachineController(BaseController):
             Session.close()
             raise acc
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("exception %r" % (action, exx))
             log.error(traceback.format_exc())
             Session.rollback()
@@ -116,7 +115,7 @@ class MachineController(BaseController):
             Session.commit()
             return request
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error("unable to create a session cookie: %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -165,7 +164,7 @@ class MachineController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe))
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("failed: %r" % exx)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -201,7 +200,7 @@ class MachineController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe))
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("failed: %r" % exx)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -238,7 +237,7 @@ class MachineController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe))
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("failed: %r" % exx)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -256,7 +255,7 @@ class MachineController(BaseController):
         :param serial: serial number of the token
         :param application: name of the application
         :param option_*: parameter is passed as additional option to
-                         the machinetoken to be stored in 
+                         the machinetoken to be stored in
                          machine_t_options table.
                          In case of LUKS application this can be
                          "option_slot"
@@ -274,7 +273,8 @@ class MachineController(BaseController):
             
             if application.lower() not in config.get("applications").keys():
                 log.error("Unknown application %r. Available applications: "
-                          "%r" % (application, config.get("applications").keys()))
+                          "%r" % (application,
+                                  config.get("applications").keys()))
                 raise Exception("Unkown application!")
             
             for p in param.keys():
@@ -297,7 +297,7 @@ class MachineController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe))
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("failed: %r" % exx)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -357,7 +357,7 @@ class MachineController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe))
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("failed: %r" % exx)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -411,7 +411,7 @@ class MachineController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe))
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("failed: %r" % exx)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -450,7 +450,7 @@ class MachineController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe))
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("failed: %r" % exx)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -500,7 +500,7 @@ class MachineController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe))
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("failed: %r" % exx)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -583,7 +583,7 @@ class MachineController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe))
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("failed: %r" % exx)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -591,9 +591,7 @@ class MachineController(BaseController):
 
         finally:
             Session.close()
-     
-    
-       
+            
     @log_with(log)
     def getapplications(self, action, **params):
         '''
@@ -608,7 +606,7 @@ class MachineController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe))
 
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("failed: %r" % exx)
             log.error(traceback.format_exc())
             Session.rollback()

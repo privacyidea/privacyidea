@@ -23,7 +23,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''     
+'''
   Description:  functional tests
                 
   Dependencies: -
@@ -38,28 +38,29 @@ from json import loads
 
 log = logging.getLogger(__name__)
 
-class TestPolicies(TestController):
 
+class TestPolicies(TestController):
 
     def setUp(self):
         '''
         Overwrite the deleting of the realms!
 
-        If the realms are deleted also the table TokenRealm gets deleted and we loose the information
+        If the realms are deleted also the table TokenRealm gets deleted and we
+        loose the information
         how many tokens are within a realm!
         '''
-        ## here we do the system test init per test method
-        #self.__deleteAllRealms__()
-        #self.__deleteAllResolvers__()
-        #self.__createResolvers__()
-        #self.__createRealms__()
+        # # here we do the system test init per test method
+        # self.__deleteAllRealms__()
+        # self.__deleteAllResolvers__()
+        # self.__createResolvers__()
+        # self.__createRealms__()
         return
 
     def tearDown(self):
         ''' Overwrite parent tear down, which removes all realms '''
         return
 
-    ### define Admins
+    # define Admins
 
     def test_00_init(self):
         '''
@@ -3047,7 +3048,87 @@ class TestPolicies(TestController):
         print response
         assert '"value": 1' in response
 
+    def test_11_check_yubikey_authorize(self):
+        '''
+        Policy 11: Yubikey not authorized
+        '''
+        serialnum = "01382015"
+        yubi_slot = 1
+        serial = "UBAM%s_%s" % (serialnum, yubi_slot)
+        otpkey = "9163508031b20d2fbb1868954e041729"
+        parameters = {
+            'type': 'yubikey',
+            'serial': serial,
+            'otpkey': otpkey,
+            'otplen': 48,
+            'description': "Yubikey enrolled in functional tests"
+        }
+        public_uid = "ecebeeejedecebeg"
 
+        response = self.app.get(url(controller='admin', action='init'),
+                                params=parameters)
+        assert '"value": true' in response
+        # test initial assign
+        parameters = {"serial": serial,
+                      "user": "root"}
+        response = self.app.get(url(controller='admin', action='assign'),
+                                params=parameters)
+        # Test response...
+        assert '"value": true' in response
+
+        # Set authorization
+        response = self.app.get(url(controller='system',
+                                    action='setPolicy'),
+                                params={'name': 'A1',
+                                        'scope': 'authorization',
+                                        'realm': 'mydefrealm',
+                                        'action': 'serial=asdf',
+                                        'user': 'root',
+                                        'client': "0.0.0.0/0",
+                                        'selftest_admin': 'superadmin'
+                                        })
+        print response
+        assert '"setPolicy A1"' in response
+
+        valid_otps = [
+            public_uid + "fcniufvgvjturjgvinhebbbertjnihit",
+            public_uid + "tbkfkdhnfjbjnkcbtbcckklhvgkljifu",
+            public_uid + "ktvkekfgufndgbfvctgfrrkinergbtdj",
+            public_uid + "jbefledlhkvjjcibvrdfcfetnjdjitrn",
+            public_uid + "druecevifbfufgdegglttghghhvhjcbh",
+            public_uid + "nvfnejvhkcililuvhntcrrulrfcrukll",
+            public_uid + "kttkktdergcenthdredlvbkiulrkftuk",
+            public_uid + "hutbgchjucnjnhlcnfijckbniegbglrt",
+            public_uid + "vneienejjnedbfnjnnrfhhjudjgghckl",
+            public_uid + "krgevltjnujcnuhtngjndbhbiiufbnki",
+            public_uid + "kehbefcrnlfejedfdulubuldfbhdlicc",
+            public_uid + "ljlhjbkejkctubnejrhuvljkvglvvlbk",
+            public_uid + "eihtnehtetluntirtirrvblfkttbjuih",
+        ]
+
+        for otp in valid_otps:
+            response = self.app.get(url(controller='validate',
+                                        action='check_yubikey'),
+                                    params={'pass': otp,
+                                            'client': "127.0.0.1"})
+            print response
+            assert '"value": false' in response
+            assert '"user": "root"' in response
+
+        # delete the token
+        response = self.app.get(url(controller="admin", action="remove"),
+                                params={'serial': serial})
+        print response
+        assert '"value": 1' in response
+        
+        # delete the policy
+        parameters = {'name': "A1",
+                      'selftest_admin': 'superadmin'}
+        
+        response = self.app.get(url(controller='system', action='delPolicy'),
+                                params=parameters)
+        log.error(response)
+        assert '"status": true' in response
 
     def test_998_cleanup_policies(self):
         '''

@@ -317,9 +317,9 @@ class ManageController(BaseController):
             if c.qtype == "loginname":
                 if "@" in c.filter:
                     (login, realm) = c.filter.split("@")
-                    user = User(login, realm)
+                    user = User(login=login, realm=realm)
                 else:
-                    user = User(c.filter)
+                    user = User(login=c.filter)
 
             elif c.qtype == "all":
                 filter_all = c.filter
