@@ -552,10 +552,9 @@ class NginxConfig(object):
     
     def create_certificates(self):
         certificates = self.get_certificates()
-        hostname = socket.gethostname()
+        hostname = socket.getfqdn()
         print("Generating SSL certificate %s and key %s" % certificates)
         if certificates[0] and certificates[1]:
-            # FIXME: fix the CN
             command = ("openssl req -x509 -newkey rsa:2048 -keyout %s -out"
                        " %s -days 1000 -subj /CN=%s -nodes" %
                        (certificates[1],
