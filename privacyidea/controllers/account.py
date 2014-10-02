@@ -5,6 +5,9 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2014-10-02 Add login help
+#             Cornelius Kölbel, cornelius@privacycidea
+#
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  AGPLv3
 #  contact:  http://www.linotp.org
@@ -30,21 +33,22 @@ This file is part of the privacyidea service
 import traceback
 
 from pylons import request, response, tmpl_context as c
-from pylons.controllers.util import abort, redirect
+from pylons.controllers.util import redirect
 
 from privacyidea.lib.base import BaseController
 from pylons.templating import render_mako as render
 
-from privacyidea.lib.reply   import sendError
-from privacyidea.model.meta  import Session
+from privacyidea.lib.reply import sendError
+from privacyidea.model.meta import Session
 
-from privacyidea.lib.util    import get_version
-from privacyidea.lib.util    import get_copyright_info
+from privacyidea.lib.util import get_version
+from privacyidea.lib.util import get_copyright_info
+from privacyidea.lib.util import getRealmBox
+from privacyidea.lib.util import get_login_help
 from privacyidea.lib.account import is_admin_identity
 
-from privacyidea.lib.realm    import getRealms
-from privacyidea.lib.realm    import getDefaultRealm
-from privacyidea.lib.user     import getRealmBox
+from privacyidea.lib.realm import getRealms
+from privacyidea.lib.realm import getDefaultRealm
 from privacyidea.lib.log import log_with
 
 import logging
@@ -62,6 +66,7 @@ required = False
 # Is also defined in selfservice.js
 LOGIN_CODE = 576
 
+
 class AccountController(BaseController):
     '''
     The AccountController
@@ -72,7 +77,6 @@ class AccountController(BaseController):
         /account/dologin
     '''
 
-
     @log_with(log)
     def __before__(self, action, **params):
 
@@ -82,7 +86,7 @@ class AccountController(BaseController):
             c.licenseinfo = get_copyright_info()
 
         except webob.exc.HTTPUnauthorized as acc:
-            ## the exception, when an abort() is called if forwarded
+            # the exception, when an abort() is called if forwarded
             log.error("%r webob.exception %r" % (action, acc))
             log.error(traceback.format_exc())
             Session.rollback()
@@ -99,12 +103,12 @@ class AccountController(BaseController):
         finally:
             pass
 
-
     def login(self, action):
         log.debug("privacyidea login screen")
         identity = request.environ.get('repoze.who.identity')
         if identity is not None:
-            # After login we either redirect to the manage interface or selfservice
+            # After login we either redirect to the manage interface or
+            # selfservice
             if is_admin_identity(identity, exception=False):
                 redirect("/manage/")
             else:
@@ -117,16 +121,19 @@ class AccountController(BaseController):
 
             c.realmArray = ["admin"]
             for (k, _v) in res.items():
-                c.realmArray.append(k)                
+                c.realmArray.append(k)
 
             c.realmbox = getRealmBox()
             log.debug("displaying realmbox: %i" % int(c.realmbox))
 
-            #TODO: How can we distinguish between failed login and first arrival.
-            #c.status = _("Wrong credentials.")
+            c.login_help = get_login_help()
+            # TODO: How can we distinguish between failed
+            # login and first arrival.
+            # c.status = _("Wrong credentials.")
 
             Session.commit()
-            response.status = '%i Logout from privacyIDEA selfservice' % LOGIN_CODE
+            response.status = '%i Logout from privacyIDEA selfservice' %\
+                              LOGIN_CODE
             return render('/selfservice/login.mako')
 
         except Exception as e:
@@ -139,5 +146,4 @@ class AccountController(BaseController):
             Session.close()
 
 
-#eof##########################################################################
-
+# eof##########################################################################

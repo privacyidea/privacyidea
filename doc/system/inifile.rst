@@ -119,6 +119,14 @@ from the server. Usually it is not possible to ask the server for future OTP
 values of a token. Using this parameter you can allow this, thus creating 
 printed OTP lists.
 
+Finally there are some settings for the use of RADIUS tokens ``radius.dictfile`` and
+``radius.nas_identifier`` which you usually do not need to change.
+
+.. _inifile_superusers:
+
+Administrators
+..............
+
 privacyIDEA authenticates the administrators. The simple default way is to 
 search the admin in a file defined by ``privacyideaSuperuserFile``. 
 All users in this file can login with *<username>@admin*. 
@@ -131,10 +139,6 @@ a *passthru* policy (see :ref:`policies`).
 To do so you need to set the parameters ``privacyideaURL`` and 
 ``privacyideaURL.disable_SSL`` to define how to address your privacyIDEA server
 and if the SSL certificate should be validated or not.
-
-Finally there are some settings for the use of RADIUS tokens ``radius.dictfile`` and 
-``radius.nas_identifier`` which you usually do not need to change.
-
 
 Database connection
 -------------------

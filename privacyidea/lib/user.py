@@ -349,20 +349,6 @@ def getUserRealms(user):
 
     return Realms
 
-@log_with(log)
-def getRealmBox():
-    '''
-    returns the config value of selfservice.realmbox.
-    if True, the realmbox in the selfservice login will be displayed.
-    if False, the realmbox will not be displayed and the user needs to login via user@realm
-    '''
-    rb_string = "privacyidea.selfservice.realmbox"
-    conf = get_privacyIDEA_config()
-    if rb_string in conf:
-        log.debug("read setting: %r" % conf.get(rb_string))
-        return "True" == conf.get(rb_string)
-    else:
-        return False
 
 @log_with(log)
 def getConf(Realms, Conf):

@@ -258,6 +258,8 @@ type: bool
 This action allows the user to search for the serial number
 of an unassigned token by entering an OTP value.
 
+.. _policy_auth_otp:
+
 auth
 ~~~~
 type: string

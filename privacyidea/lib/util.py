@@ -29,7 +29,8 @@ contains utility functions
 '''
 
 from privacyidea.lib.error import ParameterError
-from privacyidea.lib.config import getFromConfig
+from privacyidea.lib.config import (getFromConfig,
+                                    get_privacyIDEA_config)
 from privacyidea.lib.log import log_with
 import binascii
 from privacyidea.model.meta import Session
@@ -367,6 +368,39 @@ def checksum(msg):
             if n != 0:
                 crc = crc ^ 0x8408
     return crc
+
+
+@log_with(log)
+def getRealmBox():
+    '''
+    returns the config value of selfservice.realmbox.
+    if True, the realmbox in the selfservice login will be displayed.
+    if False, the realmbox will not be displayed and the user needs to login
+    via user@realm
+    '''
+    rb_string = "privacyidea.selfservice.realmbox"
+    conf = get_privacyIDEA_config()
+    if rb_string in conf:
+        log.debug("read setting: %r" % conf.get(rb_string))
+        return "True" == conf.get(rb_string)
+    else:
+        return False
+
+
+@log_with(log)
+def get_login_help():
+    '''
+    returns the config value of "login.help".
+    if True, the help button is displayed on the login screen.
+    '''
+    lh_string = "privacyidea.login.help"
+    conf = get_privacyIDEA_config()
+    if lh_string in conf:
+        log.debug("read setting: %r" % conf.get(lh_string))
+        return "True" == conf.get(lh_string)
+    else:
+        return False
+
 
 # ######################### base token ##############################
 

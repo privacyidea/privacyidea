@@ -304,11 +304,14 @@ function translate_about_dialog() {
 			</a>
 			</div>
     		<fieldset>
-    				<legend>${_("Selfservice portal")}</legend>
+    				<legend>${_("Login dialog")}</legend>
 		    		<table>
 		    			<tr><td><label for=sys_realmbox>${_("display realm select box")}</label></td>
 		    			<td><input type='checkbox' name='sys_realmbox' id='sys_realmbox' value='sys_realmbox'
-		    				title='${_("If checked a realm dropdown box will be displayed on the selfservice portal logon page.")}'></td></tr>
+		    				title='${_("If checked a realm dropdown box will be displayed on the logon page.")}'></td></tr>
+		    			<tr><td><label for=sys_loginhelp>${_("display help button on login dialog")}</label></td>
+		    			<td><input type='checkbox' name='sys_loginhelp' id='sys_loginhelp' value='sys_loginhelp'
+		    				title='${_("If checked a help button will be displayed on the logon window.")}'></td></tr>
 		    		</table>
 		    </fieldset>
     	</div>  <!-- tab system settings gui -->

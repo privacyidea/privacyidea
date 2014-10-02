@@ -22,7 +22,8 @@ Thanks a lot!
 
    overview/index
    installation/index
-   system/inifile   
+   system/inifile
+   webui/login   
    configuration/index
    tokenview/index
    userview/index

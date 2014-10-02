@@ -1609,6 +1609,9 @@ function load_system_config(){
         if (data.result.value['selfservice.realmbox'] == "True") {
             checkBoxes.push("sys_realmbox");
         }
+        if (data.result.value['login.help'] == "True") {
+            checkBoxes.push("sys_loginhelp");
+        }
         $("input:checkbox").val(checkBoxes);
         $('#sys_maxFailCount').val(data.result.value.DefaultMaxFailCount);
         $('#sys_syncWindow').val(data.result.value.DefaultSyncWindow);
@@ -1689,6 +1692,10 @@ function save_system_config(){
     if ($("#sys_realmbox").is(':checked')) {
         realmbox = "True";
     }
+    var loginhelp = "False";
+    if ($("#sys_loginhelp").is(':checked')) {
+        loginhelp= "True";
+    }
     $.post('/system/setConfig', { 'session':getsession(),
     		'PrependPin' :prepend,
     		'FailCounterIncOnFalsePin' : fcounter ,
@@ -1698,6 +1705,7 @@ function save_system_config(){
     		'PassOnUserNotFound' : passOUNFound,
     		'PassOnUserNoToken' : passOUNToken,
     		'selfservice.realmbox' : realmbox,
+    		'login.help' : loginhelp,
     		'allowSamlAttributes' : allowsaml },
      function(data, textStatus, XMLHttpRequest){
         if (data.result.status == false) {

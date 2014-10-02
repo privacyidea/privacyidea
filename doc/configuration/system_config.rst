@@ -1,3 +1,5 @@
+.. _system_config:
+
 System config
 -------------
 
@@ -113,9 +115,12 @@ during enrollment if no OCRA suite is specified.
 during enrollment if no OCRA suite is specified.
 
 
+.. _gui_settings:
 
 GUI settings
 ............
+
+.. index: GUI settings, login form
 
 The login window of the WebUI may display a dropdown box with all realms.
 You might hide this dropdown box, if you do not want to tell the world

@@ -38,7 +38,8 @@ $(document).ready(function() {
 
 
 <div id="main-login">
-<h1>${_("Login to privacyIDEA")}</h1>
+<h1>${_("Login to privacyIDEA")}
+</h1>
 
   <p>
     <form action="/account/dologin" method="POST">
@@ -63,7 +64,16 @@ $(document).ready(function() {
         </select>
         </td></tr>
         <tr><td><label for=password>${_("Password")}:</label></td>
-        <td><input autocomplete="off" type="password" id="password" name="password" value ="" /></td></tr>
+        <td>
+        <input autocomplete="off" type="password" id="password" name="password" value ="" />
+        %if c.login_help:
+			<a href='${c.help_url}/webui/login.html' target="_blank">
+			<img alt="(?)" width=24
+			src="/images/help32.png"  
+			title='${_("Open help on WebUI Login")}'>
+			</a>
+		%endif
+        </td></tr>
         <tr><td></td>
         <td>   <input type="submit" value="Login" /></td></tr>
       </table>

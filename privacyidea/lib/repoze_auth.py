@@ -27,9 +27,7 @@
 import logging
 log = logging.getLogger(__name__)
 
-import re
-
-from privacyidea.lib.user import getRealmBox
+from privacyidea.lib.util import getRealmBox
 from privacyidea.lib.realm import getDefaultRealm
 from privacyidea.lib.selftest import isSelfTest
 import traceback

@@ -1,3 +1,9 @@
+privacyidea (1.4~dev4-1) trusty; urgency=low
+
+  * Add help on logon screen.
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 02 Oct 2014 11:20:00 +0200
+
 privacyidea (1.4~dev3-1) trusty; urgency=low
 
   * Add helper dialog to setup first realm
