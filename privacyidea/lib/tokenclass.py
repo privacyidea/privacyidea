@@ -653,6 +653,9 @@ class TokenClass(object):
 
     def getSerial(self):
         return self.token.getSerial()
+    
+    def getTokentype(self):
+        return self.token.getType()
 
     def setSoPin(self, soPin):
         self.token.setSoPin(soPin)
@@ -668,7 +671,6 @@ class TokenClass(object):
 
     def getOtpLen(self):
         return self.token.privacyIDEAOtpLen
-
 
     def setOtpCount(self, otpCount):
         self.token.privacyIDEACount = int(otpCount)

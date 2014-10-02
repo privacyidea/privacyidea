@@ -976,9 +976,10 @@ class PolicyClass(object):
             ret = True
         return ret
     
-    ##### Pre and Post checks
+    # #### Pre and Post checks
     @log_with(log)
-    def checkPolicyPre(self, controller, method, param=None, authUser=None, user=None,
+    def checkPolicyPre(self, controller, method, param=None, authUser=None,
+                       user=None,
                        options=None,
                        tokenrealms=None,
                        tokentype=None):
@@ -989,15 +990,15 @@ class PolicyClass(object):
     
         :param param: This is a dictionary with the necessary parameters.
         :type param: dict
-        :param options: additional options 
+        :param options: additional options
         :type options: dict
         
         :return: dictionary with the necessary results. These depend on
                  the controller.
         '''
-        if options == None:
+        if options is None:
             options = {}
-        if param == None:
+        if param is None:
             param = {}
         ret = {}
         if tokenrealms:
@@ -1011,7 +1012,8 @@ class PolicyClass(object):
                 if len(pol.get("policies")) == 0:
                     log.error("The admin %r does not have"
                               "the right to %r" % (pol['admin'], method))
-                    raise PolicyException(_("You do not have the right to manage machines with:"
+                    raise PolicyException(_("You do not have the right to "
+                                            "manage machines with:"
                                             "%r" % method))
 
         elif 'admin' == controller:
@@ -1033,9 +1035,10 @@ class PolicyClass(object):
                 if policies['active'] and 0 == len(policies['realms']):
                     log.error("The admin >%s< has no rights in "
                               "any realms!" % policies['admin'])
-                    raise PolicyException(_("You do not have any rights in any realm! "
-                                            "Check the policies."))
-                return {'realms': policies['realms'], 'admin': policies['admin']}
+                    raise PolicyException(_("You do not have any rights in any"
+                                            " realm! Check the policies."))
+                return {'realms': policies['realms'],
+                        'admin': policies['admin']}
     
             elif 'remove' == method:
                 policies = self.getAdminPolicies("remove")
@@ -1050,9 +1053,11 @@ class PolicyClass(object):
                                 "token %s for user %s@%s"
                                 % (policies['admin'], serial,
                                    user.login, user.realm))
-                    raise PolicyException(_("You do not have the administrative "
-                                          "right to remove token %s. Check the "
-                                          "policies.") % serial)
+                    raise PolicyException(_("You do not have the "
+                                            "administrative "
+                                            "right to remove token %s. "
+                                            "Check the "
+                                            "policies.") % serial)
     
             elif 'enable' == method:
                 policies = self.getAdminPolicies("enable")
@@ -1063,8 +1068,8 @@ class PolicyClass(object):
                                 % (policies['admin'], serial,
                                    user.login, user.realm))
                     raise PolicyException(_("You do not have the administrative "
-                                          "right to enable token %s. Check the "
-                                          "policies.") % serial)
+                                            "right to enable token %s. Check "
+                                            "the policies.") % serial)
     
                 # We need to check which realm the token will be in.
                 realmList = self.tokenrealms
@@ -1534,7 +1539,8 @@ class PolicyClass(object):
             if 'max_count' == method[0: len('max_count')]:
                 ret = 0
                 serial = getParam(param, "serial", optional)
-                pol_action = MAP_TYPE_GETOTP_ACTION.get(self.tokentype.lower(), "")
+                pol_action = MAP_TYPE_GETOTP_ACTION.get(self.tokentype.lower(),
+                                                        "")
                 admin_user = getUserFromRequest(self.request)
                 if pol_action == "":
                     raise PolicyException(_("There is no policy gettoken/"
@@ -2138,6 +2144,9 @@ class PolicyClass(object):
             realm = self.getPolicyActionValue(policies, "setrealm", String=True)
     
         return realm
+    
+    def set_tokentype(self, tokentype):
+        self.tokentype = tokentype
     
     @log_with(log)
     def check_user_authorization(self, login, realm, exception=False):

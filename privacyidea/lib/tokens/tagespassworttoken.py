@@ -169,9 +169,11 @@ class TagespasswortTokenClass(TokenClass):
         return (1, pin, otpval, combined)
 
     @log_with(log)
-    def get_multi_otp(self, count=0, epoch_start=0, epoch_end=0, curTime=None, timestamp=None):
+    def get_multi_otp(self, count=0, epoch_start=0, epoch_end=0,
+                      curTime=None, timestamp=None):
         '''
-        This returns a dictionary of multiple future OTP values of the Tagespasswort token
+        This returns a dictionary of multiple future OTP values of the
+        Tagespasswort token
 
         parameter
             count    - how many otp values should be returned
@@ -183,7 +185,7 @@ class TagespasswortTokenClass(TokenClass):
             error text
             OTP dictionary
         '''
-        otp_dict = {"type" : "DPW", "otp": {}}
+        otp_dict = {"type": "DPW", "otp": {}}
         ret = False
         error = "No count specified"
         try:
@@ -202,15 +204,18 @@ class TagespasswortTokenClass(TokenClass):
                 if type(curTime) == datetime.datetime:
                     now = curTime
                 elif type(curTime) == unicode:
-                    now = datetime.datetime.strptime(curTime, "%Y-%m-%d %H:%M:%S.%f")
+                    now = datetime.datetime.strptime(curTime,
+                                                     "%Y-%m-%d %H:%M:%S.%f")
                 else:
                     log.error("wrong curTime type: %s" % type(curTime))
-                    raise TokenAdminError("[get_multi_otp] wrong curTime type: %s (%s)" % (type(curTime), curTime), id=2001)
+                    raise TokenAdminError("[get_multi_otp] wrong curTime type:"
+                                          " %s (%s)" %
+                                          (type(curTime), curTime), id=2001)
             for i in range(count):
                 delta = datetime.timedelta(days=i)
                 date_string = (now + delta).strftime("%d%m%y")
                 otpval = dpw.getOtp(date_string=date_string)
-                otp_dict["otp"][ (now + delta).strftime("%y-%m-%d")] = otpval
+                otp_dict["otp"][(now + delta).strftime("%y-%m-%d")] = otpval
             ret = True
 
         return (ret, error, otp_dict)

@@ -5,6 +5,9 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2014-10-02 Code cleanup for code coverage
+#             Cornelius Kölbel, cornelius@privacyidea.org
+#
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  AGPLv3
 #  contact:  http://www.linotp.org
@@ -49,8 +52,11 @@ from privacyidea.lib.user import getDefaultRealm
 from privacyidea.lib.user import getUserFromRequest
 
 from privacyidea.lib.token import get_token_type_list
-from privacyidea.lib.token import getTokenType, getOtp, get_multi_otp, getTokens4UserOrSerial
-from privacyidea.lib.token import getTokenRealms
+from privacyidea.lib.token import (getTokenType,
+                                   getOtp,
+                                   get_multi_otp,
+                                   getTokens4UserOrSerial,
+                                   getTokenRealms)
 from privacyidea.lib.policy import PolicyClass, PolicyException
 from privacyidea.lib.reply import sendResult, sendError
 from privacyidea.lib.config import get_privacyIDEA_config
@@ -70,11 +76,13 @@ log = logging.getLogger(__name__)
 class GettokenController(BaseController):
 
     '''
-    The privacyidea.controllers are the implementation of the web-API to talk to the privacyIDEA server.
-    The ValidateController is used to validate the username with its given OTP value.
+    The privacyidea.controllers are the implementation of the web-API to talk
+    to the privacyIDEA server.
+    The ValidateController is used to validate the username with its given
+    OTP value.
 
-    The Tagespasswort Token uses this controller to retrieve the current OTP value of
-    the Token and be able to set it in the application
+    The Tagespasswort Token uses this controller to retrieve the current OTP
+    value of     the Token and be able to set it in the application
     The functions of the GettokenController are invoked like this
 
         https://server/gettoken/<functionname>
@@ -85,18 +93,17 @@ class GettokenController(BaseController):
     def __before__(self, action, **params):
         try:
             c.audit['client'] = get_client()
+            tokentype = None
             if request.params.get('serial'):
                 tokentype = getTokenType(request.params.get('serial'))
-            else:
-                tokentype = None
+                
             self.Policy = PolicyClass(request, config, c,
                                       get_privacyIDEA_config(),
-                                      tokentype = tokentype,
-                                      token_type_list = get_token_type_list())
+                                      tokentype=tokentype,
+                                      token_type_list=get_token_type_list())
             self.before_identity_check(action)
 
-
-        except Exception as exx:
+        except Exception as exx:  # pragma: no cover
             log.error("%r exception %r" % (action, exx))
             log.error(traceback.format_exc())
             Session.rollback()
@@ -109,17 +116,17 @@ class GettokenController(BaseController):
     @log_with(log)
     def __after__(self, action, **params):
         c.audit['administrator'] = getUserFromRequest(request).get("login")
-        if request.params.has_key('serial'):
+        if 'serial' in request.params:
                 c.audit['serial'] = request.params['serial']
                 c.audit['token_type'] = getTokenType(request.params['serial'])
         self.audit.log(c.audit)
         
-
     @log_with(log)
     def getmultiotp(self, action, **params):
         '''
-        This function is used to retrieve multiple otp values for a given user or a given serial
-        If the user has more than one token, the list of the tokens is returend.
+        This function is used to retrieve multiple otp values for a given user
+        or a given serial. If the user has more than one token, the list of
+        the tokens is returned.
 
         method:
             gettoken/getmultiotp
@@ -127,7 +134,7 @@ class GettokenController(BaseController):
         
         :param serial: the serial number of the token
         :param count: number of otp values to return
-        :param curTime: used ONLY for internal testing: datetime.datetime object
+        :param curTime: ONLY for internal testing: datetime.datetime object
         :type curTime: datetime object
         :param timestamp: the unix time
         :type timestamp: int
@@ -136,7 +143,7 @@ class GettokenController(BaseController):
         '''
 
         getotp_active = config.get("privacyideaGetotp.active")
-        if "True" != getotp_active:
+        if getotp_active != "True":  # pragma: no cover
             return sendError(response, "getotp is not activated.", 0)
 
         param = request.params
@@ -151,17 +158,20 @@ class GettokenController(BaseController):
             view = getParam(param, "view", optional)
 
             r1 = self.Policy.checkPolicyPre('admin', 'getotp', param,
-                                            tokenrealms = tokenrealms)
+                                            tokenrealms=tokenrealms)
             log.debug("admin-getotp returned %s" % r1)
 
-            max_count = self.Policy.checkPolicyPre('gettoken', 'max_count', param,
-                                                   tokenrealms = tokenrealms)
+            max_count = self.Policy.checkPolicyPre('gettoken', 'max_count',
+                                                   param,
+                                                   tokenrealms=tokenrealms)
             log.debug("checkpolicypre returned %s" % max_count)
             if count > max_count:
                 count = max_count
 
             log.debug("retrieving OTP value for token %s" % serial)
-            ret = get_multi_otp(serial, count=int(count), curTime=curTime, timestamp=timestamp)
+            ret = get_multi_otp(serial, count=int(count),
+                                curTime=curTime,
+                                timestamp=timestamp)
             ret["serial"] = serial
 
             c.audit['success'] = True
@@ -171,15 +181,15 @@ class GettokenController(BaseController):
                 c.ret = ret
                 return render('/manage/multiotp_view.mako')
             else:
-                return sendResult(response, ret , 0)
+                return sendResult(response, ret, 0)
 
-        except PolicyException as pe:
+        except PolicyException as pe:  # pragma: no cover
             log.error("gettoken/getotp policy failed: %r" % pe)
             log.error(traceback.format_exc())
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error("gettoken/getmultiotp failed: %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
@@ -189,12 +199,13 @@ class GettokenController(BaseController):
         finally:
             Session.close()
 
-
     @log_with(log)
     def getotp(self, action, **params):
         '''
-        This function is used to retrieve the current otp value for a given user or a given serial
-        If the user has more than one token, the list of the tokens is returend.
+        This function is used to retrieve the current otp value for a given
+        user or a given serial
+        If the user has more than one token, the list of the tokens is
+        returned.
 
         method:
             gettoken/getotp
@@ -210,7 +221,7 @@ class GettokenController(BaseController):
         '''
 
         getotp_active = config.get("privacyideaGetotp.active")
-        if "True" != getotp_active:
+        if getotp_active != "True":  # pragma: no cover
             return sendError(response, "getotp is not activated.", 0)
 
         param = request.params
@@ -227,38 +238,49 @@ class GettokenController(BaseController):
             curTime = getParam(param, "curTime", optional)
 
             c.audit['user'] = user.login
-            if "" != user.login:
-                c.audit['realm'] = user.realm or getDefaultRealm()
-
+            
             if serial:
                 log.debug("retrieving OTP value for token %s" % serial)
             elif user.login:
-                log.debug("retrieving OTP value for token for user %s@%s" % (user.login, user.realm))
+                c.audit['realm'] = user.realm or getDefaultRealm()
+                log.debug("retrieving OTP value for token for user %s@%s" %
+                          (user.login, user.realm))
                 toks = getTokens4UserOrSerial(user, serial)
                 tokennum = len(toks)
                 if tokennum > 1:
-                    log.debug("The user has more than one token. Returning the list of serials")
+                    log.debug("The user has more than one token. "
+                              "Returning the list of serials")
                     res = -3
                     for token in toks:
                         serials.append(token.getSerial())
                 elif 1 == tokennum:
                     serial = toks[0].getSerial()
+                    # The policy needs the token type
+                    self.Policy.set_tokentype(toks[0].getTokentype())
                     log.debug("retrieving OTP for token %s for user %s@%s" %
-                                (serial, user.login, user.realm))
+                              (serial, user.login, user.realm))
                 else:
-                    log.debug("no token found for user %s@%s" % (user.login, user.realm))
+                    log.debug("no token found for user %s@%s" %
+                              (user.login, user.realm))
                     res = -4
             else:
                 res = -5
 
-            # if a serial was given or a unique serial could be received from the given user.
+            # if a serial was given or a unique serial could be received
+            # from the given user.
             if serial:
                 tokenrealms = getTokenRealms(serial)
-                max_count = self.Policy.checkPolicyPre('gettoken', 'max_count', param,
-                                                       tokenrealms = tokenrealms)
+                max_count = self.Policy.checkPolicyPre('gettoken',
+                                                       'max_count',
+                                                       param,
+                                                       tokenrealms=tokenrealms)
                 log.debug("checkpolicypre returned %s" % max_count)
                 if max_count <= 0:
-                    return sendError(response, "The policy forbids receiving OTP values for the token %s in this realm" % serial , 1)
+                    return sendError(response,
+                                     "The policy forbids receiving OTP values "
+                                     "for the token %s in this realm" %
+                                     serial,
+                                     1)
 
                 (res, pin, otpval, passw) = getOtp(serial, curTime=curTime)
 
@@ -266,17 +288,14 @@ class GettokenController(BaseController):
 
             if int(res) < 0:
                 ret['result'] = False
-                if -1 == otpval:
-                    ret['description'] = "No Token with this serial number"
-                if -2 == otpval:
-                    ret['description'] = "This Token does not support the getOtp function"
-                if -3 == otpval:
+                if res == -3:
                     ret['description'] = "The user has more than one token"
                     ret['serials'] = serials
-                if -4 == otpval:
+                if res == -4:
                     ret['description'] = "No Token found for this user"
-                if -5 == otpval:
-                    ret['description'] = "you need to provide a user or a serial"
+                if res == -5:
+                    ret['description'] = "you need to provide a user or a "\
+                                         "serial"
             else:
                 ret['result'] = True
                 ret['otpval'] = otpval
@@ -284,7 +303,7 @@ class GettokenController(BaseController):
                 ret['pass'] = passw
 
             Session.commit()
-            return sendResult(response, ret , 0)
+            return sendResult(response, ret, 0)
 
         except PolicyException as pe:
             log.error("gettoken/getotp policy failed: %r" % pe)
@@ -292,15 +311,15 @@ class GettokenController(BaseController):
             Session.rollback()
             return sendError(response, unicode(pe), 1)
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error("gettoken/getotp failed: %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
-            return sendError(response, "gettoken/getotp failed: %s" % unicode(e), 0)
+            return sendError(response,
+                             "gettoken/getotp failed: %s" % unicode(e), 0)
 
         finally:
             Session.close()
 
 
-#eof###########################################################################
-
+# eof######################################################################
