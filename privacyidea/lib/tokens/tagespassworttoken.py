@@ -36,7 +36,8 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.config import getFromConfig
 from privacyidea.lib.error import TokenAdminError
 from hashlib import md5
-from datetime import datetime
+from datetime import (datetime,
+                      timedelta)
 from binascii import hexlify
 
 from privacyidea.lib.crypto import zerome
@@ -261,7 +262,7 @@ class TagespasswortTokenClass(TokenClass):
                                           " %s (%s)" %
                                           (type(curTime), curTime), id=2001)
             for i in range(count):
-                delta = datetime.timedelta(days=i)
+                delta = timedelta(days=i)
                 date_string = (now + delta).strftime("%d%m%y")
                 otpval = dpw.getOtp(date_string=date_string)
                 otp_dict["otp"][(now + delta).strftime("%y-%m-%d")] = otpval

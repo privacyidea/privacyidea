@@ -103,9 +103,9 @@ def authenticate_privacyidea_user(user, realm, password):
         FIXME: THe server is asking himself... :-/
         '''
         # FIXME: we need to pass the client= to cope with client dependent policies.
-        data = urllib.urlencode({'user' : user,
-                                 'realm' : realm,
-                                 'pass' : password})
+        data = urllib.urlencode({'user': user,
+                                 'realm': realm,
+                                 'pass': password})
         url = ini_config.get("privacyideaURL") + "/validate/check"
         disable_ssl = ini_config.get("privacyideaURL.disable_ssl", False)
         headers = {"Content-type": "application/x-www-form-urlencoded",

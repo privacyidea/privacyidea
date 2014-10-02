@@ -35,7 +35,6 @@ import datetime
 import sys
 import re
 import binascii
-import base64
 import os
 import logging
 
@@ -79,7 +78,7 @@ from privacyidea.model.meta import Session
 from privacyidea.model import Challenge
 from privacyidea.model import MachineToken
 
-from privacyidea.lib.config  import getFromConfig
+from privacyidea.lib.config import getFromConfig
 from privacyidea.lib.resolver import getResolverObject
 
 from privacyidea.lib.realm import createDBRealm, getRealmObject

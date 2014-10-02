@@ -31,15 +31,17 @@ testing controller - for testing purposes only
 This controller is only used in the test scripts.
 """
 
-
-
 import logging
 
-from pylons import request, response
-from privacyidea.lib.base import BaseController
+from pylons import (request,
+                    response,
+                    config,
+                    tmpl_context as c)
 
-from privacyidea.lib.util import  getParam
-from privacyidea.lib.user import  getUserFromParam
+from privacyidea.lib.config import get_privacyIDEA_config
+from privacyidea.lib.base import BaseController
+from privacyidea.lib.util import getParam
+from privacyidea.lib.user import getUserFromParam
 
 from privacyidea.lib.reply import sendResult, sendError
 
@@ -54,17 +56,16 @@ required = False
 
 log = logging.getLogger(__name__)
 
-#from paste.debug.profile import profile_decorator
+# from paste.debug.profile import profile_decorator
+
 
 class TestingController(BaseController):
 
     def __before__(self):
         return response
 
-
     def __after__(self):
         return response
-
 
     def autosms(self):
         '''
@@ -86,12 +87,17 @@ class TestingController(BaseController):
         param = request.params
         try:
 
-            if isSelfTest() == False:
+            if isSelfTest() is False:
                 Session.rollback()
-                return sendError(response, "The testing controller can only be used in SelfTest mode!", 0)
+                return sendError(response,
+                                 "The testing controller can "
+                                 "only be used in SelfTest mode!", 0)
 
-            user = getUserFromParam(param, required)
-            Policy = PolicyClass()
+            _user = getUserFromParam(param, required)
+            Policy = PolicyClass(request,
+                                 config,
+                                 c,
+                                 get_privacyIDEA_config())
             ok = Policy.get_auth_AutoSMSPolicy()
 
             Session.commit()
@@ -101,12 +107,12 @@ class TestingController(BaseController):
             log.error("[autosms] validate/check failed: %r", e)
             log.error("[autosms] %s" % traceback.format_exc())
             Session.rollback()
-            return sendError(response, "validate/check failed:" + unicode(e), 0)
+            return sendError(response,
+                             "validate/check failed:" + unicode(e), 0)
 
         finally:
             Session.close()
             log.debug('[autosms] done')
-
 
     def http2sms(self):
         '''
@@ -128,7 +134,8 @@ class TestingController(BaseController):
 
 
         returns:
-           As this is a test controller, the response depends on the input values.
+           As this is a test controller, the response depends on the input
+           values.
 
             account = 5vor12, sender = legit
                 -> Response Success: "200" (Text)
@@ -189,6 +196,4 @@ class TestingController(BaseController):
             Session.close()
             log.debug('[http2sms] done')
 
-
-#eof###########################################################################
-
+# eof######################################################################
