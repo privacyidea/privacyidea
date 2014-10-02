@@ -399,7 +399,7 @@ def get_login_help():
         log.debug("read setting: %r" % conf.get(lh_string))
         return "True" == conf.get(lh_string)
     else:
-        return False
+        return True
 
 
 # ######################### base token ##############################

@@ -1585,6 +1585,10 @@ function load_system_config(){
         if (data.result.value.DefaultResetFailCount == "True") {
             checkBoxes.push("sys_resetFailCounter");
         };
+        // Set the default to true. Good for displaying it...
+        if (data.result.value.hasOwnProperty("splitAtSign") == false) {
+        	data.result.value["splitAtSign"] = "True"; 
+        }
         if (data.result.value.splitAtSign == "True") {
             checkBoxes.push("sys_splitAtSign");
         };
@@ -1608,6 +1612,10 @@ function load_system_config(){
         };
         if (data.result.value['selfservice.realmbox'] == "True") {
             checkBoxes.push("sys_realmbox");
+        }
+        // Set the default to true. Good for displaying it...
+        if (data.result.value.hasOwnProperty("login.help") == false) {
+        	data.result.value["login.help"] = "True"; 
         }
         if (data.result.value['login.help'] == "True") {
             checkBoxes.push("sys_loginhelp");
