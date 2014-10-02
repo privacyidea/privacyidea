@@ -43,20 +43,20 @@ from mako.exceptions import CompileException
 from mako.template import Template
 
 # Our Token stuff
-from privacyidea.lib.token   import TokenIterator
-from privacyidea.lib.token   import getTokenType
-from privacyidea.lib.token   import newToken
+from privacyidea.lib.token import (TokenIterator,
+                                   getTokenType,
+                                   newToken)
 
 
-from privacyidea.lib.user    import getUserFromParam, getUserFromRequest
-from privacyidea.lib.user    import getUserList, User
+from privacyidea.lib.user import getUserFromParam, getUserFromRequest
+from privacyidea.lib.user import getUserList, User
 
-from privacyidea.lib.util    import getParam
-from privacyidea.lib.util    import get_version
-from privacyidea.lib.util    import get_copyright_info
-from privacyidea.lib.reply   import sendError
+from privacyidea.lib.util import getParam
+from privacyidea.lib.util import get_version
+from privacyidea.lib.util import get_copyright_info
+from privacyidea.lib.reply import sendError
 
-from privacyidea.lib.util    import remove_empty_lines
+from privacyidea.lib.util import remove_empty_lines
 from privacyidea.weblib.util import get_client
 from privacyidea.model.meta import Session
 from privacyidea.lib.token import get_token_type_list
@@ -76,10 +76,9 @@ KNOWN_TYPES = []
 IMPORT_TEXT = {}
 ENCODING = "utf-8"
 
-
-
 optional = True
 required = False
+
 
 class ManageController(BaseController):
 

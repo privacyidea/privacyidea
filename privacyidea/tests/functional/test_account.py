@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #    privacyIDEA Account test suite
-# 
+#
 #    Copyright (C)  2014 Cornelius Kölbel, cornelius@privacyidea.org
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -23,14 +23,16 @@ from webtest.app import AppError
 
 log = logging.getLogger(__name__)
 
+
 class TestAccountController(TestController):
-
-
 
     def test_login(self):
         try:
-            response = self.app.get(url(controller='account', action='login'), params={"login" : "user",
-                                                                                       "password" : "password"})
+            response = self.app.get(url(controller='account',
+                                        action='login'),
+                                    params={"login": "user",
+                                            "password": "password"})
             print response
         except AppError as ae:
-            self.assertTrue('576 Logout from privacyIDEA selfservice' in u"%r" % ae)
+            self.assertTrue('576 Logout from privacyIDEA selfservice'
+                            in u"%r" % ae)

@@ -5,8 +5,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: privacyIDEA 2\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2014-10-02 11:14+0200\n"
-"PO-Revision-Date: 2014-09-30 10:37+0200\n"
+"POT-Creation-Date: 2014-10-02 17:44+0200\n"
+"PO-Revision-Date: 2014-10-02 11:17+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius@privacyidea.org>\n"
 "Language-Team: Deutsch <>\n"
 "Language: de\n"
@@ -15,6 +15,10 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Gtranslator 2.91.6\n"
+
+#: privacyidea/controllers/account.py:139
+msgid "Wrong credentials."
+msgstr ""
 
 #: privacyidea/controllers/selfservice.py:856
 msgid "The token you want to assign is  not contained in your realm!"
@@ -33,18 +37,18 @@ msgstr "Der Name der Richtlinie darf nur die Zeichen a-zA-Z0-9_ enthalten."
 msgid "The name of the policy must not be empty"
 msgstr "Der Name der Richtlinie darf nicht leer sein."
 
-#: privacyidea/lib/policy.py:1014
+#: privacyidea/lib/policy.py:1015
 #, python-format
 msgid "You do not have the right to manage machines with:%r"
 msgstr ""
 "Sie haben nicht die administrative Berechtigung, Client Maschinen zu "
 "verwalten: %r"
 
-#: privacyidea/lib/policy.py:1036
+#: privacyidea/lib/policy.py:1038
 msgid "You do not have any rights in any realm! Check the policies."
 msgstr "Sie haben in keinem Realm Rechte! Überprüfen Sie die Richtlinien."
 
-#: privacyidea/lib/policy.py:1053
+#: privacyidea/lib/policy.py:1056
 #, python-format
 msgid ""
 "You do not have the administrative right to remove token %s. Check the "
@@ -53,7 +57,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, den Token %s zu entfernen. "
 "Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1065
+#: privacyidea/lib/policy.py:1070
 #, python-format
 msgid ""
 "You do not have the administrative right to enable token %s. Check the "
@@ -62,7 +66,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, den Token %s zu aktivieren. "
 "Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1075
+#: privacyidea/lib/policy.py:1080
 #, python-format
 msgid ""
 "You may not enable any more tokens in realm %s. Check the policy 'tokencount'"
@@ -70,7 +74,7 @@ msgstr ""
 "Sie dürfen im Realm %s keine weiteren Token aktivieren. Überprüfen Sie die "
 "Richtlinie 'tokencount'."
 
-#: privacyidea/lib/policy.py:1087
+#: privacyidea/lib/policy.py:1092
 #, python-format
 msgid ""
 "You do not have the administrative right to disable token %s. Check the "
@@ -79,7 +83,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, den Token %s zu "
 "deaktivieren. Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1099
+#: privacyidea/lib/policy.py:1104
 #, python-format
 msgid ""
 "You do not have the administrative right to copy pin of token %s. Check the "
@@ -88,7 +92,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, die PIN des Tokens %s zu "
 "kopieren. Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1111
+#: privacyidea/lib/policy.py:1116
 #, python-format
 msgid ""
 "You do not have the administrative right to copy user of token %s. Check the "
@@ -97,7 +101,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, den Benutzer des Tokens %s "
 "zu kopieren. Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1123
+#: privacyidea/lib/policy.py:1128
 #, python-format
 msgid ""
 "You do not have the administrative right to run the losttoken workflow for "
@@ -106,7 +110,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, den Workflow 'Verlorener "
 "Token' für den Token %s zu starten. Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1136
+#: privacyidea/lib/policy.py:1141
 #, python-format
 msgid ""
 "You do not have the administrative right to run the getotp workflow for "
@@ -115,16 +119,15 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, den Workflow 'getOTP' für "
 "den Token %s zu starten. Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1148
-#, fuzzy
+#: privacyidea/lib/policy.py:1153
 msgid ""
 "You do not have the administrative right to run checkserial. Check the "
 "policies."
 msgstr ""
-"Sie haben nicht die administrative Berechtigung, den Token %s zu "
-"resynchronisieren. Überprüfen Sie die Richtlinien!"
+"Sie haben nicht die administrative Berechtigung, um \"checkserial\" "
+"auszuführen. Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1167
+#: privacyidea/lib/policy.py:1172
 msgid ""
 "You do not have the administrative right to get serials by OTPs in this "
 "realm!"
@@ -132,7 +135,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, in diesem Realm anhand von "
 "OTP-Werten die Seriennummer eines Tokens zu bestimmen!"
 
-#: privacyidea/lib/policy.py:1218
+#: privacyidea/lib/policy.py:1223
 #, python-format
 msgid ""
 "You do not have the administrative right to init token %s of type %s to user "
@@ -141,7 +144,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, Token %s des Typs %s für "
 "den Benutzer %s@%s zu initialisieren. Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1230
+#: privacyidea/lib/policy.py:1235
 msgid ""
 "You do not have the administrative right to enroll tokens. Check the "
 "policies."
@@ -149,14 +152,14 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, Tokens auszurollen. "
 "Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1243
+#: privacyidea/lib/policy.py:1248
 #, python-format
 msgid "You do not have the administrative right to init token %s of type %s."
 msgstr ""
 "Sie haben nicht die administrative Berechtigung, Token %s vom Typ %s zu "
 "initialisieren."
 
-#: privacyidea/lib/policy.py:1255 privacyidea/lib/policy.py:1268
+#: privacyidea/lib/policy.py:1260 privacyidea/lib/policy.py:1273
 #, python-format
 msgid ""
 "The maximum allowed number of tokens for the realm %s was reached. You can "
@@ -167,7 +170,7 @@ msgstr ""
 "können keine weiteren Token mehr in diesem Realm ausrollen. Bitte überprüfen "
 "Sie die Richtlinie scope=enrollment, action=tokencount."
 
-#: privacyidea/lib/policy.py:1279
+#: privacyidea/lib/policy.py:1284
 msgid ""
 "the maximum number of allowed tokens per user is exceeded. Check the "
 "policies scope=enrollment, action=maxtoken"
@@ -176,7 +179,7 @@ msgstr ""
 "können keine weiteren Token mehr in diesem Realm ausrollen. Bitte überprüfen "
 "Sie die Richtlinie scope=enrollment, action=tokencount."
 
-#: privacyidea/lib/policy.py:1294
+#: privacyidea/lib/policy.py:1299
 #, python-format
 msgid ""
 "You do not have the administrative right to unassign token %s. Check the "
@@ -185,7 +188,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, die Zuweisung des Tokens %s "
 "aufzuheben. Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1306 privacyidea/lib/policy.py:1318
+#: privacyidea/lib/policy.py:1311 privacyidea/lib/policy.py:1323
 #, python-format
 msgid ""
 "You do not have the administrative right to assign token %s. Check the "
@@ -194,7 +197,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, den Token %s zuzuweisen. "
 "Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1327
+#: privacyidea/lib/policy.py:1332
 #, python-format
 msgid ""
 "The maximum allowed number of tokens for the realm %s (%s) was reached. You "
@@ -204,14 +207,14 @@ msgstr ""
 "Sie können keine weiteren Token mehr in diesem Realm ausrollen. Bitte "
 "überprüfen Sie die Richtlinie scope=enrollment, action=tokencount."
 
-#: privacyidea/lib/policy.py:1337 privacyidea/lib/policy.py:1680
-#: privacyidea/lib/policy.py:1754 privacyidea/lib/policy.py:1796
+#: privacyidea/lib/policy.py:1342 privacyidea/lib/policy.py:1686
+#: privacyidea/lib/policy.py:1760 privacyidea/lib/policy.py:1802
 msgid "The maximum number of allowed tokens is exceeded. Check the policies"
 msgstr ""
 "Die maximale Anzahl der erlaubten Token wurde erreicht. Überprüfen Sie die "
 "Richtlinien!"
 
-#: privacyidea/lib/policy.py:1356
+#: privacyidea/lib/policy.py:1361
 #, python-format
 msgid ""
 "You do not have the administrative right to set MOTP PIN/ SC UserPIN for "
@@ -220,7 +223,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, den MOTP PIN bzw. Smartcard "
 "UserPIN für Token %s zu setzen. Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1371
+#: privacyidea/lib/policy.py:1376
 #, python-format
 msgid ""
 "You do not have the administrative right to set Smartcard PIN for token %s. "
@@ -229,7 +232,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, die Smartcard PIN für den "
 "Token %s zu setzen. Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1386
+#: privacyidea/lib/policy.py:1391
 #, python-format
 msgid ""
 "You do not have the administrative right to set OTP PIN for token %s. Check "
@@ -238,7 +241,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, die OTP PIN für den Token "
 "%s zu setzen. Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1398
+#: privacyidea/lib/policy.py:1403
 #, python-format
 msgid ""
 "You do not have the administrative right to set token properties for %s. "
@@ -247,7 +250,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, die Tokeneigenschaften für "
 "den Token %s zu setzen. Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1411
+#: privacyidea/lib/policy.py:1416
 #, python-format
 msgid ""
 "You do not have the administrative right to resync token %s. Check the "
@@ -256,14 +259,14 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, den Token %s zu "
 "resynchronisieren. Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1423
+#: privacyidea/lib/policy.py:1428
 #, python-format
 msgid "You do not have the administrative right to list users in realm %s(%s)."
 msgstr ""
 "Sie haben nicht die administrative Berechtigung, die Benutzer im Realm "
 "%s(%s) aufzulisten. Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1435
+#: privacyidea/lib/policy.py:1440
 #, python-format
 msgid ""
 "You do not have the administrative right to show status of token challenges "
@@ -272,7 +275,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, den Status der Challenges "
 "im Realm %s(%s) anzuzeigen. Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1459
+#: privacyidea/lib/policy.py:1464
 #, python-format
 msgid ""
 "You do not have the administrative right to remove tokens from realm %s. "
@@ -281,7 +284,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, Token im Realm %s zu "
 "entfernen . Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1470
+#: privacyidea/lib/policy.py:1475
 #, python-format
 msgid ""
 "You do not have the administrative right to add tokens to realm %s. Check "
@@ -290,7 +293,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, Token im Realm %s "
 "hinzuzufügen. Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1477
+#: privacyidea/lib/policy.py:1482
 #, python-format
 msgid ""
 "You may not put any more tokens in realm %s. Check the policy 'tokencount'"
@@ -298,7 +301,7 @@ msgstr ""
 "Sie können keine weiteren Token mehr im Realm %s hinzufügen. Überprüfen Sie "
 "die Richtlinie 'tokencount'!"
 
-#: privacyidea/lib/policy.py:1490
+#: privacyidea/lib/policy.py:1495
 #, python-format
 msgid ""
 "You do not have the administrative right to reset token %s. Check the "
@@ -307,7 +310,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, den Fehlzähler von Token %s "
 "zurückzusetzen. Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1503
+#: privacyidea/lib/policy.py:1508
 msgid ""
 "You do not have the administrative right to import tokens. Check the "
 "policies."
@@ -315,7 +318,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, Token zu importieren. "
 "Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1515
+#: privacyidea/lib/policy.py:1520
 #, python-format
 msgid ""
 "You do not have the administrative right to import token files to realm %s. "
@@ -324,7 +327,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, Token im Realm %s zu "
 "importieren. Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1522
+#: privacyidea/lib/policy.py:1527
 #, python-format
 msgid ""
 "The maximum number of allowed tokens in realm %s is exceeded. Check policy "
@@ -333,19 +336,19 @@ msgstr ""
 "Die Maximalzahl der erlaubten Token in Realm %s wurde erreicht. Überprüfen "
 "Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1530 privacyidea/lib/policy.py:1569
-#: privacyidea/lib/policy.py:1830
+#: privacyidea/lib/policy.py:1535 privacyidea/lib/policy.py:1575
+#: privacyidea/lib/policy.py:1836
 #, python-format
 msgid "Failed to run checkPolicyPre. Unknown method: %s"
 msgstr "checkPolicyPre fehlgeschlagen. Unbekannte Methode: %s"
 
-#: privacyidea/lib/policy.py:1540
+#: privacyidea/lib/policy.py:1546
 #, python-format
 msgid "There is no policy gettoken/max_count definable for the tokentype %r"
 msgstr ""
 "Für diesen Tokentyp (%r) ist keine Richtlinie gettoken/max_count definierbar."
 
-#: privacyidea/lib/policy.py:1563
+#: privacyidea/lib/policy.py:1569
 msgid ""
 "You do not have the administrative right to view the audit trail. You are "
 "missing a policy scope=audit, action=view"
@@ -353,7 +356,7 @@ msgstr ""
 "Sie haben nicht die administrative Berechtigung, das Audit-Log anzusehen. "
 "Überprüfen Sie die Richtlinien scope=audit, action=view!"
 
-#: privacyidea/lib/policy.py:1584
+#: privacyidea/lib/policy.py:1590
 #, python-format
 msgid ""
 "There is no policy selfservice/max_count definable for the token type %s."
@@ -361,7 +364,7 @@ msgstr ""
 "Für diesen Tokentyp (%s) ist keine Richtlinie selfservice/max_count "
 "definierbar."
 
-#: privacyidea/lib/policy.py:1594
+#: privacyidea/lib/policy.py:1600
 #, python-format
 msgid ""
 "There is no policy selfservice/max_count defined for the tokentype %s in "
@@ -370,18 +373,18 @@ msgstr ""
 "Für diesen Tokentyp (%s) ist im Realm %s keine Richtlinie selfservice/"
 "max_count definiert."
 
-#: privacyidea/lib/policy.py:1608 privacyidea/lib/policy.py:1617
-#: privacyidea/lib/policy.py:1626 privacyidea/lib/policy.py:1635
-#: privacyidea/lib/policy.py:1646 privacyidea/lib/policy.py:1657
-#: privacyidea/lib/policy.py:1666 privacyidea/lib/policy.py:1698
-#: privacyidea/lib/policy.py:1707 privacyidea/lib/policy.py:1716
-#: privacyidea/lib/policy.py:1725 privacyidea/lib/policy.py:1740
-#: privacyidea/lib/policy.py:1762 privacyidea/lib/policy.py:1782
+#: privacyidea/lib/policy.py:1614 privacyidea/lib/policy.py:1623
+#: privacyidea/lib/policy.py:1632 privacyidea/lib/policy.py:1641
+#: privacyidea/lib/policy.py:1652 privacyidea/lib/policy.py:1663
+#: privacyidea/lib/policy.py:1672 privacyidea/lib/policy.py:1704
+#: privacyidea/lib/policy.py:1713 privacyidea/lib/policy.py:1722
+#: privacyidea/lib/policy.py:1731 privacyidea/lib/policy.py:1746
+#: privacyidea/lib/policy.py:1768 privacyidea/lib/policy.py:1788
 msgid "The policy settings do not allow you to issue this request!"
 msgstr "Die Richtlinien gestatten nicht, dass Sie diese Anfrage ausführen!"
 
-#: privacyidea/lib/policy.py:1673 privacyidea/lib/policy.py:1747
-#: privacyidea/lib/policy.py:1789
+#: privacyidea/lib/policy.py:1679 privacyidea/lib/policy.py:1753
+#: privacyidea/lib/policy.py:1795
 msgid ""
 "You may not enroll any more tokens. Your maximum licensed token number is "
 "reached!"
@@ -389,68 +392,68 @@ msgstr ""
 "Sie können keine weiteren Token mehr ausrollen. Die lizensierte "
 "Maximalanzahl wurde erreicht."
 
-#: privacyidea/lib/policy.py:1689
+#: privacyidea/lib/policy.py:1695
 msgid "The policy settings do not allow you to request a serial by OTP!"
 msgstr ""
 "Die Richtlinien erlauben nicht, dass Sie anhand von OTP-Werten eine "
 "Seriennummer bestimmen."
 
-#: privacyidea/lib/policy.py:1801
+#: privacyidea/lib/policy.py:1807
 #, python-format
 msgid "Unknown method in selfservice: %s"
 msgstr "Unbekannte Methode in selfservice: %s"
 
-#: privacyidea/lib/policy.py:1840
+#: privacyidea/lib/policy.py:1846
 #, python-format
 msgid "Policy check failed. You are not allowed to %s system config."
 msgstr "%s auf die Systemkonfiguration ist Ihnen nicht erlaubt."
 
-#: privacyidea/lib/policy.py:1857
+#: privacyidea/lib/policy.py:1863
 #, python-format
 msgid "You do not have the administrative right to do an ocra/%s"
 msgstr ""
 "Sie haben nicht die administrative Berechtigung, ein ocra/%s durchzuführen. "
 "Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1863
+#: privacyidea/lib/policy.py:1869
 #, python-format
 msgid "Failed to run getPolicyPre. Unknown controller: %s"
 msgstr "Fehler bei getPolicyPre. Unbekannter Controller: %s"
 
-#: privacyidea/lib/policy.py:1908
+#: privacyidea/lib/policy.py:1914
 msgid ""
 "You do not have the administrative right to get serials from this realm!"
 msgstr ""
 "Sie haben nicht die administrative Berechtigung, Seriennummern in diesem "
 "Realm zu bestimmen. Überprüfen Sie die Richtlinien!"
 
-#: privacyidea/lib/policy.py:1914
+#: privacyidea/lib/policy.py:1920
 #, python-format
 msgid "Failed to run getPolicyPost. Unknown method: %s"
 msgstr "Fehler bei getPolicyPost. Unbekannte Methode: %s"
 
-#: privacyidea/lib/policy.py:1950
+#: privacyidea/lib/policy.py:1956
 msgid "You do not have system config read rights and not realm admin policies."
 msgstr ""
 "Sie haben keine Leserechte auf die Systemkonfiguration und keine Realm-"
 "administrativen Rechte."
 
-#: privacyidea/lib/policy.py:1959
+#: privacyidea/lib/policy.py:1965
 #, python-format
 msgid "Failed to run getPolicyPost. Unknown controller: %s"
 msgstr "Fehler bei getPolicyPost. Unbekannter Controller: %s"
 
-#: privacyidea/lib/policy.py:2173
+#: privacyidea/lib/policy.py:2182
 #, python-format
 msgid "Authorization on client %s failed for %s@%s."
 msgstr "Der Benutzer %s@%s ist für den Client %s nicht autorisiert."
 
-#: privacyidea/lib/policy.py:2406
+#: privacyidea/lib/policy.py:2415
 #, python-format
 msgid "Authorization for token with type <<%s>> failed on client %s"
 msgstr "Der Tokentyp %s ist für den Client %s nicht autorisiert."
 
-#: privacyidea/lib/policy.py:2469
+#: privacyidea/lib/policy.py:2478
 #, python-format
 msgid "Authorization for token %s failed on client %s"
 msgstr "Der Token %s ist für den Client %s nicht autorisiert."
@@ -542,11 +545,8 @@ msgstr ""
 "bestimmen."
 
 #: privacyidea/lib/token.py:2523
-#, fuzzy
 msgid "Admin is allowed to check if a serial is unique"
-msgstr ""
-"Der Administrator darf zu einem gegebenem OTP-Wert die Tokenseriennummer "
-"bestimmen."
+msgstr "Der Administrator darf prüfen, ob eine Seriennummer einmalig ist."
 
 #: privacyidea/lib/token.py:2525
 msgid "Admin is allowed to copy the PIN of one token to another token."
@@ -941,23 +941,23 @@ msgstr "Der Administrator darf einen %s-Token ausrollen."
 msgid "The user is allowed to enroll a %s token."
 msgstr "Der Benutzer darf einen %s-Token ausrollen."
 
-#: privacyidea/lib/tokenclass.py:1111
+#: privacyidea/lib/tokenclass.py:1113
 msgid "OTP seed"
 msgstr "OTP Seed"
 
-#: privacyidea/lib/tokenclass.py:1123
+#: privacyidea/lib/tokenclass.py:1125
 msgid "URL for google Authenticator"
 msgstr "URL für Google Authenticator"
 
-#: privacyidea/lib/tokenclass.py:1134
+#: privacyidea/lib/tokenclass.py:1136
 msgid "URL for OATH token"
 msgstr "URL für OATH-Token"
 
-#: privacyidea/lib/tokenclass.py:1145
+#: privacyidea/lib/tokenclass.py:1147
 msgid "URL for MOTP token"
 msgstr "URL für MOTP-Token"
 
-#: privacyidea/lib/tokenclass.py:2364
+#: privacyidea/lib/tokenclass.py:2366
 #: privacyidea/lib/tokens/ocra2token.py:1401
 msgid "URL for OCRA token"
 msgstr "URL für OCRA-Token"
@@ -968,39 +968,31 @@ msgid "Your LDAP config seems to be OK, %i user objects found."
 msgstr "LDAP Konfiguration scheint OK! Es wurden %i Benutzer gefunden."
 
 #: privacyidea/lib/tokens/emailtoken.mako:4
-#: privacyidea/tests/testdata/data/templates/emailtoken.mako.py:25
 msgid "E-mail OTP token"
 msgstr "E-Mail OTP Token"
 
 #: privacyidea/lib/tokens/emailtoken.mako:51
 #: privacyidea/lib/tokens/emailtoken.mako:58
-#: privacyidea/tests/testdata/data/templates/emailtoken.mako.py:30
-#: privacyidea/tests/testdata/data/templates/emailtoken.mako.py:34
 msgid "E-mail provider config"
 msgstr "E-Mail Konfiguration"
 
 #: privacyidea/lib/tokens/emailtoken.mako:54
-#: privacyidea/tests/testdata/data/templates/emailtoken.mako.py:32
 msgid "E-mail provider"
 msgstr "E-Mail Provider"
 
 #: privacyidea/lib/tokens/emailtoken.mako:63
-#: privacyidea/tests/testdata/data/templates/emailtoken.mako.py:36
 msgid "E-mail challenge validity (sec)"
 msgstr "Gültigkeit von E-Mail Challenge (Sek.)"
 
 #: privacyidea/lib/tokens/emailtoken.mako:67
-#: privacyidea/tests/testdata/data/templates/emailtoken.mako.py:38
 msgid "Time between e-mails (sec)"
 msgstr "Zeit zwischen E-Mails (Sek.)"
 
 #: privacyidea/lib/tokens/emailtoken.mako:77
-#: privacyidea/tests/testdata/data/templates/emailtoken.mako.py:42
 msgid "E-mail token"
 msgstr "E-Mail Token"
 
 #: privacyidea/lib/tokens/emailtoken.mako:106
-#: privacyidea/tests/testdata/data/templates/emailtoken.mako.py:47
 msgid "E-mail address"
 msgstr "E-Mail-Adresse"
 
@@ -1021,70 +1013,42 @@ msgstr "E-Mail-Adresse"
 #: privacyidea/lib/tokens/yubicotoken.mako:122
 #: privacyidea/lib/tokens/yubicotoken.mako:177
 #: privacyidea/templates/manage/machines.mako:43
-#: privacyidea/tests/testdata/data/templates/emailtoken.mako.py:49
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:48
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:82
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:52
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:85
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:102
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:54
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:80
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:116
-#: privacyidea/tests/testdata/data/templates/spasstoken.mako.py:35
-#: privacyidea/tests/testdata/data/templates/sshkeytoken.mako.py:34
-#: privacyidea/tests/testdata/data/templates/tagespassworttoken.mako.py:34
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:64
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:113
-#: privacyidea/tests/testdata/data/templates/yubicotoken.mako.py:62
-#: privacyidea/tests/testdata/data/templates/yubicotoken.mako.py:73
 msgid "Description"
 msgstr "Beschreibung"
 
 #: privacyidea/lib/tokens/hmactoken.mako:5
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:26
 msgid "HMAC Token Settings"
 msgstr "HMAC Token Einstellungen"
 
 #: privacyidea/lib/tokens/hmactoken.mako:14
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:33
 msgid "HMAC eventbased"
 msgstr "HMAC ereignisbasiert"
 
 #: privacyidea/lib/tokens/hmactoken.mako:53
 #: privacyidea/lib/tokens/totptoken.mako:124
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:38
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:52
 msgid "Please enter or copy the HMAC key."
 msgstr "Bitte geben Sie das HMAC Seed ein."
 
 #: privacyidea/lib/tokens/hmactoken.mako:55
 #: privacyidea/lib/tokens/totptoken.mako:126
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:40
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:54
 msgid "HMAC key"
 msgstr "HMAC Seed"
 
 #: privacyidea/lib/tokens/hmactoken.mako:59
 #: privacyidea/lib/tokens/totptoken.mako:130
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:42
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:56
 msgid "Generate HMAC key."
 msgstr "HMAC Seed vom Server generieren lassen."
 
 #: privacyidea/lib/tokens/hmactoken.mako:61
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:44
 msgid "OTP Length"
 msgstr "OTP-Länge"
 
 #: privacyidea/lib/tokens/hmactoken.mako:71
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:46
 msgid "Hash algorithm"
 msgstr "Hash Algorithmus"
 
 #: privacyidea/lib/tokens/hmactoken.mako:91
 #: privacyidea/lib/tokens/hmactoken.mako:168
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:52
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:67
 msgid "Enroll your HOTP Token"
 msgstr "Rollen Sie Ihren HOTP Token aus"
 
@@ -1093,11 +1057,6 @@ msgstr "Rollen Sie Ihren HOTP Token aus"
 #: privacyidea/lib/tokens/ocra2token.mako:99
 #: privacyidea/lib/tokens/smstoken.mako:218
 #: privacyidea/lib/tokens/totptoken.mako:158
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:57
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:65
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:63
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:102
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:73
 msgid "required input field"
 msgstr "Benötigtes Eingabefeld"
 
@@ -1105,10 +1064,6 @@ msgstr "Benötigtes Eingabefeld"
 #: privacyidea/lib/tokens/motptoken.mako:96
 #: privacyidea/lib/tokens/ocra2token.mako:100
 #: privacyidea/lib/tokens/totptoken.mako:159
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:59
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:67
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:65
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:75
 msgid "minimum length must be greater than {0}"
 msgstr "Die Länge muss größer als {0} sein."
 
@@ -1116,10 +1071,6 @@ msgstr "Die Länge muss größer als {0} sein."
 #: privacyidea/lib/tokens/motptoken.mako:97
 #: privacyidea/lib/tokens/ocra2token.mako:101
 #: privacyidea/lib/tokens/totptoken.mako:160
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:61
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:69
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:67
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:77
 msgid "maximum length must be lower than {0}"
 msgstr "Die Länge muss kürzer als {0} sein."
 
@@ -1129,12 +1080,6 @@ msgstr "Die Länge muss kürzer als {0} sein."
 #: privacyidea/lib/tokens/ocra2token.mako:109
 #: privacyidea/lib/tokens/totptoken.mako:161
 #: privacyidea/lib/tokens/totptoken.mako:168
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:63
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:71
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:73
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:69
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:79
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:81
 msgid ""
 "Please enter a valid init secret. It may only contain numbers and the "
 "letters A-F."
@@ -1148,40 +1093,26 @@ msgstr ""
 #: privacyidea/lib/tokens/ocra2token.mako:156
 #: privacyidea/lib/tokens/smstoken.mako:264
 #: privacyidea/lib/tokens/totptoken.mako:218
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:65
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:75
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:92
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:71
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:108
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:83
 msgid "Form data not valid."
 msgstr "Die Formulardaten sind ungültig."
 
 #: privacyidea/lib/tokens/hmactoken.mako:173
 #: privacyidea/lib/tokens/totptoken.mako:234
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:69
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:87
 msgid "Generate HMAC key"
 msgstr "Generiere HMAC Key"
 
 #: privacyidea/lib/tokens/hmactoken.mako:176
 #: privacyidea/lib/tokens/totptoken.mako:237
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:71
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:89
 msgid "Seed for HOTP token"
 msgstr "Seed des HOTP Token"
 
 #: privacyidea/lib/tokens/hmactoken.mako:187
 #: privacyidea/lib/tokens/totptoken.mako:248
 #: privacyidea/templates/manage/tokeninfo.mako:32
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:79
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:97
-#: privacyidea/tests/testdata/data/templates/manage/tokeninfo.mako.py:48
 msgid "hashlib"
 msgstr "Hash Algorithmus"
 
 #: privacyidea/lib/tokens/hmactoken.mako:201
-#: privacyidea/tests/testdata/data/templates/hmactoken.mako.py:84
 msgid "enroll hmac token"
 msgstr "HMAC Token ausrollen"
 
@@ -1198,131 +1129,104 @@ msgstr ""
 "Zeichen sein."
 
 #: privacyidea/lib/tokens/motptoken.mako:5
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:26
 msgid "mOTP Token Settings"
 msgstr "mOTP Einstellungen"
 
 #: privacyidea/lib/tokens/motptoken.mako:14
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:33
 msgid "mOTP - mobile otp"
 msgstr "mOTP - Mobiler OTP"
 
 #: privacyidea/lib/tokens/motptoken.mako:50
 #: privacyidea/lib/tokens/motptoken.mako:56
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:38
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:42
 msgid "Please enter or copy the init-secret, that was generated by your app."
 msgstr ""
 "Bitte geben Sie den Initialisierungsseed ein. Dieser wurde von der App auf "
 "Ihrem Telefon erzeugt."
 
 #: privacyidea/lib/tokens/motptoken.mako:54
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:40
 msgid "Init secret"
 msgstr "Init Seed"
 
 #: privacyidea/lib/tokens/motptoken.mako:60
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:44
 msgid "Generate MOTP key."
 msgstr "MOTP Seed vom Server generieren lassen."
 
 #: privacyidea/lib/tokens/motptoken.mako:62
 #: privacyidea/lib/tokens/motptoken.mako:66
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:46
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:48
 msgid "Also enter the PIN you are using on your phone."
 msgstr "Geben Sie die PIN ein, die Sie auch auf dem Telefon verwenden."
 
 #: privacyidea/lib/tokens/motptoken.mako:69
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:50
 msgid "(again)"
 msgstr "(wiederholen)"
 
 #: privacyidea/lib/tokens/motptoken.mako:84
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:56
 msgid "Register mOTP"
 msgstr "mOTP Token registrieren"
 
 #: privacyidea/lib/tokens/motptoken.mako:88
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:60
 msgid "Webprovisioning mOTP"
 msgstr "Provisionierung mOTP "
 
 #: privacyidea/lib/tokens/motptoken.mako:156
 #: privacyidea/templates/selfservice/register-motp.mako:21
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:77
 msgid "Register your mOTP Token"
 msgstr "mOTP Token registrieren"
 
 #: privacyidea/lib/tokens/motptoken.mako:162
 #: privacyidea/templates/selfservice/register-motp.mako:27
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:79
 msgid "Init Secret of motp-Token"
 msgstr "Initialisierungs-Seed des mOTP-Token"
 
 #: privacyidea/lib/tokens/motptoken.mako:169
 #: privacyidea/lib/tokens/motptoken.mako:236
 #: privacyidea/templates/selfservice/register-motp.mako:36
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:81
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:98
 msgid "mOTP PIN"
 msgstr "mOTP PIN"
 
 #: privacyidea/lib/tokens/motptoken.mako:173
 #: privacyidea/lib/tokens/motptoken.mako:243
 #: privacyidea/templates/selfservice/register-motp.mako:40
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:83
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:100
 msgid "mOTP PIN (again)"
 msgstr "mOTP PIN (wiederholen)"
 
 #: privacyidea/lib/tokens/motptoken.mako:182
 #: privacyidea/templates/selfservice/register-motp.mako:44
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:87
 msgid "register mOTP Token"
 msgstr "mOTP Token registrieren"
 
 #: privacyidea/lib/tokens/motptoken.mako:226
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:94
 msgid "Webprovisioning your mOTP Token"
 msgstr "Erstellen Sie Ihren mOTP Token"
 
 #: privacyidea/lib/tokens/motptoken.mako:232
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:96
 msgid "Your mOTP secret will be created by the server."
 msgstr "Der geheime mOTP Schlüssel wird vom Server erstellt."
 
 #: privacyidea/lib/tokens/motptoken.mako:260
-#: privacyidea/tests/testdata/data/templates/motptoken.mako.py:104
 msgid "provision mOTP Token"
 msgstr "mOTP Token erstellen"
 
 #: privacyidea/lib/tokens/ocra2token.mako:5
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:26
 msgid "OCRA2 settings"
 msgstr "OCRA2 Einstellungen"
 
 #: privacyidea/lib/tokens/ocra2token.mako:12
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:31
 msgid "maximum concurrent OCRA2 challenges"
 msgstr "Maximale Anzahl an gleichzeitigen OCRA2 Challenges"
 
 #: privacyidea/lib/tokens/ocra2token.mako:14
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:33
 msgid "This is the maximum concurrent challenges per OCRA2 Token."
 msgstr ""
 "Das ist die maximale Anzahl an gleichzeitigen OCRA2 Challenges, die für "
 "einen OCRA2 Token angefordert werden können."
 
 #: privacyidea/lib/tokens/ocra2token.mako:15
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:35
 msgid "OCRA2 challenge timeout"
 msgstr "Timeout für OCRA2 Challenge"
 
 #: privacyidea/lib/tokens/ocra2token.mako:17
 #: privacyidea/templates/manage/manage-base.mako:250
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:37
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:192
 msgid ""
 "After this time a challenge can not be used anymore. Valid entries are like "
 "1D, 2H or 5M where D=day, H=hour, M=minute."
@@ -1331,112 +1235,86 @@ msgstr ""
 "bspw. 1D, 2H oder 5M. Dabei bedeutet D=Tag, H=Stunde, M=Minute."
 
 #: privacyidea/lib/tokens/ocra2token.mako:24
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:41
 msgid "OCRA2 - challenge/response Token"
 msgstr "OCRA2 - Challenge/Response Token"
 
 #: privacyidea/lib/tokens/ocra2token.mako:60
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:46
 msgid "Please enter or copy the OCRA2 key."
 msgstr "Bitte geben Sie den OCRA2 Key ein."
 
 #: privacyidea/lib/tokens/ocra2token.mako:63
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:48
 msgid "OCRA2 key"
 msgstr "OCRA2 Key"
 
 #: privacyidea/lib/tokens/ocra2token.mako:69
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:50
 msgid "Generate OCRA2 key."
 msgstr "OCRA2 Key vom Server generieren lassen."
 
 #: privacyidea/lib/tokens/ocra2token.mako:72
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:52
 msgid "Ocra suite"
 msgstr "Ocrasuite"
 
 #: privacyidea/lib/tokens/ocra2token.mako:92
 #: privacyidea/lib/tokens/ocra2token.mako:172
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:58
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:73
 msgid "Enroll your OCRA2 Token"
 msgstr "Rollen Sie Ihren OCRA2 Token aus"
 
 #: privacyidea/lib/tokens/ocra2token.mako:177
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:75
 msgid "Enter seed for the new OCRA2 token:"
 msgstr "Geben Sie das Seed für den neuen OCRA2 Token ein:"
 
 #: privacyidea/lib/tokens/ocra2token.mako:180
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:77
 msgid "Generate OCRA2 seed"
 msgstr "OCRA2 Key vom Server generieren lassen."
 
 #: privacyidea/lib/tokens/ocra2token.mako:183
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:79
 msgid "Token description"
 msgstr "Token-Beschreibung"
 
 #: privacyidea/lib/tokens/ocra2token.mako:188
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:81
 msgid "enroll ocra2 token"
 msgstr "OCRA2 Token ausrollen"
 
 #: privacyidea/lib/tokens/ocra2token.mako:197
 #: privacyidea/lib/tokens/ocra2token.mako:202
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:85
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:90
 msgid "Activate your OCRA2 Token"
 msgstr "Aktivieren Sie Ihren OCRA2 Token"
 
 #: privacyidea/lib/tokens/ocra2token.mako:208
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:92
 msgid "Your OCRA2 Token :"
 msgstr "Ihr OCRA2 Token:"
 
 #: privacyidea/lib/tokens/ocra2token.mako:211
 #: privacyidea/templates/selfservice/activateqr.mako:15
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:94
-#: privacyidea/tests/testdata/data/templates/selfservice/activateqr.mako.py:27
 msgid "1. Enter the activation code :"
 msgstr "1. Geben Sie bitte den Aktivierungscode ein:"
 
 #: privacyidea/lib/tokens/ocra2token.mako:213
 #: privacyidea/templates/selfservice/activateqr.mako:17
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:96
-#: privacyidea/tests/testdata/data/templates/selfservice/activateqr.mako.py:29
 msgid "Failed to enroll token!"
 msgstr "Ausrollen des Tokens fehlgeschlagen!"
 
 #: privacyidea/lib/tokens/ocra2token.mako:216
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:98
 msgid "activate your OCRA2 Token"
 msgstr "Aktivieren Sie Ihren OCRA2 Token"
 
 #: privacyidea/lib/tokens/ocra2token.mako:226
 #: privacyidea/templates/selfservice/activateqr.mako:30
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:100
-#: privacyidea/tests/testdata/data/templates/selfservice/activateqr.mako.py:33
 msgid "2. Enter your confirmation code:"
 msgstr "2. Bitte geben Sie den Bestätigungscode ein:"
 
 #: privacyidea/lib/tokens/ocra2token.mako:230
 #: privacyidea/templates/selfservice/activateqr.mako:34
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:102
-#: privacyidea/tests/testdata/data/templates/selfservice/activateqr.mako.py:35
 #, python-format
 msgid "OCRA rollout for token %s completed!"
 msgstr "Rollout des OCRA Tokens %s abgeschlossen!"
 
 #: privacyidea/lib/tokens/ocra2token.mako:231
 #: privacyidea/templates/selfservice/activateqr.mako:35
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:104
-#: privacyidea/tests/testdata/data/templates/selfservice/activateqr.mako.py:37
 msgid "OCRA token rollout failed! Please retry"
 msgstr "Rollout des OCRA-Tokens fehlgeschlagen. Bitte versuchen Sie es erneut!"
 
 #: privacyidea/lib/tokens/ocra2token.mako:238
-#: privacyidea/tests/testdata/data/templates/ocra2token.mako.py:106
 msgid "finish your OCRA2 Token"
 msgstr "OCRA2 Token fertigstellen"
 
@@ -1449,14 +1327,11 @@ msgid "ocra challenge-response token - hmac event based"
 msgstr "OCRA Challenge Response Token - HMAC ereignisbasiert"
 
 #: privacyidea/lib/tokens/radiustoken.mako:5
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:27
 msgid "RADIUS Token"
 msgstr "RADIUS Token"
 
 #: privacyidea/lib/tokens/radiustoken.mako:55
 #: privacyidea/lib/tokens/radiustoken.mako:128
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:32
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:59
 msgid ""
 "Please enter a valid RADIUS server specification. It needs to be of the form "
 "<name_or_ip>:<port>"
@@ -1465,28 +1340,21 @@ msgstr ""
 "Form <Name_oder_IP>:<Port> genügen."
 
 #: privacyidea/lib/tokens/radiustoken.mako:72
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:34
 msgid "RADIUS settings"
 msgstr "RADIUS Einstellungen"
 
 #: privacyidea/lib/tokens/radiustoken.mako:75
 #: privacyidea/lib/tokens/radiustoken.mako:165
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:36
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:88
 msgid "You need to enter the server like myradius:1812"
 msgstr "Sie müssen den Server mit Port im Format 'radiusserver:1812' angeben."
 
 #: privacyidea/lib/tokens/radiustoken.mako:76
 #: privacyidea/lib/tokens/radiustoken.mako:166
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:38
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:90
 msgid "RADIUS server"
 msgstr "RADIUS Server"
 
 #: privacyidea/lib/tokens/radiustoken.mako:81
 #: privacyidea/lib/tokens/radiustoken.mako:169
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:40
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:94
 msgid ""
 "The PIN can either be verified on this local privacyIDEA server or forwarded "
 "to the RADIUS server"
@@ -1498,17 +1366,11 @@ msgstr ""
 #: privacyidea/lib/tokens/radiustoken.mako:170
 #: privacyidea/lib/tokens/remotetoken.mako:82
 #: privacyidea/lib/tokens/remotetoken.mako:189
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:42
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:96
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:40
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:98
 msgid "check PIN"
 msgstr "Überprüfe PIN"
 
 #: privacyidea/lib/tokens/radiustoken.mako:84
 #: privacyidea/lib/tokens/radiustoken.mako:172
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:44
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:98
 msgid ""
 "The PIN can either be verified on this local privacyIDEA server or on the "
 "RADIUS server"
@@ -1518,8 +1380,6 @@ msgstr ""
 
 #: privacyidea/lib/tokens/radiustoken.mako:85
 #: privacyidea/lib/tokens/radiustoken.mako:173
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:46
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:102
 msgid "on RADIUS server"
 msgstr "auf dem RADIUS Server"
 
@@ -1527,27 +1387,19 @@ msgstr "auf dem RADIUS Server"
 #: privacyidea/lib/tokens/radiustoken.mako:174
 #: privacyidea/lib/tokens/remotetoken.mako:86
 #: privacyidea/lib/tokens/remotetoken.mako:193
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:48
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:106
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:46
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:108
 msgid "locally"
 msgstr "lokal"
 
 #: privacyidea/lib/tokens/radiustoken.mako:89
 #: privacyidea/lib/tokens/radiustoken.mako:180
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:50
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:110
 msgid "RADIUS shared secret"
 msgstr "RADIUS Shared Secret"
 
 #: privacyidea/lib/tokens/radiustoken.mako:99
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:54
 msgid "RADIUS token"
 msgstr "RADIUS Token"
 
 #: privacyidea/lib/tokens/radiustoken.mako:162
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:84
 msgid ""
 "Here you can define, to which RADIUS server the request should be forwarded."
 msgstr ""
@@ -1555,23 +1407,19 @@ msgstr ""
 "Authentisierungsanfrage weitergeleitet werden soll."
 
 #: privacyidea/lib/tokens/radiustoken.mako:163
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:86
 msgid "Please specify the server, the secret and the username"
 msgstr ""
 "Bitte geben Sie den Server, das RADIUS Secret und den Benutzernamen an."
 
 #: privacyidea/lib/tokens/radiustoken.mako:177
-#: privacyidea/tests/testdata/data/templates/radiustoken.mako.py:108
 msgid "RADIUS user"
 msgstr "RADIUS Benutzer"
 
 #: privacyidea/lib/tokens/remotetoken.mako:5
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:27
 msgid "Remote Token"
 msgstr "REMOTE Token"
 
 #: privacyidea/lib/tokens/remotetoken.mako:57
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:32
 msgid ""
 "Please enter a valid remote server specification. It needs to be of the form "
 "http://server or https://server"
@@ -1580,7 +1428,6 @@ msgstr ""
 "Form http://server oder https://server genügen."
 
 #: privacyidea/lib/tokens/remotetoken.mako:75
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:34
 msgid ""
 "You need to enter the remote privacyIDEA server like https://"
 "remoteprivacyidea"
@@ -1589,12 +1436,10 @@ msgstr ""
 "entfernterserver.local' angeben."
 
 #: privacyidea/lib/tokens/remotetoken.mako:76
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:36
 msgid "REMOTE server"
 msgstr "REMOTE Server"
 
 #: privacyidea/lib/tokens/remotetoken.mako:81
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:38
 msgid ""
 "The PIN can either be verified on this local privacyIDEA server or forwarded "
 "to the remote server"
@@ -1603,7 +1448,6 @@ msgstr ""
 "werden oder an den remote Server weitergeleitet werden."
 
 #: privacyidea/lib/tokens/remotetoken.mako:84
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:42
 msgid ""
 "The PIN can either be verified on this local privacyIDEA server or on the "
 "remote server"
@@ -1612,27 +1456,22 @@ msgstr ""
 "dem entfernten privacyIDEA Server."
 
 #: privacyidea/lib/tokens/remotetoken.mako:85
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:44
 msgid "on REMOTE server"
 msgstr "auf dem REMOTE Server"
 
 #: privacyidea/lib/tokens/remotetoken.mako:91
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:48
 msgid "Remote Realm"
 msgstr "Remote Realm"
 
 #: privacyidea/lib/tokens/remotetoken.mako:97
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:50
 msgid "Remote Resolver"
 msgstr "Remote Resolver"
 
 #: privacyidea/lib/tokens/remotetoken.mako:108
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:54
 msgid "REMOTE token"
 msgstr "REMOTE token"
 
 #: privacyidea/lib/tokens/remotetoken.mako:142
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:59
 msgid ""
 "Please enter a valid URL for the privacyIDEA server. It needs to start with "
 "http:// or https://"
@@ -1641,7 +1480,6 @@ msgstr ""
 "mit http:// oder https:// anfangen."
 
 #: privacyidea/lib/tokens/remotetoken.mako:179
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:86
 msgid ""
 "Here you can define to which privacyIDEA Server the authentication request "
 "should be forwarded."
@@ -1650,7 +1488,6 @@ msgstr ""
 "Authentisierungsanfrage weitergeleitet werden soll."
 
 #: privacyidea/lib/tokens/remotetoken.mako:180
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:88
 msgid ""
 "You can either forward the OTP to a remote serial number or to a remote user."
 msgstr ""
@@ -1658,7 +1495,6 @@ msgstr ""
 "an einen entfernten Benutzer weitergeleitet werden."
 
 #: privacyidea/lib/tokens/remotetoken.mako:181
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:90
 msgid ""
 "If you do not enter a remote serial or a remote user, the request will be "
 "forwarded to the remote user with the same username"
@@ -1668,19 +1504,16 @@ msgstr ""
 "mit dem gleichen Benutzernamen weitergeleitet."
 
 #: privacyidea/lib/tokens/remotetoken.mako:183
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:92
 msgid "You need to enter the server like 'https://privacyidea.my.domain'"
 msgstr ""
 "Sie müssen den Server im Format 'https://privacyidea.entfernterserver.local' "
 "angeben."
 
 #: privacyidea/lib/tokens/remotetoken.mako:184
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:94
 msgid "remote server"
 msgstr "Remote Server"
 
 #: privacyidea/lib/tokens/remotetoken.mako:191
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:100
 msgid ""
 "The PIN can either be verified on this local privacyIDEA server or on the "
 "remote privacyIDEA server"
@@ -1689,99 +1522,79 @@ msgstr ""
 "dem entfernten privacyIDEA Server."
 
 #: privacyidea/lib/tokens/remotetoken.mako:192
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:104
 msgid "remotely"
 msgstr "entfernt"
 
 #: privacyidea/lib/tokens/remotetoken.mako:196
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:110
 msgid "remote serial"
 msgstr "entfernte Seriennummer"
 
 #: privacyidea/lib/tokens/remotetoken.mako:199
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:112
 msgid "remote user"
 msgstr "entfernter Benutzer"
 
 #: privacyidea/lib/tokens/remotetoken.mako:202
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:114
 msgid "remote user realm"
 msgstr "Realm des entfernten Benutzers"
 
 #: privacyidea/lib/tokens/remotetoken.mako:206
-#: privacyidea/tests/testdata/data/templates/remotetoken.mako.py:118
 msgid "remote user useridresolver"
 msgstr "UserIdResolver des entfernten Benutzers"
 
 #: privacyidea/lib/tokens/smstoken.mako:5
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:35
 msgid "SMS OTP Token"
 msgstr "SMS OTP Token"
 
 #: privacyidea/lib/tokens/smstoken.mako:119
 #: privacyidea/lib/tokens/smstoken.mako:129
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:51
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:59
 msgid "SMS Provider Config"
 msgstr "SMS Konfiguration"
 
 #: privacyidea/lib/tokens/smstoken.mako:121
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:55
 msgid "Open help on SMS OTP token"
 msgstr "Hilfe zu SMS OTP Token"
 
 #: privacyidea/lib/tokens/smstoken.mako:126
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:57
 msgid "SMS Provider"
 msgstr "SMS Provider"
 
 #: privacyidea/lib/tokens/smstoken.mako:132
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:61
 msgid "SMS Timeout"
 msgstr "SMS Timeout"
 
 #: privacyidea/lib/tokens/smstoken.mako:135
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:63
 msgid "Time between SMS (sec.)"
 msgstr "Zeit zwischen SMS (Sek.)"
 
 #: privacyidea/lib/tokens/smstoken.mako:141
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:65
 msgid "preset Clickatel"
 msgstr "Clickatel vorbelegen"
 
 #: privacyidea/lib/tokens/smstoken.mako:143
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:67
 msgid "preset Sipgate"
 msgstr "Sipgate vorbelegen"
 
 #: privacyidea/lib/tokens/smstoken.mako:149
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:71
 msgid "SMS OTP"
 msgstr "SMS OTP"
 
 #: privacyidea/lib/tokens/smstoken.mako:183
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:76
 msgid "Please enter the mobile phone number for the SMS token"
 msgstr "Bitten geben Sie die Mobiltelefonnummer für den SMS Token ein."
 
 #: privacyidea/lib/tokens/smstoken.mako:185
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:78
 msgid "phone number"
 msgstr "Mobiltelefonnummer"
 
 #: privacyidea/lib/tokens/smstoken.mako:198
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:84
 msgid "Register SMS"
 msgstr "SMS Token registrieren"
 
 #: privacyidea/lib/tokens/smstoken.mako:219
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:104
 msgid "minimum length must be greater than 10"
 msgstr "Die minimale Länge muss größer als 10 sein."
 
 #: privacyidea/lib/tokens/smstoken.mako:224
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:106
 msgid ""
 "Please enter a valid phone number. It may only contain numbers and + or /."
 msgstr ""
@@ -1790,19 +1603,16 @@ msgstr ""
 
 #: privacyidea/lib/tokens/smstoken.mako:271
 #: privacyidea/templates/selfservice/register-sms.mako:21
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:110
 msgid "Register your SMS OTP Token / mobileTAN"
 msgstr "Registrieren Sie Ihren SMS OTP Token / mobileTAN"
 
 #: privacyidea/lib/tokens/smstoken.mako:277
 #: privacyidea/templates/selfservice/register-sms.mako:27
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:112
 msgid "Your mobile phone number"
 msgstr "Ihre Mobiltelefonnummer"
 
 #: privacyidea/lib/tokens/smstoken.mako:289
 #: privacyidea/templates/selfservice/register-sms.mako:36
-#: privacyidea/tests/testdata/data/templates/smstoken.mako.py:118
 msgid "register SMS Token"
 msgstr "SMS Token registrieren"
 
@@ -1815,17 +1625,14 @@ msgid "sms challenge-response token - hmac event based"
 msgstr "SMS Challenge Response Token - HMAC ereignisbasiert"
 
 #: privacyidea/lib/tokens/spasstoken.mako:4
-#: privacyidea/tests/testdata/data/templates/spasstoken.mako.py:25
 msgid "Simple Pass Token"
 msgstr "Simple Pass Token"
 
 #: privacyidea/lib/tokens/spasstoken.mako:29
-#: privacyidea/tests/testdata/data/templates/spasstoken.mako.py:30
 msgid "The Simple Pass token will not require any one time password component."
 msgstr "Der Simple Pass Token beinhaltet keinen Einmal-Passwort-Anteil."
 
 #: privacyidea/lib/tokens/spasstoken.mako:30
-#: privacyidea/tests/testdata/data/templates/spasstoken.mako.py:32
 msgid ""
 "Anyway, you can set an OTP PIN, so that using this token the user can "
 "authenticate always and only with this fixed PIN."
@@ -1834,17 +1641,14 @@ msgstr ""
 "der OTP PIN wie ein einfaches Passwort funktioniert."
 
 #: privacyidea/lib/tokens/sshkeytoken.mako:4
-#: privacyidea/tests/testdata/data/templates/sshkeytoken.mako.py:25
 msgid "SSH Token"
 msgstr "SSH Token"
 
 #: privacyidea/lib/tokens/sshkeytoken.mako:44
-#: privacyidea/tests/testdata/data/templates/sshkeytoken.mako.py:30
 msgid "Here you can upload your public ssh key."
 msgstr "Hier können Sie den Öffentlichen SSH Schlüssel hochladen."
 
 #: privacyidea/lib/tokens/sshkeytoken.mako:47
-#: privacyidea/tests/testdata/data/templates/sshkeytoken.mako.py:32
 msgid "SSH public key"
 msgstr "Öffentlichen SSH Schlüssel"
 
@@ -1854,12 +1658,10 @@ msgstr ""
 "Öffentlicher SSH Schlüssel, der in der authorized_keys verwendet werden soll."
 
 #: privacyidea/lib/tokens/tagespassworttoken.mako:4
-#: privacyidea/tests/testdata/data/templates/tagespassworttoken.mako.py:25
 msgid "Day OTP Token / Tagespasswort"
 msgstr "Tagespasswort"
 
 #: privacyidea/lib/tokens/tagespassworttoken.mako:31
-#: privacyidea/tests/testdata/data/templates/tagespassworttoken.mako.py:30
 msgid "Here you can define the 'Tagespasswort' token, that changes every day."
 msgstr ""
 "Hier können Sie den 'Tagespasswort' Token definieren. Dieser ändert den OTP-"
@@ -1867,51 +1669,42 @@ msgstr ""
 "werden."
 
 #: privacyidea/lib/tokens/tagespassworttoken.mako:34
-#: privacyidea/tests/testdata/data/templates/tagespassworttoken.mako.py:32
 msgid "DPW key"
 msgstr "DPW Seed"
 
 #: privacyidea/lib/tokens/totptoken.mako:5
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:26
 msgid "TOTP Token Settings"
 msgstr "TOTP Token Einstellungen"
 
 #: privacyidea/lib/tokens/totptoken.mako:54
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:31
 msgid "TOTP settings"
 msgstr "TOTP Einstellungen"
 
 #: privacyidea/lib/tokens/totptoken.mako:56
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:33
 msgid "TOTP time Step"
 msgstr "TOTP Zeitschritt"
 
 #: privacyidea/lib/tokens/totptoken.mako:58
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:35
 msgid "This is the time step for time based tokens. Usually this is 30 or 60."
 msgstr ""
 "Dies ist der Zeitschritt bei zeitbasierten Token. Dies sind gewöhnlich 30 "
 "oder 60 Sekunden."
 
 #: privacyidea/lib/tokens/totptoken.mako:59
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:37
 msgid "TOTP time Shift"
 msgstr "TOTP Zeitversatz"
 
 #: privacyidea/lib/tokens/totptoken.mako:61
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:39
 msgid "This is the default time shift of the server. This should be 0."
 msgstr ""
 "Dies ist der standardmäßige Zeitversatz um den die Serveruhr und die "
 "Tokenuhr verschoben sind. Dies sollte 0 sein."
 
 #: privacyidea/lib/tokens/totptoken.mako:62
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:41
 msgid "TOTP time window"
 msgstr "TOTP Zeitfenster"
 
 #: privacyidea/lib/tokens/totptoken.mako:64
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:43
 msgid ""
 "This is the time privacyIDEA will calculate before and after the current "
 "time. A reasonable value is 300."
@@ -1920,14 +1713,11 @@ msgstr ""
 "Zeit versuchen den OTP-Wert bei einem zeitbasierten Token zu finden."
 
 #: privacyidea/lib/tokens/totptoken.mako:72
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:47
 msgid "HMAC time based"
 msgstr "HMAC zeitbasiert"
 
 #: privacyidea/lib/tokens/totptoken.mako:134
 #: privacyidea/lib/tokens/totptoken.mako:258
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:58
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:102
 msgid "timeStep"
 msgstr "Zeitschritt"
 
@@ -1935,25 +1725,18 @@ msgstr "Zeitschritt"
 #: privacyidea/lib/tokens/totptoken.mako:138
 #: privacyidea/lib/tokens/totptoken.mako:260
 #: privacyidea/lib/tokens/totptoken.mako:261
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:60
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:62
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:104
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:106
 msgid "seconds"
 msgstr "Sekunden"
 
 #: privacyidea/lib/tokens/totptoken.mako:151
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:68
 msgid "Register totp"
 msgstr "TOTP registrieren"
 
 #: privacyidea/lib/tokens/totptoken.mako:229
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:85
 msgid "Enroll your TOTP Token"
 msgstr "Rollen Sie Ihren TOTP Token aus"
 
 #: privacyidea/lib/tokens/totptoken.mako:273
-#: privacyidea/tests/testdata/data/templates/totptoken.mako.py:115
 msgid "enroll TOTP Token"
 msgstr "TOTP Token ausrollen"
 
@@ -1966,22 +1749,18 @@ msgid "Vasco Digipass Token Class - proprietary timebased tokens"
 msgstr "Vasco Digipass Token Klasse - Proprietäre zeitbasierte Token"
 
 #: privacyidea/lib/tokens/yubicotoken.mako:5
-#: privacyidea/tests/testdata/data/templates/yubicotoken.mako.py:26
 msgid "Yubico"
 msgstr "Yubico"
 
 #: privacyidea/lib/tokens/yubicotoken.mako:9
-#: privacyidea/tests/testdata/data/templates/yubicotoken.mako.py:30
 msgid "Enroll Yubikey"
 msgstr "Yubikey ausrollen"
 
 #: privacyidea/lib/tokens/yubicotoken.mako:55
-#: privacyidea/tests/testdata/data/templates/yubicotoken.mako.py:35
 msgid "You get your own API key from the yubico website "
 msgstr "Sie können Ihren eigenen API Key auf der Yubico Webseite erhalten."
 
 #: privacyidea/lib/tokens/yubicotoken.mako:59
-#: privacyidea/tests/testdata/data/templates/yubicotoken.mako.py:37
 msgid ""
 "If you do not use your own API key, the privacyIDEA demo API key will be "
 "used!"
@@ -1990,59 +1769,48 @@ msgstr ""
 "verwendet!"
 
 #: privacyidea/lib/tokens/yubicotoken.mako:63
-#: privacyidea/tests/testdata/data/templates/yubicotoken.mako.py:39
 msgid "You need to enter a valid API id"
 msgstr "Sie müssen eine gültige API ID angeben."
 
 #: privacyidea/lib/tokens/yubicotoken.mako:64
-#: privacyidea/tests/testdata/data/templates/yubicotoken.mako.py:41
 msgid "Yubico ID"
 msgstr "Yubico ID"
 
 #: privacyidea/lib/tokens/yubicotoken.mako:71
-#: privacyidea/tests/testdata/data/templates/yubicotoken.mako.py:43
 msgid "You need to enter a valid API key"
 msgstr "Sie müssen einen gültigen API Key eingeben."
 
 #: privacyidea/lib/tokens/yubicotoken.mako:72
-#: privacyidea/tests/testdata/data/templates/yubicotoken.mako.py:45
 msgid "Yubico API key"
 msgstr "Yubico API Key"
 
 #: privacyidea/lib/tokens/yubicotoken.mako:85
-#: privacyidea/tests/testdata/data/templates/yubicotoken.mako.py:49
 msgid "Yubikey"
 msgstr "Yubikey"
 
 #: privacyidea/lib/tokens/yubicotoken.mako:112
-#: privacyidea/tests/testdata/data/templates/yubicotoken.mako.py:54
 msgid "Here you need to enter the token ID of the Yubikey."
 msgstr "Hier müssen Sie die TokenID des Yubikeys eingeben."
 
 #: privacyidea/lib/tokens/yubicotoken.mako:113
-#: privacyidea/tests/testdata/data/templates/yubicotoken.mako.py:56
 msgid "You can do this by inserting the Yubikey and simply push the button."
 msgstr ""
 "Sie können dies tun, indem Sie einfach Ihren Yubikey einstecken und auf den "
 "Knopf drücken."
 
 #: privacyidea/lib/tokens/yubicotoken.mako:116
-#: privacyidea/tests/testdata/data/templates/yubicotoken.mako.py:58
 msgid "You need to enter the Yubikey token ID"
 msgstr "Sie müssen die Yubikey Token ID eingeben."
 
 #: privacyidea/lib/tokens/yubicotoken.mako:117
-#: privacyidea/tests/testdata/data/templates/yubicotoken.mako.py:60
 msgid "Token ID"
 msgstr "Token ID"
 
 #: privacyidea/lib/tokens/yubicotoken.mako:163
-#: privacyidea/tests/testdata/data/templates/yubicotoken.mako.py:67
 msgid "Enroll your Yubikey"
 msgstr "Rollen Sie Ihren Yubikey aus"
 
 #: privacyidea/lib/tokens/yubicotoken.mako:167
-#: privacyidea/tests/testdata/data/templates/yubicotoken.mako.py:69
 msgid ""
 "Enter the TokenId of your Yubikey. Simply insert the Yubikey and press the "
 "button."
@@ -2051,18 +1819,15 @@ msgstr ""
 "ein und drücken Sie den Knopf."
 
 #: privacyidea/lib/tokens/yubicotoken.mako:172
-#: privacyidea/tests/testdata/data/templates/yubicotoken.mako.py:71
 msgid "Yubikey TokenId"
 msgstr "Yubikey Token ID"
 
 #: privacyidea/lib/tokens/yubicotoken.mako:183
-#: privacyidea/tests/testdata/data/templates/yubicotoken.mako.py:75
 msgid "enroll yubico token"
 msgstr "Yubikey ausrollen"
 
 #: privacyidea/templates/auth-base.mako:34
 #: privacyidea/templates/manage/manage-base.mako:226
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:168
 msgid "Authentication"
 msgstr "Authentisierung"
 
@@ -2199,12 +1964,10 @@ msgstr "Passwort/PIN"
 
 #: privacyidea/templates/auth3.mako:34
 #: privacyidea/templates/manage/manage-base.mako:491
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:350
 msgid "OTP value"
 msgstr "OTP-Wert"
 
 #: privacyidea/templates/manage/audit.mako:6
-#: privacyidea/tests/testdata/data/templates/manage/audit.mako.py:26
 msgid "Open help on audit"
 msgstr "Hilfe zum Audit"
 
@@ -2214,7 +1977,6 @@ msgstr "Hilfe zu Client-Computern"
 
 #: privacyidea/templates/manage/machines.mako:21
 #: privacyidea/templates/manage/manage-base.mako:1439
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1035
 msgid "Delete machine"
 msgstr "Client löschen"
 
@@ -2300,143 +2062,110 @@ msgid "Add application option"
 msgstr "Option hinzufügen"
 
 #: privacyidea/templates/manage/manage-base.mako:5
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:26
 msgid "privacyIDEA Management"
 msgstr "privacyIDEA Management"
 
 #: privacyidea/templates/manage/manage-base.mako:52
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:28
 msgid "Config"
 msgstr "Konfiguration"
 
 #: privacyidea/templates/manage/manage-base.mako:54
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:30
 msgid "useridresolvers"
 msgstr "UserIdResolver"
 
 #: privacyidea/templates/manage/manage-base.mako:55
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:32
 msgid "realms"
 msgstr "Realms"
 
 #: privacyidea/templates/manage/manage-base.mako:56
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:34
 msgid "System Config"
 msgstr "System-konfiguration"
 
 #: privacyidea/templates/manage/manage-base.mako:57
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:36
 msgid "Token Config"
 msgstr "Token-konfiguration"
 
 #: privacyidea/templates/manage/manage-base.mako:58
 #: privacyidea/templates/manage/start.mako:60
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:38
-#: privacyidea/tests/testdata/data/templates/manage/start.mako.py:39
 msgid "Policies"
 msgstr "Richtlinien"
 
 #: privacyidea/templates/manage/manage-base.mako:61
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:40
 msgid "Tools"
 msgstr "Werkzeuge"
 
 #: privacyidea/templates/manage/manage-base.mako:63
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:42
 msgid "Get Serial by OTP"
 msgstr "Bestimme Seriennummer über OTP-Wert"
 
 #: privacyidea/templates/manage/manage-base.mako:64
 #: privacyidea/templates/manage/manage-base.mako:618
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:44
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:435
 msgid "Copy Token PIN"
 msgstr "Kopiere Token PIN"
 
 #: privacyidea/templates/manage/manage-base.mako:65
 #: privacyidea/templates/manage/manage-base.mako:542
 #: privacyidea/templates/manage/manage-base.mako:543
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:46
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:387
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:389
 msgid "Check Policy"
 msgstr "Richtlinie testen"
 
 #: privacyidea/templates/manage/manage-base.mako:66
 #: privacyidea/templates/manage/manage-base.mako:568
 #: privacyidea/templates/manage/manage-base.mako:596
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:48
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:403
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:421
 msgid "Export"
 msgstr "Exportieren"
 
 #: privacyidea/templates/manage/manage-base.mako:68
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:50
 msgid "Token information"
 msgstr "Token-Informationen"
 
 #: privacyidea/templates/manage/manage-base.mako:69
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:52
 msgid "Audit information"
 msgstr "Audit"
 
 #: privacyidea/templates/manage/manage-base.mako:72
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:54
 msgid "Create default realm with local users"
 msgstr "Default Realm mit lokalen Benutzern anlegen"
 
 #: privacyidea/templates/manage/manage-base.mako:75
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:56
 msgid "Import Token File"
 msgstr "Tokendatei importieren"
 
 #: privacyidea/templates/manage/manage-base.mako:77
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:58
 msgid "SafeNet/ Aladdin XML"
 msgstr "SafeNet XML (Aladdin)"
 
 #: privacyidea/templates/manage/manage-base.mako:78
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:60
 msgid "OATH csv"
 msgstr "OATH CSV"
 
 #: privacyidea/templates/manage/manage-base.mako:79
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:62
 msgid "Yubikey csv"
 msgstr "Yubikey CSV"
 
 #: privacyidea/templates/manage/manage-base.mako:86
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:71
 msgid "Help"
 msgstr "Hilfe"
 
 #: privacyidea/templates/manage/manage-base.mako:88
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:75
 msgid "Online Help"
 msgstr "Online Hilfe"
 
 #: privacyidea/templates/manage/manage-base.mako:89
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:77
 msgid "About"
 msgstr "Über..."
 
 #: privacyidea/templates/manage/manage-base.mako:95
 #: privacyidea/templates/selfservice/base.mako:51
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:81
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:41
 msgid "Selfservice"
 msgstr "Benutzerportal"
 
 #: privacyidea/templates/manage/manage-base.mako:96
 #: privacyidea/templates/selfservice/base.mako:47
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:85
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:39
 msgid "Logout"
 msgstr "Abmelden"
 
 #: privacyidea/templates/manage/manage-base.mako:102
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:87
 msgid "You need to enable Javascript to use the privacyIDEA Management Web UI."
 msgstr ""
 "Sie müssen Javascript aktivieren, um das privacyIDEA Management Web UI "
@@ -2444,23 +2173,18 @@ msgstr ""
 
 #: privacyidea/templates/manage/manage-base.mako:107
 #: privacyidea/templates/selfservice/base.mako:56
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:89
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:43
 msgid "Communicating with privacyIDEA server..."
 msgstr "Kommuniziere mit dem privacyIDEA Server..."
 
 #: privacyidea/templates/manage/manage-base.mako:136
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:99
 msgid "Contact"
 msgstr "Kontakt"
 
 #: privacyidea/templates/manage/manage-base.mako:137
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:101
 msgid "License"
 msgstr "Lizenz"
 
 #: privacyidea/templates/manage/manage-base.mako:141
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:103
 msgid ""
 "privacyIDEA is a modular authentication system. Originally for OTP  \n"
 "authentication devices. But other >>devices<< like challenge response \n"
@@ -2471,12 +2195,10 @@ msgstr ""
 "SSH-Keys werden in Zukunft unterstützt."
 
 #: privacyidea/templates/manage/manage-base.mako:144
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:107
 msgid "Openness and Transparency"
 msgstr "Offenheit und Transparenz"
 
 #: privacyidea/templates/manage/manage-base.mako:146
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:109
 msgid ""
 "privacyIDEA tries to be open in many ways. We try to provide best "
 "transparency:\n"
@@ -2503,7 +2225,6 @@ msgstr ""
 "welche fehlschlagen. Ja - Tests schlagen fehl und Code enthält Fehler!"
 
 #: privacyidea/templates/manage/manage-base.mako:154
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:117
 msgid ""
 "privacyIDEA is not ruled by a single company\n"
 "(although at the moment only one company is involved).\n"
@@ -2517,102 +2238,82 @@ msgstr ""
 "nicht von einem einzelnen, umsatzgetriebenen Entscheider ab."
 
 #: privacyidea/templates/manage/manage-base.mako:161
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:122
 msgid "Read more about the name privacyIDEA"
 msgstr "Lesen Sie mehr über den Namen privacyIDEA"
 
 #: privacyidea/templates/manage/manage-base.mako:164
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:124
 msgid "privacyIDEA is a fork of LinOTP"
 msgstr "privacyIDEA ist ein Fork von LinOTP"
 
 #: privacyidea/templates/manage/manage-base.mako:165
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:126
 msgid "(c) 2010-2014 LSE Leading Security Experts GmbH"
 msgstr "(c) 2010-2014 LSE Leading Security Experts GmbH"
 
 #: privacyidea/templates/manage/manage-base.mako:173
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:128
 msgid "The complete code is licensed under AGPLv3."
 msgstr "Der gesammte Quellcode steht unter der AGPLv3."
 
 #: privacyidea/templates/manage/manage-base.mako:181
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:130
 msgid "About privacyIDEA"
 msgstr "Über privacyIDEA"
 
 #: privacyidea/templates/manage/manage-base.mako:182
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:132
 msgid "close"
 msgstr "Schließen"
 
 #: privacyidea/templates/manage/manage-base.mako:190
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:134
 msgid "Settings"
 msgstr "Einstellungen"
 
 #: privacyidea/templates/manage/manage-base.mako:191
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:136
 msgid "Token defaults"
 msgstr "Token-Standardwerte"
 
 #: privacyidea/templates/manage/manage-base.mako:192
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:138
 msgid "GUI settings"
 msgstr "GUI Einstellungen"
 
 #: privacyidea/templates/manage/manage-base.mako:199
 #: privacyidea/templates/manage/manage-base.mako:259
 #: privacyidea/templates/manage/manage-base.mako:303
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:142
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:196
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:236
 msgid "Open help on system settings"
 msgstr "Hilfe zu Systemeinstellungen"
 
 #: privacyidea/templates/manage/manage-base.mako:204
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:144
 msgid "splitAtSign"
 msgstr "Trenne am @-Zeichen"
 
 #: privacyidea/templates/manage/manage-base.mako:206
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:146
 msgid "This will use the part right of an @-sign as realm"
 msgstr ""
 "Der Teil rechts vom @-Zeichen wird als Realm, der Teil links vom @-Zeichen "
 "als Benutzername interpretiert."
 
 #: privacyidea/templates/manage/manage-base.mako:207
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:148
 msgid "Return SAML Attributes"
 msgstr "SAML Attribute zurückgeben"
 
 #: privacyidea/templates/manage/manage-base.mako:209
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:150
 msgid "The /validate/samlcheck controller will also return user attributes"
 msgstr ""
 "Der Controller /validate/samlcheck gibt zusätzliche Benutzer-Attribute "
 "zurück."
 
 #: privacyidea/templates/manage/manage-base.mako:210
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:152
 msgid "FailCounterIncOnFalsePin"
 msgstr "Fehlzähler bei falscher PIN hochzählen"
 
 #: privacyidea/templates/manage/manage-base.mako:212
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:154
 msgid "This will increase the failcounter, if the user provided a wrong PIN."
 msgstr ""
 "Hier wird der Fehlzählen hochgezählt, wenn der Benutzer eine falsche PIN "
 "angibt und der Token nicht identifiziert werden kann."
 
 #: privacyidea/templates/manage/manage-base.mako:213
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:156
 msgid "PrependPin"
 msgstr "PIN voranstellen"
 
 #: privacyidea/templates/manage/manage-base.mako:215
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:158
 msgid ""
 "This will prepend the PIN to the OTP value. Otherwise the PIN will be "
 "appended."
@@ -2621,24 +2322,20 @@ msgstr ""
 "OTP-Wert angegegben."
 
 #: privacyidea/templates/manage/manage-base.mako:216
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:160
 msgid "Auto resync"
 msgstr "Automatische Resynchronisation"
 
 #: privacyidea/templates/manage/manage-base.mako:218
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:162
 msgid "This will automatically resync OTP counter of HMAC based tokens."
 msgstr ""
 "Für HMAC-basierte Token wird eine automatische Resynchronisation versucht, "
 "wenn der Benutzer hintereinander zwei flasche OTP-Werte eingibt."
 
 #: privacyidea/templates/manage/manage-base.mako:219
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:164
 msgid "Auto resync timeout"
 msgstr "Timeout für automatische Synchronisation"
 
 #: privacyidea/templates/manage/manage-base.mako:221
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:166
 msgid ""
 "The time in which the two successive OTP values need to be entered (in "
 "seconds)"
@@ -2646,12 +2343,10 @@ msgstr ""
 "Nach dieser Zeit (in Sekunden) wird der erste OTP-Wert wieder verworfen."
 
 #: privacyidea/templates/manage/manage-base.mako:228
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:170
 msgid "Pass on user not found"
 msgstr "Zugriff erlauben, wenn Benutzer nicht existiert"
 
 #: privacyidea/templates/manage/manage-base.mako:230
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:172
 msgid ""
 "If checked, users who are not found in the useridresolvers are authenticated "
 "successfully. USE WITH CAUTION!"
@@ -2661,12 +2356,10 @@ msgstr ""
 "erfolgreich authentisiert. VORSICHT BEI DER BENUTZUNG!"
 
 #: privacyidea/templates/manage/manage-base.mako:231
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:174
 msgid "Pass on user no token"
 msgstr "Zugriff erlauben, wenn Benutzer keinen Token hat"
 
 #: privacyidea/templates/manage/manage-base.mako:233
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:176
 msgid ""
 "If checked, users who have no token get authenticated automatically "
 "successful. USE WITH CAUTION!"
@@ -2675,17 +2368,14 @@ msgstr ""
 "Benutzer erfolgreich authentisiert. VORSICHT BEI DER BENUTZUNG!"
 
 #: privacyidea/templates/manage/manage-base.mako:237
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:178
 msgid "Authorization"
 msgstr "Authorisierung"
 
 #: privacyidea/templates/manage/manage-base.mako:238
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:180
 msgid "Override Authentication client"
 msgstr "Authentisierenden Client überschreiben"
 
 #: privacyidea/templates/manage/manage-base.mako:240
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:182
 msgid ""
 "This is a comma separated list of clients, that may send another client IP "
 "for authorization policies."
@@ -2696,52 +2386,42 @@ msgstr ""
 
 #: privacyidea/templates/manage/manage-base.mako:243
 #: privacyidea/templates/manage/manage-base.mako:287
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:184
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:224
 msgid "OCRA settings"
 msgstr "OCRA Einstellungen"
 
 #: privacyidea/templates/manage/manage-base.mako:245
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:186
 msgid "maximum concurrent OCRA challenges"
 msgstr "Maximale Anzahl an gleichzeitigen OCRA Challenges"
 
 #: privacyidea/templates/manage/manage-base.mako:247
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:188
 msgid "This is the maximum concurrent challenges per OCRA Token."
 msgstr ""
 "Das ist die maximale Anzahl an gleichzeitigen OCRA Challenges, die für einen "
 "OCRA Token angefordert werden können."
 
 #: privacyidea/templates/manage/manage-base.mako:248
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:190
 msgid "OCRA challenge timeout"
 msgstr "Timeout für OCRA Challenge"
 
 #: privacyidea/templates/manage/manage-base.mako:263
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:198
 msgid "Misc settings"
 msgstr "Diverse Einstellungen"
 
 #: privacyidea/templates/manage/manage-base.mako:265
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:200
 msgid "DefaultResetFailCount"
 msgstr "Standardmäßig Fehlzähler zurücksetzen"
 
 #: privacyidea/templates/manage/manage-base.mako:267
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:202
 msgid "Will reset the fail counter when the user authenticated successfully"
 msgstr ""
 "Setzt den Fehlzähler zurück, wenn der Benutzer sich mit diesem Token "
 "erfolgreich angemeldet hat."
 
 #: privacyidea/templates/manage/manage-base.mako:268
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:204
 msgid "DefaultMaxFailCount"
 msgstr "Standard Maximalwert für den Fehlzähler"
 
 #: privacyidea/templates/manage/manage-base.mako:270
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:206
 msgid "This is the maximum allowed failed logins for a new enrolled token."
 msgstr ""
 "Das ist die maximale Anzahl an fehlgeschlagene Anmeldeversuchen mit einem "
@@ -2749,12 +2429,10 @@ msgstr ""
 "zurückgesetzt wird."
 
 #: privacyidea/templates/manage/manage-base.mako:271
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:208
 msgid "DefaultSyncWindow"
 msgstr "Standard Resynchronisierungsfenster"
 
 #: privacyidea/templates/manage/manage-base.mako:273
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:210
 msgid ""
 "A new token will have this windows to do the manual or automatic OTP sync."
 msgstr ""
@@ -2762,44 +2440,36 @@ msgstr ""
 "Resynchronisation eines Tokens."
 
 #: privacyidea/templates/manage/manage-base.mako:274
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:212
 msgid "DefaultOtpLen"
 msgstr "Standard OTP Länge"
 
 #: privacyidea/templates/manage/manage-base.mako:276
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:214
 msgid "A new token will be set to this OTP length."
 msgstr "Der OTP-Wert eines neuen Tokens wird mit dieser Länge interpretiert."
 
 #: privacyidea/templates/manage/manage-base.mako:277
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:216
 msgid "DefaultCountWindow"
 msgstr "Standard Zählerfenster"
 
 #: privacyidea/templates/manage/manage-base.mako:279
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:218
 msgid "This is the default look ahead window for counter based tokens."
 msgstr ""
 "In diesem Zählerfenster wird standardmäßig bei einem neuen Token der OTP "
 "Wert gesucht."
 
 #: privacyidea/templates/manage/manage-base.mako:280
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:220
 msgid "DefaultChallengeValidityTime"
 msgstr "Standard Gültigkeitszeitraum einer Challenge"
 
 #: privacyidea/templates/manage/manage-base.mako:282
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:222
 msgid "Default validity timeframe of a challenge."
 msgstr "Standard Gültigkeits-Zeitfenster für eine Challenge"
 
 #: privacyidea/templates/manage/manage-base.mako:289
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:226
 msgid "default OCRA suite"
 msgstr "Standard OCRA-Suite"
 
 #: privacyidea/templates/manage/manage-base.mako:291
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:228
 msgid ""
 "This is the suite for newly enrolled OCRA tokens. Default is OCRA-1:HOTP-"
 "SHA256-8:C-QA08"
@@ -2808,12 +2478,10 @@ msgstr ""
 "Token. Standard: OCRA-1:HOTP-SHA256-8:C-QA08"
 
 #: privacyidea/templates/manage/manage-base.mako:292
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:230
 msgid "default QR suite"
 msgstr "Standard QR-Suite"
 
 #: privacyidea/templates/manage/manage-base.mako:294
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:232
 msgid ""
 "This is the suite for newly enrolled QR tokens. Default is OCRA-1:HOTP-"
 "SHA256-6:C-QA64"
@@ -2826,37 +2494,31 @@ msgid "Login dialog"
 msgstr ""
 
 #: privacyidea/templates/manage/manage-base.mako:309
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:240
 msgid "display realm select box"
 msgstr "Realm-Auswahlliste anzeigen"
 
 #: privacyidea/templates/manage/manage-base.mako:311
-#, fuzzy
 msgid "If checked a realm dropdown box will be displayed on the logon page."
 msgstr ""
-"Eine Dropdown Liste wird angezeigt, aus der der Benutzer den Realm auswählen "
-"kann, in dem er sich im Benutzerportal anmelden will."
+"Auf dem Login-Fenster wird eine Dropdown Liste angezeigt, aus der der "
+"Benutzer den Realm auswählen kann, in dem er sich anmelden will."
 
 #: privacyidea/templates/manage/manage-base.mako:312
 msgid "display help button on login dialog"
-msgstr ""
+msgstr "Hilfe-Button auf Anmelde-Fenster"
 
 #: privacyidea/templates/manage/manage-base.mako:314
-#, fuzzy
 msgid "If checked a help button will be displayed on the logon window."
 msgstr ""
-"Eine Dropdown Liste wird angezeigt, aus der der Benutzer den Realm auswählen "
-"kann, in dem er sich im Benutzerportal anmelden will."
+"Auf dem Anmeldefenster wird ein Hilfe-Button angezeigt, wenn diese Option "
+"ausgewählt wird."
 
 #: privacyidea/templates/manage/manage-base.mako:324
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:244
 msgid "System config"
 msgstr "System Konfiguration"
 
 #: privacyidea/templates/manage/manage-base.mako:325
 #: privacyidea/templates/manage/manage-base.mako:350
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:246
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:266
 msgid "Save config"
 msgstr "Konfiguration speichern"
 
@@ -2903,96 +2565,43 @@ msgstr "Konfiguration speichern"
 #: privacyidea/templates/manage/manage-base.mako:1247
 #: privacyidea/templates/manage/manage-base.mako:1440
 #: privacyidea/templates/manage/manage-base.mako:1454
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:248
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:268
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:280
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:329
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:457
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:479
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:505
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:521
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:531
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:541
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:551
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:563
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:573
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:627
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:648
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:658
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:684
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:718
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:724
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:730
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:736
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:742
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:748
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:754
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:760
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:766
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:772
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:778
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:784
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:790
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:796
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:802
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:808
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:814
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:820
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:830
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:840
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:850
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:860
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:868
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:880
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1037
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1045
 msgid "Cancel"
 msgstr "Abbrechen"
 
 #: privacyidea/templates/manage/manage-base.mako:349
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:264
 msgid "Tokentype Configuration"
 msgstr "Konfiguration der Tokentypen"
 
 #: privacyidea/templates/manage/manage-base.mako:359
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:270
 msgid "You may reset the PINs for the tokens"
 msgstr "Sie können die PINs zurücksetzen für Token"
 
 #: privacyidea/templates/manage/manage-base.mako:368
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:272
 msgid "PIN type"
 msgstr "PIN Typ"
 
 #: privacyidea/templates/manage/manage-base.mako:381
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:274
 msgid "PIN (again)"
 msgstr "PIN (wiederholen)"
 
 #: privacyidea/templates/manage/manage-base.mako:392
 #: privacyidea/templates/manage/manage-base.mako:393
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:276
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:278
 msgid "Set PIN"
 msgstr "PIN setzen"
 
 #: privacyidea/templates/manage/manage-base.mako:403
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:282
 msgid "The token will be enrolled for user"
 msgstr "Ausrollen des Tokens für Benutzer"
 
 #: privacyidea/templates/manage/manage-base.mako:409
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:284
 msgid "Currently this token will not be assigned to any users."
 msgstr "Dieser Token wird gerade keinem Benutzer zugewiesen."
 
 #: privacyidea/templates/manage/manage-base.mako:410
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:286
 msgid "[?]"
 msgstr "[?]"
 
 #: privacyidea/templates/manage/manage-base.mako:415
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:288
 msgid ""
 "If you select one user, this token will be automatically assigned to this "
 "user. Anyhow, you can assign this token to any user later on."
@@ -3002,7 +2611,6 @@ msgstr ""
 "Benutzer zuweisen."
 
 #: privacyidea/templates/manage/manage-base.mako:420
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:291
 msgid ""
 "You selected more than one user. If you want to assign the token to a user "
 "during enrollment, you need to select only one user.  Anyhow, you can assign "
@@ -3014,47 +2622,38 @@ msgstr ""
 "zuweisen."
 
 #: privacyidea/templates/manage/manage-base.mako:428
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:294
 msgid "Token type"
 msgstr "Token Typ"
 
 #: privacyidea/templates/manage/manage-base.mako:430
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:296
 msgid "OCRA - challenge/response Token"
 msgstr "OCRA - Challenge/Response Token"
 
 #: privacyidea/templates/manage/manage-base.mako:445
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:312
 msgid "Please enter or copy the OCRA key."
 msgstr "Bitte geben Sie den OCRA Key ein."
 
 #: privacyidea/templates/manage/manage-base.mako:447
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:314
 msgid "OCRA key"
 msgstr "OCRA Key"
 
 #: privacyidea/templates/manage/manage-base.mako:451
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:316
 msgid "Generate OCRA key."
 msgstr "OCRA Key vom Server generieren lassen."
 
 #: privacyidea/templates/manage/manage-base.mako:465
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:325
 msgid "Enroll token"
 msgstr "Token ausrollen"
 
 #: privacyidea/templates/manage/manage-base.mako:466
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:327
 msgid "Enroll"
 msgstr "ausrollen"
 
 #: privacyidea/templates/manage/manage-base.mako:478
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:333
 msgid "Open help on getting serial"
 msgstr "Hilfe zur Seriennummerbestimmung"
 
 #: privacyidea/templates/manage/manage-base.mako:481
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:335
 msgid ""
 "Here you can search for the serial of a token.You need to enter the current "
 "OTP value, and choose where you want to search for this token."
@@ -3064,48 +2663,37 @@ msgstr ""
 "Kriterien Sie nach dem Token suchen wollen."
 
 #: privacyidea/templates/manage/manage-base.mako:483
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:338
 msgid "Beware: This can be time consuming!"
 msgstr "Achtung: Das kann sehr zeitaufwändig sein!"
 
 #: privacyidea/templates/manage/manage-base.mako:484
 #: privacyidea/templates/manage/manage-base.mako:1240
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:340
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:874
 msgid "Type"
 msgstr "Typ"
 
 #: privacyidea/templates/manage/manage-base.mako:485
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:342
 msgid "Assigned Token"
 msgstr "Zugewiesene Token"
 
 #: privacyidea/templates/manage/manage-base.mako:487
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:344
 msgid "assigned"
 msgstr "zugewiesen"
 
 #: privacyidea/templates/manage/manage-base.mako:488
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:346
 msgid "not assigned"
 msgstr "nicht zugewiesen"
 
 #: privacyidea/templates/manage/manage-base.mako:490
 #: privacyidea/templates/manage/policies.mako:52
-#: privacyidea/templates/selfservice/login.mako:54
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:348
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:57
-#: privacyidea/tests/testdata/data/templates/selfservice/login.mako.py:35
+#: privacyidea/templates/selfservice/login.mako:55
 msgid "Realm"
 msgstr "Realm"
 
 #: privacyidea/templates/manage/manage-base.mako:496
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:352
 msgid "Get Serial by OTP value"
 msgstr "Bestimme Seriennummer über OTP-Wert"
 
 #: privacyidea/templates/manage/manage-base.mako:497
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:354
 msgid "Get Serial"
 msgstr "Bestimme Seriennummer"
 
@@ -3116,28 +2704,18 @@ msgstr "Bestimme Seriennummer"
 #: privacyidea/templates/manage/manage-base.mako:910
 #: privacyidea/templates/manage/manage-base.mako:1037
 #: privacyidea/templates/manage/manage-base.mako:1265
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:356
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:391
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:439
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:589
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:609
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:690
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:894
 msgid "Close"
 msgstr "Schließen"
 
 #: privacyidea/templates/manage/manage-base.mako:509
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:360
 msgid "Open help on Policy checker"
 msgstr "Hilfe zum Richtlinientool"
 
 #: privacyidea/templates/manage/manage-base.mako:512
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:362
 msgid "Here you can check your policies."
 msgstr "Hier können Sie Ihre Richtlinien testen."
 
 #: privacyidea/templates/manage/manage-base.mako:513
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:364
 msgid ""
 "You can enter the corresponding values and the system will check, if there "
 "is any matching policy for this scenario."
@@ -3146,47 +2724,38 @@ msgstr ""
 "einen passende Richtlinie gibt."
 
 #: privacyidea/templates/manage/manage-base.mako:516
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:366
 msgid "scope"
 msgstr "Bereich"
 
 #: privacyidea/templates/manage/manage-base.mako:524
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:375
 msgid "realm"
 msgstr "Realm"
 
 #: privacyidea/templates/manage/manage-base.mako:526
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:377
 msgid "action"
 msgstr "Aktion"
 
 #: privacyidea/templates/manage/manage-base.mako:528
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:379
 msgid "user"
 msgstr "Benutzer"
 
 #: privacyidea/templates/manage/manage-base.mako:530
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:381
 msgid "client"
 msgstr "IP-Client"
 
 #: privacyidea/templates/manage/manage-base.mako:534
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:383
 msgid "This action is allowed by the following policy:"
 msgstr "Diese Aktion wird durch die folgende Richtlinie erlaubt:"
 
 #: privacyidea/templates/manage/manage-base.mako:535
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:385
 msgid "This action is not allowed by any policy!"
 msgstr "Diese Aktion wird von keiner Richtlinie erlaubt!"
 
 #: privacyidea/templates/manage/manage-base.mako:555
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:395
 msgid "Open help on export token information"
 msgstr "Hilfe zum Export von Tokeninformationen"
 
 #: privacyidea/templates/manage/manage-base.mako:558
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:397
 msgid ""
 "Here you can export token information of the tokens you are allowed to view "
 "to a CSV file."
@@ -3195,7 +2764,6 @@ msgstr ""
 "Sie berechtigt sind einzusehen."
 
 #: privacyidea/templates/manage/manage-base.mako:559
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:399
 msgid ""
 "You can enter additional attributes, you defined in the user mapping in the "
 "UserIdResolver. These attributes will be added to the CSV file."
@@ -3205,62 +2773,51 @@ msgstr ""
 "UserIdResolver definiert sein."
 
 #: privacyidea/templates/manage/manage-base.mako:567
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:401
 msgid "Export token information"
 msgstr "Tokeninformationen exportieren"
 
 #: privacyidea/templates/manage/manage-base.mako:579
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:407
 msgid "Open help on export audit information"
 msgstr "Hilfe zum Export von Auditinformationen"
 
 #: privacyidea/templates/manage/manage-base.mako:582
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:409
 msgid "Here you can export the audit information to a CSV file."
 msgstr "Hier können Sie die Auditinformationen als CSV-Datei exportieren."
 
 #: privacyidea/templates/manage/manage-base.mako:583
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:411
 msgid "Number of audit entries to export"
 msgstr "Anzahl der zu exportierenden Auditeinträge"
 
 #: privacyidea/templates/manage/manage-base.mako:585
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:413
 msgid "Enter the number of audit entries you want to export."
 msgstr ""
 "Bitte geben Sie die Anzahl der Auditeinträge ein, die Sie exportieren wollen."
 
 #: privacyidea/templates/manage/manage-base.mako:587
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:415
 msgid "Page to export"
 msgstr "Zu exportierende Seite"
 
 #: privacyidea/templates/manage/manage-base.mako:589
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:417
 msgid "Enter the page of the audit entries you want to export."
 msgstr ""
 "Bitte geben Sie die Audit-Seite mit den Auditeinträgen an, die Sie "
 "exportieren wollen."
 
 #: privacyidea/templates/manage/manage-base.mako:595
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:419
 msgid "Export audit information"
 msgstr "Audit exportieren"
 
 #: privacyidea/templates/manage/manage-base.mako:607
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:425
 msgid "Open help on Copy token PIN tool"
 msgstr "Hilfe zum Kopieren von Token PINs"
 
 #: privacyidea/templates/manage/manage-base.mako:610
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:427
 msgid "Here you can copy the OTP PIN from one token to the other."
 msgstr ""
 "Hier können Sie die OTP PIN eines Tokens auf einen anderen Token übertragen, "
 "ohne die PIN zu kennen."
 
 #: privacyidea/templates/manage/manage-base.mako:611
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:429
 msgid ""
 "Please enter the serial number of the token with the existing PIN and the "
 "serial number of the token, that should get the same PIN."
@@ -3269,27 +2826,22 @@ msgstr ""
 "die Seriennummer des Tokens, der die PIN neu bekommen soll, ein."
 
 #: privacyidea/templates/manage/manage-base.mako:612
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:431
 msgid "from token"
 msgstr "vom Token"
 
 #: privacyidea/templates/manage/manage-base.mako:613
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:433
 msgid "to token"
 msgstr "zum Token"
 
 #: privacyidea/templates/manage/manage-base.mako:619
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:437
 msgid "Copy PIN"
 msgstr "Kopiere PIN"
 
 #: privacyidea/templates/manage/manage-base.mako:632
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:443
 msgid "Open help on XML import"
 msgstr "Hilfe zum Import von XML-Dateien"
 
 #: privacyidea/templates/manage/manage-base.mako:635
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:445
 msgid ""
 "Here you can upload the XML file that came with your SafeNet eToken PASS."
 msgstr ""
@@ -3303,29 +2855,18 @@ msgstr ""
 #: privacyidea/templates/manage/manage-base.mako:788
 #: privacyidea/templates/manage/manage-base.mako:813
 #: privacyidea/templates/manage/manage-base.mako:832
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:447
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:465
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:497
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:513
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:525
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:535
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:545
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:555
 msgid "Please choose the token file"
 msgstr "Bitte wählen Sie eine Tokendatei"
 
 #: privacyidea/templates/manage/manage-base.mako:639
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:449
 msgid "Hash Algorithm"
 msgstr "Hash Algorithmus"
 
 #: privacyidea/templates/manage/manage-base.mako:641
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:451
 msgid "automatic detection"
 msgstr "automatisch erkennen"
 
 #: privacyidea/templates/manage/manage-base.mako:655
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:453
 msgid "Aladdin XML Token file"
 msgstr "Aladdin XML Tokendatei"
 
@@ -3337,19 +2878,10 @@ msgstr "Aladdin XML Tokendatei"
 #: privacyidea/templates/manage/manage-base.mako:802
 #: privacyidea/templates/manage/manage-base.mako:822
 #: privacyidea/templates/manage/manage-base.mako:844
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:455
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:477
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:503
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:519
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:529
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:539
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:549
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:561
 msgid "load token file"
 msgstr "Tokendatei laden"
 
 #: privacyidea/templates/manage/manage-base.mako:666
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:459
 msgid ""
 "Here you may upload the XML file of any OATH compliant OTP Token.The "
 "privacyIDEA server will automatically recognize if the token is an HOTP "
@@ -3364,7 +2896,6 @@ msgstr ""
 "Verschlüsselungskey angeben."
 
 #: privacyidea/templates/manage/manage-base.mako:677
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:467
 msgid ""
 "Check the serial numbers for OATH compliance (non-compliant serial numbers "
 "will be ignored)"
@@ -3373,32 +2904,26 @@ msgstr ""
 "die nicht compliant sind, werden ignoriert."
 
 #: privacyidea/templates/manage/manage-base.mako:682
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:469
 msgid "plain value"
 msgstr "Unverschlüsselte Werte"
 
 #: privacyidea/templates/manage/manage-base.mako:683
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:471
 msgid "preshared key"
 msgstr "Mit Preshared Key verschlüsselt"
 
 #: privacyidea/templates/manage/manage-base.mako:684
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:473
 msgid "password protected"
 msgstr "Mit Passwort verschlüsselt"
 
 #: privacyidea/templates/manage/manage-base.mako:695
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:475
 msgid "PSKC Key file"
 msgstr "PSKC Datei"
 
 #: privacyidea/templates/manage/manage-base.mako:709
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:483
 msgid "Open help on OATH CSV import"
 msgstr "Hilfe zum Import von OATH CSV-Dateien"
 
 #: privacyidea/templates/manage/manage-base.mako:712
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:485
 msgid ""
 "Here you can upload a csv file for your OATH token. The file is supposed to "
 "contain one token per line"
@@ -3407,27 +2932,22 @@ msgstr ""
 "enthält. Diese Datei muss einen Token pro Zeile enthalten."
 
 #: privacyidea/templates/manage/manage-base.mako:713
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:487
 msgid "For HOTP and TOTP tokens:"
 msgstr "Für HOTP und TOTP Token:"
 
 #: privacyidea/templates/manage/manage-base.mako:714
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:489
 msgid "serial number, seed, type, otplen, timeStep"
 msgstr "Seriennummer, Seed, Typ, OTP-Länge, Zeitschritt"
 
 #: privacyidea/templates/manage/manage-base.mako:715
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:491
 msgid "For OCRA tokens:"
 msgstr "Für OCRA Token:"
 
 #: privacyidea/templates/manage/manage-base.mako:716
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:493
 msgid "serial number, seed, type, ocrasuite"
 msgstr "Seriennummer, Seed, Typ, OCRA-Suite"
 
 #: privacyidea/templates/manage/manage-base.mako:717
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:495
 msgid ""
 "type (default hotp), otplen (default 6), timeStep (default 30) and ocrasuite "
 "are optional."
@@ -3436,17 +2956,14 @@ msgstr ""
 "optional."
 
 #: privacyidea/templates/manage/manage-base.mako:728
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:501
 msgid "OATH csv Token file"
 msgstr "OATH CSV Tokendatei"
 
 #: privacyidea/templates/manage/manage-base.mako:742
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:509
 msgid "Open help on Yubikey import"
 msgstr "Hilfe zum Import von Yubikey-CSV-Dateien"
 
 #: privacyidea/templates/manage/manage-base.mako:745
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:511
 msgid ""
 "Here you can upload a csv file for your Yubikey token. The file is supposed "
 "to contain one token per line"
@@ -3456,112 +2973,88 @@ msgstr ""
 "Yubikey Personalisierungs GUI erstellt."
 
 #: privacyidea/templates/manage/manage-base.mako:756
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:517
 msgid "Yubikey csv Token file"
 msgstr "Yubikey CSV Tokendatei"
 
 #: privacyidea/templates/manage/manage-base.mako:766
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:523
 msgid ""
 "Here you can upload the data file that came with your Tagespasswort tokens."
 msgstr ""
 "Hier können Sie die Datei importieren, die mit Ihren Tagespasswort-Token kam."
 
 #: privacyidea/templates/manage/manage-base.mako:777
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:527
 msgid "Tagespasswort Token file"
 msgstr "Tagespasswort Tokendatei"
 
 #: privacyidea/templates/manage/manage-base.mako:787
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:533
 msgid "Here you can upload the data file that came with your eToken."
 msgstr ""
 "Hier können Sie die Datei importieren, die mit Ihren eToken ausgeliefert "
 "wurde."
 
 #: privacyidea/templates/manage/manage-base.mako:801
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:537
 msgid "eToken dat file"
 msgstr "eToken .dat Datei"
 
 #: privacyidea/templates/manage/manage-base.mako:812
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:543
 msgid "Here you can upload the XML file that came with your Feitian tokens."
 msgstr "Hier können Sie die XML-Datei für Ihre Feitian Token importieren."
 
 #: privacyidea/templates/manage/manage-base.mako:821
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:547
 msgid "Feitian XML Token file"
 msgstr "Feitian XML Tokendatei"
 
 #: privacyidea/templates/manage/manage-base.mako:831
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:553
 msgid "Here you can upload your Vasco dpx file."
 msgstr "Hier können Sie Ihre VASCO DPX-Datei importieren."
 
 #: privacyidea/templates/manage/manage-base.mako:835
 #: privacyidea/templates/manage/manage-base.mako:1038
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:557
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:692
 msgid "OTP length"
 msgstr "OTP-Länge"
 
 #: privacyidea/templates/manage/manage-base.mako:843
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:559
 msgid "Vasco dpx file"
 msgstr "VASCO DPX-Datei"
 
 #: privacyidea/templates/manage/manage-base.mako:853
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:565
 msgid "Here you can import your policy file."
 msgstr "Hier können Sie Ihre Richtlinien-Datei importieren."
 
 #: privacyidea/templates/manage/manage-base.mako:854
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:567
 msgid "Please choose the policy file"
 msgstr "Bitte wählen Sie eine Richtlinien-Datei"
 
 #: privacyidea/templates/manage/manage-base.mako:861
 #: privacyidea/templates/manage/policies.mako:6
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:569
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:26
 msgid "Import policies"
 msgstr "Richtlinien importieren"
 
 #: privacyidea/templates/manage/manage-base.mako:862
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:571
 msgid "Import policy file"
 msgstr "Richtlinien-Datei importieren"
 
 #: privacyidea/templates/manage/manage-base.mako:875
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:577
 msgid "Open help on realms"
 msgstr "Hilfe zu Realms"
 
 #: privacyidea/templates/manage/manage-base.mako:878
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:579
 msgid "Create a new realm or select one available realm"
 msgstr ""
 "Hier können Sie einen neuen Realm anlegen oder einen existierenden bearbeiten"
 
 #: privacyidea/templates/manage/manage-base.mako:883
 #: privacyidea/templates/manage/start.mako:8
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:581
-#: privacyidea/tests/testdata/data/templates/manage/start.mako.py:56
 msgid "Realms"
 msgstr "Realms"
 
 #: privacyidea/templates/manage/manage-base.mako:884
 #: privacyidea/templates/manage/manage-base.mako:907
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:583
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:603
 msgid "New"
 msgstr "Neu"
 
 #: privacyidea/templates/manage/manage-base.mako:885
 #: privacyidea/templates/manage/manage-base.mako:908
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:585
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:605
 msgid "Edit"
 msgstr "Bearbeiten"
 
@@ -3569,122 +3062,95 @@ msgstr "Bearbeiten"
 #: privacyidea/templates/manage/manage-base.mako:909
 #: privacyidea/templates/manage/manage-base.mako:1231
 #: privacyidea/templates/manage/manage-base.mako:1246
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:587
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:607
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:866
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:878
 msgid "Delete"
 msgstr "Löschen"
 
 #: privacyidea/templates/manage/manage-base.mako:888
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:591
 msgid "Set Default"
 msgstr "Als Standard-Realm setzen"
 
 #: privacyidea/templates/manage/manage-base.mako:889
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:593
 msgid "Clear Default"
 msgstr "Standard entfernen"
 
 #: privacyidea/templates/manage/manage-base.mako:898
 #: privacyidea/templates/manage/manage-base.mako:920
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:597
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:613
 msgid "Open help on UserIdResolvers"
 msgstr "Hilfe zu UserIdResolvern"
 
 #: privacyidea/templates/manage/manage-base.mako:901
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:599
 msgid "Create a new or select one available UserIdResolver"
 msgstr ""
 "Hier können Sie einen neuen Resolver anlegen oder einen existierenden "
 "bearbeiten"
 
 #: privacyidea/templates/manage/manage-base.mako:906
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:601
 msgid "Resolver"
 msgstr "IdResolver"
 
 #: privacyidea/templates/manage/manage-base.mako:923
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:615
 msgid "Which type of resolver do you want to create?"
 msgstr "Welchen Typ UserIdResolver wollen Sie neu anlegen?"
 
 #: privacyidea/templates/manage/manage-base.mako:927
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:617
 msgid "Creating a new UserIdResolver"
 msgstr "Einen neuen UserIdResolver anlegen"
 
 #: privacyidea/templates/manage/manage-base.mako:928
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:619
 msgid "LDAP"
 msgstr "LDAP"
 
 #: privacyidea/templates/manage/manage-base.mako:929
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:621
 msgid "SQL"
 msgstr "SQL"
 
 #: privacyidea/templates/manage/manage-base.mako:930
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:623
 msgid "SCIM"
 msgstr "SCIM"
 
 #: privacyidea/templates/manage/manage-base.mako:931
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:625
 msgid "Flatfile"
 msgstr "Flatfile"
 
 #: privacyidea/templates/manage/manage-base.mako:942
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:631
 msgid "Open help on Realms"
 msgstr "Hilfe zu Realms"
 
 #: privacyidea/templates/manage/manage-base.mako:945
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:633
 msgid "Here you can add or remove existing resolvers to the realm"
 msgstr ""
 "Hier können Sie existierende Resolver zu einem Realm hinzufügen oder von "
 "einem Realm entfernen"
 
 #: privacyidea/templates/manage/manage-base.mako:948
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:635
 msgid "You are creating a new realm."
 msgstr "Sie legen hier einen neuen Realm an."
 
 #: privacyidea/templates/manage/manage-base.mako:949
 #: privacyidea/templates/manage/manage-base.mako:957
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:637
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:644
 msgid "You may add resolvers by holding down Ctrl-Key and left-clicking."
 msgstr ""
 "Sie können Resolver hinzufügen, indem Sie die Strg-Taste halten und links "
 "klicken."
 
 #: privacyidea/templates/manage/manage-base.mako:950
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:640
 msgid "Realm name"
 msgstr "Realmname"
 
 #: privacyidea/templates/manage/manage-base.mako:955
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:642
 msgid "Here you may define the resolvers belonging to the realm"
 msgstr "Hier können Sie definieren, welche Resolver zu dem Realm gehören"
 
 #: privacyidea/templates/manage/manage-base.mako:966
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:646
 msgid "Edit Realm"
 msgstr "Realm bearbeiten"
 
 #: privacyidea/templates/manage/manage-base.mako:968
 #: privacyidea/templates/manage/manage-base.mako:1190
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:650
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:838
 msgid "Save"
 msgstr "Speichern"
 
 #: privacyidea/templates/manage/manage-base.mako:974
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:652
 msgid ""
 "The following tokens will be permanently deleted and can not be recovered."
 msgstr ""
@@ -3692,33 +3158,25 @@ msgstr ""
 "hergestellt werden."
 
 #: privacyidea/templates/manage/manage-base.mako:980
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:654
 msgid "Delete selected tokens?"
 msgstr "Ausgewählte Token löschen?"
 
 #: privacyidea/templates/manage/manage-base.mako:981
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:656
 msgid "Delete tokens"
 msgstr "Token löschen"
 
 #: privacyidea/templates/manage/manage-base.mako:990
 #: privacyidea/templates/manage/manage-base.mako:1005
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:660
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:668
 msgid "Enrolled the token"
 msgstr "Der Token"
 
 #: privacyidea/templates/manage/manage-base.mako:991
 #: privacyidea/templates/manage/manage-base.mako:1006
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:662
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:670
 msgid "for user"
 msgstr "wurde ausgerollt für Benutzer"
 
 #: privacyidea/templates/manage/manage-base.mako:998
 #: privacyidea/templates/manage/manage-base.mako:1012
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:664
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:672
 msgid "token enrollment"
 msgstr "Token ausgerollt"
 
@@ -3743,37 +3201,14 @@ msgstr "Token ausgerollt"
 #: privacyidea/templates/manage/manage-base.mako:1139
 #: privacyidea/templates/manage/manage-base.mako:1144
 #: privacyidea/templates/manage/manage-base.mako:1205
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:666
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:674
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:716
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:722
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:728
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:734
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:740
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:746
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:752
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:758
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:764
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:770
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:776
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:782
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:788
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:794
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:800
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:806
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:812
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:818
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:848
 msgid "OK"
 msgstr "OK"
 
 #: privacyidea/templates/manage/manage-base.mako:1019
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:676
 msgid "Token serial"
 msgstr "Seriennummer"
 
 #: privacyidea/templates/manage/manage-base.mako:1020
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:678
 msgid ""
 "The token was lost? You may enroll a temporary token and automatically "
 "disable the lost token."
@@ -3782,213 +3217,166 @@ msgstr ""
 "Dabei wird der verlorene Token automatisch deaktiviert."
 
 #: privacyidea/templates/manage/manage-base.mako:1024
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:680
 msgid "Lost Token"
 msgstr "Verlorener Token"
 
 #: privacyidea/templates/manage/manage-base.mako:1025
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:682
 msgid "Get temporary token"
 msgstr "Temporären Token erzeugen"
 
 #: privacyidea/templates/manage/manage-base.mako:1035
 #: privacyidea/templates/manage/tokenview.mako:4
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:686
-#: privacyidea/tests/testdata/data/templates/manage/tokenview.mako.py:26
 msgid "Token info"
 msgstr "Tokeninfo"
 
 #: privacyidea/templates/manage/manage-base.mako:1036
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:688
 msgid "Hashlib"
 msgstr "Hash Algorithmus"
 
 #: privacyidea/templates/manage/manage-base.mako:1039
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:694
 msgid "Counter Window"
 msgstr "Zählerfenster"
 
 #: privacyidea/templates/manage/manage-base.mako:1040
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:696
 msgid "Max Fail Counter"
 msgstr "Maximalwert für den Fehlzähler"
 
 #: privacyidea/templates/manage/manage-base.mako:1041
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:698
 msgid "Max Auth Count"
 msgstr "Maximale versuchte Authentisierungen"
 
 #: privacyidea/templates/manage/manage-base.mako:1042
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:700
 msgid "Max Successful Auth Count"
 msgstr "Maximale erfolgreiche Authentisierungen"
 
 #: privacyidea/templates/manage/manage-base.mako:1043
 #: privacyidea/templates/manage/manage-base.mako:1088
 #: privacyidea/templates/manage/manage-base.mako:1108
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:702
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:750
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:774
 msgid "Validity start"
 msgstr "Start Gültigkeitszeitraum"
 
 #: privacyidea/templates/manage/manage-base.mako:1044
 #: privacyidea/templates/manage/manage-base.mako:1093
 #: privacyidea/templates/manage/manage-base.mako:1113
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:704
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:756
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:780
 msgid "Validity end"
 msgstr "Ende Gültigkeitszeitraum"
 
 #: privacyidea/templates/manage/manage-base.mako:1045
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:706
 msgid "Sync Window"
 msgstr "Resynchronisierungsfenster"
 
 #: privacyidea/templates/manage/manage-base.mako:1046
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:708
 msgid "Time Window"
 msgstr "Zeitfenster"
 
 #: privacyidea/templates/manage/manage-base.mako:1047
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:710
 msgid "Time Shift"
 msgstr "Zeitversatz"
 
 #: privacyidea/templates/manage/manage-base.mako:1048
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:712
 msgid "Time Step"
 msgstr "Zeitschritt"
 
 #: privacyidea/templates/manage/manage-base.mako:1058
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:714
 msgid "set Hashlib"
 msgstr "setze Hash Algorithmus"
 
 #: privacyidea/templates/manage/manage-base.mako:1063
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:720
 msgid "set OTP length"
 msgstr "setze OTP-Länge"
 
 #: privacyidea/templates/manage/manage-base.mako:1068
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:726
 msgid "set Counter Window"
 msgstr "setze Zählerfenster"
 
 #: privacyidea/templates/manage/manage-base.mako:1073
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:732
 msgid "set Max Failcount"
 msgstr "setze Fehlzähler"
 
 #: privacyidea/templates/manage/manage-base.mako:1078
 #: privacyidea/templates/manage/manage-base.mako:1098
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:738
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:762
 msgid "set Max Auth Count"
 msgstr "setze maximal versuchte Authentisierungen"
 
 #: privacyidea/templates/manage/manage-base.mako:1083
 #: privacyidea/templates/manage/manage-base.mako:1103
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:744
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:768
 msgid "set Max Successful Auth Count"
 msgstr "setze maximal erfolgreiche Authentisierungen"
 
 #: privacyidea/templates/manage/manage-base.mako:1118
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:786
 msgid "Mobile phone number"
 msgstr "Mobiltelefonnummer"
 
 #: privacyidea/templates/manage/manage-base.mako:1123
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:792
 msgid "set Sync Window"
 msgstr "setze Resynchronisierungsfenster"
 
 #: privacyidea/templates/manage/manage-base.mako:1128
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:798
 msgid "set Time Window"
 msgstr "setze Zeitfenster"
 
 #: privacyidea/templates/manage/manage-base.mako:1133
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:804
 msgid "set Time Shift"
 msgstr "setze Zeitversatz"
 
 #: privacyidea/templates/manage/manage-base.mako:1138
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:810
 msgid "set Time Step"
 msgstr "setze Zeitschritt"
 
 #: privacyidea/templates/manage/manage-base.mako:1143
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:816
 msgid "set Description"
 msgstr "setze Beschreibung"
 
 #: privacyidea/templates/manage/manage-base.mako:1153
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:822
 msgid "You may resync the token:"
 msgstr "Resynchronisieren des Tokens:"
 
 #: privacyidea/templates/manage/manage-base.mako:1154
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:824
 msgid "Therefor please enter two OTP values."
 msgstr "Hierzu geben Sie bitte zwei aufeinanderfolgende OTP-Werte ein."
 
 #: privacyidea/templates/manage/manage-base.mako:1171
 #: privacyidea/templates/manage/tokenview.mako:5
 #: privacyidea/templates/selfservice/base.mako:106
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:826
-#: privacyidea/tests/testdata/data/templates/manage/tokenview.mako.py:28
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:87
 msgid "Resync Token"
 msgstr "Token resynchronisieren"
 
 #: privacyidea/templates/manage/manage-base.mako:1172
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:828
 msgid "Resync"
 msgstr "resynchronisieren"
 
 #: privacyidea/templates/manage/manage-base.mako:1180
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:832
 msgid "Here you may define to which realms the token shall belong to:"
 msgstr ""
 "Hier können Sie definieren, zu welchen Realms dieser Token gehören soll:"
 
 #: privacyidea/templates/manage/manage-base.mako:1182
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:834
 msgid "You may add realms by holding down Ctrl-Key and left-clicking."
 msgstr ""
 "Sie können Realms hinzufügen, indem Sie die Strg-Taste halten und links "
 "klicken."
 
 #: privacyidea/templates/manage/manage-base.mako:1189
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:836
 msgid "Edit Realms of Token"
 msgstr "Realms des Tokens bearbeiten"
 
 #: privacyidea/templates/manage/manage-base.mako:1197
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:842
 msgid "You may get OTP values for token:"
 msgstr "Für diesen Token können Sie OTP-Werte anfragen:"
 
 #: privacyidea/templates/manage/manage-base.mako:1198
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:844
 msgid "Enter the number, how many OTP values you want to retrieve:"
 msgstr "Bitte geben Sie die Anzahl der anzufragenden OTP-Werte ein:"
 
 #: privacyidea/templates/manage/manage-base.mako:1204
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:846
 msgid "Get OTP values"
 msgstr "OTP Werte anfragen"
 
 #: privacyidea/templates/manage/manage-base.mako:1212
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:852
 msgid "The following Tokens will be unassigned from the their users:"
 msgstr "Die Zuweisungen der folgenden Token werden entfernt:"
 
 #: privacyidea/templates/manage/manage-base.mako:1214
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:854
 msgid ""
 "The users will not be able to authenticate with this token anymore. Are you "
 "sure?"
@@ -3997,80 +3385,63 @@ msgstr ""
 "authentisieren. Sind Sie sicher?"
 
 #: privacyidea/templates/manage/manage-base.mako:1219
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:856
 msgid "Unassign selected tokens?"
 msgstr "Zuweisung der ausgewählten Token aufheben?"
 
 #: privacyidea/templates/manage/manage-base.mako:1220
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:858
 msgid "Unassign"
 msgstr "Zuweisung aufheben"
 
 #: privacyidea/templates/manage/manage-base.mako:1226
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:862
 msgid "Do you want to delete the realm"
 msgstr "Wollen Sie den Realm löschen "
 
 #: privacyidea/templates/manage/manage-base.mako:1230
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:864
 msgid "Deleting realm"
 msgstr "Realm löschen"
 
 #: privacyidea/templates/manage/manage-base.mako:1237
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:870
 msgid "Do you want to delete the resolver?"
 msgstr "Wollen Sie den Resolver löschen?"
 
 #: privacyidea/templates/manage/manage-base.mako:1239
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:872
 msgid "Name"
 msgstr "Name"
 
 #: privacyidea/templates/manage/manage-base.mako:1245
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:876
 msgid "Deleting resolver"
 msgstr "Resolver löschen"
 
 #: privacyidea/templates/manage/manage-base.mako:1254
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:882
 msgid "Token enrolled. Use the old PIN with the password new password."
 msgstr ""
 "Der temporärer Token wurde ausgerollt. Der Benutzer soll seine alte PIN "
 "zusammen mit dem neuen Passwort verwenden."
 
 #: privacyidea/templates/manage/manage-base.mako:1255
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:884
 msgid "The temporary token can be used till the end date."
 msgstr "Der temporäre Token kann bis zum Ablaufdatum verwendet werden."
 
 #: privacyidea/templates/manage/manage-base.mako:1258
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:886
 msgid "Serial"
 msgstr "Seriennummer"
 
 #: privacyidea/templates/manage/manage-base.mako:1259
 #: privacyidea/templates/manage/manage-base.mako:1355
-#: privacyidea/templates/selfservice/login.mako:66
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:888
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:967
-#: privacyidea/tests/testdata/data/templates/selfservice/login.mako.py:51
+#: privacyidea/templates/selfservice/login.mako:67
 msgid "Password"
 msgstr "Passwort"
 
 #: privacyidea/templates/manage/manage-base.mako:1260
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:890
 msgid "End date"
 msgstr "Ablaufdatum"
 
 #: privacyidea/templates/manage/manage-base.mako:1264
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:892
 msgid "New temporary token"
 msgstr "Neuer temporärer Token"
 
 #: privacyidea/templates/manage/manage-base.mako:1276
 #: privacyidea/templates/manage/manage-base.mako:1465
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:898
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1049
 msgid "Open help on LDAP resolver"
 msgstr "Hilfe zum LDAP-Resolver"
 
@@ -4078,25 +3449,18 @@ msgstr "Hilfe zum LDAP-Resolver"
 #: privacyidea/templates/manage/manage-base.mako:1343
 #: privacyidea/templates/manage/manage-base.mako:1405
 #: privacyidea/templates/manage/manage-base.mako:1469
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:900
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:955
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1011
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1053
 msgid "Resolver name"
 msgstr "Resolver Name"
 
 #: privacyidea/templates/manage/manage-base.mako:1282
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:902
 msgid "Server-URI"
 msgstr "Server URI"
 
 #: privacyidea/templates/manage/manage-base.mako:1286
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:904
 msgid "CA Certificate"
 msgstr "CA Zertifikat"
 
 #: privacyidea/templates/manage/manage-base.mako:1288
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:906
 msgid ""
 "If you are using LDAPS you can enter the CA certificate in PEM format here."
 msgstr ""
@@ -4104,311 +3468,243 @@ msgstr ""
 "hineinkopieren."
 
 #: privacyidea/templates/manage/manage-base.mako:1290
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:908
 msgid "BaseDN"
 msgstr "Basis DN"
 
 #: privacyidea/templates/manage/manage-base.mako:1292
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:910
 msgid "BindDN"
 msgstr "Bind DN"
 
 #: privacyidea/templates/manage/manage-base.mako:1294
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:912
 msgid "Bind Password"
 msgstr "Bind Passwort"
 
 #: privacyidea/templates/manage/manage-base.mako:1296
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:914
 msgid "Timeout"
 msgstr "Timeout"
 
 #: privacyidea/templates/manage/manage-base.mako:1298
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:916
 msgid "Sizelimit"
 msgstr "Größenlimit"
 
 #: privacyidea/templates/manage/manage-base.mako:1302
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:918
 msgid "No anonymous referral chasing"
 msgstr "Kein anonymes Verfolgen der Referrals"
 
 #: privacyidea/templates/manage/manage-base.mako:1305
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:920
 msgid "LDAP attributes"
 msgstr "LDAP Attribute"
 
 #: privacyidea/templates/manage/manage-base.mako:1306
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:922
 msgid "LoginName Attribute"
 msgstr "Attribut Loginname "
 
 #: privacyidea/templates/manage/manage-base.mako:1308
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:924
 msgid "Searchfilter"
 msgstr "Suchfilter"
 
 #: privacyidea/templates/manage/manage-base.mako:1310
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:926
 msgid "Userfilter"
 msgstr "Benutzerfilter"
 
 #: privacyidea/templates/manage/manage-base.mako:1312
 #: privacyidea/templates/manage/manage-base.mako:1366
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:928
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:977
 msgid "Attribute mapping"
 msgstr "Attributszuordnung"
 
 #: privacyidea/templates/manage/manage-base.mako:1314
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:930
 msgid "UID Type"
 msgstr "UID Typ"
 
 #: privacyidea/templates/manage/manage-base.mako:1317
 #: privacyidea/templates/manage/manage-base.mako:1327
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:932
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:945
 msgid "Preset AD"
 msgstr "AD vorbelegen"
 
 #: privacyidea/templates/manage/manage-base.mako:1318
 #: privacyidea/templates/manage/manage-base.mako:1328
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:934
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:947
 msgid "Preset LDAP"
 msgstr "LDAP vorbelegen"
 
 #: privacyidea/templates/manage/manage-base.mako:1320
 #: privacyidea/templates/manage/manage-base.mako:1383
 #: privacyidea/templates/manage/manage-base.mako:1420
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:936
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:997
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1023
 msgid "Testing connections..."
 msgstr "Teste LDAP Verbindung..."
 
 #: privacyidea/templates/manage/manage-base.mako:1321
 #: privacyidea/templates/manage/manage-base.mako:1326
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:938
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:943
 msgid "Test LDAP connection"
 msgstr "LDAP Verbindung testen"
 
 #: privacyidea/templates/manage/manage-base.mako:1325
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:941
 msgid "LDAP Resolver"
 msgstr "LDAP Resolver"
 
 #: privacyidea/templates/manage/manage-base.mako:1339
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:951
 msgid "Open help on SQL resolver"
 msgstr "Hilfe zum SQL-Resolver"
 
 #: privacyidea/templates/manage/manage-base.mako:1342
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:953
 msgid "Server config"
 msgstr "Serverkonfiguration"
 
 #: privacyidea/templates/manage/manage-base.mako:1345
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:957
 msgid "Driver"
 msgstr "Treiber"
 
 #: privacyidea/templates/manage/manage-base.mako:1347
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:959
 msgid "Server"
 msgstr "Server"
 
 #: privacyidea/templates/manage/manage-base.mako:1349
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:961
 msgid "Port"
 msgstr "Port"
 
 #: privacyidea/templates/manage/manage-base.mako:1351
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:963
 msgid "Database"
 msgstr "Datenbank"
 
 #: privacyidea/templates/manage/manage-base.mako:1353
 #: privacyidea/templates/manage/policies.mako:47
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:965
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:53
 msgid "User"
 msgstr "Benutzer"
 
 #: privacyidea/templates/manage/manage-base.mako:1359
 #: privacyidea/templates/manage/manage-base.mako:1360
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:969
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:971
 msgid "SQL attributes"
 msgstr "SQL Attribute"
 
 #: privacyidea/templates/manage/manage-base.mako:1362
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:973
 msgid "Database table"
 msgstr "Datenbanktabelle"
 
 #: privacyidea/templates/manage/manage-base.mako:1364
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:975
 msgid "Limit"
 msgstr "Limit"
 
 #: privacyidea/templates/manage/manage-base.mako:1368
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:979
 msgid "Where statement"
 msgstr "Where Anweisung"
 
 #: privacyidea/templates/manage/manage-base.mako:1370
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:981
 msgid "Database encoding"
 msgstr "Datenbank-Kodierung"
 
 #: privacyidea/templates/manage/manage-base.mako:1372
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:983
 msgid "Additional connection parameters"
 msgstr "Zusätzliche Verbindungsparameter"
 
 #: privacyidea/templates/manage/manage-base.mako:1375
 #: privacyidea/templates/manage/manage-base.mako:1376
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:985
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:987
 msgid "Preset database attributes"
 msgstr "Datenbankattribute vorbelegen"
 
 #: privacyidea/templates/manage/manage-base.mako:1377
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:989
 msgid "Wordpress"
 msgstr "Wordpress"
 
 #: privacyidea/templates/manage/manage-base.mako:1378
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:991
 msgid "OTRS"
 msgstr "OTRS"
 
 #: privacyidea/templates/manage/manage-base.mako:1379
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:993
 msgid "Tine 2.0"
 msgstr "Tine 2.0"
 
 #: privacyidea/templates/manage/manage-base.mako:1380
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:995
 msgid "Owncloud"
 msgstr "Owncloud"
 
 #: privacyidea/templates/manage/manage-base.mako:1384
 #: privacyidea/templates/manage/manage-base.mako:1389
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:999
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1003
 msgid "Test SQL connection"
 msgstr "SQL Verbindung testen"
 
 #: privacyidea/templates/manage/manage-base.mako:1388
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1001
 msgid "SQL Resolver"
 msgstr "SQL Resolver"
 
 #: privacyidea/templates/manage/manage-base.mako:1400
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1007
 msgid "Open help on SCIM resolver"
 msgstr "Hilfe zum SCIM-Resolver"
 
 #: privacyidea/templates/manage/manage-base.mako:1404
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1009
 msgid "SCIM config"
 msgstr "SCIM Konfiguration"
 
 #: privacyidea/templates/manage/manage-base.mako:1407
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1013
 msgid "URI auth server"
 msgstr "URI Auth-Server"
 
 #: privacyidea/templates/manage/manage-base.mako:1409
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1015
 msgid "URI resource server"
 msgstr "URI Resource-Server"
 
 #: privacyidea/templates/manage/manage-base.mako:1411
 #: privacyidea/templates/manage/policies.mako:57
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1017
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:61
 msgid "Client"
 msgstr "Client"
 
 #: privacyidea/templates/manage/manage-base.mako:1413
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1019
 msgid "Secret"
 msgstr "Geheimer Schlüssel"
 
 #: privacyidea/templates/manage/manage-base.mako:1415
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1021
 msgid "Mapping"
 msgstr "Zuordnung"
 
 #: privacyidea/templates/manage/manage-base.mako:1421
 #: privacyidea/templates/manage/manage-base.mako:1426
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1025
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1029
 msgid "Test SCIM connection"
 msgstr "SCIM Verbindung testen"
 
 #: privacyidea/templates/manage/manage-base.mako:1425
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1027
 msgid "SCIM Resolver"
 msgstr "SCIM Resolver"
 
 #: privacyidea/templates/manage/manage-base.mako:1432
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1031
 msgid "The following machine with all assignments will be deleted."
 msgstr ""
 "Der folgende Client-Computer mitsamt der Token- und Applikationszuweisungen "
 "wird gelöscht."
 
 #: privacyidea/templates/manage/manage-base.mako:1438
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1033
 msgid "Delete selected machine?"
 msgstr "Ausgewählten Client-Computer löschen?"
 
 #: privacyidea/templates/manage/manage-base.mako:1446
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1039
 msgid "The following application and token will be removed from the machine:"
 msgstr ""
 "Die folgende Applikation- und Token-Zuweisung wird vom Client-Computer "
 "entfernt."
 
 #: privacyidea/templates/manage/manage-base.mako:1452
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1041
 msgid "Remove selected application?"
 msgstr "Ausgewählte Applikation entfernen?"
 
 #: privacyidea/templates/manage/manage-base.mako:1453
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1043
 msgid "Remove application"
 msgstr "Entferne Applikation"
 
 #: privacyidea/templates/manage/manage-base.mako:1468
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1051
 msgid "File configuration"
 msgstr "Datei-Konfiguration"
 
 #: privacyidea/templates/manage/manage-base.mako:1471
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1055
 msgid "filename"
 msgstr "Dateiname"
 
 #: privacyidea/templates/manage/manage-base.mako:1477
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1057
 msgid "File Resolver"
 msgstr "Datei Resolver"
 
 #: privacyidea/templates/manage/manage-base.mako:1488
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1061
 msgid "Open help on auto creating default realm"
 msgstr ""
 "Hilfe zur automatischen Erzeungung des Standard-Realms mit lokalen Benutzern"
 
 #: privacyidea/templates/manage/manage-base.mako:1493
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1063
 msgid ""
 "You have no user realm configured, yet. You will not be able \n"
 "\t\t       to assign tokens to users. If you wish to, the system can create "
@@ -4421,7 +3717,6 @@ msgstr ""
 "lokalen Benutzern anlegen."
 
 #: privacyidea/templates/manage/manage-base.mako:1498
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1067
 msgid ""
 "To learn more about realms and resolvers, click the question mark\n"
 "\t\t\t   in the green circle."
@@ -4431,86 +3726,70 @@ msgstr ""
 "grünen Kreis an."
 
 #: privacyidea/templates/manage/manage-base.mako:1503
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1070
 msgid "Shall the system create this realm?"
 msgstr "Soll das System diesen Realm nun anlegen?"
 
 #: privacyidea/templates/manage/manage-base.mako:1508
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1072
 msgid "Do not ask again."
 msgstr "Nicht noch einmal fragen."
 
 #: privacyidea/templates/manage/manage-base.mako:1514
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1074
 msgid "Create default realm"
 msgstr "Standard Realm anlegen"
 
 #: privacyidea/templates/manage/manage-base.mako:1515
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1076
 msgid "Create realm"
 msgstr "Realm anlegen"
 
 #: privacyidea/templates/manage/manage-base.mako:1516
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1078
 msgid "No"
 msgstr "Nein"
 
 #: privacyidea/templates/manage/manage-base.mako:1522
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1080
 msgid "Resyncing of token failed"
 msgstr "Die Resynchronisierung des Tokens ist fehlgeschlagen."
 
 #: privacyidea/templates/manage/manage-base.mako:1523
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1082
 msgid "Resynced token successfully"
 msgstr "Der Token wurde erfolgreich resynchronisiert."
 
 #: privacyidea/templates/manage/manage-base.mako:1524
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1084
 msgid "set PIN successfully"
 msgstr "PIN erfolgreich gesetzt."
 
 #: privacyidea/templates/manage/manage-base.mako:1525
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1086
 msgid "When displaying Token information you may only select one single Token."
 msgstr ""
 "Wenn Sie Tokeninformationen anzeigen wollen, dürfen Sie nur einen einzelnen "
 "Token auswählen."
 
 #: privacyidea/templates/manage/manage-base.mako:1526
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1088
 msgid "When retrieving the token type you may only select one single Token."
 msgstr ""
 "Wenn Sie den Tokentypus bestimmen wollen, dürfen Sie nur einen einzelnen "
 "Token auswählen."
 
 #: privacyidea/templates/manage/manage-base.mako:1527
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1090
 msgid "Error: unknown tokentype in function token_enroll()"
 msgstr "Fehler: unbekannter Tokentyp in der Funktion <em>token_enroll()</em>."
 
 #: privacyidea/templates/manage/manage-base.mako:1528
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1092
 msgid "Could not find a token for this OTP value."
 msgstr "Zu diesem OTP-Wert konnte kein Token ermittelt werden."
 
 #: privacyidea/templates/manage/manage-base.mako:1529
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1094
 msgid "Error finding a token to this OTP value."
 msgstr "Fehler beim Ermitteln eines Tokens zu diesem OTP-Wert."
 
 #: privacyidea/templates/manage/manage-base.mako:1530
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1096
 msgid "Failed to communicate to privacyIDEA server"
 msgstr "Kommunikation mit dem privacyIDEA-Server fehlgeschlagen!"
 
 #: privacyidea/templates/manage/manage-base.mako:1531
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1098
 msgid "unknown token type to load!"
 msgstr "Unbekannter Tokentyp beim Import!"
 
 #: privacyidea/templates/manage/manage-base.mako:1532
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1100
 msgid ""
 "Error saving SMS configuration. Please check your configuration and your "
 "server"
@@ -4519,7 +3798,6 @@ msgstr ""
 "die Konfiguration auf dem Server."
 
 #: privacyidea/templates/manage/manage-base.mako:1533
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1102
 msgid ""
 "Error saving system configuration. Please check your configuration and your "
 "server"
@@ -4528,7 +3806,6 @@ msgstr ""
 "Konfiguration auf dem Server."
 
 #: privacyidea/templates/manage/manage-base.mako:1534
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1104
 msgid ""
 "Error saving system checkboxes configuration. Please check your "
 "configuration and your server"
@@ -4537,7 +3814,6 @@ msgstr ""
 "Konfiguration auf dem Server."
 
 #: privacyidea/templates/manage/manage-base.mako:1535
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1106
 msgid ""
 "Regexp error in realm. You need to select ONE realm to set it as default."
 msgstr ""
@@ -4545,197 +3821,158 @@ msgstr ""
 "auswählen, um diesen zum Standard-Realm zu machen."
 
 #: privacyidea/templates/manage/manage-base.mako:1536
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1108
 msgid "There is an error in the realm name!"
 msgstr "Fehler im Realmnamen!"
 
 #: privacyidea/templates/manage/manage-base.mako:1537
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1110
 msgid "Policy set."
 msgstr "Richtlinie gespeichert."
 
 #: privacyidea/templates/manage/manage-base.mako:1538
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1112
 msgid "Policy name is not defined!"
 msgstr "Der Name der Richtlinie ist nicht definiert!"
 
 #: privacyidea/templates/manage/manage-base.mako:1539
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1114
 msgid "Policy deleted."
 msgstr "Richtlinie gelöscht."
 
 #: privacyidea/templates/manage/manage-base.mako:1540
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1116
 msgid "Error fetching list!"
 msgstr "Fehler beim Abrufen der Liste!"
 
 #: privacyidea/templates/manage/manage-base.mako:1541
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1118
 msgid "created token with serial"
 msgstr "Token erfolgreich erzeugt. Seriennummer:"
 
 #: privacyidea/templates/manage/manage-base.mako:1542
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1120
 msgid "losttoken failed"
 msgstr "Verlorener Token fehlgeschlagen"
 
 #: privacyidea/templates/manage/manage-base.mako:1543
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1122
 msgid "set token PIN failed"
 msgstr "Setzen der Token PIN fehlgeschlagen"
 
 #: privacyidea/templates/manage/manage-base.mako:1544
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1124
 msgid "Error while fetching the tokentype"
 msgstr "Fehler beim Bestimmen des Tokentyps"
 
 #: privacyidea/templates/manage/manage-base.mako:1545
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1126
 msgid "Error creating token"
 msgstr "Fehler beim Erzeugen des Tokens"
 
 #: privacyidea/templates/manage/manage-base.mako:1546
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1128
 msgid "Failed"
 msgstr "Fehlgeschlagen"
 
 #: privacyidea/templates/manage/manage-base.mako:1547
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1130
 msgid "Failed to import token"
 msgstr "Import der Token fehlgeschlagen"
 
 #: privacyidea/templates/manage/manage-base.mako:1548
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1132
 msgid "Token import result"
 msgstr "Ergebnis des Tokenimports"
 
 #: privacyidea/templates/manage/manage-base.mako:1549
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1134
 msgid "Failed to import policies"
 msgstr "Import der Richtlinien fehlgeschlagen"
 
 #: privacyidea/templates/manage/manage-base.mako:1550
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1136
 msgid "Policy import result"
 msgstr "Ergebnis des Richtlinienimports"
 
 #: privacyidea/templates/manage/manage-base.mako:1551
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1138
 msgid "Error saving ldap configuration."
 msgstr "Fehler beim Speichern der LDAP Konfiguration."
 
 #: privacyidea/templates/manage/manage-base.mako:1552
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1140
 msgid "Error saving realm configuration."
 msgstr "Fehler beim Speichern der Realm Konfiguration"
 
 #: privacyidea/templates/manage/manage-base.mako:1553
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1142
 msgid "Realm created"
 msgstr "Realm angelegt"
 
 #: privacyidea/templates/manage/manage-base.mako:1554
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1144
 msgid "Error setting Token realms"
 msgstr "Fehler beim Setzen der Tokenrealms"
 
 #: privacyidea/templates/manage/manage-base.mako:1555
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1146
 msgid "Error saving file configuration"
 msgstr "Fehler beim Speichern der Datei Konfiguration"
 
 #: privacyidea/templates/manage/manage-base.mako:1556
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1148
 msgid "Error saving sql configuration"
 msgstr "Fehler beim Speichern der SQL Konfiguration"
 
 #: privacyidea/templates/manage/manage-base.mako:1557
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1150
 msgid "Error saving SCIM configuration"
 msgstr "Fehler beim Speichern der SCIM Konfiguration"
 
 #: privacyidea/templates/manage/manage-base.mako:1558
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1152
 msgid "Resolver deleted successfully"
 msgstr "Der Resolver wurde erfolgreich gelöscht"
 
 #: privacyidea/templates/manage/manage-base.mako:1559
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1154
 msgid "Failed deleting resolver"
 msgstr "Löschen des Resolvers fehlgeschlagen"
 
 #: privacyidea/templates/manage/manage-base.mako:1560
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1156
 msgid "Realm deleted"
 msgstr "Realm gelöscht"
 
 #: privacyidea/templates/manage/manage-base.mako:1561
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1158
 msgid "Failed deleting Realm"
 msgstr "Löschen des Realms fehlgeschlagen"
 
 #: privacyidea/templates/manage/manage-base.mako:1562
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1160
 msgid "Error in regular expression for"
 msgstr "Fehler im regulären Ausdruck für"
 
 #: privacyidea/templates/manage/manage-base.mako:1563
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1162
 msgid "LDAP config seems to be OK! Number of users found"
 msgstr "LDAP Konfiguration scheint OK! Anzahl der gefundenen Benutzer"
 
 #: privacyidea/templates/manage/manage-base.mako:1564
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1164
 msgid "Error loading LDAP resolver"
 msgstr "Fehler beim Laden des LDAP Resolvers"
 
 #: privacyidea/templates/manage/manage-base.mako:1565
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1166
 msgid "Error loading SQL resolver"
 msgstr "Fehler beim Laden des SQL Resolvers"
 
 #: privacyidea/templates/manage/manage-base.mako:1566
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1168
 msgid "Error loading SCIM resolver"
 msgstr "Fehler beim Laden des SCIM Resolvers"
 
 #: privacyidea/templates/manage/manage-base.mako:1567
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1170
 msgid "SQL config seems to be OK! Number of users found"
 msgstr "SQL Konfiguration scheint OK! Anzahl der gefundenen Benutzer"
 
 #: privacyidea/templates/manage/manage-base.mako:1568
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1172
 msgid "SQL config contains errors"
 msgstr "SQL Konfiguration enthält Fehler"
 
 #: privacyidea/templates/manage/manage-base.mako:1569
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1174
 msgid "SCIM config seems to be OK! Number of users found"
 msgstr "SCIM Konfiguration scheint OK! Anzahl der gefundenen Benutzer"
 
 #: privacyidea/templates/manage/manage-base.mako:1570
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1176
 msgid "SCIM config contains errors"
 msgstr "SCIM Konfiguration enthält Fehler"
 
 #: privacyidea/templates/manage/manage-base.mako:1571
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1178
 msgid "Unknown PIN type"
 msgstr "Unbekannter PIN Typ"
 
 #: privacyidea/templates/manage/manage-base.mako:1572
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1180
 msgid "You entered invalid data. Please check all the Tabs!"
 msgstr "Sie haben ungültige Daten eingegeben. Bitte prüfen Sie alle Reiter!"
 
 #: privacyidea/templates/manage/manage-base.mako:1573
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1182
 msgid "Error occurred during processing"
 msgstr "Fehler bei der Verarbeitung"
 
 #: privacyidea/templates/manage/manage-base.mako:1574
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1184
 msgid ""
 "You have defined UserIdResolvers. But you need to create at least one realm "
 "that contains some of your UserIdResolvers. The realm Dialog will now open "
@@ -4746,29 +3983,24 @@ msgstr ""
 "Dialog geöffnet."
 
 #: privacyidea/templates/manage/manage-base.mako:1575
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1186
 msgid "This realm is already the default realm."
 msgstr "Dieser Realm ist bereits der Standard-Realm."
 
 #: privacyidea/templates/manage/manage-base.mako:1576
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1188
 msgid "Incorrect or missing input at"
 msgstr "Fehlerhafte oder fehlende Angaben in:"
 
 #: privacyidea/templates/manage/manage-base.mako:1577
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1190
 msgid "Please have a look at each of the forms for more details."
 msgstr ""
 "Bitte überprüfen sie auf die einzelnen Konfigurations-Einstellungen für "
 "weitere Details."
 
 #: privacyidea/templates/manage/manage-base.mako:1578
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1192
 msgid "Form Validation Error"
 msgstr "Formular Eingabe Fehler"
 
 #: privacyidea/templates/manage/manage-base.mako:1579
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1194
 msgid ""
 "Please verify the presetted data. You might need to change the database "
 "table name."
@@ -4777,27 +4009,22 @@ msgstr ""
 "anpassen."
 
 #: privacyidea/templates/manage/manage-base.mako:1580
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1196
 msgid "SQL preset"
 msgstr "SQL Vorbelegungen"
 
 #: privacyidea/templates/manage/manage-base.mako:1581
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1198
 msgid "Machine successfully deleted."
 msgstr "Client-Computer erfolgreich gelöscht."
 
 #: privacyidea/templates/manage/manage-base.mako:1582
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1200
 msgid "Application removed successfully from machine."
 msgstr "Applikation vom Client-Computer erfolgreich entfernt."
 
 #: privacyidea/templates/manage/manage-base.mako:1583
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1202
 msgid "Machine created successfully."
 msgstr "Client-Computer erfolgreich angelegt."
 
 #: privacyidea/templates/manage/manage-base.mako:1584
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:1204
 msgid "Machine name, serial and application must not be emptry!"
 msgstr ""
 "Der Maschinenname, die Seriennummer und die Applalation dürfen nicht leer "
@@ -4819,47 +4046,38 @@ msgid "is of type"
 msgstr "ist vom Typ"
 
 #: privacyidea/templates/manage/policies.mako:4
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:24
 msgid "Export policies"
 msgstr "Richtlinien exportieren"
 
 #: privacyidea/templates/manage/policies.mako:11
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:30
 msgid "Open help on policies"
 msgstr "Hilfe zu Richtlinien"
 
 #: privacyidea/templates/manage/policies.mako:19
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:32
 msgid "Active"
 msgstr "Aktiv"
 
 #: privacyidea/templates/manage/policies.mako:23
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:34
 msgid "Policy name"
 msgstr "Name der Richtlinie"
 
 #: privacyidea/templates/manage/policies.mako:25
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:36
 msgid "The name of the policy"
 msgstr "Der Name der Richtlinie"
 
 #: privacyidea/templates/manage/policies.mako:28
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:38
 msgid "Scope"
 msgstr "Bereich"
 
 #: privacyidea/templates/manage/policies.mako:31
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:40
 msgid "__undefined__"
 msgstr "__inaktiv__"
 
 #: privacyidea/templates/manage/policies.mako:39
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:49
 msgid "Action"
 msgstr "Aktionen"
 
 #: privacyidea/templates/manage/policies.mako:41
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:51
 msgid ""
 "The action that should be allowed. These are actions like: enrollSMS, "
 "enrollMOTP...The actions may be comma separated."
@@ -4868,210 +4086,166 @@ msgstr ""
 "'enrollMOTP'... Die Aktionen sind durch Kommata getrennt."
 
 #: privacyidea/templates/manage/policies.mako:49
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:55
 msgid "The user or usergroup the policy should apply to"
 msgstr "Die Benutzer eine Gruppe für die die Richtlinie gelten soll"
 
 #: privacyidea/templates/manage/policies.mako:54
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:59
 msgid "The realm the policy applies to"
 msgstr "Der Realm, für den die Richtlinie gelten soll"
 
 #: privacyidea/templates/manage/policies.mako:59
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:63
 msgid "Comma separated list of client IPs and Subnets."
 msgstr "Durch Kommata getrennte Liste von Client-IP-Adressen oder Subnetzen."
 
 #: privacyidea/templates/manage/policies.mako:62
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:65
 msgid "Time"
 msgstr "Zeit"
 
 #: privacyidea/templates/manage/policies.mako:64
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:67
 msgid "The time on which the policy should be applied"
 msgstr "Die Zeit, zu welcher die Richtlinie gültig sein soll"
 
 #: privacyidea/templates/manage/policies.mako:68
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:69
 msgid "set policy"
 msgstr "Richtlinie speichern"
 
 #: privacyidea/templates/manage/policies.mako:69
-#: privacyidea/tests/testdata/data/templates/manage/policies.mako.py:71
 msgid "delete policy"
 msgstr "Richtlinie löschen"
 
 #: privacyidea/templates/manage/start.mako:11
-#: privacyidea/tests/testdata/data/templates/manage/start.mako.py:58
 msgid "selected tokens"
 msgstr "ausgewählte Token"
 
 #: privacyidea/templates/manage/start.mako:14
-#: privacyidea/tests/testdata/data/templates/manage/start.mako.py:60
 msgid "selected users"
 msgstr "ausgewählte Benutzer"
 
 #: privacyidea/templates/manage/start.mako:17
-#: privacyidea/tests/testdata/data/templates/manage/start.mako.py:62
 msgid "selected machine"
 msgstr "ausgewählter Client"
 
 #: privacyidea/templates/manage/start.mako:21
-#: privacyidea/tests/testdata/data/templates/manage/start.mako.py:64
 msgid "enroll"
 msgstr "ausrollen"
 
 #: privacyidea/templates/manage/start.mako:23
-#: privacyidea/tests/testdata/data/templates/manage/start.mako.py:66
 msgid "assign"
 msgstr "zuweisen"
 
 #: privacyidea/templates/manage/start.mako:25
-#: privacyidea/tests/testdata/data/templates/manage/start.mako.py:68
 msgid "unassign"
 msgstr "Zuweisung aufheben"
 
 #: privacyidea/templates/manage/start.mako:27
-#: privacyidea/tests/testdata/data/templates/manage/start.mako.py:70
 msgid "enable"
 msgstr "aktivieren"
 
 #: privacyidea/templates/manage/start.mako:29
-#: privacyidea/tests/testdata/data/templates/manage/start.mako.py:72
 msgid "disable"
 msgstr "deaktivieren"
 
 #: privacyidea/templates/manage/start.mako:31
 #: privacyidea/templates/selfservice/base.mako:112
 #: privacyidea/templates/selfservice/setpin.mako:23
-#: privacyidea/tests/testdata/data/templates/manage/start.mako.py:74
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:95
-#: privacyidea/tests/testdata/data/templates/selfservice/setpin.mako.py:29
 msgid "set PIN"
 msgstr "PIN setzen"
 
 #: privacyidea/templates/manage/start.mako:33
-#: privacyidea/tests/testdata/data/templates/manage/start.mako.py:76
 msgid "Reset failcounter"
 msgstr "Fehlzähler zurücksetzen"
 
 #: privacyidea/templates/manage/start.mako:35
-#: privacyidea/tests/testdata/data/templates/manage/start.mako.py:78
 msgid "delete"
 msgstr "löschen"
 
 #: privacyidea/templates/manage/start.mako:58
-#: privacyidea/tests/testdata/data/templates/manage/start.mako.py:35
 msgid "Token View"
 msgstr "Tokenansicht"
 
 #: privacyidea/templates/manage/start.mako:59
-#: privacyidea/tests/testdata/data/templates/manage/start.mako.py:37
 msgid "User View"
 msgstr "Benutzeransicht"
 
 #: privacyidea/templates/manage/start.mako:61
-#: privacyidea/tests/testdata/data/templates/manage/start.mako.py:41
 msgid "Machines"
 msgstr "Client-Computer"
 
 #: privacyidea/templates/manage/start.mako:62
-#: privacyidea/tests/testdata/data/templates/manage/start.mako.py:43
 msgid "Audit Trail"
 msgstr "Audit"
 
 #: privacyidea/templates/manage/tokeninfo.mako:11
-#: privacyidea/tests/testdata/data/templates/manage/tokeninfo.mako.py:33
 msgid "help on tokeninfo"
 msgstr "Hilfe zu Tokeninfo"
 
 #: privacyidea/templates/manage/tokeninfo.mako:33
-#: privacyidea/tests/testdata/data/templates/manage/tokeninfo.mako.py:50
 msgid "count auth"
 msgstr "Authentisierungszähler"
 
 #: privacyidea/templates/manage/tokeninfo.mako:34
 #: privacyidea/templates/manage/tokeninfo.mako:35
 #: privacyidea/templates/manage/tokeninfo.mako:36
-#: privacyidea/tests/testdata/data/templates/manage/tokeninfo.mako.py:52
-#: privacyidea/tests/testdata/data/templates/manage/tokeninfo.mako.py:54
-#: privacyidea/tests/testdata/data/templates/manage/tokeninfo.mako.py:56
 msgid "count auth max"
 msgstr "Authentisierungszähler Maximum"
 
 #: privacyidea/templates/manage/tokeninfo.mako:38
-#: privacyidea/tests/testdata/data/templates/manage/tokeninfo.mako.py:60
 msgid "time window"
 msgstr "Zeitfenster"
 
 #: privacyidea/templates/manage/tokeninfo.mako:39
-#: privacyidea/tests/testdata/data/templates/manage/tokeninfo.mako.py:62
 msgid "time step"
 msgstr "Zeitschritt"
 
 #: privacyidea/templates/manage/tokeninfo.mako:40
-#: privacyidea/tests/testdata/data/templates/manage/tokeninfo.mako.py:64
 msgid "time shift"
 msgstr "Zeitversatz"
 
 #: privacyidea/templates/manage/tokeninfo.mako:43
-#: privacyidea/tests/testdata/data/templates/manage/tokeninfo.mako.py:68
 msgid "mobile phone number"
 msgstr "Mobiltelefonnummer"
 
 #: privacyidea/templates/manage/tokenview.mako:3
-#: privacyidea/tests/testdata/data/templates/manage/tokenview.mako.py:24
 msgid "Lost token"
 msgstr "Verlorener Token"
 
 #: privacyidea/templates/manage/tokenview.mako:6
-#: privacyidea/tests/testdata/data/templates/manage/tokenview.mako.py:30
 msgid "set token realm"
 msgstr "Tokenrealm setzen"
 
 #: privacyidea/templates/manage/tokenview.mako:7
-#: privacyidea/tests/testdata/data/templates/manage/tokenview.mako.py:32
 msgid "get OTP"
 msgstr "OTP Werte anfragen"
 
 #: privacyidea/templates/manage/tokenview.mako:12
-#: privacyidea/tests/testdata/data/templates/manage/tokenview.mako.py:36
 msgid "help on tokenview"
 msgstr "Hilfe zur Tokenliste"
 
 #: privacyidea/templates/manage/userview.mako:6
-#: privacyidea/tests/testdata/data/templates/manage/userview.mako.py:26
 msgid "help on userview"
 msgstr "Hilfe zur Benutzerliste"
 
 #: privacyidea/templates/selfservice/activateqr.mako:3
-#: privacyidea/tests/testdata/data/templates/selfservice/activateqr.mako.py:23
 msgid "Activate your OCRA Token"
 msgstr "Aktivieren Sie Ihren OCRA Token"
 
 #: privacyidea/templates/selfservice/activateqr.mako:12
-#: privacyidea/tests/testdata/data/templates/selfservice/activateqr.mako.py:25
 msgid "Your OCRA Token :"
 msgstr "Ihr OCRA Token:"
 
 #: privacyidea/templates/selfservice/activateqr.mako:20
-#: privacyidea/tests/testdata/data/templates/selfservice/activateqr.mako.py:31
 msgid "activate your OCRA Token"
 msgstr "Aktivieren Sie Ihren OCRA Token"
 
 #: privacyidea/templates/selfservice/activateqr.mako:42
-#: privacyidea/tests/testdata/data/templates/selfservice/activateqr.mako.py:39
 msgid "finish your OCRA Token"
 msgstr "OCRA Token fertigstellen"
 
 #: privacyidea/templates/selfservice/assign.mako:3
-#: privacyidea/tests/testdata/data/templates/selfservice/assign.mako.py:24
 msgid "Assign OTP Token"
 msgstr "OTP Token zuweisen"
 
 #: privacyidea/templates/selfservice/assign.mako:8
-#: privacyidea/tests/testdata/data/templates/selfservice/assign.mako.py:28
 msgid ""
 "You may either assign the token by entering the serial number or you can "
 "enter an OTP value of the token and the system will try to identify the "
@@ -5082,124 +4256,96 @@ msgstr ""
 "zuweisen."
 
 #: privacyidea/templates/selfservice/assign.mako:13
-#: privacyidea/tests/testdata/data/templates/selfservice/assign.mako.py:33
 msgid "The OTP value of the Token to assign"
 msgstr "OTP-Wert des Tokens, der zugwiesen werden soll"
 
 #: privacyidea/templates/selfservice/assign.mako:16
-#: privacyidea/tests/testdata/data/templates/selfservice/assign.mako.py:35
 msgid "determine serial number"
 msgstr "Seriennummer bestimmen"
 
 #: privacyidea/templates/selfservice/assign.mako:23
-#: privacyidea/tests/testdata/data/templates/selfservice/assign.mako.py:38
 msgid "Serialnumber of new Token"
 msgstr "Seriennummer des neuen OTP Tokens"
 
 #: privacyidea/templates/selfservice/assign.mako:27
-#: privacyidea/tests/testdata/data/templates/selfservice/assign.mako.py:40
 msgid "assign Token"
 msgstr "Token zuweisen"
 
 #: privacyidea/templates/selfservice/base.mako:5
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:24
 msgid "privacyIDEA login"
 msgstr "privacyIDEA Login"
 
 #: privacyidea/templates/selfservice/base.mako:42
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:28
 msgid "in realm"
 msgstr "im Realm"
 
 #: privacyidea/templates/selfservice/base.mako:45
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:34
 msgid "Management"
 msgstr "Management"
 
 #: privacyidea/templates/selfservice/base.mako:62
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:45
 msgid "Your tokens:"
 msgstr "Ihre Token"
 
 #: privacyidea/templates/selfservice/base.mako:84
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:58
 msgid "Activate your QR token"
 msgstr "QR Token aktivieren"
 
 #: privacyidea/templates/selfservice/base.mako:87
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:62
 msgid "Activate your OCRA token"
 msgstr "OCRA token aktivieren"
 
 #: privacyidea/templates/selfservice/base.mako:90
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:66
 msgid "Enroll OATH token"
 msgstr "OATH Token ausrollen"
 
 #: privacyidea/templates/selfservice/base.mako:93
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:70
 msgid "Enroll Google Authenticator"
 msgstr "Google Authenticator ausrollen"
 
 #: privacyidea/templates/selfservice/base.mako:97
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:75
 msgid "Assign Token"
 msgstr "Token zuweisen"
 
 #: privacyidea/templates/selfservice/base.mako:100
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:79
 msgid "Disable Token"
 msgstr "Token deaktivieren"
 
 #: privacyidea/templates/selfservice/base.mako:103
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:83
 msgid "Enable Token"
 msgstr "Token aktivieren"
 
 #: privacyidea/templates/selfservice/base.mako:109
 #: privacyidea/templates/selfservice/reset.mako:2
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:91
-#: privacyidea/tests/testdata/data/templates/selfservice/reset.mako.py:23
 msgid "Reset Failcounter"
 msgstr "Fehlzähler zurücksetzen"
 
 #: privacyidea/templates/selfservice/base.mako:115
 #: privacyidea/templates/selfservice/setmpin.mako:24
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:99
-#: privacyidea/tests/testdata/data/templates/selfservice/setmpin.mako.py:31
 msgid "set mOTP PIN"
 msgstr "mOTP PIN setzen"
 
 #: privacyidea/templates/selfservice/base.mako:118
 #: privacyidea/templates/selfservice/getotp.mako:17
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:103
-#: privacyidea/tests/testdata/data/templates/selfservice/getotp.mako.py:29
 msgid "get OTP values"
 msgstr "OTP Werte anfragen"
 
 #: privacyidea/templates/selfservice/base.mako:121
 #: privacyidea/templates/selfservice/unassign.mako:13
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:107
-#: privacyidea/tests/testdata/data/templates/selfservice/unassign.mako.py:27
 msgid "unassign Token"
 msgstr "Tokenzuweisung aufheben"
 
 #: privacyidea/templates/selfservice/base.mako:124
 #: privacyidea/templates/selfservice/delete.mako:13
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:111
-#: privacyidea/tests/testdata/data/templates/selfservice/delete.mako.py:27
 msgid "delete Token"
 msgstr "Token löschen"
 
 #: privacyidea/templates/selfservice/base.mako:127
 #: privacyidea/templates/selfservice/history.mako:2
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:115
-#: privacyidea/tests/testdata/data/templates/selfservice/history.mako.py:23
 msgid "History"
 msgstr "Verlauf"
 
 #: privacyidea/templates/selfservice/base.mako:143
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:122
 #, python-format
 msgid ""
 "Error enrolling token:\n"
@@ -5209,7 +4355,6 @@ msgstr ""
 " %s"
 
 #: privacyidea/templates/selfservice/base.mako:144
-#: privacyidea/tests/testdata/data/templates/selfservice/base.mako.py:124
 #, python-format
 msgid ""
 "Token enrolled successfully:\n"
@@ -5219,7 +4364,6 @@ msgstr ""
 " %s"
 
 #: privacyidea/templates/selfservice/delete.mako:2
-#: privacyidea/tests/testdata/data/templates/selfservice/delete.mako.py:23
 msgid "Delete OTP Token"
 msgstr "OTP Token löschen"
 
@@ -5232,94 +4376,70 @@ msgstr "OTP Token löschen"
 #: privacyidea/templates/selfservice/setmpin.mako:12
 #: privacyidea/templates/selfservice/setpin.mako:11
 #: privacyidea/templates/selfservice/unassign.mako:9
-#: privacyidea/tests/testdata/data/templates/selfservice/delete.mako.py:25
-#: privacyidea/tests/testdata/data/templates/selfservice/disable.mako.py:25
-#: privacyidea/tests/testdata/data/templates/selfservice/enable.mako.py:25
-#: privacyidea/tests/testdata/data/templates/selfservice/getotp.mako.py:25
-#: privacyidea/tests/testdata/data/templates/selfservice/reset.mako.py:25
-#: privacyidea/tests/testdata/data/templates/selfservice/resync.mako.py:25
-#: privacyidea/tests/testdata/data/templates/selfservice/setmpin.mako.py:27
-#: privacyidea/tests/testdata/data/templates/selfservice/setpin.mako.py:25
-#: privacyidea/tests/testdata/data/templates/selfservice/unassign.mako.py:25
 msgid "selected Token"
 msgstr "ausgewählter Token"
 
 #: privacyidea/templates/selfservice/disable.mako:2
-#: privacyidea/tests/testdata/data/templates/selfservice/disable.mako.py:23
 msgid "Disable OTP Token"
 msgstr "OTP Token deaktivieren"
 
 #: privacyidea/templates/selfservice/disable.mako:13
-#: privacyidea/tests/testdata/data/templates/selfservice/disable.mako.py:27
 msgid "disable Token"
 msgstr "Token deaktivieren"
 
 #: privacyidea/templates/selfservice/enable.mako:2
-#: privacyidea/tests/testdata/data/templates/selfservice/enable.mako.py:23
 msgid "Enable OTP Token"
 msgstr "OTP Token aktivieren"
 
 #: privacyidea/templates/selfservice/enable.mako:13
-#: privacyidea/tests/testdata/data/templates/selfservice/enable.mako.py:27
 msgid "enable Token"
 msgstr "Token aktivieren"
 
 #: privacyidea/templates/selfservice/getotp.mako:2
-#: privacyidea/tests/testdata/data/templates/selfservice/getotp.mako.py:23
 msgid "get OTP values from Token"
 msgstr "OTP Werte vom Token anfragen"
 
 #: privacyidea/templates/selfservice/getotp.mako:13
-#: privacyidea/tests/testdata/data/templates/selfservice/getotp.mako.py:27
 msgid "Number of OTP values to retrieve"
 msgstr "Anzahl der anzufragenden OTP-Werte"
 
-#: privacyidea/templates/selfservice/login.mako:34
-#: privacyidea/tests/testdata/data/templates/selfservice/login.mako.py:24
+#: privacyidea/templates/selfservice/login.mako:35
 msgid "privacyIDEA"
 msgstr "privacyIDEA"
 
-#: privacyidea/templates/selfservice/login.mako:41
-#: privacyidea/tests/testdata/data/templates/selfservice/login.mako.py:26
+#: privacyidea/templates/selfservice/login.mako:42
 msgid "Login to privacyIDEA"
 msgstr "Anmeldung an privacyIDEA"
 
-#: privacyidea/templates/selfservice/login.mako:47
-#: privacyidea/tests/testdata/data/templates/selfservice/login.mako.py:28
+#: privacyidea/templates/selfservice/login.mako:48
 msgid "Username"
 msgstr "Benutzername"
 
-#: privacyidea/templates/selfservice/login.mako:73
-#, fuzzy
+#: privacyidea/templates/selfservice/login.mako:74
 msgid "Open help on WebUI Login"
-msgstr "Hilfe zum Audit"
+msgstr "Hilfe zum WebUI Login"
 
 #: privacyidea/templates/selfservice/multiotp_view.mako:24
 msgid "Failed to retrieve the OTP values of your token:"
 msgstr "Das Anfordern der OTP-Werte ist fehlgeschlagen:"
 
 #: privacyidea/templates/selfservice/reset.mako:13
-#: privacyidea/tests/testdata/data/templates/selfservice/reset.mako.py:27
 msgid "reset Failcounter"
 msgstr "Fehlzähler zurücksetzen"
 
 #: privacyidea/templates/selfservice/resync.mako:3
-#: privacyidea/tests/testdata/data/templates/selfservice/resync.mako.py:23
 msgid "Resync OTP Token"
 msgstr "OTP Token resynchronisieren"
 
 #: privacyidea/templates/selfservice/resync.mako:22
-#: privacyidea/tests/testdata/data/templates/selfservice/resync.mako.py:27
 msgid "resync OTP"
 msgstr "OTP resynchronisieren"
 
 #: privacyidea/templates/selfservice/setmpin.mako:3
-#: privacyidea/tests/testdata/data/templates/selfservice/setmpin.mako.py:23
 msgid "Reset mOTP PIN"
 msgstr "mOTP PIN zurücksetzen"
 
 #: privacyidea/templates/selfservice/setmpin.mako:5
-#: privacyidea/tests/testdata/data/templates/selfservice/setmpin.mako.py:25
 msgid ""
 "This resets the mOTP PIN, which is the PIN that is entered in the motp "
 "application on your phone."
@@ -5328,59 +4448,47 @@ msgstr ""
 "Ihrem Telefon ein."
 
 #: privacyidea/templates/selfservice/setmpin.mako:20
-#: privacyidea/tests/testdata/data/templates/selfservice/setmpin.mako.py:29
 msgid "repeat mOTP PIN"
 msgstr "mOTP PIN wiederholen"
 
 #: privacyidea/templates/selfservice/setmpin.mako:25
 #: privacyidea/templates/selfservice/setpin.mako:24
-#: privacyidea/tests/testdata/data/templates/selfservice/setmpin.mako.py:33
-#: privacyidea/tests/testdata/data/templates/selfservice/setpin.mako.py:31
 msgid "The passwords do not match!"
 msgstr "Die Passwörter sind nicht gleicht!"
 
 #: privacyidea/templates/selfservice/setmpin.mako:26
-#: privacyidea/tests/testdata/data/templates/selfservice/setmpin.mako.py:35
 msgid "Error setting mOTP PIN: "
 msgstr "Fehler beim Setzen des mOTP PINs:"
 
 #: privacyidea/templates/selfservice/setmpin.mako:27
-#: privacyidea/tests/testdata/data/templates/selfservice/setmpin.mako.py:37
 msgid "mOTP PIN set successfully"
 msgstr "mOTP PIN erfolgreich gesetzt."
 
 #: privacyidea/templates/selfservice/setpin.mako:3
-#: privacyidea/tests/testdata/data/templates/selfservice/setpin.mako.py:23
 msgid "Reset OTP PIN"
 msgstr "OTP PIN zurücksetzen"
 
 #: privacyidea/templates/selfservice/setpin.mako:19
-#: privacyidea/tests/testdata/data/templates/selfservice/setpin.mako.py:27
 msgid "repeat PIN"
 msgstr "PIN wiederholen"
 
 #: privacyidea/templates/selfservice/setpin.mako:25
-#: privacyidea/tests/testdata/data/templates/selfservice/setpin.mako.py:33
 msgid "Error setting PIN: "
 msgstr "Fehler beim Setzen der PIN:"
 
 #: privacyidea/templates/selfservice/setpin.mako:26
-#: privacyidea/tests/testdata/data/templates/selfservice/setpin.mako.py:35
 msgid "PIN set successfully"
 msgstr "PIN erfolgreich gesetzt"
 
 #: privacyidea/templates/selfservice/unassign.mako:2
-#: privacyidea/tests/testdata/data/templates/selfservice/unassign.mako.py:23
 msgid "Unassign OTP Token"
 msgstr "OTP Tokenzuweisung aufheben"
 
 #: privacyidea/templates/selfservice/webprovisiongoogle.mako:2
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisiongoogle.mako.py:24
 msgid "Provision your Google Authenticator"
 msgstr "Google Authenticator registrieren"
 
 #: privacyidea/templates/selfservice/webprovisiongoogle.mako:8
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisiongoogle.mako.py:26
 msgid ""
 "1. You first need to install the google authenticator to your Android or "
 "iPhone."
@@ -5389,19 +4497,15 @@ msgstr ""
 "installieren."
 
 #: privacyidea/templates/selfservice/webprovisiongoogle.mako:10
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisiongoogle.mako.py:28
 msgid "link for Android"
 msgstr "Link für Android"
 
 #: privacyidea/templates/selfservice/webprovisiongoogle.mako:11
 #: privacyidea/templates/selfservice/webprovisionoath.mako:10
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisiongoogle.mako.py:30
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisionoath.mako.py:27
 msgid "link for iPhone"
 msgstr "Link für iPhone"
 
 #: privacyidea/templates/selfservice/webprovisiongoogle.mako:12
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisiongoogle.mako.py:32
 msgid ""
 "Following the above link, you can directly go to install the google "
 "authenticator on your iPhone."
@@ -5411,47 +4515,36 @@ msgstr ""
 
 #: privacyidea/templates/selfservice/webprovisiongoogle.mako:15
 #: privacyidea/templates/selfservice/webprovisionoath.mako:14
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisiongoogle.mako.py:34
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisionoath.mako.py:31
 msgid "2. Then you may create a profile."
 msgstr "2. Dann können Sie Ihren Token/das Profil erzeugen."
 
 #: privacyidea/templates/selfservice/webprovisiongoogle.mako:19
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisiongoogle.mako.py:38
 msgid "event based"
 msgstr "HMAC ereignisbasiert"
 
 #: privacyidea/templates/selfservice/webprovisiongoogle.mako:22
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisiongoogle.mako.py:42
 msgid "time based"
 msgstr "HMAC zeitbasiert"
 
 #: privacyidea/templates/selfservice/webprovisiongoogle.mako:26
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisiongoogle.mako.py:45
 msgid "enroll Google Authenticator"
 msgstr "Google Authenticator registrieren"
 
 #: privacyidea/templates/selfservice/webprovisiongoogle.mako:30
 #: privacyidea/templates/selfservice/webprovisionoath.mako:20
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisiongoogle.mako.py:47
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisionoath.mako.py:35
 msgid "3."
 msgstr "3."
 
 #: privacyidea/templates/selfservice/webprovisiongoogle.mako:30
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisiongoogle.mako.py:49
 msgid "Google Authenticator"
 msgstr "Google Authenticator"
 
 #: privacyidea/templates/selfservice/webprovisiongoogle.mako:30
 #: privacyidea/templates/selfservice/webprovisionoath.mako:20
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisiongoogle.mako.py:51
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisionoath.mako.py:37
 msgid "successfully created!"
 msgstr "erfolgreich erzeugt!"
 
 #: privacyidea/templates/selfservice/webprovisiongoogle.mako:31
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisiongoogle.mako.py:53
 msgid "Click on this link to install the profile to your Android or iPhone:"
 msgstr ""
 "Klicken Sie auf Ihrem Smartphone auf diesen Link, um das Profil auf Ihrem "
@@ -5459,13 +4552,10 @@ msgstr ""
 
 #: privacyidea/templates/selfservice/webprovisiongoogle.mako:32
 #: privacyidea/templates/selfservice/webprovisionoath.mako:22
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisiongoogle.mako.py:55
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisionoath.mako.py:41
 msgid "install profile"
 msgstr "Profil installieren"
 
 #: privacyidea/templates/selfservice/webprovisiongoogle.mako:34
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisiongoogle.mako.py:57
 msgid ""
 "Or you can scan the QR code below with your Android phone to import the "
 "secret."
@@ -5474,17 +4564,14 @@ msgstr ""
 "Smartphone, um das Profil zu importieren."
 
 #: privacyidea/templates/selfservice/webprovisionoath.mako:2
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisionoath.mako.py:23
 msgid "Provision your OATH Token"
 msgstr "OATH Token registrieren"
 
 #: privacyidea/templates/selfservice/webprovisionoath.mako:8
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisionoath.mako.py:25
 msgid "1. You first need to install the oathtoken to your iPhone."
 msgstr "1. Sie müssen zuerst die oathtoken App auf Ihrem iPhone installieren."
 
 #: privacyidea/templates/selfservice/webprovisionoath.mako:11
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisionoath.mako.py:29
 msgid ""
 "Following the above link, you can directly go to install the oath token on "
 "your iPhone."
@@ -5493,36 +4580,31 @@ msgstr ""
 "Ihrem iPhone installieren."
 
 #: privacyidea/templates/selfservice/webprovisionoath.mako:16
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisionoath.mako.py:33
 msgid "enroll OATH Token"
 msgstr "OATH Token erzeugen"
 
 #: privacyidea/templates/selfservice/webprovisionoath.mako:21
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisionoath.mako.py:39
 msgid "Click on this link to install the oathtoken profile to your iPhone:"
 msgstr ""
 "Klicken Sie ihn Ihrem Smartphone auf diesen Link, um das Profil auf Ihrem "
 "iPhone zu installieren:"
 
 #: privacyidea/templates/selfservice/webprovisionoath.mako:24
-#: privacyidea/tests/testdata/data/templates/selfservice/webprovisionoath.mako.py:43
 msgid ""
 "Or you can scan the QR code below with your iPhone to import the secret."
 msgstr ""
 "Alternativ scannen Sie den unten angezeigten QR Code mit Ihrem iPhone, um "
 "das Profil zu importieren."
 
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:238
-msgid "Selfservice portal"
-msgstr "Benutzerportal"
+#~ msgid "Selfservice portal"
+#~ msgstr "Benutzerportal"
 
-#: privacyidea/tests/testdata/data/templates/manage/manage-base.mako.py:242
-msgid ""
-"If checked a realm dropdown box will be displayed on the selfservice portal "
-"logon page."
-msgstr ""
-"Eine Dropdown Liste wird angezeigt, aus der der Benutzer den Realm auswählen "
-"kann, in dem er sich im Benutzerportal anmelden will."
+#~ msgid ""
+#~ "If checked a realm dropdown box will be displayed on the selfservice "
+#~ "portal logon page."
+#~ msgstr ""
+#~ "Eine Dropdown Liste wird angezeigt, aus der der Benutzer den Realm "
+#~ "auswählen kann, in dem er sich im Benutzerportal anmelden will."
 
 #~ msgid "privacyIDEA Config"
 #~ msgstr "privacyIDEA Konfiguration"

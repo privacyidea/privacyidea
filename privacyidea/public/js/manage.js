@@ -1810,7 +1810,7 @@ function save_file_config(){
     params['name'] = resolvername;
     params['type'] = resolvertype;
     params['fileName'] = fileName;
-    save_file_config_actions(params);
+    save_file_config_action(params);
 }
 
 

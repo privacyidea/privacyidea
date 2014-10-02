@@ -50,6 +50,7 @@ from privacyidea.lib.account import is_admin_identity
 from privacyidea.lib.realm import getRealms
 from privacyidea.lib.realm import getDefaultRealm
 from privacyidea.lib.log import log_with
+from pylons.i18n.translation import _
 
 import logging
 import webob
@@ -105,6 +106,9 @@ class AccountController(BaseController):
 
     def login(self, action):
         log.debug("privacyidea login screen")
+        # referrer and path_url to check if the login failed.
+        referrer = request.referrer
+        path_url = request.path_url
         identity = request.environ.get('repoze.who.identity')
         if identity is not None:
             # After login we either redirect to the manage interface or
@@ -127,9 +131,12 @@ class AccountController(BaseController):
             log.debug("displaying realmbox: %i" % int(c.realmbox))
 
             c.login_help = get_login_help()
-            # TODO: How can we distinguish between failed
-            # login and first arrival.
-            # c.status = _("Wrong credentials.")
+            
+            c.status = ""
+            if referrer == path_url:
+                # We come from the login page, so obviously we
+                # have entered a wrong password!
+                c.status = _("Wrong credentials.")
 
             Session.commit()
             response.status = '%i Logout from privacyIDEA selfservice' %\

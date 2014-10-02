@@ -21,6 +21,7 @@
 <script>
 $(document).ready(function() {
     $('form:first *:input[type!=hidden]:first').focus();
+   	$('#wrongCredentials').delay(2000).fadeOut("slow");
 });
 </script>
 
@@ -74,6 +75,7 @@ $(document).ready(function() {
 			</a>
 		%endif
         </td></tr>
+        <tr><td></td><td class=passwordWarning id=wrongCredentials>${c.status}</td></tr>
         <tr><td></td>
         <td>   <input type="submit" value="Login" /></td></tr>
       </table>

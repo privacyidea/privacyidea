@@ -25,6 +25,10 @@
 
 }
 
+.passwordWarning {
+	color: red;
+}
+
 a.activeToken {
 	color: black;
 	background-color:white;
