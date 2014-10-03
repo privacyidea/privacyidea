@@ -6,6 +6,9 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2014-10-03 Move the QR stuff in getInitDetail into the token classes
+#             Cornelius Kölbel <cornelius@privacyidea.org>
+#
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  AGPLv3
 #  contact:  http://www.linotp.org
@@ -24,7 +27,7 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#            
+#
 '''
 
   Description:  This file containes the standard token definitions:
@@ -78,14 +81,12 @@ from privacyidea.lib.ocra    import OcraSuite
 from privacyidea.model       import OcraChallenge
 
 from privacyidea.model.meta  import Session
-from privacyidea.lib.reply   import create_img
-from privacyidea.lib.apps import create_google_authenticator_url as cr_google
-from privacyidea.lib.apps import create_oathtoken_url as cr_oath
-from privacyidea.lib.apps import create_motp_url
 
 from privacyidea.lib.validate import check_pin
 from privacyidea.lib.validate import check_otp
 from privacyidea.lib.validate import split_pin_otp
+from privacyidea.lib.reply   import create_img
+
 
 from sqlalchemy         import asc, desc
 #from sqlalchemy.sql.expression import in_
@@ -797,13 +798,6 @@ class TokenClass(object):
             ret = info.get(key)
         return ret
 
-    # FIXME: we could store the
-    #   count_auth_success_max
-    #   count_auth_success
-    # and
-    #   count_auth_max
-    #   count_auth
-    # in dedicated columns!
     def set_count_auth_success_max(self, count):
         '''
         Sets the counter for the maximum allowed successful logins
@@ -1091,15 +1085,17 @@ class TokenClass(object):
     def getInitDetail(self, params, user=None):
         '''
         to complete the token normalisation, the response of the initialiastion
-        should be build by the token specific method, the getInitDetails
+        should be build by the token specific method.
+        
+        getInitDetail returns additional information after an admin/init
+        like the QR code of an HOTP/TOTP token.
+        Can be anything else.
         '''
         response_detail = {}
 
         info = self.getInfo()
         response_detail.update(info)
         response_detail['serial'] = self.getSerial()
-
-        tok_type = self.type.lower()
 
         otpkey = None
         if 'otpkey' in info:
@@ -1109,45 +1105,6 @@ class TokenClass(object):
             response_detail["otpkey"] = {"description": _("OTP seed"),
                                          "value": "seed://%s" % otpkey,
                                          "img": create_img(otpkey, width=200)}
-            if user is not None:
-                try:
-                    # TODO: This needs to be put into the token classes.
-                    if tok_type.lower() in ["hmac", "totp"]:
-                        goo_url = cr_google(user.login,
-                                            user.realm, otpkey,
-                                            tok_type.lower(),
-                                            serial=self.getSerial())
-                        response_detail["googleurl"] = {"description": 
-                                                        _("URL for google "
-                                                          "Authenticator"),
-                                                        "value": goo_url,
-                                                        "img": create_img(goo_url,
-                                                                          width=250)
-                                                        }
-    
-                        oath_url = cr_oath(user.login,
-                                           user.realm,
-                                           otpkey, tok_type,
-                                           serial=self.getSerial())
-                        response_detail["oathurl"] = {"description": _("URL for"
-                                                                       " OATH token"),
-                                                      "value": oath_url,
-                                                      "img": create_img(oath_url,
-                                                                        width=250)
-                                                      }
-                    
-                    if tok_type.lower() in ["motp"]:
-                        motp_url = create_motp_url(user.login, user.realm,
-                                                   otpkey,
-                                                   serial=self.getSerial())
-                        response_detail["motpurl"] = {"description": _("URL for MOTP token"),
-                                                      "value": motp_url,
-                                                      "img": create_img(motp_url,
-                                                                        width=250)
-                                                      }
-                    
-                except Exception as ex:
-                    log.info('failed to set oath or google url: %r' % ex)
 
         return response_detail
 

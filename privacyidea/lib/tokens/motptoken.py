@@ -7,6 +7,9 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2014-10-03 Add getInitDetail
+#             Cornelius Kölbel <cornelius@privacyidea.org>
+#
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  LSE
 #  contact:  http://www.linotp.org
@@ -43,8 +46,11 @@ from privacyidea.lib.log import log_with
 
 from privacyidea.lib.mOTP import mTimeOtp
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.apps import create_motp_url
+from privacyidea.lib.reply import create_img
+from pylons.i18n.translation import _
 
-
+import traceback
 import logging
 log = logging.getLogger(__name__)
 
@@ -141,6 +147,35 @@ class MotpTokenClass(TokenClass):
         self.hKeyRequired = True
 
         return
+    
+    @log_with(log)
+    def getInitDetail(self, params, user=None):
+        '''
+        to complete the token normalisation, the response of the initialiastion
+        should be build by the token specific method, the getInitDetails
+        '''
+        response_detail = TokenClass.getInitDetail(self, params, user)
+        otpkey = self.getInfo().get('otpkey')
+        if otpkey:
+            tok_type = self.type.lower()
+            if user is not None:
+                try:
+                    if tok_type.lower() in ["motp"]:
+                        motp_url = create_motp_url(user.login, user.realm,
+                                                   otpkey,
+                                                   serial=self.getSerial())
+                        response_detail["motpurl"] = {"description": _("URL for MOTP "
+                                                                       "token"),
+                                                      "value": motp_url,
+                                                      "img": create_img(motp_url,
+                                                                        width=250)
+                                                      }
+                   
+                except Exception as ex:
+                    log.error("%r" % (traceback.format_exc()))
+                    log.error('failed to set motp url: %r' % ex)
+                    
+        return response_detail
 
     @log_with(log)
     def update(self, param, reset_failcount=True):
