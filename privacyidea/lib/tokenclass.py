@@ -680,7 +680,7 @@ class TokenClass(object):
         set the PIN. The optional parameter "param" can hold the information,
         if the PIN is encrypted or hashed.
         '''
-        if param == None:
+        if param is None:
             param = {}
         storeHashed = True
         enc = getParam(param, "encryptpin", optional)
@@ -719,15 +719,11 @@ class TokenClass(object):
 
         return self.token.privacyIDEAFailCount
 
-
-
-    ### TODO: - this is only HMAC??
     def setCounterWindow(self, countWindow):
         self.token.privacyIDEACountWindow = int(countWindow)
 
     def getCounterWindow(self):
         return self.token.privacyIDEACountWindow
-
 
     def setSyncWindow(self, syncWindow):
         self.token.privacyIDEASyncWindow = int(syncWindow)
@@ -735,8 +731,8 @@ class TokenClass(object):
     def getSyncWindow(self):
         return self.token.privacyIDEASyncWindow
 
-    ## hashlib algorithms:
-    ## http://www.doughellmann.com/PyMOTW/hashlib/index.html#module-hashlib
+    # hashlib algorithms:
+    # http://www.doughellmann.com/PyMOTW/hashlib/index.html#module-hashlib
 
     def getHashlib(self, hLibStr):
 
