@@ -20,7 +20,9 @@ from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.config import get_privacyIDEA_config
 from privacyidea.lib.log import log_with
 from pylons import config as ini_config
-import urllib, httplib2, json
+import urllib
+import httplib2
+import json
 import crypt
 ENCODING = "utf-8"
 import logging
@@ -29,17 +31,19 @@ from pylons import request, config, tmpl_context as c
 
 log = logging.getLogger(__name__)
 
+
 @log_with(log)
 def _get_superuser_realms():
     '''
     return the list of realms, that contain superusers.
     '''
-    superuser_realms = [ "admin" ]
+    superuser_realms = ["admin"]
     ini_su = ini_config.get("privacyideaSuperuserRealms", "")
     ini_su_list = [w.strip() for w in ini_su.split(",")]
     for r in ini_su_list:
         superuser_realms.append(r.lower())
     return superuser_realms
+
 
 @log_with(log)
 def check_admin_password(user, password, realm="admin"):
@@ -77,6 +81,7 @@ def check_admin_password(user, password, realm="admin"):
                 
     return success
 
+
 @log_with(log)
 def authenticate_privacyidea_user(user, realm, password):
     '''
@@ -86,47 +91,54 @@ def authenticate_privacyidea_user(user, realm, password):
     :param user: Username of the user
     :type user: string
     :return: In case of success return the username
-    :rtype: string 
+    :rtype: string
     '''
     res = False
     success = None
-    Policy = PolicyClass(request, config, c,
-                             get_privacyIDEA_config())
+    Policy = PolicyClass(request,
+                         config,
+                         c,
+                         get_privacyIDEA_config())
     if Policy.check_user_authorization(user, realm, exception=False):
         '''
-        We SHOULD do it this way, but unfortunately we 
+        We SHOULD do it this way, but unfortunately we
         only get the complete context in a web request.
         We are missing the client and the HSM!
          
         (res, _opt) = checkUserPass(User(login=user, realm=realm), password)
         
-        FIXME: THe server is asking himself... :-/
+        Big FIXME: The server is asking himself... :-/
         '''
-        # FIXME: we need to pass the client= to cope with client dependent policies.
+        # we need to pass the client= to cope with client dependent policies.
+        # Otherwise the authentication request will have the client 127.0.0.1
+        # as the source.
+        client = request.client_addr
         data = urllib.urlencode({'user': user,
                                  'realm': realm,
-                                 'pass': password})
+                                 'pass': password,
+                                 'client': client})
         url = ini_config.get("privacyideaURL") + "/validate/check"
         disable_ssl = ini_config.get("privacyideaURL.disable_ssl", False)
         headers = {"Content-type": "application/x-www-form-urlencoded",
                    "Accept": "text/plain"}
         try:
-            ## is httplib compiled with ssl?
-            http = httplib2.Http(disable_ssl_certificate_validation=disable_ssl)
+            # is httplib compiled with ssl?
+            http = httplib2.\
+                Http(disable_ssl_certificate_validation=disable_ssl)
         except TypeError as exx:
-            ## not so on squeeze:
-            ## TypeError: __init__() got an unexpected keyword argument
-            ## 'disable_ssl_certificate_validation'
+            # not so on squeeze:
+            # TypeError: __init__() got an unexpected keyword argument
+            # 'disable_ssl_certificate_validation'
             log.warning("httplib2 'disable_ssl_certificate_validation' "
                         "attribute error: %r" % exx)
-            ## so we run in fallback mode
+            # so we run in fallback mode
             http = httplib2.Http()
         (_resp, content) = http.request(url,
-                                       method="POST",
-                                       body=data,
-                                       headers=headers)
+                                        method="POST",
+                                        body=data,
+                                        headers=headers)
         rv = json.loads(content)
-        if rv.get("result"):        
+        if rv.get("result"):
             # in case of normal json output
             res = rv['result'].get('value', False)
 
@@ -135,21 +147,24 @@ def authenticate_privacyidea_user(user, realm, password):
 
     return success
 
+
 @log_with(log)
 def is_admin_identity(identity, exception=True):
     '''
     Check if the repoze identity is an admin, who is allowed to
     use the /admin, /system and all management controllers
     
-    This is checked by verifying the standard realmname "admin" and 
+    This is checked by verifying the standard realmname "admin" and
     the realms defined in privacyideaSuperuserRealms.
     
     Fixme: We need to get rid of the standard realm
     
-    :param exception: If set to False the method will return a bool value otherwise it will throw an exception
+    :param exception: If set to False the method will return a bool
+                      value otherwise it will throw an exception
+    :type exception: bool
     '''
     # During selftest the identity can be None!
-    if identity == None:
+    if identity is None:
         return False
     
     res = True
@@ -160,14 +175,16 @@ def is_admin_identity(identity, exception=True):
             user_id = user_id.encode(ENCODING)
         identity = user_id.decode(ENCODING)
     except:
-        pass   
+        pass
         
     (user, _foo, realm) = identity.rpartition('@')
     if realm.lower() not in _get_superuser_realms():
         if exception:
             path = request.path.lower()
-            log.warning("User %s@%s tried to call the admin function %s." %(user, realm, path))
-            raise Exception("You are not an admin user and are not allowed to call this function!")
+            log.warning("User %s@%s tried to call the admin function %s."
+                        % (user, realm, path))
+            raise Exception("You are not an admin user and are not allowed "
+                            "to call this function!")
         else:
             res = False
     return res
