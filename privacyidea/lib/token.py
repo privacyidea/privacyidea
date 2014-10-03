@@ -93,13 +93,14 @@ required = False
 
 ENCODING = "utf-8"
 
+
 ###############################################
 @log_with(log)
 def createTokenClassObject(token, typ=None):
     '''
     createTokenClassObject - create a token class object from a given type
 
-    :param token:  the database refeneced token
+    :param token:  the database referenced token
     :type  token:  database token
     :param typ:    type of to be created token
     :type  typ:    string
@@ -120,21 +121,22 @@ def createTokenClassObject(token, typ=None):
 
     # search which tokenclass should be created and create it!
     tokenclasses = config['tokenclasses']
-    if tokenclasses.has_key(typ.lower()):
+    if typ.lower() in tokenclasses:
         try:
             token_class = tokenclasses.get(typ)
             tok = newToken(token_class)(token)
         except Exception as e:
             log.debug('createTokenClassObject failed!')
-            raise TokenAdminError("createTokenClassObject failed:  %r" % e, id=1609)
+            raise TokenAdminError("createTokenClassObject failed:  %r" % e,
+                                  id=1609)
 
     else:
         log.error('type %r not found in tokenclasses: %r' %
                   (typ, tokenclasses))
         #
-        ## we try to use the parent class, which is able to handle most of the
-        ## administrative tasks. This will allow to unassigen and disable or delete
-        ## this 'abandoned token'
+        # we try to use the parent class, which is able to handle most of the
+        # administrative tasks. This will allow to unassigen and disable or
+        # delete this 'abandoned token'
         #
         from privacyidea.lib.tokenclass import TokenClass
         tok = TokenClass(token)
@@ -142,6 +144,7 @@ def createTokenClassObject(token, typ=None):
                  Using fallback 'TokenClass' for %r" % (typ, token))
 
     return tok
+
 
 @log_with(log)
 def newToken(token_class):
@@ -544,7 +547,24 @@ def getAllTokenUsers():
 
 
 @log_with(log)
-def getTokens4UserOrSerial(user=None, serial=None, forUpdate=False, _class=True):
+def getTokens4UserOrSerial(user=None,
+                           serial=None,
+                           forUpdate=False,
+                           _class=True):
+    '''
+    Returns a list of tokens either for a user or for a serial number
+    
+    :param user: The owner, whose tokens should be returned
+    :type user: user object
+    :param serial: The serial number of the token to be returned
+    :type serial: string
+    :param forUpdate:
+    :param _class: If set to True: A list of tokenclass objects will be
+                   returned. If False, a list of database tokens will be
+                   returned.
+    
+    :return: list of token objects
+    '''
     tokenList = []
     tokenCList = []
     tok = None
@@ -555,47 +575,48 @@ def getTokens4UserOrSerial(user=None, serial=None, forUpdate=False, _class=True)
 
     if (serial is not None):
         log.debug("getting token object with serial: %r" % serial)
-        ## SAWarning of non unicode type
+        # SAWarning of non unicode type
         serial = u'' + serial
 
-        sqlQuery = Session.query(Token).filter(
-                            Token.privacyIDEATokenSerialnumber == serial)
+        sqlQuery = Session.query(Token).\
+            filter(Token.privacyIDEATokenSerialnumber == serial)
 
-        if forUpdate == True:
-            sqlQuery = Session.query(Token).with_lockmode("update").filter(
-                            Token.privacyIDEATokenSerialnumber == serial)
+        if forUpdate is True:
+            sqlQuery = Session.query(Token).with_lockmode("update").\
+                filter(Token.privacyIDEATokenSerialnumber == serial)
 
-        #for token in Session.query(Token).filter(Token.privacyIDEATokenSerialnumber == serial):
         for token in sqlQuery:
-            log.debug("user serial (serial): %r" % token.privacyIDEATokenSerialnumber)
+            log.debug("user serial (serial): %r" %
+                      token.privacyIDEATokenSerialnumber)
             tokenList.append(token)
 
     if user is not None:
-        log.debug("getting token object 4 user: %r" % user)
+        log.debug("getting token object for user: %r" % user)
 
-        if (user.isEmpty() == False):
+        if (user.isEmpty() is False):
             # the upper layer will catch / at least should
-            (uid, resolver, resolverClass) = getUserId(user)
+            (uid, _resolver, resolverClass) = getUserId(user)
 
-            sqlQuery = Session.query(model.Token).filter(
-                        model.Token.privacyIDEAUserid == uid).filter(
-                        model.Token.privacyIDEAIdResClass == resolverClass)
-            if forUpdate == True:
-                sqlQuery = Session.query(model.Token).with_lockmode("update").filter(
-                            model.Token.privacyIDEAUserid == uid).filter(
-                            model.Token.privacyIDEAIdResClass == resolverClass)
+            sqlQuery = Session.query(model.Token).\
+                filter(model.Token.privacyIDEAUserid == uid).\
+                filter(model.Token.privacyIDEAIdResClass == resolverClass)
+            if forUpdate is True:
+                sqlQuery = Session.query(model.Token).with_lockmode("update").\
+                    filter(model.Token.privacyIDEAUserid == uid).\
+                    filter(model.Token.privacyIDEAIdResClass == resolverClass)
 
             for token in sqlQuery:
                 log.debug("user serial (user): %r"
                           % token.privacyIDEATokenSerialnumber)
                 tokenList.append(token)
 
-    if _class == True:
+    if _class is True:
         for tok in tokenList:
             tokenCList.append(createTokenClassObject(tok))
         return tokenCList
     else:
         return tokenList
+
 
 @log_with(log)
 def getTokensOfType(typ=None, realm=None, assigned=None):

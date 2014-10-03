@@ -19,6 +19,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from privacyidea.lib.applications import MachineApplicationBase
+from privacyidea.lib.user import getUserInfo
 import logging
 log = logging.getLogger(__name__)
 # from privacyidea.lib.log import log_with
@@ -32,8 +33,6 @@ class MachineApplication(MachineApplicationBase):
     Possible options:
         option_user
     
-    TODO: We could also match the token owner to the ssh user.
-    i.e. return the token owner
     '''
     application_name = "ssh"
     '''as the autentication item is no sensitive information,
@@ -65,6 +64,15 @@ class MachineApplication(MachineApplicationBase):
                     # We just return the ssh public key, so that
                     # it can be included into authorized keys.
                     ret["sshkey"] = tokclass.get_sshkey()
+                    # We return the username if the token is assigned to a
+                    # user, so that this username could be used to save
+                    # the ssh key accordingly
+                    (uid, resolver, resClass) = toks[0].getUser()
+                    uInfo = getUserInfo(uid, resolver, resClass)
+                    if "username" in uInfo:
+                        ret["username"] = uInfo.get("username")
+                    # ret["info"] = uInfo
+                    
         else:
                 log.info("Token %r, type %r is not supported by"
                          "SSH application module" % (serial, token_type))

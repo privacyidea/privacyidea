@@ -704,6 +704,13 @@ class TestMachineController(TestController):
                   "64xeJXE90naGJzTFVIeqQ330jw== corny@az.local")
 
         self._create_ssh(otpkey)
+        # assign token
+        response = self.app.get(url(controller='admin', action='assign'),
+                                {'serial': "SSH1",
+                                 'user': 'root'})
+        print response
+        assert ('"value": true' in response)
+        
         # add a token
         response = self.app.get(url(controller='machine', action='addtoken'),
                                 {'name': machine,
@@ -720,6 +727,7 @@ class TestMachineController(TestController):
         data = json.loads(response.body)
         print response
         assert "SSH1" in response
+        assert '"username": "root"' in response
         
         print "=========== Add option ==============="
         mtid = data.get("result").get("value").get("machines").keys()[0]

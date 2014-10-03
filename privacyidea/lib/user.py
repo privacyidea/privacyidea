@@ -634,6 +634,7 @@ def getUserList(param, User):
 
     return users
 
+
 @log_with(log)
 def getUserInfo(userid, resolver, resolverC):
     userInfo = {}
@@ -654,6 +655,7 @@ def getUserInfo(userid, resolver, resolverC):
         log.error("resolver %r notfound! :%r" % (resolverC, e))
 
     return userInfo
+
 
 @log_with(log)
 def getUserPhone(user, phone_type='phone'):
