@@ -36,33 +36,31 @@ from base64 import b64decode
 import binascii
 
 log = logging.getLogger(__name__)
-ENCODING = "utf-8" 
+ENCODING = "utf-8"
 
        
 class IdResolver (UserIdResolver):
 
-    searchFields = {
-          "username": "text",
-          "userid": "numeric",
-          "phone": "text",
-          "mobile": "text",
-          "surname": "text",
-          "givenname": "text",
-          "email": "text"
-    }
-
+    searchFields = {"username": "text",
+                    "userid": "numeric",
+                    "phone": "text",
+                    "mobile": "text",
+                    "surname": "text",
+                    "givenname": "text",
+                    "email": "text"
+                    }
 
     @classmethod
     def setup(cls, config=None, cache_dir=None):
         '''
-        this setup hook is triggered, when the server 
+        this setup hook is triggered, when the server
         starts to serve the first request
 
         :param config: the privacyidea config
         :type  config: the privacyidea config dict
         '''
         log.info("Setting up the SQLResolver")
-        return    
+        return
     
     def __init__(self):
         self.resolverId = ""
@@ -78,14 +76,13 @@ class IdResolver (UserIdResolver):
         self.reverse_map = {}
         self.where = ""
         self.encoding = ""
-        self.conParams = ""      
+        self.conParams = ""
         self.connect_string = ""
         self.session = None
         return
 
     def getSearchFields(self):
         return self.searchFields
-
 
     def checkPass(self, uid, password):
         """
@@ -112,8 +109,7 @@ class IdResolver (UserIdResolver):
             hr = hashlib.sha256(password)
             digest = binascii.hexlify(hr.digest())
             return pw_hash == digest
-
-        
+       
         res = False
         userinfo = self.getUserInfo(uid)
         
@@ -132,14 +128,13 @@ class IdResolver (UserIdResolver):
         # check for hashed password.
         elif userinfo.get("password", "XXXXX")[:5].upper() == "{SHA}":
             res = _check_sha(database_pw, password)
-        elif len(userinfo.get("password"))==64:
+        elif len(userinfo.get("password")) == 64:
             # OTRS sha256 password
             res = _otrs_sha256(database_pw, password)
         
         return res
-        
     
-    def getUserInfo(self,userId):
+    def getUserInfo(self, userId):
         '''
         This function returns all user info for a given userid/object.
         
@@ -151,33 +146,36 @@ class IdResolver (UserIdResolver):
         userinfo = {}
         
         try:
-            conditions=[]
+            conditions = []
             column = self.map.get("userid")
-            conditions.append( getattr(self.TABLE, column).like(userId) )
+            conditions.append(getattr(self.TABLE, column).like(userId))
             filter_condition = and_(*conditions)
             result = self.session.query(self.TABLE).filter(filter_condition)
                                                       
             for r in result:
-                if len(userinfo.keys())>0:
-                    raise Exception("More than one user with userid %s found!" % userId)
+                if len(userinfo.keys()) > 0:
+                    raise Exception("More than one user with userid %s found!"
+                                    % userId)
                 userinfo = self._get_user_from_mapped_object(r)
         except Exception as exx:
             log.error("Could not get the userinformation: %r" % exx)
         
-        return userinfo  
+        return userinfo
     
-
-    def getUsername(self,userId):
+    def getUsername(self, userId):
         '''
-        returns true, if a user id exists
+        Returns the username/loginname for a given userid
+        :param userid: The userid in this resolver
+        :type userid: string
+        :return: username
+        :rtype: string
         '''
         info = self.getUserInfo(userId)
-        return info.has_key('username')
+        return info.get('username', "")
    
-    
     def getUserId(self, LoginName):
-        ''' 
-        resolve the loginname to the userid. 
+        '''
+        resolve the loginname to the userid.
         
         :param LoginName: The login name from the credentials
         :type LoginName: string
@@ -186,17 +184,18 @@ class IdResolver (UserIdResolver):
         userid = ""
         
         try:
-            conditions=[]
+            conditions = []
             column = self.map.get("username")
-            conditions.append( getattr(self.TABLE, column).like(LoginName) )
+            conditions.append(getattr(self.TABLE, column).like(LoginName))
             filter_condition = and_(*conditions)
             result = self.session.query(self.TABLE).filter(filter_condition)
                                                       
             for r in result:
                 if userid != "":
-                    raise Exception("More than one user with loginname %s found!" % LoginName)
+                    raise Exception("More than one user with loginname"
+                                    " %s found!" % LoginName)
                 user = self._get_user_from_mapped_object(r)
-                userid = user["id"]  
+                userid = user["id"]
         except Exception as exx:
             log.error("Could not get the userinformation: %r" % exx)
         
@@ -212,27 +211,32 @@ class IdResolver (UserIdResolver):
         r = ro.__dict__
         user = {}
         try:
-            if r.has_key(self.map.get("userid")):
+            if self.map.get("userid") in r:
                 user["id"] = r[self.map.get("userid")]
-            if r.has_key(self.map.get("username")):
-                user["username"] = r[self.map.get("username")].decode(self.encoding)
-            if r.has_key(self.map.get("surname")):
-                user["surname"] = r[self.map.get("surname")].decode(self.encoding)
-            if r.has_key(self.map.get("givenname")):
-                user["givenname"] = r[self.map.get("givenname")].decode(self.encoding)
-            if r.has_key(self.map.get("email")):
-                user["email"] = r[self.map.get("email")].decode(self.encoding)
-            if r.has_key(self.map.get("mobile")):
-                user["mobile"] = r[self.map.get("mobile")].decode(self.encoding)
-            if r.has_key(self.map.get("phone")):
-                user["phone"] = r[self.map.get("phone")].decode(self.encoding)
-            if r.has_key(self.map.get("password")):
+            if self.map.get("username") in r:
+                user["username"] = r[self.map.get("username")].\
+                    decode(self.encoding)
+            if self.map.get("surname") in r:
+                user["surname"] = r[self.map.get("surname")].\
+                    decode(self.encoding)
+            if self.map.get("givenname") in r:
+                user["givenname"] = r[self.map.get("givenname")].\
+                    decode(self.encoding)
+            if self.map.get("email") in r:
+                user["email"] = r[self.map.get("email")].\
+                    decode(self.encoding)
+            if self.map.get("mobile") in r:
+                user["mobile"] = r[self.map.get("mobile")].\
+                    decode(self.encoding)
+            if self.map.get("phone") in r:
+                user["phone"] = r[self.map.get("phone")].\
+                    decode(self.encoding)
+            if self.map.get("password") in r:
                 user["password"] = r[self.map.get("password")]
         except:
             log.error("Failed to convert user: %r" % r)
             log.error(traceback.format_exc())
         return user
-
 
     def getUserList(self, searchDict=None):
         '''
@@ -242,20 +246,20 @@ class IdResolver (UserIdResolver):
         '''
         users = []
         conditions = []
-        if searchDict == None:
+        if searchDict is None:
             searchDict = {}
         for key in searchDict.keys():
             column = self.map.get(key)
             value = searchDict.get(key)
             value = value.replace("*", "%")
-            conditions.append( getattr(self.TABLE, column).like(value) )
+            conditions.append(getattr(self.TABLE, column).like(value))
             
         if self.where:
             # this might result in erros if the
-            # administrator enters nonsense 
+            # administrator enters nonsense
             (w_column, w_cond, w_value) = self.where.split()
             if w_cond.lower() == "like":
-                conditions.append( getattr(self.TABLE, w_column).like(w_value))
+                conditions.append(getattr(self.TABLE, w_column).like(w_value))
             elif w_cond == "==":
                 conditions.append(getattr(self.TABLE, w_column) == w_value)
             elif w_cond == ">":
@@ -264,18 +268,21 @@ class IdResolver (UserIdResolver):
                 conditions.append(getattr(self.TABLE, w_column) < w_value)
         filter_condition = and_(*conditions)
 
-        result = self.session.query(self.TABLE).filter(filter_condition).limit(self.limit)
+        result = self.session.query(self.TABLE).\
+            filter(filter_condition).\
+            limit(self.limit)
                                                       
         for r in result:
             user = self._get_user_from_mapped_object(r)
-            if user.has_key("id"):
+            if "id" in user:
                 users.append(user)
         return users
     
     def getResolverId(self):
         '''
         Returns the resolver Id
-        This should be an Identifier of the resolver, preferable the type and the name of the resolver.
+        This should be an Identifier of the resolver, preferable the type
+        and the name of the resolver.
         '''
         return "sqlresolver." + self.resolverId
 
@@ -284,7 +291,7 @@ class IdResolver (UserIdResolver):
         return 'sqlresolver'
 
     def getResolverType(self):
-        return IdResolver.getResolverClassType()    
+        return IdResolver.getResolverClassType()
     
     def loadConfig(self, config, conf):
         '''
@@ -293,28 +300,53 @@ class IdResolver (UserIdResolver):
         :param config: The configuration from the Config Table
         :type config: dict
         :param conf: the instance of the configuration
-        :type conf: string 
+        :type conf: string
         
         The information which config entries we need to load is taken from
             manage.js: function save_sql_config
                     
         '''
         self.resolverId = conf
-        self.server = self.getConfigEntry(config, 'privacyidea.sqlresolver.Server', conf)
-        self.driver = self.getConfigEntry(config, 'privacyidea.sqlresolver.Driver', conf)
-        self.database = self.getConfigEntry(config, 'privacyidea.sqlresolver.Database', conf)
-        self.port = self.getConfigEntry(config, 'privacyidea.sqlresolver.Port', conf, required=False)
-        self.limit = self.getConfigEntry(config, 'privacyidea.sqlresolver.Limit', conf, required=False, default=100)
-        self.user = self.getConfigEntry(config, 'privacyidea.sqlresolver.User', conf)
-        self.password = self.getConfigEntry(config, 'privacyidea.sqlresolver.Password', conf, required=False)
-        self.table = self.getConfigEntry(config, 'privacyidea.sqlresolver.Table', conf)
-        usermap = self.getConfigEntry(config, 'privacyidea.sqlresolver.Map', conf)
+        self.server = self.getConfigEntry(config,
+                                          'privacyidea.sqlresolver.Server',
+                                          conf)
+        self.driver = self.getConfigEntry(config,
+                                          'privacyidea.sqlresolver.Driver',
+                                          conf)
+        self.database = self.getConfigEntry(config,
+                                            'privacyidea.sqlresolver.Database',
+                                            conf)
+        self.port = self.getConfigEntry(config,
+                                        'privacyidea.sqlresolver.Port',
+                                        conf, required=False)
+        self.limit = self.getConfigEntry(config,
+                                         'privacyidea.sqlresolver.Limit',
+                                         conf, required=False, default=100)
+        self.user = self.getConfigEntry(config,
+                                        'privacyidea.sqlresolver.User',
+                                        conf)
+        self.password = self.getConfigEntry(config,
+                                            'privacyidea.sqlresolver.Password',
+                                            conf, required=False)
+        self.table = self.getConfigEntry(config,
+                                         'privacyidea.sqlresolver.Table',
+                                         conf)
+        usermap = self.getConfigEntry(config,
+                                      'privacyidea.sqlresolver.Map',
+                                      conf)
         self.map = yaml.load(usermap)
-        self.reverse_map = dict([[v,k] for k,v in self.map.items()])
-        self.where = self.getConfigEntry(config, 'privacyidea.sqlresolver.Where', conf, required=False)
-        self.encoding = self.getConfigEntry(config, 'privacyidea.sqlresolver.Encoding', conf, required=False, default="latin1")
-        self.conParams = self.getConfigEntry(config, 'privacyidea.sqlresolver.conParams', conf, required=False)      
-        
+        self.reverse_map = dict([[v, k] for k, v in self.map.items()])
+        self.where = self.getConfigEntry(config,
+                                         'privacyidea.sqlresolver.Where',
+                                         conf, required=False)
+        self.encoding = self.getConfigEntry(config,
+                                            'privacyidea.sqlresolver.Encoding',
+                                            conf,
+                                            required=False, default="latin1")
+        self.conParams = self.getConfigEntry(config,
+                                             'privacyidea.sqlresolver.'
+                                             'conParams',
+                                             conf, required=False)
         
         # create the connectstring like
         # driver://user:passwd@seerver/database?conParams
@@ -332,7 +364,8 @@ class IdResolver (UserIdResolver):
                                                         self.database,
                                                         self.conParams)
         log.info("using the connect string %s" % self.connect_string)
-        self.engine = create_engine(self.connect_string, encoding=str(self.encoding))
+        self.engine = create_engine(self.connect_string,
+                                    encoding=str(self.encoding))
         # create a configured "Session" class
         Session = sessionmaker(bind=self.engine)
 
@@ -342,65 +375,46 @@ class IdResolver (UserIdResolver):
         self.TABLE = self.db.entity(self.table)
         
         return self
-    
-    
-
 
     def getResolverDescriptor(self):
         descriptor = {}
         typ = self.getResolverType()
-        descriptor['clazz'] = "useridresolver.SQLIdResolver.IdResolver" 
-        descriptor['config'] = {'Server' : 'string',
-                                'Driver' : 'string',
-                                'Database' : 'string',
-                                'User' : 'string',
-                                'Password' : 'string',
-                                'Port' : 'int',
-                                'Limit' : 'int',
-                                'Table' : 'string',
-                                'Map' : 'string',
-                                'Where' : 'string',
-                                'Encoding' : 'string',
-                                'conParams' : 'string'}
-        return {typ : descriptor}
-
+        descriptor['clazz'] = "useridresolver.SQLIdResolver.IdResolver"
+        descriptor['config'] = {'Server': 'string',
+                                'Driver': 'string',
+                                'Database': 'string',
+                                'User': 'string',
+                                'Password': 'string',
+                                'Port': 'int',
+                                'Limit': 'int',
+                                'Table': 'string',
+                                'Map': 'string',
+                                'Where': 'string',
+                                'Encoding': 'string',
+                                'conParams': 'string'}
+        return {typ: descriptor}
 
     def getConfigEntry(self, config, key, conf, required=True, default=None):
         ckey = key
-        cval = "" 
+        cval = ""
         if conf != "" or None:
             ckey = ckey + "." + conf
-            if config.has_key(ckey):
+            if ckey in config:
                 cval = config[ckey]
         if cval == "":
-            if config.has_key(key):
+            if key in config:
                 cval = config[key]
-        if cval == "" and required == True:
+        if cval == "" and required is True:
             raise Exception("missing config entry: " + key)
         if cval == "" and default:
             cval = default
         return cval
-
             
     @classmethod
-    def testconnection(self, param):
+    def _create_connect_string(self, param):
         '''
-        This function lets you test the to be saved SQL connection.
-              
-        :param param: A dictionary with all necessary parameter to test the connection.
-        :type param: dict
-        
-        :return: Tuple of success and a description
-        :rtype: (bool, string)  
-        
-        Parameters are: Server, Driver, Database, User, Password, Port, Limit, Table, Map
-                        Where, Encoding, conParams
-            
+        create the connectstring
         '''
-        
-        num=-1
-        desc=None
-        
         port = ""
         password = ""
         conParams = ""
@@ -411,13 +425,38 @@ class IdResolver (UserIdResolver):
         if param.get("conParams"):
             conParams = "?%s" % param.get("conParams")
         connect_string = "%s://%s%s%s%s%s/%s%s" % (param.get("Driver"),
-                                                    param.get("User"),
-                                                    password,
-                                                    "@" if (param.get("User") or password) else "",
-                                                    param.get("Server"),
-                                                    port,
-                                                    param.get("Database"),
-                                                    conParams)
+                                                   param.get("User"),
+                                                   password,
+                                                   "@" if (param.get("User")
+                                                           or
+                                                           password) else "",
+                                                   param.get("Server"),
+                                                   port,
+                                                   param.get("Database"),
+                                                   conParams)
+        return connect_string
+            
+    @classmethod
+    def testconnection(self, param):
+        '''
+        This function lets you test the to be saved SQL connection.
+              
+        :param param: A dictionary with all necessary parameter
+                        to test the connection.
+        :type param: dict
+        
+        :return: Tuple of success and a description
+        :rtype: (bool, string)
+        
+        Parameters are: Server, Driver, Database, User, Password, Port,
+                        Limit, Table, Map
+                        Where, Encoding, conParams
+            
+        '''
+        num = -1
+        desc = None
+        
+        connect_string = self._create_connect_string(param)
         log.info("using the connect string %s" % connect_string)
         engine = create_engine(connect_string)
         # create a configured "Session" class
@@ -425,7 +464,7 @@ class IdResolver (UserIdResolver):
         db = SQLSoup(engine)
         TABLE = db.entity(param.get("Table"))
             
-        try:    
+        try:
             result = session.query(TABLE).count()
             num = result
             desc = "Found %i users." % num
@@ -435,7 +474,6 @@ class IdResolver (UserIdResolver):
         return (num, desc)
     
     
-
 if __name__ == "__main__":
 
     print " SQLIdResolver - IdResolver class test "
@@ -444,25 +482,24 @@ if __name__ == "__main__":
     
     print y
     
-
-    y.loadConfig({ 'privacyidea.sqlresolver.Driver' : 'mysql',
-              'privacyidea.sqlresolver.Database' : 'wordpress',
-              'privacyidea.sqlresolver.Server' : 'localhost',
-              'privacyidea.sqlresolver.User' : 'root',
-              'privacyidea.sqlresolver.Password' : 'mspw.',
-              'privacyidea.sqlresolver.Limit' : 2,
-              'privacyidea.sqlresolver.Encoding' : "utf-8",
-              'privacyidea.sqlresolver.Table' : 'wp_users',
-              'privacyidea.sqlresolver.Map' : '{ "username": "user_login", \
+    y.loadConfig({'privacyidea.sqlresolver.Driver': 'mysql',
+                  'privacyidea.sqlresolver.Database': 'wordpress',
+                  'privacyidea.sqlresolver.Server': 'localhost',
+                  'privacyidea.sqlresolver.User': 'root',
+                  'privacyidea.sqlresolver.Password': 'mspw.',
+                  'privacyidea.sqlresolver.Limit': 2,
+                  'privacyidea.sqlresolver.Encoding': "utf-8",
+                  'privacyidea.sqlresolver.Table': 'wp_users',
+                  'privacyidea.sqlresolver.Map': '{ "username": "user_login", \
                       "userid" : "ID", \
                       "email" : "user_email", \
                       "surname" : "display_name", \
                       "givenname" : "user_nicename", \
-                      "password" : "user_pass"}',                      
-              }, "")
+                      "password" : "user_pass"}',
+                  },
+                 "")
 
     print "Config loaded"
-    
     
     print "====== getUserList =========="
     result = y.getUserList()
@@ -473,13 +510,12 @@ if __name__ == "__main__":
     user = "admin"
     loginId = y.getUserId(user)
 
-    print " %s -  %s" % ( user , loginId )
-    
+    print " %s -  %s" % (user, loginId)
 
     print " reId - " + y.getResolverId()
     print "======== getUserInfo ==============="
 
-    ret = y.getUserInfo(loginId)  
+    ret = y.getUserInfo(loginId)
     print "Userinfo for %r" % loginId
     print ret
     print "============ checkPass =============="
@@ -492,13 +528,9 @@ if __name__ == "__main__":
     
     ret = y.getSearchFields()
     
-    search = { 
-               "username":"admin",
-              }
+    search = {"username": "admin"}
     
     print "=== we should only see the admin ===="
     ret = y.getUserList(search)
     for entry in ret:
         print entry
-
-    

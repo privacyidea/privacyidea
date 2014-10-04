@@ -2,10 +2,13 @@
 #
 #  product:  privacyIDEA is a fork of LinOTP
 #  module:   privacyidea resolver library
-#    
+#
 #  May, 08 2014 Cornelius Kölbel
 #  http://www.privacyidea.org
-#            
+#
+# 2014-10-03 fix getUsername function
+#            Cornelius Kölbel <cornelius@privcyidea.org>
+#
 #  product:  LinOTP2
 #  module:   useridresolver
 #  tool:     PasswdIdResolver
@@ -40,6 +43,7 @@
 
 import re
 import logging
+import crypt
 
 
 from UserIdResolver import UserIdResolver
@@ -57,8 +61,6 @@ def tokenise(r):
         m = re.match("^" + r, st)
         if m:
             ret = (st[:m.end()].strip(), st[m.end():].strip())
-            #ret[0].strip()      ## remove ws
-            #ret[1].strip()
         return ret
     return _
 
@@ -71,15 +73,13 @@ class IdResolver (UserIdResolver):
               "givenname": 0, "surname": 0, "gender": 0
               }
 
-    searchFields = {
-          "username": "text",
-          "userid": "numeric",
-          "description": "text",
-          "email": "text"
-    }
+    searchFields = {"username": "text",
+                    "userid": "numeric",
+                    "description": "text",
+                    "email": "text"
+                    }
 
-    sF = {
-          "username": 0,
+    sF = {"username": 0,
           "cryptpass": 1,
           "userid": 2,
           "description": 4,
@@ -152,16 +152,16 @@ class IdResolver (UserIdResolver):
             fields = line.split(":", 7)
             self.nameDict["%s" % fields[NAME]] = fields[ID]
 
-            ## for speed reason - build a revers lookup
+            # for speed reason - build a revers lookup
             self.reversDict[fields[ID]] = "%s" % fields[NAME]
 
-            ## for full info store the line
+            # for full info store the line
             self.descDict[fields[ID]] = fields
 
-            ## store the crypted password
+            # store the crypted password
             self.passDict[fields[ID]] = fields[PASS]
 
-            ## store surname, givenname and phones
+            # store surname, givenname and phones
             descriptions = fields[DESCRIPTION].split(",")
             name = descriptions[0]
             names = name.split(' ', 1)
@@ -196,12 +196,10 @@ class IdResolver (UserIdResolver):
         We do not support shadow passwords at the moment. so the seconds column
         of the passwd file needs to contain the crypted password
         """
-        import crypt
-
         log.info("checking password for user uid %s" % uid)
         cryptedpasswd = self.passDict[uid]
         log.debug("We found the crypted pass %s for uid %s"
-                                                    % (cryptedpasswd, uid))
+                  % (cryptedpasswd, uid))
         if cryptedpasswd:
             if cryptedpasswd == 'x' or cryptedpasswd == '*':
                 err = "Sorry, currently no support for shadow passwords"
@@ -210,15 +208,14 @@ class IdResolver (UserIdResolver):
             cp = crypt.crypt(password, cryptedpasswd)
             log.debug("crypted pass is %s" % cp)
             if crypt.crypt(password, cryptedpasswd) == cryptedpasswd:
-                log.info("successfully authenticated user uid %s"
-                                                                        % uid)
+                log.info("successfully authenticated user uid %s" % uid)
                 return True
             else:
-                log.warning("user uid %s failed to authenticate"
-                                                                        % uid)
+                log.warning("user uid %s failed to authenticate" % uid)
                 return False
         else:
-            log.warning("Failed to verify password. No crypted password found in file")
+            log.warning("Failed to verify password. No crypted password "
+                        "found in file")
             return False
 
     def getUserInfo(self, userId, no_passwd=False):
@@ -251,12 +248,15 @@ class IdResolver (UserIdResolver):
 
     def getUsername(self, userId):
         '''
-        ## TODO: why does this return bool
-
-        :param userId: the user to be searched
-        :return: true, if a user id exists
+        Returns the username/loginname for a given userid
+        :param userid: The userid in this resolver
+        :type userid: string
+        :return: username
+        :rtype: string
         '''
-        return userId in self.reversDict
+        fields = self.descDict.get(userId)
+        index = self.sF["username"]
+        return fields[index]
 
     def getUserId(self, LoginName):
         """
@@ -272,7 +272,6 @@ class IdResolver (UserIdResolver):
             LoginName = LoginName.encode(ENCODING)
 
         if LoginName in self.nameDict.keys():
-            #log.debug("YES YES YES YES")
             return self.nameDict[LoginName]
         else:
             return ""
@@ -286,7 +285,7 @@ class IdResolver (UserIdResolver):
         :param searchDict: fields, which should be queried
         :return: dict of all searchFields
         """
-        if searchDict != None:
+        if searchDict is not None:
             for search in searchDict:
                 pattern = searchDict[search]
 
@@ -303,14 +302,14 @@ class IdResolver (UserIdResolver):
         """
         ret = []
 
-        ##  first check if the searches are in the searchDict
+        #  first check if the searches are in the searchDict
         for l in self.descDict:
             line = self.descDict[l]
             ok = True
 
             for search in searchDict:
 
-                if not search in self.searchFields:
+                if search not in self.searchFields:
                     ok = False
                     break
 
@@ -327,10 +326,10 @@ class IdResolver (UserIdResolver):
                 elif search == "email":
                     ok = self.checkEmail(line, pattern)
 
-                if ok != True:
+                if ok is not True:
                     break
 
-            if ok == True:
+            if ok is True:
                 uid = line[self.sF["userid"]]
                 info = self.getUserInfo(uid, no_passwd=True)
                 ret.append(info)
@@ -493,7 +492,7 @@ class IdResolver (UserIdResolver):
         if cval == "":
             if key in config:
                 cval = config[key]
-        if cval == "" and required == True:
+        if cval == "" and required is True:
             raise Exception("missing config entry: " + key)
         return cval
 
@@ -505,7 +504,9 @@ class IdResolver (UserIdResolver):
             whether it is /etc/passwd or /etc/shadow
         """
         self.fileName = self.getConfigEntry(config,
-                                        'privacyidea.passwdresolver.fileName', conf)
+                                            'privacyidea.passwdresolver.'
+                                            'fileName',
+                                            conf)
         self.loadFile()
 
         return self
@@ -537,15 +538,8 @@ if __name__ == "__main__":
     print "result %r" % ret
 
     ret = y.getSearchFields()
-    #ret["username"]="^bea*"
-    search = {
-               "userid": " between 1000, 1005",
-#              "username":"^bea*",
-              #"description":"*Audio*",
-#              "descriptio":"*Winkler*",
-#              "userid":" <=1003",
+    search = {"userid": " between 1000, 1005",
               }
-    #
 
     ret = y.getUserList(search)
 

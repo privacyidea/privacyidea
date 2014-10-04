@@ -2,10 +2,10 @@
 #
 #  product:  privacyIDEA is a fork of LinOTP
 #  module:   resolver library
-#    
+#
 #  May 08, 2014 Cornelius Kölbel
 #  contact:  http://www.privacyidea.org
-#            
+#
 #  product:  LinOTP2
 #  module:   useridresolver
 #  tool:     SCIMIdResolver
@@ -51,6 +51,7 @@ from urllib import urlencode
 # logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+
 class IdResolver (UserIdResolver):
 
     @classmethod
@@ -73,27 +74,29 @@ class IdResolver (UserIdResolver):
         self.auth_server = ''
         self.resource_server = ''
         self.auth_client = 'localhost'
-        self.auth_secret = ''        
+        self.auth_secret = ''
         self.access_token = None
 
     @classmethod
     def get_access_token(self, server=None, client=None, secret=None):
         h = httplib2.Http()
-        auth = base64.encodestring( client + ':' + secret )
+        auth = base64.encodestring(client + ':' + secret)
 
-        resp, content = h.request(
-                                  "%s/oauth/token?grant_type=client_credentials" % server,
+        resp, content = h.request("%s/oauth/token?"
+                                  "grant_type=client_credentials" % server,
                                   'GET',
-                                  headers = { 'Authorization' : 'Basic ' + auth }
+                                  headers={'Authorization': 'Basic ' + auth}
                                   )
         if resp.get("status") != "200":
-            raise Exception("Could not get access token: %s" % resp.get("status"))
+            raise Exception("Could not get access token: %s" %
+                            resp.get("status"))
         access_token = json.loads(content).get('access_token')
         return access_token
 
     def create_scim_object(self):
-        self.access_token = self.get_access_token(self.auth_server, self.auth_client, self.auth_secret)
-
+        self.access_token = self.get_access_token(self.auth_server,
+                                                  self.auth_client,
+                                                  self.auth_secret)
 
     def checkPass(self, uid, password):
         """
@@ -110,18 +113,12 @@ class IdResolver (UserIdResolver):
         returns the user information for a given uid.
         '''
         ret = {}
-        #res = self._search_with_get_on_users(self.resource_server,
-        #                                     self.access_token,
-        #                                     {"filter" : '%s eq "%s"' % (self.mapping.get("userid"),
-        #
-        #
         # The SCIM ID is always /Users/ID
-        # Alas, we can not map the ID to any other attribute                                                              userId) })
+        # Alas, we can not map the ID to any other attribute
         res = self._get_user(self.resource_server,
                              self.access_token,
                              userId)
         user = res
-        #user = res.get("Resources", [{}])[0]
 
         ret['username'] = user.get(self.mapping.get("username"))
         ret['givenname'] = user.get(self.mapping.get("givenname"), "")
@@ -134,11 +131,14 @@ class IdResolver (UserIdResolver):
 
     def getUsername(self, userId):
         '''
-        returns the loginname for a given userId
+        Returns the username/loginname for a given userid
+        :param userid: The userid in this resolver
+        :type userid: string
+        :return: username
+        :rtype: string
         '''
         user = self.getUserInfo(userId)
-        return user.get("username")
-
+        return user.get("username", "")
 
     def getUserId(self, LoginName):
         """
@@ -148,8 +148,9 @@ class IdResolver (UserIdResolver):
         if self.access_token:
             res = self._search_with_get_on_users(self.resource_server,
                                                  self.access_token,
-                                                 {'filter' :  '%s eq "%s"' % (self.mapping.get("username"),
-                                                           LoginName) })
+                                                 {'filter': '%s eq "%s"' %
+                                                  (self.mapping.get("username"),
+                                                   LoginName)})
         return res.get("Resources", [{}])[0].get(self.mapping.get("userid"))
 
     def getUserList(self, searchDict):
@@ -181,11 +182,8 @@ class IdResolver (UserIdResolver):
 
         return ret
 
-
-
-#############################################################
 # server inf methods
-#############################################################
+
     def getResolverId(self):
         """ getResolverId(LoginName)
             - returns the resolver identifier string
@@ -213,12 +211,12 @@ class IdResolver (UserIdResolver):
         descriptor = {}
         typ = cls.getResolverClassType()
         descriptor['clazz'] = "useridresolver.SCIMIdResolver.IdResolver"
-        descriptor['config'] = {'authserver' : 'string',
-                                'resourceserver' : 'string',
-                                'authclient' : 'string',
-                                'authsecret' : 'string',
-                                'mapping' : 'string' }
-        return {typ : descriptor}
+        descriptor['config'] = {'authserver': 'string',
+                                'resourceserver': 'string',
+                                'authclient': 'string',
+                                'authsecret': 'string',
+                                'mapping': 'string'}
+        return {typ: descriptor}
 
     def getResolverDescriptor(self):
         return IdResolver.getResolverClassDescriptor()
@@ -233,7 +231,7 @@ class IdResolver (UserIdResolver):
         if cval == "":
             if key in config:
                 cval = config[key]
-        if cval == "" and required == True:
+        if cval == "" and required is True:
             raise Exception("missing config entry: " + key)
         return cval
 
@@ -243,38 +241,55 @@ class IdResolver (UserIdResolver):
             from the pylon app config
         """
         self.name = conf
-        self.auth_server = self.getConfigEntry(config, 'privacyidea.scimresolver.authserver', conf)
-        self.resource_server = self.getConfigEntry(config, 'privacyidea.scimresolver.resourceserver', conf)
-        self.auth_client = self.getConfigEntry(config, 'privacyidea.scimresolver.client', conf)
-        self.auth_secret = self.getConfigEntry(config, 'privacyidea.scimresolver.secret', conf)
-        self.mapping = json.loads(self.getConfigEntry(config, 'privacyidea.scimresolver.mapping', conf))
+        self.auth_server = self.getConfigEntry(config,
+                                               'privacyidea.scimresolver.'
+                                               'authserver',
+                                               conf)
+        self.resource_server = self.getConfigEntry(config,
+                                                   'privacyidea.scimresolver.'
+                                                   'resourceserver',
+                                                   conf)
+        self.auth_client = self.getConfigEntry(config,
+                                               'privacyidea.scimresolver.'
+                                               'client',
+                                               conf)
+        self.auth_secret = self.getConfigEntry(config,
+                                               'privacyidea.scimresolver.'
+                                               'secret',
+                                               conf)
+        self.mapping = json.loads(self.getConfigEntry(config,
+                                                      'privacyidea.'
+                                                      'scimresolver.mapping',
+                                                      conf))
         self.create_scim_object()
 
         return
-
 
     @classmethod
     def testconnection(self, param):
         '''
         This function lets you test the to be saved SCIM connection.
               
-        :param param: A dictionary with all necessary parameter to test the connection.
+        :param param: A dictionary with all necessary parameter to test the
+                        connection.
         :type param: dict
         
         :return: Tuple of success and a description
-        :rtype: (bool, string)  
+        :rtype: (bool, string)
         
         Parameters are: Authserver, Resourceserver, Client, Secret, Map
             
         '''
-        desc=None
+        desc = None
         num = -1
                
-        try:        
+        try:
             access_token = self.get_access_token(str(param.get("Authserver")),
                                                  param.get("Client"),
                                                  param.get("Secret"))
-            content = self._search_with_get_on_users(param.get("Resourceserver"), access_token, "")
+            content = self._search_with_get_on_users(param.get("Resourceserver"),
+                                                     access_token,
+                                                     "")
             num = content.get("totalResults", -1)
         except Exception as exx:
             desc = "failed to retrieve users: %s" % exx
@@ -282,23 +297,25 @@ class IdResolver (UserIdResolver):
         return (num, desc)
 
     @classmethod
-    def _search_with_get_on_users(self, resource_server, access_token, params=None):
+    def _search_with_get_on_users(self, resource_server, access_token,
+                                  params=None):
         '''
         :param params: Additional http parameters added to the URL
         :type params: dictionary
         '''
-        if params == None:
+        if params is None:
             params = {}
         headers = {'Authorization': "Bearer {0}".format(access_token),
-                    'content-type': 'application/json'}
+                   'content-type': 'application/json'}
         h = httplib2.Http()
         url = '{0}/Users?{1}'.format(resource_server, urlencode(params))
-        resp, content = h.request(url, 
+        resp, content = h.request(url,
                                   'GET',
                                   headers=headers)
         if resp.get("status") != "200":
             print "We were calling the URL ", url
-            raise Exception("Could not get user list token: %s" % resp.get("status"))
+            raise Exception("Could not get user list token: %s" %
+                            resp.get("status"))
         j_content = json.loads(content)
         return j_content
     
@@ -307,18 +324,18 @@ class IdResolver (UserIdResolver):
         '''
         '''
         headers = {'Authorization': "Bearer {0}".format(access_token),
-                    'content-type': 'application/json'}
+                   'content-type': 'application/json'}
         h = httplib2.Http()
         url = '{0}/Users/{1}'.format(resource_server, userid)
-        resp, content = h.request(url, 
+        resp, content = h.request(url,
                                   'GET',
                                   headers=headers)
         if resp.get("status") != "200":
             print "We were calling the URL ", url
-            raise Exception("Could not get user list token: %s" % resp.get("status"))
+            raise Exception("Could not get user list token: %s" %
+                            resp.get("status"))
         j_content = json.loads(content)
         return j_content
-
 
 
 if __name__ == "__main__":
@@ -329,24 +346,23 @@ if __name__ == "__main__":
     RESOURCESERVER = "http://localhost:8080/osiam-resource-server"
     print " SCIMIdResolver - IdResolver class test "
 
-
     y = getResolverClass("SCIMIdResolver", "IdResolver")()
     
     print "======== testconnection ==========="
     print "getting token for %s, %s" % (CLIENT, SECRET)
     ret = y.testconnection({"Authserver": AUTHSERVER,
-                      "Resourceserver" : RESOURCESERVER,
-                      "Client" :CLIENT,
-                      "Secret" : SECRET})
+                            "Resourceserver": RESOURCESERVER,
+                            "Client": CLIENT,
+                            "Secret": SECRET})
     print ret
 
-    
-
-    y.loadConfig({ 'privacyidea.scimresolver.authserver' : AUTHSERVER,
-                  'privacyidea.scimresolver.resourceserver' : RESOURCESERVER,
-                   'privacyidea.scimresolver.secret' : SECRET,
-                   'privacyidea.scimresolver.client' : CLIENT,
-                   'privacyidea.scimresolver.mapping' : '{ "username" : "userName" , "userid" : "id"}'}, "")
+    y.loadConfig({'privacyidea.scimresolver.authserver': AUTHSERVER,
+                  'privacyidea.scimresolver.resourceserver': RESOURCESERVER,
+                  'privacyidea.scimresolver.secret': SECRET,
+                  'privacyidea.scimresolver.client': CLIENT,
+                  'privacyidea.scimresolver.mapping': '{ "username" : '
+                  '"userName" , "userid" : "id"}'},
+                 "")
 
     print "==== the complete userlist ======="
     print y.getUserList({})
@@ -355,7 +371,7 @@ if __name__ == "__main__":
     user = "marissa"
     loginId = y.getUserId(user)
 
-    print " %s -  %s" % (user , loginId)
+    print " %s -  %s" % (user, loginId)
     print " reId - " + y.getResolverId()
 
     ret = y.getUserInfo(loginId)
@@ -364,8 +380,7 @@ if __name__ == "__main__":
     print "======== testconnection ==========="
     print "getting token for %s, %s" % (CLIENT, SECRET)
     ret = y.testconnection({"Authserver": AUTHSERVER,
-                      "Resourceserver" : RESOURCESERVER,
-                      "Client" :CLIENT,
-                      "Secret" : SECRET})
+                            "Resourceserver": RESOURCESERVER,
+                            "Client": CLIENT,
+                            "Secret": SECRET})
     print ret
-

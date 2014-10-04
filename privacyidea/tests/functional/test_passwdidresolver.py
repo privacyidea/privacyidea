@@ -4,6 +4,9 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2014-10-04 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Some PEP8 stuff.
+#
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  AGPLv3
 #  contact:  http://www.linotp.org
@@ -23,14 +26,12 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''     
+'''
   Description:  functional tests
                 
   Dependencies: -
 
 '''
-#FIXME %(here)s does not work in this file!
-
 from privacyidea.lib.resolvers.UserIdResolver import getResolverClass
 
 from privacyidea.tests import TestController
@@ -40,28 +41,27 @@ import logging
 log = logging.getLogger(__name__)
 import os
 
+
 class TestPasswdController(TestController):
-    '''
-    '''
-    
     
     def setUp(self):
         TestController.setUp(self)
         self.serials = []
         self.cwd = os.getcwd()
 
-
     def test_resolver(self):
         '''
         Testing PasswdIdResolver
         '''
         y = getResolverClass("PasswdIdResolver", "IdResolver")()
-        y.loadConfig({ 'privacyidea.passwdresolver.fileName' : '%s/privacyidea/tests/testdata/my-passwd' % self.cwd }, "")
+        y.loadConfig({'privacyidea.passwdresolver.fileName': '%s/privacyidea'
+                      '/tests/testdata/my-passwd' % self.cwd},
+                     "")
 
-        userlist = y.getUserList({'username':'*', "userid":"= 1000"})
+        userlist = y.getUserList({'username': '*',
+                                  "userid": "= 1000"})
         print userlist
         assert userlist[0].get('username') == "heinz"
-
 
         loginId = y.getUserId("heinz")
         print loginId
@@ -73,7 +73,7 @@ class TestPasswdController(TestController):
 
         username_exists = y.getUsername('1000')
         print "Username exists: %r" % username_exists
-        assert username_exists
+        assert username_exists == "heinz"
 
     def test_no_file(self):
         '''
@@ -82,10 +82,10 @@ class TestPasswdController(TestController):
         y = getResolverClass("PasswdIdResolver", "IdResolver")()
         y.loadFile()
 
-        userlist = y.getUserList({'username':'*', "userid":"= 0"})
+        userlist = y.getUserList({'username': '*',
+                                  "userid": "= 0"})
         print userlist
         assert userlist[0].get('username') == "root"
-
 
         loginId = y.getUserId("root")
         print loginId
@@ -100,7 +100,9 @@ class TestPasswdController(TestController):
         Testing checkpass with PasswdIdResolver with a shadow passwd file
         '''
         y = getResolverClass("PasswdIdResolver", "IdResolver")()
-        y.loadConfig({ 'privacyidea.passwdresolver.fileName' : '%s/privacyidea/tests/testdata/my-passwd' % self.cwd }, "")
+        y.loadConfig({'privacyidea.passwdresolver.fileName': '%s/privacyidea'
+                      '/tests/testdata/my-passwd' % self.cwd},
+                     "")
 
         success = False
         try:
@@ -115,7 +117,9 @@ class TestPasswdController(TestController):
         Testing checkpass
         '''
         y = getResolverClass("PasswdIdResolver", "IdResolver")()
-        y.loadConfig({"privacyidea.passwdresolver.fileName": "%s/privacyidea/tests/testdata/my-pass2" % self.cwd}, "")
+        y.loadConfig({"privacyidea.passwdresolver.fileName": "%s/privacyidea"
+                      "/tests/testdata/my-pass2" % self.cwd},
+                     "")
 
         res = y.checkPass('2001', "geheim")
         print "result %r" % res
@@ -123,16 +127,17 @@ class TestPasswdController(TestController):
 
         res = y.checkPass('2001', "wrongPW")
         print "result %r" % res
-        assert res == False
+        assert res is False
 
     def test_searchfields(self):
         '''
         Testing getSearchfields
         '''
         y = getResolverClass("PasswdIdResolver", "IdResolver")()
-        y.loadConfig({ 'privacyidea.passwdresolver.fileName' : '%s/privacyidea/tests/testdata/my-pass2' % self.cwd }, "")
+        y.loadConfig({'privacyidea.passwdresolver.fileName': '%s/privacyidea'
+                      '/tests/testdata/my-pass2' % self.cwd},
+                     "")
 
         s = y.getSearchFields()
         print s
         assert s
-

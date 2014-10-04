@@ -35,22 +35,22 @@ TODO:
   * redundancy
   * Timeout
   * Referral
-'''       
-       
-class IdResolver (UserIdResolver):
+'''
 
+    
+class IdResolver (UserIdResolver):
 
     @classmethod
     def setup(cls, config=None, cache_dir=None):
         '''
-        this setup hook is triggered, when the server 
+        this setup hook is triggered, when the server
         starts to serve the first request
 
         :param config: the privacyidea config
         :type  config: the privacyidea config dict
         '''
         log.info("Setting up the LDAPResolver")
-        return    
+        return
     
     def __init__(self):
         self.i_am_bound = False
@@ -70,7 +70,8 @@ class IdResolver (UserIdResolver):
             l.bind_s(DN, password)
             l.unbind()
         except Exception, e:
-            log.warning("failed to check password for %r/%r: %r" % (uid, DN, e))
+            log.warning("failed to check password for %r/%r: %r"
+                        % (uid, DN, e))
             return False
         
         return True
@@ -83,7 +84,7 @@ class IdResolver (UserIdResolver):
         :param userId: The userid of a user
         :type userId: string
         
-        :return: The DN of the object. 
+        :return: The DN of the object.
         '''
         DN = ""
         if self.uidtype == "dn":
@@ -91,7 +92,8 @@ class IdResolver (UserIdResolver):
         else:
             # get the DN for the Object
             self._bind()
-            _filter = "(&%s(%s=%s))" % (self.searchfilter, self.uidtype, userId )
+            _filter = "(&%s(%s=%s))" % \
+                (self.searchfilter, self.uidtype, userId)
             r = self.l.search_s(self.basedn,
                                 ldap.SCOPE_SUBTREE,
                                 _filter,
@@ -100,7 +102,7 @@ class IdResolver (UserIdResolver):
         if len(r) > 1:
             raise Exception("Found more than one object for uid %r" % userId)
 
-        for dn, entry in r:
+        for dn, _entry in r:
             DN = dn
         
         return DN
@@ -110,12 +112,11 @@ class IdResolver (UserIdResolver):
             self.l = ldap.initialize(self.uri)
             self.l.bind_s(self.binddn, self.bindpw)
             self.i_am_bound = True
-
-        
+    
     def _unbind(self):
         self.l.unbind_s()
     
-    def getUserInfo(self,userId):
+    def getUserInfo(self, userId):
         '''
         This function returns all user info for a given userid/object.
         
@@ -125,15 +126,16 @@ class IdResolver (UserIdResolver):
         :rtype: dict
         '''
         ret = {}
-        self._bind()      
+        self._bind()
         
         if self.uidtype.lower() == "dn":
             r = self.l.search_s(userId,
                                 ldap.SCOPE_SUBTREE,
                                 "(&" + self.searchfilter + ")",
                                 attrlist=self.userinfo.values())
-        else: 
-            _filter = "(&%s(%s=%s))" % (self.searchfilter, self.uidtype, userId )
+        else:
+            _filter = "(&%s(%s=%s))" %\
+                (self.searchfilter, self.uidtype, userId)
             r = self.l.search_s(self.basedn,
                                 ldap.SCOPE_SUBTREE,
                                 _filter,
@@ -142,25 +144,27 @@ class IdResolver (UserIdResolver):
         if len(r) > 1:
             raise Exception("Found more than one object for uid %r" % userId)
 
-        for dn,entry in r:
+        for _dn, entry in r:
             for k, v in entry.items():
                 key = self.reverse_map[k]
-                ret[key] = v[0]  
+                ret[key] = v[0]
         
-        return ret  
+        return ret
     
-
-    def getUsername(self,userId):
+    def getUsername(self, userId):
         '''
-        returns true, if a user id exists
+        Returns the username/loginname for a given userid
+        :param userid: The userid in this resolver
+        :type userid: string
+        :return: username
+        :rtype: string
         '''
         info = self.getUserInfo(userId)
-        return info.has_key('username')
+        return info.get('username', "")
    
-    
     def getUserId(self, LoginName):
-        ''' 
-        resolve the loginname to the userid. 
+        '''
+        resolve the loginname to the userid.
         
         :param LoginName: The login name from the credentials
         :type LoginName: string
@@ -168,19 +172,21 @@ class IdResolver (UserIdResolver):
         '''
         userid = ""
         self._bind()
-        _filter = "(&%s(%s=%s))" % (self.searchfilter, self.loginname_attribute, LoginName)
+        _filter = "(&%s(%s=%s))" % \
+            (self.searchfilter, self.loginname_attribute, LoginName)
         
         attributes = self.userinfo.values()
         if self.uidtype.lower() != "dn":
             attributes.append(str(self.uidtype))
             
         r = self.l.search_s(self.basedn,
-                       ldap.SCOPE_SUBTREE,
-                       _filter,
-                       attributes)
+                            ldap.SCOPE_SUBTREE,
+                            _filter,
+                            attributes)
         
         if len(r) > 1:
-            raise Exception("Found more than one object for Loginname %r" % LoginName)
+            raise Exception("Found more than one object for Loginname %r" %
+                            LoginName)
         
         for dn, entry in r:
             if self.uidtype.lower() == "dn":
@@ -205,15 +211,16 @@ class IdResolver (UserIdResolver):
         # do the filter depending on the searchDict
         _filter = "(&" + self.searchfilter
         for search_key in searchDict.keys():
-            _filter += "(%s=%s)" % (self.userinfo[search_key], searchDict[search_key])
+            _filter += "(%s=%s)" % \
+                (self.userinfo[search_key], searchDict[search_key])
         _filter += ")"
             
         r = self.l.search_s(self.basedn,
-                       ldap.SCOPE_SUBTREE,
-                       _filter,
-                       attributes)
+                            ldap.SCOPE_SUBTREE,
+                            _filter,
+                            attributes)
         
-        for dn,entry in r:
+        for dn, entry in r:
             user = {}
             if self.uidtype == "dn":
                 user['userid'] = dn
@@ -223,15 +230,15 @@ class IdResolver (UserIdResolver):
             for k, v in entry.items():
                 key = self.reverse_map[k]
                 user[key] = v[0]
-            ret.append(user)        
+            ret.append(user)
         
         return ret
-
     
     def getResolverId(self):
         '''
         Returns the resolver Id
-        This should be an Identifier of the resolver, preferable the type and the name of the resolver.
+        This should be an Identifier of the resolver, preferable the type
+        and the name of the resolver.
         '''
         return "ldapresolver." + self.resolverId
 
@@ -240,7 +247,7 @@ class IdResolver (UserIdResolver):
         return 'ldapresolver'
 
     def getResolverType(self):
-        return IdResolver.getResolverClassType()    
+        return IdResolver.getResolverClassType()
     
     def loadConfig(self, config, conf):
         '''
@@ -249,7 +256,7 @@ class IdResolver (UserIdResolver):
         :param config: The configuration from the Config Table
         :type config: dict
         :param conf: the instance of the configuration
-        :type conf: string 
+        :type conf: string
         
         The information which config entries we need to load is taken from
             manage.js: function save_ldap_config
@@ -271,63 +278,93 @@ class IdResolver (UserIdResolver):
         '''
         self.resolverId = conf
         
-        self.uri = self.getConfigEntry(config, 'privacyidea.ldapresolver.LDAPURI', conf)
-        self.basedn = self.getConfigEntry(config, 'privacyidea.ldapresolver.LDAPBASE', conf)
-        self.binddn = self.getConfigEntry(config, 'privacyidea.ldapresolver.BINDDN', conf, required=False)
-        self.bindpw = self.getConfigEntry(config, 'privacyidea.ldapresolver.BINDPW', conf, required=False)
-        self.timeout = self.getConfigEntry(config, 'privacyidea.ldapresolver.TIMEOUT', conf, required=False, default=5000)
-        self.sizelimit = self.getConfigEntry(config, 'privacyidea.ldapresolver.SIZELIMIT', conf, required=False, default=500)
-        self.loginname_attribute = self.getConfigEntry(config, 'privacyidea.ldapresolver.LOGINNAMEATTRIBUTE', conf)
-        self.searchfilter = self.getConfigEntry(config, 'privacyidea.ldapresolver.LDAPSEARCHFILTER', conf)
-        self.reversefilter = self.getConfigEntry(config, 'privacyidea.ldapresolver.LDAPFILTER', conf)
-        userinfo = self.getConfigEntry(config, 'privacyidea.ldapresolver.USERINFO', conf)
+        self.uri = self.getConfigEntry(config,
+                                       'privacyidea.ldapresolver.LDAPURI',
+                                       conf)
+        self.basedn = self.getConfigEntry(config,
+                                          'privacyidea.ldapresolver.LDAPBASE',
+                                          conf)
+        self.binddn = self.getConfigEntry(config,
+                                          'privacyidea.ldapresolver.BINDDN',
+                                          conf, required=False)
+        self.bindpw = self.getConfigEntry(config,
+                                          'privacyidea.ldapresolver.BINDPW',
+                                          conf, required=False)
+        self.timeout = self.getConfigEntry(config,
+                                           'privacyidea.ldapresolver.TIMEOUT',
+                                           conf, required=False, default=5000)
+        self.sizelimit = self.getConfigEntry(config,
+                                             'privacyidea.ldapresolver.'
+                                             'SIZELIMIT',
+                                             conf, required=False, default=500)
+        self.loginname_attribute = self.getConfigEntry(config,
+                                                       'privacyidea.'
+                                                       'ldapresolver.'
+                                                       'LOGINNAMEATTRIBUTE',
+                                                       conf)
+        self.searchfilter = self.getConfigEntry(config,
+                                                'privacyidea.ldapresolver.'
+                                                'LDAPSEARCHFILTER',
+                                                conf)
+        self.reversefilter = self.getConfigEntry(config,
+                                                 'privacyidea.ldapresolver.'
+                                                 'LDAPFILTER',
+                                                 conf)
+        userinfo = self.getConfigEntry(config,
+                                       'privacyidea.ldapresolver.USERINFO',
+                                       conf)
         self.userinfo = yaml.load(userinfo)
-        self.reverse_map = dict([[v,k] for k,v in self.userinfo.items()])
-        self.uidtype = self.getConfigEntry(config, 'privacyidea.ldapresolver.UIDTYPE', conf, required=False)
-        self.noreferrals = self.getConfigEntry(config, 'privacyidea.ldapresolver.NOREFERRALS', conf, required=False, default=False)
-        self.certificate = self.getConfigEntry(config, 'privacyidea.ldapresolver.CACERTIFICATE', conf, required=False)
+        self.reverse_map = dict([[v, k] for k, v in self.userinfo.items()])
+        self.uidtype = self.getConfigEntry(config,
+                                           'privacyidea.ldapresolver.UIDTYPE',
+                                           conf,
+                                           required=False)
+        self.noreferrals = self.getConfigEntry(config,
+                                               'privacyidea.ldapresolver.'
+                                               'NOREFERRALS',
+                                               conf,
+                                               required=False, default=False)
+        self.certificate = self.getConfigEntry(config,
+                                               'privacyidea.ldapresolver.'
+                                               'CACERTIFICATE',
+                                               conf, required=False)
         
         return self
     
-    
-
-
     def getResolverDescriptor(self):
         descriptor = {}
         typ = self.getResolverType()
-        descriptor['clazz'] = "useridresolver.LDAPIdResolver.IdResolver" 
-        descriptor['config'] = {'LDAPURI' : 'string',
-                                'LDAPBASE' : 'string',
-                                'BINDDN' : 'string',
-                                'BINDPW' : 'string',
-                                'TIMEOUT' : 'int',
-                                'SIZELIMIT' : 'int',
-                                'LOGINNAMEATTRIBUTE' : 'string',
-                                'LDAPSEARCHFILTER' : 'string',
-                                'LDAPFILTER' : 'string',
-                                'USERINFO' : 'string',
-                                'UIDTYPE' : 'string',
-                                'NOREFERRALS' : 'bool',
-                                'CACERTIFICATE' : 'string'}
-        return {typ : descriptor}
-
+        descriptor['clazz'] = "useridresolver.LDAPIdResolver.IdResolver"
+        descriptor['config'] = {'LDAPURI': 'string',
+                                'LDAPBASE': 'string',
+                                'BINDDN': 'string',
+                                'BINDPW': 'string',
+                                'TIMEOUT': 'int',
+                                'SIZELIMIT': 'int',
+                                'LOGINNAMEATTRIBUTE': 'string',
+                                'LDAPSEARCHFILTER': 'string',
+                                'LDAPFILTER': 'string',
+                                'USERINFO': 'string',
+                                'UIDTYPE': 'string',
+                                'NOREFERRALS': 'bool',
+                                'CACERTIFICATE': 'string'}
+        return {typ: descriptor}
 
     def getConfigEntry(self, config, key, conf, required=True, default=None):
         ckey = key
-        cval = "" 
+        cval = ""
         if conf != "" or None:
             ckey = ckey + "." + conf
-            if config.has_key(ckey):
+            if ckey in config:
                 cval = config[ckey]
         if cval == "":
-            if config.has_key(key):
+            if key in config:
                 cval = config[key]
-        if cval == "" and required == True:
+        if cval == "" and required is True:
             raise Exception("missing config entry: " + key)
         if cval == "" and default:
             cval = default
         return cval
-
             
     @classmethod
     @log_with(log)
@@ -337,30 +374,32 @@ class IdResolver (UserIdResolver):
         
         This is taken from controllers/admin.py
         
-        :param param: A dictionary with all necessary parameter to test the connection.
+        :param param: A dictionary with all necessary parameter to test
+                        the connection.
         :type param: dict
         
         :return: Tuple of success and a description
-        :rtype: (bool, string)  
+        :rtype: (bool, string)
         
         Parameters are:
-            BINDDN, BINDPW, LDAPURI, TIMEOUT, LDAPBASE, LOGINNAMEATTRIBUTE, LDAPSEARCHFILTER,
+            BINDDN, BINDPW, LDAPURI, TIMEOUT, LDAPBASE, LOGINNAMEATTRIBUTE,
+            LDAPSEARCHFILTER,
             LDAPFILTER, USERINFO, SIZELIMIT, NOREFERRALS, CACERTIFICATE
         '''
-        
-        success=False
-        desc=None
+        success = False
+        desc = None
         try:
             l = ldap.initialize(param["LDAPURI"])
             l.bind_s(param["BINDDN"], param["BINDPW"])
             # search for users...
             r = l.search_s(param["LDAPBASE"],
-                       ldap.SCOPE_SUBTREE,
-                       "(&" + param["LDAPSEARCHFILTER"] + ")",
-                       yaml.load(param["USERINFO"]).values())
+                           ldap.SCOPE_SUBTREE,
+                           "(&" + param["LDAPSEARCHFILTER"] + ")",
+                           yaml.load(param["USERINFO"]).values())
         
             count = len(r)
-            desc = _("Your LDAP config seems to be OK, %i user objects found.") % count
+            desc = _("Your LDAP config seems to be OK, %i user objects found.")\
+                % count
             
             l.unbind()
             success = True
@@ -371,7 +410,6 @@ class IdResolver (UserIdResolver):
         return (success, desc)
     
     
-
 if __name__ == "__main__":
 
     print " LDAPIdResolver - IdResolver class test "
@@ -380,28 +418,29 @@ if __name__ == "__main__":
     
     print y
     
-
-    y.loadConfig({ 'privacyidea.ldapresolver.LDAPURI' : 'ldap://localhost:1389',
-              'privacyidea.ldapresolver.LDAPBASE' : 'ou=users,dc=az,dc=local',
-              'privacyidea.ldapresolver.BINDDN' : 'cn=admin,dc=az,dc=local',
-              'privacyidea.ldapresolver.BINDPW' : 'LDpw.',
-              'privacyidea.ldapresolver.LOGINNAMEATTRIBUTE': 'uid',
-              'privacyidea.ldapresolver.LDAPSEARCHFILTER' : '(uid=*)(objectClass=inetOrgPerson)',
-              'privacyidea.ldapresolver.LDAPFILTER' : '(&(uid=%s)(objectClass=inetOrgPerson))',
-              'privacyidea.ldapresolver.USERINFO' : '{ "username": "uid", \
+    y.loadConfig({'privacyidea.ldapresolver.LDAPURI': 'ldap://localhost:1389',
+                  'privacyidea.ldapresolver.LDAPBASE': 'ou=users,dc=az,'
+                  'dc=local',
+                  'privacyidea.ldapresolver.BINDDN': 'cn=admin,dc=az,dc=local',
+                  'privacyidea.ldapresolver.BINDPW': 'LDpw.',
+                  'privacyidea.ldapresolver.LOGINNAMEATTRIBUTE': 'uid',
+                  'privacyidea.ldapresolver.LDAPSEARCHFILTER': '(uid=*)'
+                  '(objectClass=inetOrgPerson)',
+                  'privacyidea.ldapresolver.LDAPFILTER': '(&(uid=%s)'
+                  '(objectClass=inetOrgPerson))',
+                  'privacyidea.ldapresolver.USERINFO': '{ "username": "uid", \
                       "phone" : "telephoneNumber", \
                       "mobile" : "mobile", \
                       "email" : "mail", \
                       "surname" : "sn", \
                       "givenname" : "givenName" }',
-              'privacyidea.ldapresolver.UIDTYPE' : 'DN',                      
-              }, "")
+                  'privacyidea.ldapresolver.UIDTYPE': 'DN',
+                  }, "")
 
     print "Config loaded"
     
-    
     print "====== getUserList =========="
-    result = y.getUserList({'username' : '*'})
+    result = y.getUserList({'username': '*'})
     for entry in result:
         print entry
     print "============================="
@@ -409,25 +448,17 @@ if __name__ == "__main__":
     user = "koelbel"
     loginId = y.getUserId(user)
 
-    print " %s -  %s" % ( user , loginId )
+    print " %s -  %s" % (user, loginId)
     print " reId - " + y.getResolverId()
     print "============================="
 
-    ret = y.getUserInfo(loginId)  
+    ret = y.getUserInfo(loginId)
     print "Userinfo for %r" % loginId
     print ret
     print "============================="
     
     ret = y.getSearchFields()
-    #ret["username"]="^bea*"
-    search = { 
-               "userid":" between 1000, 1005",
-#              "username":"^bea*",
-              #"description":"*Audio*",
-#              "descriptio":"*Winkler*",
-#              "userid":" <=1003",
-              }
-    #
+    search = {"userid": " between 1000, 1005"}
     
     ret = y.getUserList(search)
     

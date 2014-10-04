@@ -4,6 +4,9 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+# 2014-10-03 fix getUsername function
+#            Cornelius Kölbel <cornelius@privcyidea.org>
+#
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  AGPLv3
 #  contact:  http://www.linotp.org
@@ -22,28 +25,26 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#  
+#
 '''
 user functions
 '''
-
 
 import logging
 import re
 import traceback
 
-from privacyidea.lib.error   import UserError
-from privacyidea.lib.util    import getParam
+from privacyidea.lib.error import UserError
+from privacyidea.lib.util import getParam
 from privacyidea.lib.log import log_with
 
-from privacyidea.lib.config  import getFromConfig, storeConfig
-from privacyidea.lib.config  import get_privacyIDEA_config
-from privacyidea.lib.realm   import setDefaultRealm
-from privacyidea.lib.realm   import getDefaultRealm
-from privacyidea.lib.realm   import getRealms
+from privacyidea.lib.config import getFromConfig, storeConfig
+from privacyidea.lib.realm import (setDefaultRealm,
+                                   getDefaultRealm,
+                                   getRealms)
 
-from privacyidea.lib.resolver import splitResolver
-from privacyidea.lib.resolver import getResolverObject
+from privacyidea.lib.resolver import (splitResolver,
+                                      getResolverObject)
 
 
 from privacyidea.lib.realm import createDBRealm
@@ -54,15 +55,16 @@ ENCODING = 'utf-8'
 
 log = logging.getLogger(__name__)
 
+
 @log_with(log)
 class User(object):
 
     # In some test case the login attribute from a not
     # initialized user is requested. This is why we need
     # these dummy class attributes.
-    login=""
-    realm=""
-    conf=""
+    login = ""
+    realm = ""
+    conf = ""
     
     def __init__(self, login="", realm="", conf=""):
         self.login = ""
@@ -90,29 +92,15 @@ class User(object):
         return self.login
 
     def isEmpty(self):
-        ## ignore if only conf is set! as it makes no sense
+        # ignore if only conf is set! as it makes no sense
         if len(self.login or "") + len(self.realm or "") == 0:
             return True
         else:
             return False
-##def __eq__(self,other):
-##    ret = False
-##    if other is None:
-##        if self.isEmpty() == True:
-##            return True
-##        else:
-##            return False
-##    if other.login == self.login and self.realm == other.realm and other.conf == self.conf:
-##        return True
-##    else:
-##        return False
-
-##def __ne__(self,other):
-##      return not(self.__eq__(other))
 
     def __str__(self):
         ret = str(None)
-        if self.isEmpty() == False:
+        if self.isEmpty() is False:
             loginname = ""
             try:
                 loginname = unicode(self.login)
@@ -128,8 +116,8 @@ class User(object):
 
     def __repr__(self):
         ret = ('User(login=%r, realm=%r, conf=%r ::resolverUid:%r, '
-             'resolverConf:%r)' % (self.login, self.realm, self.conf,
-                                   self.resolverUid, self.resolverConf))
+               'resolverConf:%r)' % (self.login, self.realm, self.conf,
+                                     self.resolverUid, self.resolverConf))
         return ret
 
     def saveResolvers(self, resolvers):
@@ -147,34 +135,36 @@ class User(object):
 
     def getResolverUId(self, resolver):
         uid = ""
-        if self.resolverUid.has_key(resolver):
+        if resolver in self.resolverUid:
             uid = self.resolverUid.get(resolver)
 
         return uid
 
     def getResolverConf(self, resolver):
         conf = ""
-        if self.resolverConf.has_key(resolver):
+        if resolver in self.resolverConf:
             conf = self.resolverConf.get(resolver)
 
         return conf
 
+
 @log_with(log)
 def getUserResolverId(user, report=False):
-    ## here we call the userid resolver!!"
+    # here we call the userid resolver!!"
 
     (uuserid, uidResolver, uidResolverClass) = (u'', u'', u'')
 
-    if (user is not None and user.isEmpty() != True):
+    if (user is not None and user.isEmpty() is not True):
         try:
             (uuserid, uidResolver, uidResolverClass) = getUserId(user)
         except Exception as e:
             log.error('for %r@%r failed: %r' % (user.login, user.realm, e))
             log.error("%s" % traceback.format_exc())
-            if report == True:
+            if report is True:
                 raise UserError("getUserResolverId failed: %r" % e, id=1112)
 
     return (uuserid, uidResolver, uidResolverClass)
+
 
 @log_with(log)
 def splitUser(username):
@@ -182,7 +172,7 @@ def splitUser(username):
     user = username.strip()
     group = ""
 
-    ## todo split the last
+    # todo split the last
     l = user.split('@')
     if len(l) >= 2:
         (user, group) = user.rsplit('@')
@@ -192,6 +182,7 @@ def splitUser(username):
             (group, user) = user.rsplit('\\')
 
     return (user, group)
+
 
 @log_with(log)
 def getUserFromParam(param, optionalOrRequired):
@@ -208,21 +199,21 @@ def getUserFromParam(param, optionalOrRequired):
         if splitAtSign.lower() == "true":
             (user, realm) = splitUser(user)
 
-    if param.has_key("realm"):
+    if "realm" in param:
         realm = param["realm"]
 
     if user != "":
-        if realm is None or realm == "" :
+        if realm is None or realm == "":
             realm = getDefaultRealm()
 
     usr = User(user, realm, "")
 
-    if param.has_key("resConf"):
+    if "resConf" in param:
         conf = param["resConf"]
-        ## with the short resolvernames, we have to extract the
-        ## configuration name from the resolver spec
+        # with the short resolvernames, we have to extract the
+        # configuration name from the resolver spec
         if "(" in conf and ")" in conf:
-            res_conf, resolver_typ = conf.split(" ")
+            res_conf, _resolver_typ = conf.split(" ")
             conf = res_conf
         usr.conf = conf
     else:
@@ -230,7 +221,8 @@ def getUserFromParam(param, optionalOrRequired):
             res = getResolversOfUser(usr)
             usr.saveResolvers(res)
             if len(res) > 1:
-                log.error("user %r@%r is in more than one resolver: %r" % (user, realm, res))
+                log.error("user %r@%r is in more than one resolver: %r" %
+                          (user, realm, res))
                 raise Exception("The user %s@%s is in more than one resolver:"
                                 " %s" % (user, realm, unicode(res)))
 
@@ -238,6 +230,7 @@ def getUserFromParam(param, optionalOrRequired):
               % (user, realm, conf))
 
     return usr
+
 
 @log_with(log)
 def getUserFromRequest(request):
@@ -248,33 +241,34 @@ def getUserFromRequest(request):
      * the client certificate and otherwise from
      * the repoze who information.
     '''
-    d_auth = { 'login' : '' }
+    d_auth = {'login': ''}
 
     param = request.params
 
     try:
         # Do BasicAuth
-        if request.environ.has_key('REMOTE_USER'):
+        if 'REMOTE_USER' in request.environ:
             d_auth['login'] = request.environ['REMOTE_USER']
             log.debug("BasicAuth: found the REMOTE_USER: %r" % d_auth)
 
         # Do DigestAuth
-        elif request.environ.has_key('HTTP_AUTHORIZATION'):
+        elif 'HTTP_AUTHORIZATION' in request.environ:
             a_auth = request.environ['HTTP_AUTHORIZATION'].split(",")
 
             for field in a_auth:
                 (key, _delimiter, value) = field.partition("=")
                 d_auth[key.lstrip(' ')] = value.strip('"')
 
-            if d_auth.has_key('Digest username'):
+            if 'Digest username' in d_auth:
                 d_auth['login'] = d_auth['Digest username']
 
             log.debug("DigestAuth: found HTTP_AUTHORIZATION: %r" % d_auth)
 
         # Do SSL Client Cert
-        elif request.environ.has_key('SSL_CLIENT_S_DN_CN'):
+        elif 'SSL_CLIENT_S_DN_CN' in request.environ:
             d_auth['login'] = request.environ.get('SSL_CLIENT_S_DN_CN')
-            log.debug("SSLClientCert Auth: found this SSL_CLIENT_S_DN_CN: %r" % d_auth)
+            log.debug("SSLClientCert Auth: found this SSL_CLIENT_S_DN_CN: %r"
+                      % d_auth)
 
         # In case of selftest
         log.debug("Doing selftest!: %r" % isSelfTest())
@@ -284,7 +278,7 @@ def getUserFromRequest(request):
             param = request.params
             d_auth['login'] = getParam(param, "selftest_admin", True)
             log.debug("Found the user: %r in the request."
-                       % d_auth)
+                      % d_auth)
 
     except Exception as e:
         log.error("An error occurred when trying to fetch "
@@ -292,6 +286,7 @@ def getUserFromRequest(request):
         pass
 
     return d_auth
+
 
 @log_with(log)
 def setRealm(realm, resolvers):
@@ -307,12 +302,12 @@ def setRealm(realm, resolvers):
         raise e
 
     ret = storeConfig("useridresolver.group.%s" % realm, resolvers)
-    if ret == False:
+    if ret is False:
         return ret
 
     createDBRealm(realm)
 
-    ## if this is the first one, make it the default
+    # if this is the first one, make it the default
     realms = getRealms()
     if 1 == len(realms):
         for name in realms:
@@ -320,12 +315,13 @@ def setRealm(realm, resolvers):
 
     return True
 
+
 @log_with(log)
 def getUserRealms(user):
     '''
     Returns the realms, a user belongs to.
-    If the user has no realm but only a useridresolver, than all realms, containing this
-    resolver are returned.
+    If the user has no realm but only a useridresolver, than all realms,
+    containing this resolver are returned.
     This function is used for the policy module
     '''
     allRealms = getRealms()
@@ -342,10 +338,12 @@ def getUserRealms(user):
             log.debug("evaluating realm %r: %r " % (key, v))
             for reso in v['useridresolver']:
                 resotype, resoname = reso.rsplit('.', 1)
-                log.debug("found resolver %r of type %r" % (resoname, resotype))
+                log.debug("found resolver %r of type %r" %
+                          (resoname, resotype))
                 if resoname == user.conf:
                     Realms.append(key.lower())
-                    log.debug("added realm %r to Realms due to resolver %r" % (key, user.conf))
+                    log.debug("added realm %r to Realms due to resolver %r" %
+                              (key, user.conf))
 
     return Realms
 
@@ -353,7 +351,7 @@ def getUserRealms(user):
 @log_with(log)
 def getConf(Realms, Conf):
     """
-    extract the configguration part from the resolver definition
+    extract the configuration part from the resolver definition
     """
     for k in Realms:
         r = Realms[k]
@@ -363,6 +361,7 @@ def getConf(Realms, Conf):
             if conf.lower() == Conf.lower():
                 return reso
     return ""
+
 
 @log_with(log)
 def getResolvers(user):
@@ -377,7 +376,7 @@ def getResolvers(user):
     '''
     Resolver = []
 
-    realms = getRealms();
+    realms = getRealms()
 
     if user.conf != "":
         reso = getConf(realms, user.conf)
@@ -398,7 +397,6 @@ def getResolvers(user):
                     for k in resDict:
                         Resolver.append(k)
 
-
                 elif user.realm.endswith('*') and len(user.realm) == 1:
                     for r in realms:
                         for idres in realms[r]["useridresolver"]:
@@ -409,10 +407,11 @@ def getResolvers(user):
         else:
             for k in realms:
                 r = realms[k]
-                if r.has_key("default"):
+                if "default" in r:
                     Resolver = r["useridresolver"]
 
     return Resolver
+
 
 @log_with(log)
 def getResolversOfUser(user):
@@ -438,10 +437,11 @@ def getResolversOfUser(user):
     if realm is None or realm == "":
         realm = getDefaultRealm()
 
-    #if realm is None or realm=="" or login is None or login == "":
-    #    log.error("You need to specify the name ( %s) and the realm (%s) of a user with conf %s" % (login, realm, user.conf))
+    # if realm is None or realm=="" or login is None or login == "":
+    #    log.error("You need to specify the name ( %s) and the realm (%s)"
+    #              "of a user with conf %s" % (login, realm, user.conf))
 
-    realms = getRealms();
+    realms = getRealms()
 
     if user.conf != "":
         reso = getConf(realms, user.conf)
@@ -451,12 +451,12 @@ def getResolversOfUser(user):
         Realm_resolvers = getResolvers(User("", realm, ""))
 
         log.debug("check if user %r is in resolver %r"
-                   % (login, Realm_resolvers))
+                  % (login, Realm_resolvers))
         # Search for user in each resolver in the realm_
         for realm_resolver in Realm_resolvers:
             log.debug("checking in %r" % realm_resolver)
 
-            (package, module, class_, conf) = splitResolver(realm_resolver)
+            (package, module, _class, conf) = splitResolver(realm_resolver)
             module = package + "." + module
 
             y = getResolverObject(realm_resolver)
@@ -470,17 +470,20 @@ def getResolversOfUser(user):
                 log.debug("type of realm_resolver: %s" % type(realm_resolver))
                 log.debug("type of login: %s" % type(login))
                 if uid not in ["", None]:
-                    log.info("user %r found in resolver %r" % (login, realm_resolver))
+                    log.info("user %r found in resolver %r" %
+                             (login, realm_resolver))
                     log.info("userid resolved to %r " % uid)
 
-                    ## Unicode Madness:
-                    ## This will break as soon as the unicode "uid" is put into a tuple
-                    ## v = (login, realm_resolver, uid)
-                    ## log.info("%s %s %s" % v)
-                    resId = y.getResolverId();
+                    # Unicode Madness:
+                    # This will break as soon as the unicode "uid" is put
+                    # into a tuple
+                    # v = (login, realm_resolver, uid)
+                    # log.info("%s %s %s" % v)
+                    resId = y.getResolverId()
                     resCId = realm_resolver
                     Resolvers.append(realm_resolver)
-                    user.addResolverUId(realm_resolver, uid, conf, resId, resCId)
+                    user.addResolverUId(realm_resolver,
+                                        uid, conf, resId, resCId)
                 else:
                     log.debug("user %r not found"
                               " in resolver %r" % (login, realm_resolver))
@@ -494,6 +497,7 @@ def getResolversOfUser(user):
     log.debug("Found the user %r in %r" % (login, Resolvers))
     return Resolvers
 
+
 @log_with(log)
 def getUserId(user):
     """
@@ -503,8 +507,7 @@ def getUserId(user):
     """
 
     uid = ''
-    loginUser = u''
-    loginUser = user.login;
+    loginUser = user.login
 
     resolvers = getResolversOfUser(user)
     for reso in resolvers:
@@ -522,17 +525,17 @@ def getUserId(user):
             if conf.lower() != user.conf.lower():
                 continue
 
-        ## try to load the UserIdResolver Class
+        # try to load the UserIdResolver Class
         try:
             module = package + "." + module
             log.debug("Getting resolver class: [%r] [%r]"
-                       % (module, class_))
+                      % (module, class_))
             y = getResolverObject(reso)
             log.debug("Getting UserID for user %r"
-                        % loginUser)
+                      % loginUser)
             uid = y.getUserId(loginUser)
             log.debug("Got UserId for user %r: %r"
-                        % (loginUser, uid))
+                      % (loginUser, uid))
 
             log.debug("Retrieving ResolverID...")
             resId = y.getResolverId()
@@ -542,7 +545,7 @@ def getUserId(user):
                       "Uid: %r" % (resId, loginUser, uid))
 
             if uid != "":
-                break;
+                break
 
         except Exception as e:
             log.error("module %r: %r" % (module, e))
@@ -552,9 +555,10 @@ def getUserId(user):
         log.warning("No uid found for the user >%r< in realm %r"
                     % (loginUser, user.realm))
         raise UserError(u"getUserId failed: no user >%s< found!"
-                         % unicode(loginUser), id=1205)
+                        % unicode(loginUser), id=1205)
 
     return (unicode(uid), unicode(resId), unicode(resIdC))
+
 
 @log_with(log)
 def getSearchFields(User):
@@ -563,13 +567,13 @@ def getSearchFields(User):
 
     for reso in getResolvers(User):
         """  """
-        (_package, module, class_, conf) = splitResolver(reso)
+        (_package, module, _class, conf) = splitResolver(reso)
 
         if len(User.conf) > 0:
             if conf.lower() != User.conf.lower():
                 continue
 
-        ## try to load the UserIdResolver Class
+        # try to load the UserIdResolver Class
         try:
             y = getResolverObject(reso)
             sf = y.getSearchFields()
@@ -581,14 +585,15 @@ def getSearchFields(User):
 
     return searchFields
 
+
 @log_with(log)
 def getUserList(param, User):
 
     users = []
     searchDict = {}
 
-    ## we have to recreate a new searchdict without the realm key
-    ## as delete does not work
+    # we have to recreate a new searchdict without the realm key
+    # as delete does not work
     for key in param:
         lval = param[key]
         if key == "realm":
@@ -602,14 +607,14 @@ def getUserList(param, User):
     resolverrrs = getResolvers(User)
 
     for reso in resolverrrs:
-        (package, module, class_, conf) = splitResolver(reso)
+        (package, module, _class, conf) = splitResolver(reso)
         module = package + "." + module
 
         if len(User.conf) > 0:
             if conf.lower() != User.conf.lower():
                 continue
 
-        ## try to load the UserIdResolver Class
+        # try to load the UserIdResolver Class
         try:
             log.debug("Check for resolver class: %r" % reso)
             y = getResolverObject(reso)
@@ -620,7 +625,7 @@ def getUserList(param, User):
                 u["useridresolver"] = reso
 
             log.debug("Found this userlist: %r" % ulist)
-            users.extend (ulist)
+            users.extend(ulist)
 
         except KeyError as exx:
             log.error("module %r:%r" % (module, exx))
@@ -658,6 +663,32 @@ def getUserInfo(userid, resolver, resolverC):
 
 
 @log_with(log)
+def getUsername(userid, resolver, resolverC):
+    '''
+    :return: the username or "" if it does not exist
+    :rtype: string
+    '''
+    username = ""
+    module = ""
+
+    if len(userid) == 0 or userid is None:
+        return username
+
+    try:
+        (package, module, _class, _conf) = splitResolver(resolverC)
+        module = package + "." + module
+
+        y = getResolverObject(resolverC)
+        log.debug("Getting username for userid >%r< in resolver" % userid)
+        username = y.getUsername(userid)
+
+    except Exception as e:
+        log.error("resolver %r notfound! :%r" % (resolverC, e))
+
+    return username
+
+
+@log_with(log)
 def getUserPhone(user, phone_type='phone'):
     '''
     Returns the phone numer of a user
@@ -665,7 +696,8 @@ def getUserPhone(user, phone_type='phone'):
     :param user: the user with the phone
     :type user: user object
 
-    :param phone_type: The type of the phone, i.e. either mobile or phone (land line)
+    :param phone_type: The type of the phone, i.e. either mobile or
+                       phone (land line)
     :type phone_type: string
 
     :returns: list with phone numbers of this user object
@@ -674,14 +706,15 @@ def getUserPhone(user, phone_type='phone'):
     log.debug("got uid %r, ResId %r, Class %r"
               % (uid, resId, resClass))
     userinfo = getUserInfo(uid, resId, resClass)
-    if userinfo.has_key(phone_type):
+    if phone_type in userinfo:
         log.debug("got user phone %r of type %r"
                   % (userinfo[phone_type], phone_type))
         return userinfo[phone_type]
     else:
-        log.warning("userobject (%r,%r,%r) has no phone of type %r." 
+        log.warning("userobject (%r,%r,%r) has no phone of type %r."
                     % (uid, resId, resClass, phone_type))
         return ""
+    
     
 @log_with(log)
 def check_user_password(username, realm, password):
@@ -689,10 +722,8 @@ def check_user_password(username, realm, password):
     This is a helper function to check the username and password against
     a userstore.
 
-    return
-
-      success    --- This is the username of the authenticated user. If unsuccessful,
-                      returns None
+    :return: the username of the authenticated user. If unsuccessful,
+             returns None
     '''
     success = None
     try:
@@ -702,44 +733,42 @@ def check_user_password(username, realm, password):
             username = username.decode(ENCODING)
         u = User(username, realm, "")
         res = getResolversOfUser(u)
-        # Now we know, the resolvers of this user and we can verify the password
+        # Now we know, the resolvers of this user and we can verify the
+        # password
         if (len(res) == 1):
             (uid, resolver, resolverC) = getUserId(u)
             log.info("the user resolves to %r" % uid)
             log.info("The username is found within the resolver %r" % resolver)
             # Authenticate user
             try:
-                (package, module, class_, conf) = splitResolver(resolverC)
+                (package, module, _class, _conf) = splitResolver(resolverC)
                 module = package + "." + module
                 y = getResolverObject(resolverC)
             except Exception as e:
                 log.error("module %r not found! :%r"
                           % (module, e))
             try:
-                if  y.checkPass(uid, password):
+                if y.checkPass(uid, password):
                     log.debug("Successfully authenticated user %r." % username)
-                    # try:
-                    #identity = self.add_metadata( environ, identity )
                     success = username + '@' + realm
                 else:
                     log.info("user %r failed to authenticate." % username)
             except Exception as e:
-                log.error("Error checking password within module %r:%r" 
+                log.error("Error checking password within module %r:%r"
                           % (module, e))
                 log.error("%s" % traceback.format_exc())
 
         elif (len(res) == 0):
-            log.error("The username %r exists in NO resolver within the realm %r." 
-                      % (username, realm))
+            log.error("The username %r exists in NO resolver within the "
+                      "realm %r." % (username, realm))
         else:
-            log.error("The username %r exists in more than one resolver within the realm %r" 
-                      % (username, realm))
+            log.error("The username %r exists in more than one resolver "
+                      "within the realm %r" % (username, realm))
             log.error(res)
     except UserError as e:
-        log.error("Error while trying to verify the username: %r" 
+        log.error("Error while trying to verify the username: %r"
                   % e.description)
 
     return success
 
-#eof###########################################################################
-
+# eof######################################################################

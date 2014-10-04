@@ -2,11 +2,13 @@
 #
 #  product:  privacyIDEA is a fork of LinOTP
 #  module:   resolver library
-#    
+#
 #  May, 08 2014 Cornelius Kölbel
 #  http://www.privacyidea.org
-#            
-#  
+#
+# 2014-10-03 fix getUsername function
+#            Cornelius Kölbel <cornelius@privcyidea.org>
+#
 #  product:  LinOTP2
 #  module:   useridresolver
 #  tool:     UserIdResolver
@@ -125,12 +127,12 @@ class UserIdResolver(object):
 
     def getUsername(self, userid):
         """
-        getUsername(LoginId)
-          - returns the loginname string
-          - empty string if not exist
-
+        Returns the username/loginname for a given userid
+        :param userid: The userid in this resolver
+        :type userid: string
+        :return: username
+        :rtype: string
         """
-
         return self.name
 
     def getUserInfo(self, userid):
@@ -198,14 +200,15 @@ def getResolverClass(packageName, className):
         attrs = ["getUserId", "getUsername", "getUserInfo", "getUserList",
                  "checkPass", "loadConfig",
                  "getResolverId", "getResolverType", "getResolverDescriptor"
-                ]
+                 ]
 
         for att in attrs:
             attribute = att
             getattr(klass, att)
         ret = klass
     except:
-        raise NameError("IdResolver AttributeError: " + packageName + "." + \
-              className + " instance has no attribute '" + attribute + "'")
+        raise NameError("IdResolver AttributeError: " + packageName + "." +
+                        className + " instance has no attribute '" +
+                        attribute + "'")
 
     return ret
