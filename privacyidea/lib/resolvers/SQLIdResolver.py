@@ -32,7 +32,8 @@ from sqlsoup import SQLSoup
 from privacyidea.lib.phppass import PasswordHash
 import traceback
 import hashlib
-from base64 import b64decode
+from base64 import (b64decode,
+                    b64encode)
 import binascii
 
 log = logging.getLogger(__name__)
@@ -94,16 +95,17 @@ class IdResolver (UserIdResolver):
         def _check_ssha(pw_hash, password, hashfunc, length):
             pw_hash_bin = b64decode(pw_hash.split("}")[1])
             digest = pw_hash_bin[:length]
+            log.error("CKO %r" % digest)
             salt = pw_hash_bin[length:]
             hr = hashfunc(password)
             hr.update(salt)
             return digest == hr.digest()
         
         def _check_sha(pw_hash, password):
-            pw_hash_bin = b64decode(pw_hash[6:])
-            digest = pw_hash_bin[:20]
-            hr = hashlib.sha1(password)
-            return digest == hr.digest()
+            b64_db_password = pw_hash[5:]
+            hr = hashlib.sha1(password).digest()
+            b64_password = b64encode(hr)
+            return b64_password == b64_db_password
         
         def _otrs_sha256(pw_hash, password):
             hr = hashlib.sha256(password)
@@ -121,9 +123,9 @@ class IdResolver (UserIdResolver):
         # check salted hashed passwords
         elif database_pw[:6].upper() == "{SSHA}":
             res = _check_ssha(database_pw, password, hashlib.sha1, 20)
-        elif database_pw[:6].upper() == "{SSHA256}":
+        elif database_pw[:9].upper() == "{SSHA256}":
             res = _check_ssha(database_pw, password, hashlib.sha256, 32)
-        elif database_pw[:6].upper() == "{SSHA512}":
+        elif database_pw[:9].upper() == "{SSHA512}":
             res = _check_ssha(database_pw, password, hashlib.sha512, 64)
         # check for hashed password.
         elif userinfo.get("password", "XXXXX")[:5].upper() == "{SHA}":
@@ -213,29 +215,28 @@ class IdResolver (UserIdResolver):
         try:
             if self.map.get("userid") in r:
                 user["id"] = r[self.map.get("userid")]
-            if self.map.get("username") in r:
-                user["username"] = r[self.map.get("username")].\
-                    decode(self.encoding)
-            if self.map.get("surname") in r:
-                user["surname"] = r[self.map.get("surname")].\
-                    decode(self.encoding)
-            if self.map.get("givenname") in r:
-                user["givenname"] = r[self.map.get("givenname")].\
-                    decode(self.encoding)
-            if self.map.get("email") in r:
-                user["email"] = r[self.map.get("email")].\
-                    decode(self.encoding)
-            if self.map.get("mobile") in r:
-                user["mobile"] = r[self.map.get("mobile")].\
-                    decode(self.encoding)
-            if self.map.get("phone") in r:
-                user["phone"] = r[self.map.get("phone")].\
-                    decode(self.encoding)
-            if self.map.get("password") in r:
-                user["password"] = r[self.map.get("password")]
-        except:
+        except UnicodeEncodeError:
             log.error("Failed to convert user: %r" % r)
             log.error(traceback.format_exc())
+        
+        for key in ["username",
+                    "surname",
+                    "givenname",
+                    "email",
+                    "mobile",
+                    "phone",
+                    "password"]:
+            try:
+                if r.get(self.map.get(key)):
+                    val = r.get(self.map.get(key))
+                    # val is a unicode!
+                    # log.error("CKO: %r" % val)
+                    # log.error("CKO: %r" % type(val))
+                    user[key] = val
+            except UnicodeEncodeError:
+                log.error("Failed to convert user: %r" % r)
+                log.error(traceback.format_exc())
+        
         return user
 
     def getUserList(self, searchDict=None):
@@ -324,7 +325,7 @@ class IdResolver (UserIdResolver):
                                          conf, required=False, default=100)
         self.user = self.getConfigEntry(config,
                                         'privacyidea.sqlresolver.User',
-                                        conf)
+                                        conf, required=False)
         self.password = self.getConfigEntry(config,
                                             'privacyidea.sqlresolver.Password',
                                             conf, required=False)
@@ -356,16 +357,18 @@ class IdResolver (UserIdResolver):
             port = ":%s" % self.port
         if self.password:
             password = ":%s" % self.password
-        self.connect_string = "%s://%s%s@%s%s/%s?%s" % (self.driver,
-                                                        self.user,
-                                                        password,
-                                                        self.server,
-                                                        port,
-                                                        self.database,
-                                                        self.conParams)
+            
+        params = {'Port': port,
+                  'Password': password,
+                  'conParams': self.conParams,
+                  'Driver': self.driver,
+                  'User': self.user,
+                  'Server': self.server,
+                  'Database': self.database}
+        self.connect_string = self._create_connect_string(params)
         log.info("using the connect string %s" % self.connect_string)
         self.engine = create_engine(self.connect_string,
-                                    encoding=str(self.encoding))
+                                    encoding=self.encoding)
         # create a configured "Session" class
         Session = sessionmaker(bind=self.engine)
 
@@ -414,6 +417,9 @@ class IdResolver (UserIdResolver):
     def _create_connect_string(self, param):
         '''
         create the connectstring
+        
+        Port, Password, conParams, Driver, User,
+        Server, Database
         '''
         port = ""
         password = ""
@@ -424,15 +430,15 @@ class IdResolver (UserIdResolver):
             password = ":%s" % param.get("Password")
         if param.get("conParams"):
             conParams = "?%s" % param.get("conParams")
-        connect_string = "%s://%s%s%s%s%s/%s%s" % (param.get("Driver"),
-                                                   param.get("User"),
+        connect_string = "%s://%s%s%s%s%s/%s%s" % (param.get("Driver", ""),
+                                                   param.get("User", ""),
                                                    password,
                                                    "@" if (param.get("User")
                                                            or
                                                            password) else "",
-                                                   param.get("Server"),
+                                                   param.get("Server", ""),
                                                    port,
-                                                   param.get("Database"),
+                                                   param.get("Database", ""),
                                                    conParams)
         return connect_string
             
@@ -474,7 +480,7 @@ class IdResolver (UserIdResolver):
         return (num, desc)
     
     
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
 
     print " SQLIdResolver - IdResolver class test "
         

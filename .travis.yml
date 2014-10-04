@@ -25,6 +25,7 @@ env:
   - TESTSCRIPT=privacyidea/tests/functional/test_importotp.py
   - TESTSCRIPT=privacyidea/tests/functional/test_ldap.py
   - TESTSCRIPT=privacyidea/tests/functional/test_ldap2.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_sql.py
   - TESTSCRIPT=privacyidea/tests/functional/test_manage.py
   - TESTSCRIPT=privacyidea/tests/functional/test_ocra2.py
   - TESTSCRIPT=privacyidea/tests/functional/test_ocra.py
