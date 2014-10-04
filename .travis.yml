@@ -5,6 +5,7 @@ python:
 # command to install dependencies
 install:
   - "pip install ."
+  - "pip install mockldap"
   - "pip install mock"
   - "pip install coveralls"
 # split the test run according to
@@ -23,6 +24,7 @@ env:
   - TESTSCRIPT=privacyidea/tests/functional/test_httpsms.py
   - TESTSCRIPT=privacyidea/tests/functional/test_importotp.py
   - TESTSCRIPT=privacyidea/tests/functional/test_ldap.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_ldap2.py
   - TESTSCRIPT=privacyidea/tests/functional/test_manage.py
   - TESTSCRIPT=privacyidea/tests/functional/test_ocra2.py
   - TESTSCRIPT=privacyidea/tests/functional/test_ocra.py

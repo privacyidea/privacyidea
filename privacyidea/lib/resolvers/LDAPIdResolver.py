@@ -67,7 +67,7 @@ class IdResolver (UserIdResolver):
         
         l = ldap.initialize(self.uri)
         try:
-            l.bind_s(DN, password)
+            l.simple_bind_s(DN, password)
             l.unbind()
         except Exception, e:
             log.warning("failed to check password for %r/%r: %r"
@@ -99,18 +99,19 @@ class IdResolver (UserIdResolver):
                                 _filter,
                                 self.userinfo.values())
                 
-        if len(r) > 1:
-            raise Exception("Found more than one object for uid %r" % userId)
+            if len(r) > 1:
+                raise Exception("Found more than one object for uid %r"
+                                % userId)
 
-        for dn, _entry in r:
-            DN = dn
+            for dn, _entry in r:
+                DN = dn
         
         return DN
         
     def _bind(self):
         if not self.i_am_bound:
             self.l = ldap.initialize(self.uri)
-            self.l.bind_s(self.binddn, self.bindpw)
+            self.l.simple_bind_s(self.binddn, self.bindpw)
             self.i_am_bound = True
     
     def _unbind(self):
@@ -147,7 +148,10 @@ class IdResolver (UserIdResolver):
         for _dn, entry in r:
             for k, v in entry.items():
                 key = self.reverse_map[k]
-                ret[key] = v[0]
+                if type(v) == list:
+                    ret[key] = v[0]
+                else:
+                    ret[key] = v
         
         return ret
     
@@ -225,11 +229,18 @@ class IdResolver (UserIdResolver):
             if self.uidtype == "dn":
                 user['userid'] = dn
             else:
-                user['userid'] = entry.get(self.uidtype)[0]
+                uid = entry.get(self.uidtype)[0]
+                if type(uid) == list:
+                    user['userid'] = entry.get(self.uidtype)[0]
+                else:
+                    user['userid'] = entry.get(self.uidtype)
                 del(entry[self.uidtype])
             for k, v in entry.items():
                 key = self.reverse_map[k]
-                user[key] = v[0]
+                if type(v) == list:
+                    user[key] = v[0]
+                else:
+                    user[key] = v
             ret.append(user)
         
         return ret
@@ -390,7 +401,7 @@ class IdResolver (UserIdResolver):
         desc = None
         try:
             l = ldap.initialize(param["LDAPURI"])
-            l.bind_s(param["BINDDN"], param["BINDPW"])
+            l.simple_bind_s(param["BINDDN"], param["BINDPW"])
             # search for users...
             r = l.search_s(param["LDAPBASE"],
                            ldap.SCOPE_SUBTREE,
@@ -410,7 +421,7 @@ class IdResolver (UserIdResolver):
         return (success, desc)
     
     
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
 
     print " LDAPIdResolver - IdResolver class test "
         

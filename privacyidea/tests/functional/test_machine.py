@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-#    privacyIDEA Account test suite
+#    privacyIDEA Machine Controller test suite
 #
 #    Copyright (C)  2014 Cornelius Kölbel, cornelius@privacyidea.org
 #
