@@ -95,7 +95,6 @@ class IdResolver (UserIdResolver):
         def _check_ssha(pw_hash, password, hashfunc, length):
             pw_hash_bin = b64decode(pw_hash.split("}")[1])
             digest = pw_hash_bin[:length]
-            log.error("CKO %r" % digest)
             salt = pw_hash_bin[length:]
             hr = hashfunc(password)
             hr.update(salt)
@@ -440,6 +439,9 @@ class IdResolver (UserIdResolver):
                                                    port,
                                                    param.get("Database", ""),
                                                    conParams)
+        # SQLAlchemy does not like a unicode connect string!
+        if param.get("Driver").lower() == "sqlite":
+            connect_string = str(connect_string)
         return connect_string
             
     @classmethod

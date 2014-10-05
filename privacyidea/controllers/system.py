@@ -842,6 +842,9 @@ class SystemController(BaseController):
             realm     - name of the realm
             resolvers - comma seperated list of resolvers, that should be
                         in this realm
+                        resolvers need to be specified in the form:
+                            privacyidea.lib.resolvers.
+                            PasswdIdResolver.IdResolver.<name>
 
         returns:
             a json result with a list of Realms
