@@ -407,14 +407,15 @@ class SecurityProvider(object):
         return found
         #return self.loadSecurityModule(id)
 
-def main():
-    ## hook for local provider test
+
+def main():  # pragma: no cover
+    # hook for local provider test
     sep = SecurityProvider()
     sep.load_config({})
     sep.createHSMPool('default')
-    sep.setupModule('default', {'passwd' : 'test123'})
+    sep.setupModule('default', {'passwd': 'test123'})
 
-    ## runtime catch an hsm for session
+    # runtime catch an hsm for session
     hsm = sep.getSecurityModule()
 
     passwo = 'password'

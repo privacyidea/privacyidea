@@ -2628,29 +2628,34 @@ class TestPolicies(TestController):
         assert '"status": true' in response
 
         # enroll tokens in realm myOtherRealm
-        response = self.app.get(url(controller='admin', action='init'), params={'type' : 'hmac',
-                                                                                'serial' : 'token1',
-                                                                                'otpkey' : 'd9848218d9977592fa70522579ec00e30adc490a',
-                                                                                'selftest_admin' : 'superadmin'})  # OTP: 585489
+        # OTP: 585489
+        response = self.app.get(url(controller='admin',
+                                    action='init'),
+                                params={'type': 'hmac',
+                                        'serial': 'token1b',
+                                        'otpkey': 'd9848218d9977592fa705'
+                                        '22579ec00e30adc490a',
+                                        'selftest_admin': 'superadmin'})
+        
         log.error(response)
         assert '"value": true' in response
 
         response = self.app.get(url(controller='admin', action='init'), params={'type' : 'hmac',
-                                                                                'serial' : 'token2',
+                                                                                'serial' : 'token2b',
                                                                                 'otpkey' : '6b9c172fd7a521e57891f758141ce66741694c59',
                                                                                 'selftest_admin' : 'superadmin'})  # OTP: 843851
         log.error(response)
         assert '"value": true' in response
 
         # set realm of tokens
-        response = self.app.get(url(controller='admin', action='tokenrealm'), params={'serial' : 'token1',
+        response = self.app.get(url(controller='admin', action='tokenrealm'), params={'serial' : 'token1b',
                                                                                      'realms' : 'myOtherRealm',
                                                                                      'selftest_admin' : 'superadmin'})
         log.error(response)
         assert '"status": true' in response
         assert '"value": 1' in response
 
-        response = self.app.get(url(controller='admin', action='tokenrealm'), params={'serial' : 'token2',
+        response = self.app.get(url(controller='admin', action='tokenrealm'), params={'serial' : 'token2b',
                                                                                      'realms' : 'myOtherRealm',
                                                                                      'selftest_admin' : 'superadmin'})
         log.error(response)
@@ -2660,7 +2665,7 @@ class TestPolicies(TestController):
         # check tokens in realm
         response = self.app.get(url(controller='admin', action='show'), params={ 'selftest_admin' : 'superadmin'})
         log.error(response)
-        assert '"privacyIDEA.TokenSerialnumber": "token2"' in response
+        assert '"privacyIDEA.TokenSerialnumber": "token2b"' in response
         assert '"privacyIDEA.CountWindow": 10' in response
         assert '"privacyIDEA.MaxFail": 10' in response
         assert '"User.description": ""' in response
@@ -2668,7 +2673,7 @@ class TestPolicies(TestController):
 
         assert '"myotherrealm"' in response
 
-        assert '"privacyIDEA.TokenSerialnumber": "token1"' in response
+        assert '"privacyIDEA.TokenSerialnumber": "token1b"' in response
         assert '"privacyIDEA.CountWindow": 10' in response
         assert '"privacyIDEA.MaxFail": 10' in response
         assert '"User.description": ""' in response
@@ -2693,7 +2698,7 @@ class TestPolicies(TestController):
 
 
         # delete the tokens of the user
-        for serial in ["token1", "token2"]:
+        for serial in ["token1b", "token2b"]:
             response = self.app.get(url(controller='admin', action='remove'), params={'serial' : serial,
                                                                                  'selftest_admin' : 'superadmin'
                                                                                   })
@@ -2741,14 +2746,14 @@ class TestPolicies(TestController):
         response = self.app.get(url(controller='admin', action='init'), params={'type' : 'hmac',
                                                                                'user' : "max1",
                                                                                "realm" : "myOtherRealm",
-                                                                                'serial' : 'token1',
+                                                                                'serial' : 'token1b',
                                                                                 'otpkey' : 'd9848218d9977592fa70522579ec00e30adc490a',
                                                                                 'selftest_admin' : 'superadmin'})  # OTP: 585489
         log.error(response)
         assert '"value": true' in response
 
         response = self.app.get(url(controller='admin', action='init'), params={'type' : 'hmac',
-                                                                                'serial' : 'token2',
+                                                                                'serial' : 'token2b',
                                                                                 'user' : "max2",
                                                                                "realm" : "myOtherRealm",
                                                                                 'otpkey' : '6b9c172fd7a521e57891f758141ce66741694c59',
@@ -2757,13 +2762,13 @@ class TestPolicies(TestController):
         assert '"value": true' in response
 
         # generate lost tokens
-        response = self.app.get(url(controller='admin', action="losttoken"), params={"serial" : "token1",
+        response = self.app.get(url(controller='admin', action="losttoken"), params={"serial" : "token1b",
                                                                                     "selftest_admin": "superadmin"})
         log.error(response)
         # check for password length 10
         assert re.search('"password": "\S{8}"', unicode(response)) is not None
 
-        response = self.app.get(url(controller='admin', action="losttoken"), params={"serial" : "token2",
+        response = self.app.get(url(controller='admin', action="losttoken"), params={"serial" : "token2b",
                                                                                     "selftest_admin": "superadmin"})
         log.error(response)
                 # check for password length 10
@@ -2771,7 +2776,7 @@ class TestPolicies(TestController):
 
 
         # delete the tokens of the user
-        for serial in ["token1", "token2", "losttoken1", "losttoken2"]:
+        for serial in ["token1b", "token2b", "losttoken1", "losttoken2"]:
             response = self.app.get(url(controller='admin', action='remove'), params={'serial' : serial,
                                                                                  'selftest_admin' : 'superadmin'
                                                                                   })

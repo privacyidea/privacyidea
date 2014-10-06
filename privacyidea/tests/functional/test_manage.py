@@ -33,92 +33,19 @@
 
 '''
 import logging
+import pylons
+from paste.deploy import loadapp
+from webtest import TestApp
 
 from privacyidea.tests import TestController, url
 
 log = logging.getLogger(__name__)
 
+
 class TestManageController(TestController):
 
-
-    def setUp(self):
-        '''
-        resolver: reso1 (my-passwd), reso2 (my-pass2)
-        realm: realm1, realm2
-        token: token1 (r1), token2 (r1), token3 (r2)
-        '''
-
-        # create resolvers
-        response = self.app.get(url(controller='system', action='setResolver'),
-                                params={'name':'reso1',
-                                        'type': 'passwdresolver',
-                                        'fileName': '%(here)s/tests/testdata/my-passwd'})
-        print response
-        assert '"value": true' in response
-
-        response = self.app.get(url(controller='system', action='setResolver'),
-                                params={'name':'reso2',
-                                        'type': 'passwdresolver',
-                                        'fileName': '%(here)s/tests/testdata/my-pass2'})
-        print response
-        assert '"value": true' in response
-        
-        response = self.app.get(url(controller='system', action='getResolvers'),
-                                params={})
-        print response
-        assert '"status": true' in response
-
-        # create realms
-
-        response = self.app.get(url(controller='system', action='setRealm'),
-                                params={'realm': 'realm1',
-                                        'resolvers': 'privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.reso1'})
-        print response
-        assert '"value": true' in response
-
-        response = self.app.get(url(controller='system', action='setRealm'),
-                                params={'realm': 'realm2',
-                                        'resolvers': 'privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.reso2'})
-        print response
-        assert '"value": true' in response
-
-        # create token
-        response = self.app.get(url(controller='admin', action='init'),
-                                params={'serial' : 'token1',
-                                        'type' : 'spass',
-                                        'pin' : 'secret',
-                                        'user': 'heinz',
-                                        'realm': 'realm1'
-                                        })
-        print response
-        assert '"value": true' in response
-
-        response = self.app.get(url(controller='admin', action='init'),
-                                params={'serial' : 'token2',
-                                        'type' : 'spass',
-                                        'pin' : 'secret',
-                                        'user': 'nick',
-                                        'realm': 'realm1'
-                                        })
-        print response
-        assert '"value": true' in response
-
-
-        response = self.app.get(url(controller='admin', action='init'),
-                                params={'serial' : 'token3',
-                                        'type' : 'spass',
-                                        'pin' : 'secret',
-                                        'user': 'renate',
-                                        'realm': 'realm2'
-                                        })
-        print response
-        assert '"value": true' in response
-
-
-
-
     ###############################################################################
-    def test_index(self):
+    def test_01_index(self):
         '''
         Manage: testing index access
         '''
@@ -128,7 +55,7 @@ class TestManageController(TestController):
         assert '<title>privacyIDEA Management</title>' in response.testbody
 
 
-    def test_policies(self):
+    def test_02_policies(self):
         '''
         Manage: testing policies tab
         '''
@@ -139,7 +66,7 @@ class TestManageController(TestController):
         assert '<button id=policy_import>' in response.testbody
         assert '<button  id=button_policy_delete>' in response.testbody
 
-    def test_audit(self):
+    def test_03_audit(self):
         '''
         Manage: testing audit trail
         '''
@@ -149,7 +76,7 @@ class TestManageController(TestController):
         assert 'table id="audit_table"' in response.testbody
         assert 'view_audit();' in response.testbody
 
-    def test_tokenview(self):
+    def test_04_tokenview(self):
         '''
         Manage: testing tokenview
         '''
@@ -164,7 +91,7 @@ class TestManageController(TestController):
         assert 'view_token();' in response.testbody
         assert 'tokenbuttons();' in response.testbody
 
-    def test_userview(self):
+    def test_05_userview(self):
         '''
         Manage: testing userview
         '''
@@ -174,7 +101,7 @@ class TestManageController(TestController):
         assert 'table id="user_table"' in response.testbody
         assert 'view_user();' in response.testbody
 
-    def test_tokenflexi(self):
+    def test_06_tokenflexi(self):
         '''
         Manage: testing the tokenview_flexi method
         '''
@@ -226,7 +153,7 @@ class TestManageController(TestController):
         assert '"total": 1' in testbody
         assert 'token3' in testbody
 
-    def test_userflexi(self):
+    def test_07_userflexi(self):
         '''
         Manage: testing the userview_flexi method
         '''
@@ -262,7 +189,7 @@ class TestManageController(TestController):
         assert '"id": "renate"' in response.testbody
 
 
-    def test_tokeninfo(self):
+    def test_08_tokeninfo(self):
         '''
         Manage: Testing tokeninfo dialog
         '''
@@ -275,7 +202,7 @@ class TestManageController(TestController):
         assert '<td class=tokeninfoOuterTable>privacyIDEA.TokenSerialnumber</td>\n    \t<!-- middle column -->\n    <td class=tokeninfoOuterTable>\n    \ttoken1\n    </td>\n        \t<!-- right column -->' in response.testbody
 
 
-    def test_logout(self):
+    def test_09_logout(self):
         '''
         Manage: testing logout
         '''
@@ -284,7 +211,7 @@ class TestManageController(TestController):
         print "logout response: %r" % response.testbody
         assert u'302 Found' in response.testbody
         
-    def test_custom_style(self):
+    def test_10_custom_style(self):
         '''
         Manage: testing custom style
         '''

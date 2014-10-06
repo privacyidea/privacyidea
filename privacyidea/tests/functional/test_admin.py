@@ -5,7 +5,7 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
-#  2013 Sep 29, Cornelius Kölbel, cornelius@privacyidea.org
+#  2014 Sep 29, Cornelius Kölbel, cornelius@privacyidea.org
 #               Added uselist test and PEP8 stuff
 #
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH

@@ -697,11 +697,12 @@ class OcraSuite():
                          ' for range: %r - %r' % (otp, passw, start, end))
         return ret
 
-def main():
+
+def main():  # pragma: no cover
 
     import struct
 
-    #ocrasuite   = 'OcraSuite-1:HOTP-SHA256-8:C-QN08-S128-PSHA1'
+    # ocrasuite   = 'OcraSuite-1:HOTP-SHA256-8:C-QN08-S128-PSHA1'
     ocrasuite = 'OCRA-1:HOTP-SHA256-8:QA08'
     key = '3132333435363738393031323334353637383930313233343536373839303132'.decode('hex')
     pin = '1234'

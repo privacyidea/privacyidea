@@ -76,6 +76,7 @@ SetupCommand('setup-app').run([config['__file__']])
 
 environ = {}
 
+
 def setUpPackage():
     '''
     setUpPackage is called before each test package / class
@@ -85,11 +86,13 @@ def setUpPackage():
     SetupCommand('setup-app').run([config['__file__']])
     return
 
+
 def tearDownPackage():
     '''
     tearDownPackage is called when a test package is finished
     '''
     return
+
 
 class TestController(TestCase):
     '''
@@ -114,10 +117,11 @@ class TestController(TestCase):
 
         conf = None
         if conffile.startswith('/'):
-            conf = appconfig('config:%s' % config['__file__'], relative_to=None)
+            conf = appconfig('config:%s' % config['__file__'],
+                             relative_to=None)
         else:
             raise Exception('dont know how to load the application relatively')
-        #conf = appconfig('config: %s' % config['__file__'], relative_to=rel)
+        # conf = appconfig('config: %s' % config['__file__'], relative_to=rel)
 
         load_environment(conf.global_conf, conf.local_conf)
         self.appconf = conf
@@ -125,35 +129,196 @@ class TestController(TestCase):
         url._push_object(URLGenerator(config['routes.map'], environ))
 
         self.isSelfTest = False
-        if env.has_key("privacyidea.selfTest"):
+        if "privacyidea.selfTest" in env:
             self.isSelfTest = True
 
         self.license = 'CE'
+                      
         return
 
     @classmethod
-    def setup_class(cls):
+    def setupClass(cls):
         '''setup - create clean execution context by resetting database '''
         LOG.info("######## setup_class: %r" % cls)
         SetupCommand('setup-app').run([config['__file__']])
+        cls.setup_realms()
         return
 
     @classmethod
-    def teardown_class(cls):
+    def tearDownClass(cls):
         '''teardown - cleanup of test class execution result'''
         LOG.info("######## teardown_class: %r" % cls)
+        cls.cleanup()
         return
 
     def setUp(self):
         ''' here we do the system test init per test method '''
-        self.__createResolvers__()
-        self.__createRealms__()
+        # self.__createResolvers__()
+        # self.__createRealms__()
         return
 
     def tearDown(self):
-        self.__deleteAllRealms__()
-        self.__deleteAllResolvers__()
+        # self.__deleteAllRealms__()
+        # self.__deleteAllResolvers__()
         return
+
+    @classmethod
+    def setup_realms(cls):
+        if pylons.test.pylonsapp:
+            wsgiapp = pylons.test.pylonsapp
+        else:
+            wsgiapp = loadapp('config: %s' % config['__file__'])
+        app = TestApp(wsgiapp)
+        parameters = {'name': 'myDefRes',
+                      'fileName': '%(here)s/tests/testdata/def-passwd',
+                      'type': 'passwdresolver'
+                      }
+        resp = app.get(url(controller='system',
+                           action='setResolver'),
+                       params=parameters)
+        assert('"value": true' in resp)
+
+        parameters = {'name': 'myOtherRes',
+                      'fileName': '%(here)s/tests/testdata/myDom-passwd',
+                      'type': 'passwdresolver'
+                      }
+        resp = app.get(url(controller='system',
+                           action='setResolver'),
+                       params=parameters)
+        assert('"value": true' in resp)
+        # create realms
+        parameters = {'realm': 'myDefRealm',
+                      'resolvers': 'privacyidea.lib.resolvers.'
+                      'PasswdIdResolver.IdResolver.myDefRes'
+                      }
+        resp = app.get(url(controller='system',
+                           action='setRealm'),
+                       params=parameters)
+        assert('"value": true' in resp)
+
+        parameters = {'realm': 'myOtherRealm',
+                      'resolvers': 'privacyidea.lib.resolvers.'
+                      'PasswdIdResolver.IdResolver.myOtherRes'
+                      }
+        resp = app.get(url(controller='system',
+                           action='setRealm'),
+                       params=parameters)
+        assert('"value": true' in resp)
+
+        parameters = {'realm': 'myMixRealm',
+                      'resolvers': 'privacyidea.lib.resolvers.'
+                      'PasswdIdResolver.IdResolver.'
+                      'myOtherRes,privacyidea.lib.resolvers.PasswdIdResolver.'
+                      'IdResolver.myDefRes'
+                      }
+        resp = app.get(url(controller='system',
+                           action='setRealm'),
+                       params=parameters)
+        assert('"value": true' in resp)
+        
+        # create resolvers
+        response = app.get(url(controller='system', action='setResolver'),
+                           params={'name': 'reso1',
+                                   'type': 'passwdresolver',
+                                   'fileName': '%(here)s/tests/testdata/'
+                                   'my-passwd'})
+        print response
+        assert '"value": true' in response
+
+        response = app.get(url(controller='system', action='setResolver'),
+                           params={'name': 'reso2',
+                                   'type': 'passwdresolver',
+                                   'fileName': '%(here)s/tests/testdata/'
+                                   'my-pass2'})
+        print response
+        assert '"value": true' in response
+        
+        response = app.get(url(controller='system', action='getResolvers'),
+                           params={})
+        print response
+        assert '"status": true' in response
+
+        # create realms
+
+        response = app.get(url(controller='system', action='setRealm'),
+                           params={'realm': 'realm1',
+                                   'resolvers': 'privacyidea.lib.resolvers.'
+                                   'PasswdIdResolver.IdResolver.reso1'})
+        print response
+        assert '"value": true' in response
+
+        response = app.get(url(controller='system', action='setRealm'),
+                           params={'realm': 'realm2',
+                                   'resolvers': 'privacyidea.lib.resolvers.'
+                                   'PasswdIdResolver.IdResolver.reso2'})
+        print response
+        assert '"value": true' in response
+
+        # create token
+        response = app.get(url(controller='admin', action='init'),
+                           params={'serial': 'token1',
+                                   'type': 'spass',
+                                   'pin': 'secret',
+                                   'user': 'heinz',
+                                   'realm': 'realm1'
+                                   })
+        print response
+        assert '"value": true' in response
+
+        response = app.get(url(controller='admin', action='init'),
+                           params={'serial': 'token2',
+                                   'type': 'spass',
+                                   'pin': 'secret',
+                                   'user': 'nick',
+                                   'realm': 'realm1'
+                                   })
+        print response
+        assert '"value": true' in response
+
+        response = app.get(url(controller='admin', action='init'),
+                           params={'serial': 'token3',
+                                   'type': 'spass',
+                                   'pin': 'secret',
+                                   'user': 'renate',
+                                   'realm': 'realm2'
+                                   })
+        print response
+        assert '"value": true' in response
+        
+    @classmethod
+    def cleanup(cls):
+        if pylons.test.pylonsapp:
+            wsgiapp = pylons.test.pylonsapp
+        else:
+            wsgiapp = loadapp('config: %s' % config['__file__'])
+        app = TestApp(wsgiapp)
+        
+        ''' get al realms and delete them '''
+        response = app.get(url(controller='system', action='getRealms'))
+        jresponse = json.loads(response.body)
+        result = jresponse.get("result")
+        values = result.get("value", {})
+        for realmId in values:
+            realm_desc = values.get(realmId)
+            realm_name = realm_desc.get("realmname")
+            parameters = {"realm": realm_name}
+            resp = app.get(url(controller='system', action='delRealm'),
+                           params=parameters)
+            assert('"result": true' in resp)
+
+        ''' get all resolvers and delete them '''
+        response = app.get(url(controller='system',
+                               action='getResolvers'))
+        jresponse = json.loads(response.body)
+        result = jresponse.get("result")
+        values = result.get("value", {})
+        for realmId in values:
+            resolv_desc = values.get(realmId)
+            resolv_name = resolv_desc.get("resolvername")
+            parameters = {"resolver": resolv_name}
+            resp = app.get(url(controller='system', action='delResolver'),
+                           params=parameters)
+            assert('"status": true' in resp)
 
     def __deleteAllRealms__(self):
         ''' get al realms and delete them '''
@@ -304,6 +469,4 @@ class TestController(TestCase):
                             params=parameters)
         assert('"value": true' in resp)
 
-
-###eof#########################################################################
-
+# ##eof######################################################################

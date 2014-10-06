@@ -474,7 +474,7 @@ def cleanup_db(filename, highwatermark=None, lowwatermark=None):
         session.commit()
     
 
-def main():
+def main():  # pragma: no cover
 
     filename = None
     highwatermark = None

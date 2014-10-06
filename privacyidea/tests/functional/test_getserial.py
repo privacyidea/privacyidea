@@ -35,31 +35,11 @@ from privacyidea.tests import TestController, url
 
 log = logging.getLogger(__name__)
 
+
 class TestGetSerialController(TestController):
 
-    ###############################################################################
-    @classmethod
-    def setUpClass(cls):
-        ## here we do the system test init (once for all)
-        return
-
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.__deleteAllRealms__()
-        cls.__deleteAllResolvers__()
-
-
     def setUp(self):
-        self.__createResolvers__()
-        self.__createRealms__()
         self.initToken()
-
-    #def tearDown(self):
-    #    pass
-    
-
-    ###############################################################################
 
     def createHOtpToken(self, hashlib, serial):
         '''

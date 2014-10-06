@@ -23,7 +23,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''     
+'''
   Description:  functional tests
                 
   Dependencies: -
@@ -71,7 +71,6 @@ class OcraOtp(object):
         self.serial = None
         self.counter = 0
 
-
     def init_1(self, response):
         ''' take the response of the first init to setup the OcraOtp'''
 
@@ -93,7 +92,6 @@ class OcraOtp(object):
 
         return (self.ocrasuite, self.sharedsecret, self.serial)
 
-
     def init_2(self, response, activationKey):
         self.activationkey = activationKey
 
@@ -101,7 +99,6 @@ class OcraOtp(object):
         self.nonce = unicode(jresp.get('detail').get('nonce'))
         self.transid = unicode(jresp.get('detail').get('transactionid'))
         app_import = unicode(jresp.get('detail').get('app_import'))
-
 
         ''' now parse the appurl for the ocrasuite '''
         uri = urlparse(app_import.replace('lseqr://', 'http://'))
@@ -121,7 +118,6 @@ class OcraOtp(object):
 
         return (self.challenge, self.transid)
 
-
     def _setup_(self):
 
         if self.ocra is not None and self.bkey is not None:
@@ -133,14 +129,17 @@ class OcraOtp(object):
         elif self.ocrasuite.find('-SHA512'):
             key_len = 64
 
-        self.bkey = kdf2(self.sharedsecret, self.nonce, self.activationkey, len=key_len)
+        self.bkey = kdf2(self.sharedsecret,
+                         self.nonce,
+                         self.activationkey,
+                         len=key_len)
         self.ocra = OcraSuite(self.ocrasuite)
 
         self.counter = 0
 
         return
 
-    def callcOtp(self, challenge=None, ocrapin=None, counter= -1):
+    def callcOtp(self, challenge=None, ocrapin=None, counter=-1):
 
         if self.ocra is None:
             self._setup_()

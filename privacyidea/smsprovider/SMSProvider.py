@@ -23,69 +23,51 @@
 #
 #
 
-""" the SMS Provider Interface - BaseClass """
 
 class ISMSProvider:
+    """ the SMS Provider Interface - BaseClass """
     def __init__(self):
         self.config = {}
+        
     def submitMessage(self, phone, message):
         pass
+    
     def loadConfig(self, configDict):
         self.config = configDict
         pass
 
 
-
-
-
-
-
-
-""" getSMSProviderClass(packageName, className):
-
-helper method to load the SMSProvider class from a given
-package in literal:
-
-example:
-
-    getResolverClass("SkypeSMSProvider", "SMSProvider")()
-
-check:
-    checks, if the submittMessage method exists
-    if not an error is thrown
-
-"""
 def getSMSProviderClass(packageName, className):
+    """ getSMSProviderClass(packageName, className):
+
+    helper method to load the SMSProvider class from a given
+    package in literal:
+    
+    example:
+    
+        getResolverClass("SkypeSMSProvider", "SMSProvider")()
+    
+    check:
+        checks, if the submittMessage method exists
+        if not an error is thrown
+    
+    """
     mod = __import__(packageName, globals(), locals(), [className])
     klass = getattr(mod, className)
     if not hasattr(klass, "submitMessage"):
-        raise NameError("SMSProvider AttributeError: " + packageName + "." + \
-              className + " instance of SMSProvider has no method 'submitMessage'")
+        raise NameError("SMSProvider AttributeError: " + packageName + "." +
+                        className + " instance of SMSProvider has no method"
+                        " 'submitMessage'")
         return ""
     else:
         return klass
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def main(phone, message):
+def main(phone, message):  # pragma: no cover
     print "SMSProvider - class load test "
 
-    config = {'nothing':'defined'}
-    #sms = ISMSProvider()
+    config = {'nothing': 'defined'}
+    # sms = ISMSProvider()
 
     sms = getSMSProviderClass("SMSProvider", "ISMSProvider")()
 
@@ -99,4 +81,5 @@ if __name__ == "__main__":
     message = "my test sms"
     main(phone, message)
     print "... done!"
-
+    
+    

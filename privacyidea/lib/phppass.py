@@ -7,7 +7,7 @@
 # source: https://github.com/exavolt/python-phpass
 #
 
-#CHECK: use pyDES instead of the native crypt module?
+# CHECK: use pyDES instead of the native crypt module?
 
 import os
 import time
@@ -33,7 +33,7 @@ else:
 class PasswordHash:
 
     def __init__(self, iteration_count_log2=8, portable_hashes=True,
-         algorithm=''):
+                 algorithm=''):
         alg = algorithm.lower()
         if (alg == 'blowfish' or alg == 'bcrypt') and _bcrypt_hashpw is None:
             raise NotImplementedError('The bcrypt module is required')
@@ -194,8 +194,7 @@ class PasswordHash:
         return hx == stored_hash
 
 
-
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     import getpass
     while True:
         pw = getpass.getpass()

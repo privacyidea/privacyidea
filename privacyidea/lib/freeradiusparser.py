@@ -199,7 +199,7 @@ class UserConfParser(BaseParser):
         return output
         
 
-def main():
+def main():  # pragma: no cover
     CP = ClientConfParser()
     config = CP.get_dict()
     # Here we could mangle with the config...

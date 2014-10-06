@@ -80,8 +80,7 @@ class DeviceSMSProvider(ISMSProvider):
         log.info("loading config for DeviceSMSProvider")
 
 
-
-def main(phone, message):
+def main(phone, message):  # pragma: no cover
     print "SMSProvider - class load test "
 
     # echo "text" | gnokii --config <filename> <ziel>

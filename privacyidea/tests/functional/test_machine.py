@@ -766,3 +766,10 @@ class TestMachineController(TestController):
         assert '"option_user": "root"' not in response
         # cleanup
         self._delete_ssh(serials=serials)
+        
+    def test_ZZ(self):
+        '''
+        Cleanup: Delete all tokens
+        '''
+        self.deleteAllTokens()
+
