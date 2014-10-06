@@ -37,6 +37,7 @@ env:
   - TESTSCRIPT=privacyidea/tests/functional/test_replication_sync.py
   - TESTSCRIPT=privacyidea/tests/functional/test_selfservice.py
   - TESTSCRIPT=privacyidea/tests/functional/test_system.py
+  - TESTSCRIPT=privacyidea/tests/functional/test_sql.py
   - TESTSCRIPT=privacyidea/tests/functional/test_totp.py
   - TESTSCRIPT=privacyidea/tests/functional/test_validate.py
   - TESTSCRIPT=privacyidea/tests/functional/test_yubikey.py
