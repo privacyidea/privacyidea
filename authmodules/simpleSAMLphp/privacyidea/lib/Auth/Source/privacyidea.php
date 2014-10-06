@@ -135,7 +135,7 @@ class sspmod_privacyidea_Auth_Source_privacyidea extends sspmod_core_Auth_UserPa
 
 		/* If we get this far, we have a valid login. */
 		$attributes = array();
-		$arr = array( "username", "surname", "email", "givenname", "mobile", "phone");
+		$arr = array( "username", "surname", "email", "givenname", "mobile", "phone", "realm", "resolver");
 		reset($arr);
 		foreach ( $arr as $key) {
 			if (array_key_exists($key, $this->attributemap)) {
