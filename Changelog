@@ -1,5 +1,6 @@
-Version 1.4, 2014-10-XX
+Version 1.4, 2014-10-06
 
+  * Add "wrong password" message on login screen
   * Add simplesamlphp module and deb package
   * Add helper dialog to easily setup first realm
   * Add QR enrollment of mOTP token (Token2)

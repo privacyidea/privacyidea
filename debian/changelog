@@ -1,3 +1,14 @@
+privacyidea (1.4-1) trusty; urgency=low
+
+  * Add "wrong password" message on login screen
+  * Speed up tests
+  * Add help on logon screen.
+  * Add helper dialog to setup first realm
+  * Add simplesamlphp module and deb package
+  * Fixed the session timeout bug in the management UI
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 06 Oct 2014 16:50:00 +0200
+
 privacyidea (1.4~dev5-1) trusty; urgency=low
 
   * Add wrong password message on login screen
