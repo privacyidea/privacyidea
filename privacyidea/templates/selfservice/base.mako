@@ -24,8 +24,6 @@
 <script type="text/javascript" src="/js/jquery.tools.min.js"></script>
 <script type="text/javascript" src="/js/jquery.validate.js"></script>
 
-<script type="text/javascript" src="/js/qrcode.js"></script>
-<script type="text/javascript" src="/js/qrcode-helper.js"></script>
 <script type="text/javascript" src="/js/privacyidea_utils.js"></script>
 <script type="text/javascript" src="/js/flexigrid.js"></script>
 <script type="text/javascript" src="/js/selfservice.js"></script>
