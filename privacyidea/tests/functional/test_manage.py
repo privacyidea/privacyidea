@@ -198,8 +198,7 @@ class TestManageController(TestController):
         print "tokeninfo response: %r" % response.testbody
         assert 'class=tokeninfoOuterTable' in response.testbody
         assert 'Heinz Hirtz' in response.testbody
-        assert 'Heinz Hirtz' in response.testbody
-        assert '<td class=tokeninfoOuterTable>privacyIDEA.TokenSerialnumber</td>\n    \t<!-- middle column -->\n    <td class=tokeninfoOuterTable>\n    \ttoken1\n    </td>\n        \t<!-- right column -->' in response.testbody
+        assert '<td class=tokeninfoOuterTable>\n    \t\tTokenSerialnumber\n    </td>\n    \t<!-- middle column -->\n    <td class=tokeninfoOuterTable>\n    \ttoken1\n    </td>' in response.testbody
 
 
     def test_09_logout(self):
