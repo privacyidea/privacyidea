@@ -312,6 +312,9 @@ function translate_about_dialog() {
 		    			<tr><td><label for=sys_loginhelp>${_("display help button on login dialog")}</label></td>
 		    			<td><input type='checkbox' name='sys_loginhelp' id='sys_loginhelp' value='sys_loginhelp'
 		    				title='${_("If checked a help button will be displayed on the logon window.")}'></td></tr>
+		    			<tr><td><label for=sys_singletoken>${_("Allow only one token to be selected")}</label></td>
+		    			<td><input type='checkbox' name='sys_singletoken' id='sys_singletoken' value='sys_singletoken'
+		    				title='${_("If checked an administrator may only select one token in the token view.")}'></td></tr>
 		    		</table>
 		    </fieldset>
     	</div>  <!-- tab system settings gui -->

@@ -1620,6 +1620,9 @@ function load_system_config(){
         if (data.result.value['login.help'] == "True") {
             checkBoxes.push("sys_loginhelp");
         }
+        if (data.result.value['select.singletoken'] == "True") {
+            checkBoxes.push("sys_singletoken");
+        }
         $("input:checkbox").val(checkBoxes);
         $('#sys_maxFailCount').val(data.result.value.DefaultMaxFailCount);
         $('#sys_syncWindow').val(data.result.value.DefaultSyncWindow);
@@ -1702,8 +1705,15 @@ function save_system_config(){
     }
     var loginhelp = "False";
     if ($("#sys_loginhelp").is(':checked')) {
-        loginhelp= "True";
+        loginhelp = "True";
     }
+    var singletoken = "False";
+    var b_singletoken = false;
+    if ($("#sys_singletoken").is(':checked')) {
+        singletoken = "True";
+        b_singletoken = true;
+    }
+    $('#token_table').flexOptions({singleSelect: b_singletoken});
     $.post('/system/setConfig', { 'session':getsession(),
     		'PrependPin' :prepend,
     		'FailCounterIncOnFalsePin' : fcounter ,
@@ -1714,7 +1724,8 @@ function save_system_config(){
     		'PassOnUserNoToken' : passOUNToken,
     		'selfservice.realmbox' : realmbox,
     		'login.help' : loginhelp,
-    		'allowSamlAttributes' : allowsaml },
+    		'allowSamlAttributes' : allowsaml,
+    		'select.singletoken' : singletoken},
      function(data, textStatus, XMLHttpRequest){
         if (data.result.status == false) {
             alert_info_text("text_system_save_error_checkbox", "", ERROR);
@@ -4507,6 +4518,7 @@ function view_policy() {
 }
 
 function view_token() {
+		var singleToken = get_select_singletoken();
 	    $("#token_table").flexigrid({
     		url : '/manage/tokenview_flexi',
     		params: [{name: "session",
@@ -4539,6 +4551,7 @@ function view_token() {
 			useRp: true,
 			rp: 15,
 			usepager: true,
+			singleSelect: singleToken,
 			showTableToggleBtn: true,
             preProcess: pre_flexi,
 			onError: error_flexi,

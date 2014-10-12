@@ -185,6 +185,27 @@ function get_realms(){
     return realms;
 }
 
+
+function get_select_singletoken(){
+	// returns true, if only a single token
+	// is allowed to be selected.
+	var $systemConfig = {};
+	var resp = $.ajax({url: "/system/getConfig",
+					   async: false,
+					   type: "POST",
+					   data: {"session": getsession(),
+						      "key": "select.singletoken"}
+					   }).responseText;
+	var data = jQuery.parseJSON(resp);
+	var select = data.result.value["getConfig select.singletoken"];
+	if (select == "True") {
+		return true;
+	} else {
+		return false;
+	}	
+}
+
+
 function ask_autocreate_realm() {
 	var realms = get_realms();
 	var cook = get_cookie("privacyidea_autocreate");
