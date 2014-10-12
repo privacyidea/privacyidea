@@ -509,7 +509,6 @@ class ManageController(BaseController):
         finally:
             Session.close()
 
-
     @log_with(log)
     def tokeninfo(self, action, **params):
         '''
@@ -531,17 +530,19 @@ class ManageController(BaseController):
             if not pol['active']:
                 filterRealm = ["*"]
 
-            log.info("admin >%s< may display the following realms: %s" % (res['admin'], filterRealm))
+            log.info("admin >%s< may display the following realms: %s" %
+                     (res['admin'], filterRealm))
             log.info("displaying tokens: serial: %s", serial)
 
-            toks = TokenIterator(User("", "", ""), serial, filterRealm=filterRealm)
+            toks = TokenIterator(User("", "", ""),
+                                 serial,
+                                 filterRealm=filterRealm)
 
-            ### now row by row
+            # now row by row
             lines = []
             for tok in toks:
                 lines.append(tok)
             if len(lines) > 0:
-
                 c.tokeninfo = lines[0]
             else:
                 c.tokeninfo = {}
@@ -550,7 +551,8 @@ class ManageController(BaseController):
                 if "privacyIDEA.TokenInfo" == k:
                     try:
                         # Try to convert string to Dictionary
-                        c.tokeninfo['privacyIDEA.TokenInfo'] = json.loads(c.tokeninfo['privacyIDEA.TokenInfo'])
+                        c.tokeninfo['privacyIDEA.TokenInfo'] = \
+                            json.loads(c.tokeninfo['privacyIDEA.TokenInfo'])
                     except:
                         pass
 

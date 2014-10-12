@@ -16,7 +16,13 @@
     % for value in c.tokeninfo:
     <tr>
     	<!-- left column -->
-    <td class=tokeninfoOuterTable>${value}</td>
+    <td class=tokeninfoOuterTable>
+    	%if value.startswith("privacyIDEA."):
+    		${value[len("privacyIDEA."):]}
+    	%else:
+    		${value}
+    	%endif
+    </td>
     	<!-- middle column -->
     <td class=tokeninfoOuterTable>
     %if "privacyIDEA.TokenInfo" == value:
