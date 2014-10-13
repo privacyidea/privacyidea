@@ -349,16 +349,8 @@ class IdResolver (UserIdResolver):
                                              conf, required=False)
         
         # create the connectstring like
-        # driver://user:passwd@seerver/database?conParams
-        port = ""
-        password = ""
-        if self.port:
-            port = ":%s" % self.port
-        if self.password:
-            password = ":%s" % self.password
-            
-        params = {'Port': port,
-                  'Password': password,
+        params = {'Port': self.port,
+                  'Password': self.password,
                   'conParams': self.conParams,
                   'Driver': self.driver,
                   'User': self.user,
@@ -442,6 +434,7 @@ class IdResolver (UserIdResolver):
         # SQLAlchemy does not like a unicode connect string!
         if param.get("Driver").lower() == "sqlite":
             connect_string = str(connect_string)
+        log.debug("SQL connectstring: %r" % connect_string)
         return connect_string
             
     @classmethod
