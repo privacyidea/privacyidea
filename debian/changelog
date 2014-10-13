@@ -1,4 +1,4 @@
-privacyidea (1.5dev1-1) trusty; urgency=low
+privacyidea (1.5~dev1-1) trusty; urgency=low
 
   * Fix the port problem with SQL resolver
 
