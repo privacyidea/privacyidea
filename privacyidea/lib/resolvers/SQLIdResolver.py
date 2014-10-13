@@ -348,17 +348,9 @@ class IdResolver (UserIdResolver):
                                              'conParams',
                                              conf, required=False)
         
-        # create the connectstring like
-        # driver://user:passwd@seerver/database?conParams
-        port = ""
-        password = ""
-        if self.port:
-            port = ":%s" % self.port
-        if self.password:
-            password = ":%s" % self.password
-            
-        params = {'Port': port,
-                  'Password': password,
+        # create the connectstring like          
+        params = {'Port': self.port,
+                  'Password': self.password,
                   'conParams': self.conParams,
                   'Driver': self.driver,
                   'User': self.user,
