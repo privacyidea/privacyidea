@@ -8,8 +8,13 @@
     ${_("Realms")}: <select id=realm></select>
     </div>
     
-    <span id="selected_tokens_header">${_("selected tokens")}</span>
+    <fieldset>
+    <legend id="selected_tokens_header">${_("selected tokens")}</legend>
     <div id="selected_tokens"></div>
+    <button class='action-button' id='button_unselect'>
+    ${_("clear token selection")}
+    </button>
+    </fieldset>
     
     <span id="selected_users_header">${_("selected users")}</span>
     <div id="selected_users"></div>

@@ -5,8 +5,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: privacyIDEA 2\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2014-10-12 21:53+0200\n"
-"PO-Revision-Date: 2014-10-12 21:54+0200\n"
+"POT-Creation-Date: 2014-10-13 11:18+0200\n"
+"PO-Revision-Date: 2014-10-13 09:42+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius@privacyidea.org>\n"
 "Language-Team: Deutsch <>\n"
 "Language: de\n"
@@ -2086,7 +2086,7 @@ msgid "Token Config"
 msgstr "Token-konfiguration"
 
 #: privacyidea/templates/manage/manage-base.mako:58
-#: privacyidea/templates/manage/start.mako:60
+#: privacyidea/templates/manage/start.mako:63
 msgid "Policies"
 msgstr "Richtlinien"
 
@@ -4129,60 +4129,64 @@ msgid "selected tokens"
 msgstr "ausgewählte Token"
 
 #: privacyidea/templates/manage/start.mako:14
+msgid "clear token selection"
+msgstr "Tokenauswahl aufheben"
+
+#: privacyidea/templates/manage/start.mako:17
 msgid "selected users"
 msgstr "ausgewählte Benutzer"
 
-#: privacyidea/templates/manage/start.mako:17
+#: privacyidea/templates/manage/start.mako:20
 msgid "selected machine"
 msgstr "ausgewählter Client"
 
-#: privacyidea/templates/manage/start.mako:21
+#: privacyidea/templates/manage/start.mako:24
 msgid "enroll"
 msgstr "ausrollen"
 
-#: privacyidea/templates/manage/start.mako:23
+#: privacyidea/templates/manage/start.mako:26
 msgid "assign"
 msgstr "zuweisen"
 
-#: privacyidea/templates/manage/start.mako:25
+#: privacyidea/templates/manage/start.mako:28
 msgid "unassign"
 msgstr "Zuweisung aufheben"
 
-#: privacyidea/templates/manage/start.mako:27
+#: privacyidea/templates/manage/start.mako:30
 msgid "enable"
 msgstr "aktivieren"
 
-#: privacyidea/templates/manage/start.mako:29
+#: privacyidea/templates/manage/start.mako:32
 msgid "disable"
 msgstr "deaktivieren"
 
-#: privacyidea/templates/manage/start.mako:31
+#: privacyidea/templates/manage/start.mako:34
 #: privacyidea/templates/selfservice/base.mako:110
 #: privacyidea/templates/selfservice/setpin.mako:23
 msgid "set PIN"
 msgstr "PIN setzen"
 
-#: privacyidea/templates/manage/start.mako:33
+#: privacyidea/templates/manage/start.mako:36
 msgid "Reset failcounter"
 msgstr "Fehlzähler zurücksetzen"
 
-#: privacyidea/templates/manage/start.mako:35
+#: privacyidea/templates/manage/start.mako:38
 msgid "delete"
 msgstr "löschen"
 
-#: privacyidea/templates/manage/start.mako:58
+#: privacyidea/templates/manage/start.mako:61
 msgid "Token View"
 msgstr "Tokenansicht"
 
-#: privacyidea/templates/manage/start.mako:59
+#: privacyidea/templates/manage/start.mako:62
 msgid "User View"
 msgstr "Benutzeransicht"
 
-#: privacyidea/templates/manage/start.mako:61
+#: privacyidea/templates/manage/start.mako:64
 msgid "Machines"
 msgstr "Client-Computer"
 
-#: privacyidea/templates/manage/start.mako:62
+#: privacyidea/templates/manage/start.mako:65
 msgid "Audit Trail"
 msgstr "Audit"
 

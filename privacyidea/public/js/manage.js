@@ -3708,6 +3708,13 @@ $(document).ready(function(){
         return false;
     });
 
+    
+    $('#button_unselect').click(function(){
+    	// unselect the selected tokens
+    	$('#token_table .trSelected').removeClass('trSelected'); 
+    	$('#selected_tokens').html("");
+    	return false;
+    });
 
     var $dialog_delete_token = $('#dialog_delete_token').dialog({
         autoOpen: false,

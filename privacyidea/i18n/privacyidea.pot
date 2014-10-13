@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: privacyIDEA 1.4\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2014-10-12 21:53+0200\n"
+"POT-Creation-Date: 2014-10-13 11:18+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1824,7 +1824,7 @@ msgid "Token Config"
 msgstr ""
 
 #: privacyidea/templates/manage/manage-base.mako:58
-#: privacyidea/templates/manage/start.mako:60
+#: privacyidea/templates/manage/start.mako:63
 msgid "Policies"
 msgstr ""
 
@@ -3700,60 +3700,64 @@ msgid "selected tokens"
 msgstr ""
 
 #: privacyidea/templates/manage/start.mako:14
-msgid "selected users"
+msgid "clear token selection"
 msgstr ""
 
 #: privacyidea/templates/manage/start.mako:17
+msgid "selected users"
+msgstr ""
+
+#: privacyidea/templates/manage/start.mako:20
 msgid "selected machine"
 msgstr ""
 
-#: privacyidea/templates/manage/start.mako:21
+#: privacyidea/templates/manage/start.mako:24
 msgid "enroll"
 msgstr ""
 
-#: privacyidea/templates/manage/start.mako:23
+#: privacyidea/templates/manage/start.mako:26
 msgid "assign"
 msgstr ""
 
-#: privacyidea/templates/manage/start.mako:25
+#: privacyidea/templates/manage/start.mako:28
 msgid "unassign"
 msgstr ""
 
-#: privacyidea/templates/manage/start.mako:27
+#: privacyidea/templates/manage/start.mako:30
 msgid "enable"
 msgstr ""
 
-#: privacyidea/templates/manage/start.mako:29
+#: privacyidea/templates/manage/start.mako:32
 msgid "disable"
 msgstr ""
 
-#: privacyidea/templates/manage/start.mako:31
+#: privacyidea/templates/manage/start.mako:34
 #: privacyidea/templates/selfservice/base.mako:110
 #: privacyidea/templates/selfservice/setpin.mako:23
 msgid "set PIN"
 msgstr ""
 
-#: privacyidea/templates/manage/start.mako:33
+#: privacyidea/templates/manage/start.mako:36
 msgid "Reset failcounter"
 msgstr ""
 
-#: privacyidea/templates/manage/start.mako:35
+#: privacyidea/templates/manage/start.mako:38
 msgid "delete"
 msgstr ""
 
-#: privacyidea/templates/manage/start.mako:58
+#: privacyidea/templates/manage/start.mako:61
 msgid "Token View"
 msgstr ""
 
-#: privacyidea/templates/manage/start.mako:59
+#: privacyidea/templates/manage/start.mako:62
 msgid "User View"
 msgstr ""
 
-#: privacyidea/templates/manage/start.mako:61
+#: privacyidea/templates/manage/start.mako:64
 msgid "Machines"
 msgstr ""
 
-#: privacyidea/templates/manage/start.mako:62
+#: privacyidea/templates/manage/start.mako:65
 msgid "Audit Trail"
 msgstr ""
 
