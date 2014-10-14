@@ -1,4 +1,22 @@
-import os
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+#  copyright 2014 Cornelius Kölbel
+#  License:  AGPLv3
+#  contact:  http://www.privacyidea.org
+#
+# This code is free software; you can redistribute it and/or
+# License as published by the Free Software Foundation; either
+# version 3 of the License, or any later version.
+#
+# This code is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import os, time
+from stat import ST_SIZE, ST_MTIME
 from subprocess import call
 import ConfigParser
 import StringIO
@@ -68,6 +86,22 @@ class Backup(object):
         self.CP.save({"assignments": self.assignments,
                       "cronjobs": self.cronjobs},
                      CRONTAB)
+        
+    def get_backups(self):
+        '''
+        List the available backups in the self.data_dir
+        
+        :return: list of tuples with names, date and size
+        '''
+        allfiles = os.listdir(self.data_dir)
+        backups = []
+        for f in allfiles:
+            if f.startswith("privacyidea-backup"):
+                st = os.stat(self.data_dir + "/" + f)
+                size = "%iMB" % (int(st[ST_SIZE]) / (1024 * 1024))
+                mtime = time.asctime(time.localtime(st[ST_MTIME]))
+                backups.append((f, size, mtime))
+        return backups
     
     def del_backup_time(self, hour, minute, month, dom, dow):
         '''

@@ -591,8 +591,23 @@ class pSetup(object):
     def backup_view(self):
         '''
         View the saved backup files to restore one.
-        '''
-        pass
+        '''        
+        bt = "Restore a backup"
+        while 1:
+            backups = self.Backup.get_backups()
+            choices = []
+            for backup in backups:
+                choices.append((backup[0], "%s %s" % (backup[1],
+                                                     backup[2])))
+            code, tags = self.d.menu("Choose a backup you wish to restore...",
+                                     choices=choices,
+                                     backtitle=bt,
+                                     width=78)
+            if code == self.d.DIALOG_OK:
+                pass
+            else:
+                break
+        
     
     def webserver_menu(self):
         bt = "Webservice configuration"
