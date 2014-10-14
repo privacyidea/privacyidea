@@ -47,6 +47,8 @@ class pSetup(object):
         
         self.NginxConfig = NginxConfig()
         
+        self.Backup = Backup()
+        
         try:
             self.RadiusConfig = FreeRADIUSConfig()
         except:
@@ -488,6 +490,109 @@ class pSetup(object):
                     self.backup_view()
             else:
                 break
+            
+    def backup_config(self):
+        '''
+        Display the cronjobs of user privacyidea
+        '''
+        bt = "Define backup times"
+        while 1:
+            cronjobs = self.Backup.get_cronjobs()
+            choices = [("Add new backup date", "")]
+            for cronjob in cronjobs:
+                if cronjob.get("user") == "privacyidea":
+                    comment = "backup job."
+                    if cronjob.get("minute", "*") != "*":
+                        comment = "hourly backup job."
+                    if cronjob.get("hour", "*") != "*":
+                        comment = "daily backup job."
+                    if cronjob.get("dow", "*") != "*":
+                        comment = "weekly backup job."
+                    if cronjob.get("dom", "*") != "*":
+                        comment = "monthly backup job."
+                    if cronjob.get("month", "*") != "*":
+                        comment = "yearly backup job."
+                    choices.append(("%s %s %s %s %s" % (cronjob.get("minute", "*"),
+                                                        cronjob.get("hour", "*"),
+                                                        cronjob.get("dom", "*"),
+                                                        cronjob.get("month", "*"),
+                                                        cronjob.get("dow", "*")),
+                                   comment))
+            code, tags = self.d.menu("Here you can define times, when "
+                                     "to run a backup.",
+                                     choices=choices,
+                                     backtitle=bt)
+            
+            if code == self.d.DIALOG_OK:
+                if tags.startswith("Add"):
+                    self.backup_add()
+                else:
+                    self.backup_delete(tags)
+            else:
+                break
+        pass
+    
+    def backup_add(self):
+        '''
+        Add a backup date.
+        '''
+        bt = "Add a new backup date"
+        code, bdate = self.d.inputbox("The date to run the backup. "
+                                      "Please enter it like this: "
+                                      "<Minute>  <Hour>  <Day-of-Month> "
+                                      " <Month>  <Day-of-Week>. You may"
+                                      " use '*' as wildcard entry.",
+                                      width=70,
+                                      backtitle=bt)
+        
+        if code == self.d.DIALOG_OK:
+            date_fragments = bdate.split()
+            if len(date_fragments) == 5:
+                pass
+            elif len(date_fragments) == 4:
+                date_fragments.append('*')
+            elif len(date_fragments) == 3:
+                date_fragments.append('*')
+                date_fragments.append('*')
+            elif len(date_fragments) == 2:
+                date_fragments.append('*')
+                date_fragments.append('*')
+                date_fragments.append('*')
+            elif len(date_fragments) == 1:
+                date_fragments.append('*')
+                date_fragments.append('*')
+                date_fragments.append('*')
+                date_fragments.append('*')
+            else:
+                return
+            self.Backup.add_backup_time(date_fragments)
+    
+    def backup_delete(self, tag):
+        '''
+        Delete a backup date
+        '''
+        bt = "Delete a backup date"
+        (minute, hour, dom, month, dow) = tag.split()
+        code = self.d.yesno("Do you want to delete the backup "
+                            "job at time %s:%s. "
+                            "Month:%s, Day of Month: %s, "
+                            "Day of week: %s?" %
+                            (hour, minute, month, dom, dow))
+        if code == self.d.DIALOG_OK:
+            # TODO: Delete backup job.
+            self.Backup.del_backup_time(hour, minute, month, dom, dow)
+        
+    def backup_now(self):
+        '''
+        Run the backup now.
+        '''
+        pass
+    
+    def backup_view(self):
+        '''
+        View the saved backup files to restore one.
+        '''
+        pass
     
     def webserver_menu(self):
         bt = "Webservice configuration"
@@ -698,4 +803,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
 

@@ -57,6 +57,11 @@ class CronJobParser(BaseParser):
         return the grouped config
         
         """
+        # reread the file from dist
+        if self.file:
+            f = codecs.open(self.file, "r", "utf-8")
+            self.content = f.read()
+            f.close()
         config = self.cron_file.parseString(self.content)
         return config
     
