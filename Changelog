@@ -1,3 +1,7 @@
+Version 1.4.1, 2014-10-14
+
+  * Fix port bug in sql resolver
+
 Version 1.4, 2014-10-06
 
   * Add "wrong password" message on login screen
