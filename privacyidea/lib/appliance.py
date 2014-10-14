@@ -5,7 +5,6 @@ import StringIO
 import re
 import sys
 from privacyidea.lib.ext import nginxparser
-from privacyidea.lib.freeradiusparser import ClientConfParser
 import crypt
 import random
 import fileinput
@@ -16,7 +15,43 @@ from privacyidea.lib.util import generate_password
 DATABASE = "privacyidea"
 DBUSER = "privacyidea"
 POOL = "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+ 
 
+class Backup(object):
+    
+    def __init__(self,
+                 config_dir="/etc/privacyidea/backup",
+                 data_dir="/var/lib/privacyidea/backup"):
+        self.data_dir = data_dir
+        pass
+    
+    def backup_now(self, password):
+        '''
+        Create a backup of the system right now
+        The current backup will contain the
+        encryption key. This will be encrypted with
+        the password.
+        '''
+        pass
+    
+    def get_backup_time(self):
+        '''
+        Parse the cronjob and return the backup times
+        '''
+        pass
+    
+    def add_backup_time(self):
+        '''
+        Add a backup time to the cronjobs
+        '''
+        pass
+    
+    def del_backup_time(self):
+        '''
+        Delete a backup time from the cronjob
+        '''
+        pass
+    
 
 class PrivacyIDEAConfig(object):
     

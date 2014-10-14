@@ -27,10 +27,11 @@ from dialog import Dialog
 from privacyidea.lib.appliance import NginxConfig
 from privacyidea.lib.appliance import PrivacyIDEAConfig
 from privacyidea.lib.appliance import FreeRADIUSConfig
+from privacyidea.lib.appliance import Backup
 
 DEFAULT_CONFIG = "/etc/privacyidea/privacyidea.ini"
 DESCRIPTION = __doc__
-VERSION = "1.3"
+VERSION = "1.5"
 
 
 class pSetup(object):
@@ -67,6 +68,10 @@ class pSetup(object):
             choices.append( ("FreeRADIUS","",
                              "Configure RADIUS settings like "
                              "the RADIUS clients.") )
+        choices.append(("Backup and Restore","",
+                        "Backup or Restore of privacyIDEA"
+                        "configuration and database and"
+                        "RADIUS clients."))
         while 1:
             code, tags = self.d.menu("Which subject do you want to configure?",
                                      choices=choices,
@@ -81,6 +86,8 @@ class pSetup(object):
                     self.privacyidea_menu()
                 elif tags == "FreeRADIUS":
                     self.radius_menu()
+                elif tags.startswith("Backup"):
+                    self.backup_menu()
                     
             else:
                 # End
@@ -464,8 +471,26 @@ class pSetup(object):
            self.pConfig.get_loglevel())
         self.d.scrollbox(text)
     
+    def backup_menu(self):
+        bt = "Backup and Restore configuration"
+        while 1:
+            code, tags = self.d.menu("Backup and Restore",
+                                     choices=[("Configure backup", ""),
+                                              ("Backup now", ""),
+                                              ("View Backups", "")],
+                                     backtitle=bt)
+            if code == self.d.DIALOG_OK:
+                if tags.startswith("Configure"):
+                    self.backup_config()
+                elif tags.startswith("Backup"):
+                    self.backup_now()
+                elif tags.startswith("View Backup"):
+                    self.backup_view()
+            else:
+                break
+    
     def webserver_menu(self):
-        bt = "Webervice configuration"
+        bt = "Webservice configuration"
         while 1:
             code, tags = self.d.menu("Configure Webserver",
                                      choices=[("enable or disable webserver", ""),
