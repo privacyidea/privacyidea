@@ -27,7 +27,9 @@ from dialog import Dialog
 from privacyidea.lib.appliance import NginxConfig
 from privacyidea.lib.appliance import PrivacyIDEAConfig
 from privacyidea.lib.appliance import FreeRADIUSConfig
-from privacyidea.lib.appliance import Backup
+from privacyidea.lib.appliance import (Backup,
+                                       CRON_BACKUP_CMD)
+from subprocess import call
 
 DEFAULT_CONFIG = "/etc/privacyidea/privacyidea.ini"
 DESCRIPTION = __doc__
@@ -586,7 +588,7 @@ class pSetup(object):
         '''
         Run the backup now.
         '''
-        pass
+        call(CRON_BACKUP_CMD, shell=True)
     
     def backup_view(self):
         '''
@@ -596,9 +598,9 @@ class pSetup(object):
         while 1:
             backups = self.Backup.get_backups()
             choices = []
-            for backup in backups:
-                choices.append((backup[0], "%s %s" % (backup[1],
-                                                     backup[2])))
+            for bfile in sorted(backups.keys(), reverse=True):
+                choices.append((bfile, "%s %s" % (backups[bfile].get("size"),
+                                                  backups[bfile].get("time"))))
             code, tags = self.d.menu("Choose a backup you wish to restore...",
                                      choices=choices,
                                      backtitle=bt,

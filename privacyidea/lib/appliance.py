@@ -91,16 +91,18 @@ class Backup(object):
         '''
         List the available backups in the self.data_dir
         
-        :return: list of tuples with names, date and size
+        :return: dict of backups. Key is the filename, and
+                 "size" and "time"
         '''
         allfiles = os.listdir(self.data_dir)
-        backups = []
+        backups = {}
         for f in allfiles:
             if f.startswith("privacyidea-backup"):
                 st = os.stat(self.data_dir + "/" + f)
                 size = "%iMB" % (int(st[ST_SIZE]) / (1024 * 1024))
                 mtime = time.asctime(time.localtime(st[ST_MTIME]))
-                backups.append((f, size, mtime))
+                backups[f] = {"size": size,
+                              "time": mtime}
         return backups
     
     def del_backup_time(self, hour, minute, month, dom, dow):

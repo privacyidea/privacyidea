@@ -19,26 +19,18 @@
   Description:  This is the setup tool for privacyidea
 '''
 
-VERSION = '1.3'
+VERSION = '1.5'
 DESCRIPTION = __doc__
 
 
-import subprocess
-import ConfigParser
 import argparse
-import smtplib
-import binascii
-from email.mime.text import MIMEText
 import sys
 import os
-import re
-import StringIO
 from privacyidea.lib.ext import nginxparser
 from privacyidea.lib.appliance import NginxConfig
 from privacyidea.lib.appliance import PrivacyIDEAConfig
-import os.path
 import pprint
-from subprocess import call 
+ 
 
 def nginx_enable(args):
     nconfig = NginxConfig()
