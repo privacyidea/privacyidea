@@ -3,3 +3,10 @@ config/token.sqlite
 privacyidea.log*
 /tests/testdata/data/
 *~
+doc/_build/
+.project
+.pydevproject
+.settings/
+DEBUILD/
+privacyidea/tests/testdata/private.pem
+privacyidea/tests/testdata/public.pem
