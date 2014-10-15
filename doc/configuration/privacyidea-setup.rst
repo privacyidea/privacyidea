@@ -3,6 +3,8 @@
 privacyIDEA setup tool
 ----------------------
 
+.. index:: appliance, setup tool
+
 Starting with 1.3.3 privacyIDEA comes with a graphical setup tool 
 to manage your token administrators and RADIUS clients.
 Thus you will get a kind of appliance experience.
@@ -48,3 +50,67 @@ data is kept.
 .. note:: You can also edit the clients.conf and other configuration files
    manually. The setup tool will also read those manual changes!
 
+
+.. _backup_and_restore:
+
+Backup and Restore
+..................
+
+.. index:: Backup, Restore
+
+Starting with version 1.5 the setup tool also supports backup and 
+restore. Backups are written to the directory `/var/lib/privacyidea/backup`.
+
+The backup contains all privacyIDEA configuration, the contents of
+the directory `/etc/privacyidea`, the encryption key, the configured
+administrators, the complete token database (MySQL) and Audit log. 
+Furthermore if you are running FreeRADIUS the backup also contains
+the `/etc/freeradius/clients.conf` file.
+
+.. figure:: appliance/backup1.png
+   :scale: 50%
+
+Schedulded backup
+~~~~~~~~~~~~~~~~~
+
+At the configuration point *Configure Backup* you can define times
+when a scheduled backup should be performed. This information is
+written to the file `/etc/crontab`.
+
+.. figure:: appliance/backup2.png
+   :scale: 50%
+
+   Scheduled backup
+
+You can enter minutes, hours, day of month, month and day of week.
+If the entry should be valid for each e.g. month or hour, you need
+to enter a '*'.
+
+In this example the `10 17 * * *` (minute=10, hour=17)
+means to perform a backup each day
+and each month at 17:10 (5:10pm).
+
+The example `1 10 1 * *` (minute=1, hour=10, day of month=1) means
+to perform a backup on the first day of each month at 10:01 am.
+
+Thus you could also perform backups only once a week at the weekend.
+
+Immediate backup
+~~~~~~~~~~~~~~~~
+
+If you want to run a backup right now you can choose the entry
+`Backup now`.
+
+Restore
+~~~~~~~
+
+The entry `View Backups` will list all the backups available.
+
+.. figure:: appliance/backup3.png
+   :scale: 50%
+
+   All available backups
+
+You can select a backup and you are asked if you want to restore the data. 
+
+.. warning:: Existing data is overwritten and will be lost.
