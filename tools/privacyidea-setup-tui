@@ -24,14 +24,12 @@ import argparse
 import sys
 import time
 from dialog import Dialog
-from privacyidea.lib.appliance import NginxConfig
-from privacyidea.lib.appliance import PrivacyIDEAConfig
-from privacyidea.lib.appliance import FreeRADIUSConfig
 from privacyidea.lib.appliance import (Backup,
-                                       CRON_BACKUP_CMD)
-from subprocess import call
+                                       FreeRADIUSConfig,
+                                       PrivacyIDEAConfig,
+                                       NginxConfig,
+                                       DEFAULT_CONFIG)
 
-DEFAULT_CONFIG = "/etc/privacyidea/privacyidea.ini"
 DESCRIPTION = __doc__
 VERSION = "1.5"
 
@@ -581,14 +579,37 @@ class pSetup(object):
                             "Day of week: %s?" %
                             (hour, minute, month, dom, dow))
         if code == self.d.DIALOG_OK:
-            # TODO: Delete backup job.
+            # Delete backup job.
             self.Backup.del_backup_time(hour, minute, month, dom, dow)
+            
+    def backup_restore(self, tag):
+        '''
+        Restore a backup
+        '''
+        bt = "Restore a backup"
+        code = self.d.yesno("Are you sure you want to restore the backup %s? "
+                            "Current data will be lost. The restore will "
+                            "restore the encryption key, administrator "
+                            "settings, token database, audit log, RADIUS "
+                            "clients, server certificates... " 
+                            "If unsure, please "
+                            "perform a backup before restoring the old one."
+                            % tag,
+                            width=70)
+        if code == self.d.DIALOG_OK:
+            # Restore the backup
+            self.d.gauge_start("Restoring backup %s" % tag, percent=20)
+            self.Backup.restore_backup(tag)
+            self.d.gauge_update(percent=90)
+            self.data_changed = True
+            time.sleep(1)
+            self.d.gauge_stop()
         
     def backup_now(self):
         '''
         Run the backup now.
         '''
-        call(CRON_BACKUP_CMD, shell=True)
+        self.Backup.backup_now()
     
     def backup_view(self):
         '''
@@ -606,7 +627,7 @@ class pSetup(object):
                                      backtitle=bt,
                                      width=78)
             if code == self.d.DIALOG_OK:
-                pass
+                self.backup_restore(tags)
             else:
                 break
         

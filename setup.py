@@ -77,7 +77,8 @@ setup(
              'tools/totp-token',
              'tools/privacyidea-create-ad-users',
              'tools/privacyidea-setup',
-             'tools/privacyidea-backup'
+             'tools/privacyidea-backup',
+             'tools/privacyidea-restore'
              ],
     setup_requires=["PasteScript>=1.6.3"],
     packages=find_packages(exclude=['ez_setup']),

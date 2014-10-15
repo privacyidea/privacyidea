@@ -15,7 +15,8 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import os, time
+import os
+import time
 from stat import ST_SIZE, ST_MTIME
 from subprocess import call
 import ConfigParser
@@ -37,8 +38,11 @@ DBUSER = "privacyidea"
 POOL = "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 CRONTAB = "/etc/crontab"
 CRON_USER = "privacyidea"
-CRON_BACKUP_CMD = "/usr/bin/privacyidea-backup"
- 
+BACKUP_CMD = "/usr/bin/privacyidea-backup"
+RESTORE_CMD = "/usr/bin/privacyidea-restore %s"
+DEFAULT_CONFIG = "/etc/privacyidea/privacyidea.ini"
+BACKUP_DIR = "/var/lib/privacyidea/backup"
+
 
 class Backup(object):
     
@@ -50,14 +54,23 @@ class Backup(object):
         self.cronjobs = {}
         self.CP = CronJobParser()
 
-    def backup_now(self, password):
+    def backup_now(self, password=None):
         '''
         Create a backup of the system right now
         The current backup will contain the
         encryption key. This will be encrypted with
         the password.
         '''
-        pass
+        call(BACKUP_CMD, shell=True)
+        
+    def restore_backup(self, bfile, password=None):
+        '''
+        Restore the backup file.
+        
+        :param bfile: the tgz file name without the path
+        :type bfile: string
+        '''
+        call(RESTORE_CMD % BACKUP_DIR + "/" + bfile, shell=True)
     
     def get_cronjobs(self):
         '''
@@ -82,7 +95,7 @@ class Backup(object):
                               "month": dc[3],
                               "dow": dc[4],
                               "user": CRON_USER,
-                              "command": CRON_BACKUP_CMD})
+                              "command": BACKUP_CMD})
         self.CP.save({"assignments": self.assignments,
                       "cronjobs": self.cronjobs},
                      CRONTAB)
