@@ -1351,6 +1351,9 @@ function _fill_realms(widget, also_none_realm){
 }
 
 function fill_realms() {
+	/*
+	 * Is used to fill the realm list in the left sidebar
+	 */
 	var defaultRealm = _fill_realms($('#realm'), 0);
 	return defaultRealm;
 }
@@ -1783,8 +1786,9 @@ function save_ldap_config(){
 function save_realm_config(){
     var realm = $('#realm_name').val();
     params = {'realm': realm,
-  		  'resolvers': g.resolvers_in_realm_to_edit}
-    save_realm_config_action(params)
+  		  'resolvers': g.resolvers_in_realm_to_edit};
+    save_realm_config_action(params);
+    return false;
 }
 
 
@@ -1904,6 +1908,8 @@ function realms_load(){
 	/*
 	 * This function is called, each time the realms are changed,
 	 * after a new realm is created or deleted.
+	 * 
+	 * it loads the realms for the realm edit dialog
 	 */
     g.realm_to_edit = "";
     show_waiting();
@@ -1933,10 +1939,12 @@ function realms_load(){
                 $(".ui-selected", this).each(function(){
                     var index = $("#realms_select li").index(this);
                     g.realm_to_edit = this.innerHTML;
+                    return false;
                 }); // end of each
             } // end of stop function
         }); // end of selectable
     }); // end of $.post
+    return false;
 }
 
 function realm_ask_delete(){
@@ -2009,15 +2017,14 @@ function realm_delete(){
 	var realm = $('#realm_delete_name').html();
 	$.post('/system/delRealm', {'realm' : realm,'session':getsession()},
 	 function(data, textStatus, XMLHttpRequest){
-		if (data.result.status == true) {
-			fill_realms();
-			realms_load();
+		if (data.result.status == true) {			
+			var buf = realms_load();
+			var tuf = fill_realms();
 			alert_info_text("text_realm_delete_success", realm);
 		}
 		else {
 			alert_info_text("text_realm_delete_fail", data.result.error.message, ERROR);
 		}
-		hide_waiting();
 	});
 }
 
@@ -3286,6 +3293,7 @@ $(document).ready(function(){
                 $(this).dialog('close');
                 show_waiting();
                 realm_delete();
+        		hide_waiting();
             	},
 				id: "button_realm_ask_delete_delete",
 				text: "Delete"

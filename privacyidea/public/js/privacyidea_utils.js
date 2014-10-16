@@ -115,7 +115,7 @@ function save_realm_config_action(params) {
         } else {
         	fill_realms();
         	realms_load();
-        	alert_info_text("text_realm_created", realm);
+        	alert_info_text("text_realm_created", params['realm']);
         }
     });
 }
