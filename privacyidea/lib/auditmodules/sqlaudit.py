@@ -138,6 +138,7 @@ class Audit(AuditBase):
         '''
         conditions = []
         for search_key in param.keys():
+            search_value = param.get(search_key)
             if search_value.strip() != '':
                 try:
                     conditions.append(getattr(LogEntry,
@@ -364,10 +365,10 @@ class Audit(AuditBase):
         finally:
             self.session.close()
 
-        # if logentries is None:
-        #    raise StopIteration
-        # else:
-        return iter(logentries)
+        if logentries is None:
+            return iter([])
+        else:
+            return iter(logentries)
     
     def audit_entry_to_dict(self, audit_entry):
         sig = self._verify_sig(audit_entry)

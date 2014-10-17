@@ -1,3 +1,10 @@
+privacyidea (1.5~dev2-1) trusty; urgency=low
+
+  * Fix the empty result audit search problem
+  * ...and other stuff...
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 17 Oct 2014 15:00:00 +0200
+
 privacyidea (1.5~dev1-1) trusty; urgency=low
 
   * Fix the port problem with SQL resolver
