@@ -138,7 +138,6 @@ class Audit(AuditBase):
         '''
         conditions = []
         for search_key in param.keys():
-            search_value = param.get(search_key)
             if search_value.strip() != '':
                 try:
                     conditions.append(getattr(LogEntry,
@@ -278,22 +277,22 @@ class Audit(AuditBase):
         Note: Not all elements of the LogEntry are used to generate the
         string (the Signature is not!), otherwise we could have used pickle
         '''
-        s = "id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s,ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % ( 
-            le.id,
-            le.date,
-            le.action,
-            le.success,
-            le.serial,
-            le.token_type,
-            le.user,
-            le.realm,
-            le.administrator,
-            le.action_detail,
-            le.info,
-            le.privacyidea_server,
-            le.client,
-            le.loglevel,
-            le.clearance_level)
+        s = "id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s,"\
+            "ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % (le.id,
+                                                  le.date,
+                                                  le.action,
+                                                  le.success,
+                                                  le.serial,
+                                                  le.token_type,
+                                                  le.user,
+                                                  le.realm,
+                                                  le.administrator,
+                                                  le.action_detail,
+                                                  le.info,
+                                                  le.privacyidea_server,
+                                                  le.client,
+                                                  le.loglevel,
+                                                  le.clearance_level)
         return s
         
     def _get_logentry_attribute(self, key):
@@ -357,7 +356,7 @@ class Audit(AuditBase):
                                          .order_by(asc(self._get_logentry_attribute(rp_dict.get("sortname"))))\
                                          .limit(limit)\
                                          .offset(offset)
-
+                                         
         except Exception as exx:
             log.error("exception %r" % exx)
             log.error("%s" % traceback.format_exc())
@@ -365,10 +364,10 @@ class Audit(AuditBase):
         finally:
             self.session.close()
 
-        if logentries is None:
-            return iter([])
-        else:
-            return iter(logentries)
+        # if logentries is None:
+        #    raise StopIteration
+        # else:
+        return iter(logentries)
     
     def audit_entry_to_dict(self, audit_entry):
         sig = self._verify_sig(audit_entry)
@@ -510,4 +509,3 @@ def main():  # pragma: no cover
 
 if __name__ == '__main__':
     main()
-    

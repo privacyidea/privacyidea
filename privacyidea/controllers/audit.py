@@ -5,6 +5,9 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2014-10-17 Fix the audit search with trailing /
+#             Cornelius Kölbel <cornelius@privacyidea.org>
+#
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  AGPLv3
 #  contact:  http://www.linotp.org
@@ -35,7 +38,7 @@ from pylons import tmpl_context as c
 from pylons import request, response, config
 from privacyidea.lib.base import BaseController
 
-from privacyidea.lib.user import  getUserFromRequest
+from privacyidea.lib.user import getUserFromRequest
 from privacyidea.lib.policy import PolicyClass, PolicyException
 
 from privacyidea.lib.reply import sendError
@@ -128,7 +131,7 @@ class AuditController(BaseController):
             output_format = getParam(param, "outform", optional)
             Policy = PolicyClass(request, config, c,
                                  get_privacyIDEA_config(),
-                                 token_type_list = get_token_type_list())
+                                 token_type_list=get_token_type_list())
             Policy.checkPolicyPre('audit', 'view', {})
 
             # remove the param outform (and other parameters that should not
@@ -145,8 +148,9 @@ class AuditController(BaseController):
             if output_format == "csv":
                 filename = "privacyidea-audit.csv"
                 response.content_type = "application/force-download"
-                response.headers['Content-disposition'] = (
-                                        'attachment; filename=%s' % filename)
+                response.headers['Content-'
+                                 'disposition'] = ('attachment; filename=%s'
+                                                   % filename)
                 audit_iter = CSVAuditIterator(search_params)
             else:
                 response.content_type = 'application/json'
@@ -166,10 +170,11 @@ class AuditController(BaseController):
             log.error("audit/search failed: %r" % e)
             log.error(traceback.format_exc())
             Session.rollback()
-            return sendError(response, "audit/search failed: %s" % unicode(e), 0)
+            return sendError(response,
+                             "audit/search failed: %s" % unicode(e), 0)
 
         finally:
             Session.close()
 
 
-#eof###########################################################################
+# eof########################################################################

@@ -5,6 +5,9 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2014-10-17 Fix the empty result problem
+#             Cornelius Kölbel, <cornelius@privacyidea.org>
+#
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  AGPLv3
 #  contact:  http://www.linotp.org
@@ -38,8 +41,8 @@ import socket
 
 import json
 
-
 from privacyidea.lib.token import getTokenNumResolver
+
 
 @log_with(log)
 def getAuditClass(packageName, className):
@@ -57,7 +60,8 @@ def getAuditClass(packageName, className):
 
 """
     if packageName is None:
-        log.error("No suiteable Audit Class found. Working with dummy AuditBase class.")
+        log.error("No suiteable Audit Class found. Working with dummy "
+                  "AuditBase class.")
         packageName = "privacyidea.lib.auditmodules"
         className = "AuditBase"
 
@@ -65,11 +69,12 @@ def getAuditClass(packageName, className):
     klass = getattr(mod, className)
     log.debug("klass: %s" % klass)
     if not hasattr(klass, "log"):
-        raise NameError("Audit AttributeError: " + packageName + "." + \
-              className + " instance has no attribute 'log'")
+        raise NameError("Audit AttributeError: " + packageName + "." +
+                        className + " instance has no attribute 'log'")
         return ""
     else:
         return klass
+
 
 @log_with(log)
 def getAudit():
@@ -82,8 +87,9 @@ def logTokenNum():
     # log the number of the tokens
     c.audit['action_detail'] = "tokennum = %s" % str(getTokenNumResolver())
 
+
 class AuditBase(object):
-    ## TODO: Fix: remove the fixed private key
+    # TODO: Fix: remove the fixed private key
     private = '''-----BEGIN RSA PRIVATE KEY-----
 MIIEowIBAAKCAQEArSQlRpXLI+GzARnqOe+XKEv5dy59pefcx/nXt5GGwzAthyiS
 lH1oC4VwFgEyh1nvM9pOtQ2sDg5EnpCOTxkGoX+wS9mqpF5S9QhJP5IkrGn4wmIC
@@ -127,23 +133,23 @@ pwIDAQAB
     @log_with(log)
     def initialize(self):
         # defaults
-        c.audit = {'action_detail' : '',
-                   'info' : '',
-                   'log_level' : 'INFO',
-                   'administrator' : '',
-                   'value' : '',
-                   'key' : '',
-                   'serial' : '',
-                   'token_type' : '',
-                   'clearance_level' : 0,
-                   'privacyidea_server' : socket.gethostname(),
-                   'realm' : '',
-                   'user' : '',
-                   'client' : ''
+        c.audit = {'action_detail': '',
+                   'info': '',
+                   'log_level': 'INFO',
+                   'administrator': '',
+                   'value': '',
+                   'key': '',
+                   'serial': '',
+                   'token_type': '',
+                   'clearance_level': 0,
+                   'privacyidea_server': socket.gethostname(),
+                   'realm': '',
+                   'user': '',
+                   'client': ''
                    }
-        c.audit['action'] = "%s/%s" % (
-                        request.environ['pylons.routes_dict']['controller'],
-                        request.environ['pylons.routes_dict']['action'])
+        controller = request.environ['pylons.routes_dict']['controller']
+        action = request.environ['pylons.routes_dict']['action']
+        c.audit['action'] = "%s/%s" % (controller, action)
 
     @log_with(log)
     def readKeys(self):
@@ -163,13 +169,13 @@ pwIDAQAB
         except Exception as e:
             log.error("Error reading public key %s: (%r)" % (pub, e))
 
-
     def getAuditId(self):
         return self.name
 
     def getTotal(self, param, AND=True, display_error=True):
         '''
-        This method returns the total number of audit entries in the audit store
+        This method returns the total number of audit entries
+        in the audit store
         '''
         return None
 
@@ -209,9 +215,9 @@ pwIDAQAB
             
         This function is deprecated.
         '''
-        if rp_dict == None:
+        if rp_dict is None:
             rp_dict = {}
-        result = [ {} ]
+        result = [{}]
         return result
     
     def searchQuery(self, search_dict, rp_dict):
@@ -222,10 +228,12 @@ pwIDAQAB
     
     def audit_entry_to_dict(self, audit_entry):
         '''
-        If the searchQuery returns an iteretor with elements that are not a dictionary, the audit module needs
+        If the searchQuery returns an iteretor with elements that are not a
+        dictionary, the audit module needs
         to provide this function, to convert the audit entry to a dictionary.
         '''
         return {}
+
 
 @log_with(log)
 def search(param, user=None, columns=None):
@@ -234,13 +242,13 @@ def search(param, user=None, columns=None):
     
     search_dict = {}
 
-    if param.has_key("query"):
+    if "query" in param:
         if "extsearch" == param['qtype']:
             # search patterns are delimitered with ;
             search_list = param['query'].split(";")
             for s in search_list:
                 log.debug(s)
-                key, e, value = s.partition("=")
+                key, _e, value = s.partition("=")
                 key = key.strip()
                 value = value.strip()
                 search_dict[key] = value
@@ -275,40 +283,38 @@ def search(param, user=None, columns=None):
         # In this case we have only a limited list of columns, like in
         # the selfservice portal
         for a in result:
-            if a.has_key('number'):
+            if "number" in a:
                 cell = []
                 for c in columns:
                     cell.append(a.get(c))
                 lines.append({'id': a['number'],
-                              'cell' : cell
+                              'cell': cell
                               })
     else:
         # Here we use all columns, that exist
         for a in result:
-            if a.has_key('number'):
-                lines.append(
-                    { 'id' : a['number'],
-                        'cell': [
-                            a.get('number', ''),
-                            a.get('date', ''),
-                            a.get('sig_check', ''),
-                            a.get('missing_line', ''),
-                            a.get('action', ''),
-                            a.get('success', ''),
-                            a.get('serial', ''),
-                            a.get('token_type', ''),
-                            a.get('user', ''),
-                            a.get('realm', ''),
-                            a.get('administrator', ''),
-                            a.get('action_detail', ''),
-                            a.get('info', ''),
-                            a.get('privacyidea_server', ''),
-                            a.get('client', ''),
-                            a.get('log_level', ''),
-                            a.get('clearance_level', ''),
-                             ]
-                    }
-                )
+            if "number" in a:
+                lines.append({'id': a['number'],
+                              'cell': [a.get('number', ''),
+                                       a.get('date', ''),
+                                       a.get('sig_check', ''),
+                                       a.get('missing_line', ''),
+                                       a.get('action', ''),
+                                       a.get('success', ''),
+                                       a.get('serial', ''),
+                                       a.get('token_type', ''),
+                                       a.get('user', ''),
+                                       a.get('realm', ''),
+                                       a.get('administrator', ''),
+                                       a.get('action_detail', ''),
+                                       a.get('info', ''),
+                                       a.get('privacyidea_server', ''),
+                                       a.get('client', ''),
+                                       a.get('log_level', ''),
+                                       a.get('clearance_level', ''),
+                                       ]
+                              }
+                             )
     # get the complete number of audit logs
     total = audit.getTotal(search_dict)
 
@@ -347,7 +353,7 @@ class AuditIterator(object):
                 search_list = param['query'].split(";")
                 for s in search_list:
                     log.debug(s)
-                    key, e, value = s.partition("=")
+                    key, _e, value = s.partition("=")
                     key = key.strip()
                     value = value.strip()
                     search_dict[key] = value
@@ -367,9 +373,7 @@ class AuditIterator(object):
             rp_dict['page'] = param.get('page')
         self.page = param.get('page', 1)
 
-
         rp_dict['rp'] = param.get('rp', '15') or '15'
-
 
         rp_dict['sortname'] = param.get('sortname')
         rp_dict['sortorder'] = param.get('sortorder')
@@ -395,7 +399,7 @@ class AuditIterator(object):
         a = self.iter.next()
 
         if type(a) != dict:
-            ## convert table data to dict!
+            # convert table data to dict!
             a = self.audit.audit_entry_to_dict(a)
 
         columns = self.columns
@@ -407,55 +411,54 @@ class AuditIterator(object):
                 for c in columns:
                     cell.append(a.get(c))
 
-                lentry = {'id': a['number'],
-                              'cell' : cell
-                              }
+                # Fixme: why is this not used?
+                _lentry = {'id': a['number'],
+                           'cell': cell}
         else:
             # Here we use all columns, that exist
             if 'number' in a:
-                entry = { 'id' : a['number'],
-                        'cell': [
-                            a.get('number', ''),
-                            a.get('date', ''),
-                            a.get('sig_check', ''),
-                            a.get('missing_line', ''),
-                            a.get('action', ''),
-                            a.get('success', ''),
-                            a.get('serial', ''),
-                            a.get('token_type', ''),
-                            a.get('user', ''),
-                            a.get('realm', ''),
-                            a.get('administrator', ''),
-                            a.get('action_detail', ''),
-                            a.get('info', ''),
-                            a.get('privacyidea_server', ''),
-                            a.get('client', ''),
-                            a.get('log_level', ''),
-                            a.get('clearance_level', ''),
-                             ],
-                    }
+                entry = {'id': a['number'],
+                         'cell': [a.get('number', ''),
+                                  a.get('date', ''),
+                                  a.get('sig_check', ''),
+                                  a.get('missing_line', ''),
+                                  a.get('action', ''),
+                                  a.get('success', ''),
+                                  a.get('serial', ''),
+                                  a.get('token_type', ''),
+                                  a.get('user', ''),
+                                  a.get('realm', ''),
+                                  a.get('administrator', ''),
+                                  a.get('action_detail', ''),
+                                  a.get('info', ''),
+                                  a.get('privacyidea_server', ''),
+                                  a.get('client', ''),
+                                  a.get('log_level', ''),
+                                  a.get('clearance_level', ''),
+                                  ],
+                         }
                 if self.headers is True:
-                    entry['data'] = [
-                            'number',
-                            'date',
-                            'sig_check',
-                            'missing_line',
-                            'action',
-                            'success',
-                            'serial',
-                            'token_type',
-                            'user',
-                            'realm',
-                            'administrator',
-                            'action_detail',
-                            'info',
-                            'privacyidea_server',
-                            'client',
-                            'log_level',
-                            'clearance_level',
+                    entry['data'] = ['number',
+                                     'date',
+                                     'sig_check',
+                                     'missing_line',
+                                     'action',
+                                     'success',
+                                     'serial',
+                                     'token_type',
+                                     'user',
+                                     'realm',
+                                     'administrator',
+                                     'action_detail',
+                                     'info',
+                                     'privacyidea_server',
+                                     'client',
+                                     'log_level',
+                                     'clearance_level',
                                      ]
 
             return entry
+
 
 class JSONAuditIterator(AuditIterator):
     """
@@ -473,8 +476,15 @@ class JSONAuditIterator(AuditIterator):
 
         :return: returns a string representing the data row
         """
+        beginning = ""
+        closing = ""
+        cell = ""
         if self.last is not None:
             raise self.last
+
+        if self.count == 0:
+            beginning = ('{ "page": %d, "rows": [') % int(self.page)
+            self.count = self.count + 1
 
         try:
             entry = self.parent.next()
@@ -482,19 +492,20 @@ class JSONAuditIterator(AuditIterator):
             self.last = exx
             # get the complete number of audit logs
             total = self.audit.getTotal(self.search_dict)
-            #closing = '], "total": %d, }' % self.total
-            closing = '], "total": %d }' % int(total)
-            return closing
+            closing = '{} ], "total": %d }' % int(total)
+            if self.count == 1:
+                # There was no other entry and we just return an empty list
+                return beginning + closing
+            else:
+                return closing
 
         entry_s = json.dumps(entry, indent=3)
 
-        if self.count == 0:
-            result = ('{ "page": %d, "rows": [ %s' %
-                         (int(self.page), entry_s))
+        if self.count > 0:
             self.count = self.count + 1
-        else:
-            result = ", " + entry_s
-        return result
+            cell = entry_s + ", "
+        return beginning + cell
+
 
 class CSVAuditIterator(AuditIterator):
     """
@@ -533,12 +544,11 @@ class CSVAuditIterator(AuditIterator):
             result += r_str
             result += "\n"
 
-
         row = []
         raw_row = entry.get('cell', [])
 
-        ## we must escape some dump entries, which destroy the
-        ## import of the csv data - like SMSProviderConfig 8-(
+        # we must escape some dump entries, which destroy the
+        # import of the csv data - like SMSProviderConfig 8-(
         for row_entry in raw_row:
             if type(row_entry) in (str, unicode):
                 row_entry = row_entry.replace('\"', "'")
@@ -552,4 +562,4 @@ class CSVAuditIterator(AuditIterator):
 
         return result
 
-###eof#########################################################################
+# ##eof#######################################################################
