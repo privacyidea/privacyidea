@@ -622,14 +622,19 @@ class pSetup(object):
             for bfile in sorted(backups.keys(), reverse=True):
                 choices.append((bfile, "%s %s" % (backups[bfile].get("size"),
                                                   backups[bfile].get("time"))))
-            code, tags = self.d.menu("Choose a backup you wish to restore...",
-                                     choices=choices,
-                                     backtitle=bt,
-                                     width=78)
-            if code == self.d.DIALOG_OK:
-                self.backup_restore(tags)
+            if len(choices) == 0:
+                    self.d.msgbox("No backups found!")
+                    break
             else:
-                break
+                code, tags = self.d.menu("Choose a backup you wish to "
+                                         "restore...",
+                                         choices=choices,
+                                         backtitle=bt,
+                                         width=78)
+                if code == self.d.DIALOG_OK:
+                    self.backup_restore(tags)
+                else:
+                    break
         
     
     def webserver_menu(self):

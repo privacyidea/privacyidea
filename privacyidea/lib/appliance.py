@@ -107,8 +107,12 @@ class Backup(object):
         :return: dict of backups. Key is the filename, and
                  "size" and "time"
         '''
-        allfiles = os.listdir(self.data_dir)
         backups = {}
+        try:
+            allfiles = os.listdir(self.data_dir)
+        except OSError:
+            return backups
+        
         for f in allfiles:
             if f.startswith("privacyidea-backup"):
                 st = os.stat(self.data_dir + "/" + f)
