@@ -2,13 +2,13 @@ Source: privacyidea
 Maintainer: Cornelius Kölbel <cornelius@privacyidea.org>
 Section: python
 Priority: optional
-Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.6.6-3), debhelper (>= 7.4.3), python-setuptools, python-pylons, python-qrcode, python-netaddr, python-ldap, python-pyrad, python-yaml, python-configobj, python-repoze.who, python-httplib2, python-crypto, python-docutils, python-repoze.who-plugins, python-sqlsoup
+Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.6.6-3), debhelper (>= 7.4.3), python-setuptools, python-pylons, python-qrcode, python-netaddr, python-ldap, python-pyrad, python-yaml, python-configobj, python-repoze.who, python-httplib2, python-crypto, python-docutils, python-repoze.who-plugins
 Standards-Version: 3.9.5
 
 Package: privacyidea
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}
-Recommends: python-mysqldb, salt-master, salt-minion, nginx-full, uwsgi, uwsgi-plugin-python
+Recommends: python-mysqldb, salt-master, salt-minion, nginx-full, uwsgi, uwsgi-plugin-python, python-sqlsoup
 Description: two-factor authentication system e.g. for OTP devices
  privacyIDEA: identity, multifactor authentication, authorization.
  privacyIDEA is an open solution for strong two-factor authentication.

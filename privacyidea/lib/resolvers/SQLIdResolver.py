@@ -27,7 +27,6 @@ from UserIdResolver import getResolverClass
 from sqlalchemy import and_
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlsoup import SQLSoup
 
 from privacyidea.lib.phppass import PasswordHash
 import traceback
@@ -38,6 +37,21 @@ import binascii
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
+
+SQLSOUP_LOADED = False
+try:
+    from sqlsoup import SQLSoup
+    SQLSOUP_LOADED = True
+except:
+    pass  # pragma: no cover
+
+if SQLSOUP_LOADED is False:  # pragma: no cover
+    try:
+        from sqlalchemy.ext.sqlsoup import SQLSoup
+        SQLSOUP_LOADED = True
+    except:
+        log.error("SQLSoup could not be loaded!")
+        pass
 
        
 class IdResolver (UserIdResolver):

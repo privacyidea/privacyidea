@@ -21,11 +21,13 @@ if [ -f /usr/share/dbconfig-common/dpkg/postinst.pgsql  ]; then
 fi
 
 fix_repoze_who () {
+    if [ ! -d /usr/lib/python2.7/dist-packages/repoze/who ]; then
 	cp -r /usr/share/pyshared/repoze/who /usr/lib/python2.7/dist-packages/repoze/
 	cp -r /usr/share/pyshared/repoze.who-1.0.18.egg-info/ /usr/lib/python2.7/dist-packages/ 
 	touch /usr/lib/python2.7/dist-packages/repoze/who/__init__.py
 	cp -r /usr/share/pyshared/repoze* /usr/lib/python2.7/dist-packages/
 	touch /usr/lib/python2.7/dist-packages/repoze/who/plugins/__init__.py
+    fi
 }
 
 create_user() {

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-VERSION = "1.5dev2"
+VERSION = "1.5dev5"
 #VERSION = "1.4"
 try:
     from setuptools import setup, find_packages
@@ -47,7 +47,7 @@ setup(
     license='AGPL v3',
     author_email='cornelius@privacyidea.org',
     url='http://www.privacyidea.org',
-    install_requires=["WebOb>=1.2,<1.4",
+    install_requires=["WebOb>=1.2,<=1.4",
                       "Pylons>=0.9.7,<=1.0",
                       "SQLAlchemy>=0.6",
                       "docutils>=0.4",
