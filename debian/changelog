@@ -1,4 +1,4 @@
-privacyidea (1.5~dev5-1precise) precise; urgency=low
+privacyidea (1.5~dev6-1trusty) trusty; urgency=low
 
   * Fix the postinstall script for not broken repoze.who
   * adapt the dependency for python webob

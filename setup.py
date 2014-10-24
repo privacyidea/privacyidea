@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-VERSION = "1.5dev5"
+VERSION = "1.5dev6"
 #VERSION = "1.4"
 try:
     from setuptools import setup, find_packages

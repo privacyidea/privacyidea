@@ -9,7 +9,9 @@ info:
 	@echo "make ppa-dev      - upload to launchpad development repo"
 	
 #VERSION=1.3~dev5
-VERSION=1.5~dev5
+VERSION=1.5~dev6
+SERIES="trusty precise"
+LOCAL_SERIES=`lsb_release -a | grep Codename | cut -f2`
 
 translate:
 	# according to http://docs.pylonsproject.org/projects/pylons-webframework/en/latest/i18n.html#using-babel
@@ -87,14 +89,22 @@ debianize:
 
 builddeb:
 	make debianize
+	################## Renew the changelog
+	cp debian/changelog DEBUILD/privacyidea.org/debian/
+	sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g debian/changelog > DEBUILD/privacyidea.org/debian/changelog
+	################# Build
 	(cd DEBUILD/privacyidea.org; debuild)
 
 ppa-dev:
-	#	make debianize
-	# Renew the changelog
+	################### Check for the series
+	@echo "You need to specify a parameter series like $(SERIES)"
+	echo $(SERIES) | grep $(series)
+	################## Renew the changelog
 	cp debian/changelog DEBUILD/privacyidea.org/debian/
+	sed -e s/"trusty) trusty; urgency"/"$(series)) $(series); urgency"/g debian/changelog > DEBUILD/privacyidea.org/debian/changelog
+	################# Build
 	(cd DEBUILD/privacyidea.org; debuild -sa -S)
-	# Upload to launchpad:
+	################ Upload to launchpad:
 	dput ppa:privacyidea/privacyidea-dev DEBUILD/privacyidea_${VERSION}-*_source.changes
 
 ppa:
