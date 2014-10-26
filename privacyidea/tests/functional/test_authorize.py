@@ -120,6 +120,7 @@ class TestAuthorizeController(TestController):
         init one DPW token
         '''
         self.createPWToken("pw1", pin="1234", pw="secret1")
+        self.unassign("pw1")
         resp = self.app.get(url(controller='admin', action='assign'),
                             {'user': 'localuser',
                              'serial': 'pw1'})
@@ -130,6 +131,7 @@ class TestAuthorizeController(TestController):
         assert '"status": true' in resp
 
         self.createPWToken("pw2", pin="1234", pw="secret2")
+        self.unassign("pw2")
         resp = self.app.get(url(controller='admin', action='assign'),
                             {'user': 'horst',
                              'serial': 'pw2'})

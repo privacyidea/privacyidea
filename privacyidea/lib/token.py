@@ -933,6 +933,7 @@ def auto_assignToken(passw, user, pin="", param=None):
 
     return ret
 
+
 @log_with(log)
 def assignToken(serial, user, pin, param=None):
     '''
@@ -942,7 +943,6 @@ def assignToken(serial, user, pin, param=None):
         param = {}
 
     toks = getTokens4UserOrSerial(None, serial)
-    #toks  = Session.query(Token).filter(Token.privacyIDEATokenSerialnumber == serial)
 
     if len(toks) > 1:
         log.warning("multiple tokens found with serial: %r" % serial)
@@ -952,6 +952,15 @@ def assignToken(serial, user, pin, param=None):
         raise TokenAdminError("no token found!", id=1102)
 
     token = toks[0]
+    
+    # Check if the token already belongs to another user
+    (owner_id, owner_resolver, owner_class) = token.getUser()
+    if owner_id and owner_resolver and owner_class:
+        log.warning("token already assigned to user: %r/%r" %
+                    (owner_id, owner_resolver))
+        raise TokenAdminError("Token already assigned to user %r/%r" %
+                              (owner_id, owner_resolver), id=1103)
+        
     if (user.login == ""):
         report = False
     else:
@@ -959,14 +968,14 @@ def assignToken(serial, user, pin, param=None):
 
     token.setUser(user, report)
 
-    ## set the Realms of the Token
+    # set the Realms of the Token
     realms = getRealms4Token(user)
     token.setRealms(realms)
 
     if pin is not None:
         token.setPin(pin, param)
 
-    ## reset the OtpCounter
+    # reset the OtpFailCounter
     token.setFailCount(0)
 
     try:
@@ -976,8 +985,10 @@ def assignToken(serial, user, pin, param=None):
         raise TokenAdminError("Token assign failed for %s/%s : %r"
                               % (user.login, serial, e), id=1105)
 
-    log.debug("successfully assigned token with serial %r to user %r" % (serial, user.login))
+    log.debug("successfully assigned token with serial "
+              "%r to user %r" % (serial, user.login))
     return True
+
 
 @log_with(log)
 def unassignToken(serial, user, pin):

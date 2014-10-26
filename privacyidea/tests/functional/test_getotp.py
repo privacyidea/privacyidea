@@ -202,6 +202,7 @@ class TestGetOtpController(TestController):
         print resp
         assert '"status": true' in resp
 
+        self.unassign("totp1")
         resp = self.app.get(url(controller='admin', action='assign'),
                             {'user': 'localuser',
                              'serial': 'totp1'

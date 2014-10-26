@@ -67,14 +67,20 @@ class TestEmailtokenController(TestController):
             'description': "E-mail token enrolled in functional tests",
             'email_address': self.default_email_address
         }
-        response = self.app.get(url(controller='admin', action='init'), params=parameters)
+        response = self.app.get(url(controller='admin', action='init'),
+                                params=parameters)
         assert '"value": true' in response
 
-        parameters = {"serial": self.token_serial, "user": "root", "pin": self.pin}
-        response = self.app.get(url(controller='admin', action='assign'), params=parameters)
+        parameters = {"serial": self.token_serial,
+                      "user": "root",
+                      "pin": self.pin}
+        self.unassign(self.token_serial)
+        response = self.app.get(url(controller='admin', action='assign'),
+                                params=parameters)
         assert '"value": true' in response
 
-        # Patch (replace) smtplib.SMTP class to prevent e-mails from being sent out
+        # Patch (replace) smtplib.SMTP class to prevent e-mails from being
+        # sent out
         self.patch_smtp = patch('smtplib.SMTP', spec=smtplib.SMTP)
         mock_smtp_class = self.patch_smtp.start()
         self.mock_smtp_instance = mock_smtp_class.return_value

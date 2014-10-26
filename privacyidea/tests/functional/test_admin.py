@@ -465,6 +465,17 @@ class TestAdminController(TestController):
         response = self.app.get(url(controller='admin', action='assign'),
                                 params=parameters)
         # Test response...
+        self.assertTrue('ERR1103: Token already assigned to user' in response,
+                        response)
+        
+        parameters = {"serial": serial}
+        response = self.app.get(url(controller='admin', action='unassign'),
+                                params=parameters)
+        
+        parameters = {"serial": serial, "user": "root", "pin": "NewPin"}
+        response = self.app.get(url(controller='admin', action='assign'),
+                                params=parameters)
+        # Test response...
         self.assertTrue('"value": true' in response, response)
 
         response = self.app.get(url(controller='admin', action='show'))

@@ -137,6 +137,16 @@ class TestController(TestCase):
         return
 
     @classmethod
+    def unassign(self, serial):
+        if pylons.test.pylonsapp:
+            wsgiapp = pylons.test.pylonsapp
+        else:
+            wsgiapp = loadapp('config: %s' % config['__file__'])
+        app = TestApp(wsgiapp)
+        app.get(url(controller='admin', action='unassign'),
+                {'serial': serial})
+
+    @classmethod
     def setupClass(cls):
         '''setup - create clean execution context by resetting database '''
         LOG.info("######## setup_class: %r" % cls)
