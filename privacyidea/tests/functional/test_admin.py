@@ -6,7 +6,7 @@
 #  contact:  http://www.privacyidea.org
 #
 #  2014 Sep 29, Cornelius Kölbel, cornelius@privacyidea.org
-#               Added uselist test and PEP8 stuff
+#               Added userlist test and PEP8 stuff
 #
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  AGPLv3

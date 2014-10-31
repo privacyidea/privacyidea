@@ -172,6 +172,21 @@ class TestGetOtpController(TestController):
             "10": "161051",
             "11": "886458"
         '''
+        self.createHOTPToken("hotp2", "12341234123412341234123412341234")
+        '''
+            "0": "819132",
+            "1": "301156",
+            "2": "586172",
+            "3": "720026",
+            "4": "062511",
+            "5": "598723",
+            "6": "770725",
+            "7": "596337",
+            "8": "647211",
+            "9": "294016",
+            "10": "161051",
+            "11": "886458"
+        '''
         self.createTOTPToken("totp1", self.seed, timeStep=30)
         '''
         T0=44576428.686175205 (*30)
@@ -325,7 +340,7 @@ class TestGetOtpController(TestController):
                                 params=parameters)
         print response
         assert '"otpval": "819132"' in response
-                
+        
     def test_05a_gettoken_by_user(self):
         '''
         get otp value by user
@@ -365,6 +380,43 @@ class TestGetOtpController(TestController):
                                     params={'serial': serial})
             print response
             assert '"value": true' in response
+            
+    def test_05b_gettoken_for_wildcard(self):
+        '''
+        get otp for a user with wildcard policy
+        '''
+        parameters = {'name': 'getalluser',
+                      'scope': 'gettoken',
+                      'realm': 'mydefrealm',
+                      'action': 'max_count_hotp=1'
+                      }
+        response = self.app.get(url(controller='system', action='setPolicy'),
+                                params=parameters)
+        print response
+        assert '"status": true' in response
+        
+        response = self.app.get(url(controller='admin', action='assign'),
+                                params={"serial": "hotp2",
+                                        "user": "horst"})
+        print response
+        assert '"status": true' in response
+        
+        response = self.app.get(url(controller="gettoken", action="getotp"),
+                                params={"serial": "hotp2",
+                                        "user": "horst2",
+                                        "realm": "mydefrealm"})
+        print response
+        assert '"otpval": "819132",' in response
+        
+        response = self.app.get(url(controller='admin', action='unassign'),
+                                params={"serial": "hotp2"})
+        print response
+        assert '"status": true' in response
+        
+        response = self.app.get(url(controller='system', action='delPolicy'),
+                                params={"name": "getalluser"})
+        print response
+        assert '"status": true' in response
             
     def test_00_missing_parameter(self):
         '''

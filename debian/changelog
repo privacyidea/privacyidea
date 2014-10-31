@@ -1,9 +1,10 @@
-privacyidea (1.5~dev6-1trusty) trusty; urgency=low
+privacyidea (1.5~dev7-1trusty) trusty; urgency=low
 
   * Fix the postinstall script for not broken repoze.who
   * adapt the dependency for python webob
+  * add fix for users in policies.
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 24 Oct 2014 07:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 31 Oct 2014 20:30:00 +0200
 
 privacyidea (1.5~dev2-1) trusty; urgency=low
 

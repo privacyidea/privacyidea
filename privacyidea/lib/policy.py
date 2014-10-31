@@ -230,11 +230,12 @@ class PolicyClass(object):
                                    for p in policy.get('action', "").
                                    lower().split(',')]
                     # so even if there is an action like otppin=XXX,
-                    # it will finde the action "otppin"
+                    # it will find the action "otppin"
                     for a in [pa.split("=")[0].strip() for pa in pol_actions]:
-                        # if the action in the policy is '*' it fits all actions!
+                        # if the action in the policy is '*' it
+                        # fits all actions!
                         if a.lower() == param['action'].lower() or a == "*":
-                            #So we are using policy: %s" % str(polname))
+                            # So we are using policy: %s" % str(polname))
                             delete_it = False
                 if delete_it:
                     pol2delete.append(polname)
@@ -245,10 +246,12 @@ class PolicyClass(object):
         if param.get('user', None) is not None:
             for polname, policy in Policies.items():
                 pol_users = [p.strip()
-                             for p in policy.get('user').lower().split(',')]
+                             for p in policy.get('user',
+                                                 "*").lower().split(',')]
                 delete_it = True
                 for u in pol_users:
-                    if u == param['user'].lower():
+                    # the user * fits all
+                    if u == param['user'].lower() or u == "*":
                         delete_it = False
                 if delete_it:
                     pol2delete.append(polname)
@@ -257,7 +260,6 @@ class PolicyClass(object):
     
         return Policies
     
-
     @log_with(log)
     def getPolicyActionValue(self, policies, action, max=True, String=False):
         '''
