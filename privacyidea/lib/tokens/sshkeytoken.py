@@ -31,6 +31,9 @@ log = logging.getLogger(__name__)
 from privacyidea.lib.util import getParam
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
+import base64
+import binascii
+
 
 optional = True
 required = False
@@ -97,12 +100,29 @@ class SSHkeyTokenClass(TokenClass):
         # check for the required parameters
         '''
         The key holds the public ssh key and this is required
+        
+        The key probably is of the form "ssh-rsa BASE64 comment"
         '''
         if (self.hKeyRequired is True):
             getParam(param, "otpkey", required)
+            
+        key_elem = param.get("otpkey").split()
+        if len(key_elem) != 3:
+            raise Exception("The key must consist of 'ssh-rsa BASE64 comment'")
+        
+        key_type = key_elem[0]
+        key = key_elem[1]
+        key_comment = key_elem[2]
+        
+        # convert key to hex
+        param["otpkey"] = binascii.hexlify(base64.b64decode(key))
+        self.addToTokenInfo("ssh_type", key_type)
+        self.addToTokenInfo("ssh_comment", key_comment)
+
         # call the parents function
         TokenClass.update(self, param)
-
+        
+        
     @log_with(log)
     def get_sshkey(self):
         '''
@@ -113,6 +133,9 @@ class SSHkeyTokenClass(TokenClass):
         '''
 
         secret = self.token.getHOtpKey()
-        sshkey = secret.getKey()
-        
-        return sshkey
+        hex_sshkey = secret.getKey()
+        sshkey = base64.b64encode(binascii.unhexlify(hex_sshkey))
+        ti = self.getTokenInfo()
+        key_type = ti.get("ssh_type")
+        key_comment = ti.get("ssh_comment")
+        return "%s %s %s" % (key_type, sshkey, key_comment)

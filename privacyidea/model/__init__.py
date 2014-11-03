@@ -189,9 +189,12 @@ class Token(object):
     @log_with(log)
     def setHKey(self, hOtpKey, reset_failcount=True):
         iv = geturandom(16)
-        # bhOtpKey            = binascii.unhexlify(hOtpKey)
         enc_otp_key = encrypt(hOtpKey, iv)
         self.privacyIDEAKeyEnc = unicode(binascii.hexlify(enc_otp_key))
+        length = len(self.privacyIDEAKeyEnc)
+        if length > 1024:
+            log.error("Key %s exceeds database field %d!" % (self.getSerial(),
+                                                             length))
         self.privacyIDEAKeyIV = unicode(binascii.hexlify(iv))
         self.privacyIDEACount = 0
         if True == reset_failcount:

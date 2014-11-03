@@ -694,14 +694,14 @@ class TestMachineController(TestController):
         machine = "machine1"
         ip = "10.0.0.1"
         app = "ssh"
-        otpkey = ("ssh-rsa AAAAB3NzaC1yc2EA+i1g7pmaNdiWiOYp2CJ/rx"
-                  "ltkWVRqOwkjSIZsV1s6jdEQuEzREbYHZSsCvVi/WKp104bI"
-                  "VjE3ORSv1R2HHt9+/cHUfoCXNKPszlM/dwBH4A6yKcSDv5+D"
-                  "qvYsZjYMwdNj9ldxaidtYo4ohohgpvPGjamGsXKQlaDmeORE"
-                  "pH2Fc/0eZWG5vAzzsw7/qCp2ydnZISLIJ6sdjDoNybHh4iq8"
-                  "hZyGtAeHN7fESc1MGkJ/eTkxD2v4IFP5MbGJOlbmy+JR56Tuq"
-                  "Ko/de9AnytvztqrMTD3+Y5ac4aZ7kSsufbOvaV1FI2+1wvJ2D"
-                  "64xeJXE90naGJzTFVIeqQ330jw== corny@az.local")
+        otpkey = ("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDGPzCp0Xz9"
+                  "TEPF0fyNts0oyymaPupsZoXnplkEaDHTxA95NF125dtj9hnTQ"
+                  "2veK/ZmB8KZFY8x15ZWB/nYCjYdMa6zBXiqm/Ku1hrDJ/j7Ro"
+                  "IWhIClmA2mRr5VJGcBjt5WtrG4NxG1rpc0oKVS9wlYRcC1WOY"
+                  "btDN1f0hEsAsjKiMhWPLX5zUe+CwVk67K3L7Emkmd+gkn+tcU"
+                  "KVVO8BZXf5wb5cTRsbiWEXSdENHtb079OnKIQc6BRMmorE1nI"
+                  "4fe312Pmk0h2bVHTAU8J5T/6ukpJZyJDUYMtpi+qVtNo90Zs6"
+                  "GH4fG9OKIfw0VvGD+bG9uzAJhViZJh2I8dqOeh root@privacyidea")
 
         self._create_ssh(otpkey)
         # assign token
