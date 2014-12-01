@@ -1,6 +1,6 @@
 {
 	"id"			: "privacyidea",
-	"name"			: "privacyIDEA",
+	"name"			: "privacyidea",
 	"descr"			: "Authenticate users with multiple factors like OTP against the authentication backend privacyIDEA.",
 	"definition"	: "privacyidea.json",
 	"branch"		: "1.4",
