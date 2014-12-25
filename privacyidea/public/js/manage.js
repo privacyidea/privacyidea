@@ -2956,8 +2956,8 @@ $(document).ready(function(){
     });
     $('#button_preset_ad').click(function(event){
         $('#ldap_loginattr').val('sAMAccountName');
-        $('#ldap_searchfilter').val('(sAMAccountName=*)(objectClass=user)');
-        $('#ldap_userfilter').val('(&(sAMAccountName=%s)(objectClass=user))');
+        $('#ldap_searchfilter').val('(sAMAccountName=*)(objectClass=person)');
+        $('#ldap_userfilter').val('(&(sAMAccountName=%s)(objectClass=person))');
         $('#ldap_mapping').val('{ "username": "sAMAccountName", "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }');
  		$('#ldap_uidtype').val('DN');
         return false;
