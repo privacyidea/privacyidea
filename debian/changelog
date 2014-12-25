@@ -1,25 +1,14 @@
-privacyidea (1.5~dev9-1trusty) trusty; urgency=low
+privacyidea (1.5-1trusty) trusty; urgency=low
 
   * Fix the postinstall script for not broken repoze.who
   * adapt the dependency for python webob
   * add fix for users in policies.
   * Working on #61
   * Closing #63, allow upper and lower case DN in LDAP resolver
-
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 25 Dec 2014 15:30:00 +0200
-
-privacyidea (1.5~dev2-1) trusty; urgency=low
-
   * Fix the empty result audit search problem
-  * ...and other stuff...
-
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 17 Oct 2014 15:00:00 +0200
-
-privacyidea (1.5~dev1-1) trusty; urgency=low
-
   * Fix the port problem with SQL resolver
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 13 Oct 2014 21:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 25 Dec 2014 16:30:00 +0200
 
 privacyidea (1.4-1) trusty; urgency=low
 
