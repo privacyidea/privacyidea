@@ -112,7 +112,7 @@ class ManageController(BaseController):
             raise acc
 
         except Exception as exx:
-            log.error("exception %r" % (action, exx))
+            log.error("exception %r, %r" % (action, exx))
             log.error(traceback.format_exc())
             Session.rollback()
             Session.close()

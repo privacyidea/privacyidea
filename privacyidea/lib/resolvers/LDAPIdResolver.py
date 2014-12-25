@@ -20,6 +20,7 @@
 import logging
 import ldap
 import yaml
+import traceback
 
 from UserIdResolver import UserIdResolver
 from UserIdResolver import getResolverClass
@@ -87,7 +88,7 @@ class IdResolver (UserIdResolver):
         :return: The DN of the object.
         '''
         DN = ""
-        if self.uidtype == "dn":
+        if self.uidtype.lower() == "dn":
             DN = userId
         else:
             # get the DN for the Object
@@ -197,7 +198,7 @@ class IdResolver (UserIdResolver):
                 userid = dn
             else:
                 userid = entry.get(self.uidtype)[0]
-        
+
         return userid
 
     def getUserList(self, searchDict):
@@ -225,24 +226,29 @@ class IdResolver (UserIdResolver):
                             attributes)
         
         for dn, entry in r:
-            user = {}
-            if self.uidtype == "dn":
-                user['userid'] = dn
-            else:
-                uid = entry.get(self.uidtype)[0]
-                if type(uid) == list:
-                    user['userid'] = entry.get(self.uidtype)[0]
+            try:
+                user = {}
+                if self.uidtype.lower() == "dn":
+                    user['userid'] = dn
                 else:
-                    user['userid'] = entry.get(self.uidtype)
-                del(entry[self.uidtype])
-            for k, v in entry.items():
-                key = self.reverse_map[k]
-                if type(v) == list:
-                    user[key] = v[0]
-                else:
-                    user[key] = v
-            ret.append(user)
-        
+                    uid = entry.get(self.uidtype)
+                    if type(uid) == list:
+                        user['userid'] = entry.get(self.uidtype)[0]
+                    else:
+                        user['userid'] = entry.get(self.uidtype)
+                    del(entry[self.uidtype])
+                for k, v in entry.items():
+                    key = self.reverse_map[k]
+                    if type(v) == list:
+                        user[key] = v[0]
+                    else:
+                        user[key] = v
+                ret.append(user)
+            except Exception as exx:
+                log.error("Error during fetching LDAP objects: %r" % exx)
+                log.error("%r" % traceback.format_exc())
+
+        log.error("Return ret: %s" % ret)
         return ret
     
     def getResolverId(self):
