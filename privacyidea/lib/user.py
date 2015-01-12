@@ -175,13 +175,13 @@ def splitUser(username):
     # todo split the last
     l = user.split('@')
     if len(l) >= 2:
-        (user, group) = user.rsplit('@')
+        (user, group) = user.rsplit('@', 1)
     else:
         l = user.split('\\')
         if len(l) >= 2:
-            (group, user) = user.rsplit('\\')
+            (group, user) = user.rsplit('\\', 1)
 
-    return (user, group)
+    return user, group
 
 
 @log_with(log)
