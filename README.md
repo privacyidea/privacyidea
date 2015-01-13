@@ -12,36 +12,36 @@ I try to keep up a good test coverage. So run tests!
 Setup
 =====
 
-You can setup the system in a virtual environment::
+You can setup the system in a virtual environment:
 
-   mkdir privacyidea
-   cd privacyidea
-   virtualenv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
+    mkdir privacyidea
+    cd privacyidea
+    virtualenv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
 
 
 Running it
 ==========
 
-Create the database::
+Create the database:
 
-   ./manage.py createdb
+    ./manage.py createdb
 
-Create the first administrator::
+Create the first administrator:
 
-   ./manage.py <email> <username>
+    ./manage.py <email> <username>
 
-Run it::
+Run it:
 
-   ./manage.py runserver
+    ./manage.py runserver
 
 Now you can connect to http://localhost:5000 with your browser and login as administrator.
 
 Run tests
 =========
 
-   nosetests -v --with-coverage --cover-package=privacyidea --cover-html
+    nosetests -v --with-coverage --cover-package=privacyidea --cover-html
 
 Code structure
 ==============
