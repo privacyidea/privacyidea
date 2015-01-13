@@ -30,7 +30,7 @@ function fixUser(user) {
     }
     console.log("User Out: " + user);
     return user;
-};
+}
 
 function fixSerial(serial) {
     console.log("Serial In: " + serial);
@@ -44,7 +44,7 @@ function fixSerial(serial) {
     }
     console.log("Serial Out: " + serial);
     return serial;
-};
+}
 
 angular.module("TokenModule", ["privacyideaAuth"])
     .factory("TokenFactory", function (auth, $http, $state, $rootScope, tokenUrl) {

@@ -5,6 +5,12 @@
                 <li role="presentation"
                     ng-class="{ active: $state.includes('config.resolvers.list') }">
                     <a ui-sref="config.resolvers.list">All Resolvers</a></li>
+                <li role="presentation"
+                    ng-class="{ active: $state.includes('config.resolvers.edit')
+                     }">
+                    <a ui-sref="config.resolvers.edit">Edit Resolver
+                        {{ form.resolver }}</a></li>
+
                 <li class="nav nav-pills nav-header">New Resolvers</li>
                 <li role="presentation"
                     ng-class="{ active: $state.includes('config.resolvers.addpassword') }">

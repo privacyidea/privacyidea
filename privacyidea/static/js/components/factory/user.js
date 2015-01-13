@@ -18,29 +18,6 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.factory("ConfigFactory", function (auth, $http, $state, $rootScope, realmUrl) {
-        /**
-         Each service - just like this service factory - is a singleton.
-         */
-        var user = auth.getUser();
-        var auth_token = auth.getAuthToken();
-        var error_func = function (error) {
-                        if (error.result.error.code == -401) {
-                            $state.go('login');
-                        } else {
-                            $rootScope.restError = error.result;
-                        }
-                    };
-
-        return {
-            getRealms: function (callback) {
-                $http.get(realmUrl, {
-                    headers: {'Authorization': auth_token }
-                }).success(callback)
-                .error(error_func);
-            }
-        }
-        });
 
 myApp.factory("UserFactory", function (auth, $http, $state, $rootScope, userUrl) {
         var user = auth.getUser();

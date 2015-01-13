@@ -19,71 +19,54 @@
  *
  */
 angular.module("privacyideaApp")
-    .controller("configController", function ($scope, $http,
-                                                resolverUrl,
-                                                realmUrl, defaultRealmUrl, auth,
-                                                $rootScope, $state) {
-
-        $scope.user = auth.getUser();
+    .controller("configController", function ($scope, $location,
+                                                $rootScope, $state,
+                                        ConfigFactory) {
+        // go to the system view by default
+        if ($location.path() == "/config") {
+            $location.path("/config/system");
+        }
+        if ($location.path() == "/config/resolvers") {
+            $location.path("/config/resolvers/list");
+        }
+        if ($location.path() == "/config/realms") {
+            $location.path("/config/realms/list");
+        }
 
         $scope.getResolvers = function () {
-            var auth_token = auth.getAuthToken();
-            $http.get(resolverUrl, {
-                headers: {'Authorization': auth_token }
-            }).success(function (data) {
-                $scope.resolvers = data.result.value;
-            }).error(function (error) {
-                $rootScope.restError = error.result;
+            ConfigFactory.getResolvers(function (data) {
+                $scope.resolvers = data.result.value
             });
         };
 
         $scope.setResolver = function (name, file) {
-            var auth_token = auth.getAuthToken();
-
             var pObject = { fileName: file,
                             type: 'passwdresolver'};
-
-            var request = $http({method: "post",
-                url: resolverUrl + "/" + name,
-                data: pObject,
-                headers: {'Authorization': auth_token,
-                          'Content-Type': 'application/json'}
-            });
-            request.success(function (data) {
+            ConfigFactory.setResolver(name, pObject, function (data) {
                 $scope.set_result = data.result.value;
                 $scope.getResolvers();
-                $state.go("config.resolvers.list");
-            }).error(function (error) {
-                $rootScope.restError = error.result;
-            });
+                $state.go("config.resolvers.list");});
         };
 
         $scope.delResolver = function (name) {
-            var auth_token = auth.getAuthToken();
-            $http.delete(resolverUrl + "/" + name, {
-                headers: {'Authorization': auth_token }
-            }).success(function (data) {
+            ConfigFactory.delResolver(name, function (data) {
                 $scope.resolvers = data.result.value;
                 $scope.getResolvers();
-            }).error(function (error) {
-                $rootScope.restError = error.result;
             });
         };
 
+        $scope.editResolver = function(resolvername) {
+            $scope.form.resolver = resolvername;
+            $state.go("config.resolver.edit", {resolvername: resolvername});
+        };
+
         $scope.getRealms = function () {
-            var auth_token = auth.getAuthToken();
-            $http.get(realmUrl, {
-                headers: {'Authorization': auth_token }
-            }).success(function (data) {
+            ConfigFactory.getRealms(function (data) {
                 $scope.realms = data.result.value;
-            }).error(function (error) {
-                $rootScope.restError = error.result;
             });
         };
 
         $scope.setRealm = function (name) {
-            var auth_token = auth.getAuthToken();
-
             var resolvers = [];
             angular.forEach($scope.selectedResolvers, function(value, resolver) {
                 if (value === true) {
@@ -93,67 +76,31 @@ angular.module("privacyideaApp")
 
             var pObject = { resolvers: resolvers.join(',') };
 
-            var request = $http({method: "POST",
-                url: realmUrl + "/" + name,
-                data: pObject,
-                headers: {'Authorization': auth_token,
-                          'Content-Type': 'application/json'}
-            });
-            request.success(function (data) {
+            ConfigFactory.setRealm(name, pObject, function (data) {
                 $scope.set_result = data.result.value;
                 $scope.cancelEdit();
                 $scope.getRealms();
-            }).error(function (error) {
-                $rootScope.restError = error.result;
             });
         };
 
         $scope.delRealm = function (name) {
-            var auth_token = auth.getAuthToken();
-
-            var request = $http({method: "delete",
-                url: realmUrl + "/" + name,
-                headers: {'Authorization': auth_token,
-                          'Content-Type': 'application/json'}
-            });
-            request.success(function (data) {
+            ConfigFactory.delRealm(name, function (data) {
                 $scope.set_result = data.result.value;
                 $scope.getRealms();
-            }).error(function (error) {
-                $rootScope.restError = error.result;
             });
         };
 
         $scope.setDefaultRealm = function (name) {
-            var auth_token = auth.getAuthToken();
-
-            var request = $http({method: "post",
-                url: defaultRealmUrl + "/" + name,
-                headers: {'Authorization': auth_token,
-                          'Content-Type': 'application/json'}
-            });
-            request.success(function (data) {
+            ConfigFactory.setDefaultRealm(name, function(data) {
                 $scope.set_result = data.result.value;
                 $scope.getRealms();
-            }).error(function (error) {
-                $rootScope.restError = error.result;
             });
         };
 
-
         $scope.clearDefaultRealm = function () {
-            var auth_token = auth.getAuthToken();
-
-            var request = $http({method: "delete",
-                url: defaultRealmUrl,
-                headers: {'Authorization': auth_token,
-                          'Content-Type': 'application/json'}
-            });
-            request.success(function (data) {
+            ConfigFactory.clearDefaultRealm(function (data) {
                 $scope.set_result = data.result.value;
                 $scope.getRealms();
-            }).error(function (error) {
-                $rootScope.restError = error.result;
             });
         };
 

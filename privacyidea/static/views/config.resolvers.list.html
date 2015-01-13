@@ -15,7 +15,9 @@
                 {{ resolver.type }}
             </td>
             <td>
-                <button class="btn btn-sm btn-primary">Edit</button>
+                <button class="btn btn-sm btn-primary"
+                        ng-click="editResolver(resolver.resolvername)"
+                        >Edit</button>
                 <button class="btn btn-sm btn-danger"
                         ng-click="delResolver(resolver
                         .resolvername)">

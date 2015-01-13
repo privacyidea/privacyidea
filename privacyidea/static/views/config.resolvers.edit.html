@@ -1,0 +1,19 @@
+
+    <form name="formResolverEdit" role="form" validate>
+        <div class="form-group">
+            <label for="resolverfile">File name</label>
+            <input name="resolverfile" id="resolverfile" class="form-control"
+                   ng-model="form.file" required
+                   placeholder="/etc/passwd"
+                   autofocus/>
+        </div>
+        <div class="text-center">
+            <button ng-click="setResolver(form.resolver, form.file)"
+                    ng-disabled="formResolverEdit.$invalid"
+                    class="btn btn-primary">Create resolver
+            </button>
+        </div>
+
+    </form>
+
+

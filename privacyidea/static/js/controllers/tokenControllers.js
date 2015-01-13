@@ -41,6 +41,7 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory, $scop
 
     $scope.getTokens();
 
+    // Get the realms and fill the realm dropdown box
     ConfigFactory.getRealms(function (data) {
         $scope.realms = data.result.value;
         angular.forEach($scope.realms, function (realm, realmname) {
