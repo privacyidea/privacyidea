@@ -2455,7 +2455,7 @@ class PolicyClass(object):
         log.error(pol)
         if len(pol) == 0:
             # No policy found, so we skip the rest
-            log.error("No policy scope=authorize, action=serial for user %r, "
+            log.debug("No policy scope=authorize, action=serial for user %r, "
                       "realm %r, client %r" % (login, realm, client))
             return True
     
