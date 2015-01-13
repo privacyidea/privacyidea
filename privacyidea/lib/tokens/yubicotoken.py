@@ -35,7 +35,7 @@ import logging
 
 import traceback
 
-from privacyidea.lib.util    import getParam
+from privacyidea.lib._util    import getParam
 from privacyidea.lib.config import getFromConfig
 from privacyidea.lib.log import log_with
 from hashlib import sha1

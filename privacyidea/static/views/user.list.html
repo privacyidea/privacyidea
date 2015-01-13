@@ -1,0 +1,37 @@
+<pagination ng-show="usercount > usersPerPage"
+            total-items="usercount" ng-model="params.page"
+            items-per-page="{{ usersPerPage }}"
+            max-size="5"
+            boundary-links="true" ng-change="pageChanged()"></pagination>
+
+<div class="table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead>
+                <tr>
+                    <th>username</th>
+                    <th>surname</th>
+                    <th>givenname</th>
+                    <th>email</th>
+                    <th>phone</th>
+                    <th>mobile</th>
+                    <th>description</th>
+                    <th>id</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr ng-repeat="user in userlist">
+                    <td><a ui-sref="user.details({username:user.username,
+                    realmname:selectedRealm})">
+                        {{ user.username }}</a></td>
+                    <td>{{ user.surname }}</td>
+                    <td>{{ user.givenname }}</td>
+                    <td><a href="mailto:{{ user.email }}">
+                        {{ user.email }}</a></td>
+                    <td>{{ user.phone }}</td>
+                    <td>{{ user.mobile }}</td>
+                    <td>{{ user.descrption }}</td>
+                    <td>{{ user.userid }}</td>
+                </tr>
+                </tbody>
+            </table>
+</div>

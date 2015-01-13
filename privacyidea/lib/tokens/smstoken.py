@@ -36,8 +36,8 @@ import datetime
 import traceback
 
 from privacyidea.lib.HMAC    import HmacOtp
-from privacyidea.lib.util    import getParam
-from privacyidea.lib.util    import required
+from privacyidea.lib._util    import getParam
+from privacyidea.lib._util    import required
 
 from privacyidea.lib.validate import check_pin
 from privacyidea.lib.validate import split_pin_otp
@@ -451,12 +451,12 @@ class SmsTokenClass(HmacTokenClass):
         '''
         try:
             ### TODO - replace tokenLen
-            otplen = int(self.token.privacyIDEAOtpLen)
+            otplen = int(self.token.otplen)
         except ValueError as ex:
             log.error("ValueError %r" % ex)
             raise Exception(ex)
 
-        secret_obj = self.token.getHOtpKey()
+        secret_obj = self.token.get_otpkey()
         counter = self.token.getOtpCounter()
 
         #log.debug("serial: %s",serialNum)

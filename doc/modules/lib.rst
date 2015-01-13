@@ -9,17 +9,27 @@ library functions
 
 .. _code_policy_class:
 
-Policy Class
-............
+Users
+.....
 
-.. autoclass:: privacyidea.lib.policy.PolicyClass
+.. automodule:: privacyidea.lib.user
+
+Token Class
+...........
+
+.. autoclass:: privacyidea.lib.tokenclass.TokenClass
    :members:
 
+Token functions
+...............
+
+.. automodule:: privacyidea.lib.token
 
 .. _code_application_class:
 
-Application Class
-.................
+..
+   Application Class
+   .................
 
-.. autoclass:: privacyidea.lib.applications.MachineApplicationBase
-   :members:
+   .. autoclass:: privacyidea.lib.applications.MachineApplicationBase
+       :members:

@@ -39,7 +39,7 @@ import datetime
 
 from privacyidea.lib.tokens.hmactoken import HmacTokenClass
 from privacyidea.lib.config import getFromConfig
-from privacyidea.lib.util import getParam
+from privacyidea.lib._util import getParam
 from privacyidea.lib.HMAC import HmacOtp
 
 from privacyidea.lib.validate import split_pin_otp
@@ -173,12 +173,12 @@ class EmailTokenClass(HmacTokenClass):
         :rtype: string
         """
         try:
-            otplen = int(self.token.privacyIDEAOtpLen)
+            otplen = int(self.token.otplen)
         except ValueError as ex:
             LOG.error("ValueError %r" % ex)
             raise Exception(ex)
 
-        secret_obj = self.token.getHOtpKey()
+        secret_obj = self.token.get_otpkey()
         counter = self.token.getOtpCounter()
 
         #log.debug("serial: %s",serialNum)

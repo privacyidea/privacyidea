@@ -30,7 +30,7 @@
 '''
 This file contains the definition of the tagespasswort token class
 '''
-from privacyidea.lib.util import getParam
+from privacyidea.lib._util import getParam
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.config import getFromConfig
@@ -175,11 +175,11 @@ class TagespasswortTokenClass(TokenClass):
         res = -1
 
         try:
-            otplen = int(self.token.privacyIDEAOtpLen)
+            otplen = int(self.token.otplen)
         except ValueError:
             return res
 
-        secretHOtp = self.token.getHOtpKey()
+        secretHOtp = self.token.get_otpkey()
 
         dpw = dpwOtp(secretHOtp, otplen)
         res = dpw.checkOtp(anOtpVal, window=window)
@@ -192,11 +192,11 @@ class TagespasswortTokenClass(TokenClass):
         res = (-1, 0, 0, 0)
 
         try:
-            otplen = int(self.token.privacyIDEAOtpLen)
+            otplen = int(self.token.otplen)
         except ValueError:
             return res
 
-        secretHOtp = self.token.getHOtpKey()
+        secretHOtp = self.token.get_otpkey()
 
         dpw = dpwOtp(secretHOtp, otplen)
 
@@ -212,7 +212,7 @@ class TagespasswortTokenClass(TokenClass):
                 log.error("invalid curTime: %r. "
                           "You need to specify a datetime" % type(curTime))
         otpval = dpw.getOtp(date_string)
-        pin = self.token.getPin()
+        pin = self.token.get_pin
         combined = "%s%s" % (otpval, pin)
         if getFromConfig("PrependPin") == "True":
             combined = "%s%s" % (pin, otpval)
@@ -240,12 +240,12 @@ class TagespasswortTokenClass(TokenClass):
         ret = False
         error = "No count specified"
         try:
-            otplen = int(self.token.privacyIDEAOtpLen)
+            otplen = int(self.token.otplen)
         except ValueError as ex:
             log.error("%r" % ex)
             return (False, unicode(ex), otp_dict)
 
-        secretHOtp = self.token.getHOtpKey()
+        secretHOtp = self.token.get_otpkey()
         dpw = dpwOtp(secretHOtp, otplen)
         log.debug("retrieving %i OTP values for token %s" % (count, dpw))
 

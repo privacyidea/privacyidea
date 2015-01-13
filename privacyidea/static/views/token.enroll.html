@@ -1,0 +1,94 @@
+<h3>Enroll a new token</h3>
+
+<!-- hide the form, after the token was enrolled -->
+<div ng-hide="enrolledToken">
+    <form name="formEnrollToken" role="form" validate>
+
+        <select class="form-control"
+                id="tokentype"
+                ng-change="changeTokenType()"
+                ng-model="form.type"
+                ng-options="type for type in formInit.tokenTypes"
+                >
+        </select>
+
+        <h4>Token data</h4>
+
+        <div class="form-group">
+            <input type="checkbox" ng-model="form.generate"
+                   name="generate" id="generate">
+            <label for="generate">Generate OTP Key on the Server</label>
+            <div ng-show="form.generate">
+            <p class="help-block">
+                The server will create the OTP value
+                and a QR Code
+                will be
+                displayed to you to be scanned.
+            </p>
+            </div>
+        </div>
+        <div class="form-group" ng-hide="form.generate">
+            <label for="otpkey">OTP Key</label>
+            <input type="text" ng-pattern="/^[0-9a-fA-F]*$/"
+                   autofocus
+                   class="form-control"
+                   placeholder="Enter OTP key..."
+                   ng-model="form.otpkey" name="otpkey">
+        </div>
+        <div class="form-group">
+            <label for="otplen">OTP length</label>
+            <select class="form-control"
+                    id="otplen"
+                ng-model="form.otplen"
+                ng-options="otplen for otplen in formInit.otplens">
+            </select>
+        </div>
+        <div class="form-group" ng-show="form.type=='totp'">
+            <label for="timestep">Timestep</label>
+            <select class="form-control"
+                    ng-model="form.timestep"
+                    name="timestep"
+                    ng-options="timestep for timestep in formInit.timesteps"></select>
+            seconds.
+        </div>
+
+        <h4>Assign token to user</h4>
+
+        <div assign-user new-user-object="newUser"></div>
+
+        <div class="msg-block"
+             ng-show="formEnrollToken.otppin2.$error.passwordVerify">
+            <span class="msg-error">OTP PINs do not match!</span>
+        </div>
+
+        <div class="text-center">
+            <button ng-click="enrollToken()"
+                    ng-disabled="formEnrollToken.$invalid"
+                    class="btn btn-primary">Enroll Token
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Show this information after the token was enrolled -->
+<div ng-show="enrolledToken">
+    <p>
+        The token was successfully enrolled with serial number
+        <a ui-sref="token.details({tokenSerial:enrolledToken.serial})">
+            {{ enrolledToken.serial }}</a>.
+    </p>
+
+    <img width="250" src="{{ enrolledToken.googleurl.img }}"/>
+
+    <p>
+        Click <a href="{{ enrolledToken.googleurl.value }}">here</a> or scan
+        the QR Code, if you
+        want to add the Token to your Google Authenticator.
+    </p>
+
+    <div class="text-center">
+        <button ng-click="enrolledToken = null;"
+                class="btn btn-primary">Enroll a new token
+        </button>
+    </div>
+</div>

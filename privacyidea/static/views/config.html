@@ -1,0 +1,47 @@
+
+<div class="well" ng-controller="configController">
+    <nav class="navbar navbar-default">
+    <div class="container">
+        <div id="navbar-config" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+                <li ng-class="{active: $state.includes('config.system')}">
+                    <a ui-sref="config.system">
+                    <span class="glyphicon glyphicon-briefcase"
+                          aria-hidden="true"></span>
+                    System</a></li>
+                <li ng-class="{active: $state.includes('config.tokens')}">
+                    <a ui-sref="config.tokens">
+                    <span class="glyphicon glyphicon-phone"
+                          aria-hidden="true"></span>
+                    Tokens</a></li>
+                <li ng-class="{active: $state.includes('config.machines')}">
+                    <a ui-sref="config.machines">
+                    <span class="glyphicon glyphicon-tasks"
+                          aria-hidden="true"></span>
+                        Machine Resolvers
+                    </a>
+                </li>
+                <li ng-class="{active: $state.includes('config.resolvers')}">
+                    <a ui-sref="config.resolvers">
+                        <span class="glyphicon glyphicon-user"
+                          aria-hidden="true"></span>
+                        User Resolvers
+                    </a>
+                </li>
+                <li ng-class="{active: $state.includes('config.realms')}">
+                    <a ui-sref="config.realms">
+                        <span class="glyphicon glyphicon-globe"
+                          aria-hidden="true"></span>
+                        User Realms
+                    </a>
+                </li>
+            </ul>
+
+        </div>
+        <!--/.nav-collapse -->
+    </div>
+    </nav>
+
+    <div ui-view class="slide"></div>
+
+</div>

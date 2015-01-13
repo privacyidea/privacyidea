@@ -37,10 +37,10 @@
 
 '''
 
-from privacyidea.lib.util import getParam
-from privacyidea.lib.util import required
-from privacyidea.lib.util import optional
-from privacyidea.lib.util import generate_otpkey
+from privacyidea.lib._util import getParam
+from privacyidea.lib._util import required
+from privacyidea.lib._util import optional
+from privacyidea.lib._util import generate_otpkey
 
 from privacyidea.lib.log import log_with
 
@@ -157,7 +157,7 @@ class MotpTokenClass(TokenClass):
         response_detail = TokenClass.getInitDetail(self, params, user)
         otpkey = self.getInfo().get('otpkey')
         if otpkey:
-            tok_type = self.type.lower()
+            tok_type = self.Type.lower()
             if user is not None:
                 try:
                     if tok_type.lower() in ["motp"]:
@@ -231,14 +231,14 @@ class MotpTokenClass(TokenClass):
         :rtype: int
 
         '''
-        otplen = self.token.privacyIDEAOtpLen
+        otplen = self.token.otplen
 
         # otime contains the previous verification time
         # the new one must be newer than this!
-        otime = self.token.privacyIDEACount
-        secretHOtp = self.token.getHOtpKey()
-        window = self.token.privacyIDEACountWindow
-        secretPin = self.token.getUserPin()
+        otime = self.token.count
+        secretHOtp = self.token.get_otpkey()
+        window = self.token.count_window
+        secretPin = self.token.get_user_pin()
 
         log.debug("otime %s", otime)
 

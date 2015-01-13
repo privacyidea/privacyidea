@@ -171,7 +171,7 @@ class DaplugTokenClass(HmacTokenClass):
     def autosync(self, hmac2Otp, anOtpVal):
         '''
         auto - sync the token based on two otp values
-        - internal method to realize the autosync within the
+        - internal method to realize the _autosync within the
         checkOtp method
 
         :param hmac2Otp: the hmac object (with reference to the token secret)
@@ -185,7 +185,7 @@ class DaplugTokenClass(HmacTokenClass):
 
         '''
         otp = _daplug2digit(anOtpVal)
-        res = HmacTokenClass.autosync(self, hmac2Otp, otp)
+        res = HmacTokenClass._autosync(self, hmac2Otp, otp)
         return res
 
     @log_with(log)
@@ -216,7 +216,7 @@ class DaplugTokenClass(HmacTokenClass):
 
         res = 0
         try:
-            otplen = int(self.token.privacyIDEAOtpLen)
+            otplen = int(self.token.otplen)
         except ValueError:
             otplen = 6
 

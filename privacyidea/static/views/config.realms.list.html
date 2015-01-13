@@ -1,0 +1,111 @@
+<div>
+    <table class="table table-bordered table-responsive table-striped">
+        <thead>
+        <tr>
+            <th>Default</th>
+            <th>Realm name</th>
+            <th>resolvers</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="(realmname, realm) in realms">
+            <td>
+                <span class="glyphicon glyphicon-ok"
+                      ng-show="realm.default"></span>
+                <button class="btn btn-success"
+                        ng-hide="realm.default"
+                        ng-click="setDefaultRealm(realmname)">set
+                    Default
+                </button>
+
+            </td>
+            <td>
+                {{ realmname }}
+            </td>
+            <td>
+                <span ng-hide="editRealm == realmname">
+                    <span ng-repeat="reso in realm.resolver">
+                        <a ui-sref="config.resolvers.list">{{ reso.name }}</a>
+                         ( {{ reso.type }})<br>
+                    </span>
+                </span>
+                <span ng-show="editRealm == realmname">
+                    <!-- TODO: Hieraus eine component bauen!-->
+                    <span  ng-repeat="resolver in resolvers">
+                        <label for="{{ resolver.resolvername }}">
+                            <input type="checkbox"
+                                   ng-model="selectedResolvers[resolver.resolvername]"
+                                   name="group"
+                                   id="{{ resolver.resolvername }}"
+                                   ng-checked="selectedResolvers[resolver.resolvername]">
+                            {{ resolver.resolvername }} ( {{ resolver.type }} )
+                        </label><br>
+                    </span>
+                </span>
+
+            </td>
+            <td>
+                <span ng-hide="editRealm">
+                <button class="btn btn-primary"
+                        ng-click="startEdit(realmname, realm)">Edit
+                </button>
+                <button class="btn btn-danger"
+                        ng-click="delRealm(realmname)">
+                        <div class="glyphicon glyphicon-trash">
+                        Delete
+                        </div>
+                </button>
+                </span>
+                <span ng-show="editRealm == realmname">
+                    <button class="btn btn-primary"
+                            ng-click="setRealm(realmname)">Save
+                    </button>
+                    <button class="btn btn-danger"
+                            ng-click="cancelEdit()">Cancel
+                    </button>
+                </span>
+            </td>
+        </tr>
+        <form name="formNewRealm" role="form" validate>
+
+            <tr ng-hide="editRealm">
+                <td>
+                </td>
+                <td>
+                    <div class="form-group">
+                        <input name="realmname" id="realmname"
+                               class="form-control"
+                               ng-model="realm.name" required
+                               placeholder="new realm"
+                               autofocus/>
+                    </div>
+                </td>
+                <td>
+                    <span  ng-repeat="resolver in resolvers">
+                        <label for="{{ resolver.resolvername }}">
+                            <input type="checkbox"
+                                   ng-model="selectedResolvers[resolver
+                                   .resolvername]"
+                                   name="group"
+                                   id="{{ resolver.resolvername }}">
+                            {{ resolver.resolvername }} ( {{ resolver.type }} )
+                        </label><br>
+                    </span>
+                </td>
+                <td>
+                    <span ng-hide="editRealm">
+                    <button ng-click="setRealm(realm.name)"
+                            ng-disabled="formNewRealm.$invalid"
+                            class="btn btn-primary">Create realm
+                    </button>
+                    </span>
+                </td>
+            </tr>
+        </form>
+
+        </tbody>
+    </table>
+
+    <pre ng-bind="selectedResolvers | json"></pre>
+
+</div>

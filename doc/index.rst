@@ -28,7 +28,6 @@ Thanks a lot!
    tokenview/index
    userview/index
    policies/index
-   machines/index
    audit/index
    tools/index
    import/index

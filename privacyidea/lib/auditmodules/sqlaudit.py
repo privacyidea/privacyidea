@@ -28,7 +28,7 @@ from sqlalchemy import Integer, String, DateTime, asc, desc, and_
 from sqlalchemy.orm import mapper
 import datetime
 # from privacyidea.lib.config  import get_privacyIDEA_config
-from pylons import config as ini_config
+# from pylons import config as ini_config
 import traceback
 from Crypto.Hash import SHA256 as HashFunc
 from Crypto.PublicKey import RSA

@@ -1,0 +1,50 @@
+<pagination ng-show="tokendata.count > 15"
+            total-items="tokendata.count" ng-model="params.page"
+            items-per-page="15"
+            max-size="5"
+            boundary-links="true" ng-change="pageChanged()"></pagination>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>serial</th>
+                <th>type</th>
+                <th>Active</th>
+                <th>window</th>
+                <th>description</th>
+                <th>failcounter</th>
+                <th>maxfail</th>
+                <th>otplen</th>
+                <th>user</th>
+                <th>realm</th>
+            </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="token in tokendata.tokens">
+            <td><a ui-sref="token.details({tokenSerial:token.serial,
+            currentToken:token})"
+                    ng-click="$rootScope.returnTo=token.list;">
+                {{ token.serial }}</a></td>
+            <td>{{ token.tokentype }}</td>
+            <td>
+                <span class="label label-success" ng-show="token.active">
+                    active
+                </span>
+                <span class="label label-danger" ng-hide="token.active">
+                    disabled
+                </span>
+            </td>
+            <td>{{ token.count_window }}</td>
+            <td>{{ token.description }}</td>
+            <td>{{ token.failcount }}</td>
+            <td>{{ token.maxfail }}</td>
+            <td>{{ token.otplen }}</td>
+            <td><a ui-sref="user.details({username: token.username,
+            realmname: token.user_realm})">
+                {{ token.username }}</a></td>
+            <td><a ui-sref="config.realms.list">{{ token.user_realm }}</a></td>
+        </tr>
+        </tbody>
+    </table>
+</div>

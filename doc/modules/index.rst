@@ -4,7 +4,8 @@ The code documentaton
 
 .. toctree::
 
-   useridresolvers
-   audit
-   controllers
+   db
    lib
+   useridresolvers
+   api
+   audit

@@ -33,7 +33,7 @@
 
 '''
 
-from privacyidea.lib.util    import getParam
+from privacyidea.lib._util    import getParam
 from pylons.i18n.translation import _
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
@@ -152,7 +152,7 @@ class VascoTokenClass(TokenClass):
         res = -1
 
         if VASCO:
-            secObject = self.token.getHOtpKey()
+            secObject = self.token.get_otpkey()
             otpkey = secObject.getKey()
             data = decompress(otpkey)
             # let vasco handle the OTP checking

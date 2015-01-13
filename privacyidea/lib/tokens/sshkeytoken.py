@@ -28,7 +28,7 @@ to import it to authorized keys files.
 import logging
 from gettext import gettext as _
 log = logging.getLogger(__name__)
-from privacyidea.lib.util import getParam
+from privacyidea.lib._util import getParam
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 import base64
@@ -132,7 +132,7 @@ class SSHkeyTokenClass(TokenClass):
         :rtype: string
         '''
 
-        secret = self.token.getHOtpKey()
+        secret = self.token.get_otpkey()
         hex_sshkey = secret.getKey()
         sshkey = base64.b64encode(binascii.unhexlify(hex_sshkey))
         ti = self.getTokenInfo()

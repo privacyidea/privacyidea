@@ -17,18 +17,20 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+__doc__ = """This is the resolver to find users in SQL databases.
+
+The file is tested in tests/test_lib_resolver.py
+"""
 
 import logging
 import yaml
 
 from UserIdResolver import UserIdResolver
-from UserIdResolver import getResolverClass
 
 from sqlalchemy import and_
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from privacyidea.lib.phppass import PasswordHash
 import traceback
 import hashlib
 from base64 import (b64decode,
@@ -42,18 +44,202 @@ SQLSOUP_LOADED = False
 try:
     from sqlsoup import SQLSoup
     SQLSOUP_LOADED = True
-except:
-    pass  # pragma: no cover
+except ImportError:  # pragma nocover
+    pass
 
-if SQLSOUP_LOADED is False:  # pragma: no cover
+if SQLSOUP_LOADED is False:  # pragma nocover
     try:
         from sqlalchemy.ext.sqlsoup import SQLSoup
         SQLSOUP_LOADED = True
-    except:
+    except ImportError:
         log.error("SQLSoup could not be loaded!")
         pass
 
-       
+import os
+import time
+import hashlib
+import crypt
+
+
+try:
+    import bcrypt
+    _bcrypt_hashpw = bcrypt.hashpw
+except ImportError:  # pragma nocover
+    _bcrypt_hashpw = None
+
+# On App Engine, this function is not available.
+if hasattr(os, 'getpid'):
+    _pid = os.getpid()
+else:  # pragma nocover
+    # Fake PID
+    from privacyidea.lib.crypto import urandom
+    _pid = urandom.randint(0, 100000)
+
+
+class PasswordHash:
+
+    def __init__(self, iteration_count_log2=8, portable_hashes=True,
+                 algorithm=''):
+        alg = algorithm.lower()
+        if (alg == 'blowfish' or alg == 'bcrypt') and _bcrypt_hashpw is None:
+            raise NotImplementedError('The bcrypt module is required')
+        self.itoa64 = \
+            './0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+        if iteration_count_log2 < 4 or iteration_count_log2 > 31:
+            iteration_count_log2 = 8
+        self.iteration_count_log2 = iteration_count_log2
+        self.portable_hashes = portable_hashes
+        self.algorithm = algorithm
+        self.random_state = '%r%r' % (time.time(), _pid)
+
+    def get_random_bytes(self, count):  # pragma nocover
+        outp = ''
+        try:
+            outp = os.urandom(count)
+        except:
+            pass
+        if len(outp) < count:
+            outp = ''
+            rem = count
+            while rem > 0:
+                self.random_state = hashlib.md5(str(time.time())
+                    + self.random_state).hexdigest()
+                outp += hashlib.md5(self.random_state).digest()
+                rem -= 1
+            outp = outp[:count]
+        return outp
+
+    def encode64(self, inp, count):
+        outp = ''
+        cur = 0
+        while cur < count:
+            value = ord(inp[cur])
+            cur += 1
+            outp += self.itoa64[value & 0x3f]
+            if cur < count:
+                value |= (ord(inp[cur]) << 8)
+            outp += self.itoa64[(value >> 6) & 0x3f]
+            if cur >= count:
+                break
+            cur += 1
+            if cur < count:
+                value |= (ord(inp[cur]) << 16)
+            outp += self.itoa64[(value >> 12) & 0x3f]
+            if cur >= count:
+                break
+            cur += 1
+            outp += self.itoa64[(value >> 18) & 0x3f]
+        return outp
+
+    def gensalt_private(self, inp):  # pragma nocover
+        outp = '$P$'
+        outp += self.itoa64[min([self.iteration_count_log2 + 5, 30])]
+        outp += self.encode64(inp, 6)
+        return outp
+
+    def crypt_private(self, pw, setting):  # pragma nocover
+        outp = '*0'
+        if setting.startswith(outp):
+            outp = '*1'
+        if not setting.startswith('$P$') and not setting.startswith('$H$'):
+            return outp
+        count_log2 = self.itoa64.find(setting[3])
+        if count_log2 < 7 or count_log2 > 30:
+            return outp
+        count = 1 << count_log2
+        salt = setting[4:12]
+        if len(salt) != 8:
+            return outp
+        if not isinstance(pw, str):
+            pw = pw.encode('utf-8')
+        hx = hashlib.md5(salt + pw).digest()
+        while count:
+            hx = hashlib.md5(hx + pw).digest()
+            count -= 1
+        return setting[:12] + self.encode64(hx, 16)
+
+    def gensalt_extended(self, inp):  # pragma nocover
+        count_log2 = min([self.iteration_count_log2 + 8, 24])
+        count = (1 << count_log2) - 1
+        outp = '_'
+        outp += self.itoa64[count & 0x3f]
+        outp += self.itoa64[(count >> 6) & 0x3f]
+        outp += self.itoa64[(count >> 12) & 0x3f]
+        outp += self.itoa64[(count >> 18) & 0x3f]
+        outp += self.encode64(inp, 3)
+        return outp
+
+    def gensalt_blowfish(self, inp):  # pragma nocover
+        itoa64 = \
+            './ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+        outp = '$2a$'
+        outp += chr(ord('0') + self.iteration_count_log2 / 10)
+        outp += chr(ord('0') + self.iteration_count_log2 % 10)
+        outp += '$'
+        cur = 0
+        while True:
+            c1 = ord(inp[cur])
+            cur += 1
+            outp += itoa64[c1 >> 2]
+            c1 = (c1 & 0x03) << 4
+            if cur >= 16:
+                outp += itoa64[c1]
+                break
+            c2 = ord(inp[cur])
+            cur += 1
+            c1 |= c2 >> 4
+            outp += itoa64[c1]
+            c1 = (c2 & 0x0f) << 2
+            c2 = ord(inp[cur])
+            cur += 1
+            c1 |= c2 >> 6
+            outp += itoa64[c1]
+            outp += itoa64[c2 & 0x3f]
+        return outp
+
+    def hash_password(self, pw):  # pragma nocover
+        rnd = ''
+        alg = self.algorithm.lower()
+        if (not alg or alg == 'blowfish' or alg == 'bcrypt') \
+             and not self.portable_hashes:
+            if _bcrypt_hashpw is None:
+                if (alg == 'blowfish' or alg == 'bcrypt'):
+                    raise NotImplementedError('The bcrypt module is required')
+            else:
+                rnd = self.get_random_bytes(16)
+                salt = self.gensalt_blowfish(rnd)
+                hx = _bcrypt_hashpw(pw, salt)
+                if len(hx) == 60:
+                    return hx
+        if (not alg or alg == 'ext-des') and not self.portable_hashes:
+            if len(rnd) < 3:
+                rnd = self.get_random_bytes(3)
+            hx = crypt.crypt(pw, self.gensalt_extended(rnd))
+            if len(hx) == 20:
+                return hx
+        if len(rnd) < 6:
+            rnd = self.get_random_bytes(6)
+        hx = self.crypt_private(pw, self.gensalt_private(rnd))
+        if len(hx) == 34:
+            return hx
+        return '*'
+
+    def check_password(self, pw, stored_hash):
+        # This part is different with the original PHP
+        if stored_hash.startswith('$2a$'):
+            # bcrypt
+            if _bcrypt_hashpw is None:  # pragma nocover
+                raise NotImplementedError('The bcrypt module is required')
+            hx = _bcrypt_hashpw(pw, stored_hash)
+        elif stored_hash.startswith('_'):
+            # ext-des
+            hx = crypt.crypt(pw, stored_hash)
+        else:
+            # portable hash
+            hx = self.crypt_private(pw, stored_hash)
+        return hx == stored_hash
+
+
 class IdResolver (UserIdResolver):
 
     searchFields = {"username": "text",
@@ -67,15 +253,14 @@ class IdResolver (UserIdResolver):
 
     @classmethod
     def setup(cls, config=None, cache_dir=None):
-        '''
+        """
         this setup hook is triggered, when the server
         starts to serve the first request
 
         :param config: the privacyidea config
         :type  config: the privacyidea config dict
-        '''
+        """
         log.info("Setting up the SQLResolver")
-        return
     
     def __init__(self):
         self.resolverId = ""
@@ -150,14 +335,14 @@ class IdResolver (UserIdResolver):
         return res
     
     def getUserInfo(self, userId):
-        '''
+        """
         This function returns all user info for a given userid/object.
         
         :param userId: The userid of the object
         :type userId: string
         :return: A dictionary with the keys defined in self.map
         :rtype: dict
-        '''
+        """
         userinfo = {}
         
         try:
@@ -168,34 +353,34 @@ class IdResolver (UserIdResolver):
             result = self.session.query(self.TABLE).filter(filter_condition)
                                                       
             for r in result:
-                if len(userinfo.keys()) > 0:
+                if len(userinfo.keys()) > 0:  # pragma nocover
                     raise Exception("More than one user with userid %s found!"
                                     % userId)
                 userinfo = self._get_user_from_mapped_object(r)
-        except Exception as exx:
+        except Exception as exx:  # pragma nocover
             log.error("Could not get the userinformation: %r" % exx)
         
         return userinfo
     
     def getUsername(self, userId):
-        '''
+        """
         Returns the username/loginname for a given userid
         :param userid: The userid in this resolver
         :type userid: string
         :return: username
         :rtype: string
-        '''
+        """
         info = self.getUserInfo(userId)
         return info.get('username', "")
    
     def getUserId(self, LoginName):
-        '''
+        """
         resolve the loginname to the userid.
         
         :param LoginName: The login name from the credentials
         :type LoginName: string
         :return: UserId as found for the LoginName
-        '''
+        """
         userid = ""
         
         try:
@@ -206,29 +391,29 @@ class IdResolver (UserIdResolver):
             result = self.session.query(self.TABLE).filter(filter_condition)
                                                       
             for r in result:
-                if userid != "":
+                if userid != "":    # pragma nocover
                     raise Exception("More than one user with loginname"
                                     " %s found!" % LoginName)
                 user = self._get_user_from_mapped_object(r)
                 userid = user["id"]
-        except Exception as exx:
+        except Exception as exx:    # pragma nocover
             log.error("Could not get the userinformation: %r" % exx)
         
         return userid
     
     def _get_user_from_mapped_object(self, ro):
-        '''
-        :param r: row
-        :type r: Mapped Object
+        """
+        :param ro: row
+        :type ro: Mapped Object
         :return: User
         :rtype: dict
-        '''
+        """
         r = ro.__dict__
         user = {}
         try:
             if self.map.get("userid") in r:
                 user["id"] = r[self.map.get("userid")]
-        except UnicodeEncodeError:
+        except UnicodeEncodeError:  # pragma nocover
             log.error("Failed to convert user: %r" % r)
             log.error(traceback.format_exc())
         
@@ -246,18 +431,18 @@ class IdResolver (UserIdResolver):
                     # log.error("CKO: %r" % val)
                     # log.error("CKO: %r" % type(val))
                     user[key] = val
-            except UnicodeEncodeError:
+            except UnicodeEncodeError:  # pragma nocover
                 log.error("Failed to convert user: %r" % r)
                 log.error(traceback.format_exc())
         
         return user
 
     def getUserList(self, searchDict=None):
-        '''
+        """
         :param searchDict: A dictionary with search parameters
         :type searchDict: dict
         :return: list of users, where each user is a dictionary
-        '''
+        """
         users = []
         conditions = []
         if searchDict is None:
@@ -269,7 +454,7 @@ class IdResolver (UserIdResolver):
             conditions.append(getattr(self.TABLE, column).like(value))
             
         if self.where:
-            # this might result in erros if the
+            # this might result in errors if the
             # administrator enters nonsense
             (w_column, w_cond, w_value) = self.where.split()
             if w_cond.lower() == "like":
@@ -293,12 +478,12 @@ class IdResolver (UserIdResolver):
         return users
     
     def getResolverId(self):
-        '''
+        """
         Returns the resolver Id
         This should be an Identifier of the resolver, preferable the type
         and the name of the resolver.
-        '''
-        return "sqlresolver." + self.resolverId
+        """
+        return "sql." + self.resolverId
 
     @classmethod
     def getResolverClassType(cls):
@@ -307,60 +492,28 @@ class IdResolver (UserIdResolver):
     def getResolverType(self):
         return IdResolver.getResolverClassType()
     
-    def loadConfig(self, config, conf):
-        '''
+    def loadConfig(self, config):
+        """
         Load the config from conf.
         
         :param config: The configuration from the Config Table
         :type config: dict
-        :param conf: the instance of the configuration
-        :type conf: string
-        
-        The information which config entries we need to load is taken from
-            manage.js: function save_sql_config
-                    
-        '''
-        self.resolverId = conf
-        self.server = self.getConfigEntry(config,
-                                          'privacyidea.sqlresolver.Server',
-                                          conf)
-        self.driver = self.getConfigEntry(config,
-                                          'privacyidea.sqlresolver.Driver',
-                                          conf)
-        self.database = self.getConfigEntry(config,
-                                            'privacyidea.sqlresolver.Database',
-                                            conf)
-        self.port = self.getConfigEntry(config,
-                                        'privacyidea.sqlresolver.Port',
-                                        conf, required=False)
-        self.limit = self.getConfigEntry(config,
-                                         'privacyidea.sqlresolver.Limit',
-                                         conf, required=False, default=100)
-        self.user = self.getConfigEntry(config,
-                                        'privacyidea.sqlresolver.User',
-                                        conf, required=False)
-        self.password = self.getConfigEntry(config,
-                                            'privacyidea.sqlresolver.Password',
-                                            conf, required=False)
-        self.table = self.getConfigEntry(config,
-                                         'privacyidea.sqlresolver.Table',
-                                         conf)
-        usermap = self.getConfigEntry(config,
-                                      'privacyidea.sqlresolver.Map',
-                                      conf)
+        """
+        self.server = config.get('Server', "")
+        self.driver = config.get('Driver', "")
+        self.database = config.get('Database', "")
+        self.resolverId = self.database
+        self.port = config.get('Port', "")
+        self.limit = config.get('Limit', 100)
+        self.user = config.get('User', "")
+        self.password = config.get('Password', "")
+        self.table = config.get('Table', "")
+        usermap = config.get('Map', {})
         self.map = yaml.load(usermap)
         self.reverse_map = dict([[v, k] for k, v in self.map.items()])
-        self.where = self.getConfigEntry(config,
-                                         'privacyidea.sqlresolver.Where',
-                                         conf, required=False)
-        self.encoding = self.getConfigEntry(config,
-                                            'privacyidea.sqlresolver.Encoding',
-                                            conf,
-                                            required=False, default="latin1")
-        self.conParams = self.getConfigEntry(config,
-                                             'privacyidea.sqlresolver.'
-                                             'conParams',
-                                             conf, required=False)
+        self.where = config.get('Where', "")
+        self.encoding = config.get('Encoding', "latin1")
+        self.conParams = config.get('conParams', "")
         
         # create the connectstring like
         params = {'Port': self.port,
@@ -402,30 +555,14 @@ class IdResolver (UserIdResolver):
                                 'conParams': 'string'}
         return {typ: descriptor}
 
-    def getConfigEntry(self, config, key, conf, required=True, default=None):
-        ckey = key
-        cval = ""
-        if conf != "" or None:
-            ckey = ckey + "." + conf
-            if ckey in config:
-                cval = config[ckey]
-        if cval == "":
-            if key in config:
-                cval = config[key]
-        if cval == "" and required is True:
-            raise Exception("missing config entry: " + key)
-        if cval == "" and default:
-            cval = default
-        return cval
-            
     @classmethod
     def _create_connect_string(self, param):
-        '''
+        """
         create the connectstring
         
         Port, Password, conParams, Driver, User,
         Server, Database
-        '''
+        """
         port = ""
         password = ""
         conParams = ""
@@ -453,7 +590,7 @@ class IdResolver (UserIdResolver):
             
     @classmethod
     def testconnection(self, param):
-        '''
+        """
         This function lets you test the to be saved SQL connection.
               
         :param param: A dictionary with all necessary parameter
@@ -467,7 +604,7 @@ class IdResolver (UserIdResolver):
                         Limit, Table, Map
                         Where, Encoding, conParams
             
-        '''
+        """
         num = -1
         desc = None
         
@@ -477,75 +614,12 @@ class IdResolver (UserIdResolver):
         # create a configured "Session" class
         session = sessionmaker(bind=engine)()
         db = SQLSoup(engine)
-        TABLE = db.entity(param.get("Table"))
-            
         try:
+            TABLE = db.entity(param.get("Table"))
             result = session.query(TABLE).count()
             num = result
             desc = "Found %i users." % num
         except Exception as exx:
             desc = "failed to retrieve users: %s" % exx
             
-        return (num, desc)
-    
-    
-if __name__ == "__main__":  # pragma: no cover
-
-    print " SQLIdResolver - IdResolver class test "
-        
-    y = getResolverClass("SQLIdResolver", "IdResolver")()
-    
-    print y
-    
-    y.loadConfig({'privacyidea.sqlresolver.Driver': 'mysql',
-                  'privacyidea.sqlresolver.Database': 'wordpress',
-                  'privacyidea.sqlresolver.Server': 'localhost',
-                  'privacyidea.sqlresolver.User': 'root',
-                  'privacyidea.sqlresolver.Password': 'mspw.',
-                  'privacyidea.sqlresolver.Limit': 2,
-                  'privacyidea.sqlresolver.Encoding': "utf-8",
-                  'privacyidea.sqlresolver.Table': 'wp_users',
-                  'privacyidea.sqlresolver.Map': '{ "username": "user_login", \
-                      "userid" : "ID", \
-                      "email" : "user_email", \
-                      "surname" : "display_name", \
-                      "givenname" : "user_nicename", \
-                      "password" : "user_pass"}',
-                  },
-                 "")
-
-    print "Config loaded"
-    
-    print "====== getUserList =========="
-    result = y.getUserList()
-    for entry in result:
-        print entry
-    print "======== getUserId ==============="
-
-    user = "admin"
-    loginId = y.getUserId(user)
-
-    print " %s -  %s" % (user, loginId)
-
-    print " reId - " + y.getResolverId()
-    print "======== getUserInfo ==============="
-
-    ret = y.getUserInfo(loginId)
-    print "Userinfo for %r" % loginId
-    print ret
-    print "============ checkPass =============="
-    uid = y.getUserId("cornelius")
-    ret = y.checkPass(uid, "test")
-    print ret
-    ret = y.checkPass(uid, "wrong")
-    print ret
-    print "============ getUserList ============"
-    
-    ret = y.getSearchFields()
-    
-    search = {"username": "admin"}
-    
-    print "=== we should only see the admin ===="
-    ret = y.getUserList(search)
-    for entry in ret:
-        print entry
+        return num, desc

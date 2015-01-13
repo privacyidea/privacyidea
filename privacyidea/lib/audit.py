@@ -33,15 +33,15 @@
 
 import logging
 log = logging.getLogger(__name__)
-from pylons import config
-from pylons import tmpl_context as c
-from pylons import request
+#from pylons import config
+#from pylons import tmpl_context as c
+#from pylons import request
 from privacyidea.lib.log import log_with
 import socket
 
 import json
 
-from privacyidea.lib.token import getTokenNumResolver
+from privacyidea.lib.token import get_tokens
 
 
 @log_with(log)
@@ -85,7 +85,8 @@ def getAudit():
 
 def logTokenNum():
     # log the number of the tokens
-    c.audit['action_detail'] = "tokennum = %s" % str(getTokenNumResolver())
+    count = get_tokens(count=True)
+    c.audit['action_detail'] = "tokennum = %s" % str(count)
 
 
 class AuditBase(object):

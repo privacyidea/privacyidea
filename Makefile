@@ -3,13 +3,14 @@ info:
 	@echo "make clean        - remove all automatically created files"
 	@echo "make epydoc       - create the API documentation"
 	@echo "make doc-man      - create the documentation as man-page"
+	@echo "make doc-html     - create the documentation as html"
 	@echo "make pypi         - upload package to pypi"
 	@echo "make debianzie    - prepare the debian build environment in DEBUILD"
 	@echo "make builddeb     - build .deb file locally on ubuntu 14.04!"
 	@echo "make ppa-dev      - upload to launchpad development repo"
 	
 #VERSION=1.3~dev5
-VERSION=1.5.1~dev1
+VERSION=1.5~dev8
 SERIES="trusty precise"
 LOCAL_SERIES=`lsb_release -a | grep Codename | cut -f2`
 
@@ -24,12 +25,8 @@ translate:
 	python setup.py compile_catalog
 clean:
 	find . -name \*.pyc -exec rm {} \;
-	rm -fr config/data
 	rm -fr build/
 	rm -fr dist/
-	rm -fr privacyIDEA.egg-info/
-	rm -fr API
-	rm -fr privacyidea/tests/testdata/data/
 	rm -fr DEBUILD
 	rm -fr RHBUILD
 	rm -fr cover
@@ -49,6 +46,9 @@ depdoc:
 
 doc-man:
 	(cd doc; make man)
+
+doc-html:
+	(cd doc; make html)
 
 redhat:
 	make clean

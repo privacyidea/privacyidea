@@ -23,16 +23,19 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#       
-'''contains all crypto functions
-'''
+#
+"""
+contains all crypto functions.
+Security module functions are contained under lib/security/
 
-
+This lib.cryto is tested in tests/test_lib_crypto.py
+"""
 import hmac
 import logging
 from hashlib import sha256
 import base64
-from privacyidea.lib.log import log_with
+from .log import log_with
+from .error import HSMException
 
 import binascii
 import os
@@ -45,50 +48,40 @@ pver = float(int(ma) + int(mi) * 0.1)
 
 import ctypes
 
-from pylons.configuration import config as env
-from pylons import tmpl_context as c
-from privacyidea.lib.error import HSMException
+from flask import current_app
 
-import Crypto.Hash as CryptoHash
 from Crypto.Hash import HMAC
 from Crypto.Hash import SHA as SHA1
 from Crypto.Hash import SHA256
 from Crypto.Cipher import AES
 
-
-from privacyidea.lib.ext.pbkdf2  import PBKDF2
-
-
-
+from passlib.hash import pbkdf2_sha512
 
 log = logging.getLogger(__name__)
 
-c_hash = {
-         'sha1': SHA1,
-         'sha256': SHA256,
-         }
+c_hash = {'sha1': SHA1,
+          'sha256': SHA256}
 
 try:
     from Crypto.Hash import SHA224
     c_hash['sha224'] = SHA224
-except:
+except:  # pragma nocover
     log.warning('Your system does not support Crypto SHA224 hash algorithm')
 
 try:
     from Crypto.Hash import SHA384
     c_hash['sha384'] = SHA384
-except:
+except:  # pragma nocover
     log.warning('Your system does not support Crypto SHA384 hash algorithm')
 
 try:
     from Crypto.Hash import SHA512
     c_hash['sha512'] = SHA512
-except:
+except:  # pragma nocover
     log.warning('Your system does not support Crypto SHA512 hash algorithm')
 
 
-
-## constant - later taken from the env?
+# constant - later taken from the env?
 CONFIG_KEY = 1
 TOKEN_KEY = 2
 VALUE_KEY = 3
@@ -139,11 +132,12 @@ class SecretObj:
         self._clearKey_(preserve=self.preserve)
         return msg_bin
 
-    def encryptPin(self):
-        self._setupKey_()
-        res = encryptPin(self.bkey)
-        self._clearKey_(preserve=self.preserve)
-        return res
+# This is never used. So we will remove it.
+#    def encryptPin(self):
+#        self._setupKey_()
+#        res = encryptPin(self.bkey)
+#        self._clearKey_(preserve=self.preserve)
+#        return res
 
     def _setupKey_(self):
         if self.bkey is None:
@@ -153,186 +147,101 @@ class SecretObj:
             del akey
 
     def _clearKey_(self, preserve=False):
-        if preserve == False:
+        if preserve is False:
             if self.bkey is not None:
                 zerome(self.bkey)
                 del self.bkey
 
     # This is used to remove the encryption key from the memory, but
-    # this could also disturbe the garbage collector and lead to memory eat ups.
+    # this could also disturb the garbage collector and lead to memory eat ups.
     def __del__(self):
         self._clearKey_()
-    def __enter__(self):
-        self._clearKey_()
-    def __exit__(self, type, value, traceback):
-        self._clearKey_()
-
-@log_with(log)
-def getSecretDummy():
-    log.debug('getSecretDummy()')
-    return "no secret file defined: privacyideaSecretFile!"
-
-
-@log_with(log, log_exit=False)
-def getSecret(id=0):
-
-    if not env.has_key("privacyideaSecretFile"):
-        log.error("No secret file defined. A parameter privacyideaSecretFile is missing in your privacyidea.ini.")
-        raise Exception("no secret file defined: privacyideaSecretFile!")
-
-    secFile = env["privacyideaSecretFile"]
-
-    #if True == isWorldAccessible(secFile):
-    #    log.error("file permission of the secret file :%s: are not secure!", secFile)
-    #    raise Exception("permissions of the secret file are not secure!")
-    secret = ''
-
-    try:
-        f = open(secFile)
-        for _i in range (0 , id + 1):
-            secret = f.read(32)
-        f.close()
-        if secret == "" :
-            #secret = setupKeyFile(secFile, id+1)
-            raise Exception ("No secret key defined for index: %s !\n"
-                             "Please extend your %s !" % (unicode(id), secFile))
-    except Exception as exx:
-        raise Exception ("Exception: %r" % exx)
-
-    return secret
-
-def setupKeyFile(secFile, maxId):
-    secret = ''
-    for index in range(0, maxId):
-        f = open(secFile)
-        for _c in range(0, index + 1):
-            secret = f.read(32)
-        f.close()
-
-        ## if no secret: fill in a new one
-        if secret == "" :
-            f = open(secFile, 'ab+')
-            secret = geturandom(32)
-            f.write(secret)
-            f.close()
-
-    return secret
-
-@log_with(log)
-def isWorldAccessible(filepath):
-    st = os.stat(filepath)
-    u_w = bool(st.st_mode & stat.S_IWUSR)
-    g_r = bool(st.st_mode & stat.S_IRGRP)
-    g_w = bool(st.st_mode & stat.S_IWGRP)
-    o_r = bool(st.st_mode & stat.S_IROTH)
-    o_w = bool(st.st_mode & stat.S_IWOTH)
-    return g_r or g_w or o_r or o_w or u_w
+        
+# This is never used. It would be used for something like:
+# with SecretObj:
+#    ....
+#    def __enter__(self):
+#        self._clearKey_()
+#
+#    def __exit__(self, typ, value, traceback):
+#        self._clearKey_()
 
 
-def _getCrypto(description):
-    '''
-       Convert the name of a hash algorithm as described in the OATH
-       specifications, to a python object handling the digest algorithm
-       interface
-    '''
-    algo = getattr(CryptoHash, description.upper(), None)
-    #if not callable(algo):
-    #    raise ValueError, ('Unknown hash algorithm', s[1])
-    return algo
+# def check(st):
+#     """
+#     calculate the checksum of st
+#     :param st: input string
+#     :return: the checksum code as 2 hex bytes
+#     """
+#     summ = 0
+#     arry = bytearray(st)
+#     for x in arry:
+#         summ = summ ^ x
+#     res = str(hex(summ % 256))[2:]
+#     if len(res) < 2:
+#         res = '0' * (2 - len(res)) + res
+#     return res.upper()
 
-def check(st):
-    """
-    calculate the checksum of st
-    :param st: input string
-    :return: the checksum code as 2 hex bytes
-    """
-    sum = 0
-    arry = bytearray(st)
-    for x in arry:
-        sum = sum ^ x
-    res = str(hex(sum % 256))[2:]
-    if len(res) < 2:
-        res = '0' * (2 - len(res)) + res
-    return res.upper()
+#
+# def kdf2(sharesecret, nonce,
+#          activationcode, length,
+#          iterations=10000,
+#          digest='SHA256', macmodule=HMAC, checksum=True):
+#     '''
+#     key derivation function
+#
+#     - takes the shared secret, an activation code and a nonce to generate a
+#          new key
+#     - the last 4 btyes (8 chars) of the nonce is the salt
+#     - the last byte    (2 chars) of the activation code are the checksum
+#     - the activation code mitght contain '-' signs for grouping char blocks
+#        aabbcc-ddeeff-112233-445566
+#
+#     :param sharedsecret:    hexlified binary value
+#     :param nonce:           hexlified binary value
+#     :param activationcode:  base32 encoded value
+#
+#     '''
+#     digestmodule = c_hash.get(digest.lower(), None)
+#
+#     byte_len = 2
+#     salt_len = 8 * byte_len
+#
+#     salt = u'' + nonce[-salt_len:]
+#     bSalt = binascii.unhexlify(salt)
+#     activationcode = activationcode.replace('-', '')
+#
+#     acode = activationcode
+#     if checksum is True:
+#         acode = str(activationcode)[:-2]
+#
+#     try:
+#         bcode = base64.b32decode(acode)
+#
+#     except Exception as exx:
+#         error = "Error during decoding activationcode %r: %r" % (acode, exx)
+#         log.error(error)
+#         raise Exception(error)
+#
+#     if checksum is True:
+#         checkCode = str(activationcode[-2:])
+#         veriCode = str(check(bcode)[-2:])
+#         if checkCode != veriCode:
+#             raise Exception('[crypt:kdf2] activation code checksum error!! '
+#                             ' [%s]%s:%s' % (acode, veriCode, checkCode))
+#
+#     activ = binascii.hexlify(bcode)
+#     passphrase = u'' + sharesecret + activ + nonce[:-salt_len]
+#     #keyStream = PBKDF2(binascii.unhexlify(passphrase),
+#     #                   bSalt, iterations=iterations,
+#     #                   digestmodule=digestmodule)
+#     #key = keyStream.read(length)
+#     key = pbkdf2_sha256(binascii.unhexlify(passphrase),
+#                         salt=bSalt, rounds=iterations)
+#     return key
 
 
-def createActivationCode(acode=None, checksum=True):
-    """
-    create the activation code
-
-    :param acode: activation code or None
-    :param checksum: flag to indicate, if a checksum will be calculated
-    :return: return the activation code
-    """
-    if acode is None:
-        acode = geturandom(20)
-    activationcode = base64.b32encode(acode)
-    if checksum == True:
-        chsum = check(acode)
-        activationcode = u'' + activationcode + chsum
-
-    return activationcode
-
-def createNonce(len=64):
-    """
-    create a nonce - which is a random string
-    :param len: len of bytes to return
-    :return: hext string
-    """
-    key = os.urandom(len)
-    return binascii.hexlify(key)
-
-
-def kdf2(sharesecret, nonce , activationcode, len, iterations=10000,
-                               digest='SHA256', macmodule=HMAC, checksum=True):
-    '''
-    key derivation function
-
-    - takes the shareed secret, an activation code and a nonce to generate a new key
-    - the last 4 btyes (8 chars) of the nonce is the salt
-    - the last byte    (2 chars) of the activation code are the checksum
-    - the activation code mitght contain '-' signs for grouping char blocks
-       aabbcc-ddeeff-112233-445566
-
-    :param sharedsecret:    hexlified binary value
-    :param nonce:           hexlified binary value
-    :param activationcode:  base32 encoded value
-
-    '''
-    digestmodule = c_hash.get(digest.lower(), None)
-
-    byte_len = 2
-    salt_len = 8 * byte_len
-
-    salt = u'' + nonce[-salt_len:]
-    bSalt = binascii.unhexlify(salt)
-    activationcode = activationcode.replace('-', '')
-
-    acode = activationcode
-    if checksum == True:
-        acode = str(activationcode)[:-2]
-
-    try:
-        bcode = base64.b32decode(acode)
-
-    except Exception as exx:
-        error = "Error during decoding activationcode %r: %r" % (acode, exx)
-        log.error(error)
-        raise Exception(error)
-
-    if checksum == True:
-        checkCode = str(activationcode[-2:])
-        veriCode = str(check(bcode)[-2:])
-        if checkCode != veriCode:
-            raise Exception('[crypt:kdf2] activation code checksum error!! [%s]%s:%s' % (acode, veriCode, checkCode))
-
-    activ = binascii.hexlify(bcode)
-    passphrase = u'' + sharesecret + activ + nonce[:-salt_len]
-    keyStream = PBKDF2(binascii.unhexlify(passphrase), bSalt, iterations=iterations, digestmodule=digestmodule)
-    key = keyStream.read(len)
-    return key
-
-@log_with(log, log_entry=False)
+@log_with(log, log_entry=False, log_exit=False)
 def hash(val, seed, algo=None):
     log.debug('hash()')
     m = sha256()
@@ -340,59 +249,51 @@ def hash(val, seed, algo=None):
     m.update(seed)
     return m.digest()
 
-@log_with(log, log_entry=False)
-def encryptPassword(password):
 
-    log.debug('encryptPassword()')
-    if hasattr(c, 'hsm') == False or isinstance(c.hsm, dict) == False:
-        raise HSMException('no hsm defined in execution context!')
+def _get_hsm():
+    config = current_app.config
+    if "pi_hsm" not in config or not isinstance(config["pi_hsm"], dict):
+        #raise HSMException('no hsm defined in execution context!')
+        from security.default import DefaultSecurityModule
+        # TODO: Migration fix it
+        HSM_config = {"obj": DefaultSecurityModule({"file": config.get(
+            "PI_ENCFILE")})}
+        current_app.config["pi_hsm"] = HSM_config
+    hsm = current_app.config.get("pi_hsm").get('obj')
 
-    hsm = c.hsm.get('obj')
-    if hsm is None or hsm.isReady() == False:
+    if hsm is None or not hsm.is_ready:  # pragma nocover
         raise HSMException('hsm not ready!')
 
-    ret = hsm.encryptPassword(password)
+    return hsm
+
+
+@log_with(log, log_entry=False)
+def encryptPassword(password):
+    hsm = _get_hsm()
+    ret = hsm.encrypt_password(password)
     return ret
+
 
 @log_with(log, log_entry=False)
 def encryptPin(cryptPin):
-
-    log.debug('encryptPin()')
-    if hasattr(c, 'hsm') == False or isinstance(c.hsm, dict) == False:
-        raise HSMException('no hsm defined in execution context!')
-
-    hsm = c.hsm.get('obj')
-    if hsm is None or  hsm.isReady() == False:
-        raise HSMException('hsm not ready!')
-
-    ret = hsm.encryptPin(cryptPin)
+    hsm = _get_hsm()
+    ret = hsm.encrypt_pin(cryptPin)
     return ret
+
 
 @log_with(log, log_exit=False)
 def decryptPassword(cryptPass):
-
-    if hasattr(c, 'hsm') == False or isinstance(c.hsm, dict) == False:
-        raise HSMException('no hsm defined in execution context!')
-
-    hsm = c.hsm.get('obj')
-    if hsm is None or hsm.isReady() == False:
-        raise HSMException('hsm not ready!')
-
-    ret = hsm.decryptPassword(cryptPass)
+    hsm = _get_hsm()
+    ret = hsm.decrypt_password(cryptPass)
     return ret
+
 
 @log_with(log, log_exit=False)
 def decryptPin(cryptPin):
-
-    if hasattr(c, 'hsm') == False or isinstance(c.hsm, dict) == False:
-        raise HSMException('no hsm defined in execution context!')
-
-    hsm = c.hsm.get('obj')
-    if hsm is None or hsm.isReady() == False:
-        raise HSMException('hsm not ready!')
-
-    ret = hsm.decryptPin(cryptPin)
+    hsm = _get_hsm()
+    ret = hsm.decrypt_pin(cryptPin)
     return ret
+
 
 @log_with(log, log_entry=False)
 def encrypt(data, iv, id=0):
@@ -409,16 +310,10 @@ def encrypt(data, iv, id=0):
 
 
     '''
-
-    log.debug('encrypt()')
-    if hasattr(c, 'hsm') == False or isinstance(c.hsm, dict) == False:
-        raise HSMException('no hsm defined in execution context!')
-
-    hsm = c.hsm.get('obj')
-    if hsm is None or hsm.isReady() == False:
-        raise HSMException('hsm not ready!')
+    hsm = _get_hsm()
     ret = hsm.encrypt(data, iv, id)
     return ret
+
 
 @log_with(log, log_exit=False)
 def decrypt(input, iv, id=0):
@@ -434,42 +329,31 @@ def decrypt(input, iv, id=0):
     :return:      decryted buffer
 
     '''
-    if hasattr(c, 'hsm') == False or isinstance(c.hsm, dict) == False:
-        raise HSMException('no hsm defined in execution context!')
-
-    hsm = c.hsm.get('obj')
-    if hsm is None or hsm.isReady() == False:
-        raise HSMException('hsm not ready!')
-
+    hsm = _get_hsm()
     ret = hsm.decrypt(input, iv, id)
     return ret
 
+
 # @log_with(log)
-def geturandom(len=20):
+def geturandom(length=20, hex=False):
     '''
     get random - from the security module
 
-    :param len:  len of the returned bytes - default is 20 bytes
-    :tyrpe len:    int
+    :param length: length of the returned bytes - default is 20 bytes
+    :rtype length: int
 
     :return: buffer of bytes
 
     '''
-    if hasattr(c, 'hsm') == False:
-        ret = os.urandom(len)
-        return ret
-
-    if isinstance(c.hsm, dict) == False:
-        raise HSMException('hsm not found!')
-
-    hsm = c.hsm.get('obj')
-    if hsm is None or hsm.isReady() == False:
-        raise HSMException('hsm not ready!')
-
-    ret = hsm.random(len)
+    hsm = _get_hsm()
+    ret = hsm.random(length)
+        
+    if hex:
+        ret = binascii.hexlify(ret)
     return ret
 
-### some random functions based on geturandom #################################
+# some random functions based on geturandom #################################
+
 
 class urandom(object):
 
@@ -482,23 +366,22 @@ class urandom(object):
 
         :return: float value
         """
-        ## get a binary random string
+        # get a binary random string
         randbin = geturandom(urandom.precision)
 
-        ## convert this to an integer
+        # convert this to an integer
         randi = int(randbin.encode('hex'), 16) * 1.0
 
-        ## get the max integer
+        # get the max integer
         intmax = 2 ** (8 * urandom.precision) * 1.0
 
-        ## scale the integer to an float between 0.0 and 1.0
+        # scale the integer to an float between 0.0 and 1.0
         randf = randi / intmax
 
         assert randf >= 0.0
         assert randf <= 1.0
 
         return randf
-
 
     @classmethod
     def uniform(cls, start, end=None):
@@ -513,22 +396,21 @@ class urandom(object):
             end = start
             start = 0.0
 
-        ## make sure we have a float
+        # make sure we have a float
         startf = start * 1.0
 
         dist = (end - start)
-        ## if end lower than start invert the distance and start at the end
+        # if end lower than start invert the distance and start at the end
         if dist < 0:
             dist = dist * -1.0
             startf = end * 1.0
 
         ret = urandom.random()
 
-        ## result is start value + stretched distance
+        # result is start value + stretched distance
         res = startf + ret * dist
 
         return res
-
 
     @classmethod
     def randint(cls, start, end=None):
@@ -542,14 +424,14 @@ class urandom(object):
             start = 0
 
         dist = end - start
-        ## if end lower than start invert the distance and start at the end
+        # if end lower than start invert the distance and start at the end
         if dist < 0:
             dist = dist * -1
             start = end
 
         randf = urandom.random()
 
-        ## result is start value + stretched distance
+        # result is start value + stretched distance
         ret = int(start + randf * dist)
 
         return ret
@@ -573,25 +455,33 @@ class urandom(object):
 
         :param start: start of range
         :param stop: end value
-        :param step: the step distance beween two values
+        :param step: the step distance between two values
 
         :return: int value
         """
         if stop is None:
             stop = start
             start = 0
-        ## see python definition of randrange
+        # see python definition of randrange
         res = urandom.choice(range(start, stop, step))
         return res
 
 
 def get_rand_digit_str(length=16):
-    '''
-    return a sting of digits with a defined length
+    """
+    return a string of digits with a defined length
     using the urandom
-    '''
+
+    This is used for creating transaction ids of challenges.
+    It does not work for lenght==1!
+
+    :return: random string
+    :rtype: basestring
+    """
+    if length==1:
+        raise ValueError    ("get_rand_digit_str only works for values > 1")
     clen = int(length / 2.4 + 0.5)
-    randd = geturandom(len=clen)
+    randd = geturandom(clen)
     s = "%d" % (int(randd.encode('hex'), 16))
     if len(s) < length:
         s = "0" * (length - len(s)) + s
@@ -612,9 +502,8 @@ def zerome(bufferObject):
     data = ctypes.POINTER(ctypes.c_char)()
     size = ctypes.c_int()  # Note, int only valid for python 2.5
     ctypes.pythonapi.PyObject_AsCharBuffer(ctypes.py_object(bufferObject),
-                                    ctypes.pointer(data), ctypes.pointer(size))
+                                           ctypes.pointer(data),
+                                           ctypes.pointer(size))
     ctypes.memset(data, 0, size.value)
-    #print repr(bufferObject)
-    return
 
-##eof##########################################################################
+    return

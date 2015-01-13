@@ -33,7 +33,7 @@
 
 import logging
 
-from privacyidea.lib.util    import getParam
+from privacyidea.lib._util    import getParam
 from privacyidea.lib.validate import check_pin
 from privacyidea.lib.log import log_with
 

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html ng-app="privacyideaApp">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Cornelius Kölbel">
+    <link rel="icon" href="../../favicon.ico">
+    <script src="/static/contrib/js/angular.js"></script>
+    <script src="/static/contrib/js/ui-bootstrap-custom-tpls-0.12.0.js"></script>
+    <script src="/static/contrib/js/ngmodules/angular-route.js"></script>
+    <script src="/static/contrib/js/ngmodules/angular-ui-router.js"></script>
+    <script src="/static/contrib/js/ngmodules/angular-animate.min.js"></script>
+
+    <link href="/static/contrib/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/contrib/css/bootstrap-theme.css" rel="stylesheet"/>
+    <!-- Custom styles for this template -->
+    <link href="/static/css/signin.css" rel="stylesheet">
+    <link href="/static/contrib/css/animate.css" rel="stylesheet">
+    <link href="/static/css/navbar-fixed-top.css" rel="stylesheet">
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/controllers/loginControllers.js"></script>
+    <script src="/static/js/controllers/tokenControllers.js"></script>
+    <script src="/static/js/controllers/configControllers.js"></script>
+    <script src="/static/js/controllers/userControllers.js"></script>
+    <script src="/static/js/components/user/auth.js"></script>
+    <script src="/static/js/components/config/config.js"></script>
+    <script src="/static/js/components/token.js"></script>
+    <script src="/static/js/components/directives.js"></script>
+    <script src="/static/js/components/user.js"></script>
+    <script src="/static/js/components/validate.js"></script>
+
+</head>
+<body ng-controller="mainController">
+<nav class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed"
+                    data-toggle="collapse" data-target="#navbar"
+                    aria-expanded="false" aria-controls="navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">privacyIDEA</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+                <li ng-class="{active: $state.includes('token')}"
+                        ng-hide="$state.includes('login')">
+                    <a ui-sref="token">
+                    <span class="glyphicon glyphicon-phone"
+                          aria-hidden="true"></span>
+                    Token View</a></li>
+                <li ng-class="{active: $state.includes('user')}"
+                        ng-hide="$state.includes('login')">
+                    <a ui-sref="user">
+                    <span class="glyphicon glyphicon-user"
+                          aria-hidden="true"></span>
+                    User View</a></li>
+                <li ng-class="{active: $state.includes('config')}"
+                        ng-hide="$state.includes('login')">
+                    <a ui-sref="config">
+                        <span class="glyphicon glyphicon-list"
+                              aria-hidden="true"></span>
+                        Config
+                    </a>
+                </li>
+                <li ng-class="{active: $state.includes('audit')}"
+                        ng-hide="$state.includes('login')">
+                    <a ui-sref="audit">
+                        <span class="glyphicon glyphicon-search"
+                              aria-hidden="true"></span>
+                        Audit
+                    </a>
+                </li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li><a ui-sref="login" ng-hide="user.username">Login</a></li>
+                <li><button ng-show="user.username"
+                            ng-click="logout()"
+                            class="btn btn-sm">
+                    Logout
+                    {{ user.username }}</button></li>
+            </ul>
+
+
+            <div>
+                <!-- We'll also add some navigation: -->
+
+
+            </div>
+
+        </div>
+        <!--/.nav-collapse -->
+    </div>
+</nav>
+
+    <div class="alert alert-danger" ng-show="restError">
+        {{ restError.error.message }}
+        <a href="" ng-click="restError=null">Hide</a>
+    </div>
+
+<div class="container">
+    <div ui-view class="slide"></div>
+</div>
+<!-- /container -->
+<!--
+<button type="button" class="btn btn-default btn-lg">
+  <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
+    Refresh
+</button>
+-->
+<div class="well">
+    <pre>
+      <!-- Here's some values to keep an eye on in the sample in order to understand $state and $stateParams -->
+      $state = {{$state.current.name}}
+      $stateParams = {{$stateParams}}
+      $state full url = {{ $state.$current.url.source }}
+      <!-- $state.$current is not a public api, we are using it to
+           display the full url for learning purposes-->
+    </pre>
+
+</div>
+</body>
+</html>

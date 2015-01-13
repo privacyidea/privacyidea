@@ -47,7 +47,7 @@ from privacyidea.lib.policy  import PolicyClass
 
 ### TODO: move this as ocra specific methods
 from privacyidea.lib.token import getRolloutToken4User
-from privacyidea.lib.util import normalize_activation_code
+from privacyidea.lib._util import normalize_activation_code
 
 from privacyidea.lib.ocra    import OcraSuite
 
@@ -259,7 +259,7 @@ class Ocra2TokenClass(TokenClass):
     @log_with(log)
     def __init__(self, aToken):
         '''
-        getInfo - return the status of the token rollout
+        get_info - return the status of the token rollout
 
         :return: info of the ocra token state
         :rtype: dict
@@ -276,7 +276,7 @@ class Ocra2TokenClass(TokenClass):
     @log_with(log)
     def getInfo(self):
         '''
-        getInfo - return the status of the token rollout
+        get_info - return the status of the token rollout
 
         :return: info of the ocra token state
         :rtype: dict
@@ -358,7 +358,7 @@ class Ocra2TokenClass(TokenClass):
             self.addToTokenInfo('rollout', '1')
 
             ##  preseerver the current key as sharedSecret
-            secObj = self.token.getHOtpKey()
+            secObj = self.token.get_otpkey()
             key = secObj.getKey()
             encSharedSecret = encryptPin(key)
             self.addToTokenInfo('sharedSecret', encSharedSecret)
@@ -379,7 +379,7 @@ class Ocra2TokenClass(TokenClass):
             del info['ocrasuite']
             self.info = info
 
-            self.token.privacyIDEAIsactive = False
+            self.token.isactive = False
 
         return
 
@@ -514,7 +514,7 @@ class Ocra2TokenClass(TokenClass):
 
         :return: hexlified signature of the data
         '''
-        secretHOtp = self.token.getHOtpKey()
+        secretHOtp = self.token.get_otpkey()
         ocraSuite = OcraSuite(self.getOcraSuiteSuite(), secretHOtp)
         signature = ocraSuite.signData(data)
         return signature
@@ -530,13 +530,13 @@ class Ocra2TokenClass(TokenClass):
 
         counter = self.getOtpCount()
 
-        secretHOtp = self.token.getHOtpKey()
+        secretHOtp = self.token.get_otpkey()
         ocraSuite = OcraSuite(self.getOcraSuiteSuite(), secretHOtp)
 
         ## set the pin onyl in the compliant hashed mode
         pin = ''
         if ocraSuite.P is not None:
-            pinObj = self.token.getUserPin()
+            pinObj = self.token.get_user_pin()
             pin = pinObj.getKey()
 
         try:
@@ -594,7 +594,7 @@ class Ocra2TokenClass(TokenClass):
         if input is None or len(input) == 0:
             typ = 'random'
 
-        secretHOtp = self.token.getHOtpKey()
+        secretHOtp = self.token.get_otpkey()
         ocraSuite = OcraSuite(self.getOcraSuiteSuite(), secretHOtp)
 
         if typ == 'raw':
@@ -700,7 +700,7 @@ class Ocra2TokenClass(TokenClass):
 
 
         '''
-        secretHOtp = self.token.getHOtpKey()
+        secretHOtp = self.token.get_otpkey()
         ocraSuite = OcraSuite(self.getOcraSuiteSuite(), secretHOtp)
 
         if data is None or len(data) == 0:
@@ -721,7 +721,7 @@ class Ocra2TokenClass(TokenClass):
         ## set the pin onyl in the compliant hashed mode
         pin = ''
         if ocraSuite.P is not None:
-            pinObj = self.token.getUserPin()
+            pinObj = self.token.get_user_pin()
             pin = pinObj.getKey()
 
         try:
@@ -964,13 +964,13 @@ class Ocra2TokenClass(TokenClass):
             raise Exception(err)
 
         ## prepare the challenge check - do the ocra setup
-        secretHOtp = self.token.getHOtpKey()
+        secretHOtp = self.token.get_otpkey()
         ocraSuite = OcraSuite(self.getOcraSuiteSuite(), secretHOtp)
 
         ## set the ocra token pin
         ocraPin = ''
         if ocraSuite.P is not None:
-            ocraPinObj = self.token.getUserPin()
+            ocraPinObj = self.token.get_user_pin()
             ocraPin = ocraPinObj.getKey()
 
             if ocraPin is None or len(ocraPin) == 0:
@@ -1025,7 +1025,7 @@ class Ocra2TokenClass(TokenClass):
                 break
 
         if -1 == ret:
-            ##  autosync: test if two consecutive challenges + it's counter match
+            ##  _autosync: test if two consecutive challenges + it's counter match
             ret = self.autosync(ocraSuite, passw, challenge)
 
 
@@ -1053,10 +1053,10 @@ class Ocra2TokenClass(TokenClass):
             elif "false" == async.lower():
                 autosync = False
         except Exception as ex:
-            log.error('autosync check undefined %r' % (ex))
+            log.error('_autosync check undefined %r' % (ex))
             return res
 
-        ' if autosync is not enabled: do nothing '
+        ' if _autosync is not enabled: do nothing '
         if False == autosync:
             return res
 
@@ -1073,7 +1073,7 @@ class Ocra2TokenClass(TokenClass):
         ## set the ocra token pin
         ocraPin = ''
         if ocraSuite.P is not None:
-            ocraPinObj = self.token.getUserPin()
+            ocraPinObj = self.token.get_user_pin()
             ocraPin = ocraPinObj.getKey()
 
             if ocraPin is None or len(ocraPin) == 0:
@@ -1087,8 +1087,8 @@ class Ocra2TokenClass(TokenClass):
 
         tinfo = self.getTokenInfo()
 
-        ## autosync does only work, if we have a token info, where the last challenge and the last sync-counter is stored
-        ## if no tokeninfo, we start with a autosync request, thus start the lookup in the sync window
+        ## _autosync does only work, if we have a token info, where the last challenge and the last sync-counter is stored
+        ## if no tokeninfo, we start with a _autosync request, thus start the lookup in the sync window
 
         if tinfo.has_key('lChallenge') == False:
             ## run checkOtp, with sync window for the current challenge
@@ -1294,7 +1294,7 @@ class Ocra2TokenClass(TokenClass):
 
 
 
-        secretHOtp = self.token.getHOtpKey()
+        secretHOtp = self.token.get_otpkey()
         ocraSuite = OcraSuite(self.getOcraSuiteSuite(), secretHOtp)
 
         syncWindow = self.token.getSyncWindow()
@@ -1306,7 +1306,7 @@ class Ocra2TokenClass(TokenClass):
         ## set the ocra token pin
         ocraPin = ''
         if ocraSuite.P is not None:
-            ocraPinObj = self.token.getUserPin()
+            ocraPinObj = self.token.get_user_pin()
             ocraPin = ocraPinObj.getKey()
 
             if ocraPin is None or len(ocraPin) == 0:

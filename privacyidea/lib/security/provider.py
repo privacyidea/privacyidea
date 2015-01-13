@@ -43,7 +43,6 @@ import time
 import logging
 import traceback
 
-from privacyidea.lib.crypto import zerome
 from privacyidea.lib.error import HSMException
 
 DEFAULT_KEY = 0
@@ -252,7 +251,7 @@ class SecurityProvider(object):
 
     def createHSMPool(self, hsm_id=None, *args, **kw):
         '''
-        setup a pool of secutity provider
+        setup a pool of security provider
         '''
         pool = None
         ## amount has to be taken from the hsm-id config
@@ -422,6 +421,7 @@ def main():  # pragma: no cover
     encpass = hsm.encryptPassword(passwo)
     passw = hsm.decryptPassword(encpass)
 
+    from privacyidea.lib.crypto import zerome
     zerome(passw)
 
     hsm2 = sep.getSecurityModule(sessionId='session2')

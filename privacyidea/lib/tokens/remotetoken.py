@@ -41,7 +41,7 @@ import urllib
 import json
 
 from privacyidea.lib.config import getFromConfig
-from privacyidea.lib.util import getParam
+from privacyidea.lib._util import getParam
 from privacyidea.lib.validate import split_pin_otp
 from privacyidea.lib.validate import check_pin
 from privacyidea.lib.log import log_with

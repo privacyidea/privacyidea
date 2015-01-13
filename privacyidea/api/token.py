@@ -1,0 +1,829 @@
+# -*- coding: utf-8 -*-
+#
+# http://www.privacyidea.org
+# (c) cornelius kölbel, privacyidea.org
+#
+# 2014-12-08 Cornelius Kölbel, <cornelius@privacyidea.org>
+#            Complete rewrite during flask migration
+#            Try to provide REST API
+#
+# privacyIDEA is a fork of LinOTP. Some code is adapted from
+# the system-controller from LinOTP, which is
+#  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
+#  License:  AGPLv3
+#  contact:  http://www.linotp.org
+#            http://www.lsexperts.de
+#            linotp@lsexperts.de
+#
+# This code is free software; you can redistribute it and/or
+# modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+# License as published by the Free Software Foundation; either
+# version 3 of the License, or any later version.
+#
+# This code is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+from flask import Blueprint
+from flask import jsonify
+from ..lib.log import log_with
+from lib.utils import (optional,
+                       send_result,
+                       send_error,
+                       send_csv_result, required, remove_session_from_param)
+
+from ..lib.user import get_user_from_param
+from ..lib.token import (init_token, get_tokens_paginate, assign_token,
+                         unassign_token, remove_token, enable_token,
+                         reset_token, resync_token, set_pin_so, set_pin_user,
+                         set_pin, set_description, set_count_window,
+                         set_sync_window, set_count_auth,
+                         set_hashlib, set_max_failcount, set_realms,
+                         copy_token_user, copy_token_pin, lost_token)
+
+from ..lib.config import get_privacyidea_config
+from ..lib.config import get_token_class_dict
+from ..lib.config import get_token_types
+from werkzeug.datastructures import FileStorage
+from cgi import FieldStorage
+from privacyidea.lib.error import (ParameterError, TokenAdminError)
+from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
+                                       parseYubicoCSV)
+
+import logging
+log = logging.getLogger(__name__)
+from lib.utils import getParam
+
+token_blueprint = Blueprint('token_blueprint', __name__)
+
+from flask import request, g
+import traceback
+from .auth import auth_required
+
+__doc__ = """
+The token API can be accessed via /token.
+
+You need to authenticate as administrator to gain access to these token
+functions.
+"""
+
+
+@token_blueprint.before_request
+@auth_required
+def before_request():
+    """
+    This is executed before the request
+    """
+    # remove session from param and gather all parameters, either
+    # from the Form data or from JSON in the request body.
+    request.all_data = remove_session_from_param(request.values, request.data)
+    # Already get some typical parameters to log
+    serial = getParam(request.all_data, "serial")
+    realm = getParam(request.all_data, "realm")
+    g.audit = {"success": False,
+               "serial": serial,
+               "realm": realm,
+               "action": "token/%s" % request.url_rule,
+               "action_detail": "",
+               "info": ""}
+
+#@token_blueprint.after_request
+#def after_request():
+#    """
+#    This function is called after a request
+#    :return:
+#    """
+#    # TODO: Do the audit logging
+#    pass
+
+@token_blueprint.route('/init', methods=['POST'])
+@log_with(log, log_entry=False)
+def init():
+    """
+    create a new token.
+
+    :param otpkey: required: the secret key of the token
+    :param genkey: set to =1, if key should be generated. We either
+                   need otpkey or genkey
+    :param keysize: the size (byte) of the key. Either 20 or 32. Default is 20
+    :param serial: required: the serial number/identifier of the token
+    :param description: A description for the token
+    :param pin: the pin of the user pass
+    :param user: the login user name. This user gets the token assigned
+    :param realm: the realm of the user.
+    :param type: the type of the token
+    :param tokenrealm: additional realms, the token should be put into
+    :param otplen: length of the OTP value
+    :param hashlib: used hashlib sha1 oder sha256
+
+    ocra arguments: for generating OCRA Tokens type=ocra you can specify
+    the following parameters:
+    :param ocrasuite: if you do not want to use the default
+                      ocra suite OCRA-1:HOTP-SHA256-8:QA64
+    :param sharedsecret: if you are in Step0 of enrolling an
+                         OCRA/QR token the
+                         sharedsecret=1 specifies,
+                         that you want to generate a shared secret
+    :param activationcode: if you are in Step1 of enrolling an
+                           OCRA token you need to pass the
+                           activation code, that was generated in
+                           the QRTAN-App
+
+    :return: a json result with a boolean "result": true
+
+    **Example response**:
+
+       .. sourcecode:: http
+
+           HTTP/1.1 200 OK
+           Content-Type: application/json
+
+           {
+              "detail": {
+                "googleurl": {
+                  "description": "URL for google Authenticator",
+                  "img": "<img    width=250   src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcIAAAHCAQAAAABUY/ToAAADsUlEQVR4nO2czY3bMBCF34QCfKSALcClyB2kpCAlpQOxlBQQgDwaoPBy4I+p9W4OSRaWF28OgizxgylgMJw/0oi/k/DlL0FApEiRIkWKFCnyeKRVmdrjNAFh3srTMuSS2qjLg2cr8pDkQpKMgF3SBITz1QA4YolVfQA4kiT35CNmK/JQZLM8aQaWH+3pEkEgTZlhBojksgGAAS7/83+K/ORkOF/NLtismiCfYXbOd+AxZivygCTXdCLCDJRLfTbhTo4wW5FHIJtyeAJIAJb4AobLBIP/ZQRAwMcyakxIPtd3ivw4EqObXJzody9t1EKS63N9p8iPI4sO3QTwGSSbA1Q0x+cWunWRDolsUjSnxvau6VB0xMIMrp4EPAnAkWsjpEMiu+ysD1mUZomuKk1/i6WtedIhkXupS1MEsMRmaVafh7dVfXwGV0D+kMj3yXDOsIsngXQiV59R0tZIE7jC0b4VA3WE2Yo8CtkTPy7b8sPA8HWbWML6dCKAqxG4GgADw+weOVuRRyTHuGztbk+PwdqQPIzTWibyDbJWVdOJQDLj9xkod4yOCK2gbzZvVpyip/xOkR9B4maCbnF8c53vHGuuLVaTHRLZpBgYgweAVP0hLPElA+mFtVrvf3W/aTM+brYij0j23o8JthAweNc1J5cCmSFNYDCAS5wfOVuRRyT7QpVL9F6XLN/zjhG4ZSAHj1trmcgmLcfoWoq6/B4LZLeqBxmVpxb5WobYfl8vaxfU7DSA4mdLh0S+TW5W2xXTiaWZ0WbALqiXmi5KU/n5tN8p8r+TzaqUH936MKNW6/2uIkvZIZF/IEleDfAZZnYi1zSB/DmVpa2YJZtVLxP5JmnfWCutty5qwNcFrWSsV2xGxs3+03+K/Cxk74WtTWflDr652L0XtoZuylOLvJNb9H7XPzQ0DOX9RTokcpAhAzRYpN4LO5TsI1rQLx0SOci4z7VcSuvQZgxWX1gfbfBX1ctEvhLupbZSe5bNQK0Jv/dTe9U6RL6WtoIBqDs33NA7Xdey3SYzrWUi99L8IfJW4cC4pYNjg+Ow/+O5vlPkx5OpnSsUzler2cbS29g8pmBmWH6elGMU+UqaFwS0NBBa9O45Rmhr26Mof0jkTt440MNlC9aOGQqzA8McaQs34xJfsv3rf4r8XOTduR+lezHN5fyh0sdY76qz/cDZijwwGcxqs0c9gNFx5w9t7e18hNmKPBRZ7NDtXKF6V1qp2e9qtZ7DkOf6TpEiRYoUKVKkyPfkNyq7YXtdjZCIAAAAAElFTkSuQmCC\"/>",
+                  "value": "otpauth://hotp/mylabel?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&counter=0"
+                },
+                "oathurl": {
+                  "description": "URL for OATH token",
+                  "img": "<img    width=250   src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcIAAAHCAQAAAABUY/ToAAADfElEQVR4nO2cTYrjMBCFX40EvZRvkKPIN5gz9c3so/QBBqxlwObNQpIlp2cYaBI6zrxamDjyhywo6leyEV+T+ccXQUCkSJEiRYoUKfL5SCviy7+zmZWBAbARmwGpPjXeZU6RL0ZGkuQCAMkMCCTmqlJ8HwAb4UiSPJJfn1Pki5Fpty8AED/MEBeAU/JoA52pOuk6Rd6f9H/60xBWbwCMyG7Mg0j3mlPky5OOiB9v5AQACCQnONr4yDlFnpisdigQQAIM4WpE2oyAWy0umyfCku1QX5A81zpFPo5EHybDEXH566U+FUlyOtc6RT6OzHao2RfOgwMQVqBYJADz5WrFVN1jTpGvRRY7FLmCExwR8y3JKbAm84HkFFawieyQyCpFJRagaMniikqRK4C9KpSVa3GULxN5lGZp8n3kinrr2H5xCmsZlQ6JPEiLqbPzKh5sRefL4uJILq4MyJeJPEjzZb2jQnFopQmSH3FZw2SHRB6lC3bQeatDiI2wghOAaoykQyKb7L2OzQPpjZjNEUgDDNiMSAMAOFpchjvNKfK1yGqHlkNetofYxclVs5RzNfkykZ/J4rc+So+++S2zy1ofDVezMXmURtoZ1ynyEeRuh1xXSiwJPtCFRyUygupDIm+l5fa9Q+Na0rT8yCG3lw6JPEqtMZaCUNfmyPWhBajtMx46Iedap8jHkV2/DK0cDWBXqapczY0ptxd5kFZjLEqzlJi6C4WyHYJjHZAOieyk2aGsSNyjoF2l0Jsg9TpE/oVMHpgvK8wupRZkIwDMQy0S5QMfbVfsOdcp8v5kF1M3N9ZaGrX/sbf2g+yQyFtpPdW2/75pTtGX5tWCcnuRt9L1OtguLcFve9DazmrpkMheOn3Ju4aA4tX6gVopiurbi7yV3Lc3IJ+vh0VuHoBbAWyeSH41hF+fzzKea50iH012QdE8OPJ92MzG9HY4NJRDpqt9+9uKfEayffeDU/J7z3UzG8PVSlqfPMrlm99W5FOSsUY8Noarmdkb+T7UTSF7Wv8kbyvyqcguL+u23k/7cDvdmm9Vpxb5LzLbobErObbc/lFzijw3eZtvcR4WAtjKx2Lmn1djztBAWN5ZPX3X24p8RrI719HcWNnsEVoz1vWPyJeJ7KXYoTln7A4Wcz6/eQL7xxxyRr95IlwNskMiezF941ykSJEiRYoU+Z+TvwF49nApsKFZZAAAAABJRU5ErkJggg==\"/>",
+                  "value": "oathtoken:///addToken?name=mylabel&lockdown=true&key=3132333435363738393031323334353637383930"
+                },
+                "otpkey": {
+                  "description": "OTP seed",
+                  "img": "<img    width=200   src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUoAAAFKAQAAAABTUiuoAAAB70lEQVR4nO2aTY6jQAyFPw9IWYI0B+ijwNHhKH0DWLZU6PXCVYSOZkF6xM/CXkQkfIsnWRU/22ViZ4x/9pIQaKCBBhpooEeilqPGrAWzdjGYy8/94QICfQftJEkTAIsBlYBKkqSf6DECAn0HnfMRkj4fnjfrATOrzxEQ6I6oX74bYGJuzxIQ6H9kqySqSjCfISDQX6CNpKE8mX18lT9GpXMEBLofHc3M7WA/19B9PgQsbgnPEBDonrCXyZMB/HMaFZOnu6DWz2aMZqaBZ79Vw9gu0W/dBsU7qm4CL16aKq9geonhcq2BlqR4jirRSYImoaF8eO8c2boeXR38YnRavIwJkNFUsg1xudZAy5ywreSFyqcabgxr8lE7XECgu8JPjpj/Ao2AJtXAYoIEYzsVi3i51kBz3Rq8O658RFhKVn4Rdesu6MYTemZoEm468kh+TejlWgNdjXoeMGVjOJXXnVJk6zboa1uFb7Wm1csTZ+tu6HN3TKcEYwvZIlLJ+sMFBPoO+twdjz7GXQy8Mf6Kqe7t0HV37FaDSp630R7Rb90WtR6ytxiaFPute6Gvu2OY6wRzC92EtguUy7UGWvqtzWgX8DtPZZ8cnvAuKNs7aH4v7ZnBPH6PWcZd0DInLPHjqSTvSAGBBhpooIEG+gb6DeDWV0l+Ofz2AAAAAElFTkSuQmCC\"/>",
+                  "value": "seed://3132333435363738393031323334353637383930"
+                },
+                "serial": "OATH00096020"
+              },
+              "id": 1,
+              "jsonrpc": "2.0",
+              "result": {
+                "status": true,
+                "value": true
+              },
+              "version": "privacyIDEA unknown"
+            }
+    """
+    response_details = {}
+    tokenrealms = None
+    param = request.all_data
+
+    # check admin authorization
+    # user_tnum = len(getTokens4UserOrSerial(user))
+    # res = self.Policy.checkPolicyPre('admin', 'init', param, user=user,
+    #                                 options={'token_num': user_tnum})
+
+    # if no user is given, we put the token in all realms of the admin
+    # if user.login == "":
+    #    log.debug("setting tokenrealm %s" % res['realms'])
+    #    tokenrealm = res['realms']
+
+    user = get_user_from_param(param)
+    tokenobject = init_token(param,
+                             user,
+                             tokenrealms=tokenrealms)
+
+    if tokenobject:
+        g.audit['success'] = True
+        # The token was created successfully, so we add token specific
+        # init details like the google URL to the response
+        init_details = tokenobject.get_init_detail(param, user)
+        response_details.update(init_details)
+
+
+    g.audit['user'] = user.login
+    g.audit['realm'] = user.realm
+    g.audit['serial'] = tokenobject.token.serial
+    g.audit['token_type'] = tokenobject.token.tokentype
+
+    # logTokenNum()
+
+    # setting the random PIN
+    # randomPINLength = self.Policy.getRandomOTPPINLength(user)
+    # if randomPINLength > 0:
+    #    newpin = self.Policy.getRandomPin(randomPINLength)
+    #    log.debug("setting random pin for token with serial "
+    #              "%s and user: %s" % (serial, user))
+    #    setPin(newpin, None, serial)
+        
+    # finally we render the info as qr immage, if the qr parameter
+    # is provided and if the token supports this
+    # if 'qr' in param and tokenobject is not None:
+    #    (rdata, hparam) = tokenobject.getQRImageData(response_detail)
+    #    hparam.update(response_detail)
+    #    hparam['qr'] = param.get('qr') or 'html'
+    #    return sendQRImageResult(response, rdata, hparam)
+    # else:
+    #    return sendResult(response, ret, opt=response_detail)
+
+    return send_result(True, details=response_details)
+
+
+@token_blueprint.route('/', methods=['GET'])
+@log_with(log)
+def list_api():
+    """
+    The method is called at /token
+    Display the list of available tokens.
+
+    :param serial: Display the token data of this single token. You can do a
+    not strict matching by specifying a serial like "*OATH*".
+    :param user: display tokens of this user
+    :param filter: takes a substring to search in table token columns
+    :param viewrealm: takes a realm, only the tokens in this realm will be
+    displayed
+    :param sortby: sort the output by column
+    :param sortdir: asc/desc
+    :param page: request a certain page
+    :param assigned: Only return assigned (True) or not assigned (False) tokens
+    :param pagesize: limit the number of returned tokens
+    :param user_fields: additional user fields from the userid resolver of
+    the owner (user)
+    :param outform: if set to "csv", than the token list will be given in CSV
+
+    :return: a json result with the data being a list of token dictionaries
+        { "data": [ { <token1> }, { <token2> }. ]
+        }
+    :rtype: json
+    """
+    param = request.all_data
+    user = get_user_from_param(param)
+    serial = getParam(param, "serial", optional)
+    page = int(getParam(param, "page", optional, default=1))
+    filt = getParam(param, "filter", optional)
+    sort = getParam(param, "sortby", optional)
+    sdir = getParam(param, "sortdir", optional)
+    psize = int(getParam(param, "pagesize", optional, default=15))
+    realm = getParam(param, "tokenrealm", optional)
+    ufields = getParam(param, "user_fields", optional)
+    output_format = getParam(param, "outform", optional)
+    assigned = getParam(param, "assigned", optional)
+    if assigned:
+        assigned = assigned.lower() == "true"
+    
+    user_fields = []
+    if ufields:
+        user_fields = [u.strip() for u in ufields.split(",")]
+
+    # filterRealm determines, which realms the admin would be allowed to see
+    filterRealm = ["*"]
+    user = get_user_from_param(param, optional)
+    # TODO: Userfields
+
+    '''
+    # check admin authorization
+    res = self.Policy.checkPolicyPre('admin', 'show', param, user=user)
+
+    filterRealm = res['realms']
+    # check if policies are active at all
+    # If they are not active, we are allowed to SHOW any tokens.
+    pol = self.Policy.getAdminPolicies("show")
+    # If there are no admin policies, we are allowed to see all realms
+    if not pol['active']:
+        filterRealm = ["*"]
+
+    '''
+    # If the admin wants to see only one realm, then do it:
+    if realm:
+        if realm in filterRealm or '*' in filterRealm:
+            filterRealm = [realm]
+    g.audit['info'] = "realm: %s, filter: %r" % (filterRealm, filt)
+
+    # get list of tokens as a dictionary
+    tokens = get_tokens_paginate(serial=serial, realm=realm, page=page,
+                                 user=user, assigned=assigned, psize=psize)
+    g.audit['success'] = True
+    if output_format == "csv":
+        return send_csv_result(tokens)
+    else:
+        return send_result(tokens)
+
+
+@token_blueprint.route('/assign', methods=['POST'])
+@log_with(log)
+def assign_api():
+    """
+    Assign a token to a user. The required arguments are serial, user and realm.
+
+    :return: In case of success it returns "value": True.
+    :rtype: json object
+    """
+    user = get_user_from_param(request.all_data, required)
+    serial = getParam(request.all_data, "serial", required)
+    pin = getParam(request.all_data, "pin")
+    res = assign_token(serial, user, pin=pin)
+    g.audit["success"] = True
+    return send_result(res)
+
+
+@token_blueprint.route('/unassign', methods=['POST'])
+@log_with(log)
+def unassign_api():
+    """
+    Unssign a token from a user.
+    You can either provide "serial" as an argument to unassign this very
+    token or you can provide user and realm, to unassign all tokens of a user.
+
+    :return: In case of success it returns "value": True.
+    :rtype: json object
+    """
+    user = get_user_from_param(request.all_data, optional)
+    serial = getParam(request.all_data, "serial", optional)
+    res = unassign_token(serial, user=user)
+    g.audit["success"] = True
+    return send_result(res)
+
+
+@token_blueprint.route('/enable', methods=['POST'])
+@token_blueprint.route('/enable/<serial>', methods=['POST'])
+@log_with(log)
+def enable_api(serial=None):
+    """
+    Enable a single token or all the tokens of a user.
+
+    You can call the function like this:
+        POST /token/enable?serial=<serial>
+        POST /token/enable?user=<user>&realm=<realm>
+        POST /token/enable/<serial>
+
+    :param serial: the serial number of the single token to enable
+    :type serial: basestring
+    :param user: The login name of the user
+    :type user: basestring
+    :param realm: the realm name of the user
+    :type realm: basestring
+    :return: In case of success it returns the number of enabled
+    tokens in "value".
+    :rtype: json object
+    """
+    user = None
+    if not serial:
+        user = get_user_from_param(request.all_data, optional)
+        serial = getParam(request.all_data, "serial", optional)
+
+    res = enable_token(serial, enable=True, user=user)
+    g.audit["success"] = True
+    return send_result(res)
+
+
+@token_blueprint.route('/disable', methods=['POST'])
+@token_blueprint.route('/disable/<serial>', methods=['POST'])
+@log_with(log)
+def disable_api(serial=None):
+    """
+    Disable a single token or all the tokens of a user.
+    Disabled tokens can not be used to authenticate but can be enabled again.
+
+    You can call the function like this:
+        POST /token/disable?serial=<serial>
+        POST /token/disable?user=<user>&realm=<realm>
+        POST /token/disable/<serial>
+
+    :param serial: the serial number of the single token to disable
+    :type serial: basestring
+    :param user: The login name of the user
+    :type user: basestring
+    :param realm: the realm name of the user
+    :type realm: basestring
+    :return: In case of success it returns the number of disabled
+    tokens in "value".
+    :rtype: json object
+    """
+    user = None
+    if not serial:
+        user = get_user_from_param(request.all_data, optional)
+        serial = getParam(request.all_data, "serial", optional)
+
+    res = enable_token(serial, enable=False, user=user)
+    g.audit["success"] = True
+    return send_result(res)
+
+
+
+@token_blueprint.route('/<serial>', methods=['DELETE'])
+@log_with(log)
+def delete_api(serial=None):
+    """
+    Delete a token by its serial number.
+    There are three different ways to delete a token. You can call one of
+    these URLs:
+        POST /token/delete?serial=<serial>
+        DELETE /token/<serial>
+        POST /token/delete/<serial>
+
+    :return: In case of success it return the number of deleted tokens in
+    "value"
+    :rtype: json object
+    """
+    res = remove_token(serial)
+    g.audit["success"] = True
+    return send_result(res)
+
+
+@token_blueprint.route('/reset', methods=['POST'])
+@token_blueprint.route('/reset/<serial>', methods=['POST'])
+@log_with(log)
+def reset_api(serial=None):
+    """
+    Reset the failcounter of a single token or of all tokens of a user.
+
+    You can call the function like this:
+        POST /token/reset?serial=<serial>
+        POST /token/reset?user=<user>&realm=<realm>
+        POST /token/reset/<serial>
+
+    :param serial: the serial number of the single token to reset
+    :type serial: basestring
+    :param user: The login name of the user
+    :type user: basestring
+    :param realm: the realm name of the user
+    :type realm: basestring
+    :return: In case of success it returns "value"=True
+    :rtype: json object
+    """
+    user = None
+    if not serial:
+        user = get_user_from_param(request.all_data, optional)
+        serial = getParam(request.all_data, "serial", optional)
+
+    res = reset_token(serial, user=user)
+    g.audit["success"] = True
+    return send_result(res)
+
+
+@token_blueprint.route('/resync', methods=['POST'])
+@token_blueprint.route('/resync/<serial>', methods=['POST'])
+@log_with(log)
+def resync_api(serial=None):
+    """
+    Resync the OTP token by providing two consecutive OTP values.
+
+    You can call the function like this:
+        POST /token/resync?serial=<serial>&otp1=<otp1>&otp2=<otp2>
+        POST /token/resync/<serial>?otp1=<otp1>&otp2=<otp2>
+
+    :param serial: the serial number of the single token to reset
+    :type serial: basestring
+    :param otp1: First OTP value
+    :type otp1: basestring
+    :param otp2: Second OTP value
+    :type otp2: basestring
+    :return: In case of success it returns "value"=True
+    :rtype: json object
+    """
+    if not serial:
+        serial = getParam(request.all_data, "serial", required)
+    otp1 = getParam(request.all_data, "otp1", required)
+    otp2 = getParam(request.all_data, "otp2", required)
+
+    res = resync_token(serial, otp1, otp2)
+    g.audit["success"] = True
+    return send_result(res)
+
+
+@token_blueprint.route('/setpin', methods=['POST'])
+@token_blueprint.route('/setpin/<serial>', methods=['POST'])
+@log_with(log)
+def setpin_api(serial=None):
+    """
+    Set the the user pin or the SO PIN of the specific token.
+    Usually these are smartcard or token specific PINs.
+    E.g. the userpin is used with mOTP tokens to store the mOTP PIN.
+
+    The token is identified by the unique serial number.
+
+    You can call the function like this:
+        POST /token/setpin?serial=<serial>&userpin=<userpin>&sopin=<sopin>
+        POST /token/setpin/<serial>?userpin=<userpin>&sopin=<sopin>
+
+    :param serial: the serial number of the single token to reset
+    :type serial: basestring
+    :param userpin: The user PIN of a smartcard
+    :type userpin: basestring
+    :param sopin: The SO PIN of a smartcard
+    :type sopin: basestring
+    :return: In "value" returns the number of PINs set.
+    :rtype: json object
+    """
+    if not serial:
+        serial = getParam(request.all_data, "serial", required)
+    userpin = getParam(request.all_data, "userpin")
+    sopin = getParam(request.all_data, "sopin")
+
+    res = 0
+    if userpin:
+        g.audit['action_detail'] += "userpin, "
+        res += set_pin_user(serial, userpin)
+
+    if sopin:
+        g.audit['action_detail'] += "sopin, "
+        res += set_pin_so(serial, sopin)
+
+    g.audit["success"] = True
+    return send_result(res)
+
+
+@token_blueprint.route('/set', methods=['POST'])
+@token_blueprint.route('/set/<serial>', methods=['POST'])
+@log_with(log)
+def set_api(serial=None):
+    """
+    This can be used to set token specific attributes like
+
+        * pin
+        * description
+        * count_window
+        * sync_window
+        * count_auth_max
+        * count_auth_success_max
+        * hashlib,
+        * max_failcount
+
+    The token is identified by the unique serial number or by the token owner.
+    In the later case all tokens of the owner will be modified.
+
+    You can call the function like this:
+        POST /token/set?serial=<serial>&description=<something>
+        POST /token/set/<serial>?hashlib=<hash>
+        POST /token/set?user=<username>&realm=<realm>&sync_window=100
+
+    :param serial: the serial number of the single token to reset
+    :type serial: basestring
+    :param user: The username of the token owner
+    :type user: basestring
+    :param realm: The realm name of the token owner
+    :type realm: basestring
+    :return: returns the number of attributes set in "value"
+    :rtype: json object
+    """
+    if not serial:
+        serial = getParam(request.all_data, "serial", required)
+    user = get_user_from_param(request.all_data)
+
+    pin = getParam(request.all_data, "pin")
+    description = getParam(request.all_data, "description")
+    count_window = getParam(request.all_data, "count_window")
+    sync_window = getParam(request.all_data, "sync_window")
+    hashlib = getParam(request.all_data, "hashlib")
+    max_failcount = getParam(request.all_data, "max_failcount")
+    count_auth_max = getParam(request.all_data, "count_auth_max")
+    count_auth_success_max = getParam(request.all_data, "count_auth_success_max")
+
+    res = 0
+
+    if pin:
+        g.audit['action_detail'] += "pin, "
+        res += set_pin(serial, pin, user=user)
+
+    if description:
+        g.audit['action_detail'] += "description=%r, " % description
+        res += set_description(serial, description, user=user)
+
+    if count_window:
+        g.audit['action_detail'] += "count_window=%r, " % count_window
+        res += set_count_window(serial, count_window, user=user)
+
+    if sync_window:
+        g.audit['action_detail'] += "sync_window=%r, " % sync_window
+        res += set_sync_window(serial, sync_window, user=user)
+
+    if hashlib:
+        g.audit['action_detail'] += "hashlib=%r, " % hashlib
+        res += set_hashlib(serial, hashlib, user=user)
+
+    if max_failcount:
+        g.audit['action_detail'] += "max_failcount=%r, " % max_failcount
+        res += set_max_failcount(serial, max_failcount, user=user)
+
+    if count_auth_max:
+        g.audit['action_detail'] += "count_auth_max=%r, " % count_auth_max
+        res += set_count_auth(serial, count_auth_max, user=user, max=True)
+
+    if count_auth_success_max:
+        g.audit['action_detail'] += "count_auth_success_max=%r, " \
+                                    "" % count_auth_success_max
+        res += set_count_auth(serial, count_auth_success_max, user=user,
+                              max=True, success=True)
+
+    g.audit["success"] = True
+    return send_result(res)
+
+
+@token_blueprint.route('/realm/<serial>', methods=['POST'])
+@log_with(log)
+def tokenrealm_api(serial=None):
+    """
+    Set the realms of a token.
+    The token is identified by the unique serial number
+
+    You can call the function like this:
+        POST /token/realm?serial=<serial>&realms=<something>
+        POST /token/realm/<serial>?realms=<hash>
+
+
+    :param serial: the serial number of the single token to reset
+    :type serial: basestring
+    :param realms: The realms the token should be assigned to. Comma seperated
+    :type realms: basestring
+    :return: returns value=True in case of success
+    :rtype: bool
+    """
+    realms = getParam(request.all_data, "realms", required)
+    if type(realms) == list:
+        realm_list = realms
+    else:
+        realm_list = [r.strip() for r in realms.split(",")]
+
+    res = set_realms(serial, realms=realm_list)
+    g.audit["success"] = True
+    return send_result(res == 1)
+
+
+@token_blueprint.route('/load/<filename>', methods=['POST'])
+@log_with(log)
+def loadtokens_api(filename=None):
+    """
+    The call imports the given file containing token definitions.
+    The file can be an OATH CSV file, an aladdin XML file or a Yubikey CSV file
+    exported from the yubikey initialization tool.
+
+    The function is called as a POST request with the file upload.
+
+    :param filename: The name of the token file, that is imported
+    :type filename: basestring
+    :param type: The file type. Can be "aladdin-xml", "oathcsv" or "yubikeycsv".
+    :type type: basestring
+    :return: The number of the imported tokens
+    :rtype: int
+    """
+    if not filename:
+        filename = getParam(request.all_data, "filename", required)
+    known_types = ['aladdin-xml', 'oathcsv', 'yubikeycsv']
+    file_type = getParam(request.all_data, "type", required)
+    hashlib = getParam(request.all_data, "aladdin_hashlib")
+
+    TOKENS = {}
+    token_file = request.files['file']
+    file_contents = ""
+    # In case of form post requests, it is a "instance" of FieldStorage
+    # i.e. the Filename is selected in the browser and the data is
+    # transferred
+    # in an iframe. see: http://jquery.malsup.com/form/#sample4
+    #
+    if type(token_file) == FieldStorage:  # pragma nocover
+        log.debug("Field storage file: %s", token_file)
+        file_contents = token_file.value
+    elif type(token_file) == FileStorage:
+        log.debug("Werkzeug File storage file: %s", token_file)
+        file_contents = token_file.read()
+    else:  # pragma nocover
+        file_contents = token_file
+
+    if file_contents == "":
+        log.error("Error loading/importing token file. file %s empty!" %
+                  filename)
+        raise ParameterError("Error loading token file. File empty!")
+
+    if file_type not in known_types:
+        log.error("Unknown file type: >>%s<<. We only know the types: %s" %
+                  (file_type, ', '.join(known_types)))
+        raise TokenAdminError("Unknown file type: >>%s<<. We only know the "
+                              "types: %s" % (file_type,
+                                             ', '.join(known_types)))
+
+    # Parse the tokens from file and get dictionary
+    if file_type == "aladdin-xml":
+        TOKENS = parseSafeNetXML(file_contents)
+    elif file_type == "oathcsv":
+        TOKENS = parseOATHcsv(file_contents)
+    elif file_type == "yubikeycsv":
+        TOKENS = parseYubicoCSV(file_contents)
+
+    # Now import the Tokens from the dictionary
+    ret = ""
+    for serial in TOKENS:
+        log.debug("importing token %s" % TOKENS[serial])
+
+        # TODO: Migration
+        # this needs to return the valid realms of the admin.
+        # it also checks the license token number
+        # res = self.Policy.checkPolicyPre('admin', 'import', {})
+        # we put the token in the FIRST realm of the admin.
+        # so tokenrealm will either be ONE realm or NONE
+        # log.info("setting tokenrealm %s" % res['realms'])
+        tokenrealms = []
+        #if res['realms']:
+        #    tokenrealm = res.get('realms')[0]
+
+        log.info("initialize token. serial: %s, realm: %s" % (serial,
+                                                              tokenrealms))
+
+        init_param = {'serial': serial,
+                      'type': TOKENS[serial]['type'],
+                      'description': TOKENS[serial].get("description",
+                                                        "imported"),
+                      'otpkey': TOKENS[serial]['otpkey'],
+                      'otplen': TOKENS[serial].get('otplen'),
+                      'timeStep': TOKENS[serial].get('timeStep'),
+                      'hashlib': TOKENS[serial].get('hashlib')}
+
+        if hashlib and hashlib != "auto":
+            init_param['hashlib'] = hashlib
+
+        #if tokenrealm:
+        #    self.Policy.checkPolicyPre('admin', 'loadtokens',
+        #                   {'tokenrealm': tokenrealm })
+
+        init_token(init_param, tokenrealms=tokenrealms)
+
+
+
+    g.audit['info'] = "%s, %s (imported: %i)" % (file_type, token_file,
+                                                 len(TOKENS))
+    g.audit['serial'] = ', '.join(TOKENS.keys())
+    # logTokenNum()
+
+    return send_result(len(TOKENS))
+
+
+@token_blueprint.route('/copypin', methods=['POST'])
+@log_with(log)
+def copypin_api():
+    """
+    Copy the token PIN from one token to the other.
+
+    You can call the function like this:
+        POST /token/copypin?from=<serial>&to=<something>
+
+    :param from: the serial number of the single, from where you want to
+    copy the pin.
+    :type from: basestring
+    :param to: the serial number of the single, from where you want to
+    copy the pin.
+    :type to: basestring
+    :return: returns value=True in case of success
+    :rtype: bool
+    """
+    serial_from = getParam(request.all_data, "from", required)
+    serial_to = getParam(request.all_data, "to", required)
+    res = copy_token_pin(serial_from, serial_to)
+    g.audit["success"] = True
+    return send_result(res)
+
+
+@token_blueprint.route('/copyuser', methods=['POST'])
+@log_with(log)
+def copyuser_api():
+    """
+    Copy the token user from one token to the other.
+
+    You can call the function like this:
+        POST /token/copyuser?from=<serial>&to=<something>
+
+    :param from: the serial number of the single, from where you want to
+    copy the pin.
+    :type from: basestring
+    :param to: the serial number of the single, from where you want to
+    copy the pin.
+    :type to: basestring
+    :return: returns value=True in case of success
+    :rtype: bool
+    """
+    serial_from = getParam(request.all_data, "from", required)
+    serial_to = getParam(request.all_data, "to", required)
+    res = copy_token_user(serial_from, serial_to)
+    g.audit["success"] = True
+    return send_result(res)
+
+
+@token_blueprint.route('/lost/<serial>', methods=['POST'])
+@log_with(log)
+def lost_api(serial=None):
+    """
+    Mark the specified token as lost and create a new temporary token.
+    This new token gets the new serial number "lost<old-serial>" and
+    a certain validity period and the PIN of the lost token.
+
+    You can call the function like this:
+        POST /token/lost/serial
+        POST /token/lost?serial=<serial>
+
+    :param serial: the serial number of the lost token.
+    :type serial: basestring
+    :return: returns value=True in case of success
+    :rtype: bool
+    """
+    res = lost_token(serial)
+
+    g.audit["success"] = True
+    return send_result(res)
+
+
+

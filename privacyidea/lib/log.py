@@ -60,9 +60,10 @@ class SecureFormatter(Formatter):
 
 
 class log_with(object):
-    '''Logging decorator that allows you to log with a
+    """
+    Logging decorator that allows you to log with a
     specific logger.
-    '''
+    """
     # Customize these messages
     ENTRY_MESSAGE = u'Entering {0} with arguments {1} and keywords {2}'
     EXIT_MESSAGE = 'Exiting {0} with result {1}'
@@ -73,17 +74,21 @@ class log_with(object):
         self.log_entry = log_entry
 
     def __call__(self, func):
-        '''Returns a wrapper that wraps func.
+        """
+        Returns a wrapper that wraps func.
         The wrapper will log the entry and exit points of the function
         with logging.INFO level.
-        '''
+
+        :param func: The function that is decorated
+        :return: function
+        """
         # set logger if it was not set earlier
         if not self.logger:
             logging.basicConfig()
             self.logger = logging.getLogger(func.__module__)
             
         @functools.wraps(func)
-        def wrapper(*args, **kwds):
+        def log_wrapper(*args, **kwds):
             try:
                 if self.log_entry:
                     self.logger.debug(self.ENTRY_MESSAGE.format(func.__name__, args, kwds))
@@ -103,4 +108,4 @@ class log_with(object):
                 self.logger.error("Error during logging of function {0}! {1}".format(func.__name__, exx))
             return f_result
         
-        return wrapper
+        return log_wrapper

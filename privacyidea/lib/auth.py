@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-#  privacyIDEA
-#  (c)  2014 Cornelius Kölbel
-
-#  License:  AGPLv3
-#  contact:  http://www.privacyidea.org
+#
+# 2014-12-15 Cornelius Kölbel, info@privacyidea.org
+#            Initial creation
+#
+# (c) Cornelius Kölbel
+# Info: http://www.privacyidea.org
 #
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,59 +19,25 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from pylons import config as ini_config
-from netaddr import IPAddress
-from netaddr import IPNetwork
+from privacyidea.models import Admin
+import passlib.hash
+from flask import current_app
 
-import logging
-log = logging.getLogger(__name__)
-
-
-def get_basic_auth_client_list():
-    '''
-    returns the list of the clients, that should to basic auth.
-    The list is configured in the ini-file like this:
-    basic_auth_clients = 10.2.2.1, 172.15.0.0/16
-    
-    :return: the list of the clients and client sub nets.
-    :rtype: list of strings
-    '''
-
-    clients = ini_config.get("privacyideaBasicAuth.clients", "")
-    client_list = [c.strip() for c in clients.split(",")]
-    return client_list
-
-
-def is_client_in_basic_auth(client):
-    '''
-    :param client: the client ip address
-    :return: returns true, if this client should do basic auth
+def verify_db_admin(username, password):
+    """
+    This function is used to verify the username and the password against the
+    database table "Admin".
+    :param username: The administrator username
+    :param password: The password
+    :return: True if password is correct for the admin
     :rtype: bool
-    '''
-    res = False
-    try:
-        client_list = get_basic_auth_client_list()
-        for network in client_list:
-            if network:
-                if IPAddress(client) in IPNetwork(network):
-                    res = True
-    except Exception as exx:
-        # THe client IPs could be misconfigured
-        log.error("Can not be determined: %r" % exx)
-        
-    return res
+    """
+    success = False
+    qa = Admin.query.filter(Admin.username == username).first()
+    if qa:
+        pw_dig = qa.password
+        # get the password pepper
+        key = current_app.config.get("PI_PEPPER", "missing")
+        success = passlib.hash.pbkdf2_sha512.verify(key + password, pw_dig)
 
-
-def request_classifier(environ):
-    '''
-    Classify the request to be either a browser request that
-    should get a form authentication or an API request, that
-    should get an basic authentication
-    '''
-    # get client
-    client = environ.get("REMOTE_ADDR")
-    if is_client_in_basic_auth(client):
-        return 'basic'
-    return 'browser'
-
-
+    return success

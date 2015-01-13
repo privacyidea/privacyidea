@@ -36,7 +36,7 @@ import logging
 import traceback
 import binascii
 
-from privacyidea.lib.util    import getParam
+from privacyidea.lib._util    import getParam
 from privacyidea.lib.log import log_with
 
 optional = True
@@ -149,7 +149,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
         TokenClass.update(self, param)
         # We need to write the secret!
-        self.token.setHKey(binascii.hexlify(self.radiusSecret))
+        self.token.set_otpkey(binascii.hexlify(self.radiusSecret))
 
         self.addToTokenInfo("radius.server", self.radiusServer)
         self.addToTokenInfo("radius.local_checkpin", self.radiusLocal_checkpin)
@@ -226,7 +226,7 @@ class RadiusTokenClass(RemoteTokenClass):
         radiusUser = self.getFromTokenInfo("radius.user")
 
         ## Read the secret!!!
-        secret = self.token.getHOtpKey()
+        secret = self.token.get_otpkey()
         radiusSecret = binascii.unhexlify(secret.getKey())
 
         if radiusSecret == VOID_RADIUS_SECRET:
