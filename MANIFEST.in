@@ -1,0 +1,6 @@
+include LICENSE
+recursive-include privacyidea *
+recursive-include tools *
+recursive-include authmodules *
+include README.md
+include test.sh
