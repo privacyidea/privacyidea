@@ -75,7 +75,11 @@
     <p>
         The token was successfully enrolled with serial number
         <a ui-sref="token.details({tokenSerial:enrolledToken.serial})">
-            {{ enrolledToken.serial }}</a>.
+            {{ enrolledToken.serial }}</a><span ng-show="newUser.user">
+        for user
+        <a ui-sref="user.details({username:newUser.user, realmname:newUser.realm})"
+                >{{ newUser.user }}</a> in realm
+        {{ newUser.realm }}</span>.
     </p>
 
     <img width="250" src="{{ enrolledToken.googleurl.img }}"/>

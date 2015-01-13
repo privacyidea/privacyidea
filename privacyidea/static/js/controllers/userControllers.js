@@ -22,7 +22,7 @@ angular.module("privacyideaApp")
     .controller("userDetailsController", function ($scope, userUrl,
                                                    realmUrl, tokenUrl,
                                                    $rootScope, TokenFactory,
-                                                   UserFactory) {
+                                                   UserFactory, $state) {
         $scope.tokensPerPage = 5;
         $scope.newToken = {"serial": "", pin: ""};
         $scope.params = {page: 1};
@@ -71,6 +71,12 @@ angular.module("privacyideaApp")
 
         $scope.getUserDetails();
         $scope._getUserToken();
+
+        $scope.enrollToken = function() {
+            // go to token.enroll with the users data
+            $state.go("token.enroll", {realmname:$scope.realmname, username:$scope.username});
+            $rootScope.returnTo="user.details({realmname:$scope.realmname, username:$scope.username})";
+        };
     });
 
 angular.module("privacyideaApp")

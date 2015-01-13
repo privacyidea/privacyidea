@@ -22,7 +22,7 @@ angular.module("privacyideaApp")
     .controller("configController", function ($scope, $http,
                                                 resolverUrl,
                                                 realmUrl, defaultRealmUrl, auth,
-                                                $rootScope) {
+                                                $rootScope, $state) {
 
         $scope.user = auth.getUser();
 

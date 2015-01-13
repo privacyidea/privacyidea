@@ -53,7 +53,7 @@ myApp.config(function ($stateProvider, $urlRouterProvider) {
             controller: "tokenDetailController"
         })
         .state('token.enroll', {
-            url: "/enroll",
+            url: "/enroll/{realmname:.*}/{username:.*}",
             templateUrl: "/static/views/token.enroll.html",
             controller: "tokenEnrollController"
         })

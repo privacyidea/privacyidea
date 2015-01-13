@@ -10,7 +10,7 @@ info:
 	@echo "make ppa-dev      - upload to launchpad development repo"
 	
 #VERSION=1.3~dev5
-VERSION=1.5~dev8
+VERSION=2.0~dev1
 SERIES="trusty precise"
 LOCAL_SERIES=`lsb_release -a | grep Codename | cut -f2`
 
