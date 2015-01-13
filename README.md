@@ -1,3 +1,12 @@
+[![Build Status][BS img]][Build Status]
+[![Coverage Status][CS img]][Coverage Status]
+
+[Build Status]: https://travis-ci.org/privacyidea/privacyidea
+[Coverage Status]: https://coveralls.io/r/privacyidea/privacyidea
+
+[BS img]: https://travis-ci.org/privacyidea/privacyidea.svg?branch=master
+[CS img]: https://coveralls.io/repos/privacyidea/privacyidea/badge.png?branch=master
+
 Preface
 =======
 
