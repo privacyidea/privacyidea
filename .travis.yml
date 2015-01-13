@@ -12,29 +12,30 @@ install:
 # http://blog.travis-ci.com/2012-11-28-speeding-up-your-tests-by-parallelizing-them/
 env:
   - TESTSCRIPT=tests/test_api_system.py
-  - TESTSCRIPT=test_api_token.py
-  - TESTSCRIPT=test_api_users.py
-  - TESTSCRIPT=test_api_validate.py
-  - TESTSCRIPT=testdata/
-  - TESTSCRIPT=test_db_model.py
-  - TESTSCRIPT=test_lib_apps.py
-  - TESTSCRIPT=test_lib_config.py
-  - TESTSCRIPT=test_lib_crypto.py
-  - TESTSCRIPT=test_lib_importotp.py
-  - TESTSCRIPT=test_lib_policy.py
-  - TESTSCRIPT=test_lib_realm.py
-  - TESTSCRIPT=test_lib_resolver.py
-  - TESTSCRIPT=test_lib_tokenclass.py
-  - TESTSCRIPT=test_lib_token.py
-  - TESTSCRIPT=test_lib_tokens_hotp.py
-  - TESTSCRIPT=test_lib_tokens_passwordtoken.py
-  - TESTSCRIPT=test_lib_tokens_totp.py
-  - TESTSCRIPT=test_lib_tokens_yubikey.py
-  - TESTSCRIPT=test_lib_user.py
-  - TESTSCRIPT=test_resolver_realm.py
+  - TESTSCRIPT=tests/test_api_token.py
+  - TESTSCRIPT=tests/test_api_users.py
+  - TESTSCRIPT=tests/test_api_validate.py
+  - TESTSCRIPT=tests/test_db_model.py
+  - TESTSCRIPT=tests/test_lib_apps.py
+  - TESTSCRIPT=tests/test_lib_config.py
+  - TESTSCRIPT=tests/test_lib_crypto.py
+  - TESTSCRIPT=tests/test_lib_importotp.py
+  - TESTSCRIPT=tests/test_lib_policy.py
+  - TESTSCRIPT=tests/test_lib_realm.py
+  - TESTSCRIPT=tests/test_lib_resolver.py
+  - TESTSCRIPT=tests/test_lib_tokenclass.py
+  - TESTSCRIPT=tests/test_lib_token.py
+  - TESTSCRIPT=tests/test_lib_tokens_hotp.py
+  - TESTSCRIPT=tests/test_lib_tokens_passwordtoken.py
+  - TESTSCRIPT=tests/test_lib_tokens_totp.py
+  - TESTSCRIPT=tests/test_lib_tokens_yubikey.py
+  - TESTSCRIPT=tests/test_lib_user.py
+  - TESTSCRIPT=tests/test_resolver_realm.py
 matrix:
     allow_failures:
         python: 2.6
+# command to run tests
+script: "nosetests -v --with-coverage --cover-package=privacyidea $TESTSCRIPT"
 
 after_success: 
     coveralls --rcfile=coveragerc
