@@ -1,4 +1,4 @@
-<h3>Token details for {{ tokenSerial }}</h3>
+<h3 name="Token Details">Token details for {{ tokenSerial }}</h3>
 
 <table class="table table-bordered table-striped">
     <tr>
@@ -189,7 +189,11 @@
                     Test token
                 </div>
             </button>
-            <span ng-click="resultTestOtp=''">{{ resultTestOtp }}</span>
+                <span class="label"
+                      ng-click="resultTestOtp=''"
+                      ng-class="{'label-success': resultTestOtp.result,
+                               'label-danger': resultTestOtp.result==false}">
+                {{ resultTestOtp.detail }}</span>
         </td>
     </tr>
 </table>

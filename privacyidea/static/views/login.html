@@ -5,7 +5,7 @@
     </div>
 
     <div class="alert alert-danger" ng-show="authenticationError">
-        Authentication Failed ({{  authenticationError }}). Try again.
+        Authentication Failed ({{ authenticationError }}). Try again.
     </div>
 
     <div class="container">
@@ -14,16 +14,19 @@
 
             <label for="username" class="sr-only">Username</label>
             <input name="username" id="username" class="form-control"
-                ng-model="login.username" required placeholder="Username"
-                autofocus />
+                   ng-model="login.username" required placeholder="Username"
+                   autofocus/>
+
             <label for="password" class="sr-only">Password</label>
             <input name="password" type="password"
                    id="password" class="form-control"
                    ng-model="login.password" required placeholder="Password"/>
+
             <div class="text-center">
                 <button ng-click="authenticate()"
                         ng-disabled="authForm.$invalid"
-                        class="btn btn-primary btn-block">Log In</button>
+                        class="btn btn-primary btn-block">Log In
+                </button>
             </div>
 
         </form>

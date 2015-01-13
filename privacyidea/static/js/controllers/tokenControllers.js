@@ -158,7 +158,8 @@ myApp.controller("tokenDetailController", function ($scope,
             serial: $scope.tokenSerial,
             pass: $scope.testPassword
         }, function (data) {
-            $scope.resultTestOtp = data.result.value;
+            $scope.resultTestOtp  = {result:data.result.value,
+                                     detail:data.detail.message};
             $scope.get();
         });
     };
