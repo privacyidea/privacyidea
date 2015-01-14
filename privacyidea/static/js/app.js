@@ -106,18 +106,20 @@ myApp.run(['$rootScope', '$state', '$stateParams',
     ]
 );
 myApp.config(['$httpProvider', function ($httpProvider) {
-    $httpProvider.interceptors.push(function ($q) {
+    $httpProvider.interceptors.push(function ($q, $rootScope) {
         return {
-            'responseError': function (rejection) {
-                var defer = $q.defer();
-                if (rejection.status == 401) {
-                    console.dir(rejection);
+            responseError: function (rejection) {
+                if(rejection.status == 0) {
+                    // The API is offline, not reachable
+                    // A state would be nicer, but we get a circular dependency
+                    // $state.go("/offline");
+                    var error = { error: { message: "The privacyIDEA system seams to be offline. The API is not reachable!"}};
+                    $rootScope.restError = error;
+                    return;
                 }
-                defer.reject(rejection);
-                return defer.promise;
+                return $q.reject(rejection);
             }
         };
     });
 
 }]);
-

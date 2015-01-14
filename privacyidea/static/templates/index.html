@@ -50,19 +50,19 @@
         <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
                 <li ng-class="{active: $state.includes('token')}"
-                        ng-hide="$state.includes('login')">
+                    ng-hide="$state.includes('login')">
                     <a ui-sref="token">
                     <span class="glyphicon glyphicon-phone"
                           aria-hidden="true"></span>
-                    Token View</a></li>
+                        Token View</a></li>
                 <li ng-class="{active: $state.includes('user')}"
-                        ng-hide="$state.includes('login')">
+                    ng-hide="$state.includes('login')">
                     <a ui-sref="user">
                     <span class="glyphicon glyphicon-user"
                           aria-hidden="true"></span>
-                    User View</a></li>
+                        User View</a></li>
                 <li ng-class="{active: $state.includes('config')}"
-                        ng-hide="$state.includes('login')">
+                    ng-hide="$state.includes('login')">
                     <a ui-sref="config">
                         <span class="glyphicon glyphicon-list"
                               aria-hidden="true"></span>
@@ -70,7 +70,7 @@
                     </a>
                 </li>
                 <li ng-class="{active: $state.includes('audit')}"
-                        ng-hide="$state.includes('login')">
+                    ng-hide="$state.includes('login')">
                     <a ui-sref="audit">
                         <span class="glyphicon glyphicon-search"
                               aria-hidden="true"></span>
@@ -80,29 +80,25 @@
             </ul>
             <ul class="nav navbar-nav navbar-right">
                 <li><a ui-sref="login" ng-hide="user.username">Login</a></li>
-                <li><button ng-show="user.username"
+                <li>
+                    <button ng-show="user.username"
                             ng-click="logout()"
                             class="btn btn-sm">
-                    Logout
-                    {{ user.username }}</button></li>
+                        Logout
+                        {{ user.username }}</button>
+                </li>
             </ul>
 
-
-            <div>
-                <!-- We'll also add some navigation: -->
-
-
-            </div>
 
         </div>
         <!--/.nav-collapse -->
     </div>
 </nav>
 
-    <div class="alert alert-danger" ng-show="restError">
-        {{ restError.error.message }}
-        <a href="" ng-click="restError=null">Hide</a>
-    </div>
+<div class="alert alert-danger" ng-show="restError">
+    {{ restError.error.message }}
+    <a href="" ng-click="restError=null">Hide</a>
+</div>
 
 <div class="container">
     <div ui-view class="slide"></div>

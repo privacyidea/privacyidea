@@ -18,8 +18,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-angular.module("privacyideaApp")
-    .controller("configController", function ($scope, $location,
+myApp.controller("configController", function ($scope, $location,
                                                 $rootScope, $state,
                                         ConfigFactory) {
         // go to the system view by default
@@ -53,11 +52,6 @@ angular.module("privacyideaApp")
                 $scope.resolvers = data.result.value;
                 $scope.getResolvers();
             });
-        };
-
-        $scope.editResolver = function(resolvername) {
-            $scope.form.resolver = resolvername;
-            $state.go("config.resolver.edit", {resolvername: resolvername});
         };
 
         $scope.getRealms = function () {
@@ -118,8 +112,27 @@ angular.module("privacyideaApp")
             $scope.selectedResolvers = {};
         };
 
+        $scope.editResolver = function(resolvername) {
+            // change the view to the config.resolvers.edit
+            $state.go("config.resolvers.edit", {'resolvername': resolvername});
+            $rootScope.returnTo = "config.resolvers.list";
+        };
+
         $scope.getRealms();
         $scope.getResolvers();
         $scope.selectedResolvers = {};
 
     });
+
+myApp.controller("resolverEditController", function ($scope, $location,
+                                                $stateParams, $state,
+                                        ConfigFactory) {
+    $scope.resolvername = $stateParams.resolvername;
+    console.log($scope.resolvername);
+    ConfigFactory.getResolver($scope.resolvername, function (data) {
+        $scope.resolver = data.result.value[$scope.resolvername];
+        console.log(data);
+        console.log($scope.resolver);
+    });
+});
+

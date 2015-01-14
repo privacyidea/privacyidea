@@ -1,9 +1,10 @@
-
+<h3>Edit Resolver {{ resolvername }}</h3>
+Type {{ resolver.type }}
     <form name="formResolverEdit" role="form" validate>
         <div class="form-group">
             <label for="resolverfile">File name</label>
             <input name="resolverfile" id="resolverfile" class="form-control"
-                   ng-model="form.file" required
+                   ng-model="resolver.data.fileName" required
                    placeholder="/etc/passwd"
                    autofocus/>
         </div>

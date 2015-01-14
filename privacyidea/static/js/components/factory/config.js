@@ -23,8 +23,6 @@ myApp.factory("ConfigFactory", function (auth, $http, $state, $rootScope,
     /**
      Each service - just like this service factory - is a singleton.
      */
-    var user = auth.getUser();
-    var auth_token = auth.getAuthToken();
     var error_func = function (error) {
         if (error.result.error.code == -401) {
             $state.go('login');
@@ -36,49 +34,55 @@ myApp.factory("ConfigFactory", function (auth, $http, $state, $rootScope,
     return {
         getResolvers: function (callback) {
             $http.get(resolverUrl, {
-                headers: {'Authorization': auth_token}
+                headers: {'Authorization': auth.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
+        getResolver: function(resolvername, callback) {
+            $http.get(resolverUrl + "/" + resolvername, {
+                headers: {'Authorization': auth.getAuthToken()}
             }).success(callback
             ).error(error_func);
         },
         getRealms: function (callback) {
             $http.get(realmUrl, {
-                headers: {'Authorization': auth_token}
+                headers: {'Authorization': auth.getAuthToken()}
             }).success(callback)
                 .error(error_func);
         },
         setResolver: function (name, params, callback) {
             $http.post(resolverUrl + "/" + name, params,
-                {headers: {'Authorization': auth_token,
+                {headers: {'Authorization': auth.getAuthToken(),
                           'Content-Type': 'application/json'}}).success(
                 callback).error(error_func);
         },
         delResolver: function(name, callback) {
             $http.delete(resolverUrl + "/" + name, {
-                headers: {'Authorization': auth_token }
+                headers: {'Authorization': auth.getAuthToken() }
             }).success(callback).error(error_func);
 
         },
         setRealm: function(name, params, callback) {
             $http.post(realmUrl + "/" + name, params, {
-                    headers: {'Authorization': auth_token,
+                    headers: {'Authorization': auth.getAuthToken(),
                           'Content-Type': 'application/json'}}).success(
                 callback).error(error_func);
         },
         delRealm: function(name, callback) {
             $http.delete(realmUrl +  "/" + name, {
-                headers: {'Authorization': auth_token,
+                headers: {'Authorization': auth.getAuthToken(),
                           'Content-Type': 'application/json'}
             }).success(callback).error(error_func);
         },
         setDefaultRealm: function(name, callback) {
             $http.post(defaultRealmUrl + "/" + name, {},
-                {headers: {'Authorization': auth_token,
+                {headers: {'Authorization': auth.getAuthToken(),
                           'Content-Type': 'application/json'}
             }).success(callback).error(error_func)
         },
         clearDefaultRealm: function(callback) {
             $http.delete(defaultRealmUrl, {
-                headers: {'Authorization': auth_token,
+                headers: {'Authorization': auth.getAuthToken(),
                           'Content-Type': 'application/json'}
             }).success(callback).error(error_func);
         }

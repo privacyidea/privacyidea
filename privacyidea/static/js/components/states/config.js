@@ -40,8 +40,9 @@ angular.module('privacyideaApp.config', ['ui.router']).config(
                     templateUrl: "/static/views/config.resolvers.addpassword.html"
                 })
                 .state('config.resolvers.edit', {
-                    url: "/edit/{resolver:.*}",
-                    templateUrl: "/static/views/config.resolvers.edit.html"
+                    url: "/edit/{resolvername:.*}",
+                    templateUrl: "/static/views/config.resolvers.edit.html",
+                    controller: "resolverEditController"
                 })
                 .state('config.system', {
                     url: "/system",
@@ -62,5 +63,9 @@ angular.module('privacyideaApp.config', ['ui.router']).config(
                 .state('config.realms.list', {
                     url: "/list",
                     templateUrl: "/static/views/config.realms.list.html"
+                })
+                .state('offline', {
+                    url: "/offline",
+                    templatesUrl: "/static/views/offline.html"
                 })
         }]);

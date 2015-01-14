@@ -20,8 +20,6 @@
  */
 
 myApp.factory("UserFactory", function (auth, $http, $state, $rootScope, userUrl) {
-        var user = auth.getUser();
-        var auth_token = auth.getAuthToken();
         var error_func = function (error) {
                         if (error.result.error.code == -401) {
                             $state.go('login');
@@ -33,7 +31,7 @@ myApp.factory("UserFactory", function (auth, $http, $state, $rootScope, userUrl)
         return {
             getUsers: function(params, callback) {
                 $http.get(userUrl, {
-                    headers: {'Authorization': auth_token },
+                    headers: {'Authorization': auth.getAuthToken() },
                     params: params
                 }).success(callback
                 ).error(error_func)
