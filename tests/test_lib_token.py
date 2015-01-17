@@ -918,3 +918,54 @@ class TokenTestCase(MyTestCase):
         tokens = get_tokens_paginate(serial="hotp*")
         self.assertTrue(len(tokens.get("tokens")) == 1,
                         len(tokens.get("tokens")))
+
+
+    def test_42_sort_tokens(self):
+        # return pagination
+        tokendata = get_tokens_paginate(sortby=Token.serial, page=1, psize=5)
+        self.assertTrue(len(tokendata.get("tokens")) == 5,
+                        len(tokendata.get("tokens")))
+
+        # sort ascending
+        tokendata = get_tokens_paginate(sortby=Token.serial, page=1, psize=100,
+                                     sortdir="asc")
+        self.assertTrue(len(tokendata.get("tokens")) >= 10,
+                        len(tokendata.get("tokens")))
+
+        tokens = tokendata.get("tokens")
+        for token in tokens:
+            print token.get("serial")
+
+        self.assertTrue(tokens[0].get("serial") == "AUTO001",
+                        tokens[0])
+        self.assertTrue(tokens[-1].get("serial") == "hotptoken",
+                        tokens[-1])
+
+        # Reverse sorting
+        tokendata = get_tokens_paginate(sortby=Token.serial, page=1, psize=100,
+                                     sortdir="desc")
+        tokens = tokendata.get("tokens")
+        for token in tokens:
+            print token.get("serial")
+
+        self.assertTrue(tokens[0].get("serial") == "hotptoken")
+        self.assertTrue(tokens[-1].get("serial") == "AUTO001")
+
+        # sort with string column
+        tokendata = get_tokens_paginate(sortby="serial", page=1, psize=100,
+                                        sortdir="asc")
+        tokens = tokendata.get("tokens")
+        for token in tokens:
+            print token.get("serial")
+
+        self.assertTrue(tokens[-1].get("serial") == "hotptoken")
+        self.assertTrue(tokens[0].get("serial") == "AUTO001")
+
+        tokendata = get_tokens_paginate(sortby="serial", page=1, psize=100,
+                                        sortdir="desc")
+        tokens = tokendata.get("tokens")
+        for token in tokens:
+            print token.get("serial")
+
+        self.assertTrue(tokens[0].get("serial") == "hotptoken")
+        self.assertTrue(tokens[-1].get("serial") == "AUTO001")

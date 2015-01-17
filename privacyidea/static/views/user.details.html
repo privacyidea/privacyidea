@@ -89,7 +89,13 @@
                 </td>
                 <td>{{ token.count_window }}</td>
                 <td>{{ token.description }}</td>
-                <td>{{ token.failcount }}</td>
+                <td><span class="label"
+                          ng-class="{'label-success': token.failcount==0,
+                                    'label-warning': token.failcount>0,
+                                    'label-danger': token.failcount>=token.maxfail}">
+                    {{ token.failcount }}
+                </span>
+                </td>
                 <td>{{ token.maxfail }}</td>
                 <td>{{ token.otplen }}</td>
             </tr>

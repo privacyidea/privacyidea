@@ -8,12 +8,30 @@
     <table class="table table-bordered table-striped">
         <thead>
             <tr>
-                <th>serial</th>
-                <th>type</th>
-                <th>Active</th>
+                <th>
+                <input ng-model="searchSerial" ng-change="getTokens()"
+                       class="form-control" placeholder="serial">
+                    <span class="glyphicon glyphicon-sort"
+                            ng-click="params.sortby='serial';
+                            reverse=!reverse; getTokens();"></span>
+                </th>
+                <th><span ng-click="sortField='token.tokentype'">type</span>
+                    <span class="glyphicon"
+                          ng-class="{'glyphicon-sort': true,
+                          'glyphicon-arrow-down': serialSort=='up',
+                          'glyphicon-arrow-up':serialSort=='down'}"
+                              aria-hidden="true"
+                            ng-click="serialSort='up'">
+
+                    </span>
+                </th>
+                <th><span ng-click="params.sortby='active'; reverse=!reverse;
+                    getTokens()">
+                    active</span></th>
                 <th>window</th>
                 <th>description</th>
-                <th>failcounter</th>
+                <th><span ng-click="params.sortby='failcount'; reverse=!reverse; getTokens()">
+                    failcounter</span></th>
                 <th>maxfail</th>
                 <th>otplen</th>
                 <th>user</th>
@@ -37,7 +55,12 @@
             </td>
             <td>{{ token.count_window }}</td>
             <td>{{ token.description }}</td>
-            <td>{{ token.failcount }}</td>
+            <td><span class="label"
+                  ng-class="{'label-success': token.failcount==0,
+                   'label-warning': token.failcount>0,
+                   'label-danger': token.failcount>=token.maxfail}">
+            {{ token.failcount }}
+            </span></td></td>
             <td>{{ token.maxfail }}</td>
             <td>{{ token.otplen }}</td>
             <td><a ui-sref="user.details({username: token.username,

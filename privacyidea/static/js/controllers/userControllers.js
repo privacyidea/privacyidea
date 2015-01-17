@@ -64,7 +64,7 @@ angular.module("privacyideaApp")
                 user: $scope.username,
                 pin: $scope.newToken.pin
             }, function () {
-                $scope.get();
+                $scope._getUserToken();
                 $scope.newToken = {"serial": "", pin: ""};
             });
         };

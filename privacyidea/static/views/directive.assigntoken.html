@@ -2,7 +2,6 @@
 This is the directive for assigning tokens to users.
 -->
 <div class="form-group">
-    {{ newTokenObject.serial }}
     <label for="serial">Serial</label>
     <input name="serial" type="text" ng-model="newTokenObject.serial"
            placeholder="start typing a serial number of a token that is not
@@ -10,7 +9,7 @@ This is the directive for assigning tokens to users.
            typeahead="serial for serial in loadSerials($viewValue)"
            typeahead-loading="loadingSerials" class="form-control" >
     <i ng-show="loadingSerials" class="glyphicon glyphicon-refresh">Loading
-        users...
+        serials...
     </i>
 </div>
 <div class="form-group">

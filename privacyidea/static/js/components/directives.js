@@ -34,6 +34,15 @@ myApp.directive('tokenDataEdit', function() {
     }
 });
 
+myApp.directive("sortBy", function(){
+    return {
+        template: "<span ng-click=params.sortby=sortBy; reverse=!reverse;getTokens()>{{sortLabel}}</span>",
+        link: function(scope, element, attr) {
+            var test = element;
+        }
+    }
+});
+
 myApp.directive('assignUser', function($http, userUrl, auth, ConfigFactory) {
     /*
     This directive is used to select a user from a realm
@@ -98,6 +107,7 @@ myApp.directive('assignToken', function($http, tokenUrl, auth) {
         }
     }
 });
+
 
 myApp.directive('equals', function() {
   return {

@@ -19,7 +19,8 @@
  *
  */
 myApp.controller("tokenController", function (TokenFactory, ConfigFactory, $scope, $location) {
-    $scope.params = {page: 1};
+    $scope.params = {page: 1, sortdir: "asc"};
+    $scope.reverse = false;
     // go to the list view by default
     if ($location.path() == "/token") {
         $location.path("/token/list");
@@ -33,6 +34,12 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory, $scop
 
     // This function fills $scope.tokendata
     $scope.getTokens = function () {
+        $scope.params["serial"] = "*" + ($scope.searchSerial || "") + "*";
+        if ($scope.reverse) {
+            $scope.params.sortdir = "desc";
+        } else {
+            $scope.params.sortdir = "asc";
+        }
         TokenFactory.getTokens(function (data) {
             $scope.tokendata = data.result.value;
             console.log($scope.tokendata);

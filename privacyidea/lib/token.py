@@ -259,8 +259,9 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     :param resolver:
     :param rollout_state:
     :param sortby: Sort by a certain Token DB field. The default is
-    Token.serial
-    :type sortby: A Token column
+    Token.serial. If a string like "serial" is provided, we try to convert it
+    to the DB column.
+    :type sortby: A Token column or a string.
     :param sortdir: Can be "asc" (default) or "desc"
     :type sortdir: basestring
     :param psize: The size of the page
@@ -275,6 +276,12 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                                 serial=serial, active=active,
                                 resolver=resolver,
                                 rollout_state=rollout_state)
+
+    if type(sortby) in [str, unicode]:
+        # convert the string to a Token column
+        cols = Token.__table__.columns
+        sortby = cols.get(sortby)
+
     if sortdir == "desc":
         sql_query = sql_query.order_by(sortby.desc())
     else:

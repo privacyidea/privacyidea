@@ -2,7 +2,16 @@
 <div class="well" ng-controller="configController">
     <nav class="navbar navbar-default">
     <div class="container">
-        <div id="navbar-config" class="navbar-collapse collapse">
+        <button type="button" class="navbar-toggle"
+                data-toggle="collapse" data-target=".myConfigNavbar"
+                aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </button>
+
+        <div class="navbar-collapse collapse myConfigNavbar">
             <ul class="nav navbar-nav">
                 <li ng-class="{active: $state.includes('config.system')}">
                     <a ui-sref="config.system">

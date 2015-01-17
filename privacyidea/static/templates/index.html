@@ -7,47 +7,29 @@
     <meta name="description" content="">
     <meta name="author" content="Cornelius Kölbel">
     <link rel="icon" href="../../favicon.ico">
-    <script src="/static/contrib/js/angular.js"></script>
-    <script src="/static/contrib/js/ui-bootstrap-custom-tpls-0.12.0.js"></script>
-    <script src="/static/contrib/js/ngmodules/angular-route.js"></script>
-    <script src="/static/contrib/js/ngmodules/angular-ui-router.js"></script>
-    <script src="/static/contrib/js/ngmodules/angular-animate.min.js"></script>
-
-    <link href="/static/contrib/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/static/contrib/css/bootstrap-theme.css" rel="stylesheet"/>
     <!-- Custom styles for this template -->
     <link href="/static/css/signin.css" rel="stylesheet">
     <link href="/static/contrib/css/animate.css" rel="stylesheet">
     <link href="/static/css/navbar-fixed-top.css" rel="stylesheet">
-    <script src="/static/js/app.js"></script>
-    <script src="/static/js/components/directives.js"></script>
-    <script src="/static/js/components/user/auth.js"></script>
-    <script src="/static/js/components/states/config.js"></script>
-    <script src="/static/js/components/factory/token.js"></script>
-    <script src="/static/js/components/factory/user.js"></script>
-    <script src="/static/js/components/factory/config.js"></script>
-    <script src="/static/js/components/factory/validate.js"></script>
-    <script src="/static/js/controllers/loginControllers.js"></script>
-    <script src="/static/js/controllers/tokenControllers.js"></script>
-    <script src="/static/js/controllers/configControllers.js"></script>
-    <script src="/static/js/controllers/userControllers.js"></script>
+    <link href="/static/contrib/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/contrib/css/bootstrap-theme.css" rel="stylesheet"/>
 
 </head>
 <body ng-controller="mainController">
-<nav class="navbar navbar-default navbar-fixed-top">
+
+<div class="navbar navbar-default navbar-fixed-top">
     <div class="container">
-        <div class="navbar-header">
-            <button type="button" class="navbar-toggle collapsed"
-                    data-toggle="collapse" data-target="#navbar"
-                    aria-expanded="false" aria-controls="navbar">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-            <a class="navbar-brand" href="#">privacyIDEA</a>
-        </div>
-        <div id="navbar" class="navbar-collapse collapse">
+        <a class="navbar-brand" href="#">privacyIDEA</a>
+        <button type="button" class="navbar-toggle"
+                data-toggle="collapse" data-target=".myMainNavbar"
+                aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </button>
+
+        <div class="navbar-collapse collapse myMainNavbar">
             <ul class="nav navbar-nav">
                 <li ng-class="{active: $state.includes('token')}"
                     ng-hide="$state.includes('login')">
@@ -79,7 +61,8 @@
                 </li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
-                <li><a ui-sref="login" ng-hide="user.username">Login</a></li>
+                <li><a ui-sref="login" ng-hide="user.username">Login</a>
+                </li>
                 <li>
                     <button ng-show="user.username"
                             ng-click="logout()"
@@ -91,9 +74,8 @@
 
 
         </div>
-        <!--/.nav-collapse -->
     </div>
-</nav>
+</div>
 
 <div class="alert alert-danger" ng-show="restError">
     {{ restError.error.message }}
@@ -121,5 +103,27 @@
     </pre>
 
 </div>
+
+<!--load all javascripts after the HTML part-->
+<script src="/static/contrib/js/angular.js"></script>
+<script src="/static/contrib/js/ui-bootstrap-custom-tpls-0.12.0.js"></script>
+<script src="/static/contrib/js/jquery-1.11.2.min.js"></script>
+<script src="/static/contrib/js/bootstrap.min.js"></script>
+<script src="/static/contrib/js/ngmodules/angular-route.js"></script>
+<script src="/static/contrib/js/ngmodules/angular-ui-router.js"></script>
+<script src="/static/contrib/js/ngmodules/angular-animate.min.js"></script>
+<script src="/static/js/app.js"></script>
+<script src="/static/js/components/directives.js"></script>
+<script src="/static/js/components/user/auth.js"></script>
+<script src="/static/js/components/states/config.js"></script>
+<script src="/static/js/components/factory/token.js"></script>
+<script src="/static/js/components/factory/user.js"></script>
+<script src="/static/js/components/factory/config.js"></script>
+<script src="/static/js/components/factory/validate.js"></script>
+<script src="/static/js/controllers/loginControllers.js"></script>
+<script src="/static/js/controllers/tokenControllers.js"></script>
+<script src="/static/js/controllers/configControllers.js"></script>
+<script src="/static/js/controllers/userControllers.js"></script>
+
 </body>
 </html>
