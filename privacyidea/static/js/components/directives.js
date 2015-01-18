@@ -42,7 +42,6 @@ myApp.directive("piSortBy", function(){
                 column = attr.piSortBy
                 scope.params.sortby=column;
                 scope.reverse=!scope.reverse;
-                // FIXME: Need to remove classes from all columns
                 $(".sortUp").addClass("unsorted");
                 $(".sortDown").addClass("unsorted");
                 $(".sortUp").removeClass("sortUp");

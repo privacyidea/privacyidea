@@ -235,8 +235,9 @@ def list_api():
 
     :param serial: Display the token data of this single token. You can do a
     not strict matching by specifying a serial like "*OATH*".
+    :param type: Display only token of type. You ca do a non strict matching by
+    specifying a tokentype like "*otp*", to file hotp and totp tokens.
     :param user: display tokens of this user
-    :param filter: takes a substring to search in table token columns
     :param viewrealm: takes a realm, only the tokens in this realm will be
     displayed
     :param sortby: sort the output by column
@@ -257,7 +258,7 @@ def list_api():
     user = get_user_from_param(param, optional)
     serial = getParam(param, "serial", optional)
     page = int(getParam(param, "page", optional, default=1))
-    filt = getParam(param, "filter", optional)
+    tokentype = getParam(param, "type", optional)
     sort = getParam(param, "sortby", optional, default="serial")
     sdir = getParam(param, "sortdir", optional, default="asc")
     psize = int(getParam(param, "pagesize", optional, default=15))
@@ -293,12 +294,12 @@ def list_api():
     if realm:
         if realm in filterRealm or '*' in filterRealm:
             filterRealm = [realm]
-    g.audit['info'] = "realm: %s, filter: %r" % (filterRealm, filt)
+    g.audit['info'] = "realm: %s" % (filterRealm)
 
     # get list of tokens as a dictionary
     tokens = get_tokens_paginate(serial=serial, realm=realm, page=page,
                                  user=user, assigned=assigned, psize=psize,
-                                 sortby=sort, sortdir=sdir)
+                                 sortby=sort, sortdir=sdir, tokentype=tokentype)
     g.audit['success'] = True
     if output_format == "csv":
         return send_csv_result(tokens)

@@ -115,8 +115,15 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
 
     if tokentype is not None:
         # filter for type
-        sql_query = sql_query.filter(func.lower(Token.tokentype) ==
-                                     tokentype.lower())
+        if "*" in tokentype:
+            # match with "like"
+            sql_query = sql_query.filter(Token.tokentype.like(
+                tokentype.lower().replace("*", "%")))
+        else:
+            # exact match
+            sql_query = sql_query.filter(func.lower(Token.tokentype) ==
+                                         tokentype.lower())
+
     if assigned is not None:
         # filter if assigned or not
         if assigned is False:

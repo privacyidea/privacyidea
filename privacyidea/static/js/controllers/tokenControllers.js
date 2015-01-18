@@ -34,7 +34,12 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory, $scop
 
     // This function fills $scope.tokendata
     $scope.getTokens = function () {
-        $scope.params["serial"] = "*" + ($scope.searchSerial || "") + "*";
+        if ($scope.serialFilter) {
+            $scope.params.serial = "*" + ($scope.serialFilter || "") + "*";
+        }
+        if ($scope.typeFilter) {
+            $scope.params.type = "*" + ($scope.typeFilter || "") + "*";
+        }
         if ($scope.reverse) {
             $scope.params.sortdir = "desc";
         } else {

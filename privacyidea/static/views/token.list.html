@@ -8,18 +8,33 @@
     <table class="table table-bordered table-striped">
         <thead>
             <tr>
-                <th pi-sort-by="serial">
-                <input ng-model="searchSerial" ng-change="getTokens()"
-                       class="form-control" placeholder="serial">
-                    <span class=getSortClass('serial')></span>
+                <th> <button class="btn btn-default unsorted"
+                             pi-sort-by="serial">serial</button>
+                    <span class="glyphicon glyphicon-filter"
+                            ng-click="serialFiltered=!serialFiltered"
+                            ng-class="{filtered:serialFilter}"></span>
+                <input ng-model="serialFilter" ng-change="getTokens()"
+                       ng-show="serialFiltered"
+                       placeholder="serial" class="form-control">
                 </th>
-                <th pi-sort-by="tokentype" class="unsorted">type</th>
-                <th pi-sort-by="active" class="unsorted">active</th>
-                <th pi-sort-by="count_window" class="unsorted">window</th>
-                <th pi-sort-by="description" class="unsorted">description</th>
-                <th pi-sort-by="failcount" class="unsorted">failcounter</th>
-                <th pi-sort-by="maxfail" class="unsorted">maxfail</th>
-                <th pi-sort-by="otplen" class="unsorted">otplen</th>
+                <th> <button class="btn btn-default unsorted"
+                             pi-sort-by="tokentype">type</button>
+                    <span class="glyphicon glyphicon-filter"
+                            ng-click="typeFiltered=!typeFiltered"
+                            ng-class="{filtered:typeFilter}"></span>
+                    <input ng-model="typeFilter" ng-change="getTokens()"
+                       ng-show="typeFiltered"
+                       placeholder="type" class="form-control">
+                </th>
+                <th><button pi-sort-by="active"
+                            class="btn btn-default
+                            unsorted">active</button></th>
+                <th><button pi-sort-by="description"
+                       class="btn btn-default
+                       unsorted">description</button></th>
+                <th><button pi-sort-by="failcount"
+                         class="btn btn-default
+                         unsorted">failcounter</button></th>
                 <th>user</th>
                 <th>realm</th>
             </tr>
@@ -39,7 +54,7 @@
                     disabled
                 </span>
             </td>
-            <td>{{ token.count_window }}</td>
+            <!--<td>{{ token.count_window }}</td>-->
             <td>{{ token.description }}</td>
             <td><span class="label"
                   ng-class="{'label-success': token.failcount==0,
@@ -47,8 +62,8 @@
                    'label-danger': token.failcount>=token.maxfail}">
             {{ token.failcount }}
             </span></td></td>
-            <td>{{ token.maxfail }}</td>
-            <td>{{ token.otplen }}</td>
+            <!--<td>{{ token.maxfail }}</td>-->
+            <!--<td>{{ token.otplen }}</td>-->
             <td><a ui-sref="user.details({username: token.username,
             realmname: token.user_realm})">
                 {{ token.username }}</a></td>
