@@ -208,3 +208,22 @@ class UserIdResolver(object):
         :rtype: bool
         """
         return False
+
+    @classmethod
+    def testconnection(self, param):
+        """
+        This function lets you test if the parameters can be used to create a
+        working resolver.
+        The implemenation should try to connect to the user store and verify
+        if users can be retrieved.
+        In case of success it should return a text like
+        "Resolver config seems OK. 123 Users found."
+
+        param param: The parameters that should be saved as the resolver
+        type param: dict
+        return: returns True in case of success and a descriptive text
+        rtype: tuple
+        """
+        success = False
+        desc = "Not implemented"
+        return success, desc

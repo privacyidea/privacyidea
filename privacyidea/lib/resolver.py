@@ -294,3 +294,20 @@ def get_resolver_object(resolvername):
             r_obj.loadConfig(resolver_config)
 
     return r_obj
+
+
+@log_with(log)
+def pretestresolver(resolvertype, params):
+    """
+    This tests, if the params will create a working resolver.
+    This function can be called before a resolver is created.
+
+    :param resolvertype:
+    :param params:
+    :type params: dict
+    :return:
+    """
+    # determine the class by the given type
+    r_obj_class = get_resolver_class(resolvertype)
+    (success, desc) = r_obj_class.testconnection(params)
+    return success, desc

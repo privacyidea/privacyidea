@@ -223,6 +223,34 @@ class APIConfigTestCase(MyTestCase):
             self.assertTrue(result["value"] == {}, result)
 
     # Resolvers
+    def test_08_pretestresolver(self):
+        param = {'LDAPURI': 'ldap://localhost',
+                 'LDAPBASE': 'o=test',
+                 'BINDDN': 'cn=manager,ou=example,o=test',
+                 'BINDPW': 'ldaptest',
+                 'LOGINNAMEATTRIBUTE': 'cn',
+                 'LDAPSEARCHFILTER': '(cn=*)',
+                 'LDAPFILTER': '(&(cn=%s))',
+                 'USERINFO': '{ "username": "cn",'
+                             '"phone" : "telephoneNumber", '
+                             '"mobile" : "mobile"'
+                             ', "email" : "mail", '
+                             '"surname" : "sn", '
+                             '"givenname" : "givenName" }',
+                 'UIDTYPE': 'DN',
+                 'type': 'ldapresolver'}
+        with self.app.test_request_context('/resolver/test',
+                                           data=param,
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertFalse(result.get("value"), result)
+            self.assertTrue("SERVER_DOWN" in detail.get("description"),
+                            detail.get("description"))
+
     def test_08_resolvers(self):
         with self.app.test_request_context('/resolver/resolver1',
                                            data={'type': 'passwdresolver',

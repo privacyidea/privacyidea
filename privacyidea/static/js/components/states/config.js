@@ -39,6 +39,10 @@ angular.module('privacyideaApp.config', ['ui.router']).config(
                     url: "/addpassword",
                     templateUrl: "/static/views/config.resolvers.addpassword.html"
                 })
+                .state('config.resolvers.addldap', {
+                    url: "/addldap",
+                    templateUrl: "/static/views/config.resolvers.addldap.html"
+                })
                 .state('config.resolvers.edit', {
                     url: "/edit/{resolvername:.*}",
                     templateUrl: "/static/views/config.resolvers.edit.html",

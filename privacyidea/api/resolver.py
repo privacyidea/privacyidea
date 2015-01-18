@@ -43,7 +43,7 @@ from ..lib.log import log_with
 from ..lib.realm import get_realms
 from ..lib.resolver import (get_resolver_list,
                             create_resolver,
-                            delete_resolver)
+                            delete_resolver, pretestresolver)
 from ..lib.realm import (set_default_realm,
                          get_default_realm,
                          set_realm,
@@ -175,7 +175,7 @@ def get_resolver(resolver=None):
     or via /resolver/<resolver>
 
     :param resolver: the name of the resolver
-    :returns: a json result with the configuration of a specified resolver
+    :return: a json result with the configuration of a specified resolver
     """
     res = get_resolver_list(filter_resolver_name=resolver)
 
@@ -184,4 +184,16 @@ def get_resolver(resolver=None):
 
     return send_result(res)
 
+@log_with(log)
+@resolver_blueprint.route('/test', methods=["POST"])
+def test_resolver():
+    """
+
+    :return: a json result with True, if the given values can create a
+    working resolver and a description.
+    """
+    param = request.all_data
+    rtype = getParam(param, "type", required)
+    success, desc = pretestresolver(rtype, param)
+    return send_result(success, details={"description": desc})
 

@@ -19,7 +19,7 @@ from privacyidea.lib.resolver import (create_resolver,
                                       delete_resolver,
                                       get_resolver_config,
                                       get_resolver_list,
-                                      get_resolver_object)
+                                      get_resolver_object, pretestresolver)
 
 
 class SQLResolverTestCase(MyTestCase):
@@ -38,7 +38,7 @@ class SQLResolverTestCase(MyTestCase):
                     "password" : "password", \
                     "phone": "phone", \
                     "mobile": "mobile"}'
-                  }
+    }
 
     def test_01_sqlite_resolver(self):
         y = SQLResolver()
@@ -86,7 +86,8 @@ class SQLResolverTestCase(MyTestCase):
         self.assertTrue(len(userlist) == 1, userlist)
 
         y = SQLResolver()
-        y.loadConfig(dict(self.parameters.items() + {"Where": "id > 2"}.items()))
+        y.loadConfig(
+            dict(self.parameters.items() + {"Where": "id > 2"}.items()))
         userlist = y.getUserList()
         self.assertTrue(len(userlist) == 4, userlist)
 
@@ -189,6 +190,38 @@ class LDAPResolverTestCase(MyTestCase):
         self.mockldap.stop()
         del self.ldapobj
 
+
+    def test_00_testconnection(self):
+        success, desc = \
+            pretestresolver("ldapresolver", {'LDAPURI':
+                                                 'ldap://localhost',
+                                             'LDAPBASE': 'o=test',
+                                             'BINDDN':
+                                                 'cn=manager,'
+                                                 'ou=example,'
+                                                 'o=test',
+                                             'BINDPW': 'ldaptest',
+                                             'LOGINNAMEATTRIBUTE': 'cn',
+                                             'LDAPSEARCHFILTER':
+                                                 '(cn=*)',
+                                             'LDAPFILTER': '(&('
+                                                           'cn=%s))',
+                                             'USERINFO': '{ '
+                                                         '"username": "cn",'
+                                                         '"phone" '
+                                                         ': '
+                                                         '"telephoneNumber", '
+                                                         '"mobile" : "mobile"'
+                                                         ', '
+                                                         '"email" '
+                                                         ': '
+                                                         '"mail", '
+                                                         '"surname" : "sn", '
+                                                         '"givenname" : '
+                                                         '"givenName" }',
+                                             'UIDTYPE': 'DN'})
+        self.assertTrue(success, (success, desc))
+
     def test_01_LDAP_DN(self):
         y = LDAPResolver()
         y.loadConfig({'LDAPURI': 'ldap://localhost',
@@ -205,7 +238,7 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"surname" : "sn", '
                                   '"givenname" : "givenName" }',
                       'UIDTYPE': 'DN',
-                  })
+        })
 
         result = y.getUserList({'username': '*'})
         self.assertTrue(len(result) == 3, result)
@@ -257,7 +290,7 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"surname" : "sn", '
                                   '"givenname" : "givenName" }',
                       'UIDTYPE': 'oid',
-                  })
+        })
 
         result = y.getUserList({'username': '*'})
         self.assertTrue(len(result) == 3, result)
@@ -293,7 +326,6 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertFalse(res)
 
     def test_03_testconnection(self):
-
         y = LDAPResolver()
         res = y.testconnection({'LDAPURI': 'ldap://localhost',
                                 'LDAPBASE': 'o=test',
@@ -303,13 +335,13 @@ class LDAPResolverTestCase(MyTestCase):
                                 'LDAPSEARCHFILTER': '(cn=*)',
                                 'LDAPFILTER': '(&(cn=%s))',
                                 'USERINFO': '{ "username": "cn",'
-                                              '"phone" : "telephoneNumber", '
-                                              '"mobile" : "mobile"'
-                                              ', "email" : "mail", '
-                                              '"surname" : "sn", '
-                                              '"givenname" : "givenName" }',
-                                  'UIDTYPE': 'oid',
-                              })
+                                            '"phone" : "telephoneNumber", '
+                                            '"mobile" : "mobile"'
+                                            ', "email" : "mail", '
+                                            '"surname" : "sn", '
+                                            '"givenname" : "givenName" }',
+                                'UIDTYPE': 'oid',
+        })
 
         self.assertTrue(res[0], res)
         self.assertTrue(res[1] == 'Your LDAP config seems to be OK, 3 user '
@@ -317,7 +349,6 @@ class LDAPResolverTestCase(MyTestCase):
 
 
     def test_04_testconnection_fail(self):
-
         y = LDAPResolver()
         res = y.testconnection({'LDAPURI': 'ldap://localhost',
                                 'LDAPBASE': 'o=test',
@@ -327,16 +358,17 @@ class LDAPResolverTestCase(MyTestCase):
                                 'LDAPSEARCHFILTER': '(cn=*)',
                                 'LDAPFILTER': '(&(cn=%s))',
                                 'USERINFO': '{ "username": "cn",'
-                                              '"phone" : "telephoneNumber", '
-                                              '"mobile" : "mobile"'
-                                              ', "email" : "mail", '
-                                              '"surname" : "sn", '
-                                              '"givenname" : "givenName" }',
-                                  'UIDTYPE': 'oid',
-                              })
+                                            '"phone" : "telephoneNumber", '
+                                            '"mobile" : "mobile"'
+                                            ', "email" : "mail", '
+                                            '"surname" : "sn", '
+                                            '"givenname" : "givenName" }',
+                                'UIDTYPE': 'oid',
+        })
 
         self.assertFalse(res[0], res)
         self.assertTrue("INVALID_CREDENTIALS" in res[1], res)
+
 
 class ResolverTestCase(MyTestCase):
     """
@@ -344,7 +376,7 @@ class ResolverTestCase(MyTestCase):
     """
     resolvername1 = "resolver1"
     resolvername2 = "Resolver2"
-    
+
     def test_01_create_resolver(self):
         rid = create_resolver({"resolver": self.resolvername1,
                                "type": "passwdresolver",
@@ -370,40 +402,40 @@ class ResolverTestCase(MyTestCase):
         params = {"resolver": "res with blank",
                   "type": "passwdresolver"}
         self.assertRaises(Exception, create_resolver, params)
-        
+
         # unknown type
         params = {"resolver": "validname",
                   "type": "unknown_type"}
         self.assertRaises(Exception, create_resolver, params)
-        
+
         # same name
         params = {"resolver": self.resolvername1,
                   "type": "passwdresolver",
                   "fileName": "/etc/secrets"}
         self.assertRaises(Exception, create_resolver, params)
-        
+
         # similar name
         params = {"resolver": "Resolver1",
                   "type": "passwdresolver",
                   "fileName": "/etc/secrets"}
         self.assertRaises(Exception, create_resolver, params)
-        
+
         # check that the resolver was successfully created
         reso_list = get_resolver_list()
         self.assertTrue(self.resolvername1 in reso_list)
-        
+
         # test error: type without data
         params = {"resolver": self.resolvername2,
                   "type": "ldapresolver",
                   "type.BindPW": "topsecret"}
         self.assertRaises(Exception, create_resolver, params)
-        
+
         # test error: description without data
         params = {"resolver": self.resolvername2,
                   "type": "ldapresolver",
                   "desc.BindPW": "something else"}
         self.assertRaises(Exception, create_resolver, params)
-        
+
         # key not supported by the resolver
         # The resolver is created anyway
         params = {"resolver": self.resolvername2,
@@ -411,20 +443,20 @@ class ResolverTestCase(MyTestCase):
                   "UnknownKey": "something else"}
         rid = create_resolver(params)
         self.assertTrue(rid > 0)
-        
+
         # check that the resolver was successfully created
         reso_list = get_resolver_list()
         self.assertTrue(self.resolvername2 in reso_list)
-        
+
     def test_02_get_resolver_list(self):
         reso_list = get_resolver_list(filter_resolver_name=self.resolvername1)
         self.assertTrue(self.resolvername1 in reso_list, reso_list)
         self.assertTrue(self.resolvername2 not in reso_list, reso_list)
-        
+
     def test_03_get_resolver_config(self):
         reso_config = get_resolver_config(self.resolvername2)
         self.assertTrue("UnknownKey" in reso_config, reso_config)
-        
+
     def test_04_if_a_resolver_exists(self):
         reso_list = get_resolver_list()
         self.assertTrue(self.resolvername1 in reso_list)
@@ -432,23 +464,24 @@ class ResolverTestCase(MyTestCase):
 
     def test_05_create_resolver_object(self):
         from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver
+
         reso_obj = get_resolver_object(self.resolvername1)
         self.assertTrue(isinstance(reso_obj, IdResolver), type(reso_obj))
-        
+
         # resolver, that does not exist
         reso_obj = get_resolver_object("unknown")
         self.assertTrue(reso_obj is None, reso_obj)
-        
+
     def test_10_delete_resolver(self):
         # get the list of the resolvers
         reso_list = get_resolver_list()
         self.assertTrue(self.resolvername1 in reso_list, reso_list)
         self.assertTrue(self.resolvername2 in reso_list, reso_list)
-        
+
         # delete the resolvers
         delete_resolver(self.resolvername1)
         delete_resolver(self.resolvername2)
-        
+
         # check list empty
         reso_list = get_resolver_list()
         self.assertTrue(self.resolvername1 not in reso_list, reso_list)
@@ -510,8 +543,10 @@ class ResolverTestCase(MyTestCase):
         self.assertFalse(y.checkPass("1000", "wrong password"))
         self.assertRaises(NotImplementedError, y.checkPass, "1001", "secret")
         self.assertFalse(y.checkPass("1002", "no pw at all"))
-        self.assertTrue(y.getUsername("1000") == "cornelius", y.getUsername("1000"))
-        self.assertTrue(y.getUserId(u"cornelius") == "1000", y.getUserId("cornelius"))
+        self.assertTrue(y.getUsername("1000") == "cornelius",
+                        y.getUsername("1000"))
+        self.assertTrue(y.getUserId(u"cornelius") == "1000",
+                        y.getUserId("cornelius"))
         self.assertTrue(y.getUserId("user does not exist") == "")
         sF = y.getSearchFields({"username": "*"})
         self.assertTrue(sF.get("username") == "text", sF)
