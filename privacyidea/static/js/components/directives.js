@@ -34,11 +34,27 @@ myApp.directive('tokenDataEdit', function() {
     }
 });
 
-myApp.directive("sortBy", function(){
+myApp.directive("piSortBy", function(){
     return {
-        template: "<span ng-click=params.sortby=sortBy; reverse=!reverse;getTokens()>{{sortLabel}}</span>",
+        restrict: 'A',
         link: function(scope, element, attr) {
-            var test = element;
+            element.on('click', function() {
+                column = attr.piSortBy
+                scope.params.sortby=column;
+                scope.reverse=!scope.reverse;
+                // FIXME: Need to remove classes from all columns
+                $(".sortUp").addClass("unsorted");
+                $(".sortDown").addClass("unsorted");
+                $(".sortUp").removeClass("sortUp");
+                $(".sortDown").removeClass("sortDown");
+                element.removeClass("unsorted");
+                if (scope.reverse) {
+                    element.addClass("sortDown");
+                } else {
+                    element.addClass("sortUp");
+                }
+                scope.getTokens();
+            });
         }
     }
 });
@@ -137,3 +153,4 @@ myApp.directive('equals', function() {
     }
   }
 });
+

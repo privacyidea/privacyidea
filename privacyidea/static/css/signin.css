@@ -4,6 +4,17 @@ body {
   background-color: #eee;
 }
 
+.sortUp:after {
+    content: '\25B2';
+}
+.sortDown:after {
+    content: '\25BC';
+}
+
+.unsorted:after {
+    content: '\25CF';
+}
+
 .form-signin {
   max-width: 330px;
   padding: 15px;
