@@ -5,33 +5,61 @@
             boundary-links="true" ng-change="pageChanged()"></pagination>
 
 <div class="table-responsive">
-            <table class="table table-bordered table-striped">
-                <thead>
-                <tr>
-                    <th>username</th>
-                    <th>surname</th>
-                    <th>givenname</th>
-                    <th>email</th>
-                    <th>phone</th>
-                    <th>mobile</th>
-                    <th>description</th>
-                    <th>id</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr ng-repeat="user in userlist">
-                    <td><a ui-sref="user.details({username:user.username,
+    <table class="table table-bordered table-striped">
+        <thead>
+        <tr>
+            <th>username
+                <span class="glyphicon glyphicon-filter"
+                      ng-click="usernameFiltered=!usernameFiltered"
+                      ng-class="{filtered:params.usernameFilter}"></span>
+                <input ng-model="params.usernameFilter" ng-change="_getUsers()"
+                       ng-show="usernameFiltered"
+                       placeholder="filter" class="form-control">
+            </th>
+            <th>surname
+                <span class="glyphicon glyphicon-filter"
+                      ng-click="surnameFiltered=!surnameFiltered"
+                      ng-class="{filtered:params.surnameFilter}"></span>
+                <input ng-model="params.surnameFilter" ng-change="_getUsers()"
+                       ng-show="surnameFiltered"
+                       placeholder="filter" class="form-control">
+            </th>
+            <th>givenname
+                <span class="glyphicon glyphicon-filter"
+                      ng-click="givennameFiltered=!givennameFiltered"
+                      ng-class="{filtered:params.givennameFilter}"></span>
+                <input ng-model="params.givennameFilter" ng-change="_getUsers()"
+                       ng-show="givennameFiltered"
+                       placeholder="filter" class="form-control">
+            </th>
+            <th>email
+                <span class="glyphicon glyphicon-filter"
+                      ng-click="emailFiltered=!emailFiltered"
+                      ng-class="{filtered:params.emailFilter}"></span>
+                <input ng-model="params.emailFilter" ng-change="_getUsers()"
+                       ng-show="emailFiltered"
+                       placeholder="filter" class="form-control">
+            </th>
+            <th>phone</th>
+            <th>mobile</th>
+            <th>description</th>
+            <th>id</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="user in userlist">
+            <td><a ui-sref="user.details({username:user.username,
                     realmname:selectedRealm})">
-                        {{ user.username }}</a></td>
-                    <td>{{ user.surname }}</td>
-                    <td>{{ user.givenname }}</td>
-                    <td><a href="mailto:{{ user.email }}">
-                        {{ user.email }}</a></td>
-                    <td>{{ user.phone }}</td>
-                    <td>{{ user.mobile }}</td>
-                    <td>{{ user.descrption }}</td>
-                    <td>{{ user.userid }}</td>
-                </tr>
-                </tbody>
-            </table>
+                {{ user.username }}</a></td>
+            <td>{{ user.surname }}</td>
+            <td>{{ user.givenname }}</td>
+            <td><a href="mailto:{{ user.email }}">
+                {{ user.email }}</a></td>
+            <td>{{ user.phone }}</td>
+            <td>{{ user.mobile }}</td>
+            <td>{{ user.descrption }}</td>
+            <td>{{ user.userid }}</td>
+        </tr>
+        </tbody>
+    </table>
 </div>

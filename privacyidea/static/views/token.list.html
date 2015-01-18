@@ -15,7 +15,7 @@
                             ng-class="{filtered:serialFilter}"></span>
                 <input ng-model="serialFilter" ng-change="getTokens()"
                        ng-show="serialFiltered"
-                       placeholder="serial" class="form-control">
+                       placeholder="filter" class="form-control">
                 </th>
                 <th> <button class="btn btn-default unsorted"
                              pi-sort-by="tokentype">type</button>
@@ -24,7 +24,7 @@
                             ng-class="{filtered:typeFilter}"></span>
                     <input ng-model="typeFilter" ng-change="getTokens()"
                        ng-show="typeFiltered"
-                       placeholder="type" class="form-control">
+                       placeholder="filter" class="form-control">
                 </th>
                 <th><button pi-sort-by="active"
                             class="btn btn-default

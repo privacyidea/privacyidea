@@ -85,7 +85,11 @@ angular.module("privacyideaApp")
                                             ConfigFactory, UserFactory) {
 
         $scope.usersPerPage = 15;
-        $scope.params = {page: 1};
+        $scope.params = {page: 1,
+                        usernameFilter: "",
+                        surnameFilter: "",
+                        givennameFilter: "",
+                        emailFilter: ""};
         // scroll to the top of the page
         document.body.scrollTop = document.documentElement.scrollTop = 0;
         // go to the list view by default
@@ -94,7 +98,20 @@ angular.module("privacyideaApp")
         }
 
         $scope._getUsers = function () {
-            UserFactory.getUsers({realm: $scope.selectedRealm},
+            var params = {realm: $scope.selectedRealm};
+            if ($scope.params.usernameFilter) {
+                params.username = "*" + $scope.params.usernameFilter + "*";
+            }
+            if ($scope.params.surnameFilter) {
+                params.surname = "*" + $scope.params.surnameFilter + "*";
+            }
+            if ($scope.params.givennameFilter) {
+                params.givenname = "*" + $scope.params.givennameFilter + "*";
+            }
+            if ($scope.params.emailFilter) {
+                params.email = "*" + $scope.params.emailFilter + "*";
+            }
+            UserFactory.getUsers(params,
                 function (data) {
                     userlist = data.result.value;
                     // The userlist is the complete list of the users.
