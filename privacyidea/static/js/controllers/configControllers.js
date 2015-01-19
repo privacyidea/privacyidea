@@ -125,7 +125,21 @@ myApp.controller("configController", function ($scope, $location,
             };
             $scope.showResult = true;
         });
-    }
+    };
+
+    $scope.params = {};
+    $scope.saveSystemConfig = function () {
+        ConfigFactory.saveSystemConfig($scope.params, function(data) {
+            console.log(data);
+        })
+    };
+    $scope.getSystemConfig = function () {
+        ConfigFactory.getSystemConfig(function(data) {
+            console.log(data);
+            $scope.params = data.result.value;
+        })
+    };
+    $scope.getSystemConfig();
 
 });
 

@@ -19,7 +19,7 @@
  *
  */
 myApp.factory("ConfigFactory", function (auth, $http, $state, $rootScope,
-                                         resolverUrl, realmUrl, defaultRealmUrl) {
+                                         resolverUrl, realmUrl, defaultRealmUrl, systemUrl) {
     /**
      Each service - just like this service factory - is a singleton.
      */
@@ -88,6 +88,18 @@ myApp.factory("ConfigFactory", function (auth, $http, $state, $rootScope,
         },
         clearDefaultRealm: function(callback) {
             $http.delete(defaultRealmUrl, {
+                headers: {'Authorization': auth.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
+        saveSystemConfig: function(params, callback) {
+            $http.post(systemUrl + "/setConfig", params, {
+                headers: {'Authorization': auth.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
+        getSystemConfig: function(callback) {
+            $http.get(systemUrl, {
                 headers: {'Authorization': auth.getAuthToken(),
                           'Content-Type': 'application/json'}
             }).success(callback).error(error_func);
