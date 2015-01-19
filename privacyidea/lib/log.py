@@ -95,6 +95,7 @@ class log_with(object):
                 else:
                     self.logger.debug(self.ENTRY_MESSAGE.format(func.__name__, "HIDDEN", "HIDDEN"))
             except Exception as exx:
+                self.logger.error(exx)
                 self.logger.error("Error during logging of function {0}! {1}".format(func.__name__, exx))
                 
             f_result = func(*args, **kwds)

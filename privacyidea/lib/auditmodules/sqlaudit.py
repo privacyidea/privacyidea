@@ -18,22 +18,33 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
+__doc__ = """The SQL Audit Module is used to write audit entries to an SQL
+database.
+The SQL Audit Module is configured like this:
+
+    privacyideaAudit.module = privacyidea.lib.auditmodules.sqlaudit
+    privacyideaAudit.key.private = tests/testdata/private.pem
+    privacyideaAudit.key.public = tests/testdata/public.pem
+
+    Optional:
+    privacyideaAudit.sql.url = sqlite://
+
+If the privacyideaAudit.sql.url is omitted the Audit data is written to the
+token database.
+"""
+
 import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.audit import AuditBase
-
 
 from sqlalchemy import Table, MetaData, Column
 from sqlalchemy import Integer, String, DateTime, asc, desc, and_
 from sqlalchemy.orm import mapper
 import datetime
-# from privacyidea.lib.config  import get_privacyIDEA_config
-# from pylons import config as ini_config
 import traceback
 from Crypto.Hash import SHA256 as HashFunc
 from Crypto.PublicKey import RSA
 from sqlalchemy.exc import OperationalError
-from privacyidea.lib.log import log_with
 
 metadata = MetaData()
 
@@ -97,24 +108,25 @@ from sqlalchemy.orm import sessionmaker
 
 
 class Audit(AuditBase):
-    '''
+    """
     This is the SQLAudit module, which writes the audit entries
     to an SQL database table.
     It requires the configuration parameters:
     
     privacyideaAudit.sql.url (default: sqlalchemy.url)
+    """
     
-    '''
-    
-    def __init__(self):
+    def __init__(self, config=None):
         self.name = "sqlaudit"
-        self.readKeys()
+        self.config = config or {}
+        self.audit_data = {}
+        self.read_keys(self.config.get("privacyideaAudit.key.public"),
+                       self.config.get("privacyideaAudit.key.private"))
         
-        # conf = get_privacyIDEA_config()
         # an Engine, which the Session will use for connection
         # resources
-        connect_string = ini_config.get("privacyideaAudit.sql.url",
-                                        ini_config.get("sqlalchemy.url"))
+        connect_string = self.config.get("privacyideaAudit.sql.url",
+                                        self.config.get("sqlalchemy.url"))
         log.info("using the connect string %s" % connect_string)
         self.engine = create_engine(connect_string)
 
@@ -125,17 +137,14 @@ class Audit(AuditBase):
         self.session = Session()
         try:
             metadata.create_all(self.engine)
-        except OperationalError as exx:
+        except OperationalError as exx:  # pragma nocover
             log.info("%r" % exx)
             pass
-            
-    def getAuditId(self):
-        return self.name
 
     def _create_filter(self, param):
-        '''
+        """
         create a filter condition for the logentry
-        '''
+        """
         conditions = []
         for search_key in param.keys():
             search_value = param.get(search_key)
@@ -153,11 +162,11 @@ class Audit(AuditBase):
         filter_condition = and_(*conditions)
         return filter_condition
 
-    def getTotal(self, param, AND=True, display_error=True):
-        '''
+    def get_total(self, param, AND=True, display_error=True):
+        """
         This method returns the total number of audit entries
         in the audit store
-        '''
+        """
         count = 0
 
         # if param contains search filters, we build the search filter
@@ -172,26 +181,36 @@ class Audit(AuditBase):
             self.session.close()
         return count
 
-    @log_with(log)
     def log(self, param):
-        '''
+        """
+        Add new log details in param to the internal log data self.audit_data.
+
+        :param param: Log data that is to be added
+        :type param: dict
+        :return: None
+        """
+        for k, v in param.iteritems():
+            self.audit_data[k] = v
+
+    def finalize_log(self):
+        """
         This method is used to log the data.
         It should hash the data and do a hash chain and sign the data
-        '''
+        """
         try:
-            le = LogEntry(action=param.get("action"),
-                          success=param.get("success"),
-                          serial=param.get("serial"),
-                          token_type=param.get("token_type"),
-                          user=param.get("user"),
-                          realm=param.get("realm"),
-                          administrator=param.get("administrator"),
-                          action_detail=param.get("action_detail"),
-                          info=param.get("info"),
-                          privacyidea_server=param.get("privacyidea_server"),
-                          client=param.get("client", ""),
-                          loglevel=param.get("log_level"),
-                          clearance_level=param.get("clearance_level")
+            le = LogEntry(action=self.audit_data.get("action"),
+                          success=self.audit_data.get("success"),
+                          serial=self.audit_data.get("serial"),
+                          token_type=self.audit_data.get("token_type"),
+                          user=self.audit_data.get("user"),
+                          realm=self.audit_data.get("realm"),
+                          administrator=self.audit_data.get("administrator"),
+                          action_detail=self.audit_data.get("action_detail"),
+                          info=self.audit_data.get("info"),
+                          privacyidea_server=self.audit_data.get("privacyidea_server"),
+                          client=self.audit_data.get("client", ""),
+                          loglevel=self.audit_data.get("log_level"),
+                          clearance_level=self.audit_data.get("clearance_level")
                           )
             self.session.add(le)
             self.session.commit()
@@ -201,21 +220,23 @@ class Audit(AuditBase):
             le.signature = sign
             self.session.merge(le)
             self.session.commit()
-        except Exception as exx:
+        except Exception as exx:  # pragma nocover
             log.error("exception %r" % exx)
             log.error("%s" % traceback.format_exc())
             self.session.rollback()
 
         finally:
             self.session.close()
+            # clear the audit data
+            self.audit_data = {}
     
     def _sign(self, s):
-        '''
+        """
         Create a signature of the string s
         
         :return: The signature of the string
         :rtype: long
-        '''
+        """
         RSAkey = RSA.importKey(self.private)
         hashvalue = HashFunc.new(s).digest()
         signature = RSAkey.sign(hashvalue, 1)
@@ -223,22 +244,22 @@ class Audit(AuditBase):
         return s_signature
     
     def _verify_sig(self, audit_entry):
-        '''
+        """
         Check the signature of the audit log in the database
-        '''
+        """
         r = False
         try:
             RSAkey = RSA.importKey(self.public)
             hashvalue = HashFunc.new(self._log_to_string(audit_entry)).digest()
             signature = long(audit_entry.signature)
             r = RSAkey.verify(hashvalue, (signature,))
-        except Exception:
+        except Exception:  # pragma nocover
             log.error("Failed to verify audit entry: %r" % audit_entry.id)
             log.error(traceback.format_exc())
         return r
 
     def _check_missing(self, audit_id):
-        '''
+        """
         Check if the audit log contains the entries before and after
         the given id.
         
@@ -247,7 +268,7 @@ class Audit(AuditBase):
         meta information
         1. Which one was the first entry. (use initialize_log)
         2. Which one was the last entry.
-        '''
+        """
         res = False
         try:
             id_bef = self.session.query(LogEntry.id
@@ -260,7 +281,7 @@ class Audit(AuditBase):
             # self.session.commit()
             if id_bef and id_aft:
                 res = True
-        except Exception as exx:
+        except Exception as exx:  # pragma nocover
             log.error("exception %r" % exx)
             log.error("%s" % traceback.format_exc())
             # self.session.rollback()
@@ -271,13 +292,13 @@ class Audit(AuditBase):
         return res
     
     def _log_to_string(self, le):
-        '''
+        """
         This function creates a string from the logentry so
         that this string can be signed.
         
         Note: Not all elements of the LogEntry are used to generate the
         string (the Signature is not!), otherwise we could have used pickle
-        '''
+        """
         s = "id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s,"\
             "ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % (le.id,
                                                   le.date,
@@ -297,9 +318,9 @@ class Audit(AuditBase):
         return s
         
     def _get_logentry_attribute(self, key):
-        '''
+        """
         This function returns the LogEntry attribute for the given key value
-        '''
+        """
         sortname = {'number': LogEntry.id,
                     'action': LogEntry.action,
                     'success': LogEntry.success,
@@ -318,9 +339,9 @@ class Audit(AuditBase):
         return sortname.get(key)
         
     def search(self, search_dict, rp_dict):
-        '''
+        """
         This function returns the audit log as a list of dictionaries.
-        '''
+        """
         res = []
         auditIter = self.searchQuery(search_dict, rp_dict=rp_dict)
         try:
@@ -358,7 +379,7 @@ class Audit(AuditBase):
                                          .limit(limit)\
                                          .offset(offset)
                                          
-        except Exception as exx:
+        except Exception as exx:  # pragma nocover
             log.error("exception %r" % exx)
             log.error("%s" % traceback.format_exc())
             self.session.rollback()
