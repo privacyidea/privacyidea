@@ -7,7 +7,7 @@ PWFILE = "tests/testdata/passwd"
 PWFILE2 = "tests/testdata/passwords"
 
 from .base import MyTestCase
-from privacyidea.lib.resolver import (create_resolver)
+from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User,
                                   get_username,
@@ -28,7 +28,7 @@ class UserTestCase(MyTestCase):
     realm2 = "realm2"
     
     def test_00_create_user(self):
-        rid = create_resolver({"resolver": self.resolvername1,
+        rid = save_resolver({"resolver": self.resolvername1,
                                "type": "passwdresolver",
                                "fileName": PWFILE})
         self.assertTrue(rid > 0, rid)
@@ -156,7 +156,7 @@ class UserTestCase(MyTestCase):
         self.assertTrue(user.realm == self.realm1, user)
         
         # create a realm, where cornelius is in two resolvers!
-        rid = create_resolver({"resolver": self.resolvername3,
+        rid = save_resolver({"resolver": self.resolvername3,
                                "type": "passwdresolver",
                                "fileName": PWFILE2})
         self.assertTrue(rid > 0, rid)

@@ -44,7 +44,7 @@ from lib.utils import (getParam,
 from ..lib.log import log_with
 from ..lib.realm import get_realms
 from ..lib.resolver import (get_resolver_list,
-                            create_resolver,
+                            save_resolver,
                             delete_resolver)
 from ..lib.realm import (set_default_realm,
                          get_default_realm,

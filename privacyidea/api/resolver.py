@@ -42,7 +42,7 @@ from lib.utils import (getParam,
 from ..lib.log import log_with
 from ..lib.realm import get_realms
 from ..lib.resolver import (get_resolver_list,
-                            create_resolver,
+                            save_resolver,
                             delete_resolver, pretestresolver)
 from ..lib.realm import (set_default_realm,
                          get_default_realm,
@@ -107,6 +107,12 @@ def set_resolver(resolver=None):
     This creates a new resolver or updates an existing one.
     A resolver is uniquely identified by its name.
 
+    If you update a resolver, you do not need to provide all parameters.
+    Parameters you do not provide are left untouched.
+    When updating a resolver you must not change the type!
+    You do not need to specify the type, but if you specify a wrong type,
+    it will produce an error.
+
     :param resolver: the name of the resolver.
     :type resolver: basestring
     :param type: the type of the resolver. Valid types are passwdresolver,
@@ -145,7 +151,7 @@ def set_resolver(resolver=None):
     if resolver:
         # The resolver parameter was passed as a part of the URL
         param.update({"resolver": resolver})
-    res = create_resolver(param)
+    res = save_resolver(param)
     return send_result(res)
 
 

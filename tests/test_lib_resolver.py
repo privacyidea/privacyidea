@@ -10,17 +10,15 @@ The lib.resolver.py only depends on the database model.
 PWFILE = "tests/testdata/passwords"
 from .base import MyTestCase
 from mockldap import MockLdap
-import ldap
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
-from privacyidea.lib.resolvers.SQLIdResolver import PasswordHash
 
-from privacyidea.lib.resolver import (create_resolver,
+from privacyidea.lib.resolver import (save_resolver,
                                       delete_resolver,
                                       get_resolver_config,
                                       get_resolver_list,
                                       get_resolver_object, pretestresolver)
-
+from privacyidea.models import ResolverConfig
 
 class SQLResolverTestCase(MyTestCase):
     """
@@ -378,47 +376,46 @@ class ResolverTestCase(MyTestCase):
     resolvername2 = "Resolver2"
 
     def test_01_create_resolver(self):
-        rid = create_resolver({"resolver": self.resolvername1,
+        rid = save_resolver({"resolver": self.resolvername1,
                                "type": "passwdresolver",
                                "fileName": "/etc/passwd",
                                "type.fileName": "string",
                                "desc.fileName": "The name of the file"})
         self.assertTrue(rid > 0, rid)
 
-
         # description with missing main key
         params = {"resolver": "reso2",
                   "type": "passwdresolver",
                   "type.fileName": "string"}
-        self.assertRaises(Exception, create_resolver, params)
+        self.assertRaises(Exception, save_resolver, params)
 
         # type with missing main key
         params = {"resolver": "reso2",
                   "type": "passwdresolver",
                   "desc.fileName": "The file name"}
-        self.assertRaises(Exception, create_resolver, params)
+        self.assertRaises(Exception, save_resolver, params)
 
         # not allowed resolver name
         params = {"resolver": "res with blank",
                   "type": "passwdresolver"}
-        self.assertRaises(Exception, create_resolver, params)
+        self.assertRaises(Exception, save_resolver, params)
 
         # unknown type
         params = {"resolver": "validname",
                   "type": "unknown_type"}
-        self.assertRaises(Exception, create_resolver, params)
+        self.assertRaises(Exception, save_resolver, params)
 
-        # same name
+        # same name with different type
         params = {"resolver": self.resolvername1,
-                  "type": "passwdresolver",
+                  "type": "ldapresolver",
                   "fileName": "/etc/secrets"}
-        self.assertRaises(Exception, create_resolver, params)
+        self.assertRaises(Exception, save_resolver, params)
 
-        # similar name
+        # similar name with different type
         params = {"resolver": "Resolver1",
-                  "type": "passwdresolver",
+                  "type": "ldapresolver",
                   "fileName": "/etc/secrets"}
-        self.assertRaises(Exception, create_resolver, params)
+        self.assertRaises(Exception, save_resolver, params)
 
         # check that the resolver was successfully created
         reso_list = get_resolver_list()
@@ -428,20 +425,20 @@ class ResolverTestCase(MyTestCase):
         params = {"resolver": self.resolvername2,
                   "type": "ldapresolver",
                   "type.BindPW": "topsecret"}
-        self.assertRaises(Exception, create_resolver, params)
+        self.assertRaises(Exception, save_resolver, params)
 
         # test error: description without data
         params = {"resolver": self.resolvername2,
                   "type": "ldapresolver",
                   "desc.BindPW": "something else"}
-        self.assertRaises(Exception, create_resolver, params)
+        self.assertRaises(Exception, save_resolver, params)
 
         # key not supported by the resolver
         # The resolver is created anyway
         params = {"resolver": self.resolvername2,
                   "type": "passwdresolver",
                   "UnknownKey": "something else"}
-        rid = create_resolver(params)
+        rid = save_resolver(params)
         self.assertTrue(rid > 0)
 
         # check that the resolver was successfully created
@@ -486,10 +483,10 @@ class ResolverTestCase(MyTestCase):
         reso_list = get_resolver_list()
         self.assertTrue(self.resolvername1 not in reso_list, reso_list)
         self.assertTrue(self.resolvername2 not in reso_list, reso_list)
-        self.assertTrue(len(reso_list) == 0)
+        self.assertTrue(len(reso_list) == 0, reso_list)
 
     def test_11_base_resolver_class(self):
-        create_resolver({"resolver": "baseresolver",
+        save_resolver({"resolver": "baseresolver",
                          "type": "UserIdResolver"})
         y = get_resolver_object("baseresolver")
         self.assertTrue(y, y)
@@ -516,7 +513,7 @@ class ResolverTestCase(MyTestCase):
     def test_12_passwdresolver(self):
         # Create a resolver with an empty filename
         # will use the filename /etc/passwd
-        rid = create_resolver({"resolver": self.resolvername1,
+        rid = save_resolver({"resolver": self.resolvername1,
                                "type": "passwdresolver",
                                "fileName": "",
                                "type.fileName": "string",
@@ -527,7 +524,7 @@ class ResolverTestCase(MyTestCase):
         delete_resolver(self.resolvername1)
 
         # Load a file with an empty line
-        rid = create_resolver({"resolver": self.resolvername1,
+        rid = save_resolver({"resolver": self.resolvername1,
                                "type": "passwdresolver",
                                "fileName": PWFILE,
                                "type.fileName": "string",
@@ -587,3 +584,87 @@ class ResolverTestCase(MyTestCase):
         self.assertFalse(y._stringMatch("Duda", "Hal*"))
         self.assertTrue(y._stringMatch("HalloDuda", "*Du*"))
         self.assertTrue(y._stringMatch("Duda", "Duda"))
+
+    def test_13_update_resolver(self):
+        # Init stuff
+        top = ('o=test', {'o': 'test'})
+        example = ('ou=example,o=test', {'ou': 'example'})
+        other = ('ou=other,o=test', {'ou': 'other'})
+        manager = ('cn=manager,ou=example,o=test',
+                   {'cn': 'manager',
+                    'userPassword': ['ldaptest'],
+                    'oid': "1"})
+        alice = ('cn=alice,ou=example,o=test',
+                 {'cn': 'alice',
+                  'userPassword': ['alicepw'],
+                  'oid': "2",
+                  'mobile': ["1234", "45678"]})
+        bob = ('cn=bob,ou=other,o=test',
+               {'cn': 'bob', 'userPassword': ['bobpw'], 'oid': ["3"]})
+
+        # This is the content of our mock LDAP directory. It takes the form
+        # {dn: {attr: [value, ...], ...}, ...}.
+        directory = dict([top, example, other, manager, alice, bob])
+
+        # We only need to create the MockLdap instance once. The content we
+        # pass in will be used for all LDAP connections.
+        mockldap = MockLdap(directory)
+        mockldap.start()
+        ldapobj = mockldap['ldap://localhost/']
+        # --------------------------------
+        # First we create an LDAP resolver
+        rid = save_resolver({"resolver": "myLDAPres",
+                               "type": "ldapresolver",
+                               'LDAPURI': 'ldap://localhost',
+                               'LDAPBASE': 'o=test',
+                               'BINDDN': 'cn=manager,ou=example,o=test',
+                               'BINDPW': 'ldaptest',
+                               'LOGINNAMEATTRIBUTE': 'cn',
+                               'LDAPSEARCHFILTER': '(cn=*)',
+                               'LDAPFILTER': '(&(cn=%s))',
+                               'USERINFO': '{ "username": "cn",'
+                                           '"phone" : "telephoneNumber", '
+                                           '"mobile" : "mobile"'
+                                           ', "email" : "mail", '
+                                           '"surname" : "sn", '
+                                           '"givenname" : "givenName" }',
+                               'UIDTYPE': 'DN'
+        })
+
+        self.assertTrue(rid > 0, rid)
+        reso_list = get_resolver_list()
+        self.assertTrue("myLDAPres" in reso_list, reso_list)
+        ui = ResolverConfig.query.filter(
+            ResolverConfig.Key=='USERINFO').first().Value
+        # Check that the email is contained in the UI
+        self.assertTrue("email" in ui, ui)
+
+        # --------------------------------
+        # Then we update the LDAP resolver
+        rid = save_resolver({"resolver": "myLDAPres",
+                             "type": "ldapresolver",
+                             'LDAPURI': 'ldap://localhost',
+                               'LDAPBASE': 'o=test',
+                               'BINDDN': 'cn=manager,ou=example,o=test',
+                               'BINDPW': 'ldaptest',
+                               'LOGINNAMEATTRIBUTE': 'cn',
+                               'LDAPSEARCHFILTER': '(cn=*)',
+                               'LDAPFILTER': '(&(cn=%s))',
+                               'USERINFO': '{ "username": "cn",'
+                                           '"phone" : "telephoneNumber", '
+                                           '"surname" : "sn", '
+                                           '"givenname" : "givenName" }',
+                               'UIDTYPE': 'DN'
+        })
+        self.assertTrue(rid > 0, rid)
+        reso_list = get_resolver_list(filter_resolver_name="myLDAPres")
+        # TODO check the data
+        ui = ResolverConfig.query.filter(
+            ResolverConfig.Key=='USERINFO').first().Value
+        # Check that the email is NOT contained in the UI
+        self.assertTrue("email" not in ui, ui)
+
+        # clean up
+        mockldap.stop()
+        del ldapobj
+        del mockldap

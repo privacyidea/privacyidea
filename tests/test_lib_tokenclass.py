@@ -6,7 +6,7 @@ The lib.tokenclass depends on the DB model and lib.user
 PWFILE = "tests/testdata/passwords"
 
 from .base import MyTestCase
-from privacyidea.lib.resolver import (create_resolver)
+from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import (TokenClass,
@@ -31,7 +31,7 @@ class TokenBaseTestCase(MyTestCase):
     # set_user, get_user, reset, set_user_identifiers
     
     def test_00_create_user_realm(self):
-        rid = create_resolver({"resolver": self.resolvername1,
+        rid = save_resolver({"resolver": self.resolvername1,
                                "type": "passwdresolver",
                                "fileName": PWFILE})
         self.assertTrue(rid > 0, rid)

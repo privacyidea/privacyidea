@@ -49,16 +49,23 @@ from ..models import (Resolver,
 from ..api.lib.utils import required
 from ..api.lib.utils import getParam
 from .error import ConfigAdminError
+from sqlalchemy import func
+
 log = logging.getLogger(__name__)
 
 
 @log_with(log)
-def create_resolver(params):
+def save_resolver(params):
     """
     create a new resolver from request parameters
     and save the resolver in the database.
-    If the resolvername already exist or if some other errors occur,
-    an exception is raised.
+
+    If the resolver already exist, it is updated.
+    If you update a resolver, you do not need to provide all parameters.
+    Parameters you do not provide are left untouched.
+    When updating a resolver you must not change the type!
+    You do not need to specify the type, but if you specify a wrong type,
+    it will produce an error.
 
     :param params: request parameters like "name" and "type" and the
                    configuration parameters of the resolver config.
@@ -70,6 +77,7 @@ def create_resolver(params):
     # for the name and type thing...
     resolvername = getParam(params, 'resolver', required)
     resolvertype = getParam(params, 'type', required)
+    update_resolver = False
     # check the name
     nameExp = "^[A-Za-z0-9_\-]+$"
     if re.match(nameExp, resolvername) is None:
@@ -82,11 +90,16 @@ def create_resolver(params):
             raise Exception("resolver type : %s not in %s" %
                             (resolvertype, unicode(resolvertypes)))
 
-    resolvers = get_resolver_list(filter_resolver_type=resolvertype)
-    for resolver in resolvers:
-        if resolvername.lower() == resolver.lower():
-            raise Exception("resolver with similar name already exists: %s" %
-                            (resolver))
+    # check the name
+    resolvers = get_resolver_list(filter_resolver_name=resolvername)
+    for r_name, resolver in resolvers.iteritems():
+        if resolver.get("type") == resolvertype:
+            # We found the resolver with the same name and the same type,
+            # So we will update this resolver
+            update_resolver = True
+        else:
+            raise Exception("resolver with similar name and other type already "
+                            "exists: %s" % r_name)
 
     # create a dictionary for the ResolverConfig
     resolver_config = get_resolver_config_description(resolvertype)
@@ -127,9 +140,13 @@ def create_resolver(params):
                         unicode(params))
 
     # Everything passed. So lets actually create the resolver in the DB
-    resolver = Resolver(params.get("resolver"),
-                        params.get("type"))
-    resolver_id = resolver.save()
+    if update_resolver:
+        resolver_id = Resolver.query.filter(func.lower(Resolver.name) ==
+                                  resolvername.lower()).first().id
+    else:
+        resolver = Resolver(params.get("resolver"),
+                            params.get("type"))
+        resolver_id = resolver.save()
     # create the config
     for key in data:
         ResolverConfig(resolver_id=resolver_id,
@@ -153,7 +170,8 @@ def get_resolver_list(filter_resolver_type=None,
     Resolvers = {}
     if filter_resolver_name:
         resolvers = Resolver.query\
-                            .filter(Resolver.name == filter_resolver_name)
+                            .filter(func.lower(Resolver.name) ==
+                                    filter_resolver_name.lower())
     elif filter_resolver_type:
         resolvers = Resolver.query\
                             .filter(Resolver.rtype == filter_resolver_type)

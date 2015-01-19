@@ -6,7 +6,7 @@ The lib.resolvers.py only depends on the database model.
 import json
 from .base import MyTestCase
 
-from privacyidea.lib.resolver import (create_resolver,
+from privacyidea.lib.resolver import (save_resolver,
                                       delete_resolver)
 
 from privacyidea.lib.realm import (set_realm,
@@ -26,12 +26,12 @@ class ResolverTestCase(MyTestCase):
     realm1 = "realm1"
     
     def test_01_create_realm(self):
-        rid = create_resolver({"resolver": self.resolvername1,
+        rid = save_resolver({"resolver": self.resolvername1,
                                "type": "passwdresolver",
                                "fileName": "/etc/passwd"})
         self.assertTrue(rid > 0, rid)
         
-        rid = create_resolver({"resolver": self.resolvername2,
+        rid = save_resolver({"resolver": self.resolvername2,
                                "type": "passwdresolver",
                                "fileName": "/etc/secrets"})
         self.assertTrue(rid > 0, rid)

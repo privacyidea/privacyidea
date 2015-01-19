@@ -2,7 +2,7 @@ import unittest
 import json
 from privacyidea.app import create_app
 from privacyidea.models import db
-from privacyidea.lib.resolver import (create_resolver)
+from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import User
 
@@ -28,7 +28,7 @@ class MyTestCase(unittest.TestCase):
 
     def setUp_user_realms(self):
         # create user realm
-        rid = create_resolver({"resolver": self.resolvername1,
+        rid = save_resolver({"resolver": self.resolvername1,
                                "type": "passwdresolver",
                                "fileName": PWFILE})
         self.assertTrue(rid > 0, rid)
