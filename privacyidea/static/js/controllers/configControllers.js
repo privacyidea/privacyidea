@@ -32,6 +32,9 @@ myApp.controller("configController", function ($scope, $location,
         $location.path("/config/realms/list");
     }
 
+    // TODO: This information needs to be fetched from the server
+    $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver'];
+
     $scope.getResolvers = function () {
         ConfigFactory.getResolvers(function (data) {
             $scope.resolvers = data.result.value
@@ -103,9 +106,9 @@ myApp.controller("configController", function ($scope, $location,
         $scope.selectedResolvers = {};
     };
 
-    $scope.editResolver = function (resolvername) {
+    $scope.editResolver = function (resolvername, r_type) {
         // change the view to the config.resolvers.edit
-        $state.go("config.resolvers.edit", {'resolvername': resolvername});
+        $state.go("config.resolvers.edit"+r_type, {'resolvername': resolvername});
         $rootScope.returnTo = "config.resolvers.list";
     };
 
@@ -115,21 +118,20 @@ myApp.controller("configController", function ($scope, $location,
 
 });
 
-myApp.controller("resolverEditController", function ($scope, $location,
-                                                     $stateParams, $state,
-                                                     ConfigFactory) {
-    $scope.resolvername = $stateParams.resolvername;
-    console.log($scope.resolvername);
-    ConfigFactory.getResolver($scope.resolvername, function (data) {
-        $scope.resolver = data.result.value[$scope.resolvername];
-        console.log(data);
-        console.log($scope.resolver);
-    });
-});
-
-myApp.controller("PasswdResolverController", function ($scope, ConfigFactory, $state) {
+myApp.controller("PasswdResolverController", function ($scope, ConfigFactory, $state, $stateParams) {
     $scope.params = {type: 'passwdresolver',
                     fileName: "/etc/passwd"};
+
+    $scope.resolvername = $stateParams.resolvername;
+    if ($scope.resolvername) {
+        /* If we have a resolvername, we do an Edit
+        and we need to fill all the $scope.params */
+        ConfigFactory.getResolver($scope.resolvername, function (data) {
+            var resolver = data.result.value[$scope.resolvername];
+            $scope.params = resolver.data;
+            $scope.params.type = 'passwdresolver';
+        });
+    }
 
     $scope.setResolver = function () {
         ConfigFactory.setResolver($scope.resolvername, $scope.params, function (data) {
@@ -140,7 +142,7 @@ myApp.controller("PasswdResolverController", function ($scope, ConfigFactory, $s
     };
 });
 
-myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $state) {
+myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $state, $stateParams) {
     /*
      BINDDN, BINDPW, LDAPURI, TIMEOUT, LDAPBASE, LOGINNAMEATTRIBUTE,
      LDAPSEARCHFILTER,
@@ -153,8 +155,20 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
         type: 'ldapresolver'
     };
     $scope.result = {};
-    $scope.resolvername = "";
+    $scope.resolvername = $stateParams.resolvername;
     $scope.showResult = false;
+
+    if ($scope.resolvername) {
+        /* If we have a resolvername, we do an Edit
+        and we need to fill all the $scope.params */
+        ConfigFactory.getResolver($scope.resolvername, function (data) {
+            var resolver = data.result.value[$scope.resolvername];
+            console.log(resolver);
+            $scope.params = resolver.data;
+            $scope.params.NOREFERRALS = ($scope.params.NOREFERRALS == "1");
+            $scope.params.type = 'ldapresolver';
+        });
+    }
 
     $scope.presetAD = function () {
         $scope.params.LOGINNAMEATTRIBUTE = "sAMAcountName";

@@ -35,18 +35,23 @@ angular.module('privacyideaApp.config', ['ui.router']).config(
                     url: "/list",
                     templateUrl: "/static/views/config.resolvers.list.html"
                 })
-                .state('config.resolvers.addpassword', {
-                    url: "/addpassword",
-                    templateUrl: "/static/views/config.resolvers.addpassword.html"
+                .state('config.resolvers.addpasswdresolver', {
+                    // Create a new resolver
+                    url: "/passwd",
+                    templateUrl: "/static/views/config.resolvers.passwd.html"
                 })
-                .state('config.resolvers.addldap', {
-                    url: "/addldap",
-                    templateUrl: "/static/views/config.resolvers.addldap.html"
+                .state('config.resolvers.editpasswdresolver', {
+                    // edit an existing resolver
+                    url: "/passwd/{resolvername:.*}",
+                    templateUrl: "/static/views/config.resolvers.passwd.html"
                 })
-                .state('config.resolvers.edit', {
-                    url: "/edit/{resolvername:.*}",
-                    templateUrl: "/static/views/config.resolvers.edit.html",
-                    controller: "resolverEditController"
+                .state('config.resolvers.addldapresolver', {
+                    url: "/ldap",
+                    templateUrl: "/static/views/config.resolvers.ldap.html"
+                })
+                .state('config.resolvers.editldapresolver', {
+                    url: "/ldap/{resolvername:.*}",
+                    templateUrl: "/static/views/config.resolvers.ldap.html"
                 })
                 .state('config.system', {
                     url: "/system",

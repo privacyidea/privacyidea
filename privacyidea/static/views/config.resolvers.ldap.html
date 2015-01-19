@@ -1,8 +1,12 @@
-<h2 class="form-signin-heading">Create a new LDAP Resolver</h2>
+<div ng-controller="LdapResolverController">
+
+<h2 class="form-signin-heading"
+        ng-show="resolvername">Edit LDAP Resolver {{ resolvername }}</h2>
+<h2 class="form-signin-heading"
+        ng-hide="resolvername">Create a new LDAP Resolver</h2>
 
 <form name="formResolverAddLdap" role="form" validate
-      class="form-horizontal"
-      ng-controller="LdapResolverController">
+      class="form-horizontal">
 
     <div class="form-group">
         <label for="resolvername" class="col-sm-3 control-label">Resolver
@@ -153,10 +157,9 @@
         </button>
         <button ng-click="setLDAPResolver()"
                 ng-disabled="formResolverAddLdap.$invalid"
-                class="btn btn-primary">Create resolver
+                class="btn btn-primary">Save resolver
         </button>
     </div>
 
 </form>
-
-
+</div>

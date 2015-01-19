@@ -12,18 +12,16 @@
                         {{ resolvername }}</a></li>
 
                 <li class="nav nav-pills nav-header">New Resolvers</li>
-                <li role="presentation"
-                    ng-class="{ active: $state.includes('config.resolvers.addpassword') }">
-                    <a ui-sref="config.resolvers.addpassword">Add Passwd
-                        Resolver</a>
+                <!-- Here we can get all resolvers and iterated over
+                     the resolver types.
+                -->
+                <li ng-repeat="resolvertype in availableResolverTypes"
+                        role="presentation"
+                    ng-class="{active:
+                    $state.includes('config.resolvers.add'+resolvertype) }">
+                    <a ui-sref="config.resolvers.add{{ resolvertype }}">
+                        New {{ resolvertype }}</a>
                 </li>
-                <li ng-class="{ active: $state.includes('config.resolvers.addldap') }">
-                    <a ui-sref="config.resolvers.addldap">Add LDAP Resolver</a>
-                </li>
-                <li ng-class="{ active: $state.includes('config.resolvers.addsql') }">
-                    <a ui-sref="config.resolvers.addldap">Add SQL Resolver</a>
-                </li>
-
             </ul>
         </div>
 
