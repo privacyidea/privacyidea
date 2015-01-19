@@ -25,13 +25,14 @@
 __doc__ = """This module contains the REST API for doing authentication.
 The methods are tested in the file tests/test_api_validate.py
 """
-from flask import (Blueprint, request, g)
+from flask import (Blueprint, request, g, current_app)
 from privacyidea.lib.user import get_user_from_param
 from lib.utils import send_result, getParam
 from ..lib.decorators import (check_user_or_serial_in_request)
 from lib.utils import required
 from privacyidea.lib.token import (check_user_pass, check_serial_pass)
 from privacyidea.api.lib.utils import remove_session_from_param
+from privacyidea.lib.audit import getAudit
 
 validate_blueprint = Blueprint('validate_blueprint', __name__)
 
@@ -41,15 +42,18 @@ def before_request():
     """
     This is executed before the request
     """
-    g.audit = {"success": False,
-               "info": ""}
-
-    #check_auth_token()
-    #g.Policy = PolicyClass()
-
-    # remove session from param and gather all parameters, either
-    # from the Form data or from JSON in the request body.
     request.all_data = remove_session_from_param(request.values, request.data)
+    # Already get some typical parameters to log
+    serial = getParam(request.all_data, "serial")
+    realm = getParam(request.all_data, "realm")
+
+    g.audit_object = getAudit(current_app.config)
+    g.audit_object.log({"success": False,
+                        "serial": serial,
+                        "realm": realm,
+                        "action": "token/%s" % request.url_rule,
+                        "action_detail": "",
+                        "info": ""})
 
 
 @validate_blueprint.route('/check', methods=['POST', 'GET'])

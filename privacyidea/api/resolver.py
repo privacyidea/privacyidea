@@ -96,7 +96,7 @@ def get_resolvers():
     """
     typ = getParam(request.all_data, "type", optional)
     res = get_resolver_list(filter_resolver_type=typ)
-    g.audit['success'] = True
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -166,8 +166,8 @@ def delete_resolver_api(resolver=None):
     :return: json with success or fail
     """
     res = delete_resolver(resolver)
-    g.audit['success'] = res
-    g.audit['info'] = resolver
+    g.audit_object.log({"success": res,
+                        "info": resolver})
 
     return send_result(res)
 
@@ -185,8 +185,8 @@ def get_resolver(resolver=None):
     """
     res = get_resolver_list(filter_resolver_name=resolver)
 
-    g.audit['success'] = True
-    g.audit['info'] = resolver
+    g.audit_object.log({"success": True,
+                        "info": resolver})
 
     return send_result(res)
 

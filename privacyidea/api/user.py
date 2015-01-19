@@ -97,7 +97,7 @@ def get_users():
     realm = getParam(request.all_data, "realm")
     users = get_user_list(request.all_data)
 
-    g.audit['success'] = True
-    g.audit['info'] = "realm: %s" % realm
+    g.audit_object.log({'success': True,
+                        'info': "realm: %s" % realm})
     
     return send_result(users)

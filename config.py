@@ -8,6 +8,10 @@ class Config:
     # "GG5HTt40Cpf5@localhost/privacyidea"
     PI_ENCFILE = "tests/testdata/enckey"
     PI_HSM = "default"
+    PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
+    PI_AUDIT_KEY_PRIVATE = "tests/testdata/private.pem"
+    PI_AUDIT_KEY_PUBLIC = "tests/testdata/public.pem"
+    # PI_AUDIT_SQL_URI = sqlite://
 
 
 class DevelopmentConfig(Config):

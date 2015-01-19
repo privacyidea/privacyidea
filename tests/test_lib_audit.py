@@ -25,11 +25,11 @@ class AuditTestCase(MyTestCase):
 
     def setUp(self):
         # Patch ldap.initialize
-        config = {"privacyideaAudit.module":
+        config = {"PI_AUDIT_MODULE":
                       "privacyidea.lib.auditmodules.sqlaudit",
-                  "privacyideaAudit.key.private": "tests/testdata/private.pem",
-                  "privacyideaAudit.key.public": "tests/testdata/public.pem",
-                  "privacyideaAudit.sql.url": "sqlite://"}
+                  "PI_AUDIT_KEY_PRIVATE": "tests/testdata/private.pem",
+                  "PI_AUDIT_KEY_PUBLIC": "tests/testdata/public.pem",
+                  "PI_AUDIT_SQL_URI": "sqlite://"}
         self.Audit = getAudit(config)
 
     def tearDown(self):

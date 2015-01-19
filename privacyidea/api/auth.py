@@ -35,6 +35,8 @@ import json
 from functools import wraps
 from datetime import (datetime,
                       timedelta)
+from privacyidea.lib.audit import getAudit
+
 
 
 # TODO: provide the user object
@@ -54,9 +56,10 @@ def before_request():
     """
     This is executed before the request
     """
-    print "Before system..."
-    g.audit = {"success": False,
-               "info": ""}
+
+    g.audit_object = getAudit(current_app.config)
+    g.audit_object.log({"success": False,
+                        "info": ""})
     request.all_data = remove_session_from_param(request.values, request.data)
 
 

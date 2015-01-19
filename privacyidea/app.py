@@ -50,8 +50,8 @@ def create_app(config_name=None, var2=None):
     :return: The flask application
     :rtype: App object
     """
-    print "var1: %s" % config_name
-    print "var2: %s" % var2
+    print "configname: %s" % config_name
+    print "var2      : %s" % var2
     app = Flask(__name__, static_folder="static",
                 template_folder="static/templates")
     if config_name:

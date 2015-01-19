@@ -30,13 +30,10 @@
 #
 
 from flask import Blueprint
-from flask import jsonify
 from ..lib.log import log_with
 from lib.utils import (optional,
                        send_result,
-                       send_error,
                        send_csv_result, required, remove_session_from_param)
-
 from ..lib.user import get_user_from_param
 from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          unassign_token, remove_token, enable_token,
@@ -45,10 +42,6 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          set_sync_window, set_count_auth,
                          set_hashlib, set_max_failcount, set_realms,
                          copy_token_user, copy_token_pin, lost_token)
-
-from ..lib.config import get_privacyidea_config
-from ..lib.config import get_token_class_dict
-from ..lib.config import get_token_types
 from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
 from privacyidea.lib.error import (ParameterError, TokenAdminError)
@@ -58,12 +51,10 @@ from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
 import logging
 log = logging.getLogger(__name__)
 from lib.utils import getParam
+from flask import request, g
 
 token_blueprint = Blueprint('token_blueprint', __name__)
 
-from flask import request, g
-import traceback
-from .auth import auth_required
 
 __doc__ = """
 The token API can be accessed via /token.
@@ -71,35 +62,6 @@ The token API can be accessed via /token.
 You need to authenticate as administrator to gain access to these token
 functions.
 """
-
-
-@token_blueprint.before_request
-@auth_required
-def before_request():
-    """
-    This is executed before the request
-    """
-    # remove session from param and gather all parameters, either
-    # from the Form data or from JSON in the request body.
-    request.all_data = remove_session_from_param(request.values, request.data)
-    # Already get some typical parameters to log
-    serial = getParam(request.all_data, "serial")
-    realm = getParam(request.all_data, "realm")
-    g.audit = {"success": False,
-               "serial": serial,
-               "realm": realm,
-               "action": "token/%s" % request.url_rule,
-               "action_detail": "",
-               "info": ""}
-
-#@token_blueprint.after_request
-#def after_request():
-#    """
-#    This function is called after a request
-#    :return:
-#    """
-#    # TODO: Do the audit logging
-#    pass
 
 @token_blueprint.route('/init', methods=['POST'])
 @log_with(log, log_entry=False)
@@ -191,17 +153,16 @@ def init():
                              tokenrealms=tokenrealms)
 
     if tokenobject:
-        g.audit['success'] = True
+        g.audit_object.log({"success": True})
         # The token was created successfully, so we add token specific
         # init details like the google URL to the response
         init_details = tokenobject.get_init_detail(param, user)
         response_details.update(init_details)
 
-
-    g.audit['user'] = user.login
-    g.audit['realm'] = user.realm
-    g.audit['serial'] = tokenobject.token.serial
-    g.audit['token_type'] = tokenobject.token.tokentype
+    g.audit_object.log({'user': user.login,
+                        'realm': user.realm,
+                        'serial': tokenobject.token.serial,
+                        'token_type': tokenobject.token.tokentype})
 
     # logTokenNum()
 
@@ -294,13 +255,13 @@ def list_api():
     if realm:
         if realm in filterRealm or '*' in filterRealm:
             filterRealm = [realm]
-    g.audit['info'] = "realm: %s" % (filterRealm)
+    g.audit_object.log({'info': "realm: %s" % (filterRealm)})
 
     # get list of tokens as a dictionary
     tokens = get_tokens_paginate(serial=serial, realm=realm, page=page,
                                  user=user, assigned=assigned, psize=psize,
                                  sortby=sort, sortdir=sdir, tokentype=tokentype)
-    g.audit['success'] = True
+    g.audit_object.log({"success": True})
     if output_format == "csv":
         return send_csv_result(tokens)
     else:
@@ -320,7 +281,7 @@ def assign_api():
     serial = getParam(request.all_data, "serial", required)
     pin = getParam(request.all_data, "pin")
     res = assign_token(serial, user, pin=pin)
-    g.audit["success"] = True
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -338,7 +299,7 @@ def unassign_api():
     user = get_user_from_param(request.all_data, optional)
     serial = getParam(request.all_data, "serial", optional)
     res = unassign_token(serial, user=user)
-    g.audit["success"] = True
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -370,7 +331,7 @@ def enable_api(serial=None):
         serial = getParam(request.all_data, "serial", optional)
 
     res = enable_token(serial, enable=True, user=user)
-    g.audit["success"] = True
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -403,7 +364,7 @@ def disable_api(serial=None):
         serial = getParam(request.all_data, "serial", optional)
 
     res = enable_token(serial, enable=False, user=user)
-    g.audit["success"] = True
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -424,7 +385,7 @@ def delete_api(serial=None):
     :rtype: json object
     """
     res = remove_token(serial)
-    g.audit["success"] = True
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -455,7 +416,7 @@ def reset_api(serial=None):
         serial = getParam(request.all_data, "serial", optional)
 
     res = reset_token(serial, user=user)
-    g.audit["success"] = True
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -485,7 +446,7 @@ def resync_api(serial=None):
     otp2 = getParam(request.all_data, "otp2", required)
 
     res = resync_token(serial, otp1, otp2)
-    g.audit["success"] = True
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -520,14 +481,14 @@ def setpin_api(serial=None):
 
     res = 0
     if userpin:
-        g.audit['action_detail'] += "userpin, "
+        g.audit_object.add_to_log({'action_detail': "userpin, "})
         res += set_pin_user(serial, userpin)
 
     if sopin:
-        g.audit['action_detail'] += "sopin, "
+        g.audit_object.add_to_log({'action_detail': "sopin, "})
         res += set_pin_so(serial, sopin)
 
-    g.audit["success"] = True
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -580,40 +541,47 @@ def set_api(serial=None):
     res = 0
 
     if pin:
-        g.audit['action_detail'] += "pin, "
+        g.audit_object.add_to_log({'action_detail': "pin, "})
         res += set_pin(serial, pin, user=user)
 
     if description:
-        g.audit['action_detail'] += "description=%r, " % description
+        g.audit_object.add_to_log({'action_detail': "description=%r, "
+                                                    "" % description})
         res += set_description(serial, description, user=user)
 
     if count_window:
-        g.audit['action_detail'] += "count_window=%r, " % count_window
+        g.audit_object.add_to_log({'action_detail': "count_window=%r, "
+                                                    "" % count_window})
         res += set_count_window(serial, count_window, user=user)
 
     if sync_window:
-        g.audit['action_detail'] += "sync_window=%r, " % sync_window
+        g.audit_object.add_to_log({'action_detail': "sync_window=%r, "
+                                                    "" % sync_window})
         res += set_sync_window(serial, sync_window, user=user)
 
     if hashlib:
-        g.audit['action_detail'] += "hashlib=%r, " % hashlib
+        g.audit_object.add_to_log({'action_detail': "hashlib=%r, "
+                                                    "" % hashlib})
         res += set_hashlib(serial, hashlib, user=user)
 
     if max_failcount:
-        g.audit['action_detail'] += "max_failcount=%r, " % max_failcount
+        g.audit_object.add_to_log({'action_detail': "max_failcount=%r, "
+                                                    "" % max_failcount})
         res += set_max_failcount(serial, max_failcount, user=user)
 
     if count_auth_max:
-        g.audit['action_detail'] += "count_auth_max=%r, " % count_auth_max
+        g.audit_object.add_to_log({'action_detail': "count_auth_max=%r, "
+                                                    "" % count_auth_max})
         res += set_count_auth(serial, count_auth_max, user=user, max=True)
 
     if count_auth_success_max:
-        g.audit['action_detail'] += "count_auth_success_max=%r, " \
-                                    "" % count_auth_success_max
+        g.audit_object.add_to_log({'action_detail':
+                                       "count_auth_success_max=%r, " %
+                                       count_auth_success_max})
         res += set_count_auth(serial, count_auth_success_max, user=user,
                               max=True, success=True)
 
-    g.audit["success"] = True
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -643,7 +611,7 @@ def tokenrealm_api(serial=None):
         realm_list = [r.strip() for r in realms.split(",")]
 
     res = set_realms(serial, realms=realm_list)
-    g.audit["success"] = True
+    g.audit_object.log({"success": True})
     return send_result(res == 1)
 
 
@@ -745,10 +713,10 @@ def loadtokens_api(filename=None):
         init_token(init_param, tokenrealms=tokenrealms)
 
 
-
-    g.audit['info'] = "%s, %s (imported: %i)" % (file_type, token_file,
-                                                 len(TOKENS))
-    g.audit['serial'] = ', '.join(TOKENS.keys())
+    g.audit_object.log({'info': "%s, %s (imported: %i)" % (file_type,
+                                                              token_file,
+                                                 len(TOKENS)),
+                        'serial': ', '.join(TOKENS.keys())})
     # logTokenNum()
 
     return send_result(len(TOKENS))
@@ -775,7 +743,7 @@ def copypin_api():
     serial_from = getParam(request.all_data, "from", required)
     serial_to = getParam(request.all_data, "to", required)
     res = copy_token_pin(serial_from, serial_to)
-    g.audit["success"] = True
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -800,7 +768,7 @@ def copyuser_api():
     serial_from = getParam(request.all_data, "from", required)
     serial_to = getParam(request.all_data, "to", required)
     res = copy_token_user(serial_from, serial_to)
-    g.audit["success"] = True
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -823,7 +791,7 @@ def lost_api(serial=None):
     """
     res = lost_token(serial)
 
-    g.audit["success"] = True
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 

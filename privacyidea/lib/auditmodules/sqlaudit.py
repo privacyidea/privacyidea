@@ -22,14 +22,14 @@ __doc__ = """The SQL Audit Module is used to write audit entries to an SQL
 database.
 The SQL Audit Module is configured like this:
 
-    privacyideaAudit.module = privacyidea.lib.auditmodules.sqlaudit
-    privacyideaAudit.key.private = tests/testdata/private.pem
-    privacyideaAudit.key.public = tests/testdata/public.pem
+    PI_AUDIT_MODULE = privacyidea.lib.auditmodules.sqlaudit
+    PI_AUDIT_KEY_PRIVATE = tests/testdata/private.pem
+    PI_AUDIT_KEY_PUBLIC = tests/testdata/public.pem
 
     Optional:
-    privacyideaAudit.sql.url = sqlite://
+    PI_AUDIT_SQL_URI = sqlite://
 
-If the privacyideaAudit.sql.url is omitted the Audit data is written to the
+If the PI_AUDIT_SQL_URI is omitted the Audit data is written to the
 token database.
 """
 
@@ -111,22 +111,22 @@ class Audit(AuditBase):
     """
     This is the SQLAudit module, which writes the audit entries
     to an SQL database table.
-    It requires the configuration parameters:
-    
-    privacyideaAudit.sql.url (default: sqlalchemy.url)
+    It requires the configuration parameters.
+    PI_AUDIT_SQL_URI
     """
     
     def __init__(self, config=None):
         self.name = "sqlaudit"
         self.config = config or {}
         self.audit_data = {}
-        self.read_keys(self.config.get("privacyideaAudit.key.public"),
-                       self.config.get("privacyideaAudit.key.private"))
+        self.read_keys(self.config.get("PI_AUDIT_KEY_PUBLIC"),
+                       self.config.get("PI_AUDIT_KEY_PRIVATE"))
         
         # an Engine, which the Session will use for connection
         # resources
-        connect_string = self.config.get("privacyideaAudit.sql.url",
-                                        self.config.get("sqlalchemy.url"))
+        connect_string = self.config.get("PI_AUDIT_SQL_URI",
+                                        self.config.get(
+                                            "SQLALCHEMY_DATABASE_URI"))
         log.info("using the connect string %s" % connect_string)
         self.engine = create_engine(connect_string)
 
@@ -192,6 +192,15 @@ class Audit(AuditBase):
         for k, v in param.iteritems():
             self.audit_data[k] = v
 
+    def add_to_log(self, param):
+        """
+        Add new text to an existing log entry
+        :param param:
+        :return:
+        """
+        for k, v in param.iteritems():
+            self.audit_data[k] += v
+
     def finalize_log(self):
         """
         This method is used to log the data.
@@ -222,6 +231,7 @@ class Audit(AuditBase):
             self.session.commit()
         except Exception as exx:  # pragma nocover
             log.error("exception %r" % exx)
+            log.error("DATA: %s" % self.audit_data)
             log.error("%s" % traceback.format_exc())
             self.session.rollback()
 

@@ -131,8 +131,9 @@ def set_realm_api(realm=None):
     else:
         Resolvers = resolvers.split(',')
     (added, failed) = set_realm(realm, Resolvers)
-    g.audit['success'] = len(added) == len(Resolvers)
-    g.audit['info'] = "realm: %r, resolvers: %r" % (realm, resolvers)
+    g.audit_object.log({'success': len(added) == len(Resolvers),
+                        'info':  "realm: %r, resolvers: %r" % (realm,
+                                                               resolvers)})
     return send_result({"added": added,
                         "failed": failed})
 
@@ -183,7 +184,7 @@ def get_realms_api():
         }
     """
     realms = get_realms()
-    g.audit['success'] = True
+    g.audit_object.log({"success": True})
 
     # If the admin is not allowed to see all realms,
     # (policy scope=system, action=read)
@@ -210,8 +211,8 @@ def set_default_realm_api(realm=None):
     """
     realm = realm.lower().strip()
     r = set_default_realm(realm)
-    g.audit['success'] = r
-    g.audit['info'] = realm
+    g.audit_object.log({"success": r,
+                        "info": realm})
     return send_result(r)
 
 
@@ -238,8 +239,8 @@ def delete_default_realm_api(realm=None):
         }
     """
     r = set_default_realm("")
-    g.audit['success'] = r
-    g.audit['info'] = ""
+    g.audit_object.log({"success": r,
+                        "info": ""})
     return send_result(r)
 
 
@@ -280,8 +281,8 @@ def get_default_realm_api():
     if defRealm:
         res = get_realms(defRealm)
 
-    g.audit['success'] = True
-    g.audit['info'] = defRealm
+    g.audit_object.log({"success": True,
+                        "info": defRealm})
 
     return send_result(res)
 
@@ -324,8 +325,8 @@ def delete_realm_api(realm=None):
 
     """
     ret = delete_realm(realm)
-    g.audit['success'] = ret
-    g.audit['info'] = realm
+    g.audit_object.log({"success": ret,
+                        "info": realm})
 
     return send_result(ret)
 

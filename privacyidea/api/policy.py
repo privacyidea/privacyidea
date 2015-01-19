@@ -144,14 +144,14 @@ def set_policy_api(name=None):
     client = getParam(param, "client", optional)
     active = getParam(param, "active", optional)
 
-    g.audit['action_detail'] = unicode(param)
+    g.audit_object.log({'action_detail': unicode(param)})
     ret = set_policy(name=name, scope=scope, action=action, realm=realm,
                      resolver=resolver, user=user, client=client,
                      active=active or True)
     log.debug("policy %s successfully saved." % name)
     string = "setPolicy " + name
     res[string] = ret
-    g.audit['success'] = True
+    g.audit_object.log({"success": True})
 
     return send_result(res)
 
@@ -237,9 +237,9 @@ def get_policy(name=None, export=None):
                                                    "filename=%s" % export)
         ret = response
 
-    g.audit['success'] = True
-    g.audit['info'] = ("name = %s, realm = %s, scope = %s" %
-                       (name, realm, scope))
+    g.audit_object.log({"success": True,
+                        'info': "name = %s, realm = %s, scope = %s" %
+                       (name, realm, scope)})
     return ret
 
 
@@ -288,8 +288,8 @@ def delete_policy_api(name=None):
        }
     """
     ret = delete_policy(name)
-    g.audit['success'] = ret
-    g.audit['info'] = name
+    g.audit_object.log({'success': ret,
+                        'info': name})
     return send_result(ret)
 
 
@@ -357,9 +357,9 @@ def import_policy_api(filename=None):
         raise ParameterError("Error loading policy. File empty!")
 
     policy_num = import_policies(file_contents=file_contents)
-    g.audit['info'] = ("imported %d policies from file %s" % (policy_num,
-                                                              filename))
-    g.audit['success'] = 1
+    g.audit_object.log({"success": True,
+                        'info': "imported %d policies from file %s" % (
+                            policy_num, filename)})
 
     return send_result(policy_num)
 
@@ -442,14 +442,15 @@ def check_policy_api():
     if len(policies) > 0:
         res["allowed"] = True
         res["policy"] = policies
-        g.audit['info'] = "allowed by policy %s" % policies.keys()
+        g.audit_object.log({'info': "allowed by policy %s" % policies.keys()})
     else:
         res["allowed"] = False
         res["info"] = "No policies found"
 
-    g.audit['action_detail'] = "action = %s, realm = %s, scope = %s"\
-                               % (action, realm, scope)
-    g.audit['success'] = True
+    g.audit_object.log({"success": True,
+                        'action_detail': "action = %s, realm = %s, scope = "
+                                         "%s" % (action, realm, scope)
+                        })
 
     return send_result(res)
 

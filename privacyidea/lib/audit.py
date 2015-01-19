@@ -32,17 +32,17 @@ __doc__="""This is the BaseClass for audit trails
 The audit is supposed to work like this. First we need to create an audit
 object. E.g. this can be done in the before_request:
 
-    g["audit_obj"] = getAudit(file_config)
+    g.audit_object = getAudit(file_config)
 
-During the request, the g.audit_obj can be used to add audit information:
+During the request, the g.audit_object can be used to add audit information:
 
-    g["audit_obj"].log({"client": "123.2.3.4", "action": "validate/check"})
+    g.audit_object.log({"client": "123.2.3.4", "action": "validate/check"})
 
 Thus at many different places in the code, audit information can be added to
 the audit object.
 Finally the audit_object needs to be stored to the audit storage. So we call:
 
-    g["audit_obj"].finalize_log()
+    g.audit_object.finalize_log()
 
 which creates a signature of the audit data and writes the data to the audit
 storage.
@@ -91,7 +91,7 @@ def getAudit(config):
     This wrapper function creates a new audit object based on the config
     from the config file. The config file entry could look like this:
 
-        privacyideaAudit.module = privacyidea.lib.auditmodules.sqlaudit
+        PI_AUDIT_MODULE = privacyidea.lib.auditmodules.sqlaudit
 
     Each audit module (at the moment only SQL) has its own additional config
     entries.
@@ -99,7 +99,7 @@ def getAudit(config):
     :param config: The config entries from the file config
     :return: Audit Object
     """
-    audit_module = config.get("privacyideaAudit.module")
+    audit_module = config.get("PI_AUDIT_MODULE")
     audit = getAuditClass(audit_module, "Audit")(config)
     return audit
 
@@ -290,6 +290,14 @@ class AuditBase(object):
         This method is used to log the data.
         During a request this method can be called several times to fill the
         internal audit_data dictionary.
+        """
+        pass
+
+    def add_to_log(self, param):
+        """
+        Add to existing log entry
+        :param param:
+        :return:
         """
         pass
 

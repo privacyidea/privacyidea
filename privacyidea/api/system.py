@@ -62,6 +62,7 @@ from ..lib.error import (ParameterError,
                          AuthError,
                          PolicyError)
 from ..lib.token import get_dynamic_policy_definitions
+from ..lib.audit import getAudit
 
 from .auth import (check_auth_token,
                    auth_required)
@@ -87,6 +88,52 @@ from .policy import policy_blueprint
 from .realm import realm_blueprint
 from .realm import defaultrealm_blueprint
 from .user import user_blueprint
+from .token import token_blueprint
+
+
+@system_blueprint.before_request
+@resolver_blueprint.before_request
+@realm_blueprint.before_request
+@defaultrealm_blueprint.before_request
+@policy_blueprint.before_request
+@user_blueprint.before_request
+@token_blueprint.before_request
+@auth_required
+def before_request():
+    """
+    This is executed before the request
+    """
+    g.Policy = PolicyClass()
+    # remove session from param and gather all parameters, either
+    # from the Form data or from JSON in the request body.
+    request.all_data = remove_session_from_param(request.values, request.data)
+    # Already get some typical parameters to log
+    serial = getParam(request.all_data, "serial")
+    realm = getParam(request.all_data, "realm")
+
+    g.audit_object = getAudit(current_app.config)
+    g.audit_object.log({"success": False,
+                        "serial": serial,
+                        "realm": realm,
+                        "action": request.url_rule,
+                        "action_detail": "",
+                        "info": ""})
+
+
+@system_blueprint.after_request
+@resolver_blueprint.after_request
+@realm_blueprint.after_request
+@defaultrealm_blueprint.after_request
+@policy_blueprint.after_request
+@user_blueprint.after_request
+@token_blueprint.after_request
+def after_request(response):
+    """
+    This function is called after a request
+    :return:
+    """
+    g.audit_object.finalize_log()
+    return response
 
 
 @system_blueprint.errorhandler(AuthError)
@@ -95,6 +142,7 @@ from .user import user_blueprint
 @resolver_blueprint.app_errorhandler(AuthError)
 @policy_blueprint.app_errorhandler(AuthError)
 @user_blueprint.app_errorhandler(AuthError)
+@token_blueprint.app_errorhandler(AuthError)
 def auth_error(error):
     return send_error(error.description, error_code=-401), error.status_code
 
@@ -105,6 +153,7 @@ def auth_error(error):
 @resolver_blueprint.app_errorhandler(PolicyError)
 @policy_blueprint.app_errorhandler(PolicyError)
 @user_blueprint.app_errorhandler(PolicyError)
+@token_blueprint.app_errorhandler(PolicyError)
 def policy_error(error):
     return send_error(error.description), error.status_code
 
@@ -115,38 +164,15 @@ def policy_error(error):
 @resolver_blueprint.app_errorhandler(500)
 @policy_blueprint.app_errorhandler(500)
 @user_blueprint.app_errorhandler(500)
+@token_blueprint.app_errorhandler(500)
 def internal_error(e):
     """
     This function is called when an internal error (500) occurs.
     This is each time an exception is thrown.
     """
-    #g.audit['info'] = unicode(e)
     response = send_error(unicode(e))
     response.status_code = 500
     return response
-
-    
-@system_blueprint.before_request
-@resolver_blueprint.before_request
-@realm_blueprint.before_request
-@defaultrealm_blueprint.before_request
-@policy_blueprint.before_request
-@user_blueprint.before_request
-@auth_required
-def before_request():
-    """
-    This is executed before the request
-    """
-    print "Before system..."
-    g.audit = {"success": False,
-               "info": ""}
-    
-    #check_auth_token()
-    g.Policy = PolicyClass()
-    
-    # remove session from param and gather all parameters, either
-    # from the Form data or from JSON in the request body.
-    request.all_data = remove_session_from_param(request.values, request.data)
 
 
 @system_blueprint.route('/<key>', methods=['GET'])
@@ -195,8 +221,8 @@ def set_config():
         value = getParam(param, key, optional)
         res = set_privacyidea_config(key, value)
         result[key] = res
-        g.audit['success'] = True
-        g.audit['info'] += "%s=%s, " % (key, value)
+        g.audit_object.log({"success": True})
+        g.audit_object.add_to_log({"info": "%s=%s, " % (key, value)})
     return send_result(result)
 
 
@@ -246,9 +272,9 @@ def set_default():
             value = getParam(param, k.lower(), required)
             res = set_privacyidea_config(k, value)
             result[k] = res
-            g.audit['success'] = True
-            g.audit['info'] += "%s=%s, " % (k, value)
-    
+            g.audit_object.log({"success": True})
+            g.audit_object.add_to_log({"info": "%s=%s, " % (k, value)})
+
     if len(result) == 0:
         log.warning("Failed saving config. Could not find any "
                     "known parameter. %s"
@@ -272,8 +298,8 @@ def delete_config(key=None):
     if not key:
         raise ParameterError("You need to provide the config key to delete.")
     res = delete_privacyidea_config(key)
-    g.audit['success'] = res
-    g.audit['info'] = key
+    g.audit_object.log({'success': res,
+                        'info': key})
     return send_result(res)
 
 
@@ -306,8 +332,8 @@ def get_policy_defs(scope=None):
     if scope:
         pol = pol.get(scope)
 
-    g.audit['success'] = True
-    g.audit['info'] = scope
+    g.audit_object.log({"success": True,
+                        'info': scope})
     return send_result(pol)
 
 """
