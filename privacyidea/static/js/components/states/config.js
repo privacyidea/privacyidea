@@ -53,6 +53,14 @@ angular.module('privacyideaApp.config', ['ui.router']).config(
                     url: "/ldap/{resolvername:.*}",
                     templateUrl: "/static/views/config.resolvers.ldap.html"
                 })
+                .state('config.resolvers.addsqlresolver', {
+                    url: "/ldap",
+                    templateUrl: "/static/views/config.resolvers.sql.html"
+                })
+                .state('config.resolvers.editsqlresolver', {
+                    url: "/ldap/{resolvername:.*}",
+                    templateUrl: "/static/views/config.resolvers.sql.html"
+                })
                 .state('config.system', {
                     url: "/system",
                     templateUrl: "/static/views/config.system.html"

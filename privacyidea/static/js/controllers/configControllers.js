@@ -116,6 +116,17 @@ myApp.controller("configController", function ($scope, $location,
     $scope.getResolvers();
     $scope.selectedResolvers = {};
 
+    $scope.showResult = false;
+    $scope.testResolver = function () {
+        ConfigFactory.testResolver($scope.params, function (data) {
+            $scope.result = {
+                result: data.result.value,
+                description: data.detail.description
+            };
+            $scope.showResult = true;
+        });
+    }
+
 });
 
 myApp.controller("PasswdResolverController", function ($scope, ConfigFactory, $state, $stateParams) {
@@ -156,7 +167,6 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
     };
     $scope.result = {};
     $scope.resolvername = $stateParams.resolvername;
-    $scope.showResult = false;
 
     if ($scope.resolvername) {
         /* If we have a resolvername, we do an Edit
@@ -198,8 +208,8 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
         });
     };
 
-    $scope.testLDAP = function () {
-        ConfigFactory.testLDAPResolver($scope.params, function (data) {
+    $scope.testResolver = function () {
+        ConfigFactory.testResolver($scope.params, function (data) {
             $scope.result = {
                 result: data.result.value,
                 description: data.detail.description
@@ -207,4 +217,67 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
             $scope.showResult = true;
         });
     }
+
+});
+
+myApp.controller("SqlResolverController", function ($scope, ConfigFactory, $state, $stateParams) {
+    /*
+
+     */
+    $scope.params = {
+        type: 'sqlresolver'
+    };
+    $scope.result = {};
+    $scope.resolvername = $stateParams.resolvername;
+    $scope.showResult = false;
+
+    if ($scope.resolvername) {
+        /* If we have a resolvername, we do an Edit
+        and we need to fill all the $scope.params */
+        ConfigFactory.getResolver($scope.resolvername, function (data) {
+            var resolver = data.result.value[$scope.resolvername];
+            console.log(resolver);
+            $scope.params = resolver.data;
+            $scope.params.type = 'sqlresolver';
+        });
+    }
+
+    $scope.presetWordpress = function () {
+        $scope.params.Table = "wp_users";
+        $scope.params.Map = '{ "userid" : "ID", "username": "user_login", "email" : "user_email", "givenname" : "display_name", "password" : "user_pass" }';
+    };
+
+        $scope.presetOTRS = function () {
+        $scope.params.Table = "users";
+        $scope.params.Map = '{ "userid" : "id", "username": "login", "givenname" : "first_name", "surname" : "last_name", "password" : "pw" }';
+    };
+
+    $scope.presetTine = function () {
+        $scope.params.Table = "tine20_accounts";
+        $scope.params.Map = '{ "userid" : "id", "username": "login_name", "email" : "email", "givenname" : "first_name", "surname" : "last_name", "password" : "password" }';
+    };
+
+    $scope.presetOwncloud = function () {
+        $scope.params.Table = "oc_users";
+        $scope.params.Map = '{ "userid" : "uid", "username": "uid", "givenname" : "displayname", "password" : "password" }';
+    };
+
+    $scope.setSQLResolver = function () {
+        ConfigFactory.setResolver($scope.resolvername, $scope.params, function (data) {
+            $scope.set_result = data.result.value;
+            $scope.getResolvers();
+            $state.go("config.resolvers.list");
+        });
+    };
+
+    $scope.testSQL = function () {
+        ConfigFactory.testResolver($scope.params, function (data) {
+            $scope.result = {
+                result: data.result.value,
+                description: data.detail.description
+            };
+            $scope.showResult = true;
+        });
+    }
+
 });

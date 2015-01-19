@@ -56,7 +56,7 @@ myApp.factory("ConfigFactory", function (auth, $http, $state, $rootScope,
                           'Content-Type': 'application/json'}}).success(
                 callback).error(error_func);
         },
-        testLDAPResolver: function (params, callback) {
+        testResolver: function (params, callback) {
             $http.post(resolverUrl + "/test", params,
                 {headers: {'Authorization': auth.getAuthToken(),
                           'Content-Type': 'application/json'}}).success(
