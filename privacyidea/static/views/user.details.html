@@ -11,7 +11,10 @@
         username: "pulse"
     -->
     <h2>Details for user {{ username }} in realm
-        <a ui-sref="config.realms.list">{{ realmname }}</a></h2>
+        <a ui-sref="config.realms.list">{{ realmname }}</a>
+        <a class="btn btn-default" ui-sref="audit({user: username})">
+        View user in Audit log</a>
+    </h2>
 
     <div class="panel-body">
         <div class="col-xs-6">

@@ -89,6 +89,7 @@ from .realm import realm_blueprint
 from .realm import defaultrealm_blueprint
 from .user import user_blueprint
 from .token import token_blueprint
+from .audit import audit_blueprint
 
 
 @system_blueprint.before_request
@@ -98,12 +99,12 @@ from .token import token_blueprint
 @policy_blueprint.before_request
 @user_blueprint.before_request
 @token_blueprint.before_request
+
 @auth_required
 def before_request():
     """
     This is executed before the request
     """
-    g.Policy = PolicyClass()
     # remove session from param and gather all parameters, either
     # from the Form data or from JSON in the request body.
     request.all_data = remove_session_from_param(request.values, request.data)
@@ -115,9 +116,14 @@ def before_request():
     g.audit_object.log({"success": False,
                         "serial": serial,
                         "realm": realm,
-                        "action": request.url_rule,
+                        "client": request.remote_addr,
+                        "client_user_agent": request.user_agent.browser,
+                        "privcyidea_server": request.host,
+                        "action": "%s %s" % (request.method, request.url_rule),
+                        "administrator": g.logged_in_user,
                         "action_detail": "",
                         "info": ""})
+    g.Policy = PolicyClass()
 
 
 @system_blueprint.after_request
@@ -127,12 +133,16 @@ def before_request():
 @policy_blueprint.after_request
 @user_blueprint.after_request
 @token_blueprint.after_request
+@audit_blueprint.after_request
 def after_request(response):
     """
     This function is called after a request
-    :return:
+    :return: The response
     """
-    g.audit_object.finalize_log()
+    # In certain error cases the before_request was not handled
+    # completely so that we do not have an audit_object
+    if "audit_object" in g:
+        g.audit_object.finalize_log()
     return response
 
 
@@ -143,6 +153,7 @@ def after_request(response):
 @policy_blueprint.app_errorhandler(AuthError)
 @user_blueprint.app_errorhandler(AuthError)
 @token_blueprint.app_errorhandler(AuthError)
+@audit_blueprint.app_errorhandler(AuthError)
 def auth_error(error):
     return send_error(error.description, error_code=-401), error.status_code
 
@@ -154,6 +165,7 @@ def auth_error(error):
 @policy_blueprint.app_errorhandler(PolicyError)
 @user_blueprint.app_errorhandler(PolicyError)
 @token_blueprint.app_errorhandler(PolicyError)
+@audit_blueprint.app_errorhandler(PolicyError)
 def policy_error(error):
     return send_error(error.description), error.status_code
 
@@ -165,6 +177,7 @@ def policy_error(error):
 @policy_blueprint.app_errorhandler(500)
 @user_blueprint.app_errorhandler(500)
 @token_blueprint.app_errorhandler(500)
+@audit_blueprint.app_errorhandler(500)
 def internal_error(e):
     """
     This function is called when an internal error (500) occurs.

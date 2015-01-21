@@ -7,43 +7,50 @@
 <div class="table-responsive">
     <table class="table table-bordered table-striped">
         <thead>
-            <tr>
-                <th> <button class="btn btn-default unsorted"
-                             pi-sort-by="serial">serial</button>
-                    <span class="glyphicon glyphicon-filter"
-                            ng-click="serialFiltered=!serialFiltered"
-                            ng-class="{filtered:serialFilter}"></span>
-                <input ng-model="serialFilter" ng-change="getTokens()"
-                       ng-show="serialFiltered"
-                       placeholder="filter" class="form-control">
-                </th>
-                <th> <button class="btn btn-default unsorted"
-                             pi-sort-by="tokentype">type</button>
-                    <span class="glyphicon glyphicon-filter"
-                            ng-click="typeFiltered=!typeFiltered"
-                            ng-class="{filtered:typeFilter}"></span>
-                    <input ng-model="typeFilter" ng-change="getTokens()"
-                       ng-show="typeFiltered"
-                       placeholder="filter" class="form-control">
-                </th>
-                <th><button pi-sort-by="active"
-                            class="btn btn-default
-                            unsorted">active</button></th>
-                <th><button pi-sort-by="description"
-                       class="btn btn-default
-                       unsorted">description</button></th>
-                <th><button pi-sort-by="failcount"
-                         class="btn btn-default
-                         unsorted">failcounter</button></th>
-                <th>user</th>
-                <th>realm</th>
-            </tr>
+        <tr>
+            <th>
+                <button class="btn btn-default unsorted"
+                        pi-sort-by="serial">serial
+                </button>
+                <pi-filter ng-model="serialFilter"
+                           ng-change="getTokens()"></pi-filter>
+            </th>
+            <th>
+                <button class="btn btn-default unsorted"
+                        pi-sort-by="tokentype">type
+                </button>
+                <pi-filter ng-model="typeFilter"
+                           ng-change="getTokens()"></pi-filter>
+            </th>
+            <th>
+                <button pi-sort-by="active"
+                        class="btn btn-default
+                            unsorted">active
+                </button>
+            </th>
+            <th>
+                <button pi-sort-by="description"
+                        class="btn btn-default
+                       unsorted">description
+                </button>
+                <pi-filter ng-model="descriptionFilter"
+                           ng-change="getTokens()"></pi-filter>
+            </th>
+            <th>
+                <button pi-sort-by="failcount"
+                        class="btn btn-default
+                         unsorted">failcounter
+                </button>
+            </th>
+            <th>user</th>
+            <th>realm</th>
+        </tr>
         </thead>
         <tbody>
         <tr ng-repeat="token in tokendata.tokens">
             <td><a ui-sref="token.details({tokenSerial:token.serial,
             currentToken:token})"
-                    ng-click="$rootScope.returnTo=token.list;">
+                   ng-click="$rootScope.returnTo=token.list;">
                 {{ token.serial }}</a></td>
             <td>{{ token.tokentype }}</td>
             <td>
@@ -57,11 +64,12 @@
             <!--<td>{{ token.count_window }}</td>-->
             <td>{{ token.description }}</td>
             <td><span class="label"
-                  ng-class="{'label-success': token.failcount==0,
+                      ng-class="{'label-success': token.failcount==0,
                    'label-warning': token.failcount>0,
                    'label-danger': token.failcount>=token.maxfail}">
             {{ token.failcount }}
-            </span></td></td>
+            </span></td>
+            </td>
             <!--<td>{{ token.maxfail }}</td>-->
             <!--<td>{{ token.otplen }}</td>-->
             <td><a ui-sref="user.details({username: token.username,

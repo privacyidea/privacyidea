@@ -28,15 +28,37 @@ It only provides the method
 from flask import (Blueprint,
                    request, current_app)
 from lib.utils import (getParam,
-                       send_result)
+                       send_result, remove_session_from_param)
 from flask import g
 import logging
 from ..lib.audit import search
 log = logging.getLogger(__name__)
-
+from ..lib.audit import getAudit
+from .auth import auth_required
+from ..lib.policy import PolicyClass
 
 audit_blueprint = Blueprint('audit_blueprint', __name__)
 
+
+@audit_blueprint.before_request
+@auth_required
+def before_request():
+    """
+    This is executed before the request
+    """
+    # remove session from param and gather all parameters, either
+    # from the Form data or from JSON in the request body.
+    request.all_data = remove_session_from_param(request.values, request.data)
+    g.audit_object = getAudit(current_app.config)
+    g.audit_object.log({"success": False,
+                        "client": request.remote_addr,
+                        "client_user_agent": request.user_agent.browser,
+                        "privcyidea_server": request.host,
+                        "action": "%s %s" % (request.method, request.url_rule),
+                        "administrator": g.logged_in_user,
+                        "action_detail": "",
+                        "info": ""})
+    g.Policy = PolicyClass()
 
 @audit_blueprint.route('/', methods=['GET'])
 def search_audit():
@@ -69,42 +91,8 @@ def search_audit():
             "status": true,
             "value": [
               {
-                "action": "GET /system/",
-                "action_detail": "",
-                "administrator": null,
-                "clearance_level": null,
-                "client": "",
-                "date": "2015-01-21T09:06:03.685705",
-                "info": "",
-                "log_level": null,
-                "missing_line": "FAIL",
-                "number": 66,
-                "privacyidea_server": null,
-                "realm": null,
-                "serial": null,
-                "sig_check": "OK",
-                "success": 0,
-                "token_type": null,
-                "user": null
-              },
-              {
-                "action": "GET /resolver/",
-                "action_detail": "",
-                "administrator": null,
-                "clearance_level": null,
-                "client": "",
-                "date": "2015-01-21T09:06:03.394826",
-                "info": "",
-                "log_level": null,
-                "missing_line": "OK",
-                "number": 65,
-                "privacyidea_server": null,
-                "realm": null,
-                "serial": null,
-                "sig_check": "OK",
-                "success": 1,
-                "token_type": null,
-                "user": null
+                 "serial": "....",
+                 "missing_line": "..."
               }
             ]
           },
@@ -113,8 +101,8 @@ def search_audit():
     """
     output_format = getParam(request.all_data, "outform")
 
-    audit_list = search(current_app.config, request.all_data)
+    audit_dict = search(current_app.config, request.all_data)
 
     g.audit_object.log({'success': True})
     
-    return send_result(audit_list)
+    return send_result(audit_dict)

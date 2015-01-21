@@ -34,12 +34,29 @@ myApp.directive('tokenDataEdit', function() {
     }
 });
 
+myApp.directive("piFilter", function () {
+    return {
+        require: 'ngModel',
+        restrict: 'E',
+        scope: {},
+        templateUrl: "static/views/directive.filter.table.html",
+        link: function (scope, element, attr, ctrl) {
+            scope.updateFilter = function() {
+                ctrl.$setViewValue(scope.filterValue);
+            };
+            ctrl.$viewChangeListeners.push(function(){
+              scope.$eval(attr.ngChange);
+            });
+        }
+    }
+});
+
 myApp.directive("piSortBy", function(){
     return {
         restrict: 'A',
         link: function(scope, element, attr) {
             element.on('click', function() {
-                column = attr.piSortBy
+                column = attr.piSortBy;
                 scope.params.sortby=column;
                 scope.reverse=!scope.reverse;
                 $(".sortUp").addClass("unsorted");
@@ -57,6 +74,7 @@ myApp.directive("piSortBy", function(){
         }
     }
 });
+
 
 myApp.directive('assignUser', function($http, userUrl, auth, ConfigFactory) {
     /*
@@ -153,3 +171,16 @@ myApp.directive('equals', function() {
   }
 });
 
+myApp.directive('statusClass', function() {
+    return {
+        link: function (scope, element, attrs, ngModel) {
+            if (["OK", "1", 1].indexOf( attrs.statusClass )>-1) {
+                element.addClass("label label-success");
+                element.removeClass("label-danger");
+            } else {
+                element.addClass("label label-danger");
+                element.removeClass("label-success");
+            }
+        }
+    };
+});

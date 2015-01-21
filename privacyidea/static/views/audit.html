@@ -1,1 +1,83 @@
-This is the audit view.
+<div class="well">
+    <pagination ng-show="auditdata.count > 10"
+                total-items="auditdata.count" ng-model="params.page"
+                items-per-page="10"
+                max-size="5"
+                boundary-links="true" ng-change="pageChanged()"></pagination>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead>
+            <tr>
+                <th>number</th>
+                <th>date</th>
+                <th>action
+                    <pi-filter ng-model="actionFilter"
+                               ng-change="getAuditList()">
+                </th>
+                <th>success
+                    <pi-filter ng-model="successFilter"
+                               ng-change="getAuditList()">
+                </th>
+                <th>action detail
+                    <pi-filter ng-model="action_detailFilter"
+                               ng-change="getAuditList()">
+                </th>
+                <th>serial
+                    <pi-filter ng-model="serialFilter"
+                               ng-change="getAuditList()"></pi-filter>
+                </th>
+                <th>token type
+                    <pi-filter ng-model="typeFilter"
+                               ng-change="getAuditList()">
+                </th>
+                <th>administrator
+                    <pi-filter ng-model="administratorFilter"
+                               ng-change="getAuditList()">
+                </th>
+                <th>user
+                    <pi-filter ng-model="userFilter"
+                               ng-change="getAuditList()">
+                </th>
+                <th>realm</th>
+                <th>client</th>
+                <th>info</th>
+                <th>sig_check</th>
+                <th>missing_line</th>
+                <th>clearance</th>
+                <th>log level</th>
+                <th>privacyidea server</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="audit in auditdata.auditdata">
+                <td>{{ audit.number }}</td>
+                <td>{{ audit.date | date:'medium' }}</td>
+                <td>{{ audit.action }}</td>
+                <td><span status-class="{{ audit.success }}">
+                {{ audit.success }}
+            </span></td>
+                <td>{{ audit.action_detail }}</td>
+                <td><a ui-sref="token.details({tokenSerial:audit.serial})"
+                       ng-click="$rootScope.returnTo=audit;">
+                    {{ audit.serial }}</a></td>
+                <td>{{ audit.token_type }}</td>
+                <td>{{ audit.administrator }}</td>
+                <td>{{ audit.user }}</td>
+                <td>{{ audit.realm }}</td>
+                <td>{{ audit.client }}</td>
+                <td>{{ audit.info }}</td>
+                <td><span status-class="{{ audit.sig_check }}">
+                {{ audit.sig_check }}
+            </span></td>
+                <td><span status-class="{{ audit.missing_line }}">
+                {{ audit.missing_line }}</span></td>
+                <td>{{ audit.clearance_level }}</td>
+                <td>{{ audit.log_level }}</td>
+                <td>{{ audit.privacyidea_server }}</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>

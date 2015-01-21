@@ -7,7 +7,6 @@
 #            Complete rewrite during flask migration
 #            Try to provide REST API
 #
-#
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
 # License as published by the Free Software Foundation; either
@@ -43,17 +42,27 @@ def before_request():
     This is executed before the request
     """
     request.all_data = remove_session_from_param(request.values, request.data)
-    # Already get some typical parameters to log
-    serial = getParam(request.all_data, "serial")
-    realm = getParam(request.all_data, "realm")
-
     g.audit_object = getAudit(current_app.config)
     g.audit_object.log({"success": False,
-                        "serial": serial,
-                        "realm": realm,
-                        "action": "token/%s" % request.url_rule,
                         "action_detail": "",
+                        "client": request.remote_addr,
+                        "client_user_agent": request.user_agent.browser,
+                        "privcyidea_server": request.host,
+                        "action": "%s %s" % (request.method, request.url_rule),
                         "info": ""})
+
+
+@validate_blueprint.after_request
+def after_request(response):
+    """
+    This function is called after a request
+    :return: The response
+    """
+    # In certain error cases the before_request was not handled
+    # completely so that we do not have an audit_object
+    if "audit_object" in g:
+        g.audit_object.finalize_log()
+    return response
 
 
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
@@ -72,7 +81,7 @@ def check():
 
     :return: a json result with a boolean "result": true
 
-    **Example response** for a succesful authentication:
+    **Example response** for a successful authentication:
 
        .. sourcecode:: http
 
@@ -97,6 +106,12 @@ def check():
     else:
         result, details = check_user_pass(user, password)
 
+    g.audit_object.log({"info": details.get("message"),
+                        "success": result,
+                        "serial": serial or details.get("serial"),
+                        "tokentype": details.get("type"),
+                        "user": user.login,
+                        "realm": user.realm})
     return send_result(result, details=details)
 
 
@@ -137,6 +152,13 @@ def simplecheck():
         ret = ":-)"
     else:
         ret = ":-("
+
+    g.audit_object.log({"info": details.get("message"),
+                        "success": result,
+                        "serial": serial or details.get("serial"),
+                        "tokentype": details.get("type"),
+                        "user": user.login,
+                        "realm": user.realm})
     return ret
 
 

@@ -1,0 +1,5 @@
+<span class="glyphicon glyphicon-filter"
+      ng-click="filterVisible=!filterVisible"
+      ng-class="{filtered:filterValue}"></span>
+ <input ng-show="filterVisible" ng-change="updateFilter()"
+        ng-model="filterValue" placeholder="filter" class="form-control">

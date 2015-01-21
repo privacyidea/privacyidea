@@ -104,92 +104,62 @@ def getAudit(config):
     return audit
 
 
-
 @log_with(log)
-def search(param, user=None, columns=None):
+def search(config, param=None, user=None):
+    """
+    Returns a list of audit entries, supports pagination
 
-    audit = getAudit()
-
-    search_dict = {}
-
-    if "query" in param:
-        if "extsearch" == param['qtype']:
-            # search patterns are delimitered with ;
-            search_list = param['query'].split(";")
-            for s in search_list:
-                log.debug(s)
-                key, _e, value = s.partition("=")
-                key = key.strip()
-                value = value.strip()
-                search_dict[key] = value
-            log.debug(search_dict)
-
-        else:
-            search_dict[param['qtype']] = param["query"]
-    else:
-        for k, v in param.items():
-            search_dict[k] = v
-
-    log.debug("search_dict: %s" % search_dict)
-
-    rp_dict = {}
-    rp_dict['page'] = param.get('page')
+    :param config: The config entries from the file config
+    :return: Audit dictionary with information about the previous and next
+    pages.
+    """
+    audit = getAudit(config)
+    sortorder = "desc"
+    page_size = 15
     page = 1
-    if param.get('page'):
-        page = param.get('page')
+    # The filtering dictionary
+    param = param or {}
+    # special treatment for:
+    # outform, sortorder, page, pagesize
+    if "outform" in param:
+        del param["outform"]
+    if "sortorder" in param:
+        sortorder = param["sortorder"]
+        del param["sortorder"]
+    if "page" in param:
+        page = param["page"]
+        del param["page"]
+    if "page_size" in param:
+        page_size = param["page_size"]
+        del param["page_size"]
 
-    rp_dict['rp'] = param.get('rp')
-    rp_dict['sortname'] = param.get('sortname')
-    rp_dict['sortorder'] = param.get('sortorder')
-    log.debug("[rp_dict: %s" % rp_dict)
-    if user:
-        search_dict['user'] = user.login
-        search_dict['realm'] = user.realm
+    pagination = audit.search(param, sortorder=sortorder, page=page,
+                            page_size=page_size)
 
-    result = audit.search(search_dict, rp_dict=rp_dict)
+    ret = {"auditdata": pagination.auditdata,
+           "prev": pagination.prev,
+           "next": pagination.next,
+           "current": pagination.page,
+           "count": pagination.total}
 
-    lines = []
-    if columns:
-        # In this case we have only a limited list of columns, like in
-        # the selfservice portal
-        for a in result:
-            if "number" in a:
-                cell = []
-                for c in columns:
-                    cell.append(a.get(c))
-                lines.append({'id': a['number'],
-                              'cell': cell
-                              })
-    else:
-        # Here we use all columns, that exist
-        for a in result:
-            if "number" in a:
-                lines.append({'id': a['number'],
-                              'cell': [a.get('number', ''),
-                                       a.get('date', ''),
-                                       a.get('sig_check', ''),
-                                       a.get('missing_line', ''),
-                                       a.get('action', ''),
-                                       a.get('success', ''),
-                                       a.get('serial', ''),
-                                       a.get('token_type', ''),
-                                       a.get('user', ''),
-                                       a.get('realm', ''),
-                                       a.get('administrator', ''),
-                                       a.get('action_detail', ''),
-                                       a.get('info', ''),
-                                       a.get('privacyidea_server', ''),
-                                       a.get('client', ''),
-                                       a.get('log_level', ''),
-                                       a.get('clearance_level', ''),
-                                       ]
-                              }
-                             )
-    # get the complete number of audit logs
-    total = audit.getTotal(search_dict)
+    return ret
 
-    return lines, total, page
 
+class Paginate(object):
+    """
+    This is a pagination object, that is used for searching audit trails.
+    """
+    def __init__(self):
+        # The audit data
+        self.auditdata = []
+        # The number of the previous page
+        self.prev = None
+        # the number of the next page
+        self.next = None
+        # the number of the current page
+        self.current = 1
+        # the total entry numbers
+        self.total = 0
 
 
 class AuditBase(object):
@@ -324,24 +294,19 @@ class AuditBase(object):
         """
         pass
 
-    def search(self, param, AND=True, display_error=True, rp_dict=None):
+    def search(self, param, display_error=True, rp_dict=None):
         """
         This function is used to search audit events.
 
-        param:
-            Search parameters can be passed.
+        param: Search parameters can be passed.
 
-        return:
-            A list of dictionaries is returned.
-            Each list element denotes an audit event.
+        return: A pagination object
+
             
         This function is deprecated.
         """
-        if rp_dict is None:
-            rp_dict = {}
-        result = [{}]
-        return result
-    
+        return Paginate()
+
     def search_query(self, search_dict, rp_dict):
         """
         This function returns the audit log as an iterator on the result

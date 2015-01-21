@@ -201,6 +201,8 @@ def list_api():
     :param user: display tokens of this user
     :param viewrealm: takes a realm, only the tokens in this realm will be
     displayed
+    :param description: Display token with this kind of description
+    :type description: basestring
     :param sortby: sort the output by column
     :param sortdir: asc/desc
     :param page: request a certain page
@@ -220,6 +222,7 @@ def list_api():
     serial = getParam(param, "serial", optional)
     page = int(getParam(param, "page", optional, default=1))
     tokentype = getParam(param, "type", optional)
+    description = getParam(param, "description", optional)
     sort = getParam(param, "sortby", optional, default="serial")
     sdir = getParam(param, "sortdir", optional, default="asc")
     psize = int(getParam(param, "pagesize", optional, default=15))
@@ -260,7 +263,9 @@ def list_api():
     # get list of tokens as a dictionary
     tokens = get_tokens_paginate(serial=serial, realm=realm, page=page,
                                  user=user, assigned=assigned, psize=psize,
-                                 sortby=sort, sortdir=sdir, tokentype=tokentype)
+                                 sortby=sort, sortdir=sdir,
+                                 tokentype=tokentype,
+                                 description=description)
     g.audit_object.log({"success": True})
     if output_format == "csv":
         return send_csv_result(tokens)
