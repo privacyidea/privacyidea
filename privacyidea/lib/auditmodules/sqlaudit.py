@@ -35,7 +35,7 @@ token database.
 
 import logging
 log = logging.getLogger(__name__)
-from privacyidea.lib.audit import AuditBase
+from privacyidea.lib.audit import (AuditBase, Paginate)
 
 from sqlalchemy import Table, MetaData, Column
 from sqlalchemy import Integer, String, DateTime, asc, desc, and_
@@ -149,15 +149,20 @@ class Audit(AuditBase):
         for search_key in param.keys():
             search_value = param.get(search_key)
             if search_value.strip() != '':
-                try:
-                    conditions.append(getattr(LogEntry,
-                                              search_key).like("%" +
-                                                               search_value +
-                                                               "%"))
-                except:
-                    # The search_key was no search key but some
-                    # bullshit stuff in the param
-                    pass
+                # We do not search if the search value only consists of '*'
+                if search_value.strip('*') != '':
+                    try:
+                        search_value = search_value.replace('*', '%')
+                        if '%' in search_value:
+                            conditions.append(getattr(LogEntry,
+                                                      search_key).like(search_value))
+                        else:
+                            conditions.append(getattr(LogEntry, search_key) ==
+                                              search_value)
+                    except:
+                        # The search_key was no search key but some
+                        # bullshit stuff in the param
+                        pass
         # Combine them with or to a BooleanClauseList
         filter_condition = and_(*conditions)
         return filter_condition
@@ -350,20 +355,29 @@ class Audit(AuditBase):
         
     def search(self, search_dict, page_size=15, page=1, sortorder="asc"):
         """
-        This function returns the audit log as a list of dictionaries.
+        This function returns the audit log as a Pagination object.
         """
-        res = []
+        page = int(page)
+        page_size = int(page_size)
+        paging_object = Paginate()
+        paging_object.page = page
+        paging_object.total = self.get_total(search_dict)
+        if page > 1:
+            paging_object.prev = page - 1
+        if paging_object.total > (page_size * page):
+            paging_object.next = page + 1
+
         auditIter = self.searchQuery(search_dict, page_size=page_size,
                                      page=page, sortorder=sortorder)
         try:
             le = auditIter.next()
             while le:
                 # Fill the list
-                res.append(self.audit_entry_to_dict(le))
+                paging_object.auditdata.append(self.audit_entry_to_dict(le))
                 le = auditIter.next()
         except StopIteration:
             pass
-        return res
+        return paging_object
         
     def searchQuery(self, search_dict, page_size=15, page=1, sortorder="asc",
                     sortname="number"):

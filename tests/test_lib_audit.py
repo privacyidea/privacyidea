@@ -51,7 +51,7 @@ class AuditTestCase(MyTestCase):
 
         # read audit entry
         audit_log = self.Audit.search({})
-        self.assertTrue(len(audit_log) == 3, len(audit_log))
+        self.assertTrue(audit_log.total == 3, audit_log.total)
 
     def test_01_get_total(self):
         self.Audit.log({"action": "action1"})
@@ -77,6 +77,28 @@ class AuditTestCase(MyTestCase):
                                     "bullshit": "value"})
         self.assertTrue(tot == 2, "Total numbers: %s" % tot)
 
-    def test_02_empty_search(self):
-        audit_log = self.Audit.search({"action": "XXXX"}, {})
-        self.assertTrue(len(audit_log) == 0, audit_log)
+    def test_02_filter_search(self):
+        # Prepare some audit entries:
+        self.Audit.log({"serial": "serial1"})
+        self.Audit.finalize_log()
+
+        self.Audit.log({"serial": "serial1"})
+        self.Audit.finalize_log()
+
+        self.Audit.log({"serial": "serial2"})
+        self.Audit.finalize_log()
+
+        self.Audit.log({"serial": "oath"})
+        self.Audit.finalize_log()
+
+        audit_log = self.Audit.search({"serial": "serial1"})
+        self.assertTrue(audit_log.total == 2, audit_log.total)
+
+        audit_log = self.Audit.search({"serial": "serial2"})
+        self.assertTrue(audit_log.total == 1, audit_log.total)
+
+        audit_log = self.Audit.search({"serial": "*serial*"})
+        self.assertTrue(audit_log.total == 3, audit_log.total)
+
+        audit_log = self.Audit.search({"serial": "oath*"})
+        self.assertTrue(audit_log.total == 1, audit_log.total)

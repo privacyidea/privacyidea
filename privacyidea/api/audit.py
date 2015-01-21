@@ -28,15 +28,37 @@ It only provides the method
 from flask import (Blueprint,
                    request, current_app)
 from lib.utils import (getParam,
-                       send_result)
+                       send_result, remove_session_from_param)
 from flask import g
 import logging
 from ..lib.audit import search
 log = logging.getLogger(__name__)
-
+from ..lib.audit import getAudit
+from .auth import auth_required
+from ..lib.policy import PolicyClass
 
 audit_blueprint = Blueprint('audit_blueprint', __name__)
 
+
+@audit_blueprint.before_request
+@auth_required
+def before_request():
+    """
+    This is executed before the request
+    """
+    # remove session from param and gather all parameters, either
+    # from the Form data or from JSON in the request body.
+    request.all_data = remove_session_from_param(request.values, request.data)
+    g.audit_object = getAudit(current_app.config)
+    g.audit_object.log({"success": False,
+                        "client": request.remote_addr,
+                        "client_user_agent": request.user_agent.browser,
+                        "privcyidea_server": request.host,
+                        "action": "%s %s" % (request.method, request.url_rule),
+                        "administrator": g.logged_in_user,
+                        "action_detail": "",
+                        "info": ""})
+    g.Policy = PolicyClass()
 
 @audit_blueprint.route('/', methods=['GET'])
 def search_audit():
@@ -69,14 +91,8 @@ def search_audit():
             "status": true,
             "value": [
               {
-                "description": "Cornelius K\u00f6lbel,,+49 151 2960 1417,+49 561 3166797,cornelius.koelbel@netknights.it",
-                "email": "cornelius.koelbel@netknights.it",
-                "givenname": "Cornelius",
-                "mobile": "+49 151 2960 1417",
-                "phone": "+49 561 3166797",
-                "surname": "K\u00f6lbel",
-                "userid": "1009",
-                "username": "cornelius"
+                 "serial": "....",
+                 "missing_line": "..."
               }
             ]
           },
@@ -85,8 +101,8 @@ def search_audit():
     """
     output_format = getParam(request.all_data, "outform")
 
-    audit_list = search(current_app.config, request.all_data)
+    audit_dict = search(current_app.config, request.all_data)
 
     g.audit_object.log({'success': True})
     
-    return send_result(audit_list)
+    return send_result(audit_dict)

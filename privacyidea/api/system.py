@@ -99,7 +99,6 @@ from .audit import audit_blueprint
 @policy_blueprint.before_request
 @user_blueprint.before_request
 @token_blueprint.before_request
-@audit_blueprint.before_request
 @auth_required
 def before_request():
     """
@@ -116,7 +115,11 @@ def before_request():
     g.audit_object.log({"success": False,
                         "serial": serial,
                         "realm": realm,
+                        "client": request.remote_addr,
+                        "client_user_agent": request.user_agent.browser,
+                        "privcyidea_server": request.host,
                         "action": "%s %s" % (request.method, request.url_rule),
+                        "administrator": g.logged_in_user,
                         "action_detail": "",
                         "info": ""})
     g.Policy = PolicyClass()

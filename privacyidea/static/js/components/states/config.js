@@ -84,5 +84,55 @@ angular.module('privacyideaApp.config', ['ui.router']).config(
                 .state('offline', {
                     url: "/offline",
                     templatesUrl: "/static/views/offline.html"
+                }).state('login', {
+                    url: "/login",
+                    templateUrl: "/static/views/login.html"
                 })
+                .state('token', {
+                    url: "/token",
+                    templateUrl: "/static/views/token.html"
+                })
+                .state('token.list', {
+                    url: "/list",
+                    templateUrl: "/static/views/token.list.html",
+                    controller: "tokenController"
+                })
+                .state('token.details', {
+                    url: "/details/{tokenSerial:.*}",
+                    templateUrl: "/static/views/token.details.html",
+                    controller: "tokenDetailController"
+                })
+                .state('token.enroll', {
+                    url: "/enroll/{realmname:.*}/{username:.*}",
+                    templateUrl: "/static/views/token.enroll.html",
+                    controller: "tokenEnrollController"
+                })
+                .state('token.import', {
+                    url: "/import",
+                    templateUrl: "/static/views/token.import.html",
+                    controller: "tokenImportController"
+                })
+                .state('audit', {
+                    url: "/audit?serial&user",
+                    templateUrl: "/static/views/audit.html",
+                    controller: "auditController"
+                })
+                .state('user', {
+                    url: "/user",
+                    templateUrl: "/static/views/user.html"
+                })
+                .state('user.list', {
+                    url: "/list",
+                    templateUrl: "/static/views/user.list.html"
+                })
+                .state('user.details', {
+                    url: "/details/{realmname:.*}/{username:.*}",
+                    templateUrl: "/static/views/user.details.html",
+                    controller: ['$scope', '$stateParams',
+                        function ($scope, $stateParams) {
+                            $scope.username = $stateParams.username;
+                            $scope.realmname = $stateParams.realmname;
+                        }]
+                });
+
         }]);

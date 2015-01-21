@@ -58,6 +58,11 @@ def before_request():
     """
     g.audit_object = getAudit(current_app.config)
     g.audit_object.log({"success": False,
+                        "client": request.remote_addr,
+                        "client_user_agent": request.user_agent.browser,
+                        "privcyidea_server": request.host,
+                        "action": "%s %s" % (request.method, request.url_rule),
+                        "action_detail": "",
                         "info": ""})
     request.all_data = remove_session_from_param(request.values, request.data)
 
@@ -165,6 +170,9 @@ def get_auth_token():
                         "nonce": geturandom(hex=True),
                         "exp": datetime.utcnow() + validity},
                        secret)
+    g.audit_object.log({"success": True,
+                        "administrator": username,
+                        "jwt_token": token})
     return send_result({"token": token})
 
 

@@ -18,14 +18,40 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("auditController", function (AuditFactory, $scope, $location) {
-    var params = {sortorder: "desc",
-                  page_size: 200};
+myApp.controller("auditController", function (AuditFactory, $scope, $stateParams) {
+    $scope.params = {sortorder: "desc",
+                      page_size: 10,
+                       page: 1};
+
+    // If the state is called with some filter values
+    if ($stateParams.serial) {
+        $scope.serialFilter = $stateParams.serial;
+    }
+    if ($stateParams.user) {
+        $scope.userFilter = $stateParams.user;
+    }
+
     $scope.getAuditList = function () {
-        AuditFactory.get(params, function(data) {
-            $scope.auditlist = data.result.value;
-            console.log($scope.auditlist);
+        $scope.params.serial = "*" + ($scope.serialFilter || "") + "*";
+        $scope.params.user = "*" + ($scope.userFilter || "") + "*";
+        $scope.params.administrator = "*" + ($scope.administratorFilter || "") + "*";
+        $scope.params.tokentype = "*" + ($scope.typeFilter || "") + "*";
+        $scope.params.action = "*" + ($scope.actionFilter || "") + "*";
+        $scope.params.success = "*" + ($scope.successFilter || "") + "*";
+        $scope.params.action_detail = "*" + ($scope.action_detailFilter || "") + "*";
+        console.log("Request Audit Trail with params");
+        console.log($scope.params);
+        AuditFactory.get($scope.params, function(data) {
+            $scope.auditdata = data.result.value;
+            console.log($scope.auditdata);
         });
     };
+
+    // Change the pagination
+    $scope.pageChanged = function () {
+        console.log('Page changed to: ' + $scope.params.page);
+        $scope.getAuditList();
+    };
+
     $scope.getAuditList();
 });

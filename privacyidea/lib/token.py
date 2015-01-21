@@ -102,7 +102,7 @@ def create_tokenclass_object(db_token):
 
 def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                         serial=None, active=None, resolver=None,
-                        rollout_state=None):
+                        rollout_state=None, description=None):
     """
     This function create the sql query for getting tokens. It is used by
     get_tokens and get_tokens_paginate.
@@ -123,6 +123,18 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
             # exact match
             sql_query = sql_query.filter(func.lower(Token.tokentype) ==
                                          tokentype.lower())
+
+    if description is not None:
+        # filter for Description
+        if "*" in description:
+            # match with "like"
+            sql_query = sql_query.filter(Token.description.like(
+                description.lower().replace("*", "%")))
+        else:
+            # exact match
+            sql_query = sql_query.filter(func.lower(Token.description) ==
+                                         description.lower())
+
 
     if assigned is not None:
         # filter if assigned or not
@@ -248,7 +260,7 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
 def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                 serial=None, active=None, resolver=None, rollout_state=None,
                 sortby=Token.serial, sortdir="asc", psize=15,
-                page=1):
+                page=1, description=None):
     """
     This function is used to retrieve a token list, that can be displayed in
     the Web UI. It supports pagination.
@@ -282,7 +294,8 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                                 assigned=assigned, user=user,
                                 serial=serial, active=active,
                                 resolver=resolver,
-                                rollout_state=rollout_state)
+                                rollout_state=rollout_state,
+                                description=description)
 
     if type(sortby) in [str, unicode]:
         # convert the string to a Token column
@@ -1745,7 +1758,10 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
         # We need to return success
         res = True
         reply_dict["message"] = "matching %i tokens" % len(valid_token_list)
-        # TODO: write serial numbers or something to audit log
+        # write serial numbers or something to audit log
+        if len(valid_token_list) == 1:
+            reply_dict["serial"] = valid_token_list[0].token.serial
+            reply_dict["type"] = valid_token_list[0].token.tokentype
 
     elif len(challenge_response_token_list) > 0:
         # A challenge token was found.
@@ -1779,7 +1795,10 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
         for tokenobject in tokenobject_list:
             tokenobject.inc_failcount()
             reply_dict["message"] = "wrong otp value"
-            # TODO: write the serial numbers to the audit log
+            # write the serial numbers to the audit log
+            if len(pin_matching_token_list) == 1:
+                reply_dict["serial"] = pin_matching_token_list[0].token.serial
+                reply_dict["type"] = pin_matching_token_list[0].token.tokentype
 
     elif len(invalid_token_list) > 0:
         # There were only tokens, that did not match the OTP value and

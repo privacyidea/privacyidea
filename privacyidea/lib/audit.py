@@ -107,8 +107,11 @@ def getAudit(config):
 @log_with(log)
 def search(config, param=None, user=None):
     """
+    Returns a list of audit entries, supports pagination
+
     :param config: The config entries from the file config
-    :return: Audit Object
+    :return: Audit dictionary with information about the previous and next
+    pages.
     """
     audit = getAudit(config)
     sortorder = "desc"
@@ -130,10 +133,33 @@ def search(config, param=None, user=None):
         page_size = param["page_size"]
         del param["page_size"]
 
-    result = audit.search(param, sortorder=sortorder, page=page,
-                          page_size=page_size)
+    pagination = audit.search(param, sortorder=sortorder, page=page,
+                            page_size=page_size)
 
-    return result
+    ret = {"auditdata": pagination.auditdata,
+           "prev": pagination.prev,
+           "next": pagination.next,
+           "current": pagination.page,
+           "count": pagination.total}
+
+    return ret
+
+
+class Paginate(object):
+    """
+    This is a pagination object, that is used for searching audit trails.
+    """
+    def __init__(self):
+        # The audit data
+        self.auditdata = []
+        # The number of the previous page
+        self.prev = None
+        # the number of the next page
+        self.next = None
+        # the number of the current page
+        self.current = 1
+        # the total entry numbers
+        self.total = 0
 
 
 class AuditBase(object):
@@ -268,24 +294,19 @@ class AuditBase(object):
         """
         pass
 
-    def search(self, param, AND=True, display_error=True, rp_dict=None):
+    def search(self, param, display_error=True, rp_dict=None):
         """
         This function is used to search audit events.
 
-        param:
-            Search parameters can be passed.
+        param: Search parameters can be passed.
 
-        return:
-            A list of dictionaries is returned.
-            Each list element denotes an audit event.
+        return: A pagination object
+
             
         This function is deprecated.
         """
-        if rp_dict is None:
-            rp_dict = {}
-        result = [{}]
-        return result
-    
+        return Paginate()
+
     def search_query(self, search_dict, rp_dict):
         """
         This function returns the audit log as an iterator on the result

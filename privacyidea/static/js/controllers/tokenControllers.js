@@ -34,12 +34,9 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory, $scop
 
     // This function fills $scope.tokendata
     $scope.getTokens = function () {
-        if ($scope.serialFilter) {
-            $scope.params.serial = "*" + ($scope.serialFilter || "") + "*";
-        }
-        if ($scope.typeFilter) {
-            $scope.params.type = "*" + ($scope.typeFilter || "") + "*";
-        }
+        $scope.params.serial = "*" + ($scope.serialFilter || "") + "*";
+        $scope.params.type = "*" + ($scope.typeFilter || "") + "*";
+        $scope.params.description = "*" + ($scope.descriptionFilter || "") + "*";
         if ($scope.reverse) {
             $scope.params.sortdir = "desc";
         } else {

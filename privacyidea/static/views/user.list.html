@@ -9,36 +9,20 @@
         <thead>
         <tr>
             <th>username
-                <span class="glyphicon glyphicon-filter"
-                      ng-click="usernameFiltered=!usernameFiltered"
-                      ng-class="{filtered:params.usernameFilter}"></span>
-                <input ng-model="params.usernameFilter" ng-change="_getUsers()"
-                       ng-show="usernameFiltered"
-                       placeholder="filter" class="form-control">
+                <pi-filter ng-model="params.usernameFilter"
+                         ng-change="_getUsers()"></pi-filter>
             </th>
             <th>surname
-                <span class="glyphicon glyphicon-filter"
-                      ng-click="surnameFiltered=!surnameFiltered"
-                      ng-class="{filtered:params.surnameFilter}"></span>
-                <input ng-model="params.surnameFilter" ng-change="_getUsers()"
-                       ng-show="surnameFiltered"
-                       placeholder="filter" class="form-control">
+                <pi-filter ng-model="params.surnameFilter"
+                         ng-change="_getUsers()"></pi-filter>
             </th>
             <th>givenname
-                <span class="glyphicon glyphicon-filter"
-                      ng-click="givennameFiltered=!givennameFiltered"
-                      ng-class="{filtered:params.givennameFilter}"></span>
-                <input ng-model="params.givennameFilter" ng-change="_getUsers()"
-                       ng-show="givennameFiltered"
-                       placeholder="filter" class="form-control">
+                <pi-filter ng-model="params.givennameFilter"
+                         ng-change="_getUsers()"></pi-filter>
             </th>
             <th>email
-                <span class="glyphicon glyphicon-filter"
-                      ng-click="emailFiltered=!emailFiltered"
-                      ng-class="{filtered:params.emailFilter}"></span>
-                <input ng-model="params.emailFilter" ng-change="_getUsers()"
-                       ng-show="emailFiltered"
-                       placeholder="filter" class="form-control">
+                <pi-filter ng-model="params.emailFilter"
+                         ng-change="_getUsers()"></pi-filter>
             </th>
             <th>phone</th>
             <th>mobile</th>
