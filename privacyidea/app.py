@@ -29,7 +29,6 @@ from .api.realm import realm_blueprint
 from .api.realm import defaultrealm_blueprint
 from .api.policy import policy_blueprint
 from .api.user import user_blueprint
-from .api.audit import audit_blueprint
 from .api.auth import jwtauth
 from .webui.login import login_blueprint
 from config import config
@@ -76,7 +75,6 @@ def create_app(config_name=None, var2=None):
     app.register_blueprint(login_blueprint, url_prefix='/')
     app.register_blueprint(jwtauth, url_prefix='/auth')
     app.register_blueprint(user_blueprint, url_prefix='/user')
-    app.register_blueprint(audit_blueprint, url_prefix='/audit')
     
     db.init_app(app)
     migrate = Migrate(app, db)

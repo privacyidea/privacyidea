@@ -94,7 +94,6 @@ myApp.constant("realmUrl", "/realm");
 myApp.constant("defaultRealmUrl", "/defaultrealm");
 myApp.constant("validateUrl", "/validate");
 myApp.constant("systemUrl", "/system");
-myApp.constant("auditUrl", "/audit");
 myApp.run(['$rootScope', '$state', '$stateParams',
         function ($rootScope, $state, $stateParams) {
 

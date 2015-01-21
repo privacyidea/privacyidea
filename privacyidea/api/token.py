@@ -330,8 +330,6 @@ def enable_api(serial=None):
         user = get_user_from_param(request.all_data, optional)
         serial = getParam(request.all_data, "serial", optional)
 
-    g.audit_object.log({"serial": serial,
-                        "user": "%s" % user})
     res = enable_token(serial, enable=True, user=user)
     g.audit_object.log({"success": True})
     return send_result(res)
@@ -365,8 +363,6 @@ def disable_api(serial=None):
         user = get_user_from_param(request.all_data, optional)
         serial = getParam(request.all_data, "serial", optional)
 
-    g.audit_object.log({"serial": serial,
-                        "user": "%s" % user})
     res = enable_token(serial, enable=False, user=user)
     g.audit_object.log({"success": True})
     return send_result(res)
@@ -389,8 +385,7 @@ def delete_api(serial=None):
     :rtype: json object
     """
     res = remove_token(serial)
-    g.audit_object.log({"success": True,
-                        "serial": serial})
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -420,8 +415,6 @@ def reset_api(serial=None):
         user = get_user_from_param(request.all_data, optional)
         serial = getParam(request.all_data, "serial", optional)
 
-    g.audit_object.log({"serial": serial,
-                        "user": "%s" % user})
     res = reset_token(serial, user=user)
     g.audit_object.log({"success": True})
     return send_result(res)
@@ -452,7 +445,6 @@ def resync_api(serial=None):
     otp1 = getParam(request.all_data, "otp1", required)
     otp2 = getParam(request.all_data, "otp2", required)
 
-    g.audit_object.log({"serial": serial})
     res = resync_token(serial, otp1, otp2)
     g.audit_object.log({"success": True})
     return send_result(res)
@@ -484,8 +476,6 @@ def setpin_api(serial=None):
     """
     if not serial:
         serial = getParam(request.all_data, "serial", required)
-
-    g.audit_object.log({"serial": serial})
     userpin = getParam(request.all_data, "userpin")
     sopin = getParam(request.all_data, "sopin")
 
@@ -538,8 +528,6 @@ def set_api(serial=None):
     if not serial:
         serial = getParam(request.all_data, "serial", required)
     user = get_user_from_param(request.all_data)
-    g.audit_object.log({"serial": serial,
-                        "user": "%s" % user})
 
     pin = getParam(request.all_data, "pin")
     description = getParam(request.all_data, "description")
@@ -617,8 +605,6 @@ def tokenrealm_api(serial=None):
     :rtype: bool
     """
     realms = getParam(request.all_data, "realms", required)
-    g.audit_object.log({"serial": serial,
-                        "action_detail": "%s" % realms})
     if type(realms) == list:
         realm_list = realms
     else:
@@ -648,8 +634,6 @@ def loadtokens_api(filename=None):
     """
     if not filename:
         filename = getParam(request.all_data, "filename", required)
-
-    g.audit_object.log({"action_detail": filename})
     known_types = ['aladdin-xml', 'oathcsv', 'yubikeycsv']
     file_type = getParam(request.all_data, "type", required)
     hashlib = getParam(request.all_data, "aladdin_hashlib")
@@ -730,7 +714,7 @@ def loadtokens_api(filename=None):
 
 
     g.audit_object.log({'info': "%s, %s (imported: %i)" % (file_type,
-                                                          token_file,
+                                                              token_file,
                                                  len(TOKENS)),
                         'serial': ', '.join(TOKENS.keys())})
     # logTokenNum()
@@ -805,7 +789,6 @@ def lost_api(serial=None):
     :return: returns value=True in case of success
     :rtype: bool
     """
-    g.audit_object.log({"serial": serial})
     res = lost_token(serial)
 
     g.audit_object.log({"success": True})

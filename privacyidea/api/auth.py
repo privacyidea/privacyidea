@@ -56,20 +56,11 @@ def before_request():
     """
     This is executed before the request
     """
+
     g.audit_object = getAudit(current_app.config)
     g.audit_object.log({"success": False,
                         "info": ""})
     request.all_data = remove_session_from_param(request.values, request.data)
-
-
-@jwtauth.after_request
-def after_request(response):
-    """
-    This function is called after a request
-    :return:
-    """
-    g.audit_object.finalize_log()
-    return response
 
 
 @jwtauth.route('', methods=['POST'])

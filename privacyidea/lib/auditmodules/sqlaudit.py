@@ -348,13 +348,12 @@ class Audit(AuditBase):
                     'clearance_level': LogEntry.clearance_level}
         return sortname.get(key)
         
-    def search(self, search_dict, page_size=15, page=1, sortorder="asc"):
+    def search(self, search_dict, rp_dict):
         """
         This function returns the audit log as a list of dictionaries.
         """
         res = []
-        auditIter = self.searchQuery(search_dict, page_size=page_size,
-                                     page=page, sortorder=sortorder)
+        auditIter = self.searchQuery(search_dict, rp_dict=rp_dict)
         try:
             le = auditIter.next()
             while le:
@@ -365,29 +364,30 @@ class Audit(AuditBase):
             pass
         return res
         
-    def searchQuery(self, search_dict, page_size=15, page=1, sortorder="asc",
-                    sortname="number"):
-        """
+    def searchQuery(self, search_dict, rp_dict):
+        '''
         This function returns the audit log as an iterator on the result
-        """
+        '''
         logentries = None
         try:
-            limit = int(page_size)
-            offset = (int(page) - 1) * limit
+            limit = int(rp_dict.get('rp', 15))
+            offset = (int(rp_dict.get('page', 1)) - 1) * limit
             
             # create filter condition
             filter_condition = self._create_filter(search_dict)
-
-            if sortorder == "desc":
-                logentries = self.session.query(LogEntry).filter(
-                    filter_condition).order_by(
-                    desc(self._get_logentry_attribute("number"))).limit(
-                    limit).offset(offset)
+            
+            if rp_dict.get("sortorder") == "desc":
+                logentries = self.session.query(LogEntry)\
+                                         .filter(filter_condition)\
+                                         .order_by(desc(self._get_logentry_attribute(rp_dict.get("sortname"))))\
+                                         .limit(limit)\
+                                         .offset(offset)
             else:
-                logentries = self.session.query(LogEntry).filter(
-                    filter_condition).order_by(
-                    asc(self._get_logentry_attribute("number"))).limit(
-                    limit).offset(offset)
+                logentries = self.session.query(LogEntry)\
+                                         .filter(filter_condition)\
+                                         .order_by(asc(self._get_logentry_attribute(rp_dict.get("sortname"))))\
+                                         .limit(limit)\
+                                         .offset(offset)
                                          
         except Exception as exx:  # pragma nocover
             log.error("exception %r" % exx)
@@ -400,15 +400,6 @@ class Audit(AuditBase):
             return iter([])
         else:
             return iter(logentries)
-
-    def clear(self):
-        """
-        Deletes all entries in the database table.
-        This is only used for test cases!
-        :return:
-        """
-        self.session.query(LogEntry).delete()
-        self.session.commit()
     
     def audit_entry_to_dict(self, audit_entry):
         sig = self._verify_sig(audit_entry)
