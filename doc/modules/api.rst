@@ -13,6 +13,7 @@ Now you can take a look at the several REST endpoints.
 
 .. toctree::
 
+   api/audit
    api/auth
    api/validate
    api/system
