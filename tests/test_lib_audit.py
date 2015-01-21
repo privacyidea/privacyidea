@@ -24,13 +24,14 @@ class AuditTestCase(MyTestCase):
         pass
 
     def setUp(self):
-        # Patch ldap.initialize
+        pass
         config = {"PI_AUDIT_MODULE":
                       "privacyidea.lib.auditmodules.sqlaudit",
                   "PI_AUDIT_KEY_PRIVATE": "tests/testdata/private.pem",
                   "PI_AUDIT_KEY_PUBLIC": "tests/testdata/public.pem",
                   "PI_AUDIT_SQL_URI": "sqlite://"}
         self.Audit = getAudit(config)
+        self.Audit.clear()
 
     def tearDown(self):
         # Stop patching ldap.initialize and reset state.
@@ -49,8 +50,8 @@ class AuditTestCase(MyTestCase):
         self.Audit.finalize_log()
 
         # read audit entry
-        audit_log = self.Audit.search({}, {})
-        self.assertTrue(len(audit_log) == 3, audit_log)
+        audit_log = self.Audit.search({})
+        self.assertTrue(len(audit_log) == 3, len(audit_log))
 
     def test_01_get_total(self):
         self.Audit.log({"action": "action1"})
@@ -66,7 +67,7 @@ class AuditTestCase(MyTestCase):
 
         tot = self.Audit.get_total({})
         self.assertTrue(tot == 3, tot)
-        audit_log = self.Audit.search({}, {"sortorder": "desc"})
+        audit_log = self.Audit.search({}, sortorder="desc")
 
         print "The Log:"
         print audit_log
