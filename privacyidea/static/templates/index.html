@@ -38,13 +38,15 @@
                           aria-hidden="true"></span>
                         Token View</a></li>
                 <li ng-class="{active: $state.includes('user')}"
-                    ng-hide="$state.includes('login')">
+                    ng-hide="$state.includes('login')"
+                    ng-show="loggedInUser.role == 'admin'">
                     <a ui-sref="user">
                     <span class="glyphicon glyphicon-user"
                           aria-hidden="true"></span>
                         User View</a></li>
                 <li ng-class="{active: $state.includes('config')}"
-                    ng-hide="$state.includes('login')">
+                    ng-hide="$state.includes('login')"
+                    ng-show="loggedInUser.role == 'admin'">
                     <a ui-sref="config">
                         <span class="glyphicon glyphicon-list"
                               aria-hidden="true"></span>
@@ -131,7 +133,7 @@
 <script src="/static/contrib/js/ngmodules/angular-animate.min.js"></script>
 <script src="/static/js/app.js"></script>
 <script src="/static/js/components/directives.js"></script>
-<script src="/static/js/components/user/auth.js"></script>
+<script src="/static/js/components/factory/auth.js"></script>
 <script src="/static/js/components/states/config.js"></script>
 <script src="/static/js/components/factory/token.js"></script>
 <script src="/static/js/components/factory/user.js"></script>

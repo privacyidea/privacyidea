@@ -76,7 +76,7 @@ myApp.directive("piSortBy", function(){
 });
 
 
-myApp.directive('assignUser', function($http, userUrl, auth, ConfigFactory) {
+myApp.directive('assignUser', function($http, userUrl, AuthFactory, ConfigFactory) {
     /*
     This directive is used to select a user from a realm
 
@@ -93,7 +93,7 @@ myApp.directive('assignUser', function($http, userUrl, auth, ConfigFactory) {
             });
             scope.loadUsers = function($viewValue) {
             // TODO: Move this into the userFactory!
-            var auth_token = auth.getAuthToken();
+            var auth_token = AuthFactory.getAuthToken();
             return $http({
                 method: 'GET',
                 url: userUrl + "?username=*" + $viewValue + "*",
@@ -109,7 +109,7 @@ myApp.directive('assignUser', function($http, userUrl, auth, ConfigFactory) {
     }
 });
 
-myApp.directive('assignToken', function($http, tokenUrl, auth) {
+myApp.directive('assignToken', function($http, tokenUrl, AuthFactory) {
     /*
     This directive is used to select a serial number and assign it
     to the user.
@@ -123,8 +123,7 @@ myApp.directive('assignToken', function($http, tokenUrl, auth) {
         templateUrl: "static/views/directive.assigntoken.html",
         link: function (scope, element, attr) {
             scope.loadSerials = function($viewValue) {
-            // TODO: Move this into the userFactory!
-            var auth_token = auth.getAuthToken();
+            var auth_token = AuthFactory.getAuthToken();
             return $http({
                 method: 'GET',
                 url: tokenUrl,

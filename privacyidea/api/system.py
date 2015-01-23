@@ -80,8 +80,6 @@ from .audit import audit_blueprint
 @defaultrealm_blueprint.before_request
 @policy_blueprint.before_request
 @user_blueprint.before_request
-@token_blueprint.before_request
-
 @admin_required
 def before_request():
     """

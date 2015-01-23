@@ -203,12 +203,23 @@ def admin_required(f):
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        check_auth_token(role="admin")
+        check_auth_token(required_role=["admin"])
         return f(*args, **kwargs)
     return decorated_function
 
 
-def check_auth_token(role=None):
+def user_required(f):
+    """
+    This is a decorator for routes, that require to be authenticated.
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        check_auth_token(required_role=["user", "admin"])
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def check_auth_token(required_role=None):
     """
     This checks the authentication token
     
@@ -235,13 +246,13 @@ def check_auth_token(role=None):
         raise AuthError("Authentication failure",
                         "Your token has expired: %s" % err,
                         status=401)
-    if role and role != r.get("role"):
+    if required_role and r.get("role") not in required_role:
         # If we require a certain role like "admin", but the users role does
         # not match
         raise AuthError("Authentication failure",
                         "Your do not have the necessary role (%s) to access "
-                        "this resouce!" % (role),
+                        "this resouce!" % (required_role),
                         status=401)
     g.logged_in_user = {"username": r.get("username"),
-                        "role": r.get("role")};
+                        "role": r.get("role")}
 

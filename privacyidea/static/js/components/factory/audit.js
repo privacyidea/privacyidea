@@ -19,7 +19,7 @@
  *
  */
 
-myApp.factory("AuditFactory", function (auth, $http, $state, $rootScope, auditUrl) {
+myApp.factory("AuditFactory", function (AuthFactory, $http, $state, $rootScope, auditUrl) {
         /**
          Each service - just like this service factory - is a singleton.
          */
@@ -34,7 +34,7 @@ myApp.factory("AuditFactory", function (auth, $http, $state, $rootScope, auditUr
         return {
             get: function (params, callback) {
                 $http.get(auditUrl, {
-                    headers: {'Authorization': auth.getAuthToken()},
+                    headers: {'Authorization': AuthFactory.getAuthToken()},
                     params: params
                 }).success(callback
                 ).error(error_func)

@@ -365,7 +365,6 @@ def split_user(username):
     return user, realm
 
 
-
 def get_user_from_param(param, optionalOrRequired=optional):
     """
     Find the parameters user, realm and resolver and

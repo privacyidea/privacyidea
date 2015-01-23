@@ -20,7 +20,7 @@
  */
 angular.module("privacyideaApp")
     .controller("mainController", function ($scope, $http, $location,
-                                            authUrl, auth, $rootScope) {
+                                            authUrl, AuthFactory, $rootScope) {
         // We save the previous State in the $rootScope, so that we
         // can return there
         $rootScope.$on('$stateChangeSuccess',
@@ -41,8 +41,10 @@ angular.module("privacyideaApp")
             }, {
                 withCredentials: true
             }).success(function (data) {
-                auth.setUser($scope.login.username, data.result.value.token);
-                $scope.user = auth.getUser();
+                AuthFactory.setUser($scope.login.username,
+                    data.result.value.token, data.result.value.role);
+                $scope.user = AuthFactory.getUser();
+                $scope.loggedInUser = AuthFactory.getUser();
                 console.log("successfully authenticated");
                 console.log($scope.user);
                 $location.path("/token");
@@ -59,7 +61,7 @@ angular.module("privacyideaApp")
 
        $scope.logout = function () {
             // logout: Clear the user and the auth_token.
-            auth.dropUser();
+            AuthFactory.dropUser();
             $scope.user = {};
             $location.path("/login");
        };

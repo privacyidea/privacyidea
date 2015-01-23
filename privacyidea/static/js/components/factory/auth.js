@@ -19,7 +19,7 @@
  *
  */
 angular.module("privacyideaAuth", [])
-    .factory("auth", function () {
+    .factory("AuthFactory", function () {
         /*
         Each service - just like this service factory - is a singleton.
         Here we just store the username of the authenticated user and his
@@ -28,9 +28,10 @@ angular.module("privacyideaAuth", [])
         var user = {};
 
         return {
-            setUser: function (username, auth_token) {
-                    user.username = username;
-                    user.auth_token = auth_token;
+            setUser: function (username, auth_token, role) {
+                user.username = username;
+                user.auth_token = auth_token;
+                user.role = role;
             },
             dropUser: function () {
                     user = {};
@@ -40,6 +41,9 @@ angular.module("privacyideaAuth", [])
             },
             getAuthToken: function () {
                 return user.auth_token;
+            },
+            getRole: function () {
+                return user.role;
             }
         }
     });

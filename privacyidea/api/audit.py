@@ -34,31 +34,13 @@ import logging
 from ..lib.audit import search
 log = logging.getLogger(__name__)
 from ..lib.audit import getAudit
-from .auth import admin_required
+from .auth import user_required
 from ..lib.policy import PolicyClass
 
 audit_blueprint = Blueprint('audit_blueprint', __name__)
 
 
-@audit_blueprint.before_request
-@admin_required
-def before_request():
-    """
-    This is executed before the request
-    """
-    # remove session from param and gather all parameters, either
-    # from the Form data or from JSON in the request body.
-    request.all_data = remove_session_from_param(request.values, request.data)
-    g.audit_object = getAudit(current_app.config)
-    g.audit_object.log({"success": False,
-                        "client": request.remote_addr,
-                        "client_user_agent": request.user_agent.browser,
-                        "privcyidea_server": request.host,
-                        "action": "%s %s" % (request.method, request.url_rule),
-                        "administrator": g.logged_in_user.get("username"),
-                        "action_detail": "",
-                        "info": ""})
-    g.Policy = PolicyClass()
+# The before method is handled in api/token
 
 @audit_blueprint.route('/', methods=['GET'])
 def search_audit():

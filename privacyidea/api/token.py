@@ -52,6 +52,11 @@ import logging
 log = logging.getLogger(__name__)
 from lib.utils import getParam
 from flask import request, g
+from privacyidea.lib.audit import getAudit
+from flask import current_app
+from privacyidea.lib.policy import PolicyClass
+from privacyidea.api.auth import (user_required, admin_required)
+from privacyidea.api.audit import audit_blueprint
 
 token_blueprint = Blueprint('token_blueprint', __name__)
 
@@ -59,9 +64,56 @@ token_blueprint = Blueprint('token_blueprint', __name__)
 __doc__ = """
 The token API can be accessed via /token.
 
-You need to authenticate as administrator to gain access to these token
+You need to authenticate to gain access to these token
 functions.
+If you are authenticated as administrator, you can manage all tokens.
+If you are authenticated as normal user, you can only manage your own tokens.
+Some API calls are only allowed to be accessed by adminitrators.
 """
+
+@token_blueprint.before_request
+@audit_blueprint.before_request
+@user_required
+def before_request():
+    """
+    This is executed before the request.
+
+    user_required checks if there is a logged in admin or user
+    """
+    # remove session from param and gather all parameters, either
+    # from the Form data or from JSON in the request body.
+    request.all_data = remove_session_from_param(request.values, request.data)
+
+    g.audit_object = getAudit(current_app.config)
+    if g.logged_in_user.get("role") == "user":
+        # A user is calling this API
+        # In case the token API is called by the user and not by the admin we
+        #  need to restrict the token view.
+        CurrentUser = get_user_from_param({"user":
+                                               g.logged_in_user.get("username")})
+        request.all_data["user"] = CurrentUser.login
+        request.all_data["realm"] = CurrentUser.realm
+        g.audit_object.log({"user": CurrentUser.login,
+                            "realm": CurrentUser.realm})
+    else:
+        # An administrator is calling this API
+        g.audit_object.log({"administrator": g.logged_in_user.get("username")})
+
+    # Already get some typical parameters to log
+    serial = getParam(request.all_data, "serial")
+    realm = getParam(request.all_data, "realm")
+
+    g.audit_object.log({"success": False,
+                        "serial": serial,
+                        "realm": realm,
+                        "client": request.remote_addr,
+                        "client_user_agent": request.user_agent.browser,
+                        "privcyidea_server": request.host,
+                        "action": "%s %s" % (request.method, request.url_rule),
+                        "action_detail": "",
+                        "info": ""})
+    g.Policy = PolicyClass()
+
 
 @token_blueprint.route('/init', methods=['POST'])
 @log_with(log, log_entry=False)
@@ -330,13 +382,12 @@ def enable_api(serial=None):
     tokens in "value".
     :rtype: json object
     """
-    user = None
+    user = get_user_from_param(request.all_data, optional)
     if not serial:
-        user = get_user_from_param(request.all_data, optional)
         serial = getParam(request.all_data, "serial", optional)
 
     res = enable_token(serial, enable=True, user=user)
-    g.audit_object.log({"success": True})
+    g.audit_object.log({"success": res > 0})
     return send_result(res)
 
 
@@ -363,13 +414,12 @@ def disable_api(serial=None):
     tokens in "value".
     :rtype: json object
     """
-    user = None
+    user = get_user_from_param(request.all_data, optional)
     if not serial:
-        user = get_user_from_param(request.all_data, optional)
         serial = getParam(request.all_data, "serial", optional)
 
     res = enable_token(serial, enable=False, user=user)
-    g.audit_object.log({"success": True})
+    g.audit_object.log({"success": res > 0})
     return send_result(res)
 
 
@@ -389,7 +439,8 @@ def delete_api(serial=None):
     "value"
     :rtype: json object
     """
-    res = remove_token(serial)
+    # If the API is called by a user, we pass the User Object to the function
+    res = remove_token(serial, get_user_from_param(request.all_data))
     g.audit_object.log({"success": True})
     return send_result(res)
 
@@ -415,9 +466,8 @@ def reset_api(serial=None):
     :return: In case of success it returns "value"=True
     :rtype: json object
     """
-    user = None
+    user = get_user_from_param(request.all_data, optional)
     if not serial:
-        user = get_user_from_param(request.all_data, optional)
         serial = getParam(request.all_data, "serial", optional)
 
     res = reset_token(serial, user=user)
@@ -428,6 +478,7 @@ def reset_api(serial=None):
 @token_blueprint.route('/resync', methods=['POST'])
 @token_blueprint.route('/resync/<serial>', methods=['POST'])
 @log_with(log)
+@admin_required
 def resync_api(serial=None):
     """
     Resync the OTP token by providing two consecutive OTP values.
@@ -476,6 +527,8 @@ def setpin_api(serial=None):
     :type userpin: basestring
     :param sopin: The SO PIN of a smartcard
     :type sopin: basestring
+    :param otppin: The OTP PIN of a token
+    :type otppin: basestring
     :return: In "value" returns the number of PINs set.
     :rtype: json object
     """
@@ -483,6 +536,8 @@ def setpin_api(serial=None):
         serial = getParam(request.all_data, "serial", required)
     userpin = getParam(request.all_data, "userpin")
     sopin = getParam(request.all_data, "sopin")
+    otppin = getParam(request.all_data, "otppin")
+    user = get_user_from_param(request.all_data)
 
     res = 0
     if userpin:
@@ -493,6 +548,10 @@ def setpin_api(serial=None):
         g.audit_object.add_to_log({'action_detail': "sopin, "})
         res += set_pin_so(serial, sopin)
 
+    if otppin:
+        g.audit_object.add_to_log({'action_detail': "otppin, "})
+        res += set_pin(serial, otppin, user=user)
+
     g.audit_object.log({"success": True})
     return send_result(res)
 
@@ -500,11 +559,12 @@ def setpin_api(serial=None):
 @token_blueprint.route('/set', methods=['POST'])
 @token_blueprint.route('/set/<serial>', methods=['POST'])
 @log_with(log)
+@admin_required
 def set_api(serial=None):
     """
+    This API is only to be used by the admin!
     This can be used to set token specific attributes like
 
-        * pin
         * description
         * count_window
         * sync_window
@@ -534,7 +594,6 @@ def set_api(serial=None):
         serial = getParam(request.all_data, "serial", required)
     user = get_user_from_param(request.all_data)
 
-    pin = getParam(request.all_data, "pin")
     description = getParam(request.all_data, "description")
     count_window = getParam(request.all_data, "count_window")
     sync_window = getParam(request.all_data, "sync_window")
@@ -544,10 +603,6 @@ def set_api(serial=None):
     count_auth_success_max = getParam(request.all_data, "count_auth_success_max")
 
     res = 0
-
-    if pin:
-        g.audit_object.add_to_log({'action_detail': "pin, "})
-        res += set_pin(serial, pin, user=user)
 
     if description:
         g.audit_object.add_to_log({'action_detail': "description=%r, "
@@ -592,6 +647,7 @@ def set_api(serial=None):
 
 @token_blueprint.route('/realm/<serial>', methods=['POST'])
 @log_with(log)
+@admin_required
 def tokenrealm_api(serial=None):
     """
     Set the realms of a token.
@@ -622,6 +678,7 @@ def tokenrealm_api(serial=None):
 
 @token_blueprint.route('/load/<filename>', methods=['POST'])
 @log_with(log)
+@admin_required
 def loadtokens_api(filename=None):
     """
     The call imports the given file containing token definitions.
@@ -729,6 +786,7 @@ def loadtokens_api(filename=None):
 
 @token_blueprint.route('/copypin', methods=['POST'])
 @log_with(log)
+@admin_required
 def copypin_api():
     """
     Copy the token PIN from one token to the other.
@@ -754,6 +812,7 @@ def copypin_api():
 
 @token_blueprint.route('/copyuser', methods=['POST'])
 @log_with(log)
+@admin_required
 def copyuser_api():
     """
     Copy the token user from one token to the other.
@@ -779,6 +838,7 @@ def copyuser_api():
 
 @token_blueprint.route('/lost/<serial>', methods=['POST'])
 @log_with(log)
+@admin_required
 def lost_api(serial=None):
     """
     Mark the specified token as lost and create a new temporary token.

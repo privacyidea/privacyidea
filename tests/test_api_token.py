@@ -415,10 +415,10 @@ class APITokenTestCase(MyTestCase):
     def test_09_set_token_attributes(self):
         self._create_temp_token("SET001")
         # Set some things
-        with self.app.test_request_context('/token/set',
+        with self.app.test_request_context('/token/setpin',
                                             method="POST",
                                             data={"serial": "SET001",
-                                                  "pin": "test"},
+                                                  "otppin": "test"},
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -551,10 +551,10 @@ class APITokenTestCase(MyTestCase):
             value = result.get("value")
             self.assertTrue(value is True, result)
 
-        with self.app.test_request_context('/token/set',
+        with self.app.test_request_context('/token/setpin',
                                             method="POST",
                                             data={"serial": "FROM001",
-                                                  "pin": "test"},
+                                                  "otppin": "test"},
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)

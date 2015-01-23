@@ -24,6 +24,7 @@
 
                     <li role="presentation"
                             ng-class="{active: $state.includes('token.import')}"
+                            ng-show="loggedInUser.role == 'admin'"
                             >
                         <a ui-sref="token.import">
                             <span class="glyphicon glyphicon-upload"></span>

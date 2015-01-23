@@ -18,9 +18,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("tokenController", function (TokenFactory, ConfigFactory, $scope, $location) {
+myApp.controller("tokenController", function (TokenFactory, ConfigFactory, $scope, $location, AuthFactory) {
     $scope.params = {page: 1, sortdir: "asc"};
     $scope.reverse = false;
+    $scope.loggedInUser = AuthFactory.getUser();
     // go to the list view by default
     if ($location.path() == "/token") {
         $location.path("/token/list");
@@ -51,6 +52,7 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory, $scop
     $scope.getTokens();
 
     // Get the realms and fill the realm dropdown box
+    /*
     ConfigFactory.getRealms(function (data) {
         $scope.realms = data.result.value;
         angular.forEach($scope.realms, function (realm, realmname) {
@@ -60,7 +62,7 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory, $scop
             }
         });
     })
-
+    */
 });
 
 
@@ -143,7 +145,7 @@ myApp.controller("tokenDetailController", function ($scope,
     };
 
     $scope.setPin = function () {
-        TokenFactory.set($scope.tokenSerial, "pin",
+        TokenFactory.setpin($scope.tokenSerial, "otppin",
             $scope.pin1, function () {
                 $scope.pin1 = "";
                 $scope.pin2 = "";
