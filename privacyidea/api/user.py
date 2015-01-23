@@ -24,19 +24,10 @@
 from flask import (Blueprint,
                    request)
 from lib.utils import (getParam,
-                       optional,
-                       send_result,
-                       send_error,
-                       remove_session_from_param)
-from ..lib.policy import (PolicyClass)
-from ..lib.error import (AuthError,
-                         PolicyError)
+                       send_result)
 
-from .auth import (auth_required)
 from flask import (g)
-
 from ..lib.user import get_user_list
-
 import logging
 
 

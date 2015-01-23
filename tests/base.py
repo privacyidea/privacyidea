@@ -5,7 +5,7 @@ from privacyidea.models import db
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import User
-
+from privacyidea.lib.auth import create_db_admin
 
 PWFILE = "tests/testdata/passwords"
 
@@ -25,6 +25,8 @@ class MyTestCase(unittest.TestCase):
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
         db.create_all()
+        # Create an admin for tests.
+        create_db_admin(cls.app, "testadmin", "admin@test.tld", "testpw")
 
     def setUp_user_realms(self):
         # create user realm
@@ -63,8 +65,8 @@ class MyTestCase(unittest.TestCase):
         
     def authenticate(self):
         with self.app.test_request_context('/auth',
-                                           data={"username": "testuser",
-                                                 "password": "pass"},
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"},
                                            method='POST'):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)

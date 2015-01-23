@@ -285,16 +285,16 @@ class User(object):
             res = self.get_resolvers()
             # Now we know, the resolvers of this user and we can verify the
             # password
-            if (len(res) == 1):
+            if len(res) == 1:
                 y = get_resolver_object(self.resolver)
-                (uid, _rtype, _rname) = self.get_user_identifiers()
+                uid, _rtype, _rname = self.get_user_identifiers()
                 if y.checkPass(uid, password):
                     success = "%s@%s" % (self.login, self.realm)
                     log.debug("Successfully authenticated user %r." % self)
                 else:
                     log.info("user %r failed to authenticate." % self)
 
-            elif (len(res) == 0):
+            elif len(res) == 0:
                 log.error("The user %r exists in NO resolver." %
                           (self))
             else:

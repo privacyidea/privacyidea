@@ -19,6 +19,10 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+__doc__="""This REST API is used to authenticate the users.
+
+Authentication of users and admins is tested in tests/test_api_roles.py
+"""
 from flask import (Blueprint,
                    request,
                    url_for,
@@ -73,7 +77,7 @@ def get_auth_token():
     """
     This call verifies the credentials of the user and issues an
     authentication token, that is used for the later API calls. The
-    authentication token has a validitiy, that is usually 1 hour.
+    authentication token has a validity, that is usually 1 hour.
 
     :jsonparam username: The username of the user who wants to authenticate to
         the API.
@@ -144,41 +148,67 @@ def get_auth_token():
     username = request.all_data.get("username")
     password = request.all_data.get("password")
     secret = current_app.secret_key
+    # This is the default role for the logged in user.
+    # The role privileges may be risen to "admin"
+    role = "user"
+    # The way the user authenticated. This could be
+    # "password" = The admin user DB or the user store
+    # "pi" = The admin or the user is authenticated against privacyIDEA
+    authtype = "password"
     if username is None:
         raise AuthError("Authentication failure",
                         "missing Username",
                         status=401)
-    # TODO: Verify the password
-    if current_app.config.get("TESTING"):
-        # we do no password checking in TESTING mode
-        pass
-    else:
-        if not verify_db_admin(username, password):
-            raise AuthError("Authentication failure",
-                            "Wrong credentials", status=401)
+    # Verify the password
+    admin_auth = False
+    user_auth = False
+    if verify_db_admin(username, password):
+        role = "admin"
+        admin_auth = True
 
+    if not admin_auth:
+        from privacyidea.lib.user import User
+        from privacyidea.lib.user import split_user
+        username, realm = split_user(username)
+        user_obj = User(username, realm)
+        if user_obj.check_password(password):
+            user_auth = True
+
+    if not admin_auth and not user_auth:
+        raise AuthError("Authentication failure",
+                        "Wrong credentials", status=401)
+
+    # Add the role to the JWT, so that we can verify it internally
+    # Add the authtype to the JWT, so that we could use it for access
+    # definitions
     token = jwt.encode({"username": username,
                         "nonce": geturandom(hex=True),
+                        "role": role,
+                        "authtype": authtype,
                         "exp": datetime.utcnow() + validity},
                        secret)
     g.audit_object.log({"success": True,
                         "administrator": username,
                         "jwt_token": token})
-    return send_result({"token": token})
+
+    # Add the role to the response, so that the WebUI can make decisions
+    # based on this (only show selfservice, not the admin part)
+    return send_result({"token": token,
+                        "role": role})
 
 
-def auth_required(f):
+def admin_required(f):
     """
     This is a decorator for routes, that require to be authenticated.
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        check_auth_token()
+        check_auth_token(role="admin")
         return f(*args, **kwargs)
     return decorated_function
 
 
-def check_auth_token():
+def check_auth_token(role=None):
     """
     This checks the authentication token
     
@@ -205,6 +235,13 @@ def check_auth_token():
         raise AuthError("Authentication failure",
                         "Your token has expired: %s" % err,
                         status=401)
-    # TODO: more tests from the json web token
-    g.logged_in_user = r.get("username")
+    if role and role != r.get("role"):
+        # If we require a certain role like "admin", but the users role does
+        # not match
+        raise AuthError("Authentication failure",
+                        "Your do not have the necessary role (%s) to access "
+                        "this resouce!" % (role),
+                        status=401)
+    g.logged_in_user = {"username": r.get("username"),
+                        "role": r.get("role")};
 
