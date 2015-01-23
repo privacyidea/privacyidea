@@ -28,6 +28,7 @@ import os
 import passlib.hash
 from getpass import getpass
 from privacyidea.lib.security.default import DefaultSecurityModule
+from privacyidea.lib.auth import create_db_admin
 
 if os.path.exists('.env'):
     print('Importing environment from .env...')
@@ -60,8 +61,7 @@ def addadmin(email, username, password=None):
     """
     Register a new administrator in the database.
     """
-    key = app.config.get("PI_PEPPER", "missing")
-    config = app.config
+    db.create_all()
     if not password:
         password = getpass()
         password2 = getpass(prompt='Confirm: ')
@@ -69,14 +69,9 @@ def addadmin(email, username, password=None):
             import sys
             sys.exit('Error: passwords do not match.')
 
-    pw_dig = passlib.hash.pbkdf2_sha512.encrypt(key + password,
-                                                rounds=10023,
-                                                salt_size=10)
-    print pw_dig
-    db.create_all()
-    user = Admin(email=email, username=username, password=pw_dig)
-    user.save()
+    create_db_admin(app, username, email, password)
     print('Admin {0} was registered successfully.'.format(username))
+
 
 @manager.command
 def encrypt_enckey(encfile):

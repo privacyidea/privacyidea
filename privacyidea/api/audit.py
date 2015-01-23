@@ -34,14 +34,14 @@ import logging
 from ..lib.audit import search
 log = logging.getLogger(__name__)
 from ..lib.audit import getAudit
-from .auth import auth_required
+from .auth import admin_required
 from ..lib.policy import PolicyClass
 
 audit_blueprint = Blueprint('audit_blueprint', __name__)
 
 
 @audit_blueprint.before_request
-@auth_required
+@admin_required
 def before_request():
     """
     This is executed before the request
@@ -55,7 +55,7 @@ def before_request():
                         "client_user_agent": request.user_agent.browser,
                         "privcyidea_server": request.host,
                         "action": "%s %s" % (request.method, request.url_rule),
-                        "administrator": g.logged_in_user,
+                        "administrator": g.logged_in_user.get("username"),
                         "action_detail": "",
                         "info": ""})
     g.Policy = PolicyClass()

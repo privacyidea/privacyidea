@@ -32,8 +32,7 @@
 The code of this module is tested in tests/test_api_system.py
 """
 from flask import (Blueprint,
-                   request,
-                   url_for)
+                   request)
 from lib.utils import (getParam,
                        getLowerParams,
                        optional,
@@ -42,14 +41,6 @@ from lib.utils import (getParam,
                        send_error,
                        remove_session_from_param)
 from ..lib.log import log_with
-from ..lib.realm import get_realms
-from ..lib.resolver import (get_resolver_list,
-                            save_resolver,
-                            delete_resolver)
-from ..lib.realm import (set_default_realm,
-                         get_default_realm,
-                         set_realm,
-                         delete_realm)
 from ..lib.config import (get_privacyidea_config,
                           set_privacyidea_config,
                           delete_privacyidea_config,
@@ -64,18 +55,9 @@ from ..lib.error import (ParameterError,
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.audit import getAudit
 
-from .auth import (check_auth_token,
-                   auth_required)
-from flask import (g,
-                    make_response,
-                    current_app)
-from gettext import gettext as _
-from werkzeug.datastructures import FileStorage
-from cgi import FieldStorage
-
+from .auth import admin_required
+from flask import (g, current_app)
 import logging
-import traceback
-import re
 import json
 
 
@@ -100,7 +82,7 @@ from .audit import audit_blueprint
 @user_blueprint.before_request
 @token_blueprint.before_request
 
-@auth_required
+@admin_required
 def before_request():
     """
     This is executed before the request
@@ -120,7 +102,7 @@ def before_request():
                         "client_user_agent": request.user_agent.browser,
                         "privcyidea_server": request.host,
                         "action": "%s %s" % (request.method, request.url_rule),
-                        "administrator": g.logged_in_user,
+                        "administrator": g.logged_in_user.get("username"),
                         "action_detail": "",
                         "info": ""})
     g.Policy = PolicyClass()

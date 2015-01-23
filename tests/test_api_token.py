@@ -13,7 +13,6 @@ YUBICOFILE = "tests/testdata/yubico-oath.csv"
 
 class APITokenTestCase(MyTestCase):
 
-
     def _create_temp_token(self, serial):
         with self.app.test_request_context('/token/init',
                                            method='POST',

@@ -32,47 +32,17 @@
 The code of this module is tested in tests/test_api_system.py
 """
 from flask import (Blueprint,
-                   request,
-                   url_for)
+                   request)
 from lib.utils import (getParam,
-                       getLowerParams,
                        optional,
                        required,
                        send_result)
 from ..lib.log import log_with
-from ..lib.realm import get_realms
 from ..lib.resolver import (get_resolver_list,
                             save_resolver,
                             delete_resolver, pretestresolver)
-from ..lib.realm import (set_default_realm,
-                         get_default_realm,
-                         set_realm,
-                         delete_realm)
-from ..lib.config import (get_privacyidea_config,
-                          set_privacyidea_config,
-                          delete_privacyidea_config,
-                          get_from_config)
-from ..lib.policy import (set_policy,
-                          get_policies, PolicyClass,
-                          export_policies, import_policies,
-                          delete_policy, get_static_policy_definitions)
-from ..lib.error import (ParameterError,
-                         AuthError,
-                         PolicyError)
-from ..lib.token import get_dynamic_policy_definitions
-
-from .auth import (check_auth_token,
-                   auth_required)
-from flask import (g,
-                    make_response,
-                    current_app)
-from gettext import gettext as _
-from werkzeug.datastructures import FileStorage
-from cgi import FieldStorage
-
+from flask import g
 import logging
-import traceback
-import re
 
 
 log = logging.getLogger(__name__)

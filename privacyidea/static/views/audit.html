@@ -2,8 +2,9 @@
     <pagination ng-show="auditdata.count > 10"
                 total-items="auditdata.count" ng-model="params.page"
                 items-per-page="10"
-                max-size="5"
+                max-size="10"
                 boundary-links="true" ng-change="pageChanged()"></pagination>
+    {{ auditdata.count }} entries found.
 
     <div class="table-responsive">
         <table class="table table-bordered table-striped">
