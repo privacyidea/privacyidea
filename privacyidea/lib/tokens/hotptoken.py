@@ -257,6 +257,9 @@ class HotpTokenClass(TokenClass):
                 # finally set the values for the update
         upd_param['otpkey'] = otpKey
         upd_param['hashlib'] = self.hashlibStr
+        # We need to save the token to the database so that the TokenInfo
+        # table can refer to the token.id.
+        self.save()
         self.add_tokeninfo("hashlib", self.hashlibStr)
         val = getParam(upd_param, "otplen", optional)
         if val is not None:
@@ -417,14 +420,14 @@ class HotpTokenClass(TokenClass):
             # if former is defined
             if "otp1c" in info:
                 # check if this is consecutive
-                otp1c = info.get("otp1c")
+                otp1c = int(info.get("otp1c"))
                 otp2c = res
 
                 if (otp1c + 1) != otp2c:
                     res = -1
 
                 if "dueDate" in info:
-                    dueDate = info.get("dueDate")
+                    dueDate = int(info.get("dueDate"))
                     now = int(time.time())
                     if dueDate <= now:
                         res = -1
@@ -433,14 +436,13 @@ class HotpTokenClass(TokenClass):
                     res = -1  # pragma nocover
 
                 # now clean the resync data
-                del info["dueDate"]
-                del info["otp1c"]
-                self.set_tokeninfo(info)
+                self.del_tokeninfo("dueDate")
+                self.del_tokeninfo("otp1c")
 
             else:
-                info["otp1c"] = res
-                info["dueDate"] = int(time.time()) + self.get_sync_timeout()
-                self.set_tokeninfo(info)
+                self.add_tokeninfo("otp1c", res)
+                self.add_tokeninfo("dueDate", int(time.time()) +
+                                   self.get_sync_timeout())
 
                 res = -1
 

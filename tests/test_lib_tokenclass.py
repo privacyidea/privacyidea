@@ -223,8 +223,8 @@ class TokenBaseTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
         token.set_hashlib("sha1")
-        self.assertTrue("hashlib" in token.token.info,
-                        token.token.info)
+        tinfo = token.token.get_info()
+        self.assertTrue("hashlib" in tinfo, tinfo)
         
     def test_09_failcount(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -401,10 +401,12 @@ class TokenBaseTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
         token.set_tokeninfo({"something": "else"})
-        self.assertTrue("something" in token.token.info, token.token.info)
+        ti = token.get_tokeninfo()
+        self.assertTrue("something" in ti, ti)
         token.add_tokeninfo("nochwas", "Wert")
-        self.assertTrue("something" in token.token.info, token.token.info)
-        self.assertTrue("nochwas" in token.token.info, token.token.info)
+        ti = token.get_tokeninfo()
+        self.assertTrue("something" in ti, ti)
+        self.assertTrue("nochwas" in ti, ti)
 
     def test_17_update_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

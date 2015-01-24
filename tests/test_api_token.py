@@ -444,10 +444,10 @@ class APITokenTestCase(MyTestCase):
 
         # check the values
         with self.app.test_request_context('/token/',
-                                            method="GET",
-                                            query_string=urlencode({"serial":
-                                                                        "SET001"}),
-                                            headers={'Authorization': self.at}):
+                                           method="GET",
+                                           query_string=urlencode(
+                                                   {"serial": "SET001"}),
+                                           headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
@@ -459,11 +459,11 @@ class APITokenTestCase(MyTestCase):
             self.assertTrue(token.get("sync_window") == 999, token)
             self.assertTrue(token.get("maxfail") == 15, token)
             self.assertTrue(token.get("description") == "Some Token", token)
-            tokeninfo = json.loads(token.get("info"))
+            tokeninfo = token.get("info")
             self.assertTrue(tokeninfo.get("hashlib") == "sha2", tokeninfo)
-            self.assertTrue(tokeninfo.get("count_auth_max") == 17,
+            self.assertTrue(tokeninfo.get("count_auth_max") == "17",
                             tokeninfo)
-            self.assertTrue(tokeninfo.get("count_auth_success_max") == 8,
+            self.assertTrue(tokeninfo.get("count_auth_success_max") == "8",
                             tokeninfo)
 
     def test_10_set_token_realms(self):

@@ -12,9 +12,9 @@ from .base import MyTestCase
 
 
 class TokenModelTestCase(MyTestCase):
-    '''
+    """
     Test the token on the database level
-    '''
+    """
     def create_resolver_realm(self):
         r = Resolver("resolver1", "passwdresolver")
         r.save()
@@ -151,17 +151,18 @@ class TokenModelTestCase(MyTestCase):
         # setting normal values
         t2.count_window = 100
         t2.otplen = 8
-        t2.info = "In fo"
         t2.set_description("De scription")
         t2.save()
+        t2.set_info({"info": "value"})
         t3 = Token.query\
                   .filter_by(serial="serial2")\
                   .first()
         self.assertTrue(t3.count_window == 100)
         self.assertTrue(t3.otplen == 8)
         self.assertTrue(t3.description == "De scription")
-        self.assertTrue(t3.info == "In fo")
-        self.assertTrue(t3.get_info() == "In fo")
+        self.assertTrue(t3.info_list[0].Value == "value")
+        t3info = t3.get_info()
+        self.assertTrue(t3.get_info().get("info") == "value")
         
         # test the string represenative
         s = "%s" % t3
@@ -397,3 +398,17 @@ class TokenModelTestCase(MyTestCase):
         password2 = Admin.query.filter_by(username="admin").first().password
         self.assertTrue(password1 != password2, (password1, password2))
 
+    def test_15_add_and_delete_tokeninfo(self):
+        t1 = Token("serialTI")
+        t1.save()
+
+        t1.set_info({"key1": "value1",
+                     "key2": "value2",
+                     "key3": "value3"})
+        t2 = Token.query.filter_by(serial="serialTI").first()
+        t2info = t2.get_info()
+        self.assertTrue(t2info.get("key2") == "value2", t2info)
+
+        t2.del_info("key2")
+        t2info = t2.get_info()
+        self.assertTrue(t2info.get("key2") is None, t2info)

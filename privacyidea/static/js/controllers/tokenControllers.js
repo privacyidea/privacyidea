@@ -91,7 +91,11 @@ myApp.controller("tokenDetailController", function ($scope,
     };
 
     $scope.unassign = function () {
-        TokenFactory.unassign($scope.tokenSerial, $scope.get);
+        if ($scope.loggedInUser.role == 'user') {
+            TokenFactory.unassign($scope.tokenSerial, $state.go('token.list'));
+        } else {
+            TokenFactory.unassign($scope.tokenSerial, $scope.get);
+        }
     };
 
     $scope.enable = function () {

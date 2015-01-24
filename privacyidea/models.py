@@ -75,7 +75,6 @@ class Token(MethodsMixin, db.Model):
     tokentype = db.Column(db.Unicode(30),
                           default=u'HOTP',
                           index=True)
-    info = db.Column(db.Unicode(2000), default=u'')
     user_pin = db.Column(db.Unicode(512),
                          default=u'')  # encrypt
     user_pin_iv = db.Column(db.Unicode(32),
@@ -113,6 +112,9 @@ class Token(MethodsMixin, db.Model):
                             default=1000)
     rollout_state = db.Column(db.Unicode(10),
                               default=u'')
+    info = db.relationship('TokenInfo',
+                              lazy='dynamic',
+                              backref='info')
         
     def __init__(self, serial, tokentype=u"",
                  isactive=True, otplen=6,
@@ -158,6 +160,9 @@ class Token(MethodsMixin, db.Model):
         ret = self.id
         db.session.query(TokenRealm)\
                   .filter(TokenRealm.token_id == self.id)\
+                  .delete()
+        db.session.query(TokenInfo)\
+                  .filter(TokenInfo.token_id == self.id)\
                   .delete()
         db.session.delete(self)
         db.session.commit()
@@ -398,7 +403,7 @@ class Token(MethodsMixin, db.Model):
         ret['description'] = self.description
         ret['serial'] = self.serial
         ret['tokentype'] = self.tokentype
-        ret['info'] = self._fix_spaces(self.info)
+        ret['info'] = self.get_info()
 
         ret['resolver'] = self.resolver
         ret['resolver_type'] = self.resolver_type
@@ -437,15 +442,39 @@ class Token(MethodsMixin, db.Model):
 
     def set_info(self, info):
         """
-        Set the info comlumn
+        Set the additional token info for this token
+        :param info: The key-values to set for this token
+        :type info: dict
         """
-        self.info = info
+        for k, v in info.iteritems():
+            TokenInfo(self.id, k, v).save()
+
+    def del_info(self, key=None):
+        """
+        Deletes tokeninfo for a given token.
+        If the key is omitted, all Tokeninfo is deleted.
+
+        :param key: searches for the given key to delete the entry
+        :return:
+        """
+        if key:
+            tokeninfos = TokenInfo.query.filter_by(token_id=self.id, Key=key)
+        else:
+            tokeninfos = TokenInfo.query.filter_by(token_id=self.id)
+        for ti in tokeninfos:
+            ti.delete()
+        pass
 
     def get_info(self):
-        # Fix for working with MS SQL servers
-        # MS SQL servers sometimes return a '<space>' when
-        # the column is empty: ''
-        return self._fix_spaces(self.info)
+        """
+
+        :return: The token info as dictionary
+        """
+        ret = {}
+        tokeninfos = TokenInfo.query.filter_by(token_id=self.id)
+        for ti in tokeninfos:
+            ret[ti.Key] = ti.Value
+        return ret
 
     def update_type(self, typ):
         """
@@ -479,6 +508,56 @@ class Token(MethodsMixin, db.Model):
             self.update_otpkey(otpkey)
 
 
+class TokenInfo(MethodsMixin, db.Model):
+    """
+    The Info Table for additional, flexible information store with each token.
+    The idea of the tokeninfo table is, that new token types can easily store
+    long additional information.
+    """
+    __tablename__ = 'tokeninfo'
+    id = db.Column(db.Integer, primary_key=True)
+    Key = db.Column(db.Unicode(255),
+                    nullable=False)
+    Value = db.Column(db.Unicode(2000), default=u'')
+    Description = db.Column(db.Unicode(2000), default=u'')
+    token_id = db.Column(db.Integer(),
+                         db.ForeignKey('token.id'))
+    token = db.relationship('Token',
+                            lazy='joined',
+                            backref='info_list')
+    __table_args__ = (db.UniqueConstraint('token_id',
+                                          'Key',
+                                          name='tiix_2'), {})
+
+    def __init__(self, token_id, Key, Value, Description=None):
+        """
+        Create a new tokeninfo for a given token_id
+        """
+        self.token_id = token_id
+        self.Key = Key
+        self.Value = Value
+        self.Description = Description
+
+    def save(self):
+        ti = TokenInfo.query.filter_by(token_id=self.token_id,
+                                           Key=self.Key).first()
+        if ti is None:
+            # create a new one
+            db.session.add(self)
+            db.session.commit()
+            ret = self.id
+        else:
+            # update
+            TokenInfo.query.filter_by(token_id=self.token_id,
+                                           Key=self.Key
+                                           ).update({'Value': self.Value,
+                                                     'Descrip'
+                                                     'tion': self.Description})
+            ret = ti.id
+        db.session.commit()
+        return ret
+
+
 class Admin(db.Model):
     """
     The administrators for managing the system.
@@ -509,9 +588,9 @@ class Admin(db.Model):
 
 
 class Config(db.Model):
-    '''
+    """
     The config table holds all the configuration in key value pairs.
-    '''
+    """
     __tablename__ = "config"
     Key = db.Column(db.Unicode(255),
                     primary_key=True,

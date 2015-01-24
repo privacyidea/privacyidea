@@ -210,8 +210,8 @@ class HOTPTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = HotpTokenClass(db_token)
         token.set_hashlib("sha1")
-        self.assertTrue("hashlib" in token.token.info,
-                        token.token.info)
+        ti = token.get_tokeninfo()
+        self.assertTrue("hashlib" in ti, ti)
 
     def test_09_failcount(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

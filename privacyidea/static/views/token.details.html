@@ -204,35 +204,48 @@
 
     <!-- =================== USER ASSIGN ================= -->
 
-    <h4 ng-show="token.user_id">Assgined User</h4>
-    <table ng-show="token.user_id" class="table table-striped table-bordered">
-        <tr>
-            <td>Username</td>
-            <td><a ui-sref="user.details({username: token.username,
+    <div ng-show="loggedInUser.role == 'admin'">
+        <h4 ng-show="token.user_id">Assgined User</h4>
+        <table ng-show="token.user_id"
+               class="table table-striped table-bordered">
+            <tr>
+                <td>Username</td>
+                <td><a ui-sref="user.details({username: token.username,
             realmname: token.user_realm})">
-                {{ token.username }}</a></td>
-            <td>
-                <button ng-click="unassign()"
-                        class="btn btn-warning">
-                    <div class="glyphicon glyphicon-resize-full">
-                        Unassign User
-                    </div>
-                </button>
-            </td>
-        </tr>
-        <tr>
-            <td>Realm</td>
-            <td><a ui-sref="config.realms.list">{{ token.user_realm }}</a></td>
-        </tr>
-        <tr>
-            <td>Resolver</td>
-            <td><a ui-sref="config.resolvers.list">{{ token.resolver }}</a></td>
-        </tr>
-        <tr>
-            <td>User Id</td>
-            <td>{{ token.user_id }}</td>
-        </tr>
-    </table>
+                    {{ token.username }}</a></td>
+                <td>
+                    <button ng-click="unassign()"
+                            class="btn btn-warning">
+                        <div class="glyphicon glyphicon-resize-full">
+                            Unassign User
+                        </div>
+                    </button>
+                </td>
+            </tr>
+            <tr>
+                <td>Realm</td>
+                <td><a ui-sref="config.realms.list">{{ token.user_realm }}</a>
+                </td>
+            </tr>
+            <tr>
+                <td>Resolver</td>
+                <td><a ui-sref="config.resolvers.list">{{ token.resolver }}</a>
+                </td>
+            </tr>
+            <tr>
+                <td>User Id</td>
+                <td>{{ token.user_id }}</td>
+            </tr>
+        </table>
+    </div>
+    <div ng-show="loggedInUser.role== 'user'">
+        <button ng-click="unassign()"
+                class="btn btn-warning">
+            <div class="glyphicon glyphicon-resize-full">
+                Unassign Token
+            </div>
+        </button>
+    </div>
 </div>
 
 <h4 ng-hide="token.user_id">Assign User</h4>

@@ -192,6 +192,9 @@ class TotpTokenClass(HotpTokenClass):
         if "timeShift" in param:
             self.timeShift = param.get("timeShift")
 
+        # We need to save the token to the database, so that it as an ID in
+        # the DB, which we can refer to in the TokenInfo table.
+        self.save()
         self.add_tokeninfo("timeWindow", self.timeWindow)
         self.add_tokeninfo("timeShift", self.timeShift)
         self.add_tokeninfo("timeStep", self.timeStep)
@@ -283,8 +286,8 @@ class TotpTokenClass(HotpTokenClass):
         self.hashlibStr = self.get_tokeninfo("hashlib", self.hashlibStr)
         timeStepping = int(self.get_tokeninfo("timeStep") or self.timeStep)
         window = window or int(self.get_tokeninfo("timeWindow") or
-                             self.timeWindow)
-        shift = int(self.get_tokeninfo("timeShift") or self.timeShift)
+                               self.timeWindow)
+        shift = float(self.get_tokeninfo("timeShift") or self.timeShift)
         # oldCounter we have to remove one, as the normal otp handling will
         # increment
         # TODO: Migration: Really?
@@ -396,7 +399,7 @@ class TotpTokenClass(HotpTokenClass):
             # if former is defined
             if "otp1c" in info:
                 # check if this is consecutive
-                otp1c = info.get("otp1c")
+                otp1c = int(info.get("otp1c"))
                 otp2c = res
                 log.debug("otp1c: %r, otp2c: %r" % (otp1c, otp2c))
                 diff = math.fabs(otp2c - otp1c)
@@ -445,7 +448,7 @@ class TotpTokenClass(HotpTokenClass):
 
         self.hashlibStr = self.get_tokeninfo("hashlib", 'sha1')
         timeStepping = int(self.get_tokeninfo("timeStep") or 30)
-        shift = int(self.get_tokeninfo("timeShift") or 0)
+        shift = float(self.get_tokeninfo("timeShift") or 0)
         window = int(self.token.sync_window) * timeStepping
         log.debug("timestep: %r, syncWindow: %r, timeShift: %r"
                   % (timeStepping, window, shift))
@@ -586,7 +589,7 @@ class TotpTokenClass(HotpTokenClass):
 
         self.hashlibStr = self.get_tokeninfo("hashlib", "sha1")
         timeStepping = int(self.get_tokeninfo("timeStep", "30"))
-        shift = int(self.get_tokeninfo("timeShift", "0"))
+        shift = float(self.get_tokeninfo("timeShift", "0"))
 
         hmac2Otp = HmacOtp(secretHOtp, self.get_otp_count(),
                            otplen, self.get_hashlib(self.hashlibStr))

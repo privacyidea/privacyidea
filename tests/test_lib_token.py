@@ -483,7 +483,7 @@ class TokenTestCase(MyTestCase):
         r = set_hashlib(serial=serial, hashlib="sha256")
         self.assertTrue(r == 1)
         hashlib = tokenobject.token.get_info()
-        self.assertTrue("sha256" in hashlib, hashlib)
+        self.assertTrue(hashlib.get("hashlib") == "sha256", hashlib)
         remove_token(serial)
 
 
@@ -510,11 +510,10 @@ class TokenTestCase(MyTestCase):
         r = set_count_auth(serial=serial, count=103, max=True, success=True)
         self.assertTrue(r == 1)
         tinfo = tokenobject.token.get_info()
-        tinfo = json.loads(tinfo)
-        self.assertTrue(tinfo.get("count_auth") == 100, tinfo)
-        self.assertTrue(tinfo.get("count_auth_max") == 101, tinfo)
-        self.assertTrue(tinfo.get("count_auth_success") == 102, tinfo)
-        self.assertTrue(tinfo.get("count_auth_success_max") == 103, tinfo)
+        self.assertTrue(tinfo.get("count_auth") == "100", tinfo)
+        self.assertTrue(tinfo.get("count_auth_max") == "101", tinfo)
+        self.assertTrue(tinfo.get("count_auth_success") == "102", tinfo)
+        self.assertTrue(tinfo.get("count_auth_success_max") == "103", tinfo)
 
     def test_25_add_tokeninfo(self):
         serial = "t1"
@@ -522,7 +521,6 @@ class TokenTestCase(MyTestCase):
         r = add_tokeninfo(serial, "something", "new")
         self.assertTrue(r == 1, r)
         tinfo = tokenobject.token.get_info()
-        tinfo = json.loads(tinfo)
         self.assertTrue(tinfo.get("something") == "new", tinfo)
         remove_token(serial)
 

@@ -205,14 +205,13 @@ class TokenClass(object):
 
     def set_tokeninfo(self, info):
         """
-        Set the tokeninfo field in the DB
-        :param info: arbitrary key and value
-        :return: dictionary
+        Set the tokeninfo field in the DB. Old values will be deleted.
+        :param info: dictionary with key and value
+        :type info: dict
+        :return:
         """
-        if info is not None:
-            tokeninfo = u'' + json.dumps(info, indent=0)
-            self.token.set_info(tokeninfo)
-
+        self.token.del_info()
+        self.token.set_info(info)
 
     def add_tokeninfo(self, key, value):
         """
@@ -221,17 +220,7 @@ class TokenClass(object):
         :param value:
         :return:
         """
-        info = {}
-        tokeninfo = self.token.get_info()
-
-        if tokeninfo is not None:
-            if len(tokeninfo) > 0 :
-                info = json.loads(tokeninfo)
-
-        #if info.has_key(key) == True:
-        info[key] = value
-
-        self.set_tokeninfo(info)
+        self.token.set_info({key: value})
 
     def check_otp(self, otpval, counter=None, window=None, options=None):
         """
@@ -637,20 +626,15 @@ class TokenClass(object):
         :return: the value for the key
         :rtype: int or string
         """
-        info = {}
-
         tokeninfo = self.token.get_info()
-        try:
-            info = json.loads(tokeninfo)
-        except Exception as e:  # pragma nocover
-            log.error('get_info %r' % (e))
-            return None
-
         if key:
-            ret = info.get(key, default)
+            ret = tokeninfo.get(key, default)
         else:
-            ret = info
+            ret = tokeninfo
         return ret
+
+    def del_tokeninfo(self, key=None):
+        self.token.del_info(key)
 
     def set_count_auth_success_max(self, count):
         """
