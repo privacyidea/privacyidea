@@ -76,7 +76,7 @@ myApp.directive("piSortBy", function(){
 });
 
 
-myApp.directive('assignUser', function($http, userUrl, AuthFactory, ConfigFactory) {
+myApp.directive('assignUser', function($http, userUrl, AuthFactory) {
     /*
     This directive is used to select a user from a realm
 
@@ -84,15 +84,15 @@ myApp.directive('assignUser', function($http, userUrl, AuthFactory, ConfigFactor
      */
     return {
         scope: {
-            newUserObject: '='
+            newUserObject: '=',
+            realms: '='
         },
         templateUrl: "static/views/directive.assignuser.html",
         link: function (scope, element, attr) {
-            ConfigFactory.getRealms(function(data) {
-                scope.realms = data.result.value;
-            });
+            console.log("Entering assignUser directive");
+            console.log(scope.realms);
+            console.log(scope.newUserObject);
             scope.loadUsers = function($viewValue) {
-            // TODO: Move this into the userFactory!
             var auth_token = AuthFactory.getAuthToken();
             return $http({
                 method: 'GET',

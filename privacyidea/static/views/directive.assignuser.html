@@ -5,7 +5,8 @@ This is the directive for assigning users.
     <label for="realm">Realm</label>
     <select class="form-control"
             name="realm" ng-model="newUserObject.realm"
-            ng-options="realmname for (realmname, realm) in realms" >
+            ng-options="realmname as realmname for (realmname, realm) in
+            realms">
     </select>
 </div>
 

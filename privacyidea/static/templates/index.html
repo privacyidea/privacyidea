@@ -38,14 +38,12 @@
                           aria-hidden="true"></span>
                         Token View</a></li>
                 <li ng-class="{active: $state.includes('user')}"
-                    ng-hide="$state.includes('login')"
                     ng-show="loggedInUser.role == 'admin'">
                     <a ui-sref="user">
                     <span class="glyphicon glyphicon-user"
                           aria-hidden="true"></span>
                         User View</a></li>
                 <li ng-class="{active: $state.includes('config')}"
-                    ng-hide="$state.includes('login')"
                     ng-show="loggedInUser.role == 'admin'">
                     <a ui-sref="config">
                         <span class="glyphicon glyphicon-list"
@@ -70,7 +68,8 @@
                             ng-click="logout()"
                             class="btn btn-sm">
                         Logout
-                        {{ user.username }}</button>
+                        {{ user.username }}<br>
+                    ({{ loggedInUser.role }})</button>
                 </li>
             </ul>
 

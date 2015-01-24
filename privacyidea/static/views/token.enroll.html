@@ -18,13 +18,14 @@
             <input type="checkbox" ng-model="form.generate"
                    name="generate" id="generate">
             <label for="generate">Generate OTP Key on the Server</label>
+
             <div ng-show="form.generate">
-            <p class="help-block">
-                The server will create the OTP value
-                and a QR Code
-                will be
-                displayed to you to be scanned.
-            </p>
+                <p class="help-block">
+                    The server will create the OTP value
+                    and a QR Code
+                    will be
+                    displayed to you to be scanned.
+                </p>
             </div>
         </div>
         <div class="form-group" ng-hide="form.generate">
@@ -39,8 +40,8 @@
             <label for="otplen">OTP length</label>
             <select class="form-control"
                     id="otplen"
-                ng-model="form.otplen"
-                ng-options="otplen for otplen in formInit.otplens">
+                    ng-model="form.otplen"
+                    ng-options="otplen for otplen in formInit.otplens">
             </select>
         </div>
         <div class="form-group" ng-show="form.type=='totp'">
@@ -52,14 +53,30 @@
             seconds.
         </div>
 
-        <h4>Assign token to user</h4>
+        <div ng-show="loggedInUser.role == 'admin'">
+            <h4>Assign token to user</h4>
 
-        <div assign-user new-user-object="newUser"></div>
+            <div assign-user new-user-object="newUser" realms="realms"
+                 default-realm="defaultRealm"></div>
 
-        <div class="msg-block"
-             ng-show="formEnrollToken.otppin2.$error.passwordVerify">
-            <span class="msg-error">OTP PINs do not match!</span>
+            <div class="msg-block"
+                 ng-show="formEnrollToken.otppin2.$error.passwordVerify">
+                <span class="msg-error">OTP PINs do not match!</span>
+            </div>
         </div>
+        <div class="form-group"
+             ng-show="loggedInUser.role == 'user'">
+            <label for="otppin">PIN</label>
+            <input name="otppin" ng-model="newUser.pin"
+                   type=password class="form-control"
+                   euqals="{{ pin2 }}"
+                   placeholder="Type a password">
+            <input name="otppin2" ng-model="pin2"
+                   type=password class="form-control"
+                   equals="{{ newUser.pin }}"
+                   placeholder="Repeat password">
+        </div>
+
 
         <div class="text-center">
             <button ng-click="enrollToken()"
@@ -75,7 +92,8 @@
     <p>
         The token was successfully enrolled with serial number
         <a ui-sref="token.details({tokenSerial:enrolledToken.serial})">
-            {{ enrolledToken.serial }}</a><span ng-show="newUser.user">
+            {{ enrolledToken.serial }}</a>
+        <span ng-show="newUser.user && loggedInUser.role == 'admin'">
         for user
         <a ui-sref="user.details({username:newUser.user, realmname:newUser.realm})"
                 >{{ newUser.user }}</a> in realm

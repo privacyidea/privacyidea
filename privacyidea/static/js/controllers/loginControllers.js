@@ -33,6 +33,7 @@ angular.module("privacyideaApp")
 
         // This holds the user object, the username, the password and the token.
         $scope.login = {username: "", password: ""};
+        AuthFactory.setUser();
 
         $scope.authenticate = function () {
             $http.post(authUrl, {

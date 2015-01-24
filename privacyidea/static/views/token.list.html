@@ -42,8 +42,8 @@
                          unsorted">failcounter
                 </button>
             </th>
-            <th>user</th>
-            <th>realm</th>
+            <th ng-show="loggedInUser.role == 'admin'">user</th>
+            <th ng-show="loggedInUser.role == 'admin'">realm</th>
         </tr>
         </thead>
         <tbody>
@@ -69,13 +69,16 @@
                    'label-danger': token.failcount>=token.maxfail}">
             {{ token.failcount }}
             </span></td>
-            </td>
             <!--<td>{{ token.maxfail }}</td>-->
             <!--<td>{{ token.otplen }}</td>-->
-            <td><a ui-sref="user.details({username: token.username,
-            realmname: token.user_realm})">
-                {{ token.username }}</a></td>
-            <td><a ui-sref="config.realms.list">{{ token.user_realm }}</a></td>
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="user.details({username: token.username,
+                            realmname: token.user_realm})">
+                {{ token.username }}</a>
+            </td>
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="config.realms.list">{{ token.user_realm }}</a>
+            </td>
         </tr>
         </tbody>
     </table>

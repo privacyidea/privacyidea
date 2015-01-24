@@ -52,17 +52,17 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory, $scop
     $scope.getTokens();
 
     // Get the realms and fill the realm dropdown box
-    /*
-    ConfigFactory.getRealms(function (data) {
-        $scope.realms = data.result.value;
-        angular.forEach($scope.realms, function (realm, realmname) {
-            if (realm.default) {
-                // Set the default realm
-                $scope.defaultRealm = realmname;
-            }
+    if (AuthFactory.getRole() == 'admin') {
+        ConfigFactory.getRealms(function (data) {
+            $scope.realms = data.result.value;
+            angular.forEach($scope.realms, function (realm, realmname) {
+                if (realm.default) {
+                    // Set the default realm
+                    $scope.defaultRealm = realmname;
+                }
+            });
         });
-    })
-    */
+    }
 });
 
 
@@ -178,10 +178,21 @@ myApp.controller("tokenDetailController", function ($scope,
 
 });
 
-myApp.controller("tokenEnrollController", function ($scope, TokenFactory, $stateParams) {
-    // init the username
-    $scope.newUser = {user: "", realm: $scope.defaultRealm};
-    // init the user if token.enroll was called from the user.details
+myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
+                                                    $stateParams, AuthFactory) {
+    console.log($scope.realms);
+    $scope.newUser = {};
+    // init the user, if token.enroll was called as a normal user
+    if (AuthFactory.getRole() == 'user') {
+        $scope.newUser.user = AuthFactory.getUser().username;
+        $scope.newUser.realm = AuthFactory.getUser().realm;
+    } else {
+        // init the username with default realm
+        $scope.newUser = {user: "", realm: $scope.defaultRealm};
+        console.log("tokenEnrollController");
+        console.log($scope.newUser);
+    }
+    // init the user, if token.enroll was called from the user.details
     if ($stateParams.username) {
         $scope.newUser.user = $stateParams.username;
     }
