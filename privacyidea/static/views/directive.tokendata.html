@@ -10,7 +10,7 @@
     </form>
 </td>
 
-<td>
+<td><div ng-hide="loggedInUser.role == 'user'">
     <button ng-show="editFlag"
             class="btn btn-primary"
             ng-click="callback({key: tokenKey, value: tokenData}); editFlag =
@@ -26,4 +26,5 @@
             class="btn btn-primary"
             ng-click="editFlag = true;">Edit
     </button>
+    </div>
 </td>

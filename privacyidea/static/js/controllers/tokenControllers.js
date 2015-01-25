@@ -66,14 +66,17 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory, $scop
 });
 
 
-myApp.controller("tokenDetailController", function ($scope,
+    myApp.controller("tokenDetailController", function ($scope,
                                                     TokenFactory, UserFactory,
                                                     $stateParams,
-                                                    $state, $rootScope, ValidateFactory) {
+                                                    $state, $rootScope,
+                                                    ValidateFactory,
+                                                    AuthFactory) {
     $scope.tokenSerial = $stateParams.tokenSerial;
     $scope.editCountWindow = false;
     $scope.selectedRealms = {};
     $scope.newUser = {user: "", realm: $scope.defaultRealm};
+    $scope.loggedInUser = AuthFactory.getUser();
     // scroll to the top of the page
     document.body.scrollTop = document.documentElement.scrollTop = 0;
 
@@ -184,7 +187,7 @@ myApp.controller("tokenDetailController", function ($scope,
 
 myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                                                     $stateParams, AuthFactory) {
-    console.log($scope.realms);
+    $scope.loggedInUser = AuthFactory.getUser();
     $scope.newUser = {};
     // init the user, if token.enroll was called as a normal user
     if (AuthFactory.getRole() == 'user') {

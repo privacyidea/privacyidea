@@ -41,7 +41,8 @@
             token-key="max_failcount"
             input-pattern="[0-9]*"
             callback-cancel="get()"
-            callback="set(key, value)"></tr>
+            callback="set(key, value)"
+            logged-in-user="loggedInUser"></tr>
         <tr>
             <td>Fail counter</td>
             <td><span class="label"
@@ -74,14 +75,16 @@
             token-key="count_window"
             input-pattern="[0-9]*"
             callback-cancel="get()"
-            callback="set(key, value)"></tr>
+            callback="set(key, value)"
+            logged-in-user="loggedInUser"></tr>
         <tr token-data-edit text="Sync Window"
             button-text="Set sync window"
             token-data="{{ token.sync_window }}"
             token-key="sync_window"
             input-pattern="[0-9]*"
             callback-cancel="get()"
-            callback="set(key, value)"></tr>
+            callback="set(key, value)"
+            logged-in-user="loggedInUser"></tr>
         <!-- If setData is called within the directive tokenDataEdit,
         the function set in the parent scope is called -->
         <tr token-data-edit text="Description"
@@ -89,7 +92,8 @@
             token-data="{{ token.description }}"
             token-key="description"
             callback-cancel="get()"
-            callback="set(key, value)"></tr>
+            callback="set(key, value)"
+            logged-in-user="loggedInUser"></tr>
         <tr>
             <td>Info</td>
             <td>{{ token.info }}</td>
@@ -115,18 +119,20 @@
                 </span></span>
             </td>
             <td>
-                <button class="btn btn-primary"
-                        ng-hide="editTokenRealm"
-                        ng-click="startEditRealm()">Edit
-                </button>
-                <button class="btn btn-primary"
-                        ng-show="editTokenRealm"
-                        ng-click="saveRealm()">Save realms
-                </button>
-                <button class="btn btn-danger"
-                        ng-show="editTokenRealm"
-                        ng-click="cancelEditRealm();">Cancel
-                </button>
+                <div ng-show="loggedInUser.role == 'admin'">
+                    <button class="btn btn-primary"
+                            ng-hide="editTokenRealm"
+                            ng-click="startEditRealm()">Edit
+                    </button>
+                    <button class="btn btn-primary"
+                            ng-show="editTokenRealm"
+                            ng-click="saveRealm()">Save realms
+                    </button>
+                    <button class="btn btn-danger"
+                            ng-show="editTokenRealm"
+                            ng-click="cancelEditRealm();">Cancel
+                    </button>
+                </div>
             </td>
         </tr>
 

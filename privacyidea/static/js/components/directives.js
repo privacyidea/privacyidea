@@ -27,10 +27,15 @@ myApp.directive('tokenDataEdit', function() {
             tokenKey: '@',
             inputPattern: '@',
             inputType: '@',
+            loggedInUser: '=',
             callback: '&',
             callbackCancel: '&'
         },
-        templateUrl: "static/views/directive.tokendata.html"
+        templateUrl: "static/views/directive.tokendata.html",
+        link: function(scope, element, attr, ctrl) {
+            console.log("tokenDataEdit");
+            console.log(scope.loggedInUser);
+        }
     }
 });
 
