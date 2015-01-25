@@ -28,8 +28,9 @@ angular.module("privacyideaAuth", [])
         var user = {};
 
         return {
-            setUser: function (username, auth_token, role) {
+            setUser: function (username, realm, auth_token, role) {
                 user.username = username;
+                user.realm = realm;
                 user.auth_token = auth_token;
                 user.role = role;
             },
@@ -38,6 +39,9 @@ angular.module("privacyideaAuth", [])
             },
             getUser: function () {
                 return user;
+            },
+            getRealm: function () {
+                return user.realm;
             },
             getAuthToken: function () {
                 return user.auth_token;

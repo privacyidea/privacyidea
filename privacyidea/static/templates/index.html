@@ -61,15 +61,15 @@
                 </li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
-                <li><a ui-sref="login" ng-hide="user.username">Login</a>
+                <li><a ui-sref="login" ng-hide="loggedInUser.username">Login</a>
                 </li>
                 <li>
-                    <button ng-show="user.username"
+                    <button ng-show="loggedInUser.username"
                             ng-click="logout()"
                             class="btn btn-sm">
                         Logout
-                        {{ user.username }}<br>
-                    ({{ loggedInUser.role }})</button>
+                        {{ loggedInUser.username }} @{{ loggedInUser.realm }}<br>
+                    (Role: {{ loggedInUser.role }})</button>
                 </li>
             </ul>
 

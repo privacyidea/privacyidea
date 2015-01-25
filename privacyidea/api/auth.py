@@ -40,7 +40,8 @@ from functools import wraps
 from datetime import (datetime,
                       timedelta)
 from privacyidea.lib.audit import getAudit
-
+from privacyidea.lib.user import User
+from privacyidea.lib.user import split_user
 
 
 # TODO: provide the user object
@@ -147,6 +148,7 @@ def get_auth_token():
     validity = timedelta(hours=1)
     username = request.all_data.get("username")
     password = request.all_data.get("password")
+    realm = ""
     secret = current_app.secret_key
     # This is the default role for the logged in user.
     # The role privileges may be risen to "admin"
@@ -167,8 +169,6 @@ def get_auth_token():
         admin_auth = True
 
     if not admin_auth:
-        from privacyidea.lib.user import User
-        from privacyidea.lib.user import split_user
         username, realm = split_user(username)
         user_obj = User(username, realm)
         if user_obj.check_password(password):
@@ -185,7 +185,8 @@ def get_auth_token():
                         "nonce": geturandom(hex=True),
                         "role": role,
                         "authtype": authtype,
-                        "exp": datetime.utcnow() + validity},
+                        "exp": datetime.utcnow() + validity,
+                        "rights": "TODO"},
                        secret)
     g.audit_object.log({"success": True,
                         "administrator": username,
@@ -193,7 +194,10 @@ def get_auth_token():
     # Add the role to the response, so that the WebUI can make decisions
     # based on this (only show selfservice, not the admin part)
     return send_result({"token": token,
-                        "role": role})
+                        "role": role,
+                        "username": username,
+                        "realm": realm,
+                        "rights": "TODO"})
 
 
 def admin_required(f):

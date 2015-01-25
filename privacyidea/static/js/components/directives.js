@@ -18,7 +18,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.directive('tokenDataEdit', function() {
+myApp.directive('tokenDataEdit', function(AuthFactory) {
     return {
         scope: {
             text: '@',
@@ -27,12 +27,12 @@ myApp.directive('tokenDataEdit', function() {
             tokenKey: '@',
             inputPattern: '@',
             inputType: '@',
-            loggedInUser: '=',
             callback: '&',
             callbackCancel: '&'
         },
         templateUrl: "static/views/directive.tokendata.html",
         link: function(scope, element, attr, ctrl) {
+            scope.loggedInUser = AuthFactory.getUser();
             console.log("tokenDataEdit");
             console.log(scope.loggedInUser);
         }
