@@ -4,24 +4,24 @@
             <input name="splitAtSign" id="splitAtSign"
                    ng-model="params.splitAtSign"
                    type="checkbox"
-                    ng-checked="params.splitAtSign==1"/>
+                    ng-checked="isChecked(params.splitAtSign)"/>
             <label for="splitAtSign">Use @ sign to split the username
-                and the realm</label>
+                and the realm.</label>
         </div>
         <div class="form-group col-sm-12">
             <input name="IncFailCountOnFalsePin" id="IncFailCountOnFalsePin"
                    ng-model="params.IncFailCountOnFalsePin"
                    type="checkbox"
-                   ng-checked="params.IncFailCountOnFalsePin==1"/>
+                   ng-checked="isChecked(params.IncFailCountOnFalsePin)"/>
             <label for="IncFailCountOnFalsePin">Increase the failcounter if
-                the wrong PIN was enterd.
+                the wrong PIN was entered.
             </label>
         </div>
         <div class="form-group col-sm-12">
             <input name="PrependPin" id="PrependPin"
                    ng-model="params.PrependPin"
                    type="checkbox"
-                    ng-checked="params.PrependPin==1"/>
+                    ng-checked="isChecked(params.PrependPin)"/>
             <label for="PrependPin">Prepend the PIN in front of the OTP value
                 . Otherwise it will be post pended.
             </label>
@@ -31,7 +31,7 @@
             <input name="ReturnSamlAttributes" id="ReturnSamlAttributes"
                    ng-model="params.ReturnSamlAttributes"
                    type="checkbox"
-                    ng-checked="params.ReturnSamlAttributes==1"/>
+                    ng-checked="isChecked(params.ReturnSamlAttributes)"/>
             <label for="ReturnSamlAttributes">Include SAML attributes in the
                 authentication response.
             </label>
@@ -41,7 +41,7 @@
             <input name="AutoResync" id="AutoResync"
                    ng-model="params.AutoResync"
                    type="checkbox"
-                    ng-checked="params.AutoResync==1"/>
+                    ng-checked="isChecked(params.AutoResync)"/>
             <label for="AutoResync">Automatic resync during authentication
             </label>
         </div>
@@ -61,7 +61,7 @@
             <input name="PassOnUserNotFound" id="PassOnUserNotFound"
                    ng-model="params.PassOnUserNotFound"
                    type="checkbox"
-                    ng-checked="params.PassOnUserNotFound==1"/>
+                    ng-checked="isChecked(params.PassOnUserNotFound)"/>
             <label for="PassOnUserNotFound">Pass, if the user does not exist
             </label>
         </div>
@@ -69,7 +69,7 @@
             <input name="PassOnUserNoToken" id="PassOnUserNoToken"
                    ng-model="params.PassOnUserNoToken"
                    type="checkbox"
-                    ng-checked="params.PassOnUserNoToken==1"/>
+                    ng-checked="isChecked(params.PassOnUserNoToken)"/>
             <label for="PassOnUserNoToken">Pass, if the user has no token
             </label>
         </div>
@@ -162,7 +162,7 @@
                        id="UiLoginDisplayHelpButton"
                        ng-model="params.UiLoginDisplayHelpButton"
                        type="checkbox"
-                        ng-checked="params.UiLoginDisplayHelpButton==1"/>
+                        ng-checked="isChecked(params.UiLoginDisplayHelpButton)"/>
                 <label for="UiLoginDisplayHelpButton">Display Help Button on
                     Login
                     Screen.
@@ -172,7 +172,7 @@
                 <input name="UiLoginDisplayRealmBox" id="UiLoginDisplayRealmBox"
                        ng-model="params.UiLoginDisplayRealmBox"
                        type="checkbox"
-                        ng-checked="params.UiLoginDisplayRealmBox==1"/>
+                        ng-checked="isChecked(params.UiLoginDisplayRealmBox)"/>
                 <label for="UiLoginDisplayRealmBox">Display Realm Box on Login
                     Screen.
                 </label>

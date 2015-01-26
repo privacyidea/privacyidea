@@ -61,20 +61,20 @@ angular.module("TokenModule", ["privacyideaAuth"])
 
         return {
             getTokens: function (callback, params) {
-                $http.get(tokenUrl, {
+                $http.get(tokenUrl + "/", {
                     headers: {'Authorization': AuthFactory.getAuthToken()},
                     params: params
                 }).success(callback
                 ).error(error_func)
             },
             getTokenForSerial: function (serial, callback) {
-                $http.get(tokenUrl + "?serial=" + serial, {
+                $http.get(tokenUrl + "/?serial=" + serial, {
                     headers: {'Authorization': AuthFactory.getAuthToken()}
                 }).success(callback
                 ).error(error_func)
             },
             getTokenForUser: function (params, callback) {
-                $http.get(tokenUrl, {
+                $http.get(tokenUrl + "/", {
                     headers: {'Authorization': AuthFactory.getAuthToken()},
                     params: params
                 }).success(callback

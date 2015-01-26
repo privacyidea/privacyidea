@@ -1,7 +1,8 @@
 """Update from versoin 1.5 to version 2.0
 
 Revision ID: 4f32a4e1bf33
-Revises: None
+Revises:
+ne
 Create Date: 2015-01-26 10:06:50.568505
 
 """
@@ -62,49 +63,27 @@ class Token(Base):
                        unique=True,
                        nullable=False,
                        index=True)
-    tokentype = sa.Column(sa.Unicode(30),
-                          default=u'HOTP',
-                          index=True)
-    user_pin = sa.Column(sa.Unicode(512),
-                         default=u'')  # encrypt
-    user_pin_iv = sa.Column(sa.Unicode(32),
-                            default=u'')  # encrypt
-    so_pin = sa.Column(sa.Unicode(512),
-                       default=u'')  # encrypt
-    so_pin_iv = sa.Column(sa.Unicode(32),
-                          default=u'')  # encrypt
-    resolver = sa.Column(sa.Unicode(120), default=u'',
-                         index=True)
+    tokentype = sa.Column(sa.Unicode(30), default=u'HOTP', index=True)
+    user_pin = sa.Column(sa.Unicode(512), default=u'')
+    user_pin_iv = sa.Column(sa.Unicode(32), default=u'')
+    so_pin = sa.Column(sa.Unicode(512), default=u'')
+    so_pin_iv = sa.Column(sa.Unicode(32), default=u'')
+    resolver = sa.Column(sa.Unicode(120), default=u'', index=True)
     resolver_type = sa.Column(sa.Unicode(120), default=u'')
-    user_id = sa.Column(sa.Unicode(320),
-                        default=u'', index=True)
-    pin_seed = sa.Column(sa.Unicode(32),
-                         default=u'')
-    otplen = sa.Column(sa.Integer(),
-                       default=6)
-    pin_hash = sa.Column(sa.Unicode(512),
-                         default=u'')  # hashed
-    key_enc = sa.Column(sa.Unicode(1024),
-                        default=u'')  # encrypt
-    key_iv = sa.Column(sa.Unicode(32),
-                       default=u'')
-    maxfail = sa.Column(sa.Integer(),
-                        default=10)
-    active = sa.Column(sa.Boolean(),
-                       default=True)
-    failcount = sa.Column(sa.Integer(),
-                          default=0)
-    count = sa.Column(sa.Integer(),
-                      default=0)
-    count_window = sa.Column(sa.Integer(),
-                             default=10)
-    sync_window = sa.Column(sa.Integer(),
-                            default=1000)
-    rollout_state = sa.Column(sa.Unicode(10),
-                              default=u'')
-    info = relationship('TokenInfo',
-                        lazy='dynamic',
-                        backref='info')
+    user_id = sa.Column(sa.Unicode(320), default=u'', index=True)
+    pin_seed = sa.Column(sa.Unicode(32), default=u'')
+    otplen = sa.Column(sa.Integer(), default=6)
+    pin_hash = sa.Column(sa.Unicode(512), default=u'')
+    key_enc = sa.Column(sa.Unicode(1024), default=u'')
+    key_iv = sa.Column(sa.Unicode(32), default=u'')
+    maxfail = sa.Column(sa.Integer(), default=10)
+    active = sa.Column(sa.Boolean(), default=True)
+    failcount = sa.Column(sa.Integer(), default=0)
+    count = sa.Column(sa.Integer(), default=0)
+    count_window = sa.Column(sa.Integer(), default=10)
+    sync_window = sa.Column(sa.Integer(), default=1000)
+    rollout_state = sa.Column(sa.Unicode(10), default=u'')
+    info = relationship('TokenInfo', lazy='dynamic', backref='info')
 
 
 class TokenInfo(Base):
@@ -270,37 +249,7 @@ def create_update_token_table():
     session = Session(bind=bind)
 
     # create the tables
-    # Token.__table__.create(bind)
-    op.create_table('token',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('description', sa.Unicode(length=80), nullable=True),
-    sa.Column('serial', sa.Unicode(length=40), nullable=False),
-    sa.Column('tokentype', sa.Unicode(length=30), nullable=True),
-    sa.Column('user_pin', sa.Unicode(length=512), nullable=True),
-    sa.Column('user_pin_iv', sa.Unicode(length=32), nullable=True),
-    sa.Column('so_pin', sa.Unicode(length=512), nullable=True),
-    sa.Column('so_pin_iv', sa.Unicode(length=32), nullable=True),
-    sa.Column('resolver', sa.Unicode(length=120), nullable=True),
-    sa.Column('resolver_type', sa.Unicode(length=120), nullable=True),
-    sa.Column('user_id', sa.Unicode(length=320), nullable=True),
-    sa.Column('pin_seed', sa.Unicode(length=32), nullable=True),
-    sa.Column('otplen', sa.Integer(), nullable=True),
-    sa.Column('pin_hash', sa.Unicode(length=512), nullable=True),
-    sa.Column('key_enc', sa.Unicode(length=1024), nullable=True),
-    sa.Column('key_iv', sa.Unicode(length=32), nullable=True),
-    sa.Column('maxfail', sa.Integer(), nullable=True),
-    sa.Column('active', sa.Boolean(), nullable=True),
-    sa.Column('failcount', sa.Integer(), nullable=True),
-    sa.Column('count', sa.Integer(), nullable=True),
-    sa.Column('count_window', sa.Integer(), nullable=True),
-    sa.Column('sync_window', sa.Integer(), nullable=True),
-    sa.Column('rollout_state', sa.Unicode(length=10), nullable=True),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_token_resolver'), 'token', ['resolver'], unique=False)
-    op.create_index(op.f('ix_token_serial'), 'token', ['serial'], unique=True)
-    op.create_index(op.f('ix_token_tokentype'), 'token', ['tokentype'], unique=False)
-    op.create_index(op.f('ix_token_user_id'), 'token', ['user_id'], unique=False)
+    Token.__table__.create(bind)
     TokenInfo.__table__.create(bind)
 
     for ot in session.query(Token_old):
@@ -319,12 +268,16 @@ def create_update_token_table():
             else:
                 print "Error: Unknown resolvertype: %s" % reso[3]
                 resolvertype = "FIXME"
+        if ot.privacyIDEATokenType.lower() == "hmac":
+            tokentype = "hotp"
+        else:
+            tokentype = ot.privacyIDEATokenType.lower()
 
         nt = Token(id=ot.privacyIDEATokenId,
                    serial=ot.privacyIDEATokenSerialnumber,
                    active=ot.privacyIDEAIsactive,
                    description=ot.privacyIDEATokenDesc,
-                   tokentype=ot.privacyIDEATokenType,
+                   tokentype=tokentype,
                    user_pin=ot.privacyIDEATokenPinUser,
                    user_pin_iv=ot.privacyIDEATokenPinUserIV,
                    so_pin=ot.privacyIDEATokenPinSO,
@@ -354,9 +307,6 @@ def create_update_token_table():
                 session.add(ti)
 
     session.commit()
-    print "----------------------------------"
-    # drop the old table
-    op.drop_table('Token_old')
 
 
 def create_resolver_config():
@@ -442,8 +392,6 @@ def create_realms():
                         realm_id=tokenrealm.realm_id)
         session.add(tr)
     session.commit()
-    op.drop_table("TokenRealm_old")
-    op.drop_table("Realm_old")
 
     print "Add resolvers to the realms"
     realms = session.query(Config_old).\
@@ -484,10 +432,23 @@ def finalize_config():
 
     configs = session.query(Config_old)
     for conf in configs:
-        c = Config(Key=".".join(conf.Key.split(".")[1:]),
-                   Value=conf.Value,
-                   Type=conf.Type,
-                   Description=conf.Description)
+        key = ".".join(conf.Key.split(".")[1:])
+        value = conf.Value
+        Type = conf.Type
+        Description = conf.Description
+        if key == "FailCounterIncOnFalsePin":
+            key = "IncFailCountOnFalsePin"
+            value = (conf.Value == "True")
+        if Type == "bool":
+            value = (conf.Value == "True")
+        if key == "splitAtSign":
+            value = (conf.Value == "True")
+            Type = "bool"
+
+        c = Config(Key=key,
+                   Value=value,
+                   Type=Type,
+                   Description=Description)
         session.add(c)
     session.commit()
     op.drop_table('Config_old')
@@ -497,7 +458,7 @@ def create_new_tables():
     print "Create remaining tables"
     bind = op.get_bind()
     Admin.__table__.create(bind)
-    op.drop_table("Challenges")
+    #op.drop_table("Challenges")
     op.create_table('challenge',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('transaction_id', sa.Unicode(length=64), nullable=False),
@@ -511,22 +472,17 @@ def create_new_tables():
     sa.Column('otp_valid', sa.Boolean(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_challenge_transaction_id'), 'challenge', ['transaction_id'], unique=True)
-    op.drop_index('ix_token_resolver')
-    op.create_index(op.f('ix_token_resolver'), 'token', ['resolver'], unique=False)
-    op.drop_index('ix_token_serial')
-    op.create_index(op.f('ix_token_serial'), 'token', ['serial'], unique=True)
-    op.drop_index('ix_token_tokentype')
-    op.create_index(op.f('ix_token_tokentype'), 'token', ['tokentype'], unique=False)
-    op.drop_index('ix_token_user_id')
-    op.create_index(op.f('ix_token_user_id'), 'token', ['user_id'], unique=False)
 
     # drop old tables
-    op.drop_table("ClientMachine")
-    op.drop_table("MachineUser")
-    op.drop_table("MachineToken")
     op.drop_table("MachineTokenOptions")
     op.drop_table("MachineUserOptions")
+    op.drop_table("MachineUser")
+    op.drop_table("MachineToken")
+    op.drop_table("ClientMachine")
+
+    op.drop_table("TokenRealm_old")
+    op.drop_table("Realm_old")
+    op.drop_table("Token_old")
 
 
 def upgrade():
@@ -538,8 +494,8 @@ def upgrade():
     create_policy()
     finalize_config()
     create_new_tables()
-    return
 
 
 def downgrade():
+    print "We do not support downgrading to version 1.5."
     pass

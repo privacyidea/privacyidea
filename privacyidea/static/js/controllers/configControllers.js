@@ -21,6 +21,7 @@
 myApp.controller("configController", function ($scope, $location,
                                                $rootScope, $state,
                                                ConfigFactory) {
+    $scope.params = {};
     // go to the system view by default
     if ($location.path() == "/config") {
         $location.path("/config/system");
@@ -34,6 +35,11 @@ myApp.controller("configController", function ($scope, $location,
 
     // TODO: This information needs to be fetched from the server
     $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver'];
+
+    $scope.isChecked = function(val) {
+      // check if val is set
+      return [true, 1, '1', 'True'].indexOf(val) > -1
+    };
 
     $scope.getResolvers = function () {
         ConfigFactory.getResolvers(function (data) {
@@ -127,9 +133,9 @@ myApp.controller("configController", function ($scope, $location,
         });
     };
 
-    $scope.params = {};
     $scope.saveSystemConfig = function () {
         ConfigFactory.saveSystemConfig($scope.params, function(data) {
+            console.log($scope.params);
             console.log(data);
         })
     };
@@ -137,6 +143,16 @@ myApp.controller("configController", function ($scope, $location,
         ConfigFactory.getSystemConfig(function(data) {
             console.log(data);
             $scope.params = data.result.value;
+            $scope.params.PrependPin = $scope.isChecked($scope.params.PrependPin);
+            $scope.params.splitAtSign = $scope.isChecked($scope.params.splitAtSign);
+            $scope.params.IncFailCountOnFalsePin = $scope.isChecked($scope.params.IncFailCountOnFalsePin);
+            $scope.params.ReturnSamlAttributes = $scope.isChecked($scope.params.ReturnSamlAttributes);
+            $scope.params.AutoResync = $scope.isChecked($scope.params.AutoResync);
+            $scope.params.PassOnUserNotFound = $scope.isChecked($scope.params.PassOnUserNotFound);
+            $scope.params.PassOnUserNoToken = $scope.isChecked($scope.params.PassOnUserNoToken);
+            $scope.params.UiLoginDisplayHelpButton = $scope.isChecked($scope.params.UiLoginDisplayHelpButton);
+            $scope.params.UiLoginDisplayRealmBox = $scope.isChecked($scope.params.UiLoginDisplayRealmBox);
+            console.log($scope.params);
         })
     };
     $scope.getSystemConfig();

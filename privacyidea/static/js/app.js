@@ -35,7 +35,7 @@ myApp.config(function ($stateProvider, $urlRouterProvider) {
 
 });
 myApp.constant("authUrl", "/auth");
-myApp.constant("tokenUrl", "/token/");
+myApp.constant("tokenUrl", "/token");
 myApp.constant("userUrl", "/user");
 myApp.constant("resolverUrl", "/resolver");
 myApp.constant("realmUrl", "/realm");

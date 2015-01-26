@@ -73,6 +73,9 @@ Upgrading
 =========
 
 The database model has changed, so that you need to upgrade the database.
+
+!! Before upgrading be sure to make a backup !!
+
 To upgrade your database from 1.5 to the new 2.0 schema run:
 
    ./manage db upgrade
