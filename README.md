@@ -69,4 +69,11 @@ Based on the realm there is the library ``lib/user.py`` which provides functions
 for users. There is no database table user, since users are dynamically read from
 the user sources like SQL, LDAP, SCIM or flat files.
 
+Upgrading
+=========
+
+The database model has changed, so that you need to upgrade the database.
+To upgrade your database from 1.5 to the new 2.0 schema run:
+
+   ./manage db upgrade
 

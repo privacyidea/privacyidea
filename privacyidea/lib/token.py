@@ -113,7 +113,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
         # extract the realm from the user object:
         realm = user.realm
 
-    if tokentype is not None:
+    if tokentype is not None and tokentype.strip("*"):
         # filter for type
         if "*" in tokentype:
             # match with "like"
@@ -124,7 +124,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
             sql_query = sql_query.filter(func.lower(Token.tokentype) ==
                                          tokentype.lower())
 
-    if description is not None:
+    if description is not None and tokentype.strip("*"):
         # filter for Description
         if "*" in description:
             # match with "like"
@@ -157,7 +157,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
         # filter for given resolver
         sql_query = sql_query.filter(Token.resolver == resolver)
 
-    if serial is not None:
+    if serial is not None and serial.strip("*"):
         # filter for serial
         if "*" in serial:
             # match with "like"

@@ -34,8 +34,9 @@ class TestingConfig(Config):
 
 
 class ProductionConfig(Config):
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'data.sqlite')
+    #SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+    #    'sqlite:///' + os.path.join(basedir, 'data.sqlite')
+    SQLALCHEMY_DATABASE_URI = "mysql://pi2:pi2@localhost/pi2"
     SECRET_KEY = os.environ.get('SECRET_KEY') or 't0p s3cr3t'
     # This is used to encrypt the admin passwords
     PI_PEPPER = "Never know..."

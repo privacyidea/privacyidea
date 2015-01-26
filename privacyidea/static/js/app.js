@@ -25,7 +25,7 @@ myApp = angular.module("privacyideaApp",
 myApp.config(function ($stateProvider, $urlRouterProvider) {
     //
     // For any unmatched url, redirect to /token
-    $urlRouterProvider.otherwise("/token");
+    $urlRouterProvider.otherwise("/token/");
     // We always open the list state, when the resolver state is chosen.
     //$urlRouterProvider.when('/config/resolvers', ' +
     //''/config/resolvers/list');
@@ -35,7 +35,7 @@ myApp.config(function ($stateProvider, $urlRouterProvider) {
 
 });
 myApp.constant("authUrl", "/auth");
-myApp.constant("tokenUrl", "/token");
+myApp.constant("tokenUrl", "/token/");
 myApp.constant("userUrl", "/user");
 myApp.constant("resolverUrl", "/resolver");
 myApp.constant("realmUrl", "/realm");
