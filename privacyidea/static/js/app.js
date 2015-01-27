@@ -21,19 +21,18 @@
 myApp = angular.module("privacyideaApp",
     ['privacyideaAuth',
         'ui.router', 'ui.bootstrap', 'TokenModule',
-        'ngAnimate', 'privacyideaApp.config']);
-myApp.config(function ($stateProvider, $urlRouterProvider) {
-    //
+        'ngAnimate', 'ngIdle', 'privacyideaApp.config']);
+myApp.config(function ($urlRouterProvider) {
     // For any unmatched url, redirect to /token
     $urlRouterProvider.otherwise("/token/");
-    // We always open the list state, when the resolver state is chosen.
-    //$urlRouterProvider.when('/config/resolvers', ' +
-    //''/config/resolvers/list');
-    //$urlRouterProvider.when('/realms', '/config/realms/list');
-    //$urlRouterProvider.when('/config/realms', '/config/realms/list');
-    //
-
 });
+myApp.config(['KeepaliveProvider', 'IdleProvider',
+    function (KeepaliveProvider, IdleProvider) {
+    // Logout configuration
+    IdleProvider.idle(20);
+    IdleProvider.timeout(10);
+    KeepaliveProvider.interval(3);
+}]);
 myApp.constant("authUrl", "/auth");
 myApp.constant("tokenUrl", "/token");
 myApp.constant("userUrl", "/user");
