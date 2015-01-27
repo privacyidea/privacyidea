@@ -89,6 +89,7 @@ angular.module("privacyideaApp")
                 $location.path("/token");
             }).error(function (error) {
                 $rootScope.restError = error.result;
+                $rootScope.showError = true;
                 console.log("clear the form");
             }).then(function () {
                     // We delete the login object, so that the password is not
@@ -106,5 +107,11 @@ angular.module("privacyideaApp")
             $scope.myCountdown = "";
             $state.go("login");
             Idle.unwatch();
+        };
+
+        $rootScope.showError = false;
+        $scope.errorOK = function () {
+            // This will hide the error again
+            $rootScope.showError = false;
         };
     });

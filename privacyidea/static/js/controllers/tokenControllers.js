@@ -207,7 +207,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         $scope.newUser.realm = $stateParams.realmname;
     }
     $scope.formInit = {
-        tokenTypes: ["hotp", "totp"],
+        tokenTypes: ["hotp", "totp", "spass"],
         timesteps: [30, 60], otplens: [6, 8]
     };
     // These are values that are also sent to the backend!

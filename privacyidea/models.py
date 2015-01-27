@@ -308,7 +308,7 @@ class Token(MethodsMixin, db.Model):
         res = False
         # check for a valid input
         if pin is not None:
-            if (self.is_pin_encrypted() is True):
+            if self.is_pin_encrypted() is True:
                 log.debug("we got an encrypted PIN!")
                 tokenPin = self.pin_hash[2:]
                 decryptTokenPin = decryptPin(tokenPin)

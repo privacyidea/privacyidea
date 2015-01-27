@@ -26,14 +26,14 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-"""
+__doc__="""
 This is the HOTP implementation.
 It is inherited from lib.tokenclass and is thus dependent on models.py
+
+This code is tested in tests/test_lib_tokens_hotp
 """
 
 import time
-from datetime import datetime
-
 from .HMAC import HmacOtp
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
@@ -92,10 +92,8 @@ class HotpTokenClass(TokenClass):
 
         :param key: subsection identifier
         :type key: string
-
         :param ret: default return value, if nothing is found
         :type ret: user defined
-
         :return: subsection if key exists or user defined
         :rtype: dict
         """

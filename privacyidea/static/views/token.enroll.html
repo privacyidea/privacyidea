@@ -12,45 +12,47 @@
                 >
         </select>
 
-        <h4>Token data</h4>
+        <div ng-hide="form.type=='spass'">
+            <h4>Token data</h4>
+            {{  form.type }}
+            <div class="form-group">
+                <input type="checkbox" ng-model="form.generate"
+                       name="generate" id="generate">
+                <label for="generate">Generate OTP Key on the Server</label>
 
-        <div class="form-group">
-            <input type="checkbox" ng-model="form.generate"
-                   name="generate" id="generate">
-            <label for="generate">Generate OTP Key on the Server</label>
-
-            <div ng-show="form.generate">
-                <p class="help-block">
-                    The server will create the OTP value
-                    and a QR Code
-                    will be
-                    displayed to you to be scanned.
-                </p>
+                <div ng-show="form.generate">
+                    <p class="help-block">
+                        The server will create the OTP value
+                        and a QR Code
+                        will be
+                        displayed to you to be scanned.
+                    </p>
+                </div>
             </div>
-        </div>
-        <div class="form-group" ng-hide="form.generate">
-            <label for="otpkey">OTP Key</label>
-            <input type="text" ng-pattern="/^[0-9a-fA-F]*$/"
-                   autofocus
-                   class="form-control"
-                   placeholder="Enter OTP key..."
-                   ng-model="form.otpkey" name="otpkey">
-        </div>
-        <div class="form-group">
-            <label for="otplen">OTP length</label>
-            <select class="form-control"
-                    id="otplen"
-                    ng-model="form.otplen"
-                    ng-options="otplen for otplen in formInit.otplens">
-            </select>
-        </div>
-        <div class="form-group" ng-show="form.type=='totp'">
-            <label for="timestep">Timestep</label>
-            <select class="form-control"
-                    ng-model="form.timestep"
-                    name="timestep"
-                    ng-options="timestep for timestep in formInit.timesteps"></select>
-            seconds.
+            <div class="form-group" ng-hide="form.generate">
+                <label for="otpkey">OTP Key</label>
+                <input type="text" ng-pattern="/^[0-9a-fA-F]*$/"
+                       autofocus
+                       class="form-control"
+                       placeholder="Enter OTP key..."
+                       ng-model="form.otpkey" name="otpkey">
+            </div>
+            <div class="form-group">
+                <label for="otplen">OTP length</label>
+                <select class="form-control"
+                        id="otplen"
+                        ng-model="form.otplen"
+                        ng-options="otplen for otplen in formInit.otplens">
+                </select>
+            </div>
+            <div class="form-group" ng-show="form.type=='totp'">
+                <label for="timestep">Timestep</label>
+                <select class="form-control"
+                        ng-model="form.timestep"
+                        name="timestep"
+                        ng-options="timestep for timestep in formInit.timesteps"></select>
+                seconds.
+            </div>
         </div>
 
         <div ng-show="loggedInUser.role == 'admin'">
@@ -97,7 +99,7 @@
         for user
         <a ui-sref="user.details({username:newUser.user, realmname:newUser.realm})"
                 >{{ newUser.user }}</a> in realm
-        {{ newUser.realm }}</span>.
+            {{ newUser.realm }}</span>.
     </p>
 
     <img width="250" src="{{ enrolledToken.googleurl.img }}"/>

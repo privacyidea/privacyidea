@@ -60,10 +60,9 @@ myApp.config(['$httpProvider', function ($httpProvider) {
             responseError: function (rejection) {
                 if(rejection.status == 0) {
                     // The API is offline, not reachable
-                    // A state would be nicer, but we get a circular dependency
-                    // $state.go("/offline");
-                    var error = { error: { message: "The privacyIDEA system seams to be offline. The API is not reachable!"}};
+                    var error = { error: { message: "The privacyIDEA system seems to be offline. The API is not reachable!"}};
                     $rootScope.restError = error;
+                    $rootScope.showError = true;
                     return;
                 }
                 return $q.reject(rejection);

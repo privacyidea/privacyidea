@@ -318,6 +318,7 @@ def get_token_list():
     """
     module_list = set()
 
+    # TODO: migrate the implementations and uncomment
     #module_list.add(".tokens.daplugtoken.DaplugTokenClass")
     #module_list.add(".tokens.emailtoken.")
     #module_list.add(".tokens.hmactoken.HmacTokenClass")
@@ -328,7 +329,7 @@ def get_token_list():
     #module_list.add(".tokens.radiustoken")
     #module_list.add(".tokens.remotetoken")
     #module_list.add(".tokens.smstoken")
-    #module_list.add(".tokens.spasstoken")
+    module_list.add("tokens.spasstoken")
     #module_list.add(".tokens.sshkeytoken")
     #module_list.add(".tokens.tagespassworttoken")
     module_list.add("tokens.totptoken")
