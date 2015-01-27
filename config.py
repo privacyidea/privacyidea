@@ -6,11 +6,11 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY')
     # SQL_ALCHEMY_DATABASE_URI = "mysql://privacyidea:XmbSrlqy5d4IS08zjz"
     # "GG5HTt40Cpf5@localhost/privacyidea"
-    PI_ENCFILE = "tests/testdata/enckey"
+    PI_ENCFILE = os.path.join(basedir, "tests/testdata/enckey")
     PI_HSM = "default"
     PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
-    PI_AUDIT_KEY_PRIVATE = "tests/testdata/private.pem"
-    PI_AUDIT_KEY_PUBLIC = "tests/testdata/public.pem"
+    PI_AUDIT_KEY_PRIVATE = os.path.join(basedir, "tests/testdata/private.pem")
+    PI_AUDIT_KEY_PUBLIC = os.path.join(basedir, "tests/testdata/public.pem")
     # PI_AUDIT_SQL_URI = sqlite://
 
 
