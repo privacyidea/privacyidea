@@ -207,7 +207,9 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         $scope.newUser.realm = $stateParams.realmname;
     }
     $scope.formInit = {
-        tokenTypes: ["hotp", "totp", "spass"],
+        tokenTypes: {"hotp": "HOTP: event based One Time Passwords",
+            "totp": "TOTP: time based One Time Passwords",
+            "spass": "SPass: Simple Pass token. Static password"},
         timesteps: [30, 60], otplens: [6, 8]
     };
     // These are values that are also sent to the backend!
@@ -230,7 +232,8 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         console.log($scope.newUser.pin);
         TokenFactory.enroll($scope.newUser,
             $scope.form, $scope.callback);
-    }
+    };
+
 });
 
 
