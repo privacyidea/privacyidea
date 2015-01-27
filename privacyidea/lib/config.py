@@ -321,9 +321,8 @@ def get_token_list():
     # TODO: migrate the implementations and uncomment
     #module_list.add(".tokens.daplugtoken.DaplugTokenClass")
     #module_list.add(".tokens.emailtoken.")
-    #module_list.add(".tokens.hmactoken.HmacTokenClass")
     module_list.add("tokens.hotptoken")
-    #module_list.add(".tokens.motptoken")
+    module_list.add("tokens.motptoken")
     #module_list.add(".tokens.ocra2token")
     module_list.add("tokens.passwordtoken")
     #module_list.add(".tokens.radiustoken")

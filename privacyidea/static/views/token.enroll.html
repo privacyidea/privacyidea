@@ -62,13 +62,9 @@
             {{ newUser.realm }}</span>.
     </p>
 
-    <img width="250" src="{{ enrolledToken.googleurl.img }}"/>
-
-    <p>
-        Click <a href="{{ enrolledToken.googleurl.value }}">here</a> or scan
-        the QR Code, if you
-        want to add the Token to your Google Authenticator.
-    </p>
+    <!-- This is the token data section. It differs for every token type-->
+    <ng-include src="'/static/views/token.enrolled.' + form.type + '.html'">
+    </ng-include>
 
     <div class="text-center">
         <button ng-click="enrolledToken = null;"

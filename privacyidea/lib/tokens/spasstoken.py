@@ -37,8 +37,6 @@ This code is tested in tests/test_lib_tokens_spass
 """
 
 import logging
-
-from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.log import log_with
 
 optional = True

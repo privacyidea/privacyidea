@@ -206,10 +206,13 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     if ($stateParams.realmname) {
         $scope.newUser.realm = $stateParams.realmname;
     }
+    // TODO: Read this from an object "serverConfig", that is returned
+    // after authentication
     $scope.formInit = {
         tokenTypes: {"hotp": "HOTP: event based One Time Passwords",
             "totp": "TOTP: time based One Time Passwords",
-            "spass": "SPass: Simple Pass token. Static password"},
+            "spass": "SPass: Simple Pass token. Static passwords",
+            "motp": "mOTP: classical mobile One Time Passwords"},
         timesteps: [30, 60], otplens: [6, 8]
     };
     // These are values that are also sent to the backend!

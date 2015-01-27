@@ -44,7 +44,6 @@ from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import create_img
 from privacyidea.lib.utils import generate_otpkey
 
-
 optional = True
 required = False
 import gettext

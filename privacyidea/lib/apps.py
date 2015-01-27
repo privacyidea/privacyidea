@@ -48,13 +48,13 @@ from privacyidea.lib.log import log_with
 
 @log_with(log)
 def create_motp_url(key, user=None, realm=None, serial=""):
-    '''
+    """
     This creates the motp url as described at
     http://huseynov.com/index.php?post=motp-vs-google-authenticator-and-a-new-otp-app
     
     The format is:
     motp://SecureSite:alice@wonder.land?secret=JBSWY3DPEHPK3PXP
-    '''
+    """
     # For Token2 the OTPKEY is hexencoded, not base32!
     otpkey = key
     # TODO: Migration: Policy

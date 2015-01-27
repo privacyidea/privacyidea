@@ -19,9 +19,9 @@ import datetime
 
 
 class HOTPTokenTestCase(MyTestCase):
-    '''
+    """
     Test the token on the database level
-    '''
+    """
     resolvername1 = "resolver1"
     resolvername2 = "Resolver2"
     resolvername3 = "reso3"
