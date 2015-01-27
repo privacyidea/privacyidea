@@ -192,7 +192,7 @@ class Token(MethodsMixin, db.Model):
         self.key_enc = unicode(binascii.hexlify(enc_otp_key))
         length = len(self.key_enc)
         if length > 1024:
-            log.error("Key %s exceeds database field %d!" % (self.getSerial(),
+            log.error("Key %s exceeds database field %d!" % (self.get_serial(),
                                                              length))
         self.key_iv = unicode(binascii.hexlify(iv))
         self.count = 0

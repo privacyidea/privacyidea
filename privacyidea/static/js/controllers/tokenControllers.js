@@ -212,7 +212,8 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         tokenTypes: {"hotp": "HOTP: event based One Time Passwords",
             "totp": "TOTP: time based One Time Passwords",
             "spass": "SPass: Simple Pass token. Static passwords",
-            "motp": "mOTP: classical mobile One Time Passwords"},
+            "motp": "mOTP: classical mobile One Time Passwords",
+            "sshkey": "SSH Public Key: The public SSH key"},
         timesteps: [30, 60], otplens: [6, 8]
     };
     // These are values that are also sent to the backend!
@@ -237,6 +238,10 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             $scope.form, $scope.callback);
     };
 
+    $scope.sshkeyChanged = function () {
+        var keyArr = $scope.form.sshkey.split(" ");
+        $scope.form.description = keyArr.slice(2).join(" ");
+    };
 });
 
 

@@ -329,7 +329,7 @@ def get_token_list():
     #module_list.add(".tokens.remotetoken")
     #module_list.add(".tokens.smstoken")
     module_list.add("tokens.spasstoken")
-    #module_list.add(".tokens.sshkeytoken")
+    module_list.add("tokens.sshkeytoken")
     #module_list.add(".tokens.tagespassworttoken")
     module_list.add("tokens.totptoken")
     #module_list.add(".tokens.vascotoken")
