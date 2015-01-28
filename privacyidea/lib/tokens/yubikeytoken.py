@@ -87,14 +87,13 @@ class YubikeyTokenClass(TokenClass):
         :rtype: s.o.
 
         """
-        res = {
-            'type':          'yubikey',
-            'title':         'Yubikey in AES mode',
-            'description':   ('Yubico token to run the AES OTP mode.'),
-            'init':          {},
-            'config':        {},
-            'selfservice':   {},
-            'policy':        {},
+        res = {'type': 'yubikey',
+               'title': 'Yubikey in AES mode',
+               'description': 'Yubico token to run the AES OTP mode.',
+               'init': {},
+               'config': {},
+               'selfservice': {},
+               'policy': {}
         }
 
         if key is not None and key in res:
@@ -250,7 +249,7 @@ def check_yubikey_pass(passw):
 
     This checks the output of a yubikey in AES mode without providing
     the serial number.
-    The first 12 (of 44) or 16 of 48) characers are the tokenid, which is
+    The first 12 (of 44) or 16 of 48) characters are the tokenid, which is
     stored in the tokeninfo.
 
     :param passw: The password that consist of the static yubikey prefix and

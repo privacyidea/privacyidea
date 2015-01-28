@@ -158,14 +158,12 @@ def policy_error(error):
 @user_blueprint.app_errorhandler(500)
 @token_blueprint.app_errorhandler(500)
 @audit_blueprint.app_errorhandler(500)
-def internal_error(e):
+def internal_error(error):
     """
     This function is called when an internal error (500) occurs.
     This is each time an exception is thrown.
     """
-    response = send_error(unicode(e))
-    response.status_code = 500
-    return response
+    return send_error(unicode(error), error_code=-500), 500
 
 
 @system_blueprint.route('/<key>', methods=['GET'])

@@ -23,12 +23,12 @@ myApp.factory("ValidateFactory", function ($http, $state, $rootScope, validateUr
          Each service - just like this service factory - is a singleton.
          */
         var error_func = function (error) {
-                        if (error.result.error.code == -401) {
-                            $state.go('login');
-                        } else {
-                            $rootScope.restError = error.result;
-                        }
-                    };
+            if (error.result.error.code == -401) {
+                $state.go('login');
+            } else {
+                $rootScope.restError = error.result;
+            }
+        };
 
         return {
             check: function (params, callback) {

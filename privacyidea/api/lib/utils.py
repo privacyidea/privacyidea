@@ -124,7 +124,7 @@ def send_result(obj, rid=1, details=None):
     return jsonify(res)
 
 
-def send_error(exception, rid=1, context=None, error_code = -311):
+def send_error(errstring, rid=1, context=None, error_code = -311):
     """
     sendError - return a json error result document
 
@@ -134,8 +134,8 @@ def send_error(exception, rid=1, context=None, error_code = -311):
      must have the attribute response._exception set, to stop further
      processing, which otherwise will have ugly results!!
 
-    :param exception: should be a privacyidea exception
-    :type exception: exception
+    :param errstring: An error message
+    :type errstring: basestring
     :param rid: id value, for future versions
     :type rid: int
     :param context: default is None or 'before'
@@ -148,85 +148,16 @@ def send_error(exception, rid=1, context=None, error_code = -311):
     :rtype: string
 
     """
-    ret = ''
+    res = {"jsonrpc": "2.0",
+           "result": {"status": False,
+                      "error": {"code": error_code,
+                                "message": errstring}
+                      },
+           "version": get_version(),
+           "id": rid
+           }
 
-    # handle the different types of exception:
-    # Exception, privacyIDEAError, str/unicode
-    if '__class__' in exception and isinstance(exception, Exception):
-        errDesc = unicode(exception)
-        if isinstance(exception, privacyIDEAError):
-            error_code = exception.getId()
-
-    elif type(exception) in [str, unicode]:
-        errDesc = unicode(exception)
-
-    else:
-        errDesc = u"%r" % exception
-
-    HTTP_ERROR = False
-    # check if we have an additional request parameter 'httperror'
-    # which triggers the error to be delivered as HTTP Error
-    try:
-        httperror = request.values.get('httperror')
-    except Exception as exx:
-        httperror = "%r" % exx
-
-    if httperror is not None:
-        # now lookup in the config, which privacyidea errors should be shwon as
-        # HTTP error
-        privacyidea_errors = current_app.config["privacyideaConfig"].get('privacyidea.errors')
-        if privacyidea_errors is None:
-            HTTP_ERROR = True
-        else:
-            privacyidea_errors = privacyidea_errors.split(',')
-            if unicode(error_code) in privacyidea_errors:
-                HTTP_ERROR = True
-            else:
-                HTTP_ERROR = False
-
-    if HTTP_ERROR is True:
-        # httperror as param exist but is not defined
-        # so fallback to 500 - Internal Server Error
-        if len(httperror) == 0:
-            httperror = '500'
-
-        # prepare the response to be of text/html
-        '''
-        TODO: Migration
-        response.content_type = 'text/html'
-        response.status = httperror
-
-        code = httperror
-        status = httpErr.get(httperror, '')
-        desc = '[%s] %d: %s' % (get_version(), error_code, errDesc)
-        ret = resp % (code, status, code, status, desc)
-
-        if context in ['before', 'after']:
-            response._exception = exception
-            response.text = u'' + ret
-            ret = response
-        '''
-
-    else:
-        res = {"jsonrpc": "2.0",
-               "result": {"status": False,
-                          "error": {"code": error_code,
-                                    "message": errDesc}
-                          },
-               "version": get_version(),
-               "id": rid
-               }
-
-        ret = jsonify(res)
-
-        '''
-        TODO: Migration
-        if context in ['before', 'after']:
-            response._exception = exception
-            response.body = ret
-            ret = response
-        '''
-
+    ret = jsonify(res)
     return ret
 
 

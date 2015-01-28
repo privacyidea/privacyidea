@@ -189,6 +189,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                                                     $stateParams, AuthFactory) {
     $scope.loggedInUser = AuthFactory.getUser();
     $scope.newUser = {};
+    $scope.tempData = {};
     // init the user, if token.enroll was called as a normal user
     if (AuthFactory.getRole() == 'user') {
         $scope.newUser.user = AuthFactory.getUser().username;
@@ -213,14 +214,15 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             "totp": "TOTP: time based One Time Passwords",
             "spass": "SPass: Simple Pass token. Static passwords",
             "motp": "mOTP: classical mobile One Time Passwords",
-            "sshkey": "SSH Public Key: The public SSH key"},
+            "sshkey": "SSH Public Key: The public SSH key",
+            "yubikey": "Yubikey AES mode: One Time Passwords with Yubikey"},
         timesteps: [30, 60], otplens: [6, 8]
     };
     // These are values that are also sent to the backend!
     $scope.form = {
         timestep: 30,
         otplen: 6,
-        generate: true,
+        genkey: true,
         type: "hotp"
     };
 
@@ -238,9 +240,20 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             $scope.form, $scope.callback);
     };
 
+    // Special Token functions
     $scope.sshkeyChanged = function () {
         var keyArr = $scope.form.sshkey.split(" ");
         $scope.form.description = keyArr.slice(2).join(" ");
+    };
+
+    $scope.yubikeyGetLen = function () {
+        if ($scope.tempData.yubikeyTest.length >= 32) {
+            $scope.form.otplen = $scope.tempData.yubikeyTest.length;
+            if ($scope.tempData.yubikeyTest.length > 32) {
+                $scope.tempData.yubikeyUid = true;
+                $scope.tempData.yubikeyUidLen = $scope.tempData.yubikeyTest.length - 32;
+            }
+        }
     };
 });
 

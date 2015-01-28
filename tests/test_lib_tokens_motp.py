@@ -5,6 +5,7 @@ This depends on lib.tokenclass
 
 from .base import MyTestCase
 from privacyidea.lib.tokens.motptoken import MotpTokenClass
+from privacyidea.lib.tokens.mOTP import mTimeOtp
 from privacyidea.models import Token
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
@@ -144,3 +145,22 @@ class SpassTokenTestCase(MyTestCase):
 
         info = token.get_class_info("title")
         self.assertTrue(info == "mOTP Token", info)
+
+    def test_05_test_vector(self):
+        # Testvector from
+        # https://github.com/neush/otpn900/blob/master/src/test_motp.c
+
+        key = "0123456789abcdef"
+        epoch = [ 129612120, 129612130, 0, 4, 129612244, 129612253]
+        pins = ["6666", "6666", "1", "1", "77777777", "77777777"]
+        otps = ["6ed4e4", "502a59", "bd94a4", "fb596e", "7abf75", "4d4ac4"]
+
+        i = 0
+        motp1 = mTimeOtp(key=key, pin=pins[0])
+        for e in epoch:
+            pin = pins[i]
+            otp = otps[i]
+            sotp = motp1.calcOtp(e, key, pin)
+
+            self.assertTrue(sotp == otp, "%s==%s" % (sotp, otp))
+            i += 1
