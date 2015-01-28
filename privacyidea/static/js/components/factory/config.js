@@ -98,6 +98,13 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
                           'Content-Type': 'application/json'}
             }).success(callback).error(error_func);
         },
+        loadSystemConfig: function(callback, key) {
+            if (!key) { key = ""};
+            $http.get(systemUrl + "/" + key, {
+                headers: {'Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
         getSystemConfig: function(callback) {
             $http.get(systemUrl, {
                 headers: {'Authorization': AuthFactory.getAuthToken(),

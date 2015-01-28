@@ -18,6 +18,44 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+myApp.controller("tokenConfigController", function ($scope, $location,
+                                                    $rootScope, $state,
+                                                    $stateParams,
+                                                    ConfigFactory) {
+    $scope.tokentype = $stateParams.tokentype || "hotp";
+    $scope.form = {};
+    $scope.original_params = {};
+    $scope.formInit = {
+        totpSteps: ["30", "60"],
+        hashlibs: ["sha1", "sha256", "sha512"]
+    };
+
+    $scope.loadSystemConfig = function () {
+        ConfigFactory.loadSystemConfig(function (data) {
+            $scope.form = data.result.value;
+            // make a deep copy
+            angular.copy($scope.form, $scope.original_params);
+            // Default inits
+            $scope.form['totp.timeStep'] = $scope.form['totp.timeStep'] || "30";
+            $scope.form['totp.hashlib'] = $scope.form['totp.hashlib'] || "sha1";
+            $scope.form['hotp.hashlib'] = $scope.form['hotp.hashlib'] || "sha1";
+        });
+    };
+
+    $scope.saveTokenConfig = function () {
+        // only save parameters, that have changed!
+        var save_params = {};
+        angular.forEach($scope.form, function (value, key) {
+            if (value != $scope.original_params[key])
+                save_params[key] = value;
+        });
+        ConfigFactory.saveSystemConfig(save_params, function (data) {
+            // TODO: what should we do?
+        });
+    };
+
+    $scope.loadSystemConfig();
+});
 myApp.controller("configController", function ($scope, $location,
                                                $rootScope, $state,
                                                ConfigFactory) {
@@ -36,9 +74,9 @@ myApp.controller("configController", function ($scope, $location,
     // TODO: This information needs to be fetched from the server
     $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver'];
 
-    $scope.isChecked = function(val) {
-      // check if val is set
-      return [true, 1, '1', 'True'].indexOf(val) > -1
+    $scope.isChecked = function (val) {
+        // check if val is set
+        return [true, 1, '1', 'True'].indexOf(val) > -1
     };
 
     $scope.getResolvers = function () {
@@ -114,7 +152,7 @@ myApp.controller("configController", function ($scope, $location,
 
     $scope.editResolver = function (resolvername, r_type) {
         // change the view to the config.resolvers.edit
-        $state.go("config.resolvers.edit"+r_type, {'resolvername': resolvername});
+        $state.go("config.resolvers.edit" + r_type, {'resolvername': resolvername});
         $rootScope.returnTo = "config.resolvers.list";
     };
 
@@ -134,13 +172,13 @@ myApp.controller("configController", function ($scope, $location,
     };
 
     $scope.saveSystemConfig = function () {
-        ConfigFactory.saveSystemConfig($scope.params, function(data) {
+        ConfigFactory.saveSystemConfig($scope.params, function (data) {
             console.log($scope.params);
             console.log(data);
         })
     };
     $scope.getSystemConfig = function () {
-        ConfigFactory.getSystemConfig(function(data) {
+        ConfigFactory.getSystemConfig(function (data) {
             console.log(data);
             $scope.params = data.result.value;
             $scope.params.PrependPin = $scope.isChecked($scope.params.PrependPin);
@@ -160,13 +198,15 @@ myApp.controller("configController", function ($scope, $location,
 });
 
 myApp.controller("PasswdResolverController", function ($scope, ConfigFactory, $state, $stateParams) {
-    $scope.params = {type: 'passwdresolver',
-                    fileName: "/etc/passwd"};
+    $scope.params = {
+        type: 'passwdresolver',
+        fileName: "/etc/passwd"
+    };
 
     $scope.resolvername = $stateParams.resolvername;
     if ($scope.resolvername) {
         /* If we have a resolvername, we do an Edit
-        and we need to fill all the $scope.params */
+         and we need to fill all the $scope.params */
         ConfigFactory.getResolver($scope.resolvername, function (data) {
             var resolver = data.result.value[$scope.resolvername];
             $scope.params = resolver.data;
@@ -200,7 +240,7 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
 
     if ($scope.resolvername) {
         /* If we have a resolvername, we do an Edit
-        and we need to fill all the $scope.params */
+         and we need to fill all the $scope.params */
         ConfigFactory.getResolver($scope.resolvername, function (data) {
             var resolver = data.result.value[$scope.resolvername];
             console.log(resolver);
@@ -263,7 +303,7 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory, $stat
 
     if ($scope.resolvername) {
         /* If we have a resolvername, we do an Edit
-        and we need to fill all the $scope.params */
+         and we need to fill all the $scope.params */
         ConfigFactory.getResolver($scope.resolvername, function (data) {
             var resolver = data.result.value[$scope.resolvername];
             console.log(resolver);
@@ -277,7 +317,7 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory, $stat
         $scope.params.Map = '{ "userid" : "ID", "username": "user_login", "email" : "user_email", "givenname" : "display_name", "password" : "user_pass" }';
     };
 
-        $scope.presetOTRS = function () {
+    $scope.presetOTRS = function () {
         $scope.params.Table = "users";
         $scope.params.Map = '{ "userid" : "id", "username": "login", "givenname" : "first_name", "surname" : "last_name", "password" : "pw" }';
     };

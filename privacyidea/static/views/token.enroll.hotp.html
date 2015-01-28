@@ -34,3 +34,12 @@ The HOTP token is an event based token. You can paste a secret key or
             ng-options="otplen for otplen in formInit.otplens">
     </select>
 </div>
+
+<div class="form-group">
+    <label for="hashlib">Hash algorithm</label>
+    <select class="form-control"
+            id="hashlib"
+            ng-model="form.hashlib"
+            ng-options="hashlib for hashlib in formInit.hashlibs">
+    </select>
+</div>

@@ -218,14 +218,17 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             "yubikey": "Yubikey AES mode: One Time Passwords with Yubikey",
             "remote": "Remote Token: Forward authentication request to another server",
             "yubico": "Yubikey Cloud mode: Forward authentication request to YubiCloud"},
-        timesteps: [30, 60], otplens: [6, 8]
+        timesteps: [30, 60],
+        otplens: [6, 8],
+        hashlibs: ["sha1", "sha256", "sha512"]
     };
     // These are values that are also sent to the backend!
     $scope.form = {
         timestep: 30,
         otplen: 6,
         genkey: true,
-        type: "hotp"
+        type: "hotp",
+        hashlib: "sha1"
     };
 
     $scope.callback = function (data) {
