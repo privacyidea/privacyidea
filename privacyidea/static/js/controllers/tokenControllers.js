@@ -215,7 +215,8 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             "spass": "SPass: Simple Pass token. Static passwords",
             "motp": "mOTP: classical mobile One Time Passwords",
             "sshkey": "SSH Public Key: The public SSH key",
-            "yubikey": "Yubikey AES mode: One Time Passwords with Yubikey"},
+            "yubikey": "Yubikey AES mode: One Time Passwords with Yubikey",
+            "remote": "Remote Token: Forward authentication request to another server"},
         timesteps: [30, 60], otplens: [6, 8]
     };
     // These are values that are also sent to the backend!
@@ -228,8 +229,6 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
 
     $scope.callback = function (data) {
         $scope.enrolledToken = data.detail;
-        $scope.qrcode = $scope.enrolledToken.googleurl.img;
-        $scope.image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcIAAAHCAQAAAABUY/ToAAADsUlEQVR4nO2cW4rjOhCGvzo25FGGXkCWYu9s6CXNDuKl9AIarMeAzH8eJNlK0g3DTIfuhKoH44s+ZIEo1U0y8Xcy//eXIDjppJNOOumkk07+PNKK9NgUzWyKPTax5re5yRRrq+mb/9bJH0mOkqQFmIdOEM6m1wGkBcyG1YBOkqRL8jv+1skfScaqX8bl4vt8TOgUD9IJMLP+6/p08jnI/upZRNBsnSAess4xwoKNv7+qTyefm7QpJOyXEoxK2ESXVdAd+3Tyscmqh4KACCK+JObhvc86aPxtCKqC+pI+nXxKcjYzswFsAhjfDrIp9gCd7NfbjZv2oON08g5k1kO7fhFxNc0DxjxgwFov4TIt8ljjdPJ+JNldH5XqiyCx+fE60Sl7/qcgZa8tPz7WOJ28H0mZK0vXzJIyc5YtIBRSE0Iqk+uxxunk/cg6I0JCWrqqkUK9jEowLkUZ7Xc+h5ysUvyy8a0nR6cBRDzIbtquPcU8+rc+nXxGMkeFzA6yKb9fLS9oADqFszFbz/7uMcfp5D3IupZBtXga+3mbQ7ndtrT5WubkB2RIQNyCP7GsccVrW8BsAGbPlzl5I40LT5CqulE1ndknUtc8uh5ycpPqve9uPUBI2fZpDaD8zueQk9fSKJkiafP3a01RllD0lc8hJy9lt6lLADFfqjmd51BIWzxbHh9y8kr2XIdOIdUatND6YLnd9tX1kJMXUt2sOADxIJuPwrYYo2Dt1X5NlXiscTp5P7KxqS9WqwTkpFlt5zlXJz+WTQ+VyJCIL6mUn51AjeIBIAj71z6dfEaycfAJCZuAHGjcDKDc3GOMTn5Cmg2gU+xzRSMAej2ezcwOqgHs1SSdrYSQHnGcTt6DbBeqUWUPB9kUeusR8QUrJYydDM+5OvkpuZpN0aqSYTXmo8R8PNda2GimUzj7Plcnr2T3xnKqDGhKPJqwda5QWzxO7eS17LmOaj+nJmJdCkBCW23tc8jJS9GltNmMkChJsyZi7bWwTn5I7ud+ZI9+3u7GZbWya7o+ul/m5EdktoeW8lLS2XKwOh8DkveXJZiPquWyDzlOJ+9ANpWK7aaNujeoqUsDch7W7SEn/4QMCb0eU97wYRPFV9PrULdT/6S/dfJbyZuzY+bhvdf41ieIfdI8YJqtkxHeDcIX9Onkc5EX8aGlq5cmKkTjkjX7P3wtc/KSbM79CAmb4kH7CXpsNrVNwc/Sc/JKbs/9yJeE8k1IaMuSqWn8WON00kknnXTSSSed/Ez+B0ohDiBWFjiOAAAAAElFTkSuQmCC"
     };
 
     $scope.enrollToken = function () {

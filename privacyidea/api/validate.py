@@ -88,7 +88,12 @@ def check():
            HTTP/1.1 200 OK
            Content-Type: application/json
 
-           {
+            {
+              "detail": {
+                "message": "matching 1 tokens",
+                "serial": "PISP0000AB00",
+                "type": "spass"
+              },
               "id": 1,
               "jsonrpc": "2.0",
               "result": {

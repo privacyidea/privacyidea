@@ -5,6 +5,10 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2015-01-28 Rewrite for migration to flask
+#             Cornelius Kölbel <cornelius@privacyidea.org>
+#
+#
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  LSE
 #  contact:  http://www.linotp.org
@@ -24,26 +28,24 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''
-  Description:  This file contains the definition of the remote token class
-  
-  Dependencies: -
+__doc__="""This is the implementation of the remote token. The remote token
+forwards an authentication request to another privacyidea server.
 
-'''
+To do this it uses the parameters remote.server, remote.realm,
+remote.resolver, remote.user or remote.serial.
+The parameter remote.local_checkpin determines, whether the PIN should be
+checked locally or remotely.
+
+The code is tested in tests/test_lib_tokens_remote
+"""
 
 import logging
 import copy
 import traceback
+import requests
 
-
-import httplib2
-import urllib
-import json
-
-from privacyidea.lib.config import getFromConfig
-from privacyidea.lib._util import getParam
-from privacyidea.lib.validate import split_pin_otp
-from privacyidea.lib.validate import check_pin
+from privacyidea.lib.config import get_from_config
+from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.log import log_with
 
 optional = True
@@ -75,45 +77,40 @@ class RemoteTokenClass(TokenClass):
         :param aToken: the db bound token
         """
         TokenClass.__init__(self, aToken)
-        self.setType(u"remote")
+        self.set_type(u"remote")
 
         self.remoteServer = ""
         self.remoteLocalCheckpin = None
         self.remoteSerial = None
         self.remoteUser = None
         self.remoteRealm = None
-        self.remoteResConf = None
+        self.remoteResolver = None
         self.mode = ['authenticate', 'challenge']
 
     @classmethod
-    def getClassType(cls):
+    def get_class_type(cls):
         """
         return the class type identifier
         """
         return "remote"
 
     @classmethod
-    def getClassPrefix(cls):
+    def get_class_prefix(cls):
         """
         return the token type prefix
         """
-        return "LSRE"
+        return "PIRE"
 
     @classmethod
     @log_with(log)
-    def getClassInfo(cls, key=None, ret='all'):
+    def get_class_info(cls, key=None, ret='all'):
         """
-        getClassInfo - returns a subtree of the token definition
-
         :param key: subsection identifier
         :type key: string
-
         :param ret: default return value, if nothing is found
         :type ret: user defined
-
         :return: subsection if key exists or user defined
-        :rtype: s.o.
-
+        :rtype: dict or string
         """
         res = {'type': 'remote',
                'title': 'Remote Token',
@@ -154,7 +151,7 @@ class RemoteTokenClass(TokenClass):
         self.remoteServer = getParam(param, "remote.server", required)
         # if another OTP length would be specified in /admin/init this would
         # be overwritten by the parent class, which is ok.
-        self.setOtpLen(6)
+        self.set_otplen(6)
 
         val = getParam(param, "remote.local_checkpin", optional)
         if val is not None:
@@ -172,20 +169,20 @@ class RemoteTokenClass(TokenClass):
         if val is not None:
             self.remoteRealm = val
 
-        val = getParam(param, "remote.resConf", optional)
+        val = getParam(param, "remote.resolver", optional)
         if val is not None:
-            self.remoteResConf = val
+            self.remoteResolver = val
 
         TokenClass.update(self, param)
 
-        self.addToTokenInfo("remote.server", self.remoteServer)
-        self.addToTokenInfo("remote.serial", self.remoteSerial)
-        self.addToTokenInfo("remote.user", self.remoteUser)
-        self.addToTokenInfo("remote.local_checkpin", self.remoteLocalCheckpin)
-        self.addToTokenInfo("remote.realm", self.remoteRealm)
-        self.addToTokenInfo("remote.resConf", self.remoteResConf)
-
-        return
+        # In case we need to save the token, so that we get a Database token.id
+        self.save()
+        self.add_tokeninfo("remote.server", self.remoteServer)
+        self.add_tokeninfo("remote.serial", self.remoteSerial)
+        self.add_tokeninfo("remote.user", self.remoteUser)
+        self.add_tokeninfo("remote.local_checkpin", self.remoteLocalCheckpin)
+        self.add_tokeninfo("remote.realm", self.remoteRealm)
+        self.add_tokeninfo("remote.resolver", self.remoteResolver)
 
     @log_with(log)
     def check_pin_local(self):
@@ -195,7 +192,7 @@ class RemoteTokenClass(TokenClass):
         :return: bool
         """
         local_check = False
-        if 1 == int(self.getFromTokenInfo("remote.local_checkpin")):
+        if 1 == int(self.get_tokeninfo("remote.local_checkpin")):
             local_check = True
         log.debug(" local checking pin? %r" % local_check)
 
@@ -203,7 +200,7 @@ class RemoteTokenClass(TokenClass):
 
 
     @log_with(log)
-    def authenticate(self, passw, user, options=None):
+    def authenticate(self, passw, user=None, options=None):
         """
         do the authentication on base of password / otp and user and
         options, the request parameters.
@@ -217,29 +214,117 @@ class RemoteTokenClass(TokenClass):
         :return: tuple of (success, otp_count - 0 or -1, reply)
 
         """
-        log.debug("authenticate")
-
         res = False
         otp_counter = -1
         reply = None
-
         otpval = passw
 
-        ## should we check the pin localy??
+        # should we check the pin localy?
         if self.check_pin_local():
-            (res, pin, otpval) = split_pin_otp(self, passw, user,
-                                               options=options)
+            (_res, pin, otpval) = self.split_pin_pass(passw, user,
+                                                      options=options)
 
-            res = TokenClass.checkPin(self, pin)
-            if res is False:
-                return (res, otp_counter, reply)
+            if not TokenClass.check_pin(self, pin):
+                return False, otp_counter, {'message': "Wrong PIN"}
 
-        (res, otp_count, reply) = self.do_request(otpval, user=user)
+        otp_count = self.check_otp(otpval, options=options)
+        if otp_count >= 0:
+            res = True
+            reply = {'message': 'matching 1 tokens',
+                     'serial': self.get_serial(),
+                     'type': self.get_tokentype()}
+        else:
+            reply = {'message': 'remote side denied access'}
 
-        return (res, otp_count, reply)
+        return res, otp_count, reply
+
+    def check_otp(self, otpval, counter=None, window=None, options=None):
+        """
+        run the http request against the remote host
+
+        :param otpval: the OTP value
+        :param counter: The counter for counter based otp values
+        :type counter: int
+        :param window: a counter window
+        :type counter: int
+        :param options: additional token specific options
+        :type options: dict
+        :return: counter of the matching OTP value.
+        :rtype: int
+        """
+        otp_count = -1
+        otpval = otpval.encode("utf-8")
+
+        remoteServer = self.get_tokeninfo("remote.server") or ""
+        remoteServer = remoteServer.encode("utf-8")
+
+        # in preparation of the ability to relocate privacyidea urls,
+        # we introduce the remote url path
+        remotePath = self.get_tokeninfo("remote.path") or ""
+        remotePath = remotePath.strip().encode('utf-8')
+
+        remoteSerial = self.get_tokeninfo("remote.serial") or ""
+        remoteSerial = remoteSerial.encode('utf-8')
+
+        remoteUser = self.get_tokeninfo("remote.user") or ""
+        remoteUser = remoteUser.encode('utf-8')
+
+        remoteRealm = self.get_tokeninfo("remote.realm") or ""
+        remoteRealm = remoteRealm.encode('utf-8')
+
+        remoteResolver = self.get_tokeninfo("remote.resolver") or ""
+        remoteResolver = remoteResolver.encode('utf-8')
+
+        ssl_verify = get_from_config("remote.verify_ssl_certificate",
+                                        False) or False
+
+        if type(ssl_verify) in [str, unicode]:
+            if ssl_verify.lower() in ["true", "1"]:
+                ssl_verify = True
+            else:
+                ssl_verify = False
+
+        # here we also need to check for remote.user and so on....
+        log.debug("checking OTP len:%r remotely on server: %r,"
+                  " serial: %r, user: %r" %
+                  (len(otpval), remoteServer, remoteSerial, remoteUser))
+        params = {}
+
+        if len(remotePath) == 0:
+            remotePath = "/validate/check"
+        if len(remoteSerial) > 0:
+            params['serial'] = remoteSerial
+        elif len(remoteUser) > 0:
+            params['user'] = remoteUser
+            params['realm'] = remoteRealm
+            params['resolver'] = remoteResolver
+
+        else:
+            log.warning("The remote token does neither contain a "
+                        "remote.serial nor a remote.userr.")
+            return otp_count
+
+        params['pass'] = otpval
+        request_url = "%s%s" % (remoteServer, remotePath)
+
+        try:
+            r = requests.post(request_url, data=params, verify=ssl_verify)
+
+            if r.status_code == requests.codes.ok:
+                response = r.json()
+                result = response.get("result")
+                if result.get("value"):
+                    otp_count = 1
+
+        except Exception as exx:  # pragma nocover
+            log.error("Error getting response from "
+                      "remote Server (%r): %r" % (request_url, exx))
+            log.error(traceback.format_exc())
+
+        return otp_count
 
     @log_with(log)
-    def is_challenge_request(self, passw, user, options=None):
+    def is_challenge_request(self, passw, user=None, options=None):
         """
         This method checks, if this is a request, that triggers a challenge.
         It depends on the way, the pin is checked - either locally or remote
@@ -257,237 +342,9 @@ class RemoteTokenClass(TokenClass):
         request_is_valid = False
 
         if self.check_pin_local():
-            pin_match = check_pin(self, passw, user=user, options=options)
+            pin_match = self.check_pin(passw, user=user,
+                                         options=options)
             if pin_match is True:
                 request_is_valid = True
 
         return request_is_valid
-
-    @log_with(log)
-    def do_request(self, passw, transactionid=None, user=None):
-        """
-        run the http request against the remote host
-
-        :param passw: the password which should be checked on the remote host
-        :param transactionid: provided,  if this is a challenge response
-        :param user: the requesting user - used if no remote serial or remote
-                     user is provided
-
-        :return: Tuple of (success, otp_count= -1 or 0, reply=remote response)
-        """
-
-        reply = {}
-        otpval = passw.encode("utf-8")
-
-        remoteServer = self.getFromTokenInfo("remote.server") or ""
-        remoteServer = remoteServer.encode("utf-8")
-
-        ## in preparation of the ability to relocate privacyidea urls,
-        ## we introduce the remote url path
-        remotePath = self.getFromTokenInfo("remote.path") or ""
-        remotePath = remotePath.strip().encode('utf-8')
-
-        remoteSerial = self.getFromTokenInfo("remote.serial") or ""
-        remoteSerial = remoteSerial.encode('utf-8')
-
-        remoteUser = self.getFromTokenInfo("remote.user") or ""
-        remoteUser = remoteUser.encode('utf-8')
-
-        remoteRealm = self.getFromTokenInfo("remote.realm") or ""
-        remoteRealm = remoteRealm.encode('utf-8')
-
-        remoteResConf = self.getFromTokenInfo("remote.resConf") or ""
-        remoteResConf = remoteResConf.encode('utf-8')
-
-        ssl_verify = getFromConfig("remote.verify_ssl_certificate",
-                                   False) or False
-
-        if type(ssl_verify) in [str, unicode]:
-            if ssl_verify.lower() == "true":
-                ssl_verify = True
-            else:
-                ssl_verify = False
-
-
-        ## here we also need to check for remote.user and so on....
-        log.debug("checking OTP len:%r remotely on server: %r,"
-                  " serial: %r, user: %r" %
-                  (len(otpval), remoteServer, remoteSerial, remoteUser))
-        params = {}
-
-        if len(remoteSerial) > 0:
-            params['serial'] = remoteSerial
-            if len(remotePath) == 0:
-                remotePath = "/validate/check_s"
-        elif len(remoteUser) > 0:
-            params['user'] = remoteUser
-            params['realm'] = remoteRealm
-            params['resConf'] = remoteResConf
-            if len(remotePath) == 0:
-                remotePath = "/validate/check"
-
-        else:
-        ## There is no remote.serial and no remote.user, so we will
-        ## try to pass the requesting user.
-            if user is None:
-                log.warning("FIXME: We do not know the user at the moment!")
-            else:
-                params['user'] = user.login
-                params['realm'] = user.realm
-
-        params['pass'] = otpval
-        if transactionid is not None:
-            params['state'] = transactionid
-
-        ## use a POST request to check the token
-        data = urllib.urlencode(params)
-        request_url = "%s%s" % (remoteServer, remotePath)
-
-        try:
-            ## prepare the submit and receive headers
-            headers = {"Content-type": "application/x-www-form-urlencoded",
-                       "Accept": "text/plain"}
-
-            ## submit the request
-            try:
-                ## is httplib compiled with ssl?
-                http = httplib2.Http(disable_ssl_certificate_validation=
-                                     not(ssl_verify))
-            except TypeError as exx:
-                ## not so on squeeze:
-                ## TypeError: __init__() got an unexpected keyword argument
-                ## 'disable_ssl_certificate_validation'
-
-                log.warning("httplib2 'disable_ssl_certificate_validation' "
-                            "attribute error: %r" % exx)
-                ## so we run in fallback mode
-                http = httplib2.Http()
-
-            (resp, content) = http.request(request_url,
-                                           method="POST",
-                                           body=data,
-                                           headers=headers)
-            result = json.loads(content)
-            log.debug(result)
-            status = result['result']['status']
-            log.debug(status)
-
-            if True == status:
-                if True == result['result']['value']:
-                    res = True
-                    otp_count = 0
-
-            if "detail" in result:
-                reply = copy.deepcopy(result["detail"])
-                otp_count = -1
-                res = False
-
-        except Exception as exx:
-            log.error("Error getting response from "
-                      "remote Server (%r): %r" % (request_url, exx))
-            log.error(traceback.format_exc())
-
-        return (res, otp_count, reply)
-
-    @log_with(log)
-    def checkResponse4Challenge(self, user, passw, options=None,
-                                challenges=None):
-        '''
-        This method verifies if the given ``passw`` matches any
-        existing ``challenge`` of the token.
-
-        It then returns the new otp_counter of the token and the
-        list of the matching challenges.
-
-        In case of success the otp_counter needs to be >= 0.
-        The matching_challenges is passed to the method
-        :py:meth:`~privacyidea.lib.tokenclass.TokenClass.challenge_janitor`
-        to clean up challenges.
-
-        :param user: the requesting user
-        :type user: User object
-        :param passw: the password (pin+otp)
-        :type passw: string
-        :param options:  additional arguments from the request, which could
-                         be token specific
-        :type options: dict
-        :param challenges: A sorted list of valid challenges for this token.
-        :type challenges: list
-        :return: tuple of (otpcounter and the list of matching challenges)
-
-        '''
-        otp_counter = -1
-        transid = None
-        matching_challenge = None
-        reply = None
-
-        matching_challenges = []
-
-        if 'transactionid' in options or 'state' in options:
-            ## fetch the transactionid
-            transid = options.get('transactionid', options.get('state', None))
-
-        if transid is not None:
-            ## in case of a local pin check, we the transaction is a local one
-            ## and we must not forward this!!
-            if self.check_pin_local():
-                ## check if transaction id is in list of challengens
-                for challenge in challenges:
-                    if challenge.transid == transid:
-                        matching_challenge = challenge
-                        break
-
-                if matching_challenge is not None:
-                    (res, otp_counter, reply) = \
-                        self.do_request(passw, user=user)
-
-                    ## everything is ok, we remove the challenge
-                    if res is True and otp_counter >= 0:
-                        matching_challenges.append(matching_challenge)
-
-            ## in case of remote check pin, we just forward everything
-            else:
-                (res, otp_counter, reply) = \
-                    self.do_request(passw, transactionid=transid, user=user)
-
-        return (otp_counter, matching_challenges)
-
-    @log_with(log)
-    def checkPin(self, pin, options=None):
-        """
-        check the pin - either remote or localy
-        - in case of remote, we return true, as the
-          the splitPinPass will put the passw then in the otpVal
-        """
-        res = True
-
-        ## only, if pin should be checked localy
-        if self.check_pin_local():
-            res = TokenClass.checkPin(self, pin)
-
-        return res
-
-    @log_with(log)
-    def splitPinPass(self, passw):
-        """
-        Split the PIN and the OTP value.
-        Only if it is locally checked and not remotely.
-
-        :param passw: the password with pin and otp
-        :return: tuple of the (success, pin and otpvalue)
-
-        """
-        res = 0
-
-        local_check = self.check_pin_local()
-
-
-        if local_check:
-            (res, pin, otpval) = TokenClass.splitPinPass(self, passw)
-        else:
-            pin = ""
-            otpval = passw
-
-        return (res, pin, otpval)
-
-###eof#########################################################################
