@@ -216,7 +216,8 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             "motp": "mOTP: classical mobile One Time Passwords",
             "sshkey": "SSH Public Key: The public SSH key",
             "yubikey": "Yubikey AES mode: One Time Passwords with Yubikey",
-            "remote": "Remote Token: Forward authentication request to another server"},
+            "remote": "Remote Token: Forward authentication request to another server",
+            "yubico": "Yubikey Cloud mode: Forward authentication request to YubiCloud"},
         timesteps: [30, 60], otplens: [6, 8]
     };
     // These are values that are also sent to the backend!

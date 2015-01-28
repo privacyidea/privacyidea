@@ -333,7 +333,7 @@ def get_token_list():
     #module_list.add(".tokens.tagespassworttoken")
     module_list.add("tokens.totptoken")
     #module_list.add(".tokens.vascotoken")
-    #module_list.add(".tokens.yubicotoken")
+    module_list.add("tokens.yubicotoken")
     module_list.add("tokens.yubikeytoken")
     
     # Dynamic Resolver modules
