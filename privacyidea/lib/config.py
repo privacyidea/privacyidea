@@ -319,22 +319,22 @@ def get_token_list():
     module_list = set()
 
     # TODO: migrate the implementations and uncomment
-    #module_list.add(".tokens.daplugtoken.DaplugTokenClass")
-    #module_list.add(".tokens.emailtoken.")
+    module_list.add("tokens.daplugtoken")
     module_list.add("tokens.hotptoken")
     module_list.add("tokens.motptoken")
-    #module_list.add(".tokens.ocra2token")
     module_list.add("tokens.passwordtoken")
-    #module_list.add(".tokens.radiustoken")
     module_list.add("tokens.remotetoken")
-    #module_list.add(".tokens.smstoken")
     module_list.add("tokens.spasstoken")
     module_list.add("tokens.sshkeytoken")
-    #module_list.add(".tokens.tagespassworttoken")
     module_list.add("tokens.totptoken")
-    #module_list.add(".tokens.vascotoken")
     module_list.add("tokens.yubicotoken")
     module_list.add("tokens.yubikeytoken")
+    #module_list.add(".tokens.emailtoken.")
+    #module_list.add(".tokens.ocra2token")
+    #module_list.add(".tokens.radiustoken")
+    #module_list.add(".tokens.smstoken")
+    #module_list.add(".tokens.tagespassworttoken")
+    #module_list.add(".tokens.vascotoken")
     
     # Dynamic Resolver modules
     # TODO: Migration

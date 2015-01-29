@@ -5,6 +5,11 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2015-01-29 Adapt during migration to flask
+#             Cornelius Kölbel <cornelius@privacyidea.org>
+#
+#
+#
 #  based on the tokenclass.py base class of LinOTP which is
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #
@@ -21,14 +26,17 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''
+"""
 This is the token module for the daplug token. It behaves like HOTP,
 but uses another OTP format/mapping.
-'''
+
+This code is tested in tests/test_lib_tokens_daplug
+"""
+
 import binascii
-from privacyidea.lib.tokens.hmactoken import HmacTokenClass
+from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.log import log_with
-from privacyidea.lib.config import getFromConfig
+from privacyidea.lib.config import get_from_config, get_prepend_pin
 
 optional = True
 required = False
@@ -55,33 +63,40 @@ def _daplug2digit(daplug_otp):
         hex_otp += digit
     otp = binascii.unhexlify(hex_otp)
     return otp
+
+def _digi2daplug(normal_otp):
+    """
+    convert "497096" to 34 39 37 30 39 36, which is efekeiebekeh
+
+    This function is only used for testing purposes
+    :param normal_otp:
+    :return:
+    """
+    daplug_otp = ""
+    hex_otp = binascii.hexlify(normal_otp)
+    REVERSE_MAP = {v: k for k,v in MAPPING.iteritems()}
+    for i in hex_otp:
+        daplug_otp += REVERSE_MAP.get(i)
+    return daplug_otp
          
-         
-class DaplugTokenClass(HmacTokenClass):
-    '''
+class DaplugTokenClass(HotpTokenClass):
+    """
     daplug token class implementation
-    '''
+    """
 
     @classmethod
-    def getClassType(cls):
-        '''
-        getClassType - return the token type shortname
-
-        :return: 'daplug'
-        :rtype: string
-
-        '''
+    def get_class_type(cls):
         return "daplug"
 
     @classmethod
-    def getClassPrefix(cls):
+    def get_class_prefix(cls):
         return "DPLG"
 
     @classmethod
     @log_with(log)
-    def getClassInfo(cls, key=None, ret='all'):
-        '''
-        getClassInfo - returns a subtree of the token definition
+    def get_class_info(cls, key=None, ret='all'):
+        """
+        returns a subtree of the token definition
 
         :param key: subsection identifier
         :type key: string
@@ -90,9 +105,8 @@ class DaplugTokenClass(HmacTokenClass):
         :type ret: user defined
 
         :return: subsection if key exists or user defined
-        :rtype: s.o.
-
-        '''
+        :rtype: dict or string
+        """
         res = {'type': 'daplug',
                'title': 'Daplug Event Token',
                'description': ("event based OTP token using "
@@ -108,127 +122,120 @@ class DaplugTokenClass(HmacTokenClass):
 
     @log_with(log)
     def __init__(self, a_token):
-        '''
-        constructor - create a token object
+        """
+        create a token object
 
         :param aToken: instance of the orm db object
         :type aToken:  orm object
-
-        '''
-        HmacTokenClass.__init__(self, a_token)
-        self.setType(u"DAPLUG")
+        """
+        HotpTokenClass.__init__(self, a_token)
+        self.set_type(u"daplug")
         self.hKeyRequired = True
         return
 
     @log_with(log)
-    def checkOtp(self, anOtpVal, counter, window, options=None):
-        '''
+    def check_otp(self, anOtpVal, counter=None, window=None, options=None):
+        """
         checkOtp - validate the token otp against a given otpvalue
 
         :param anOtpVal: the otpvalue to be verified
         :type anOtpVal:  string, format: efekeiebekeh
-
         :param counter: the counter state, that should be verified
         :type counter: int
-
         :param window: the counter +window, which should be checked
         :type window: int
-
         :param options: the dict, which could contain token specific info
         :type options: dict
-
         :return: the counter state or -1
         :rtype: int
 
-        '''
+        """
         # convert OTP value
         otp = _daplug2digit(anOtpVal)
-        res = HmacTokenClass.checkOtp(self, otp, counter, window, options)
+        res = HotpTokenClass.check_otp(self, otp, counter, window, options)
         return res
 
     @log_with(log)
     def check_otp_exist(self, otp, window=10):
-        '''
+        """
         checks if the given OTP value is/are values of this very token.
         This is used to autoassign and to determine the serial number of
         a token.
 
         :param otp: the to be verified otp value
         :type otp: string
-
         :param window: the lookahead window for the counter
         :type window: int
-
         :return: counter or -1 if otp does not exist
         :rtype:  int
-
-        '''
+        """
         otp = _daplug2digit(otp)
-        res = HmacTokenClass.check_otp_exist(self, otp, window)
+        res = HotpTokenClass.check_otp_exist(self, otp, window)
         return res
 
     @log_with(log)
-    def autosync(self, hmac2Otp, anOtpVal):
-        '''
-        auto - sync the token based on two otp values
-        - internal method to realize the _autosync within the
-        checkOtp method
+    def get_otp(self, current_time=None):
+        res = HotpTokenClass.get_otp(self, current_time)
+        # returns (1, -1, '755224', '755224-1')
+        return res[0], res[1], _digi2daplug(res[2]), res[3]
 
-        :param hmac2Otp: the hmac object (with reference to the token secret)
-        :type hmac2Otp: hmac object
 
-        :param anOtpVal: the actual otp value
-        :type anOtpVal: string
+    @log_with(log)
+    def get_multi_otp(self, count=0, epoch_start=0, epoch_end=0,
+                        curTime=None, timestamp=None):
+        res = HotpTokenClass.get_multi_otp(self, count=count,
+                                           epoch_start=epoch_start,
+                                           epoch_end=epoch_end,
+                                           curTime=curTime, timestamp=timestamp)
+        #  (True, 'OK', {'otp': {0: '755224', 1: '287082',
+        #                        2: '359152', 3: '969429',
+        #                        4: '338314'},
+        #                'type': 'hotp'})
+        # convert the response
+        rdict = {'type': self.get_class_type(),
+                 'otp': {}}
+        otp_dict = {}
+        for k, v in res[2].get('otp').iteritems():
+            rdict['otp'][k] = _digi2daplug(v)
 
-        :return: counter or -1 if otp does not exist
-        :rtype:  int
-
-        '''
-        otp = _daplug2digit(anOtpVal)
-        res = HmacTokenClass._autosync(self, hmac2Otp, otp)
-        return res
+        return res[0], res[1], rdict
 
     @log_with(log)
     def resync(self, otp1, otp2, options=None):
-        '''
+        """
         resync the token based on two otp values
         - external method to do the resync of the token
 
         :param otp1: the first otp value
         :type otp1: string
-
         :param otp2: the second otp value
         :type otp2: string
-
         :param options: optional token specific parameters
         :type options:  dict or None
-
         :return: counter or -1 if otp does not exist
         :rtype:  int
-
-        '''
+        """
         n_otp1 = _daplug2digit(otp1)
         n_otp2 = _daplug2digit(otp2)
-        res = HmacTokenClass.resync(self, n_otp1, n_otp2, options)
+        res = HotpTokenClass.resync(self, n_otp1, n_otp2, options)
         return res
 
-    def splitPinPass(self, passw):
-
+    def split_pin_pass(self, passw, user=None, options=None):
         res = 0
         try:
             otplen = int(self.token.otplen)
-        except ValueError:
+        except ValueError:  # pragma nocover
             otplen = 6
 
         # For splitting the value we use 12 characters.
         # For internal calculation we use 6 digits.
-        otplen = otplen * 2
+        otplen *= 2
         
-        if getFromConfig("PrependPin") == "True":
+        if get_prepend_pin():
             pin = passw[0:-otplen]
             otpval = passw[-otplen:]
         else:
             pin = passw[otplen:]
             otpval = passw[0:otplen]
 
-        return (res, pin, otpval)
+        return res, pin, otpval

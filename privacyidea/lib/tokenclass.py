@@ -305,7 +305,6 @@ class TokenClass(object):
         res = self.token.check_pin(pin)
         return res
 
-
     def authenticate(self, passw, user=None, options=None):
         """
         High level interface which covers the check_pin and check_otp
@@ -338,7 +337,8 @@ class TokenClass(object):
         otp_counter = -1
         reply = None
 
-        (res, pin, otpval) = self.split_pin_pass(passw, user, options=options)
+        (res, pin, otpval) = self.split_pin_pass(passw, user=user,
+                                                 options=options)
         if res != -1:
             pin_match = self.check_pin(pin, user=user, options=options)
             if pin_match is True:
