@@ -7,11 +7,11 @@ from .base import MyTestCase
 from privacyidea.lib.tokens.radiustoken import RadiusTokenClass
 from privacyidea.models import Token
 from privacyidea.lib.error import ParameterError
-import responses
-import json
 from privacyidea.lib.config import set_privacyidea_config
 import radiusmock
-from pyrad import packet
+
+DICT_FILE="tests/testdata/dictionary"
+
 
 class RadiusTokenTestCase(MyTestCase):
 
@@ -20,12 +20,14 @@ class RadiusTokenTestCase(MyTestCase):
     params1 = {"radius.server": "my.other.radiusserver:1812",
                "radius.local_checkpin": True,
                "radius.user": "user1",
-               "radius.secret": "testing123"}
+               "radius.secret": "testing123",
+               "radius.dictfile": "tests/testdata/dictfile"}
     serial2 = "use1"
     params2 = {"radius.server": "my.other.radiusserver:1812",
                "radius.local_checkpin": False,
                "radius.user": "user1",
-               "radius.secret": "testing123"}
+               "radius.secret": "testing123",
+               "radius.dictfile": "tests/testdata/dictfile"}
     serial3 = "serial3"
     params3 = {"radius.server": "my.other.radiusserver:1812"}
 
@@ -98,6 +100,7 @@ class RadiusTokenTestCase(MyTestCase):
     @radiusmock.activate
     def test_04_do_request_success(self):
         radiusmock.setdata(success=True)
+        set_privacyidea_config("radius.dictfile", DICT_FILE)
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = RadiusTokenClass(db_token)
         otpcount = token.check_otp("123456")
