@@ -1,5 +1,5 @@
 """
-This test file tests the lib.tokens.sshkeytoken
+This test file tests the lib.tokens.remotetoken
 This depends on lib.tokenclass
 """
 

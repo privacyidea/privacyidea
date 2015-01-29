@@ -21,12 +21,16 @@
                 </li>
                 -->
                 <li role="presentation"
-                    ng-class="{ active: tokentype == 'yubico'}">
-                    <a ui-sref="config.tokens({tokentype: 'yubico'})">Yubico</a>
+                    ng-class="{ active: tokentype == 'radius'}">
+                    <a ui-sref="config.tokens({tokentype: 'radius'})">RADIUS</a>
                 </li>
                 <li role="presentation"
                     ng-class="{ active: tokentype == 'remote'}">
                     <a ui-sref="config.tokens({tokentype: 'remote'})">Remote</a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'yubico'}">
+                    <a ui-sref="config.tokens({tokentype: 'yubico'})">Yubico</a>
                 </li>
             </ul>
         </div>

@@ -1,0 +1,43 @@
+<p class="help-block">
+    The RADIUS token forwards the authentication request to another
+    RADIUS server. You can choose if the PIN should be stripped and
+    checked locally.
+</p>
+
+<h4>Token data</h4>
+
+<div class="form-group">
+    <input type="checkbox" ng-model="form['radius.local_checkpin']"
+           name="localPin" id="localPin">
+    <label for="localPin">Check the PIN locally</label>
+</div>
+
+<div class="form-group">
+    <label for="radiusServer">RADIUS Server</label>
+    <input type="text"
+           required
+           class="form-control"
+           placeholder="your.radius.server:1812"
+           ng-model="form['radius.server']" name="radiusServer">
+    <p class="help-block">
+        The RADIUS server may include the port number.
+    </p>
+</div>
+
+<div class="form-group">
+    <label for="radiusUser">RADIUS User</label>
+    <input type="text" ng-model="form['radius.user']"
+           class="form-control"
+           required
+           plasceholder="The username on the RADIUS server"
+           name="radiusUser">
+</div>
+
+<div class="form-group">
+    <label for="radiusSecret">RADIUS Secret</label>
+    <input type="text" ng-model="form['radius.secret']"
+           class="form-control"
+           required
+           plasceholder="testing123"
+           name="radiusSecret">
+</div>
