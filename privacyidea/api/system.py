@@ -214,9 +214,6 @@ def set_config():
             value = getParam(param, key, optional)
             typ = getParam(param, key + ".type", optional)
             desc = getParam(param, key + ".desc", optional)
-            if typ and typ.lower() == "password":
-                # TODO: store value in encrypted way
-                pass
             res = set_privacyidea_config(key, value, typ, desc)
             result[key] = res
             g.audit_object.log({"success": True})

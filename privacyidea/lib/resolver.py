@@ -50,6 +50,7 @@ from ..api.lib.utils import required
 from ..api.lib.utils import getParam
 from .error import ConfigAdminError
 from sqlalchemy import func
+from .crypto import encryptPassword, decryptPassword
 
 log = logging.getLogger(__name__)
 
@@ -148,10 +149,12 @@ def save_resolver(params):
                             params.get("type"))
         resolver_id = resolver.save()
     # create the config
-    for key in data:
+    for key, value in data.iteritems():
+        if types.get(key) == "password":
+            value = encryptPassword(value)
         ResolverConfig(resolver_id=resolver_id,
                        Key=key,
-                       Value=data.get(key),
+                       Value=value,
                        Type=types.get(key, ""),
                        Description=desc.get(key, "")).save()
     return resolver_id
@@ -179,13 +182,15 @@ def get_resolver_list(filter_resolver_type=None,
         resolvers = Resolver.query.all()
     
     for reso in resolvers:
-        r = {}
-        r["resolvername"] = reso.name
-        r["type"] = reso.rtype
+        r = {"resolvername": reso.name,
+             "type": reso.rtype}
         # Add resolver config data
         data = {}
         for conf in reso.rconfig:
-            data[conf.Key] = conf.Value
+            value = conf.Value
+            if conf.Type == "password":
+                value = decryptPassword(value)
+            data[conf.Key] = value
         r["data"] = data
         Resolvers[reso.name] = r
 
@@ -219,13 +224,13 @@ def delete_resolver(resolvername):
 
 @log_with(log)
 def get_resolver_config(resolvername):
-    '''
+    """
     return the complete config of a given resolver from the database
     :param resolvername: the name of the resolver
     :type resolvername: string
     :return: the config of the resolver
     :rtype: dict
-    '''
+    """
     reso = get_resolver_list(filter_resolver_name=resolvername)
     return reso.get(resolvername, {}).get("data", {})
 

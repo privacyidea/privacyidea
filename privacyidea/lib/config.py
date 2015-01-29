@@ -4,7 +4,7 @@
 #  Nov 11, 2014 Cornelius Kölbel
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
-##
+#
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
 # License as published by the Free Software Foundation; either
@@ -18,10 +18,13 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''
-The is the global object g, that stores the contents of the
-Config Table.
-'''
+__doc__="""The config module takes care about storing server configuration in
+the Config database table.
+
+It provides functions to retrieve (get) and and set configuration.
+
+The code is tested in tests/test_lib_config
+"""
 
 import logging
 import sys
@@ -30,7 +33,6 @@ import inspect
 from flask import current_app
 
 from .log import log_with
-from .error import ConfigAdminError
 from ..models import Config, db
 
 from .crypto import encryptPassword
@@ -58,18 +60,25 @@ def get_from_config(key=None, default=None):
     :return: If key is None, then a dictionary is returned. I a certain key
               is given a string/bool is returned.
     """
+    rvalue = ""
     if key:
         q = Config.query.filter_by(Key=key).first()
         if q:
-            value = q.Value
+            rvalue = q.Value
+            if q.Type == "password":
+                rvalue = decryptPassword(rvalue)
         else:
-            value = default
+            rvalue = default
     else:
-        value = {}
+        rvalue = {}
         q = Config.query.all()
         for entry in q:
-            value[entry.Key] = entry.Value
-    return value
+            value = entry.Value
+            if entry.Type == "password":
+                value = decryptPassword(value)
+            rvalue[entry.Key] = value
+
+    return rvalue
 
 
 def get_resolver_types():
@@ -420,7 +429,7 @@ def get_resolver_module_list():
             exec("import %s" % mod_name)
             module = eval(mod_name)
 
-        except Exception as exx:
+        except Exception as exx:  # pragma nocover
             module = None
             log.warning('unable to load resolver module : %r (%r)'
                         % (mod_name, exx))
@@ -435,12 +444,14 @@ def set_privacyidea_config(key, value, typ="", desc=""):
     ret = 0
     # We need to check, if the value already exist
     q1 = Config.query.filter_by(Key=key).count()
+    if typ == "password":
+        # store value in encrypted way
+        value = encryptPassword(value)
     if q1 > 0:
         # The value already exist, we need to update
         data = {'Value': value}
         if typ:
             data.update({'Type': typ})
-            # TODO: Encrypt passwords
         if desc:
             data.update({'Description': desc})
         Config.query.filter_by(Key=key).update(data)

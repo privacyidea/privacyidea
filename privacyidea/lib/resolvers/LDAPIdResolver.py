@@ -346,7 +346,7 @@ class IdResolver (UserIdResolver):
         descriptor['config'] = {'LDAPURI': 'string',
                                 'LDAPBASE': 'string',
                                 'BINDDN': 'string',
-                                'BINDPW': 'string',
+                                'BINDPW': 'password',
                                 'TIMEOUT': 'int',
                                 'SIZELIMIT': 'int',
                                 'LOGINNAMEATTRIBUTE': 'string',

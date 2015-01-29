@@ -270,7 +270,11 @@ def _get_hsm():
 @log_with(log, log_entry=False)
 def encryptPassword(password):
     hsm = _get_hsm()
-    ret = hsm.encrypt_password(password)
+    try:
+        ret = hsm.encrypt_password(password)
+    except Exception as exx:  # pragma nocover
+        log.warning(exx)
+        ret = "FAILED TO ENCRYPT PASSWORD!"
     return ret
 
 
@@ -284,7 +288,11 @@ def encryptPin(cryptPin):
 @log_with(log, log_exit=False)
 def decryptPassword(cryptPass):
     hsm = _get_hsm()
-    ret = hsm.decrypt_password(cryptPass)
+    try:
+        ret = hsm.decrypt_password(cryptPass)
+    except Exception as exx:  # pragma nocover
+        log.warning(exx)
+        ret = "FAILED TO DECRYPT PASSWORD!"
     return ret
 
 

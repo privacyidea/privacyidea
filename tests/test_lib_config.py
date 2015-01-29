@@ -186,3 +186,15 @@ class ConfigTestCase(MyTestCase):
         self.assertTrue(prefix.get("totp") == "TOTP", prefix)
         self.assertTrue(prefix.get("hotp") == "OATH", prefix)
 
+    def test_04_store_encrypted_values(self):
+        r = set_privacyidea_config("mySecretData", "soho",
+                                   typ="password", desc="Very important")
+        self.assertTrue(r == "insert", r)
+
+        r = get_from_config("mySecretData")
+        self.assertTrue(r == "soho", r)
+
+        r = get_from_config()
+        self.assertTrue(r.get("mySecretData") == "soho",
+                        r.get("mySecretData"))
+
