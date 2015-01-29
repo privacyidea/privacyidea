@@ -66,7 +66,7 @@
                 <li>
                     <button ng-show="loggedInUser.username"
                             ng-click="logout()"
-                            class="btn btn-warning">
+                            class="btn btn-sm btn-warning">
                         Logout
                         {{ loggedInUser.username }} @{{ loggedInUser.realm }}<br>
                     (Role: {{ loggedInUser.role }})</button>
@@ -86,7 +86,6 @@
 <div class="alert alert-warning" ng-show="logoutWarning">
 	You will be logged out in {{ myCountdown }} second(s).
 </div>
-
 <div class="container">
     <div ui-view class="slide"></div>
 </div>

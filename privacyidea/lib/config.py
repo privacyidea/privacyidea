@@ -440,6 +440,7 @@ def set_privacyidea_config(key, value, typ="", desc=""):
         data = {'Value': value}
         if typ:
             data.update({'Type': typ})
+            # TODO: Encrypt passwords
         if desc:
             data.update({'Description': desc})
         Config.query.filter_by(Key=key).update(data)

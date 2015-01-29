@@ -35,10 +35,14 @@ myApp.controller("tokenConfigController", function ($scope, $location,
             $scope.form = data.result.value;
             // make a deep copy
             angular.copy($scope.form, $scope.original_params);
+            // TODO: We need to put these settings in the token specific code
             // Default inits
             $scope.form['totp.timeStep'] = $scope.form['totp.timeStep'] || "30";
             $scope.form['totp.hashlib'] = $scope.form['totp.hashlib'] || "sha1";
             $scope.form['hotp.hashlib'] = $scope.form['hotp.hashlib'] || "sha1";
+            // RADIUS
+            $scope.form['radius.secret.type'] = "password";
+            $scope.form['radius.dictfile'] = "/etc/privacyidea/dictionary"
         });
     };
 

@@ -186,10 +186,13 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory, $scop
 });
 
 myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
-                                                    $stateParams, AuthFactory) {
+                                                    $stateParams, AuthFactory,
+                                                    ConfigFactory) {
     $scope.loggedInUser = AuthFactory.getUser();
     $scope.newUser = {};
     $scope.tempData = {};
+    // System default values for enrollment
+    $scope.systemDefault = {};
     // init the user, if token.enroll was called as a normal user
     if (AuthFactory.getRole() == 'user') {
         $scope.newUser.user = AuthFactory.getUser().username;
@@ -259,6 +262,25 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             }
         }
     };
+
+    // If the user is admin, he can read the config.
+    if ($scope.loggedInUser.role == "admin") {
+        ConfigFactory.loadSystemConfig(function (data) {
+            /* Default config values like
+                radius.server, radius.secret...
+             are stored in $scope.systemDefault
+             */
+            var systemDefault = data.result.value;
+            // TODO: The entries should be handled automatically.
+            var entries = ["radius.server", "radius.secret", "remote.server",
+                "totp.hashlib", "hotp.hashlib"];
+            entries.forEach(function(entry) {
+                if (!$scope.form[entry]) {
+                    $scope.form[entry] = systemDefault[entry];
+                }
+            });
+        });
+    }
 });
 
 

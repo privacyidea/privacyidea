@@ -209,11 +209,18 @@ def set_config():
     param = request.all_data
     result = {}
     for key in param:
-        value = getParam(param, key, optional)
-        res = set_privacyidea_config(key, value)
-        result[key] = res
-        g.audit_object.log({"success": True})
-        g.audit_object.add_to_log({"info": "%s=%s, " % (key, value)})
+        if key.split(".")[-1] not in ["type", "desc"]:
+            # Only store base values, not type or desc
+            value = getParam(param, key, optional)
+            typ = getParam(param, key + ".type", optional)
+            desc = getParam(param, key + ".desc", optional)
+            if typ and typ.lower() == "password":
+                # TODO: store value in encrypted way
+                pass
+            res = set_privacyidea_config(key, value, typ, desc)
+            result[key] = res
+            g.audit_object.log({"success": True})
+            g.audit_object.add_to_log({"info": "%s=%s, " % (key, value)})
     return send_result(result)
 
 
