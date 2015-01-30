@@ -34,7 +34,8 @@ except ImportError:
 import inspect
 from collections import namedtuple, Sequence, Sized
 from functools import update_wrapper
-from pyrad import packet
+import smtplib
+
 
 Call = namedtuple('Call', ['request', 'response'])
 
@@ -139,6 +140,18 @@ class SmtpMock(object):
             response = (535, "authentication failed (#5.7.1)")
         return {self._request_data.get("recipient"): response}
 
+    def _on_init(self, SMTP_instance, host, port=25):
+        # mangle request packet
+        self.timeout = 3
+        self.esmtp_features = {}
+        return None
+
+    def _on_debuglevel(self, SMTP_instance, level):
+        return None
+
+    def _on_quit(self, SMTP_instance):
+        return None
+
     def start(self):
         import mock
 
@@ -155,10 +168,33 @@ class SmtpMock(object):
                                     unbound_on_login)
         self._patcher2.start()
 
+        def unbound_on_init(SMTP, server, *a, **kwargs):
+            return self._on_init(SMTP, server, *a, **kwargs)
+
+        self._patcher3 = mock.patch('smtplib.SMTP.__init__',
+                                    unbound_on_init)
+        self._patcher3.start()
+
+        def unbound_on_debuglevel(SMTP, level, *a, **kwargs):
+            return self._on_debuglevel(SMTP, level, *a, **kwargs)
+
+        self._patcher4 = mock.patch('smtplib.SMTP.debuglevel',
+                                    unbound_on_debuglevel)
+        self._patcher4.start()
+
+        def unbound_on_quit(SMTP, *a, **kwargs):
+            return self._on_quit(SMTP, *a, **kwargs)
+
+        self._patcher5 = mock.patch('smtplib.SMTP.quit',
+                                    unbound_on_quit)
+        self._patcher5.start()
 
     def stop(self):
         self._patcher.stop()
         self._patcher2.stop()
+        self._patcher3.stop()
+        self._patcher4.stop()
+        self._patcher5.stop()
 
 
 # expose default mock namespace
