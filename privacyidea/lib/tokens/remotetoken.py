@@ -40,7 +40,6 @@ The code is tested in tests/test_lib_tokens_remote
 """
 
 import logging
-import copy
 import traceback
 import requests
 

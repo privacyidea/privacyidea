@@ -5,6 +5,10 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2015-01-30   Adapt for migration to flask
+#               Cornelius Kölbel <cornelius@privacyidea.org>
+#
+#
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  LSE
 #  contact:  http://www.linotp.org
@@ -24,53 +28,49 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''
-  Description:  This file contains the definition of the SMS token class
-  
-  Dependencies: -
+__doc__="""The SMS token sends an SMS containing an OTP via some kind of
+gateway. The gateways can be an SMTP or HTTP gateway or the special sipgate
+protocol.
+The Gateways are defined in the SMSProvider Modules.
 
-'''
+This code is tested in tests/test_lib_tokens_sms
+"""
 
 import time
 import datetime
 import traceback
 
-from privacyidea.lib.HMAC    import HmacOtp
-from privacyidea.lib._util    import getParam
-from privacyidea.lib._util    import required
+from privacyidea.lib.tokens.HMAC import HmacOtp
+from privacyidea.api.lib.utils import getParam
+from privacyidea.api.lib.utils import required
 
-from privacyidea.lib.validate import check_pin
-from privacyidea.lib.validate import split_pin_otp
+#from privacyidea.lib.validate import check_pin
+#from privacyidea.lib.validate import split_pin_otp
 
-from privacyidea.lib.config  import getFromConfig
-
-from privacyidea.lib.policy import PolicyClass
-from pylons import request, config, tmpl_context as c
-from privacyidea.lib.config import get_privacyIDEA_config
+from privacyidea.lib.config import get_from_config, get_privacyidea_config
+#from privacyidea.lib.policy import PolicyClass
+#from pylons import request, config, tmpl_context as c
 from privacyidea.lib.log import log_with
-from privacyidea.smsprovider.SMSProvider import getSMSProviderClass
+from privacyidea.lib.smsprovider.SMSProvider import getSMSProviderClass
 
 from json import loads
-
 from gettext import gettext as _
 
 
-from privacyidea.lib.tokens.hmactoken import HmacTokenClass
+from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 
 import logging
 log = logging.getLogger(__name__)
 
 keylen = {'sha1'    : 20,
           'sha256'  : 32,
-          'sha512'  : 64,
-          }
+          'sha512'  : 64}
 
 
-
-class SmsTokenClass(HmacTokenClass):
-    '''
+class SmsTokenClass(HotpTokenClass):
+    """
     implementation of the sms token class
-    '''
+    """
     def __init__(self, aToken):
         HmacTokenClass.__init__(self, aToken)
         self.setType(u"sms")
