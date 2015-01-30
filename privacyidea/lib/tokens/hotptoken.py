@@ -252,7 +252,7 @@ class HotpTokenClass(TokenClass):
                 # this will raise an exception if otpkey is not present
                 otpKey = getParam(upd_param, "otpkey", required)
                 # finally set the values for the update
-        upd_param['otpkey'] = otpKey
+            upd_param['otpkey'] = otpKey
         upd_param['hashlib'] = self.hashlibStr
         # We need to save the token to the database so that the TokenInfo
         # table can refer to the token.id.
