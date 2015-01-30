@@ -132,7 +132,6 @@ class YubicoTokenClass(TokenClass):
         # overwrite the maybe wrong lenght given at the command line
         param['otplen'] = 44
         TokenClass.update(self, param)
-        self.save()
         self.add_tokeninfo("yubico.tokenid", self.tokenid)
 
     @log_with(log)

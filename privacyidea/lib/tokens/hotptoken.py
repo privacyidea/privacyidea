@@ -254,9 +254,6 @@ class HotpTokenClass(TokenClass):
                 # finally set the values for the update
             upd_param['otpkey'] = otpKey
         upd_param['hashlib'] = self.hashlibStr
-        # We need to save the token to the database so that the TokenInfo
-        # table can refer to the token.id.
-        self.save()
         self.add_tokeninfo("hashlib", self.hashlibStr)
         val = getParam(upd_param, "otplen", optional)
         if val is not None:

@@ -22,12 +22,16 @@ myApp.controller("tokenConfigController", function ($scope, $location,
                                                     $rootScope, $state,
                                                     $stateParams,
                                                     ConfigFactory) {
+    $scope.defaultSMSProvider = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider";
     $scope.tokentype = $stateParams.tokentype || "hotp";
     $scope.form = {};
     $scope.original_params = {};
     $scope.formInit = {
         totpSteps: ["30", "60"],
-        hashlibs: ["sha1", "sha256", "sha512"]
+        hashlibs: ["sha1", "sha256", "sha512"],
+        smsProviders: [$scope.defaultSMSProvider,
+        "privacyidea.lib.smsprovider.SipgateSMSProvider.SipgateSMSProvider",
+        "privacyidea.lib.smsprovider.SmtpSMSProvider.SmtpSMSProvider"]
     };
 
     $scope.loadSystemConfig = function () {
@@ -43,6 +47,8 @@ myApp.controller("tokenConfigController", function ($scope, $location,
             // RADIUS
             $scope.form['radius.secret.type'] = "password";
             $scope.form['radius.dictfile'] = "/etc/privacyidea/dictionary"
+            // SMS
+            $scope.form['sms.Provider'] = $scope.form['sms.Provider'] || $scope.defaultSMSProvider;
         });
     };
 

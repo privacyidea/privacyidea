@@ -446,6 +446,10 @@ class Token(MethodsMixin, db.Model):
         :param info: The key-values to set for this token
         :type info: dict
         """
+        if not self.id:
+            # If there is no ID to reference the token, we need to save the
+            # token
+            self.save()
         for k, v in info.iteritems():
             TokenInfo(self.id, k, v).save()
 

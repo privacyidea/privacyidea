@@ -408,7 +408,7 @@ class SMSTokenTestCase(MyTestCase):
                       self.SMSHttpUrl,
                       body=self.success_body)
         transactionid = "123456098712"
-        set_privacyidea_config("SMSProviderConfig", self.SMSProviderConfig)
+        set_privacyidea_config("sms.providerConfig", self.SMSProviderConfig)
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = SmsTokenClass(db_token)
         self.assertTrue(token.check_otp("123456", 1, 10) == -1)
@@ -423,8 +423,8 @@ class SMSTokenTestCase(MyTestCase):
 
     def test_19_failed_loading(self):
         transactionid = "123456098712"
-        set_privacyidea_config("SMSProviderConfig", "noJSON")
-        set_privacyidea_config("SMSProvider",
+        set_privacyidea_config("sms.providerConfig", "noJSON")
+        set_privacyidea_config("sms.provider",
                                "privacyidea.lib.smsprovider."
                                "HttpSMSProvider.HttpSMSProviderWRONG")
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -433,9 +433,9 @@ class SMSTokenTestCase(MyTestCase):
         self.assertFalse(c[0], c)
         self.assertTrue("The PIN was correct, but" in c[1], c[1])
 
-        set_privacyidea_config("SMSProvider",
+        set_privacyidea_config("sms.provider",
                                "privacyidea.lib.smsprovider."
                                "HttpSMSProvider.HttpSMSProvider")
         c = token.create_challenge(transactionid)
         self.assertFalse(c[0], c)
-        self.assertTrue("Failed to load SMSProviderConfig" in c[1], c[1])
+        self.assertTrue("Failed to load sms.providerConfig" in c[1], c[1])

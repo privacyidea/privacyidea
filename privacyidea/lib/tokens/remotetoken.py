@@ -174,8 +174,6 @@ class RemoteTokenClass(TokenClass):
 
         TokenClass.update(self, param)
 
-        # In case we need to save the token, so that we get a Database token.id
-        self.save()
         self.add_tokeninfo("remote.server", self.remoteServer)
         self.add_tokeninfo("remote.serial", self.remoteSerial)
         self.add_tokeninfo("remote.user", self.remoteUser)

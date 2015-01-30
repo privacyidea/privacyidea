@@ -192,9 +192,6 @@ class TotpTokenClass(HotpTokenClass):
         if "timeShift" in param:
             self.timeShift = param.get("timeShift")
 
-        # We need to save the token to the database, so that it as an ID in
-        # the DB, which we can refer to in the TokenInfo table.
-        self.save()
         self.add_tokeninfo("timeWindow", self.timeWindow)
         self.add_tokeninfo("timeShift", self.timeShift)
         self.add_tokeninfo("timeStep", self.timeStep)

@@ -297,9 +297,9 @@ class SmsTokenClass(HotpTokenClass):
             log.debug("config: %r" % config)
             sms.load_config(config)
         except Exception as exc:
-            log.error("Failed to load SMSProviderConfig: %r" % exc)
+            log.error("Failed to load sms.providerConfig: %r" % exc)
             log.error(traceback.format_exc())
-            raise Exception("Failed to load SMSProviderConfig: %r" % exc)
+            raise Exception("Failed to load sms.providerConfig: %r" % exc)
 
         log.debug("submitMessage: %r, to phone %r" % (message, phone))
         ret = sms.submit_message(phone, message)
@@ -313,7 +313,7 @@ class SmsTokenClass(HotpTokenClass):
         :return: tuple of SMSProvider and Provider Class as string
         :rtype: tuple of (string, string)
         """
-        smsProvider = get_from_config("SMSProvider",
+        smsProvider = get_from_config("sms.provider",
                                       default="privacyidea.lib.smsprovider."
                                               "HttpSMSProvider.HttpSMSProvider")
         (SMSProvider, SMSProviderClass) = smsProvider.rsplit(".", 1)
@@ -327,7 +327,7 @@ class SmsTokenClass(HotpTokenClass):
         :return: dict of the sms provider definition
         :rtype: dict
         """
-        tConfig = get_from_config("SMSProviderConfig", "{}")
+        tConfig = get_from_config("sms.providerConfig", "{}")
         config = loads(tConfig)
         return config
 
@@ -340,7 +340,7 @@ class SmsTokenClass(HotpTokenClass):
         :rtype:  int
         """
         try:
-            timeout = int(get_from_config("SMSProviderTimeout", 5 * 60))
+            timeout = int(get_from_config("sms.providerTimeout", 5 * 60))
         except Exception as ex:  # pragma nocover
             log.warning("SMSProviderTimeout: value error %r - reset to 5*60"
                                                                         % (ex))
