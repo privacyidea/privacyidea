@@ -36,6 +36,7 @@ from config import config
 from .models import db
 from flask.ext.migrate import Migrate
 from flask.ext.bootstrap import Bootstrap 
+from privacyidea.lib.cache import cache
 
 
 def create_app(config_name=None, var2=None):
@@ -51,8 +52,8 @@ def create_app(config_name=None, var2=None):
     :return: The flask application
     :rtype: App object
     """
-    print "configname: %s" % config_name
-    print "var2      : %s" % var2
+    #print "configname: %s" % config_name
+    #print "var2      : %s" % var2
     app = Flask(__name__, static_folder="static",
                 template_folder="static/templates")
     if config_name:
@@ -81,7 +82,11 @@ def create_app(config_name=None, var2=None):
     db.init_app(app)
     migrate = Migrate(app, db)
     bootstrap = Bootstrap(app)
-        
+
+    # Flask-Cache
+    app.config['CACHE_TYPE'] = 'simple'
+    cache.init_app(app)
+
     return app
 
 # We create this app to be used in the wsgi script

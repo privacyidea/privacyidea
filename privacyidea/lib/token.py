@@ -62,6 +62,7 @@ from privacyidea.lib.config import (get_token_class, get_token_prefix,
 from privacyidea.lib.user import get_user_info
 from gettext import gettext as _
 from privacyidea.lib.realm import realm_is_defined
+from privacyidea.lib.cache import cache
 
 log = logging.getLogger(__name__)
 
@@ -189,6 +190,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
 
 
 @log_with(log)
+@cache.memoize(10)
 def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
                 serial=None, active=None, resolver=None, rollout_state=None,
                 count=False):

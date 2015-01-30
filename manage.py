@@ -25,7 +25,6 @@
 # ./manage.py createdb
 #
 import os
-import passlib.hash
 from getpass import getpass
 from privacyidea.lib.security.default import DefaultSecurityModule
 from privacyidea.lib.auth import create_db_admin
