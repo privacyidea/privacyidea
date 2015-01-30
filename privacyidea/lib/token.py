@@ -244,15 +244,17 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     else:
         # Return a simple, flat list of tokenobjects
         for token in sql_query.all():
-            log.debug("adding token with serial %r" % token.serial)
             # the token is the database object, but we want an instance of the
             # tokenclass!
-            tokenobject = create_tokenclass_object(token)
-            if isinstance(tokenobject, TokenClass):
-                # A database token, that has a non existing type, will
-                # return None, and not a TokenClass. We do not want to
-                # add None to our list
-                token_list.append(tokenobject)
+            if token.tokentype != "sms":
+                tokenobject = create_tokenclass_object(token)
+                if isinstance(tokenobject, TokenClass):
+                    # A database token, that has a non existing type, will
+                    # return None, and not a TokenClass. We do not want to
+                    # add None to our list
+                    token_list.append(tokenobject)
+                else:
+                    pass
         ret = token_list
 
     return ret

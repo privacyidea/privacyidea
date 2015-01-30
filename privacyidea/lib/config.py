@@ -38,7 +38,7 @@ from ..models import Config, db
 from .crypto import encryptPassword
 from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver
-
+from privacyidea.lib.cache import cache
 from datetime import datetime
 
 log = logging.getLogger(__name__)
@@ -46,12 +46,14 @@ log = logging.getLogger(__name__)
 ENCODING = 'utf-8'
 
 
+@cache.memoize(10)
 def get_privacyidea_config():
     # timestamp = Config.query.filter_by(Key="privacyidea.timestamp").first()
     return get_from_config()
 
 
 @log_with(log)
+@cache.memoize(10)
 def get_from_config(key=None, default=None):
     """
     :param Key: A key to retrieve
@@ -81,6 +83,7 @@ def get_from_config(key=None, default=None):
     return rvalue
 
 
+@cache.memoize(10)
 def get_resolver_types():
     """
     Return a simple list of the type names of the resolvers.
@@ -98,6 +101,7 @@ def get_resolver_types():
     return resolver_types
 
 
+@cache.memoize(10)
 def get_resolver_classes():
     """
     Returns a list of the available resolver classes like:
@@ -118,6 +122,7 @@ def get_resolver_classes():
     return resolver_classes
 
 
+@cache.memoize(10)
 def get_token_class_dict():
     """
     get a dictionary of the token classes and a dictionary of the
@@ -156,6 +161,8 @@ def get_token_class_dict():
 
     return tokenclass_dict, tokentype_dict
 
+
+@cache.memoize(10)
 def get_token_class(tokentype):
     """
     This takes a token type like "hotp" and returns a class
@@ -175,6 +182,8 @@ def get_token_class(tokentype):
 
     return tokenclass
 
+
+@cache.memoize(10)
 def get_token_types():
     """
     Return a simple list of the type names of the tokens.
@@ -192,6 +201,7 @@ def get_token_types():
     return tokentypes
 
 
+@cache.memoize(10)
 def get_token_prefix(tokentype=None, default=None):
     """
     Return the token prefix for a tokentype as it is defined in the
@@ -215,7 +225,7 @@ def get_token_prefix(tokentype=None, default=None):
     return ret
 
 
-
+@cache.memoize(10)
 def get_token_classes():
     """
     Returns a list of the available token classes like:
@@ -235,6 +245,8 @@ def get_token_classes():
 
     return token_classes
 
+
+@cache.memoize(10)
 def get_resolver_class_dict():
     """
     get a dictionary of the resolver classes and a dictionary
@@ -285,6 +297,7 @@ def get_resolver_class_dict():
 
 
 @log_with(log)
+@cache.memoize(10)
 def get_resolver_list():
     """
     get the list of the module names of the resolvers like
@@ -320,6 +333,7 @@ def get_resolver_list():
 
 
 @log_with(log)
+@cache.memoize(10)
 def get_token_list():
     """
     get the list of the tokens
@@ -366,6 +380,7 @@ def get_token_list():
 
 
 @log_with(log)
+@cache.memoize(10)
 def get_token_module_list():
     """
     return the list of modules of the available token classes
@@ -400,6 +415,7 @@ def get_token_module_list():
     return modules
 
 
+@cache.memoize(10)
 def get_resolver_module_list():
     """
     return the list of modules of the available resolver classes
@@ -487,6 +503,7 @@ def delete_privacyidea_config(key):
     return ret
 
 
+@cache.memoize(10)
 def get_inc_fail_count_on_false_pin():
     """
     Return if the Failcounter should be increased if only tokens
@@ -500,6 +517,8 @@ def get_inc_fail_count_on_false_pin():
         r = r.lower() == "true"
     return r
 
+
+@cache.memoize(10)
 def get_prepend_pin():
     """
     Get the status of the "PrependPin" Config
@@ -511,6 +530,7 @@ def get_prepend_pin():
     # The values are strings, so we need to compare:
     r = (r.lower() == "true" or r == "1")
     return r
+
 
 def set_prepend_pin(prepend=True):
     """
