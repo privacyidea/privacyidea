@@ -25,7 +25,7 @@ The file is tested in tests/test_lib_resolver.py
 """
 
 import logging
-import ldap
+import ldap3
 import yaml
 import traceback
 
@@ -38,9 +38,7 @@ ENCODING = "utf-8"
 '''
 TODO:
   * Encoding
-  * redundancy
-  * Timeout
-  * Referral
+  * redundancy  -> pool (http://ldap3.readthedocs.org/)
 '''
 
     
@@ -64,7 +62,7 @@ class IdResolver (UserIdResolver):
         self.basedn = ""
         self.binddn = ""
         self.bindpw = ""
-        self.timeout = 5000
+        self.timeout = 5.0  # seconds!
         self.sizelimit = 500
         self.loginname_attribute = ""
         self.searchfilter = ""
@@ -84,10 +82,19 @@ class IdResolver (UserIdResolver):
         
         """
         DN = self._getDN(uid)
-        
-        l = ldap.initialize(self.uri)
+
+        server = ldap3.Server(self.server, port=self.port,
+                              use_ssl=self.ssl,
+                              connect_timeout=self.timeout)
         try:
-            l.simple_bind_s(DN, password)
+            l = ldap3.Connection(server,
+                                 user=DN,
+                                 password=password,
+                                 auto_bind=True,
+                                 client_strategy=ldap3.SYNC,
+                                 authentication=ldap3.SIMPLE,
+                                 check_names=True,
+                                 auto_referrals=not self.noreferrals)
             l.unbind()
         except Exception, e:
             log.warning("failed to check password for %r/%r: %r"
@@ -122,24 +129,32 @@ class IdResolver (UserIdResolver):
             self._bind()
             filter = "(&%s(%s=%s))" % \
                 (self.searchfilter, self.uidtype, userId)
-            r = self.l.search_s(self.basedn,
-                                ldap.SCOPE_SUBTREE,
-                                filter,
-                                self.userinfo.values())
-                
+            self.l.search(search_base=self.basedn,
+                              search_scope=ldap3.SUBTREE,
+                              search_filter=filter,
+                              attributes=self.userinfo.values())
+            r = self.l.response
             if len(r) > 1:  # pragma nocover
                 raise Exception("Found more than one object for uid %r"
                                 % userId)
+            if len(r) == 1:
+                dn = r[0].get("dn")
 
-            for dn, _entry in r:
-                pass
-        
         return dn
         
     def _bind(self):
         if not self.i_am_bound:
-            self.l = ldap.initialize(self.uri)
-            self.l.simple_bind_s(self.binddn, self.bindpw)
+            server = ldap3.Server(self.server, port=self.port,
+                                  use_ssl=self.ssl,
+                                  connect_timeout=self.timeout)
+            self.l = ldap3.Connection(server,
+                                      user=self.binddn,
+                                      password=self.bindpw,
+                                      auto_bind=True,
+                                      client_strategy=ldap3.SYNC,
+                                      authentication=ldap3.SIMPLE,
+                                      check_names=True,
+                                      auto_referrals=not self.noreferrals)
             self.i_am_bound = True
 
     def getUserInfo(self, userId):
@@ -155,29 +170,31 @@ class IdResolver (UserIdResolver):
         self._bind()
         
         if self.uidtype.lower() == "dn":
-            r = self.l.search_s(userId,
-                                ldap.SCOPE_SUBTREE,
-                                "(&" + self.searchfilter + ")",
-                                attrlist=self.userinfo.values())
+            self.l.search(search_base=userId,
+                          search_scope=ldap3.SUBTREE,
+                          search_filter="(&" + self.searchfilter + ")",
+                          attributes=self.userinfo.values())
         else:
             filter = "(&%s(%s=%s))" %\
                 (self.searchfilter, self.uidtype, userId)
-            r = self.l.search_s(self.basedn,
-                                ldap.SCOPE_SUBTREE,
-                                filter,
-                                self.userinfo.values())
-                
+            self.l.search(search_base=self.basedn,
+                              search_scope=ldap3.SUBTREE,
+                              search_filter=filter,
+                              attributes=self.userinfo.values())
+
+        r = self.l.response
         if len(r) > 1:  # pragma nocover
             raise Exception("Found more than one object for uid %r" % userId)
 
-        for _dn, entry in r:
-            for k, v in entry.items():
-                key = self.reverse_map[k]
-                if type(v) == list:
-                    ret[key] = v[0]
-                else:
-                    ret[key] = v
-        
+        for entry in r:
+            attributes = entry.get("attributes")
+            for k, v in attributes.items():
+                key = self.reverse_map.get(k)
+                if key:
+                    if type(v) == list:
+                        ret[key] = v[0]
+                    else:
+                        ret[key] = v
         return ret
     
     def getUsername(self, user_id):
@@ -208,21 +225,23 @@ class IdResolver (UserIdResolver):
         if self.uidtype.lower() != "dn":
             attributes.append(str(self.uidtype))
             
-        r = self.l.search_s(self.basedn,
-                            ldap.SCOPE_SUBTREE,
-                            filter,
-                            attributes)
-        
+        self.l.search(search_base=self.basedn,
+                      search_scope=ldap3.SUBTREE,
+                      search_filter=filter,
+                      attributes=attributes)
+
+        r = self.l.response
         if len(r) > 1:  # pragma nocover
             raise Exception("Found more than one object for Loginname %r" %
                             LoginName)
         
-        for dn, entry in r:
+        for entry in r:
             if self.uidtype.lower() == "dn":
-                userid = dn
+                userid = entry.get("dn")
             else:
-                userid = self._get_uid(entry)
-        
+                attributes = entry.get("attributes")
+                userid = self._get_uid(attributes)
+
         return userid
 
     def getUserList(self, searchDict):
@@ -244,25 +263,29 @@ class IdResolver (UserIdResolver):
                 (self.userinfo[search_key], searchDict[search_key])
         filter += ")"
             
-        r = self.l.search_s(self.basedn,
-                            ldap.SCOPE_SUBTREE,
-                            filter,
-                            attributes)
-        
-        for dn, entry in r:
+        self.l.search(search_base=self.basedn,
+                          search_scope=ldap3.SUBTREE,
+                          search_filter=filter,
+                          attributes=attributes,
+                          paged_size=self.sizelimit)
+        # returns a list of dictionaries
+        for entry in self.l.response:
+            dn = entry.get("dn")
+            attributes = entry.get("attributes")
             try:
                 user = {}
                 if self.uidtype.lower() == "dn":
                     user['userid'] = dn
                 else:
-                    user['userid'] = self._get_uid(entry)
-                    del(entry[self.uidtype])
-                for k, v in entry.items():
-                    key = self.reverse_map[k]
-                    if type(v) == list:
-                        user[key] = v[0]
-                    else:
-                        user[key] = v
+                    user['userid'] = self._get_uid(attributes)
+                    #del(attributes[self.uidtype])
+                for k, v in attributes.items():
+                    key = self.reverse_map.get(k)
+                    if key:
+                        if type(v) == list:
+                            user[key] = v[0]
+                        else:
+                            user[key] = v
                 ret.append(user)
             except Exception as exx:  # pragma nocover
                 log.error("Error during fetching LDAP objects: %r" % exx)
@@ -312,10 +335,11 @@ class IdResolver (UserIdResolver):
                     
         """
         self.uri = config.get("LDAPURI")
+        (self.server, self.port, self.ssl) = self.split_uri(self.uri)
         self.basedn = config.get("LDAPBASE")
         self.binddn = config.get("BINDDN")
         self.bindpw = config.get("BINDPW")
-        self.timeout = config.get("TIMEOUT", 5000)
+        self.timeout = float(config.get("TIMEOUT", 5))
         self.sizelimit = config.get("SIZELIMIT", 500)
         self.loginname_attribute = config.get("LOGINNAMEATTRIBUTE")
         self.searchfilter = config.get("LDAPSEARCHFILTER")
@@ -329,6 +353,25 @@ class IdResolver (UserIdResolver):
         self.resolverId = self.uri
         
         return self
+
+    @classmethod
+    def split_uri(self, uri):
+        ldap_elems = uri.split(":")
+        if len(ldap_elems) == 3:
+            server = ldap_elems[1].strip("/")
+            port = ldap_elems[2]
+            if ldap_elems[0].lower() == "ldaps":
+                ssl=True
+            else:
+                ssl=False
+        if len(ldap_elems) == 2:
+            server = ldap_elems[1].strip("/")
+            port = None
+            if ldap_elems[0].lower() == "ldaps":
+                ssl=True
+            else:
+                ssl=False
+        return server, port, ssl
 
     @classmethod
     def getResolverClassDescriptor(cls):
@@ -382,15 +425,25 @@ class IdResolver (UserIdResolver):
         """
         success = False
         try:
-            l = ldap.initialize(param["LDAPURI"])
-            l.simple_bind_s(param["BINDDN"], param["BINDPW"])
+            (host, port, ssl) = self.split_uri(param.get("LDAPURI"))
+            server = ldap3.Server(host, port=port,
+                                  use_ssl=ssl,
+                                  connect_timeout=float(param.get("TIMEOUT",
+                                                                  5)))
+            l = ldap3.Connection(server, user=param.get("BINDDN"),
+                                 password=param.get("BINDPW"),
+                                 auto_bind=True,
+                                 client_strategy=ldap3.SYNC,
+                                 authentication=ldap3.SIMPLE,
+                                 check_names=True,
+                                 auto_referrals=not param.get("NOREFERRALS"))
             # search for users...
-            r = l.search_s(param["LDAPBASE"],
-                           ldap.SCOPE_SUBTREE,
-                           "(&" + param["LDAPSEARCHFILTER"] + ")",
-                           yaml.load(param["USERINFO"]).values())
+            l.search(search_base=param["LDAPBASE"],
+                     search_scope=ldap3.SUBTREE,
+                     search_filter="(&" + param["LDAPSEARCHFILTER"] + ")",
+                     attributes=yaml.load(param["USERINFO"]).values())
         
-            count = len(r)
+            count = len(l.response)
             desc = _("Your LDAP config seems to be OK, %i user objects found.")\
                 % count
             

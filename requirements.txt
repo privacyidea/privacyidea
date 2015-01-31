@@ -26,15 +26,15 @@ coverage==3.7.1
 docutils==0.12
 funcparserlib==0.3.6
 itsdangerous==0.24
+ldap3==0.9.7.2
 mock==1.0.1
-mockldap==0.2.3
 netaddr==0.7.12
 nose==1.3.4
 passlib==1.6.2
+pyasn1==0.1.7
 pycparser==2.10
 pycrypto==2.6.1
 pyrad==2.0
-python-ldap==2.4.18
 pyusb==1.0.0b2
 qrcode==5.1
 requests==2.5.0
