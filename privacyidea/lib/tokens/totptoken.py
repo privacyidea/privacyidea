@@ -73,22 +73,6 @@ class TotpTokenClass(HotpTokenClass):
         self.set_type(u"totp")
         self.hKeyRequired = True
 
-        # timeStep defines the granularity:
-        self.timeStep = get_from_config("totp.timeStep") or 30
-
-        # window size in seconds:
-        # 30 seconds with as step width of 30 seconds results
-        # in a window of 1  which is one attempt
-        self.timeWindow = get_from_config("totp.timeWindow") or 180
-
-        # the time shift is specified in seconds  - and could be
-        # positive and negative
-        self.timeShift = get_from_config("totp.timeShift") or 0
-
-        # we support various hashlib methods, but only on create
-        # which is effectively set in the update
-        self.hashlibStr = get_from_config("totp.hashlib", u'sha1')
-        return
     
     @classmethod
     def get_class_type(cls):
@@ -183,21 +167,45 @@ class TotpTokenClass(HotpTokenClass):
         """
         HotpTokenClass.update(self, param, reset_failcount=reset_failcount)
 
-        if "timeStep" in param:
-            self.timeStep = param.get("timeStep")
+        timeStep = param.get("timeStep",
+                             get_from_config("totp.timeStep") or 30)
 
-        if "timeWindow" in param:
-            self.timeWindow = param.get("timeWindow")
+        timeWindow = param.get("timeWindow",
+                               get_from_config("totp.timeWindow") or 180)
 
-        if "timeShift" in param:
-            self.timeShift = param.get("timeShift")
+        timeShift = param.get("timeShift",
+                              get_from_config("totp.timeShift") or 0)
+        # we support various hashlib methods, but only on create
+        # which is effectively set in the update
+        hashlibStr = get_from_config("totp.hashlib", u'sha1')
 
-        self.add_tokeninfo("timeWindow", self.timeWindow)
-        self.add_tokeninfo("timeShift", self.timeShift)
-        self.add_tokeninfo("timeStep", self.timeStep)
-        self.add_tokeninfo("hashlib", self.hashlibStr)
+        self.add_tokeninfo("timeWindow", timeWindow)
+        self.add_tokeninfo("timeShift", timeShift)
+        self.add_tokeninfo("timeStep", timeStep)
+        self.add_tokeninfo("hashlib", hashlibStr)
 
-        return
+    @property
+    def timestep(self):
+        timeStepping = int(self.get_tokeninfo("timeStep") or
+                           get_from_config("totp.timeStep") or 30)
+        return timeStepping
+
+    @property
+    def hashlib(self):
+        hashlibStr = self.get_tokeninfo("hashlib") or \
+                     get_from_config("totp.hashlib", u'sha1')
+        return hashlibStr
+
+    @property
+    def timewindow(self):
+        window = int(self.get_tokeninfo("timeWindow") or
+                     get_from_config("totp.timeWindow") or 180)
+        return window
+
+    @property
+    def timeshift(self):
+        shift = float(self.get_tokeninfo("timeShift") or 0)
+        return shift
 
     @log_with(log)
     def check_otp_exist(self, otp, window=None, options=None):
@@ -215,7 +223,8 @@ class TotpTokenClass(HotpTokenClass):
         :rtype:  int
         """
         options = options or {}
-        timeStepping = int(self.get_tokeninfo("timeStep") or self.timeStep)
+        timeStepping = int(self.get_tokeninfo("timeStep") or
+                           get_from_config("totp.timeStep") or 30)
         window = window or (self.get_sync_window() * timeStepping)
         res = self.check_otp(otp, window=window, options=options)
         return res
@@ -227,7 +236,7 @@ class TotpTokenClass(HotpTokenClass):
 
     def _counter2time(self, counter, timeStepping=60):
         rnd = 0.5
-        T0 = (float(counter) - rnd) * timeStepping
+        T0 = (float(counter) - rnd) * int(timeStepping)
         return T0
 
     def _getTimeFromCounter(self, counter, timeStepping=30, rnd=1):
@@ -280,37 +289,34 @@ class TotpTokenClass(HotpTokenClass):
         otplen = int(self.token.otplen)
         options = options or {}
         secretHOtp = self.token.get_otpkey()
-        self.hashlibStr = self.get_tokeninfo("hashlib", self.hashlibStr)
-        timeStepping = int(self.get_tokeninfo("timeStep") or self.timeStep)
-        window = window or int(self.get_tokeninfo("timeWindow") or
-                               self.timeWindow)
-        shift = float(self.get_tokeninfo("timeShift") or self.timeShift)
         # oldCounter we have to remove one, as the normal otp handling will
         # increment
         # TODO: Migration: Really?
         # oCount = self.get_otp_count() - 1
         oCount = self.get_otp_count()
         inow = int(time.time())
+        window = window or self.timewindow
 
         initTime = int(options.get('initTime', -1))
         if initTime != -1:
             server_time = int(initTime)
         else:
-            server_time = time.time() + shift
+            server_time = time.time() + self.timeshift
 
         # If we have a counter from the parameter list
         if not counter:
             # No counter, so we take the current token_time
-            counter = self._time2counter(server_time, timeStepping=timeStepping)
-        otime = self._getTimeFromCounter(oCount, timeStepping=timeStepping)
-        ttime = self._getTimeFromCounter(counter, timeStepping=timeStepping)
+            counter = self._time2counter(server_time,
+                                         timeStepping=self.timestep)
+        otime = self._getTimeFromCounter(oCount, timeStepping=self.timestep)
+        ttime = self._getTimeFromCounter(counter, timeStepping=self.timestep)
 
         hmac2Otp = HmacOtp(secretHOtp,
                            counter,
                            otplen,
-                           self.get_hashlib(self.hashlibStr))
+                           self.get_hashlib(self.hashlib))
         res = hmac2Otp.checkOtp(anOtpVal,
-                                int(window / timeStepping),
+                                int(window / self.timestep),
                                 symetric=True)
 
         if res != -1 and oCount != 0 and res <= oCount:
@@ -334,17 +340,17 @@ class TotpTokenClass(HotpTokenClass):
 
             # here we calculate the new drift/shift between the server time
             # and the tokentime
-            tokentime = self._counter2time(res, timeStepping)
+            tokentime = self._counter2time(res, self.timestep)
             tokenDt = datetime.datetime.fromtimestamp(tokentime / 1.0)
 
             nowDt = datetime.datetime.fromtimestamp(inow / 1.0)
 
-            lastauth = self._counter2time(oCount, timeStepping)
+            lastauth = self._counter2time(oCount, self.timestep)
             lastauthDt = datetime.datetime.fromtimestamp(lastauth / 1.0)
 
-            log.debug("last auth : %r" % (lastauthDt))
-            log.debug("tokentime : %r" % (tokenDt))
-            log.debug("now       : %r" % (nowDt))
+            log.debug("last auth : %r" % lastauthDt)
+            log.debug("tokentime : %r" % tokenDt)
+            log.debug("now       : %r" % nowDt)
             log.debug("delta     : %r" % (tokentime - inow))
 
             new_shift = (tokentime - inow)
@@ -404,8 +410,7 @@ class TotpTokenClass(HotpTokenClass):
                     res = -1
                 else:
                     server_time = time.time()
-                    timeStepping = int(self.get_tokeninfo("timeStep"))
-                    counter = int((server_time / timeStepping) + 0.5)
+                    counter = int((server_time / self.timestep) + 0.5)
 
                     shift = otp2c - counter
                     info["timeShift"] = shift
@@ -443,45 +448,41 @@ class TotpTokenClass(HotpTokenClass):
         otplen = int(self.token.otplen)
         secretHOtp = self.token.get_otpkey()
 
-        self.hashlibStr = self.get_tokeninfo("hashlib", 'sha1')
-        timeStepping = int(self.get_tokeninfo("timeStep") or 30)
-        shift = float(self.get_tokeninfo("timeShift") or 0)
-        window = int(self.token.sync_window) * timeStepping
         log.debug("timestep: %r, syncWindow: %r, timeShift: %r"
-                  % (timeStepping, window, shift))
+                  % (self.timestep, self.timewindow, self.timeshift))
 
         initTime = int(options.get('initTime', -1))
         if initTime != -1:
             server_time = int(initTime)
         else:
-            server_time = time.time() + shift
+            server_time = time.time() + self.timeshift
 
-        counter = int((server_time / timeStepping) + 0.5)
+        counter = int((server_time / self.timestep) + 0.5)
         log.debug("counter (current time): %i" % counter)
 
         oCount = self.get_otp_count()
 
         log.debug("tokenCounter: %r" % oCount)
         log.debug("now checking window %s, timeStepping %s" %
-                  (window, timeStepping))
+                  (self.timewindow, self.timestep))
         # check 2nd value
         hmac2Otp = HmacOtp(secretHOtp,
                            counter,
                            otplen,
-                           self.get_hashlib(self.hashlibStr))
+                           self.get_hashlib(self.hashlib))
         log.debug("%s in otpkey: %s " % (otp2, secretHOtp))
         res2 = hmac2Otp.checkOtp(otp2,
-                                 int(window / timeStepping),
+                                 int(self.timewindow / self.timestep),
                                  symetric=True)  # TEST -remove the 10
         log.debug("res 2: %r" % res2)
         # check 1st value
         hmac2Otp = HmacOtp(secretHOtp,
                            counter - 1,
                            otplen,
-                           self.get_hashlib(self.hashlibStr))
+                           self.get_hashlib(self.hashlib))
         log.debug("%s in otpkey: %s " % (otp1, secretHOtp))
         res1 = hmac2Otp.checkOtp(otp1,
-                                 int(window / timeStepping),
+                                 int(self.timewindow / self.timestep),
                                  symetric=True)  # TEST -remove the 10
         log.debug("res 1: %r" % res1)
 
@@ -495,8 +496,8 @@ class TotpTokenClass(HotpTokenClass):
         if res1 != -1 and res1 + 1 == res2:
             # here we calculate the new drift/shift between the server time
             # and the tokentime
-            tokentime = (res2 + 0.5) * timeStepping
-            currenttime = server_time - shift
+            tokentime = (res2 + 0.5) * self.timestep
+            currenttime = server_time - self.timeshift
             new_shift = (tokentime - currenttime)
             log.debug("the counters %r and %r matched. New shift: %r"
                       % (res1, res2, new_shift))
@@ -515,8 +516,8 @@ class TotpTokenClass(HotpTokenClass):
         log.debug("end. %s: ret: %r" % (msg, ret))
         return ret
 
-    def get_otp(self, current_time=None, do_truncation=True, time_seconds=None,
-                 challenge=None):
+    def get_otp(self, current_time=None, do_truncation=True,
+                time_seconds=None, challenge=None):
         """
         get the next OTP value
 
@@ -531,14 +532,11 @@ class TotpTokenClass(HotpTokenClass):
         """
         otplen = int(self.token.otplen)
         secretHOtp = self.token.get_otpkey()
-        self.hashlibStr = self.get_tokeninfo("hashlib", "sha1")
-        timeStepping = int(self.get_tokeninfo("timeStep") or 30)
-        shift = int(self.get_tokeninfo("timeShift") or 0)
 
         hmac2Otp = HmacOtp(secretHOtp,
                            self.get_otp_count(),
                            otplen,
-                           self.get_hashlib(self.hashlibStr))
+                           self.get_hashlib(self.hashlib))
 
         if time_seconds is None:
             time_seconds = self._time2float(datetime.datetime.now())
@@ -546,7 +544,7 @@ class TotpTokenClass(HotpTokenClass):
             time_seconds = self._time2float(current_time)
 
         # we don't need to round here as we have already float
-        counter = int(((time_seconds - shift) / timeStepping))
+        counter = int(((time_seconds - self.timeshift) / self.timestep))
         otpval = hmac2Otp.generate(counter=counter,
                                    inc_counter=False,
                                    do_truncation=do_truncation,
@@ -561,7 +559,7 @@ class TotpTokenClass(HotpTokenClass):
 
     @log_with(log)
     def get_multi_otp(self, count=0, epoch_start=0, epoch_end=0,
-                        curTime=None, timestamp=None):
+                      curTime=None, timestamp=None):
         """
         return a dictionary of multiple future OTP values
         of the HOTP/HMAC token
@@ -584,12 +582,8 @@ class TotpTokenClass(HotpTokenClass):
         otplen = int(self.token.otplen)
         secretHOtp = self.token.get_otpkey()
 
-        self.hashlibStr = self.get_tokeninfo("hashlib", "sha1")
-        timeStepping = int(self.get_tokeninfo("timeStep", "30"))
-        shift = float(self.get_tokeninfo("timeShift", "0"))
-
         hmac2Otp = HmacOtp(secretHOtp, self.get_otp_count(),
-                           otplen, self.get_hashlib(self.hashlibStr))
+                           otplen, self.get_hashlib(self.hashlib))
 
         if curTime:
             # datetime object provided for simulation
@@ -602,17 +596,17 @@ class TotpTokenClass(HotpTokenClass):
             tCounter = self._time2float(datetime.datetime.now())
 
         # we don't need to round here as we have alread float
-        counter = int(((tCounter - shift) / timeStepping))
+        counter = int(((tCounter - self.timeshift) / self.timestep))
 
-        otp_dict["shift"] = shift
-        otp_dict["timeStepping"] = timeStepping
+        otp_dict["shift"] = self.timeshift
+        otp_dict["timeStepping"] = self.timeshift
 
         if count > 0:
             error = "OK"
             for i in range(0, count):
                 otpval = hmac2Otp.generate(counter=counter + i,
                                            inc_counter=False)
-                timeCounter = ((counter + i) * timeStepping) + shift
+                timeCounter = ((counter + i) * self.timestep) + self.timeshift
                 
                 val_time = datetime.datetime.\
                     fromtimestamp(timeCounter).strftime("%Y-%m-%d %H:%M:%S")

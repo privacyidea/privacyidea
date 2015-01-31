@@ -121,14 +121,14 @@ class MotpTokenClass(TokenClass):
         return ret
 
     @log_with(log)
-    def __init__(self, a_token):
+    def __init__(self, db_token):
         """
         constructor - create a token object
 
         :param a_token: instance of the orm db object
         :type a_token:  orm object
         """
-        TokenClass.__init__(self, a_token)
+        TokenClass.__init__(self, db_token)
         self.set_type(u"motp")
         self.hKeyRequired = True
         return

@@ -35,8 +35,7 @@ from privacyidea.webui.login import login_blueprint
 from config import config
 from privacyidea.models import db
 from flask.ext.migrate import Migrate
-from flask.ext.bootstrap import Bootstrap 
-from privacyidea.lib.cache import cache
+from flask.ext.bootstrap import Bootstrap
 
 
 def create_app(config_name=None, var2=None):
@@ -82,10 +81,6 @@ def create_app(config_name=None, var2=None):
     db.init_app(app)
     migrate = Migrate(app, db)
     bootstrap = Bootstrap(app)
-
-    # Flask-Cache
-    app.config['CACHE_TYPE'] = 'simple'
-    cache.init_app(app)
 
     return app
 

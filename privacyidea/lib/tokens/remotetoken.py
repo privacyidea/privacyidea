@@ -69,21 +69,14 @@ class RemoteTokenClass(TokenClass):
     different users.
     """
 
-    def __init__(self, aToken):
+    def __init__(self, db_token):
         """
         constructor - create a token class object with it's db token binding
 
         :param aToken: the db bound token
         """
-        TokenClass.__init__(self, aToken)
+        TokenClass.__init__(self, db_token)
         self.set_type(u"remote")
-
-        self.remoteServer = ""
-        self.remoteLocalCheckpin = None
-        self.remoteSerial = None
-        self.remoteUser = None
-        self.remoteRealm = None
-        self.remoteResolver = None
         self.mode = ['authenticate', 'challenge']
 
     @classmethod
@@ -146,42 +139,21 @@ class RemoteTokenClass(TokenClass):
         :param param: the request parameters
         :return: - nothing -
         """
-
-        self.remoteServer = getParam(param, "remote.server", required)
         # if another OTP length would be specified in /admin/init this would
         # be overwritten by the parent class, which is ok.
         self.set_otplen(6)
-
-        val = getParam(param, "remote.local_checkpin", optional)
-        if val is not None:
-            self.remoteLocalCheckpin = val
-
-        val = getParam(param, "remote.serial", optional)
-        if val is not None:
-            self.remoteSerial = val
-
-        val = getParam(param, "remote.user", optional)
-        if val is not None:
-            self.remoteUser = val
-
-        val = getParam(param, "remote.realm", optional)
-        if val is not None:
-            self.remoteRealm = val
-
-        val = getParam(param, "remote.resolver", optional)
-        if val is not None:
-            self.remoteResolver = val
-
         TokenClass.update(self, param)
 
-        self.add_tokeninfo("remote.server", self.remoteServer)
-        self.add_tokeninfo("remote.serial", self.remoteSerial)
-        self.add_tokeninfo("remote.user", self.remoteUser)
-        self.add_tokeninfo("remote.local_checkpin", self.remoteLocalCheckpin)
-        self.add_tokeninfo("remote.realm", self.remoteRealm)
-        self.add_tokeninfo("remote.resolver", self.remoteResolver)
+        remoteServer = getParam(param, "remote.server", required)
+        self.add_tokeninfo("remote.server", remoteServer)
 
-    @log_with(log)
+        for key in ["remote.local_checkpin", "remote.serial", "remote.user",
+                    "remote.realm", "remote.resolver"]:
+            val = getParam(param, key, optional)
+            if val is not None:
+                self.add_tokeninfo(key, val)
+
+    @property
     def check_pin_local(self):
         """
         lookup if pin should be checked locally or on remote host
@@ -194,7 +166,6 @@ class RemoteTokenClass(TokenClass):
         log.debug(" local checking pin? %r" % local_check)
 
         return local_check
-
 
     @log_with(log)
     def authenticate(self, passw, user=None, options=None):
@@ -217,7 +188,7 @@ class RemoteTokenClass(TokenClass):
         otpval = passw
 
         # should we check the pin localy?
-        if self.check_pin_local():
+        if self.check_pin_local:
             (_res, pin, otpval) = self.split_pin_pass(passw, user,
                                                       options=options)
 
@@ -338,7 +309,7 @@ class RemoteTokenClass(TokenClass):
 
         request_is_valid = False
 
-        if self.check_pin_local():
+        if self.check_pin_local:
             pin_match = self.check_pin(passw, user=user,
                                          options=options)
             if pin_match is True:

@@ -94,7 +94,7 @@ class RadiusTokenTestCase(MyTestCase):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = RadiusTokenClass(db_token)
 
-        r = token.check_pin_local()
+        r = token.check_pin_local
         self.assertTrue(r, r)
 
     @radiusmock.activate

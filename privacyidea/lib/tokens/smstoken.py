@@ -40,14 +40,10 @@ import time
 import datetime
 import traceback
 
-from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.api.lib.utils import getParam
 from privacyidea.api.lib.utils import required
 
-#from privacyidea.lib.validate import check_pin
-#from privacyidea.lib.validate import split_pin_otp
-
-from privacyidea.lib.config import get_from_config, get_privacyidea_config
+from privacyidea.lib.config import get_from_config
 #from privacyidea.lib.policy import PolicyClass
 #from pylons import request, config, tmpl_context as c
 from privacyidea.lib.log import log_with
@@ -55,7 +51,7 @@ from privacyidea.lib.smsprovider.SMSProvider import get_sms_provider_class
 from json import loads
 from gettext import gettext as _
 
-
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 
 import logging
@@ -70,10 +66,11 @@ class SmsTokenClass(HotpTokenClass):
     """
     implementation of the sms token class
     """
-    def __init__(self, aToken):
-        HotpTokenClass.__init__(self, aToken)
+    def __init__(self, db_token):
+        TokenClass.__init__(self, db_token)
         self.set_type(u"sms")
         self.mode = ['challenge']
+        self.hKeyRequired = True
 #        self.Policy = PolicyClass(request, config, c,
 #                                  get_privacyIDEA_config())
 

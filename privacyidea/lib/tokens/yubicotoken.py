@@ -63,8 +63,8 @@ log = logging.getLogger(__name__)
 ###############################################
 class YubicoTokenClass(TokenClass):
 
-    def __init__(self, aToken):
-        TokenClass.__init__(self, aToken)
+    def __init__(self, db_token):
+        TokenClass.__init__(self, db_token)
         self.set_type(u"yubico")
         self.tokenid = ""
 

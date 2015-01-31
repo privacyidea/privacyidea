@@ -55,12 +55,10 @@ class YubikeyTokenClass(TokenClass):
     The Yubikey Token in the Yubico AES mode
     """
 
-    def __init__(self, aToken):
-        TokenClass.__init__(self, aToken)
+    def __init__(self, db_token):
+        TokenClass.__init__(self, db_token)
         self.set_type(u"yubikey")
-
         self.hKeyRequired = True
-        return
 
 
     @classmethod

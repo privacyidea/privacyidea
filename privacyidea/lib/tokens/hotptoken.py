@@ -152,18 +152,6 @@ class HotpTokenClass(TokenClass):
         self.set_type(u"hotp")
         self.hKeyRequired = True
 
-        # we support various hashlib methods, but only on create
-        # which is effectively set in the update
-
-        self.hashlibStr = u"sha1"
-        try:
-            self.hashlibStr = get_from_config("hotp.hashlib", u'sha1')
-        except Exception as ex:  # pragma nocover
-            log.error('Failed to get the hotp.hashlib ({0!r:s})'.format(ex))
-            raise Exception(ex)
-
-        return
-
     @log_with(log)
     def get_init_detail(self, params=None, user=None):
         """
@@ -230,15 +218,15 @@ class HotpTokenClass(TokenClass):
 
         val = getParam(upd_param, "hashlib", optional)
         if val is not None:
-            self.hashlibStr = val
+            hashlibStr = val
         else:
-            self.hashlibStr = 'sha1'
+            hashlibStr = 'sha1'
 
         # check if the key_size id provided
         # if not, we could derive it from the hashlib
         key_size = getParam(upd_param, 'key_size', optional)
         if key_size is None:
-            upd_param['key_size'] = keylen.get(self.hashlibStr)
+            upd_param['key_size'] = keylen.get(hashlibStr)
         otpKey = ''
         if self.hKeyRequired is True:
             genkey = int(getParam(upd_param, "genkey", optional) or 0)
@@ -253,8 +241,8 @@ class HotpTokenClass(TokenClass):
                 otpKey = getParam(upd_param, "otpkey", required)
                 # finally set the values for the update
             upd_param['otpkey'] = otpKey
-        upd_param['hashlib'] = self.hashlibStr
-        self.add_tokeninfo("hashlib", self.hashlibStr)
+        upd_param['hashlib'] = hashlibStr
+        self.add_tokeninfo("hashlib", hashlibStr)
         val = getParam(upd_param, "otplen", optional)
         if val is not None:
             self.set_otplen(int(val))
@@ -262,8 +250,13 @@ class HotpTokenClass(TokenClass):
             self.set_otplen(get_from_config("DefaultOtpLen", 6))
 
         TokenClass.update(self, upd_param, reset_failcount)
-        return
-        
+
+    @property
+    def hashlib(self):
+        hashlibStr = self.get_tokeninfo("hashlib") or \
+                     get_from_config("hotp.hashlib", u'sha1')
+        return hashlibStr
+
     # challenge interfaces starts here
     @log_with(log)
     def is_challenge_request(self, passw, user=None, options=None):
@@ -306,7 +299,6 @@ class HotpTokenClass(TokenClass):
         :rtype: int
         """
         otplen = int(self.token.otplen)
-        self.hashlibStr = self.get_tokeninfo("hashlib", 'sha1')
         secretHOtp = self.token.get_otpkey()
 
         if counter is None:
@@ -316,7 +308,7 @@ class HotpTokenClass(TokenClass):
         hmac2Otp = HmacOtp(secretHOtp,
                            counter,
                            otplen,
-                           self.get_hashlib(self.hashlibStr))
+                           self.get_hashlib(self.hashlib))
         res = hmac2Otp.checkOtp(anOtpVal, window)
 
         if -1 == res:
@@ -350,11 +342,10 @@ class HotpTokenClass(TokenClass):
         res = -1
         otplen = int(self.token.otplen)
         counter = int(self.token.count)
-        self.hashlibStr = self.get_tokeninfo("hashlib", "sha1")
 
         secretHOtp = self.token.get_otpkey()
         hmac2Otp = HmacOtp(secretHOtp, counter, otplen,
-                           self.get_hashlib(self.hashlibStr))
+                           self.get_hashlib(self.hashlib))
         res = hmac2Otp.checkOtp(otp, window)
 
         if res >= 0:
@@ -461,13 +452,12 @@ class HotpTokenClass(TokenClass):
         """
         ret = False
         otplen = int(self.token.otplen)
-        self.hashlibStr = self.get_tokeninfo("hashlib", 'sha1')
         secretHOtp = self.token.get_otpkey()
         counter = self.token.count
         syncWindow = self.get_sync_window()
         # log.debug("serial: %s",serialNum)
         hmac2Otp = HmacOtp(secretHOtp, counter, otplen,
-                           self.get_hashlib(self.hashlibStr))
+                           self.get_hashlib(self.hashlib))
         counter = hmac2Otp.checkOtp(otp1, syncWindow)
 
         if counter == -1:
@@ -513,13 +503,12 @@ class HotpTokenClass(TokenClass):
         :rtype: tuple
         """
         otplen = int(self.token.otplen)
-        self.hashlibStr = self.get_tokeninfo("hashlib", 'sha1')
         secretHOtp = self.token.get_otpkey()
 
         hmac2Otp = HmacOtp(secretHOtp,
                            self.token.count,
                            otplen,
-                           self.get_hashlib(self.hashlibStr))
+                           self.get_hashlib(self.hashlib))
         otpval = hmac2Otp.generate(inc_counter=False)
 
         pin = self.token.get_pin()
@@ -555,7 +544,7 @@ class HotpTokenClass(TokenClass):
 
         secretHOtp = self.token.get_otpkey()
         hmac2Otp = HmacOtp(secretHOtp, self.token.count, otplen,
-                           self.get_hashlib(self.hashlibStr))
+                           self.get_hashlib(self.hashlib))
         log.debug("retrieving %i OTP values for token %s" % (count, hmac2Otp))
 
         if count > 0:
@@ -566,4 +555,4 @@ class HotpTokenClass(TokenClass):
                 otp_dict["otp"][i] = otpval
             ret = True
 
-        return (ret, error, otp_dict)
+        return ret, error, otp_dict

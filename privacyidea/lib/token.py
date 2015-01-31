@@ -62,7 +62,6 @@ from privacyidea.lib.config import (get_token_class, get_token_prefix,
 from privacyidea.lib.user import get_user_info
 from gettext import gettext as _
 from privacyidea.lib.realm import realm_is_defined
-from privacyidea.lib.cache import cache
 
 log = logging.getLogger(__name__)
 
@@ -190,10 +189,10 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
 
 
 @log_with(log)
-@cache.memoize(10)
+#@cache.memoize(10)
 def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
-                serial=None, active=None, resolver=None, rollout_state=None,
-                count=False):
+               serial=None, active=None, resolver=None, rollout_state=None,
+               count=False):
     """
     (was getTokensOfType)
     This function returns a list of token objects of a
@@ -246,15 +245,12 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
         for token in sql_query.all():
             # the token is the database object, but we want an instance of the
             # tokenclass!
-            if token.tokentype != "sms":
-                tokenobject = create_tokenclass_object(token)
-                if isinstance(tokenobject, TokenClass):
-                    # A database token, that has a non existing type, will
-                    # return None, and not a TokenClass. We do not want to
-                    # add None to our list
-                    token_list.append(tokenobject)
-                else:
-                    pass
+            tokenobject = create_tokenclass_object(token)
+            if isinstance(tokenobject, TokenClass):
+                # A database token, that has a non existing type, will
+                # return None, and not a TokenClass. We do not want to
+                # add None to our list
+                token_list.append(tokenobject)
         ret = token_list
 
     return ret

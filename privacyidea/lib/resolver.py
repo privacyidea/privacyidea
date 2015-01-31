@@ -51,7 +51,7 @@ from ..api.lib.utils import getParam
 from .error import ConfigAdminError
 from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
-from privacyidea.lib.cache import cache
+#from privacyidea.lib.cache import cache
 
 log = logging.getLogger(__name__)
 
@@ -162,7 +162,7 @@ def save_resolver(params):
 
 
 @log_with(log)
-@cache.memoize(10)
+#@cache.memoize(10)
 def get_resolver_list(filter_resolver_type=None,
                       filter_resolver_name=None):
     """
@@ -225,7 +225,7 @@ def delete_resolver(resolvername):
 
 
 @log_with(log)
-@cache.memoize(10)
+#@cache.memoize(10)
 def get_resolver_config(resolvername):
     """
     return the complete config of a given resolver from the database
@@ -239,7 +239,7 @@ def get_resolver_config(resolvername):
 
 
 @log_with(log)
-@cache.memoize(10)
+#@cache.memoize(10)
 def get_resolver_config_description(resolver_type):
     """
     get the configuration description of a resolver
@@ -264,7 +264,7 @@ def get_resolver_config_description(resolver_type):
     return descriptor
 
 
-@cache.memoize(10)
+#@cache.memoize(10)
 def get_resolver_class(resolver_type):
     '''
     return the class object for a resolver type
@@ -284,7 +284,7 @@ def get_resolver_class(resolver_type):
     return ret
 
 
-@cache.memoize(10)
+#@cache.memoize(10)
 def get_resolver_type(resolvername):
     """
     return the type of a resolvername
@@ -299,7 +299,7 @@ def get_resolver_type(resolvername):
 
 
 @log_with(log)
-@cache.memoize(10)
+#@cache.memoize(10)
 def get_resolver_object(resolvername):
     """
     TODO: We can cache this

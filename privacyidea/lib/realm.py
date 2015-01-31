@@ -43,12 +43,11 @@ from ..models import (Realm,
                       db)
 from log import log_with
 import logging
-from privacyidea.lib.cache import cache
 log = logging.getLogger(__name__)
 
 
 @log_with(log)
-@cache.memoize(10)
+#@cache.memoize(10)
 def get_realms(realmname=""):
     '''
     either return all defined realms or a specific realm
@@ -76,7 +75,7 @@ def get_realms(realmname=""):
     return result
 
 
-@cache.memoize(10)
+#@cache.memoize(10)
 def get_realm(realmname):
     """
     :param realmname:
@@ -127,7 +126,7 @@ def set_default_realm(default_realm=None):
 
 
 @log_with(log)
-@cache.memoize(10)
+#@cache.memoize(10)
 def get_default_realm():
     """
     return the default realm

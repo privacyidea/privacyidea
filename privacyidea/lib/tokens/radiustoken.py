@@ -58,14 +58,9 @@ log = logging.getLogger(__name__)
 ###############################################
 class RadiusTokenClass(RemoteTokenClass):
 
-    def __init__(self, aToken):
-        RemoteTokenClass.__init__(self, aToken)
+    def __init__(self, db_token):
+        RemoteTokenClass.__init__(self, db_token)
         self.set_type(u"radius")
-
-        self.radiusServer = ""
-        self.radiusUser = ""
-        self.radiusLocal_checkpin = "0"
-        self.radiusSecret = ""
         self.mode = ['authenticate', 'challenge']
 
     @classmethod
@@ -115,31 +110,22 @@ class RadiusTokenClass(RemoteTokenClass):
 
     def update(self, param):
 
-        self.radiusServer = getParam(param, "radius.server", required)
+        radiusServer = getParam(param, "radius.server", required)
+        self.add_tokeninfo("radius.server", radiusServer)
         # if another OTP length would be specified in /admin/init this would
         # be overwritten by the parent class, which is ok.
         self.set_otplen(6)
-
+        TokenClass.update(self, param)
         val = getParam(param, "radius.local_checkpin", optional)
-        if val is not None:
-            self.radiusLocal_checkpin = val
+        self.add_tokeninfo("radius.local_checkpin", val)
 
         val = getParam(param, "radius.user", required)
-        if val is not None:
-            self.radiusUser = val
+        self.add_tokeninfo("radius.user", val)
 
         val = getParam(param, "radius.secret", required)
-        if val is not None:
-            self.radiusSecret = val
+        self.token.set_otpkey(binascii.hexlify(val))
 
-        TokenClass.update(self, param)
-        # We need to write the secret!
-        self.token.set_otpkey(binascii.hexlify(self.radiusSecret))
-        self.add_tokeninfo("radius.server", self.radiusServer)
-        self.add_tokeninfo("radius.local_checkpin", self.radiusLocal_checkpin)
-        self.add_tokeninfo("radius.user", self.radiusUser)
-
-    @log_with(log)
+    @property
     def check_pin_local(self):
         """
         lookup if pin should be checked locally or on radius host
@@ -150,7 +136,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
         if 1 == int(self.get_tokeninfo("radius.local_checkpin")):
             local_check = True
-        log.debug(" local checking pin? %r" % local_check)
+        log.debug("local checking pin? %r" % local_check)
 
         return local_check
 
@@ -162,20 +148,10 @@ class RadiusTokenClass(RemoteTokenClass):
         """
         res = 0
         pin = ""
-        otpval = ""
-        local_check = self.check_pin_local()
-        log.debug("local checking pin? %r"
-                  % local_check)
-
-        if self.check_pin_local():
-            log.debug("locally checked")
+        otpval = passw
+        if self.check_pin_local:
             (res, pin, otpval) = TokenClass.split_pin_pass(self, passw)
-        else:  # pragma nocover
-            # This code is probably never reached, since split_pin_pass is
-            # only called if check_pin_local() == True
-            log.debug("remotely checked")
-            pin = ""
-            otpval = passw
+
         return res, pin, otpval
 
     @log_with(log)

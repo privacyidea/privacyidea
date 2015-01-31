@@ -32,8 +32,7 @@ log = logging.getLogger(__name__)
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
-import base64
-import binascii
+
 
 
 optional = True
@@ -52,6 +51,10 @@ class SSHkeyTokenClass(TokenClass):
     This can be used to manage SSH keys and retrieve the public ssh key
     to import it to authorized keys files.
     """
+    def __init__(self, db_token):
+        TokenClass.__init__(self, db_token)
+        self.set_type(u"sshkey")
+        self.mode = ['authenticate']
 
     @classmethod
     def get_class_type(cls):
