@@ -15,6 +15,7 @@ from privacyidea.models import (Token,
                                  Config,
                                  Challenge)
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
+import binascii
 import datetime
 
 
@@ -629,3 +630,24 @@ class HOTPTokenTestCase(MyTestCase):
         token.set_sync_window(10)
         token.set_count_window(5)
         self.assertTrue(token.is_challenge_request("test"))
+
+    def test_25_sha256_token(self):
+        # taken from https://tools.ietf.org/html/rfc6238#appendix-B
+        serial = "sha25T"
+        db_token = Token(serial, tokentype="hotp")
+        db_token.save()
+        token = HotpTokenClass(db_token)
+        token.set_otpkey(binascii.hexlify("12345678901234567890"))
+        token.set_hashlib("sha256")
+        token.set_otplen(8)
+        token.save()
+        # get it from the database again
+        #    59     |  1970-01-01  | 0000000000000001 | 46119246 | SHA256 |
+        db_token = Token.query.filter_by(serial=serial).first()
+        token = HotpTokenClass(db_token)
+        r = token.check_otp("46119246")
+        self.assertTrue(r)
+        # 00000000023523ED | 67062674 | SHA256 |
+        token.set_otp_count(0x00000000023523ED - 1)
+        token.save()
+        token.check_otp("67062674")
