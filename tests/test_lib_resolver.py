@@ -20,6 +20,32 @@ from privacyidea.lib.resolver import (save_resolver,
                                       get_resolver_object, pretestresolver)
 from privacyidea.models import ResolverConfig
 
+LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
+                 "attributes": {'cn': 'alice',
+                                "sn": "Cooper",
+                                "givenName": "Alice",
+                                'userPassword': 'alicepw',
+                                'oid': "2",
+                                "email": "alice@test.com",
+                                'mobile': ["1234", "45678"]}},
+                {"dn": 'cn=bob,ou=example,o=test',
+                 "attributes": {'cn': 'bob',
+                                "sn": "Marley",
+                                "givenName": "Robert",
+                                "email": "bob@example.com",
+                                "mobile": "123456",
+                                'userPassword': 'bobpw',
+                                'oid': "3"}},
+                {"dn": 'cn=manager,ou=example,o=test',
+                 "attributes": {'cn': 'manager',
+                                "givenName": "Corny",
+                                "sn": "keule",
+                                "email": "ck@o",
+                                "mobile": "123354",
+                                'userPassword': 'ldaptest',
+                                'oid': "1"}}]
+
+
 class SQLResolverTestCase(MyTestCase):
     """
     Test the SQL Resolver
@@ -149,34 +175,10 @@ class LDAPResolverTestCase(MyTestCase):
     """
     Test the LDAP resolver
     """
-    LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
-                 "attributes": {'cn': 'alice',
-                                "sn": "Cooper",
-                                "givenName": "Alice",
-                                'userPassword': 'alicepw',
-                                'oid': "2",
-                                "email": "alice@test.com",
-                                'mobile': ["1234", "45678"]}},
-                {"dn": 'cn=bob,ou=example,o=test',
-                 "attributes": {'cn': 'bob',
-                                "sn": "Marley",
-                                "givenName": "Robert",
-                                "email": "bob@example.com",
-                                "mobile": "123456",
-                                'userPassword': 'bobpw',
-                                'oid': "3"}},
-                {"dn": 'cn=manager,ou=example,o=test',
-                 "attributes": {'cn': 'manager',
-                                "givenName": "Corny",
-                                "sn": "keule",
-                                "email": "ck@o",
-                                "mobile": "123354",
-                                'userPassword': 'ldaptest',
-                                'oid': "1"}}]
 
     @ldap3mock.activate
     def test_00_testconnection(self):
-        ldap3mock.setLDAPDirectory(self.LDAPDirectory)
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
         success, desc = \
             pretestresolver("ldapresolver", {'LDAPURI':
                                                  'ldap://localhost',
@@ -209,7 +211,7 @@ class LDAPResolverTestCase(MyTestCase):
 
     @ldap3mock.activate
     def test_01_LDAP_DN(self):
-        ldap3mock.setLDAPDirectory(self.LDAPDirectory)
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
         y = LDAPResolver()
         y.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
@@ -263,7 +265,7 @@ class LDAPResolverTestCase(MyTestCase):
 
     @ldap3mock.activate
     def test_02_LDAP_OID(self):
-        ldap3mock.setLDAPDirectory(self.LDAPDirectory)
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
         y = LDAPResolver()
         y.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
@@ -316,7 +318,7 @@ class LDAPResolverTestCase(MyTestCase):
 
     @ldap3mock.activate
     def test_03_testconnection(self):
-        ldap3mock.setLDAPDirectory(self.LDAPDirectory)
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
         y = LDAPResolver()
         res = y.testconnection({'LDAPURI': 'ldap://localhost',
                                 'LDAPBASE': 'o=test',
@@ -340,7 +342,7 @@ class LDAPResolverTestCase(MyTestCase):
 
     @ldap3mock.activate
     def test_04_testconnection_fail(self):
-        ldap3mock.setLDAPDirectory(self.LDAPDirectory)
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
         y = LDAPResolver()
         res = y.testconnection({'LDAPURI': 'ldap://localhost',
                                 'LDAPBASE': 'o=test',
@@ -360,7 +362,6 @@ class LDAPResolverTestCase(MyTestCase):
 
         self.assertFalse(res[0], res)
         self.assertTrue("Wrong password in LDAP mock module" in res[1], res)
-
 
 class ResolverTestCase(MyTestCase):
     """
@@ -579,33 +580,9 @@ class ResolverTestCase(MyTestCase):
         self.assertTrue(y._stringMatch("HalloDuda", "*Du*"))
         self.assertTrue(y._stringMatch("Duda", "Duda"))
 
+    @ldap3mock.activate
     def test_13_update_resolver(self):
-        return
-        # Init stuff
-        top = ('o=test', {'o': 'test'})
-        example = ('ou=example,o=test', {'ou': 'example'})
-        other = ('ou=other,o=test', {'ou': 'other'})
-        manager = ('cn=manager,ou=example,o=test',
-                   {'cn': 'manager',
-                    'userPassword': ['ldaptest'],
-                    'oid': "1"})
-        alice = ('cn=alice,ou=example,o=test',
-                 {'cn': 'alice',
-                  'userPassword': ['alicepw'],
-                  'oid': "2",
-                  'mobile': ["1234", "45678"]})
-        bob = ('cn=bob,ou=other,o=test',
-               {'cn': 'bob', 'userPassword': ['bobpw'], 'oid': ["3"]})
-
-        # This is the content of our mock LDAP directory. It takes the form
-        # {dn: {attr: [value, ...], ...}, ...}.
-        directory = dict([top, example, other, manager, alice, bob])
-
-        # We only need to create the MockLdap instance once. The content we
-        # pass in will be used for all LDAP connections.
-        mockldap = MockLdap(directory)
-        mockldap.start()
-        ldapobj = mockldap['ldap://localhost/']
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
         # --------------------------------
         # First we create an LDAP resolver
         rid = save_resolver({"resolver": "myLDAPres",
@@ -658,8 +635,3 @@ class ResolverTestCase(MyTestCase):
             ResolverConfig.Key=='USERINFO').first().Value
         # Check that the email is NOT contained in the UI
         self.assertTrue("email" not in ui, ui)
-
-        # clean up
-        mockldap.stop()
-        del ldapobj
-        del mockldap
