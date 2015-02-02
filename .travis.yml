@@ -5,7 +5,6 @@ python:
 # command to install dependencies
 install:
   - "pip install ."
-  - "pip install mockldap"
   - "pip install mock"
   - "pip install coveralls"
   - "pip install -r requirements.txt"
