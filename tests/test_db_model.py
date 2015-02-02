@@ -412,3 +412,14 @@ class TokenModelTestCase(MyTestCase):
         t2.del_info("key2")
         t2info = t2.get_info()
         self.assertTrue(t2info.get("key2") is None, t2info)
+
+    def test_16_add_and_delete_tokeninfo_password(self):
+        t1 = Token("serialTI2")
+        t1.set_info({"key1": "value1",
+                     "key1.type": "password"})
+
+        t2 = Token.query.filter_by(serial="serialTI2").first()
+        t2info = t2.get_info()
+
+        self.assertTrue(t2info.get("key1.type") == "password",
+                        t2info)

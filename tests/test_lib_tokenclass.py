@@ -327,6 +327,48 @@ class TokenBaseTestCase(MyTestCase):
         token.set_validity_period_start(start)
         self.assertFalse(token.check_validity_period())
 
+    def test_11_tokeninfo_with_type(self):
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = TokenClass(db_token)
+        token.add_tokeninfo("radius.secret", "secret", value_type="password")
+        info1 = token.get_tokeninfo()
+        self.assertTrue("radius.secret" in info1, info1)
+        self.assertTrue("radius.secret.type" in info1, info1)
+
+        info = token.get_tokeninfo("radius.secret")
+        self.assertTrue(info == "secret")
+
+    def test_11_tokeninfo_encrypt(self):
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = TokenClass(db_token)
+
+        token.add_tokeninfo("radius.secret", "topSecret",
+                            value_type="password")
+        info1 = token.get_tokeninfo()
+        self.assertTrue("radius.secret" in info1, info1)
+        self.assertTrue("radius.secret.type" in info1, info1)
+        # get_tokeninfo without parameters does not decrypt!
+        self.assertTrue(info1.get("radius.secret") != "topSecret",
+                        info1.get("radius.secret"))
+
+        # get_tokeninfo with parameter does decrypt!
+        info = token.get_tokeninfo("radius.secret")
+        self.assertTrue(info == "topSecret", info)
+
+        # THe same with set_tokeninfo
+        token.set_tokeninfo({"radius.secret": "otherSecret",
+                             "radius.secret.type": "password"})
+        info1 = token.get_tokeninfo()
+        self.assertTrue("radius.secret" in info1, info1)
+        self.assertTrue("radius.secret.type" in info1, info1)
+        # get_tokeninfo without parameters does not decrypt!
+        self.assertTrue(info1.get("radius.secret") != "otherSecret",
+                        info1.get("radius.secret"))
+
+        # get_tokeninfo with parameter does decrypt!
+        info = token.get_tokeninfo("radius.secret")
+        self.assertTrue(info == "otherSecret", info)
+
     def test_12_inc_otp_counter(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)

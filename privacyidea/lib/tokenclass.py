@@ -59,8 +59,9 @@ from .user import (User,
                    get_username)
 from ..models import (TokenRealm, Challenge, cleanup_challenges)
 from .challenge import get_challenges
+from .crypto import encryptPassword
+from .crypto import decryptPassword
 
-import json
 
 DATE_FORMAT = "%d/%m/%y %H:%M"
 optional = True
@@ -202,7 +203,6 @@ class TokenClass(object):
         """
         return self.init_details
 
-
     def set_tokeninfo(self, info):
         """
         Set the tokeninfo field in the DB. Old values will be deleted.
@@ -211,16 +211,31 @@ class TokenClass(object):
         :return:
         """
         self.token.del_info()
+        for k, v in info.iteritems():
+            if k.endswith(".type"):
+                # we have a type
+                if v == "password":
+                    # of type password, so we need to entrypt the value of
+                    # the original key (without type)
+                    orig_key = ".".join(k.split(".")[:-1])
+                    info[orig_key] = encryptPassword(info.get(orig_key, ""))
+
         self.token.set_info(info)
 
-    def add_tokeninfo(self, key, value):
+    def add_tokeninfo(self, key, value, value_type=None):
         """
         Add a key and a value to the DB tokeninfo
         :param key:
         :param value:
         :return:
         """
-        self.token.set_info({key: value})
+        add_info = {key: value}
+        if value_type:
+            add_info[key + ".type"] = value_type
+            if value_type == "password":
+                # encrypt the value
+                add_info[key] = encryptPassword(value)
+        self.token.set_info(add_info)
 
     def check_otp(self, otpval, counter=None, window=None, options=None):
         """
@@ -618,6 +633,10 @@ class TokenClass(object):
     def get_tokeninfo(self, key=None, default=None):
         """
         return the complete token info or a single key of the tokeninfo.
+        When returning the complete token info dictionary encrypted entries
+        are not decrypted.
+        If you want to receive a decrypted value, you need to call it
+        directly with the key.
 
         :param key: the key to return
         :type key: string
@@ -629,6 +648,9 @@ class TokenClass(object):
         tokeninfo = self.token.get_info()
         if key:
             ret = tokeninfo.get(key, default)
+            if tokeninfo.get(key + ".type") == "password":
+                # we need to decrypt the return value
+                ret = decryptPassword(ret)
         else:
             ret = tokeninfo
         return ret

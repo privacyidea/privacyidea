@@ -443,6 +443,11 @@ class Token(MethodsMixin, db.Model):
     def set_info(self, info):
         """
         Set the additional token info for this token
+
+        Entries that end with ".type" are used as type for the keys.
+        I.e. two entries sshkey="XYZ" and sshkey.type="password" will store
+        the key sshkey as type "password".
+
         :param info: The key-values to set for this token
         :type info: dict
         """
@@ -450,8 +455,14 @@ class Token(MethodsMixin, db.Model):
             # If there is no ID to reference the token, we need to save the
             # token
             self.save()
+        types = {}
         for k, v in info.iteritems():
-            TokenInfo(self.id, k, v).save()
+            if k.endswith(".type"):
+                types[".".join(k.split(".")[:-1])] = v
+        for k, v in info.iteritems():
+            if not k.endswith(".type"):
+                TokenInfo(self.id, k, v,
+                          Type=types.get(k)).save()
 
     def del_info(self, key=None):
         """
@@ -477,6 +488,8 @@ class Token(MethodsMixin, db.Model):
         ret = {}
         tokeninfos = TokenInfo.query.filter_by(token_id=self.id)
         for ti in tokeninfos:
+            if ti.Type:
+                ret[ti.Key + ".type"] = ti.Type
             ret[ti.Key] = ti.Value
         return ret
 
@@ -523,6 +536,7 @@ class TokenInfo(MethodsMixin, db.Model):
     Key = db.Column(db.Unicode(255),
                     nullable=False)
     Value = db.Column(db.Unicode(2000), default=u'')
+    Type = db.Column(db.Unicode(100), default=u'')
     Description = db.Column(db.Unicode(2000), default=u'')
     token_id = db.Column(db.Integer(),
                          db.ForeignKey('token.id'))
@@ -533,13 +547,16 @@ class TokenInfo(MethodsMixin, db.Model):
                                           'Key',
                                           name='tiix_2'), {})
 
-    def __init__(self, token_id, Key, Value, Description=None):
+    def __init__(self, token_id, Key, Value,
+                 Type= None,
+                 Description=None):
         """
         Create a new tokeninfo for a given token_id
         """
         self.token_id = token_id
         self.Key = Key
         self.Value = Value
+        self.Type = Type
         self.Description = Description
 
     def save(self):
@@ -556,7 +573,8 @@ class TokenInfo(MethodsMixin, db.Model):
                                            Key=self.Key
                                            ).update({'Value': self.Value,
                                                      'Descrip'
-                                                     'tion': self.Description})
+                                                     'tion': self.Description,
+                                                     'Type': self.Type})
             ret = ti.id
         db.session.commit()
         return ret

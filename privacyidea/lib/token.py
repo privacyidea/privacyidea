@@ -1299,7 +1299,9 @@ def set_count_auth(serial, count, user=None, max=False,
 
 @log_with(log)
 @check_user_or_serial
-def add_tokeninfo(serial, info, value=None, user=None):
+def add_tokeninfo(serial, info, value=None,
+                  value_type=None,
+                  user=None):
     """
     Sets a token info field in the database. The info is a dict for each
     token of key/value pairs.
@@ -1308,8 +1310,11 @@ def add_tokeninfo(serial, info, value=None, user=None):
     :type serial: basestring
     :param info: The key of the info in the dict
     :param value: The value of the info
+    :param value_type: The type of the value. If set to "password" the value
+    is stored encrypted
+    :type value_type: basestring
     :param user: The owner of the tokens, that should be modified
-    :type user: User oject
+    :type user: User object
     :return: the number of modified tokens
     :rtype: int
     """
