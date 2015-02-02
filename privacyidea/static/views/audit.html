@@ -1,4 +1,7 @@
 <div class="well">
+    <button class="btn btn-default"
+            ng-click="download()">Download Audit log</button>
+    <a href="/audit/audit.csv">Download file</a>
     <pagination ng-show="auditdata.count > 10"
                 total-items="auditdata.count" ng-model="params.page"
                 items-per-page="10"

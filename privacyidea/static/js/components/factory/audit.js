@@ -38,6 +38,13 @@ myApp.factory("AuditFactory", function (AuthFactory, $http, $state, $rootScope, 
                     params: params
                 }).success(callback
                 ).error(error_func)
+            },
+            download: function(params, filename, callback) {
+                $http.get(auditUrl + "/" + filename, {
+                    headers: {'Authorization': AuthFactory.getAuthToken()},
+                    params: params
+                }).success(callback
+                ).error(error_func)
             }
         }
     });

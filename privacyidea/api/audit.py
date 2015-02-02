@@ -26,30 +26,23 @@ It only provides the method
   GET /audit
 """
 from flask import (Blueprint,
-                   request, current_app)
-from lib.utils import (getParam,
-                       send_result, remove_session_from_param)
+                   request, current_app, Response,
+                   stream_with_context)
+from lib.utils import (send_result)
 from flask import g
 import logging
-from ..lib.audit import search
+from ..lib.audit import search, getAudit
 log = logging.getLogger(__name__)
-from ..lib.audit import getAudit
-from .auth import user_required
-from ..lib.policy import PolicyClass
 
 audit_blueprint = Blueprint('audit_blueprint', __name__)
 
 
-# The before method is handled in api/token
-
 @audit_blueprint.route('/', methods=['GET'])
 def search_audit():
     """
-    return a list of audit entries.
+    return a paginated list of audit entries.
 
     Params can be passed as key-value-pairs.
-
-    :param outform: If set to "csv" the output is returned as a CSV file.
 
     **Example request**:
 
@@ -81,10 +74,52 @@ def search_audit():
           "version": "privacyIDEA unknown"
         }
     """
-    output_format = getParam(request.all_data, "outform")
-
     audit_dict = search(current_app.config, request.all_data)
-
     g.audit_object.log({'success': True})
     
     return send_result(audit_dict)
+
+
+@audit_blueprint.route('/<csvfile>', methods=['GET'])
+def download_csv(csvfile=None):
+    """
+    Download the audit entry as CSV file.
+
+    Params can be passed as key-value-pairs.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+       GET /audit/audit.csv?realm=realm1 HTTP/1.1
+       Host: example.com
+       Accept: text/csv
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+       HTTP/1.1 200 OK
+       Content-Type: text/csv
+
+        {
+          "id": 1,
+          "jsonrpc": "2.0",
+          "result": {
+            "status": true,
+            "value": [
+              {
+                 "serial": "....",
+                 "missing_line": "..."
+              }
+            ]
+          },
+          "version": "privacyIDEA unknown"
+        }
+    """
+    audit = getAudit(current_app.config)
+    g.audit_object.log({'success': True})
+    return Response(stream_with_context(audit.csv_generator(request.all_data)),
+                    mimetype='text/csv',
+                    headers={"Content-Disposition": ("attachment; "
+                                                     "filename=%s" % csvfile)})

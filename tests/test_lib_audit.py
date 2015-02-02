@@ -5,7 +5,7 @@ This tests the files
 """
 
 from .base import MyTestCase
-from privacyidea.lib.audit import getAudit
+from privacyidea.lib.audit import getAudit, search
 
 PUBLIC = "tests/testdata/public.pem"
 PRIVATE = "tests/testdata/private.pem"
@@ -25,12 +25,12 @@ class AuditTestCase(MyTestCase):
 
     def setUp(self):
         pass
-        config = {"PI_AUDIT_MODULE":
-                      "privacyidea.lib.auditmodules.sqlaudit",
-                  "PI_AUDIT_KEY_PRIVATE": "tests/testdata/private.pem",
-                  "PI_AUDIT_KEY_PUBLIC": "tests/testdata/public.pem",
-                  "PI_AUDIT_SQL_URI": "sqlite://"}
-        self.Audit = getAudit(config)
+        self.config = {"PI_AUDIT_MODULE":
+                       "privacyidea.lib.auditmodules.sqlaudit",
+                       "PI_AUDIT_KEY_PRIVATE": "tests/testdata/private.pem",
+                       "PI_AUDIT_KEY_PUBLIC": "tests/testdata/public.pem",
+                       "PI_AUDIT_SQL_URI": "sqlite://"}
+        self.Audit = getAudit(self.config)
         self.Audit.clear()
 
     def tearDown(self):
@@ -102,3 +102,31 @@ class AuditTestCase(MyTestCase):
 
         audit_log = self.Audit.search({"serial": "oath*"})
         self.assertTrue(audit_log.total == 1, audit_log.total)
+
+    def test_03_lib_search(self):
+        res = search(self.config, {"page": 1, "page_size": 10, "sortorder":
+            "asc"})
+        self.assertTrue(res.get("count") == 0, res)
+
+    def test_04_lib_download(self):
+        # Prepare some audit entries:
+        self.Audit.log({"serial": "serial1"})
+        self.Audit.finalize_log()
+
+        self.Audit.log({"serial": "serial1"})
+        self.Audit.finalize_log()
+
+        self.Audit.log({"serial": "serial2"})
+        self.Audit.finalize_log()
+
+        self.Audit.log({"serial": "oath"})
+        self.Audit.finalize_log()
+
+        audit_log = self.Audit.csv_generator()
+        self.assertTrue(type(audit_log).__name__ == "generator",
+                        type(audit_log).__name__)
+
+        for audit_entry in audit_log:
+            self.assertTrue(type(audit_entry).__name__ == "unicode",
+                            type(audit_entry).__name__)
+

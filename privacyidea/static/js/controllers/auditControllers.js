@@ -18,7 +18,9 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("auditController", function (AuditFactory, $scope, $stateParams) {
+myApp.controller("auditController", function (AuditFactory, $scope,
+                                              $stateParams, $http,
+                                              AuthFactory) {
     $scope.params = {sortorder: "desc",
                       page_size: 10,
                        page: 1};
@@ -51,6 +53,15 @@ myApp.controller("auditController", function (AuditFactory, $scope, $stateParams
     $scope.pageChanged = function () {
         console.log('Page changed to: ' + $scope.params.page);
         $scope.getAuditList();
+    };
+
+    // download function
+    $scope.download = function () {
+        var filename = "audit.csv";
+        console.log("download audit log");
+        $http.get("/audit/" + filename, {
+                    headers: {'Authorization': AuthFactory.getAuthToken()},
+                })
     };
 
     $scope.getAuditList();
