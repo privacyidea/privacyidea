@@ -1,3 +1,16 @@
+privacyIDEA
+===========
+
+privacyIDEA is an open solution for strong two-factor authentication.
+privacyIDEA does to not bind you to any decision of the authentication
+protocol or it does not dictate you where your user information should be
+stored. This is achieved by its totally modular architecture.
+privacyIDEA is not only open as far as its modular architecture is
+concerned. But privacyIDEA is completely licensed under the AGPLv3.
+
+Code tests and coverage
+=======================
+
 [![Build Status][BS img]][Build Status]
 [![Coverage Status][CS img]][Coverage Status]
 
@@ -7,13 +20,16 @@
 [BS img]: https://travis-ci.org/privacyidea/privacyidea.svg?branch=master
 [CS img]: https://coveralls.io/repos/privacyidea/privacyidea/badge.png?branch=master
 
-Preface
-=======
+Dev Version 2.0
+===============
 
 The new 2.0 branch is based on flask and sqlalchemy as the python backend. The web UI is based
 on angularJS and bootstrap.
 
-At the moment the 2.0 branch is not ready for production. You can follow the setup instructions and play around.
+At the moment the 2.0 branch is not ready for production. 
+For productive use please use privacyIDEA 1.5.1.
+
+You can follow the setup instructions and play around.
 You are also welcome to take a look at the hopefully tidy code and contribute.
 
 I try to keep up a good test coverage. So run tests!
