@@ -194,7 +194,7 @@ class YubikeyTokenClass(TokenClass):
         # CRC-16 checksum of the whole decrypted OTP should give a fixed residual
         # of 0xf0b8 (see Yubikey-Manual - Chapter 6: Implementation details).
         log.debug("calculated checksum (61624): %r" % checksum(msg_hex))
-        if checksum(msg_hex) != 0xf0b8:  # pragma nocover
+        if checksum(msg_hex) != 0xf0b8:  # pragma: no cover
             log.warning("CRC checksum for token %r failed" % serial)
             return -3
 
@@ -266,7 +266,7 @@ def check_yubikey_pass(passw):
     modhex_serial = passw[:-32][-16:]
     try:
         serialnum = "UBAM" + modhex_decode(modhex_serial)
-    except TypeError as exx:  # pragma nocover
+    except TypeError as exx:  # pragma: no cover
         log.error("Failed to convert serialnumber: %r" % exx)
         return res, opt
 

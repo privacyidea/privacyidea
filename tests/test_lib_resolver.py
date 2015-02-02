@@ -12,6 +12,7 @@ from .base import MyTestCase
 import ldap3mock
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
+from privacyidea.lib.resolvers.SQLIdResolver import PasswordHash
 
 from privacyidea.lib.resolver import (save_resolver,
                                       delete_resolver,
@@ -635,3 +636,24 @@ class ResolverTestCase(MyTestCase):
             ResolverConfig.Key=='USERINFO').first().Value
         # Check that the email is NOT contained in the UI
         self.assertTrue("email" not in ui, ui)
+
+class PasswordHashTestCase(MyTestCase):
+    """
+    Test the password hashing in the SQL database
+    """
+    def test_01_get_random_bytes(self):
+        ph = PasswordHash()
+        rb = ph.get_random_bytes(10)
+        self.assertTrue(len(rb) == 10, len(rb))
+        rb = ph.get_random_bytes(100)
+        self.assertTrue(len(rb) == 100, len(rb))
+        _ph = PasswordHash(iteration_count_log2=32)
+
+    def test_02_checkpassword_crypt(self):
+        ph = PasswordHash()
+        r = ph.check_password("Hallo", "_xyFAfsLH.5Z.Q")
+        self.assertTrue(r)
+
+
+
+        # gensalt, hash_password

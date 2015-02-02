@@ -342,13 +342,13 @@ def import_policy_api(filename=None):
     # transferred
     # in an iframe. see: http://jquery.malsup.com/form/#sample4
     #
-    if type(policy_file) == FieldStorage:  # pragma nocover
+    if type(policy_file) == FieldStorage:  # pragma: no cover
         log.debug("Field storage file: %s", policy_file)
         file_contents = policy_file.value
     elif type(policy_file) == FileStorage:
         log.debug("Werkzeug File storage file: %s", policy_file)
         file_contents = policy_file.read()
-    else:  # pragma nocover
+    else:  # pragma: no cover
         file_contents = policy_file
 
     if file_contents == "":

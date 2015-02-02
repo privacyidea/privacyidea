@@ -44,10 +44,10 @@ SQLSOUP_LOADED = False
 try:
     from sqlsoup import SQLSoup
     SQLSOUP_LOADED = True
-except ImportError:  # pragma nocover
+except ImportError:  # pragma: no cover
     pass
 
-if SQLSOUP_LOADED is False:  # pragma nocover
+if SQLSOUP_LOADED is False:  # pragma: no cover
     try:
         from sqlalchemy.ext.sqlsoup import SQLSoup
         SQLSOUP_LOADED = True
@@ -64,13 +64,13 @@ import crypt
 try:
     import bcrypt
     _bcrypt_hashpw = bcrypt.hashpw
-except ImportError:  # pragma nocover
+except ImportError:  # pragma: no cover
     _bcrypt_hashpw = None
 
 # On App Engine, this function is not available.
 if hasattr(os, 'getpid'):
     _pid = os.getpid()
-else:  # pragma nocover
+else:  # pragma: no cover
     # Fake PID
     from privacyidea.lib.crypto import urandom
     _pid = urandom.randint(0, 100000)
@@ -92,13 +92,13 @@ class PasswordHash:
         self.algorithm = algorithm
         self.random_state = '%r%r' % (time.time(), _pid)
 
-    def get_random_bytes(self, count):  # pragma nocover
+    def get_random_bytes(self, count):
         outp = ''
         try:
             outp = os.urandom(count)
-        except:
+        except:  # pragma: no cover
             pass
-        if len(outp) < count:
+        if len(outp) < count:  # pragma: no cover
             outp = ''
             rem = count
             while rem > 0:
@@ -131,13 +131,13 @@ class PasswordHash:
             outp += self.itoa64[(value >> 18) & 0x3f]
         return outp
 
-    def gensalt_private(self, inp):  # pragma nocover
+    def gensalt_private(self, inp):  # pragma: no cover
         outp = '$P$'
         outp += self.itoa64[min([self.iteration_count_log2 + 5, 30])]
         outp += self.encode64(inp, 6)
         return outp
 
-    def crypt_private(self, pw, setting):  # pragma nocover
+    def crypt_private(self, pw, setting):  # pragma: no cover
         outp = '*0'
         if setting.startswith(outp):
             outp = '*1'
@@ -158,7 +158,7 @@ class PasswordHash:
             count -= 1
         return setting[:12] + self.encode64(hx, 16)
 
-    def gensalt_extended(self, inp):  # pragma nocover
+    def gensalt_extended(self, inp):  # pragma: no cover
         count_log2 = min([self.iteration_count_log2 + 8, 24])
         count = (1 << count_log2) - 1
         outp = '_'
@@ -169,7 +169,7 @@ class PasswordHash:
         outp += self.encode64(inp, 3)
         return outp
 
-    def gensalt_blowfish(self, inp):  # pragma nocover
+    def gensalt_blowfish(self, inp):  # pragma: no cover
         itoa64 = \
             './ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
         outp = '$2a$'
@@ -197,13 +197,13 @@ class PasswordHash:
             outp += itoa64[c2 & 0x3f]
         return outp
 
-    def hash_password(self, pw):  # pragma nocover
+    def hash_password(self, pw):  # pragma: no cover
         rnd = ''
         alg = self.algorithm.lower()
         if (not alg or alg == 'blowfish' or alg == 'bcrypt') \
              and not self.portable_hashes:
             if _bcrypt_hashpw is None:
-                if (alg == 'blowfish' or alg == 'bcrypt'):
+                if alg == 'blowfish' or alg == 'bcrypt':
                     raise NotImplementedError('The bcrypt module is required')
             else:
                 rnd = self.get_random_bytes(16)
@@ -228,11 +228,12 @@ class PasswordHash:
         # This part is different with the original PHP
         if stored_hash.startswith('$2a$'):
             # bcrypt
-            if _bcrypt_hashpw is None:  # pragma nocover
+            if _bcrypt_hashpw is None:  # pragma: no cover
                 raise NotImplementedError('The bcrypt module is required')
             hx = _bcrypt_hashpw(pw, stored_hash)
         elif stored_hash.startswith('_'):
             # ext-des
+            stored_hash = stored_hash[1:]
             hx = crypt.crypt(pw, stored_hash)
         else:
             # portable hash
@@ -353,11 +354,11 @@ class IdResolver (UserIdResolver):
             result = self.session.query(self.TABLE).filter(filter_condition)
                                                       
             for r in result:
-                if len(userinfo.keys()) > 0:  # pragma nocover
+                if len(userinfo.keys()) > 0:  # pragma: no cover
                     raise Exception("More than one user with userid %s found!"
                                     % userId)
                 userinfo = self._get_user_from_mapped_object(r)
-        except Exception as exx:  # pragma nocover
+        except Exception as exx:  # pragma: no cover
             log.error("Could not get the userinformation: %r" % exx)
         
         return userinfo
@@ -391,12 +392,12 @@ class IdResolver (UserIdResolver):
             result = self.session.query(self.TABLE).filter(filter_condition)
                                                       
             for r in result:
-                if userid != "":    # pragma nocover
+                if userid != "":    # pragma: no cover
                     raise Exception("More than one user with loginname"
                                     " %s found!" % LoginName)
                 user = self._get_user_from_mapped_object(r)
                 userid = user["id"]
-        except Exception as exx:    # pragma nocover
+        except Exception as exx:    # pragma: no cover
             log.error("Could not get the userinformation: %r" % exx)
         
         return userid
@@ -413,7 +414,7 @@ class IdResolver (UserIdResolver):
         try:
             if self.map.get("userid") in r:
                 user["id"] = r[self.map.get("userid")]
-        except UnicodeEncodeError:  # pragma nocover
+        except UnicodeEncodeError:  # pragma: no cover
             log.error("Failed to convert user: %r" % r)
             log.error(traceback.format_exc())
         
@@ -431,7 +432,7 @@ class IdResolver (UserIdResolver):
                     # log.error("CKO: %r" % val)
                     # log.error("CKO: %r" % type(val))
                     user[key] = val
-            except UnicodeEncodeError:  # pragma nocover
+            except UnicodeEncodeError:  # pragma: no cover
                 log.error("Failed to convert user: %r" % r)
                 log.error(traceback.format_exc())
         

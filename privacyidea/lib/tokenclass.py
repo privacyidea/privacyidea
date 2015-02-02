@@ -566,7 +566,7 @@ class TokenClass(object):
             self.token.failcount = (self.token.failcount + 1)
         try:
             self.token.save()
-        except:  # pragma nocover
+        except:  # pragma: no cover
             log.error('update failed')
             raise TokenAdminError("Token Fail Counter update failed", id=1106)
         return self.token.failcount
@@ -926,7 +926,7 @@ class TokenClass(object):
             elif type(val).__name__.startswith('Token'):
                 ldict[key] = val.get_vars(save=save)
             else:
-                ldict[key] = "%r" % val  # pragma nocover
+                ldict[key] = "%r" % val  # pragma: no cover
         return ldict
 
     def get_init_detail(self, params=None, user=None):

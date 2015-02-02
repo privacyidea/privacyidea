@@ -134,7 +134,7 @@ class IdResolver (UserIdResolver):
                               search_filter=filter,
                               attributes=self.userinfo.values())
             r = self.l.response
-            if len(r) > 1:  # pragma nocover
+            if len(r) > 1:  # pragma: no cover
                 raise Exception("Found more than one object for uid %r"
                                 % userId)
             if len(r) == 1:
@@ -183,7 +183,7 @@ class IdResolver (UserIdResolver):
                               attributes=self.userinfo.values())
 
         r = self.l.response
-        if len(r) > 1:  # pragma nocover
+        if len(r) > 1:  # pragma: no cover
             raise Exception("Found more than one object for uid %r" % userId)
 
         for entry in r:
@@ -231,7 +231,7 @@ class IdResolver (UserIdResolver):
                       attributes=attributes)
 
         r = self.l.response
-        if len(r) > 1:  # pragma nocover
+        if len(r) > 1:  # pragma: no cover
             raise Exception("Found more than one object for Loginname %r" %
                             LoginName)
         
@@ -287,7 +287,7 @@ class IdResolver (UserIdResolver):
                         else:
                             user[key] = v
                 ret.append(user)
-            except Exception as exx:  # pragma nocover
+            except Exception as exx:  # pragma: no cover
                 log.error("Error during fetching LDAP objects: %r" % exx)
                 log.error("%r" % traceback.format_exc())
         

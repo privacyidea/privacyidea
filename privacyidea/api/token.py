@@ -708,13 +708,13 @@ def loadtokens_api(filename=None):
     # transferred
     # in an iframe. see: http://jquery.malsup.com/form/#sample4
     #
-    if type(token_file) == FieldStorage:  # pragma nocover
+    if type(token_file) == FieldStorage:  # pragma: no cover
         log.debug("Field storage file: %s", token_file)
         file_contents = token_file.value
     elif type(token_file) == FileStorage:
         log.debug("Werkzeug File storage file: %s", token_file)
         file_contents = token_file.read()
-    else:  # pragma nocover
+    else:  # pragma: no cover
         file_contents = token_file
 
     if file_contents == "":

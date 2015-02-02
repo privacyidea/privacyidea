@@ -50,7 +50,7 @@ class ISMSProvider:
     def __init__(self):
         self.config = {}
         
-    def submit_message(self, phone, message):  # pragma nocover
+    def submit_message(self, phone, message):  # pragma: no cover
         """
         Sends the SMS. It should return a bool indicating if the SMS was
         sent successfully.

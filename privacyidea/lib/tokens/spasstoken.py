@@ -116,10 +116,10 @@ class SpassTokenClass(TokenClass):
         :param options:
         :return:
         """
-        return False  # pragma nocover
+        return False  # pragma: no cover
 
     def is_challenge_response(self, passw, user, options=None, challenges=None):
-        return False  # pragma nocover
+        return False  # pragma: no cover
 
     def check_otp(self, otpval, counter=None, window=None, options=None):
         """

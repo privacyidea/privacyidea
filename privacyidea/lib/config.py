@@ -155,7 +155,7 @@ def get_token_class_dict():
                         tokenclass_dict[class_name] = obj
                         if hasattr(obj, 'get_class_type'):
                             tokentype_dict[class_name] = obj.get_class_type()
-                    except Exception as e:  # pragma nocover
+                    except Exception as e:  # pragma: no cover
                         log.error("error constructing token_class_dict: %r" % e)
 
     return tokenclass_dict, tokentype_dict
@@ -288,7 +288,7 @@ def get_resolver_class_dict():
 
                     resolverprefix_dict[class_name] = prefix
 
-                except Exception as e:  # pragma nocover
+                except Exception as e:  # pragma: no cover
                     log.error("error constructing resolverclass_list: %r"
                                  % e)
 
@@ -406,7 +406,7 @@ def get_token_module_list():
             exec("import %s" % mod_name)
             module = eval(mod_name)
             modules.append(module)
-        except Exception as exx:  # pragma nocover
+        except Exception as exx:  # pragma: no cover
             module = None
             log.warning('unable to load resolver module : %r (%r)'
                         % (mod_name, exx))
@@ -445,7 +445,7 @@ def get_resolver_module_list():
             exec("import %s" % mod_name)
             module = eval(mod_name)
 
-        except Exception as exx:  # pragma nocover
+        except Exception as exx:  # pragma: no cover
             module = None
             log.warning('unable to load resolver module : %r (%r)'
                         % (mod_name, exx))

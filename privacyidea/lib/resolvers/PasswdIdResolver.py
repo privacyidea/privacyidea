@@ -413,7 +413,7 @@ class IdResolver (UserIdResolver):
 
         try:
             cUserId = int(line[self.sF["userid"]])
-        except:  # pragma nocover
+        except:  # pragma: no cover
             return ret
 
         (op, val) = tokenise(">=|<=|>|<|=|between")(pattern)
@@ -427,7 +427,7 @@ class IdResolver (UserIdResolver):
                     v = ihVal
                     ihVal = ilVal
                     ilVal = v
-            except:  # pragma nocover
+            except:  # pragma: no cover
                 return ret
 
             if (cUserId <= ihVal and cUserId >= ilVal):
@@ -435,7 +435,7 @@ class IdResolver (UserIdResolver):
         else:
             try:
                 ival = int(val)
-            except:  # pragma nocover
+            except:  # pragma: no cover
                 return ret
 
             if op == "=":

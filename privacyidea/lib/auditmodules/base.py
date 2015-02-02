@@ -71,7 +71,7 @@ class Paginate(object):
         self.total = 0
 
 
-class AuditBase(object):  # pragma nocover
+class AuditBase(object):  # pragma: no cover
 
     def __init__(self, config=None):
         """
@@ -164,7 +164,7 @@ class AuditBase(object):  # pragma nocover
         return None
 
     @log_with(log)
-    def log(self, param):  # pragma nocover
+    def log(self, param):  # pragma: no cover
         """
         This method is used to log the data.
         During a request this method can be called several times to fill the

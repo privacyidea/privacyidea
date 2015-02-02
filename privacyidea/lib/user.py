@@ -115,7 +115,7 @@ class User(object):
             loginname = ""
             try:
                 loginname = unicode(self.login)
-            except UnicodeEncodeError:  # pragma nocover
+            except UnicodeEncodeError:  # pragma: no cover
                 loginname = unicode(self.login.encode(ENCODING))
 
             conf = ''
@@ -166,7 +166,7 @@ class User(object):
         for resolvername in resolvers_in_realm:
             # test, if the user is contained in this resolver
             y = get_resolver_object(resolvername)
-            if y is None:  # pragma nocover
+            if y is None:  # pragma: no cover
                 log.error("Resolver %r not found!" % resolvername)
             else:
                 uid = y.getUserId(self.login)
@@ -301,10 +301,10 @@ class User(object):
                 log.error("The user %r exists in more than one resolver" %
                           (self))
                 log.error(res)
-        except UserError as e:  # pragma nocover
+        except UserError as e:  # pragma: no cover
             log.error("Error while trying to verify the username: %r"
                       % e.description)
-        except Exception as e:  # pragma nocover
+        except Exception as e:  # pragma: no cover
             log.error("Error checking password within module %r" % (e))
             log.error("%s" % traceback.format_exc())
     
@@ -328,7 +328,7 @@ class User(object):
                 sf = y.getSearchFields()
                 searchFields[reso] = sf
     
-            except Exception as e:  # pragma nocover
+            except Exception as e:  # pragma: no cover
                 log.warning("module %r: %r" % (reso, e))
     
         return searchFields
@@ -465,12 +465,12 @@ def get_user_list(param={}, user=None):
             log.debug("Found this userlist: %r" % ulist)
             users.extend(ulist)
 
-        except KeyError as exx:  # pragma nocover
+        except KeyError as exx:  # pragma: no cover
             log.error("%r" % (exx))
             log.error("%s" % traceback.format_exc())
             raise exx
 
-        except Exception as exx:  # pragma nocover
+        except Exception as exx:  # pragma: no cover
             log.error("%r" % (exx))
             log.error("%s" % traceback.format_exc())
             continue

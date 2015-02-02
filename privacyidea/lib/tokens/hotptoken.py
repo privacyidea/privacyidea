@@ -193,7 +193,7 @@ class HotpTokenClass(TokenClass):
                                                   "img": create_img(oath_url,
                                                                     width=250)
                                                   }
-                except Exception as ex:  # pragma nocover
+                except Exception as ex:  # pragma: no cover
                     log.error("%r" % (traceback.format_exc()))
                     log.error('failed to set oath or google url: %r' % ex)
                     
@@ -418,7 +418,7 @@ class HotpTokenClass(TokenClass):
                         res = -1
                 else:
                     # if by any reason the dueDate is missing!
-                    res = -1  # pragma nocover
+                    res = -1  # pragma: no cover
 
                 # now clean the resync data
                 self.del_tokeninfo("dueDate")

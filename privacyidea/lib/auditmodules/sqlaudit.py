@@ -137,7 +137,7 @@ class Audit(AuditBase):
         self.session = Session()
         try:
             metadata.create_all(self.engine)
-        except OperationalError as exx:  # pragma nocover
+        except OperationalError as exx:  # pragma: no cover
             log.info("%r" % exx)
             pass
 
@@ -234,7 +234,7 @@ class Audit(AuditBase):
             le.signature = sign
             self.session.merge(le)
             self.session.commit()
-        except Exception as exx:  # pragma nocover
+        except Exception as exx:  # pragma: no cover
             log.error("exception %r" % exx)
             log.error("DATA: %s" % self.audit_data)
             log.error("%s" % traceback.format_exc())
@@ -268,7 +268,7 @@ class Audit(AuditBase):
             hashvalue = HashFunc.new(self._log_to_string(audit_entry)).digest()
             signature = long(audit_entry.signature)
             r = RSAkey.verify(hashvalue, (signature,))
-        except Exception:  # pragma nocover
+        except Exception:  # pragma: no cover
             log.error("Failed to verify audit entry: %r" % audit_entry.id)
             log.error(traceback.format_exc())
         return r
@@ -296,7 +296,7 @@ class Audit(AuditBase):
             # self.session.commit()
             if id_bef and id_aft:
                 res = True
-        except Exception as exx:  # pragma nocover
+        except Exception as exx:  # pragma: no cover
             log.error("exception %r" % exx)
             log.error("%s" % traceback.format_exc())
             # self.session.rollback()
@@ -421,7 +421,7 @@ class Audit(AuditBase):
                     asc(self._get_logentry_attribute("number"))).limit(
                     limit).offset(offset)
                                          
-        except Exception as exx:  # pragma nocover
+        except Exception as exx:  # pragma: no cover
             log.error("exception %r" % exx)
             log.error("%s" % traceback.format_exc())
             self.session.rollback()
@@ -477,7 +477,7 @@ from getopt import getopt, GetoptError
 import ConfigParser
 
 
-def usage():  # pragma nocover
+def usage():  # pragma: no cover
     print('''cleanup audit database according to:
         privacyideaAudit.sql.highwatermark and
         privacyideaAudit.sql.lowwatermark
@@ -491,7 +491,7 @@ def usage():  # pragma nocover
 
 def cleanup_db(filename,
                highwatermark=None,
-               lowwatermark=None):  # pragma nocover
+               lowwatermark=None):  # pragma: no cover
 
     config_path = os.path.abspath(os.path.dirname(filename))
     config = ConfigParser.ConfigParser()
@@ -548,7 +548,7 @@ def cleanup_db(filename,
         session.commit()
     
 
-def main():  # pragma nocover
+def main():  # pragma: no cover
 
     filename = None
     highwatermark = None

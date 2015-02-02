@@ -154,7 +154,7 @@ class MotpTokenClass(TokenClass):
                                                   "img": create_img(motp_url,
                                                                     width=250)
                                                   }
-                except Exception as ex:   # pragma nocover
+                except Exception as ex:   # pragma: no cover
                     log.error("%r" % (traceback.format_exc()))
                     log.error('failed to set motp url: %r' % ex)
                     

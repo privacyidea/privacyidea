@@ -284,7 +284,7 @@ class RemoteTokenClass(TokenClass):
                 if result.get("value"):
                     otp_count = 1
 
-        except Exception as exx:  # pragma nocover
+        except Exception as exx:  # pragma: no cover
             log.error("Error getting response from "
                       "remote Server (%r): %r" % (request_url, exx))
             log.error(traceback.format_exc())

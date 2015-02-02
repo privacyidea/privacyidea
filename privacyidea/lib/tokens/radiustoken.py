@@ -242,7 +242,7 @@ class RadiusTokenClass(RemoteTokenClass):
                             "rejected access to user %s." %
                             (r_server, radiusUser))
 
-        except Exception as ex:  # pragma nocover
+        except Exception as ex:  # pragma: no cover
             log.error("Error contacting radius Server: %r" % (ex))
             log.error(traceback.format_exc())
 

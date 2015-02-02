@@ -71,7 +71,7 @@ def getAuditClass(packageName, className):
     mod = __import__(packageName, globals(), locals(), [className])
     klass = getattr(mod, className)
     log.debug("klass: %s" % klass)
-    if not hasattr(klass, "log"):  # pragma nocover
+    if not hasattr(klass, "log"):  # pragma: no cover
         raise NameError("Audit AttributeError: " + packageName + "." +
                         className + " instance has no attribute 'log'")
     return klass

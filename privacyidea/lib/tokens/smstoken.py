@@ -333,7 +333,7 @@ class SmsTokenClass(HotpTokenClass):
         """
         try:
             timeout = int(get_from_config("sms.providerTimeout", 5 * 60))
-        except Exception as ex:  # pragma nocover
+        except Exception as ex:  # pragma: no cover
             log.warning("SMSProviderTimeout: value error %r - reset to 5*60"
                                                                         % (ex))
             timeout = 5 * 60

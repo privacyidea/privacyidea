@@ -224,7 +224,7 @@ class DaplugTokenClass(HotpTokenClass):
         res = 0
         try:
             otplen = int(self.token.otplen)
-        except ValueError:  # pragma nocover
+        except ValueError:  # pragma: no cover
             otplen = 6
 
         # For splitting the value we use 12 characters.

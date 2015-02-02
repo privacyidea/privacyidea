@@ -91,7 +91,7 @@ def create_tokenclass_object(db_token):
     if token_class:
         try:
             token_object = token_class(db_token)
-        except Exception as e:  # pragma nocover
+        except Exception as e:  # pragma: no cover
             raise TokenAdminError("create_tokenclass_object failed:  %r" % e,
                                   id=1609)
     else:
@@ -745,7 +745,7 @@ def gen_serial(tokentype=None, prefix=None):
         if numtokens == 0:
             # ok, there is no such token, so we're done
             break
-        serial = _gen_serial(prefix, tokennum + numtokens)  # pragma nocover
+        serial = _gen_serial(prefix, tokennum + numtokens)  # pragma: no cover
 
     return serial
 
@@ -838,7 +838,7 @@ def init_token(param, user=None, tokenrealms=None):
     try:
         # Save the token to the database
         db_token.save()
-    except Exception as e:  # pragma nocover
+    except Exception as e:  # pragma: no cover
         log.error('token create failed!')
         log.error("%r" % (traceback.format_exc()))
         raise TokenAdminError("token create failed %r" % e, id=1112)
@@ -985,7 +985,7 @@ def assign_token(serial, user, pin=None, param=None):
 
     try:
         tokenobject.save()
-    except Exception as e:  # pragma nocover
+    except Exception as e:  # pragma: no cover
         log.error('update Token DB failed')
         raise TokenAdminError("Token assign failed for %r/%s : %r"
                               % (user, serial, e), id=1105)
@@ -1019,7 +1019,7 @@ def unassign_token(serial, user=None):
 
     try:
         tokenobject.save()
-    except Exception as e:  # pragma nocover
+    except Exception as e:  # pragma: no cover
         log.error('update token DB failed')
         raise TokenAdminError("Token unassign failed for %r: %r"
                               % (serial, e), id=1105)

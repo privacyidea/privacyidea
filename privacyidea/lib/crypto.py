@@ -65,19 +65,19 @@ c_hash = {'sha1': SHA1,
 try:
     from Crypto.Hash import SHA224
     c_hash['sha224'] = SHA224
-except:  # pragma nocover
+except:  # pragma: no cover
     log.warning('Your system does not support Crypto SHA224 hash algorithm')
 
 try:
     from Crypto.Hash import SHA384
     c_hash['sha384'] = SHA384
-except:  # pragma nocover
+except:  # pragma: no cover
     log.warning('Your system does not support Crypto SHA384 hash algorithm')
 
 try:
     from Crypto.Hash import SHA512
     c_hash['sha512'] = SHA512
-except:  # pragma nocover
+except:  # pragma: no cover
     log.warning('Your system does not support Crypto SHA512 hash algorithm')
 
 
@@ -261,7 +261,7 @@ def _get_hsm():
         current_app.config["pi_hsm"] = HSM_config
     hsm = current_app.config.get("pi_hsm").get('obj')
 
-    if hsm is None or not hsm.is_ready:  # pragma nocover
+    if hsm is None or not hsm.is_ready:  # pragma: no cover
         raise HSMException('hsm not ready!')
 
     return hsm
@@ -272,7 +272,7 @@ def encryptPassword(password):
     hsm = _get_hsm()
     try:
         ret = hsm.encrypt_password(password)
-    except Exception as exx:  # pragma nocover
+    except Exception as exx:  # pragma: no cover
         log.warning(exx)
         ret = "FAILED TO ENCRYPT PASSWORD!"
     return ret
@@ -290,7 +290,7 @@ def decryptPassword(cryptPass):
     hsm = _get_hsm()
     try:
         ret = hsm.decrypt_password(cryptPass)
-    except Exception as exx:  # pragma nocover
+    except Exception as exx:  # pragma: no cover
         log.warning(exx)
         ret = "FAILED TO DECRYPT PASSWORD!"
     return ret
