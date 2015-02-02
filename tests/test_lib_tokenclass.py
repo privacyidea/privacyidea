@@ -571,3 +571,26 @@ class TokenBaseTestCase(MyTestCase):
         self.assertTrue(token_data.get("user_id") == "2000")
         self.assertTrue(token_data.get("tokentype") == "newtype")
         self.assertTrue(token_data.get("count_window") == 52)
+
+    def test_22_store_tokeninfo_longer_than_2000_byte(self):
+        data = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDJy0rLoxqc8SsY8DVAFi" \
+               "jMsQyCvhBu4K40hdZOacXK4O6OgnacnSKN56MP6pzz2+4svzvDzwvkFsvf3" \
+               "4pbsgDF67PPSCsimmjEQjf0UfamBKh0cl181CbPYsph3UTBOCgHh3FFDXBd" \
+               "uPK4DQzEVQpmqe80h+lsvQ81qPYagbRW6fpd0uWn9H7a/qiLQZsiKLL07HGB" \
+               "+NwWue4os0r9s4qxeG76K6QM7nZKyC0KRAz7CjAf+0X7YzCOu2pzyxVdj/" \
+               "T+KArFcMmq8Vdz24mhcFFXTzU3wveas1A9rwamYWB+Spuohh/OrK3wDsrry" \
+               "StKQv7yofgnPMsTdaL7XxyQVPCmh2jVl5ro9BPIjTXsre9EUxZYFVr3EIECR" \
+               "DNWy3xEnUHk7Rzs734Rp6XxGSzcSLSju8/MBzUVe35iXfXDRcqTcoA0700pI" \
+               "b1ANYrPUO8Up05v4EjIyBeU61b4ilJ3PNcEVld6FHwP3Z7F068ef4DXEC/d" \
+               "7pibrp4Up61WYQIXV/utDt3NDg/Zf3iqoYcJNM/zIZx2j1kQQwqtnbGqxJM" \
+               "rL6LtClmeWteR4420uZxafLE9AtAL4nnMPuubC87L0wJ88un9teza/N02K" \
+               "JMHy01Yz3iJKt3Ou9eV6kqOei3kvLs5dXmriTHp6g9whtnN6/Liv9SzZPJ" \
+               "Ts8YfThi34Wccrw== NetKnights GmbH"
+
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = TokenClass(db_token)
+
+        token.add_tokeninfo("sshkey", data, value_type="password")
+
+        sshkey = token.get_tokeninfo("sshkey")
+        self.assertTrue(sshkey == data, sshkey)

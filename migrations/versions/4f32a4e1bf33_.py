@@ -96,7 +96,7 @@ class TokenInfo(Base):
     id = sa.Column(sa.Integer, primary_key=True)
     Key = sa.Column(sa.Unicode(255),
                     nullable=False)
-    Value = sa.Column(sa.Unicode(2000), default=u'')
+    Value = sa.Column(sa.UnicodeText(), default=u'')
     Description = sa.Column(sa.Unicode(2000), default=u'')
     token_id = sa.Column(sa.Integer(),
                          sa.ForeignKey('token.id'))

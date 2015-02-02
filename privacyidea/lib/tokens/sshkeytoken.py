@@ -121,7 +121,7 @@ class SSHkeyTokenClass(TokenClass):
         key_comment = key_elem[2]
         
         # convert key to hex
-        self.add_tokeninfo("ssh_key", key)
+        self.add_tokeninfo("ssh_key", key, value_type="password")
         self.add_tokeninfo("ssh_type", key_type)
         self.add_tokeninfo("ssh_comment", key_comment)
 
@@ -136,12 +136,9 @@ class SSHkeyTokenClass(TokenClass):
         :return: SSH pub key
         :rtype: string
         """
-
-        #secret = self.token.get_otpkey()
-        #hex_sshkey = secret.getKey()
-        #sshkey = base64.b64encode(binascii.unhexlify(hex_sshkey))
         ti = self.get_tokeninfo()
-        sshkey = ti.get("ssh_key")
         key_type = ti.get("ssh_type")
         key_comment = ti.get("ssh_comment")
+        # get the ssh key directly, otherwise it will not be decrypted
+        sshkey = self.get_tokeninfo("ssh_key")
         return "%s %s %s" % (key_type, sshkey, key_comment)

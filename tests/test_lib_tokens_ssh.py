@@ -8,7 +8,7 @@ from privacyidea.lib.tokens.sshkeytoken import SSHkeyTokenClass
 from privacyidea.models import Token
 
 
-class SpassTokenTestCase(MyTestCase):
+class SSHTokenTestCase(MyTestCase):
 
     otppin = "topsecret"
     serial1 = "ser1"
@@ -27,9 +27,6 @@ class SpassTokenTestCase(MyTestCase):
              "ei3kvLs5dXmriTHp6g9whtnN6/Liv9SzZPJTs8YfThi34Wccrw== " \
              "NetKnights GmbH"
 
-
-    # set_user, get_user, reset, set_user_identifiers
-    
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="sshkey")
         db_token.save()
@@ -47,7 +44,6 @@ class SpassTokenTestCase(MyTestCase):
         class_prefix = token.get_class_prefix()
         self.assertTrue(class_prefix == "SSHK", class_prefix)
         self.assertTrue(token.get_class_type() == "sshkey", token)
-
 
     def test_03_class_methods(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()

@@ -535,7 +535,7 @@ class TokenInfo(MethodsMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     Key = db.Column(db.Unicode(255),
                     nullable=False)
-    Value = db.Column(db.Unicode(2000), default=u'')
+    Value = db.Column(db.UnicodeText(), default=u'')
     Type = db.Column(db.Unicode(100), default=u'')
     Description = db.Column(db.Unicode(2000), default=u'')
     token_id = db.Column(db.Integer(),

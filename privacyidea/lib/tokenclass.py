@@ -462,11 +462,6 @@ class TokenClass(object):
         self.token.tokentype = u'' + self.type
         return
 
-#    def addToSession(self, Session):
-#        # TODO: Migration why this?
-#        pass
-#        # Session.add(self.token)
-
     def delete_token(self):
         """
         delete the database token
