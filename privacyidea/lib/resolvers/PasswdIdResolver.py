@@ -33,22 +33,21 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''
+"""
   Description:  This file is part of the privacyidea service
                 This module implements the communication interface
                 for resolvin user info to the /etc/passwd user base
 
   Dependencies: -
-'''
+"""
 
 import re
+import os
 import logging
 import crypt
 
 
 from UserIdResolver import UserIdResolver
-from UserIdResolver import getResolverClass
-
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
@@ -116,35 +115,27 @@ class IdResolver (UserIdResolver):
         self.givennameDict = {}
         self.emailDict = {}
 
-    def close(self):
-        """
-        request hook - to close down resolver object
-        """
-        return
-
     def loadFile(self):
 
         """
-          init loads the /etc/passwd
-            user and uid as a dict for /
-            user loginname lookup
+        Loads the data of the file initially.
+        if the self.fileName is empty, it loads /etc/passwd.
+        Empty lines are ignored.
         """
 
         if (self.fileName == ""):
             self.fileName = "/etc/passwd"
 
-        log.info('loading users from file %s' % (self.fileName))
-
+        log.info('loading users from file %s from within %r' % (self.fileName,
+                                                                os.getcwd()))
         fileHandle = open(self.fileName, "r")
-
-        line = fileHandle.readline()
 
         ID = self.sF["userid"]
         NAME = self.sF["username"]
         PASS = self.sF["cryptpass"]
         DESCRIPTION = self.sF["description"]
 
-        while line:
+        for line in fileHandle:
             line = line.strip()
             if len(line) == 0:
                 continue
@@ -182,19 +173,23 @@ class IdResolver (UserIdResolver):
                     if email_match:
                         self.emailDict[fields[ID]] = email_match.group(0)
 
-            """ print ">>" + key[0] + "<< " + key[2] """
-            line = fileHandle.readline()
-            
         fileHandle.close()
 
     def checkPass(self, uid, password):
         """
         This function checks the password for a given uid.
-        - returns true in case of success
-        -         false if password does not match
+        returns true in case of success
+        false if password does not match
 
-        We do not support shadow passwords at the moment. so the seconds column
+        We do not support shadow passwords. so the seconds column
         of the passwd file needs to contain the crypted password
+
+        :param uid: The uid of the user
+        :type uid: int
+        :param password: The password in cleartext
+        :type password: sting
+        :return: True or False
+        :rtype: bool
         """
         log.info("checking password for user uid %s" % uid)
         cryptedpasswd = self.passDict[uid]
@@ -282,8 +277,10 @@ class IdResolver (UserIdResolver):
 
         TODO: implementation is not completed
 
-        :param searchDict: fields, which should be queried
+        :param searchDict: fields, which can be queried
+        :type searchDict: dict
         :return: dict of all searchFields
+        :rtype: dict
         """
         if searchDict is not None:
             for search in searchDict:
@@ -342,20 +339,28 @@ class IdResolver (UserIdResolver):
         """
 
         username = line[self.sF["username"]]
-        ret = self.stringMatch(username, pattern)
+        ret = self._stringMatch(username, pattern)
         return ret
 
     def checkDescription(self, line, pattern):
         description = line[self.sF["description"]]
-        ret = self.stringMatch(description, pattern)
+        ret = self._stringMatch(description, pattern)
         return ret
 
     def checkEmail(self, line, pattern):
         email = line[self.sF["email"]]
-        ret = self.stringMatch(email, pattern)
+        ret = self._stringMatch(email, pattern)
         return ret
 
-    def stringMatch(self, cString, cPattern):
+    def _stringMatch(self, cString, cPattern):
+        """
+        internal function to match strings.
+
+        :param cString: The string to match
+        :param cPattern: the pattern
+        :return: If the sting matches
+        :rtype: bool
+        """
         ret = False
         e = s = ""
 
@@ -376,13 +381,13 @@ class IdResolver (UserIdResolver):
             s = "s"
             pattern = pattern[:-1]
 
-        if (e == "e" and s == "s"):
+        if e == "e" and s == "s":
             if string.find(pattern) != -1:
                 return True
-        elif (e == "e"):
+        elif e == "e":
             if string.endswith(pattern):
                 return True
-        elif (s == "s"):
+        elif s == "s":
             if string.startswith(pattern):
                 return True
         else:
@@ -393,13 +398,22 @@ class IdResolver (UserIdResolver):
 
     def checkUserId(self, line, pattern):
         """
-        check for the userId
+        Check if a userid matches a pattern.
+        A pattern can be "=1000", ">=1000",
+        "<2000" or "between 1000,2000".
+
+        :param line: the dictionary of a user
+        :type line: dict
+        :param pattern: match pattern with <, <=...
+        :type pattern: string
+        :return: True or False
+        :rtype: bool
         """
         ret = False
 
         try:
             cUserId = int(line[self.sF["userid"]])
-        except:
+        except:  # pragma nocover
             return ret
 
         (op, val) = tokenise(">=|<=|>|<|=|between")(pattern)
@@ -413,7 +427,7 @@ class IdResolver (UserIdResolver):
                     v = ihVal
                     ihVal = ilVal
                     ilVal = v
-            except:
+            except:  # pragma nocover
                 return ret
 
             if (cUserId <= ihVal and cUserId >= ilVal):
@@ -421,7 +435,7 @@ class IdResolver (UserIdResolver):
         else:
             try:
                 ival = int(val)
-            except:
+            except:  # pragma nocover
                 return ret
 
             if op == "=":
@@ -441,7 +455,7 @@ class IdResolver (UserIdResolver):
                     ret = True
 
             elif op == "<=":
-                if (cUserId < ival):
+                if (cUserId <= ival):
                     ret = True
 
         return ret
@@ -450,9 +464,9 @@ class IdResolver (UserIdResolver):
 # server info methods
 #############################################################
     def getResolverId(self):
-        """ getResolverId(LoginName)
-            - returns the resolver identifier string
-            - empty string if not exist
+        """
+        return the resolver identifier string, which in fact is
+        filename, where it points to.
         """
         return self.fileName
 
@@ -482,65 +496,15 @@ class IdResolver (UserIdResolver):
     def getResolverDescriptor(self):
         return IdResolver.getResolverClassDescriptor()
 
-    def getConfigEntry(self, config, key, conf, required=True):
-        ckey = key
-        cval = ""
-        if conf != "" or None:
-            ckey = ckey + "." + conf
-            if ckey in config:
-                cval = config[ckey]
-        if cval == "":
-            if key in config:
-                cval = config[key]
-        if cval == "" and required is True:
-            raise Exception("missing config entry: " + key)
-        return cval
 
-    def loadConfig(self, config, conf):
+    def loadConfig(self, config):
         """ loadConfig(configDict)
             The UserIdResolver could be configured
             from the pylons app config - here
             this could be the passwd file ,
             whether it is /etc/passwd or /etc/shadow
         """
-        self.fileName = self.getConfigEntry(config,
-                                            'privacyidea.passwdresolver.'
-                                            'fileName',
-                                            conf)
+        self.fileName = config.get("fileName", config.get("filename"))
         self.loadFile()
 
         return self
-
-if __name__ == "__main__":
-
-    print " PasswdIdResolver - IdResolver class test "
-
-    y = getResolverClass("PasswdIdResolver", "IdResolver")()
-
-    y.loadConfig({'privacyidea.passwdresolver.fileName': '/etc/passwd'}, "")
-    x = getResolverClass("PasswdIdResolver", "IdResolver")()
-    x.loadConfig({'privacyidea.passwdresolver.fileName': '/etc/meinpass'}, "")
-
-    print "======/etc/meinpass=========="
-    print x.getUserList({'username': '*', "userid": ">= 1000"})
-    print "======/etc/passwd=========="
-    print y.getUserList({'username': '*', "userid": ">= 1000"})
-    print "================"
-
-    user = "koelbel"
-    loginId = y.getUserId(user)
-
-    print " %s -  %s" % (user, loginId)
-    print " reId - " + y.getResolverId()
-
-    ret = y.getUserInfo(loginId)
-
-    print "result %r" % ret
-
-    ret = y.getSearchFields()
-    search = {"userid": " between 1000, 1005",
-              }
-
-    ret = y.getUserList(search)
-
-    print ret

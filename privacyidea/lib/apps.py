@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 #
 #  privacyIDEA is a fork of LinOTP
-#  May 08, 2014 Cornelius Kölbel
+#
+#  * 2014-12-01 Cornelius Kölbel <cornelius@privacyidea.org>
+#               Migrate to flask
+#
+#  * May 08, 2014 Cornelius Kölbel
 #  * 2014-09-12 added Motp URL. Cornelius Kölbel
 #
 #  License:  AGPLv3
@@ -26,40 +30,38 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''
+"""
 It generates the URL for smartphone apps like
 google authenticator
 oath token
-'''
+
+This only depends on the ConfigPolicy.
+"""
 
 import binascii
 import base64
 
 import logging
 log = logging.getLogger(__name__)
-
-from privacyidea.lib.policy import PolicyClass
-from privacyidea.lib.config import get_privacyIDEA_config
-from pylons import request, config, tmpl_context as c
 from urllib import quote
 from privacyidea.lib.log import log_with
 
-
 @log_with(log)
-def create_motp_url(user, realm, key, serial=""):
-    '''
+def create_motp_url(key, user=None, realm=None, serial=""):
+    """
     This creates the motp url as described at
     http://huseynov.com/index.php?post=motp-vs-google-authenticator-and-a-new-otp-app
     
     The format is:
     motp://SecureSite:alice@wonder.land?secret=JBSWY3DPEHPK3PXP
-    '''
+    """
     # For Token2 the OTPKEY is hexencoded, not base32!
     otpkey = key
-    
-    Policy = PolicyClass(request, config, c,
-                         get_privacyIDEA_config())
-    label = Policy.get_tokenlabel(user, realm, serial)
+    # TODO: Migration: Policy
+    #Policy = PolicyClass(request, config, c,
+    #                     get_privacyidea_config())
+    # label = Policy.get_tokenlabel(user, realm, serial)
+    label = "mylabel"
     allowed_label_len = 20
     label = label[0:allowed_label_len]
     url_label = quote(label)
@@ -68,7 +70,9 @@ def create_motp_url(user, realm, key, serial=""):
 
 
 @log_with(log)
-def create_google_authenticator_url(user, realm, key, type="hmac", serial=""):
+def create_google_authenticator_url(key=None, user=None,
+                                        realm=None, type="hotp",
+                                        serial=""):
     '''
     This creates the google authenticator URL.
     This url may only be 119 characters long.
@@ -79,7 +83,7 @@ def create_google_authenticator_url(user, realm, key, type="hmac", serial=""):
     '''
     # policy depends on some lib.util
 
-    if "hmac" == type.lower():
+    if "hotp" == type.lower():
         type = "hotp"
 
     key_bin = binascii.unhexlify(key)
@@ -92,9 +96,10 @@ def create_google_authenticator_url(user, realm, key, type="hmac", serial=""):
     allowed_label_len = max_len - base_len
     log.debug("we have got %s characters left for the token label" % str(allowed_label_len))
 
-    Policy = PolicyClass(request, config, c,
-                         get_privacyIDEA_config())
-    label = Policy.get_tokenlabel(user, realm, serial)
+    #Policy = PolicyClass(request, config, c,
+    #                     get_privacyIDEA_config())
+    #label = Policy.get_tokenlabel(user, realm, serial)
+    label = serial or "mylabel"
     label = label[0:allowed_label_len]
 
     url_label = quote(label)
@@ -102,7 +107,8 @@ def create_google_authenticator_url(user, realm, key, type="hmac", serial=""):
     return "otpauth://%s/%s?secret=%s&counter=0" % (type, url_label, otpkey)
 
 @log_with(log)
-def create_oathtoken_url(user, realm, otpkey, type="hmac", serial=""):
+def create_oathtoken_url(otpkey=None, user=None, realm=None,
+                         type="hotp", serial=""):
     #'url' : 'oathtoken:///addToken?name='+serial +
     #                '&key='+otpkey+
     #                '&timeBased=false&counter=0&numDigites=6&lockdown=true',
@@ -111,9 +117,11 @@ def create_oathtoken_url(user, realm, otpkey, type="hmac", serial=""):
     if "totp" == type.lower():
         timebased = "&timeBased=true"
 
-    Policy = PolicyClass(request, config, c,
-                         get_privacyIDEA_config())
-    label = Policy.get_tokenlabel(user, realm, serial)
+    # TODO: Migration: Here we need a ConfigPolicy
+    #Policy = PolicyClass(request, config, c,
+    #                     get_privacyIDEA_config())
+    # label = Policy.get_tokenlabel(user, realm, serial)
+    label = "mylabel"
     url_label = quote(label)
 
     url = "oathtoken:///addToken?name=%s&lockdown=true&key=%s%s" % (

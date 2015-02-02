@@ -1,0 +1,85 @@
+<pagination ng-show="tokendata.count > 15"
+            total-items="tokendata.count" ng-model="params.page"
+            items-per-page="15"
+            max-size="5"
+            boundary-links="true" ng-change="pageChanged()"></pagination>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead>
+        <tr>
+            <th>
+                <button class="btn btn-default unsorted"
+                        pi-sort-by="serial">serial
+                </button>
+                <pi-filter ng-model="serialFilter"
+                           ng-change="getTokens()"></pi-filter>
+            </th>
+            <th>
+                <button class="btn btn-default unsorted"
+                        pi-sort-by="tokentype">type
+                </button>
+                <pi-filter ng-model="typeFilter"
+                           ng-change="getTokens()"></pi-filter>
+            </th>
+            <th>
+                <button pi-sort-by="active"
+                        class="btn btn-default
+                            unsorted">active
+                </button>
+            </th>
+            <th>
+                <button pi-sort-by="description"
+                        class="btn btn-default
+                       unsorted">description
+                </button>
+                <pi-filter ng-model="descriptionFilter"
+                           ng-change="getTokens()"></pi-filter>
+            </th>
+            <th>
+                <button pi-sort-by="failcount"
+                        class="btn btn-default
+                         unsorted">failcounter
+                </button>
+            </th>
+            <th ng-show="loggedInUser.role == 'admin'">user</th>
+            <th ng-show="loggedInUser.role == 'admin'">realm</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="token in tokendata.tokens">
+            <td><a ui-sref="token.details({tokenSerial:token.serial,
+            currentToken:token})"
+                   ng-click="$rootScope.returnTo=token.list;">
+                {{ token.serial }}</a></td>
+            <td>{{ token.tokentype }}</td>
+            <td>
+                <span class="label label-success" ng-show="token.active">
+                    active
+                </span>
+                <span class="label label-danger" ng-hide="token.active">
+                    disabled
+                </span>
+            </td>
+            <!--<td>{{ token.count_window }}</td>-->
+            <td>{{ token.description }}</td>
+            <td><span class="label"
+                      ng-class="{'label-success': token.failcount==0,
+                   'label-warning': token.failcount>0,
+                   'label-danger': token.failcount>=token.maxfail}">
+            {{ token.failcount }}
+            </span></td>
+            <!--<td>{{ token.maxfail }}</td>-->
+            <!--<td>{{ token.otplen }}</td>-->
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="user.details({username: token.username,
+                            realmname: token.user_realm})">
+                {{ token.username }}</a>
+            </td>
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="config.realms.list">{{ token.user_realm }}</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>

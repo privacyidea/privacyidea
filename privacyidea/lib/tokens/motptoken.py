@@ -7,6 +7,8 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2015-01-27 Rewrite due to flask migration
+#             Cornelius Klöbel <cornelius@privacyidea.org>
 #  2014-10-03 Add getInitDetail
 #             Cornelius Kölbel <cornelius@privacyidea.org>
 #
@@ -29,72 +31,56 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''
-  Description:  This file containes the mOTP token implementation:
-              - http://motp.sourceforge.net/ -
+__doc__="""This code implements the motp one time password algorithm
+described in motp.sourceforge.net.
 
-  Dependencies: -
-
-'''
-
-from privacyidea.lib.util import getParam
-from privacyidea.lib.util import required
-from privacyidea.lib.util import optional
-from privacyidea.lib.util import generate_otpkey
-
-from privacyidea.lib.log import log_with
-
-from privacyidea.lib.mOTP import mTimeOtp
-from privacyidea.lib.tokenclass import TokenClass
+The code is tested in tests/test_lib_tokens_motp
+"""
+from .mOTP import mTimeOtp
 from privacyidea.lib.apps import create_motp_url
-from privacyidea.lib.reply import create_img
-from pylons.i18n.translation import _
+from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.log import log_with
+from privacyidea.lib.utils import create_img
+from privacyidea.api.lib.utils import getParam
+from privacyidea.lib.utils import generate_otpkey
+
+optional = True
+required = False
 
 import traceback
 import logging
 log = logging.getLogger(__name__)
+import gettext
+_ = gettext.gettext
 
 
-###############################################
 class MotpTokenClass(TokenClass):
-    '''
-    implementation of the mOTP token class
-    - see: http://motp.sourceforge.net/
-    '''
 
     @classmethod
-    def getClassType(cls):
-        '''
-        static method to return the token class identifier
-
-        :return: fixed string
-        '''
-
+    def get_class_type(cls):
         return "motp"
 
     @classmethod
-    def getClassPrefix(cls):
-        return "LSMO"
+    def get_class_prefix(cls):
+        return "PIMO"
 
     @classmethod
-    def getClassInfo(cls, key=None, ret='all'):
-        '''
-        getClassInfo - returns all or a subtree of the token definition
+    def get_class_info(cls, key=None, ret='all'):
+        """
+        returns a subtree of the token definition
+        Is used by lib.token.get_token_info
 
         :param key: subsection identifier
         :type key: string
-
         :param ret: default return value, if nothing is found
         :type ret: user defined
-
         :return: subsection if key exists or user defined
-        :rtype : s.o.
-
-        '''
+        :rtype : dict or string
+        """
 
         res = {'type': 'motp',
                'title': 'mOTP Token',
-               'description': ('mobile otp token'),
+               'description': 'mobile otp token',
                'init': {'page': {'html': 'motptoken.mako',
                                  'scope': 'enroll', },
                         'title': {'html': 'motptoken.mako',
@@ -135,43 +121,40 @@ class MotpTokenClass(TokenClass):
         return ret
 
     @log_with(log)
-    def __init__(self, a_token):
-        '''
+    def __init__(self, db_token):
+        """
         constructor - create a token object
 
         :param a_token: instance of the orm db object
         :type a_token:  orm object
-        '''
-        TokenClass.__init__(self, a_token)
-        self.setType(u"mOTP")
+        """
+        TokenClass.__init__(self, db_token)
+        self.set_type(u"motp")
         self.hKeyRequired = True
-
         return
     
     @log_with(log)
-    def getInitDetail(self, params, user=None):
-        '''
-        to complete the token normalisation, the response of the initialiastion
+    def get_init_detail(self, params=None, user=None):
+        """
+        to complete the token normalisation, the response of the initialization
         should be build by the token specific method, the getInitDetails
-        '''
-        response_detail = TokenClass.getInitDetail(self, params, user)
-        otpkey = self.getInfo().get('otpkey')
+        """
+        response_detail = TokenClass.get_init_detail(self, params, user)
+        otpkey = self.init_details.get('otpkey')
         if otpkey:
             tok_type = self.type.lower()
             if user is not None:
                 try:
-                    if tok_type.lower() in ["motp"]:
-                        motp_url = create_motp_url(user.login, user.realm,
-                                                   otpkey,
-                                                   serial=self.getSerial())
-                        response_detail["motpurl"] = {"description": _("URL for MOTP "
-                                                                       "token"),
-                                                      "value": motp_url,
-                                                      "img": create_img(motp_url,
-                                                                        width=250)
-                                                      }
-                   
-                except Exception as ex:
+                    motp_url = create_motp_url(otpkey,
+                                               user.login, user.realm,
+                                               serial=self.get_serial())
+                    response_detail["motpurl"] = {"description": _("URL for MOTP "
+                                                                   "token"),
+                                                  "value": motp_url,
+                                                  "img": create_img(motp_url,
+                                                                    width=250)
+                                                  }
+                except Exception as ex:   # pragma nocover
                     log.error("%r" % (traceback.format_exc()))
                     log.error('failed to set motp url: %r' % ex)
                     
@@ -179,16 +162,15 @@ class MotpTokenClass(TokenClass):
 
     @log_with(log)
     def update(self, param, reset_failcount=True):
-        '''
+        """
         update - process initialization parameters
 
         :param param: dict of initialization parameters
         :type param: dict
 
         :return: nothing
-
-        '''
-        if (self.hKeyRequired is True):
+        """
+        if self.hKeyRequired is True:
             genkey = int(getParam(param, "genkey", optional) or 0)
             if not param.get('keysize'):
                 param['keysize'] = 16
@@ -203,54 +185,49 @@ class MotpTokenClass(TokenClass):
             param['otpkey'] = otpKey
             
         # motp token specific
-        otpPin = getParam(param, "otppin", required)
-        self.token.setUserPin(otpPin)
+        mOTPPin = getParam(param, "motppin", required)
+        self.token.set_user_pin(mOTPPin)
 
         TokenClass.update(self, param, reset_failcount)
 
         return
 
     @log_with(log)
-    def checkOtp(self, anOtpVal, counter, window, options=None):
-        '''
-        checkOtp - validate the token otp against a given otpvalue
+    def check_otp(self, anOtpVal, counter=None, window=None, options=None):
+        """
+        validate the token otp against a given otpvalue
 
         :param anOtpVal: the to be verified otpvalue
         :type anOtpVal:  string
-
         :param counter: the counter state, that shoule be verified
         :type counter: int
-
         :param window: the counter +window, which should be checked
         :type window: int
-
         :param options: the dict, which could contain token specific info
         :type options: dict
-
         :return: the counter state or -1
         :rtype: int
-
-        '''
-        otplen = self.token.privacyIDEAOtpLen
+        """
+        otplen = self.token.otplen
 
         # otime contains the previous verification time
         # the new one must be newer than this!
-        otime = self.token.privacyIDEACount
-        secretHOtp = self.token.getHOtpKey()
-        window = self.token.privacyIDEACountWindow
-        secretPin = self.token.getUserPin()
+        otime = self.token.count
+        secretHOtp = self.token.get_otpkey()
+        window = self.token.count_window
+        secretPin = self.token.get_user_pin()
 
         log.debug("otime %s", otime)
 
         mtimeOtp = mTimeOtp(secretHOtp, secretPin, otime, otplen)
         res = mtimeOtp.checkOtp(anOtpVal, window, options=options)
 
-        if (res != -1):
-            res = res - 1  # later on this will be incremented by 1
-        if res == -1:
-            msg = "verification failed"
-        else:
+        if res != -1:
+            # later on this will be incremented by 1
+            res -= 1
             msg = "verifiction was successful"
+        else:
+            msg = "verification failed"
 
         log.debug("%s :res %r" % (msg, res))
         return res

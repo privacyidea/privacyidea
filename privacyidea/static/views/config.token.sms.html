@@ -1,0 +1,38 @@
+<h2>SMS Token settings</h2>
+<p class="help-block">
+    The SMS Token is an event based token. After the user has tried to
+    authenticate with the OTP PIN, an SMS with an OTP value is sent to the
+    users mobile phone. Then user can authenticate with this OTP value in a
+    second step.
+</p>
+<p class="help-block">
+    Here you can define how the SMS will be sent - via which kind of gateway.
+</p>
+
+<div class="form-group">
+    <label for="smsProvider">SMS Provider</label>
+    <select class="form-control"
+           ng-model="form['sms.provider']" name="smsProvider"
+        ng-options="select for select in formInit.smsProviders">
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="smsTimeout">Timeout</label>
+    <input type="text"
+           required
+           class="form-control"
+           placeholder="300"
+           ng-model="form['sms.providerTimeout']" name="smsTimeout">
+</div>
+
+<div class="form-group">
+    <label for="smsConfig">Provider Config</label>
+    <textarea type="text" rows="6"
+           required
+           class="form-control"
+           placeholder="{'USERNAME': 'Your User',\n 'PASSWORD': 'Your Password'}"
+           ng-model="form['sms.providerConfig']" name="smsConfig"></textarea>
+</div>
+
+

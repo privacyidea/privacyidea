@@ -1,0 +1,58 @@
+<div class="row" ng-controller="tokenConfigController">
+    <div class="col-lg-3">
+        <div class="pa-sidebar panel">
+            <ul class="nav nav-pills nav-stacked">
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'hotp'}">
+                    <a ui-sref="config.tokens({tokentype: 'hotp'})">HOTP</a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'totp'}">
+                    <a ui-sref="config.tokens({tokentype: 'totp'})">TOTP</a>
+                </li>
+                <!--
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'motp'}">
+                    <a ui-sref="config.tokens({tokentype: 'motp'})">mOTP</a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'yubikey'}">
+                    <a ui-sref="config.tokens({tokentype: 'yubikey'})">Yubikey</a>
+                </li>
+                -->
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'radius'}">
+                    <a ui-sref="config.tokens({tokentype: 'radius'})">RADIUS</a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'remote'}">
+                    <a ui-sref="config.tokens({tokentype: 'remote'})">Remote</a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'sms'}">
+                    <a ui-sref="config.tokens({tokentype: 'sms'})">SMS</a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'yubico'}">
+                    <a ui-sref="config.tokens({tokentype: 'yubico'})">Yubico</a>
+                </li>
+            </ul>
+        </div>
+
+    </div>
+    <div class="col-lg-9 slide panel">
+        <form name="formTokenConfig" role="form" validate>
+            <ng-include
+                    src="'/static/views/config.token.' + tokentype + '.html'">
+            </ng-include>
+
+            <div class="text-center">
+                <button class="btn btn-primary"
+                        ng-click="saveTokenConfig()"
+                        ng-disabled="formTokenConfig.$invalid">
+                    Save
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

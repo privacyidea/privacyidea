@@ -1,0 +1,270 @@
+<h3 name="Token Details">Token details for {{ tokenSerial }}
+    <a class="btn btn-default" ui-sref="audit({serial: tokenSerial})">
+        View token in Audit log</a>
+</h3>
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <tr>
+            <td>Type</td>
+            <td>{{ token.tokentype }}</td>
+            <td>
+                <button class="btn btn-danger" ng-click="delete()">
+                    <div class="glyphicon glyphicon-trash">
+                        Delete
+                    </div>
+                </button>
+            </td>
+        </tr>
+        <tr>
+            <td>Active</td>
+            <td>
+            <span class="label label-success" ng-show="token.active">
+                active
+            </span>
+            <span class="label label-danger" ng-hide="token.active">
+                disabled
+            </span>
+            <td>
+            <span ng-show="token.active"
+                  ng-click="disable()">
+                <button class="btn btn-danger">Disable</button>
+            </span>
+            <span ng-show="!token.active"
+                  ng-click="enable()">
+                <button class="btn btn-success">Enable</button>
+            </span>
+            </td>
+        </tr>
+        <tr token-data-edit text="Maxfail"
+            button-text="Set max fail"
+            token-data="{{ token.maxfail }}"
+            token-key="max_failcount"
+            input-pattern="[0-9]*"
+            callback-cancel="get()"
+            callback="set(key, value)"
+            logged-in-user="loggedInUser"></tr>
+        <tr>
+            <td>Fail counter</td>
+            <td><span class="label"
+                      ng-class="{'label-success': token.failcount==0,
+                   'label-warning': token.failcount>0,
+                   'label-danger': token.failcount>=token.maxfail}">
+            {{ token.failcount }}
+            </span></td>
+            <td>
+                <button class="btn btn-success"
+                        ng-show="token.failcount > 0"
+                        ng-click="reset()">
+                    Reset fail counter
+                </button>
+            </td>
+        </tr>
+        <tr>
+            <td>OTP Length</td>
+            <td>{{ token.otplen }}</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Count</td>
+            <td>{{ token.count }}</td>
+            <td></td>
+        </tr>
+        <tr token-data-edit text="Count Window"
+            button-text="Set count window"
+            token-data="{{ token.count_window }}"
+            token-key="count_window"
+            input-pattern="[0-9]*"
+            callback-cancel="get()"
+            callback="set(key, value)"
+            logged-in-user="loggedInUser"></tr>
+        <tr token-data-edit text="Sync Window"
+            button-text="Set sync window"
+            token-data="{{ token.sync_window }}"
+            token-key="sync_window"
+            input-pattern="[0-9]*"
+            callback-cancel="get()"
+            callback="set(key, value)"
+            logged-in-user="loggedInUser"></tr>
+        <!-- If setData is called within the directive tokenDataEdit,
+        the function set in the parent scope is called -->
+        <tr token-data-edit text="Description"
+            button-text="Set description"
+            token-data="{{ token.description }}"
+            token-key="description"
+            callback-cancel="get()"
+            callback="set(key, value)"
+            logged-in-user="loggedInUser"></tr>
+        <tr>
+            <td>Info</td>
+            <td>{{ token.info | json }}</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Realms</td>
+            <td><span ng-hide="editTokenRealm">
+            <ul ng-click="editTokenRealm = true;">
+                <li ng-repeat="realm in token.realms">{{ realm }}</li>
+            </ul>
+            </span>
+            <span ng-show="editTokenRealm">
+                <span ng-repeat="(realmname, realm) in realms">
+                    <label for="{{ realmname }}">
+                        <input type="checkbox"
+                               ng-model="selectedRealms[realmname]"
+                               name="group"
+                               id="{{ realmname }}"
+                               ng-checked="selectedRealms[realmname]">
+                        {{ realmname }}
+                    </label><br>
+                </span></span>
+            </td>
+            <td>
+                <div ng-show="loggedInUser.role == 'admin'">
+                    <button class="btn btn-primary"
+                            ng-hide="editTokenRealm"
+                            ng-click="startEditRealm()">Edit
+                    </button>
+                    <button class="btn btn-primary"
+                            ng-show="editTokenRealm"
+                            ng-click="saveRealm()">Save realms
+                    </button>
+                    <button class="btn btn-danger"
+                            ng-show="editTokenRealm"
+                            ng-click="cancelEditRealm();">Cancel
+                    </button>
+                </div>
+            </td>
+        </tr>
+
+        <!-- =================== TOKEN FUNCTIONS =============================== -->
+
+        <tr>
+            <td>
+                <input type="text" ng-model="otp1"
+                       class="form-control"
+                       placeholder="Enter first OTP value">
+            </td>
+            <td>
+                <input type="text" ng-model="otp2"
+                       class="form-control"
+                       placeholder="Enter second OTP value">
+            </td>
+            <td>
+                <button class="btn btn-primary"
+                        ng-disabled="(!otp1 || !otp2)"
+                        ng-click="resyncToken()">
+                    <div class="glyphicon glyphicon-refresh">
+                        Resync Token
+                    </div>
+                </button>
+                <span ng-click="resultResync=''">{{ resultResync }}</span>
+            </td>
+        </tr>
+
+        <tr>
+            <td>
+                <input type="password" ng-model="pin1"
+                       class="form-control"
+                       placeholder="Enter PIN for token">
+            </td>
+            <td>
+                <input type="password" ng-model="pin2"
+                       class="form-control"
+                       placeholder="Enter PIN again">
+            </td>
+            <td>
+                <button class="btn btn-primary"
+                        ng-disabled="pin1 != pin2"
+                        ng-click="setPin()">
+                    <div class="glyphicon glyphicon-pushpin">
+                        Set PIN
+                    </div>
+                </button>
+            </td>
+        </tr>
+
+        <tr>
+            <td></td>
+            <td>
+                <input type="text" ng-model="testPassword"
+                       name="testPassword"
+                       class="form-control"
+                       placeholder="Enter PIN and OTP to check the token.">
+            </td>
+            <td>
+
+                <button class="btn btn-primary" ng-disabled="!testPassword"
+                        ng-click="testOtp()">
+                    <div class="glyphicon glyphicon-question-sign">
+                        Test token
+                    </div>
+                </button>
+                <span class="label"
+                      ng-click="resultTestOtp=''"
+                      ng-class="{'label-success': resultTestOtp.result,
+                               'label-danger': resultTestOtp.result==false}">
+                {{ resultTestOtp.detail }}</span>
+            </td>
+        </tr>
+    </table>
+
+    <!-- =================== USER ASSIGN ================= -->
+
+    <div ng-show="loggedInUser.role == 'admin'">
+        <h4 ng-show="token.user_id">Assgined User</h4>
+        <table ng-show="token.user_id"
+               class="table table-striped table-bordered">
+            <tr>
+                <td>Username</td>
+                <td><a ui-sref="user.details({username: token.username,
+            realmname: token.user_realm})">
+                    {{ token.username }}</a></td>
+                <td>
+                    <button ng-click="unassign()"
+                            class="btn btn-warning">
+                        <div class="glyphicon glyphicon-resize-full">
+                            Unassign User
+                        </div>
+                    </button>
+                </td>
+            </tr>
+            <tr>
+                <td>Realm</td>
+                <td><a ui-sref="config.realms.list">{{ token.user_realm }}</a>
+                </td>
+            </tr>
+            <tr>
+                <td>Resolver</td>
+                <td><a ui-sref="config.resolvers.list">{{ token.resolver }}</a>
+                </td>
+            </tr>
+            <tr>
+                <td>User Id</td>
+                <td>{{ token.user_id }}</td>
+            </tr>
+        </table>
+    </div>
+    <div ng-show="loggedInUser.role== 'user'">
+        <button ng-click="unassign()"
+                class="btn btn-warning">
+            <div class="glyphicon glyphicon-resize-full">
+                Unassign Token
+            </div>
+        </button>
+    </div>
+</div>
+
+<h4 ng-hide="token.user_id">Assign User</h4>
+<form ng-hide="token.user_id" name="formAssignToken" role="form" validate>
+    <div assign-user new-user-object="newUser"></div>
+
+    <div class="text-center">
+        <button ng-click="assignUser()"
+                ng-disabled="formAssignToken.$invalid"
+                class="btn btn-primary">
+            <div clas="glyphicon glyphicon-resize-small">
+                Assign User
+            </div>
+        </button>
+    </div>
+</form>

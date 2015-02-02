@@ -1,0 +1,25 @@
+<!--
+This is the directive for assigning tokens to users.
+-->
+<div class="form-group">
+    <label for="serial">Serial</label>
+    <input name="serial" type="text" ng-model="newTokenObject.serial"
+           placeholder="start typing a serial number of a token that is not
+           assigned, yet."
+           typeahead="serial for serial in loadSerials($viewValue)"
+           typeahead-loading="loadingSerials" class="form-control" >
+    <i ng-show="loadingSerials" class="glyphicon glyphicon-refresh">Loading
+        serials...
+    </i>
+</div>
+<div class="form-group">
+    <label for="otppin">PIN</label>
+    <input name="otppin" ng-model="newTokenObject.pin"
+            type=password class="form-control"
+            euqals="{{pin2}}"
+            placeholder="Type a password">
+    <input name="otppin2" ng-model="pin2"
+            type=password class="form-control"
+            equals="{{newTokenObject.pin}}"
+            placeholder="Repeat password">
+</div>

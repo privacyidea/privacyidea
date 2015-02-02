@@ -5,6 +5,11 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2015-01-28 Rewrite during flask migration
+#             Change to use requests module
+#             Cornelius Kölbel <cornelius@privacyidea.org>
+#
+#
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  LSE
 #  contact:  http://www.linotp.org
@@ -24,23 +29,22 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''        
-  Description:  This file contains the definition of the yubikey token class
-  
-  Dependencies: -
+"""
+This is the implementation of the yubico token type.
+Authentication requests are forwarded to the Yubico Cloud service YubiCloud.
 
-'''
-
+The code is tested in tests/test_lib_tokens_yubico
+"""
 import logging
 
 import traceback
-
-from privacyidea.lib.util    import getParam
-from privacyidea.lib.config import getFromConfig
+import requests
+from privacyidea.api.lib.utils import getParam
+from privacyidea.lib.config import get_from_config
 from privacyidea.lib.log import log_with
+from privacyidea.lib.tokenclass import TokenClass
 from hashlib import sha1
 import hmac
-import urllib, urllib2
 import re
 import os
 import binascii
@@ -48,77 +52,61 @@ import binascii
 YUBICO_LEN_ID = 12
 YUBICO_LEN_OTP = 44
 YUBICO_URL = "http://api.yubico.com/wsapi/2.0/verify"
-DEFAULT_CLIENT_ID = 11759
-DEFAULT_API_KEY = "P1QVTgnToQWQm0b6LREEhDIAbHU="
+DEFAULT_CLIENT_ID = 20771
+DEFAULT_API_KEY = "9iE9DRkPHQDJbAFFC31/dum5I54="
 
 optional = True
 required = False
-
-from privacyidea.lib.tokenclass import TokenClass
-
 
 log = logging.getLogger(__name__)
 
 ###############################################
 class YubicoTokenClass(TokenClass):
-    """
-    The Yubico Cloud token forwards an authentication request to the Yubico Cloud service.
-    """
 
-    def __init__(self, aToken):
-        TokenClass.__init__(self, aToken)
-        self.setType(u"yubico")
-
+    def __init__(self, db_token):
+        TokenClass.__init__(self, db_token)
+        self.set_type(u"yubico")
         self.tokenid = ""
 
 
     @classmethod
-    def getClassType(cls):
+    def get_class_type(cls):
         return "yubico"
 
     @classmethod
-    def getClassPrefix(cls):
+    def get_class_prefix(cls):
         return "UBCM"
 
     @classmethod
     @log_with(log)
-    def getClassInfo(cls, key=None, ret='all'):
-        '''
-        getClassInfo - returns a subtree of the token definition
-
+    def get_class_info(cls, key=None, ret='all'):
+        """
         :param key: subsection identifier
         :type key: string
-
         :param ret: default return value, if nothing is found
         :type ret: user defined
-
         :return: subsection if key exists or user defined
-        :rtype: s.o.
-
-        '''
-        res = {
-               'type'           : 'yubico',
-               'title'          : 'Yubico Token',
-               'description'    : ('Yubico token to forward the authentication request to the Yubico Cloud authentication'),
-
-               'init'         : {'page' : {'html'      : 'yubicotoken.mako',
-                                            'scope'      : 'enroll', },
-                                   'title'  : {'html'      : 'yubicotoken.mako',
-                                             'scope'     : 'enroll.title', },
-                                   },
-
-               'config'        : { 'page' : {'html'      : 'yubicotoken.mako',
-                                            'scope'      : 'config', },
-                                   'title'  : {'html'      : 'yubicotoken.mako',
-                                             'scope'     : 'config.title', },
-                                 },
-               'selfservice'   :  { 'enroll' :
-                                   {'page' : {
-                                              'html'       : 'yubicotoken.mako',
-                                              'scope'      : 'selfservice.enroll', },
-                                    'title'  : {
-                                                'html'      : 'yubicotoken.mako',
-                                                'scope'      : 'selfservice.title.enroll', },
+        :rtype: dict or string
+        """
+        res = {'type': 'yubico',
+               'title': 'Yubico Token',
+               'description': 'Yubico token to forward the authentication '
+                              'request to the Yubico Cloud authentication',
+               'init': {'page': {'html': 'yubicotoken.mako',
+                                 'scope': 'enroll', },
+                        'title': {'html': 'yubicotoken.mako',
+                                   'scope': 'enroll.title'}
+               },
+               'config': {'page': {'html': 'yubicotoken.mako',
+                                   'scope': 'config'},
+                          'title': {'html': 'yubicotoken.mako',
+                                    'scope': 'config.title'}
+               },
+               'selfservice':  {'enroll': {'page': {
+                   'html': 'yubicotoken.mako',
+                   'scope': 'selfservice.enroll'},
+                                           'title': {'html': 'yubicotoken.mako',
+                                                     'scope': 'selfservice.title.enroll', },
                                     },
                                    },
                'policy' : {},
@@ -132,9 +120,7 @@ class YubicoTokenClass(TokenClass):
                 ret = res
         return ret
 
-
     def update(self, param):
-
         tokenid = getParam(param, "yubico.tokenid", required)
         if len(tokenid) < YUBICO_LEN_ID:
             log.error("The tokenid needs to be %i characters long!" % YUBICO_LEN_ID)
@@ -142,87 +128,92 @@ class YubicoTokenClass(TokenClass):
 
         if len(tokenid) > YUBICO_LEN_ID:
             tokenid = tokenid[:YUBICO_LEN_ID]
-
         self.tokenid = tokenid
-        self.setOtpLen(44)
-
+        # overwrite the maybe wrong lenght given at the command line
+        param['otplen'] = 44
         TokenClass.update(self, param)
-
-        self.addToTokenInfo("yubico.tokenid", self.tokenid)
-
-        return
+        self.add_tokeninfo("yubico.tokenid", self.tokenid)
 
     @log_with(log)
-    def checkOtp(self, anOtpVal, counter, window, options=None):
-        '''
+    def check_otp(self, anOtpVal, counter=None, window=None, options=None):
+        """
         Here we contact the Yubico Cloud server to validate the OtpVal.
-        '''
+        """
         res = -1
 
-        apiId = getFromConfig("yubico.id", DEFAULT_CLIENT_ID)
-        apiKey = getFromConfig("yubico.secret", DEFAULT_API_KEY)
+        apiId = get_from_config("yubico.id", DEFAULT_CLIENT_ID)
+        apiKey = get_from_config("yubico.secret", DEFAULT_API_KEY)
 
         if apiKey == DEFAULT_API_KEY or apiId == DEFAULT_CLIENT_ID:
-            log.warning("Usage of default apiKey or apiId not recomended!!")
+            log.warning("Usage of default apiKey or apiId not recomended!")
             log.warning("Please register your own apiKey and apiId at "
-                                                        "yubico website !!")
+                        "yubico website!")
             log.warning("Configure of apiKey and apiId at the "
-                                             "privacyidea manage config menue!!")
+                        "privacyidea manage config menu!")
 
-        tokenid = self.getFromTokenInfo("yubico.tokenid")
+        tokenid = self.get_tokeninfo("yubico.tokenid")
         if len(anOtpVal) < 12:
             log.warning("The otpval is too short: %r" % anOtpVal)
-
         elif anOtpVal[:12] != tokenid:
-            log.warning("the tokenid in the OTP value does not match the assigned token!")
-
+            log.warning("the tokenid in the OTP value does not match "
+                        "the assigned token!")
         else:
             nonce = binascii.hexlify(os.urandom(20))
-            p = urllib.urlencode({'nonce': nonce,
-                                    'otp':anOtpVal,
-                                    'id':apiId})
-            URL = "%s?%s" % (YUBICO_URL, p)
+            p = {'nonce': nonce,
+                 'otp': anOtpVal,
+                 'id' :apiId}
+
             try:
-                f = urllib2.urlopen(urllib2.Request(URL))
-                rv = f.read()
-                m = re.search('\nstatus=(\w+)\r', rv)
-                result = m.group(1)
+                r = requests.post(YUBICO_URL,
+                                  data=p)
 
-                m = re.search('nonce=(\w+)\r', rv)
-                return_nonce = m.group(1)
+                if r.status_code == requests.codes.ok:
+                    response = r.text
+                    m = re.search('status=(\w+)[\n,\r,\\\]', response)
+                    result = m.group(1)
 
-                m = re.search('h=(.+)\r', rv)
-                return_hash = m.group(1)
+                    m = re.search('nonce=(\w+)[\n,\r,\\\]', response)
+                    return_nonce = m.group(1)
 
-                # check signature:
-                elements = rv.split('\r')
-                hash_elements = []
-                for elem in elements:
-                    elem = elem.strip('\n')
-                    if elem and elem[:2] != "h=":
-                        hash_elements.append(elem)
+                    m = re.search('h=(.+?)[\n,\r,\\\]', response)
+                    return_hash = m.group(1)
 
-                hash_input = '&'.join(sorted(hash_elements))
+                    # check signature:
+                    elements = response.split('\r')
+                    hash_elements = []
+                    for elem in elements:
+                        elem = elem.strip('\n')
+                        if elem and elem[:2] != "h=":
+                            hash_elements.append(elem)
 
-                hashed_data = binascii.b2a_base64(hmac.new(
-                                                           binascii.a2b_base64(apiKey),
-                                                           hash_input,
-                                                           sha1).digest())[:-1]
+                    hash_input = '&'.join(sorted(hash_elements))
+                    hashed_data = binascii.b2a_base64(hmac.new(
+                                                               binascii.a2b_base64(apiKey),
+                                                               hash_input,
+                                                               sha1).digest())[:-1]
 
-                if hashed_data != return_hash:
-                    log.error("The hash of the return from the Yubico Cloud server does not match the data!")
+                    if hashed_data != return_hash:
+                        log.error("The hash of the return from the Yubico "
+                                  "Cloud server does not match the data!")
 
-                if nonce != return_nonce:
-                    log.error("The returned nonce does not match the sent nonce!")
+                    if nonce != return_nonce:
+                        log.error("The returned nonce does not match "
+                                  "the sent nonce!")
 
-                if result == "OK" and nonce == return_nonce and hashed_data == return_hash:
-                    res = 1
-                else:
-                    # possible results are listed here:
-                    # https://github.com/Yubico/yubikey-val/wiki/ValidationProtocolV20
-                    log.warning("failed with %r" % result)
+                    if result == "OK":
+                        res = 1
+                        if nonce != return_nonce or hashed_data != return_hash:
+                            log.warning("Nonce and Hash do not match.")
+                            res = -2
+                    else:
+                        # possible results are listed here:
+                        # https://github.com/Yubico/yubikey-val/wiki/ValidationProtocolV20
+                        log.warning("failed with %r" % result)
+
+
             except Exception as ex:
-                log.error("Error getting response from Yubico Cloud Server (%r): %r" % (URL, ex))
+                log.error("Error getting response from Yubico Cloud Server"
+                          " (%r): %r" % (YUBICO_URL, ex))
                 log.error("%r" % traceback.format_exc())
 
         return res

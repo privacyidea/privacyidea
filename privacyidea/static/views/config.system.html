@@ -1,0 +1,190 @@
+<form>
+    <div class="panel">
+        <div class="form-group col-sm-12">
+            <input name="splitAtSign" id="splitAtSign"
+                   ng-model="params.splitAtSign"
+                   type="checkbox"
+                    ng-checked="isChecked(params.splitAtSign)"/>
+            <label for="splitAtSign">Use @ sign to split the username
+                and the realm.</label>
+        </div>
+        <div class="form-group col-sm-12">
+            <input name="IncFailCountOnFalsePin" id="IncFailCountOnFalsePin"
+                   ng-model="params.IncFailCountOnFalsePin"
+                   type="checkbox"
+                   ng-checked="isChecked(params.IncFailCountOnFalsePin)"/>
+            <label for="IncFailCountOnFalsePin">Increase the failcounter if
+                the wrong PIN was entered.
+            </label>
+        </div>
+        <div class="form-group col-sm-12">
+            <input name="PrependPin" id="PrependPin"
+                   ng-model="params.PrependPin"
+                   type="checkbox"
+                    ng-checked="isChecked(params.PrependPin)"/>
+            <label for="PrependPin">Prepend the PIN in front of the OTP value
+                . Otherwise it will be post pended.
+            </label>
+        </div>
+
+        <div class="form-group col-sm-12">
+            <input name="ReturnSamlAttributes" id="ReturnSamlAttributes"
+                   ng-model="params.ReturnSamlAttributes"
+                   type="checkbox"
+                    ng-checked="isChecked(params.ReturnSamlAttributes)"/>
+            <label for="ReturnSamlAttributes">Include SAML attributes in the
+                authentication response.
+            </label>
+        </div>
+
+        <div class="form-group col-sm-12">
+            <input name="AutoResync" id="AutoResync"
+                   ng-model="params.AutoResync"
+                   type="checkbox"
+                    ng-checked="isChecked(params.AutoResync)"/>
+            <label for="AutoResync">Automatic resync during authentication
+            </label>
+        </div>
+        <div class="form-group">
+            <label for="AutoResyncTimeout"
+                   class="col-sm-9 control-label">Auto resync timeout
+            </label>
+
+            <div class="col-sm-3">
+                <input name="AutoResyncTimeout" class="form-control"
+                       ng-disabled="!params.AutoResync"
+                       ng-model="params.AutoResyncTimeout"
+                       placeholder="300"/>
+            </div>
+        </div>
+        <div class="form-group col-sm-12">
+            <input name="PassOnUserNotFound" id="PassOnUserNotFound"
+                   ng-model="params.PassOnUserNotFound"
+                   type="checkbox"
+                    ng-checked="isChecked(params.PassOnUserNotFound)"/>
+            <label for="PassOnUserNotFound">Pass, if the user does not exist
+            </label>
+        </div>
+        <div class="form-group col-sm-12">
+            <input name="PassOnUserNoToken" id="PassOnUserNoToken"
+                   ng-model="params.PassOnUserNoToken"
+                   type="checkbox"
+                    ng-checked="isChecked(params.PassOnUserNoToken)"/>
+            <label for="PassOnUserNoToken">Pass, if the user has no token
+            </label>
+        </div>
+
+        <div class="form-group">
+            <label for="AutoResyncTimeout"
+                   class="col-sm-4 control-label">Override Authorization Clients
+            </label>
+
+            <div class="col-sm-8">
+                <input name="OverrideAuthorizationClient" class="form-control"
+                       ng-model="params.OverrideAuthorizationClient"
+                       placeholder="127.0.0.1, 10.0.0.8"/>
+
+                <p class="help-block">These client IP addresses or subnets are
+                    allowed to masquerade as another client.
+                </p>
+            </div>
+        </div>
+
+        <div class="well col-sm-12">
+
+            <div class="form-group">
+                <label for="DefaultOtpLen"
+                       class="col-sm-9 control-label">OTP length of
+                    newly enrolled tokens</label>
+
+                <div class="col-sm-3">
+                    <input name="DefaultOtpLen" class="form-control"
+                           ng-model="params.DefaultOtpLen"
+                           placeholder="6"/>
+                </div>
+            </div>
+
+
+            <div class="form-group">
+                <label for="DefaultCountWindow"
+                       class="col-sm-9 control-label">Count Window of
+                    newly enrolled tokens</label>
+
+                <div class="col-sm-3">
+                    <input name="DefaultCountWindow" class="form-control"
+                           ng-model="params.DefaultCountWindow"
+                           placeholder="10"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="DefaultMaxFailCount"
+                       class="col-sm-9 control-label">Max Failcount of
+                    newly enrolled tokens</label>
+
+                <div class="col-sm-3">
+                    <input name="DefaultMaxFailCount" class="form-control"
+                           ng-model="params.DefaultMaxFailCount"
+                           placeholder="10"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="DefaultSyncWindow"
+                       class="col-sm-9 control-label">Sync Window of
+                    newly enrolled tokens</label>
+
+                <div class="col-sm-3">
+                    <input name="DefaultSyncWindow" class="form-control"
+                           ng-model="params.DefaultSyncWindow"
+                           placeholder="1000"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="DefaultChallengeValidityTime"
+                       class="col-sm-9 control-label">The challenge validity
+                    time
+                </label>
+
+                <div class="col-sm-3">
+                    <input name="DefaultChallengeValidityTime"
+                           class="form-control"
+                           ng-model="params.DefaultChallengeValidityTime"
+                           placeholder="120"/>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="well col-sm-12">
+            <div class="form-group  col-sm-12">
+                <input name="UiLoginDisplayHelpButton"
+                       id="UiLoginDisplayHelpButton"
+                       ng-model="params.UiLoginDisplayHelpButton"
+                       type="checkbox"
+                        ng-checked="isChecked(params.UiLoginDisplayHelpButton)"/>
+                <label for="UiLoginDisplayHelpButton">Display Help Button on
+                    Login
+                    Screen.
+                </label>
+            </div>
+            <div class="form-group  col-sm-12">
+                <input name="UiLoginDisplayRealmBox" id="UiLoginDisplayRealmBox"
+                       ng-model="params.UiLoginDisplayRealmBox"
+                       type="checkbox"
+                        ng-checked="isChecked(params.UiLoginDisplayRealmBox)"/>
+                <label for="UiLoginDisplayRealmBox">Display Realm Box on Login
+                    Screen.
+                </label>
+            </div>
+        </div>
+
+
+        <div class="text-center">
+            <button ng-click="saveSystemConfig()"
+                    class="btn btn-primary">Save System Config
+            </button>
+        </div>
+
+    </div>
+</form>

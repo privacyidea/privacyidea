@@ -1,0 +1,32 @@
+<h2>RADIUS Token settings</h2>
+<p class="help-block">
+    The RADIUS token forwards the authentication request to another
+    privacyIDEA server.
+</p>
+
+<div class="form-group">
+    <label for="radiusServer">Default RADIUS Server</label>
+    <input type="text"
+           required
+           class="form-control"
+           placeholder="your.radius.server:1812"
+           ng-model="form['radius.server']" name="radiusServer">
+</div>
+
+<div class="form-group">
+    <label for="radiusDict">RADIUS dictionary file</label>
+    <input type="text"
+           required
+           class="form-control"
+           placeholder="/etc/privacyidea/dictionary"
+           ng-model="form['radius.dictfile']" name="radiusDict">
+</div>
+
+<div class="form-group">
+    <label for="radiusSecret">Default RADIUS Secret</label>
+    <input type="text"
+           required
+           class="form-control"
+           placeholder="testing123"
+           ng-model="form['radius.secret']" name="radiusSecret">
+</div>

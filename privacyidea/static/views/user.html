@@ -1,0 +1,40 @@
+<div class="well" ng-controller="userController">
+
+    <div class="row">
+        <div class="col-lg-3">
+            <div class="pa-sidebar panel">
+                <ul class="nav nav-pills nav-stacked">
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('user.list')}"><a
+                            ui-sref="user.list">All
+                        users</a> </li>
+                    <li role="presentation"
+                            ng-show="$state.includes('user.list')">
+                        Select Realm
+                        <select class="form-control"
+
+                                ng-change="changeRealm()"
+                                ng-model="selectedRealm">
+                            <option ng-repeat="(realmname, realm) in realms"
+                                    ng-selected="realm.default">{{ realmname }}</option>
+                        </select>
+                    </li>
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('user.details')}"
+                        ng-show="$state.includes('user.details')"><a>User
+                    {{ $stateParams.username }}</a></li>
+                    <li>Quick links</li>
+                    <li>
+                        <a ui-sref="config.realms.list">Edit realms</a>
+                    </li>
+                    <li>total users: {{ usercount }}</li>
+                </ul>
+            </div>
+
+        </div>
+
+        <div ui-view class="col-lg-9 slide panel">
+        </div>
+    </div>
+
+</div>

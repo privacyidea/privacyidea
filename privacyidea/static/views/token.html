@@ -1,0 +1,49 @@
+<div class="well" ng-controller="tokenController">
+
+    <div class="row">
+        <div class="col-lg-3">
+            <div class="pa-sidebar panel">
+                <ul class="nav nav-pills nav-stacked">
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('token.list')}"><a
+                            ui-sref="token.list">All
+                        tokens</a> </li>
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('token.details')}"
+                        ng-show="$state.includes('token.details')"><a>Token
+                            {{ $stateParams.tokenSerial }}</a>
+                    </li>
+
+                    <li role="presentation"
+                            ng-class="{active: $state.includes('token.enroll')}"
+                            >
+                        <a ui-sref="token.enroll">
+                            <span class="glyphicon glyphicon-edit"></span>
+                            Enroll Token</a>
+                    </li>
+
+                    <li role="presentation"
+                            ng-class="{active: $state.includes('token.import')}"
+                            ng-show="loggedInUser.role == 'admin'"
+                            >
+                        <a ui-sref="token.import">
+                            <span class="glyphicon glyphicon-upload"></span>
+                            Import Tokens</a>
+                    </li>
+
+                </ul>
+                <hr>
+                <div>
+                    total tokens: {{ tokendata.count }}
+                </div>
+
+            </div>
+
+        </div>
+
+        <div ui-view class="col-lg-9 slide panel">
+        </div>
+    </div>
+
+</div>
+

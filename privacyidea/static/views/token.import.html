@@ -1,0 +1,60 @@
+<h3>Import tokens from a file</h3>
+
+<form name="formImportToken" role="form" validate>
+    <select id="filetype"
+            class="form-control"
+            ng-change="changeFileType()"
+            ng-model="form.type"
+            ng-options="type for type in formInit.fileTypes"
+            >
+    </select>
+
+    <div ng-show="form.type==='OATH CSV'">
+        <p class="help-block">
+            Here you can upload a csv file for your OATH token.
+            The file is supposed to contain one token per line.
+        </p>
+
+        <p class="help-block">
+            For HOTP and TOTP tokens:
+        </p>
+
+        <p class="help-block">
+            serial number, seed, type, otplen, timeStep
+        </p>
+
+        <p class="help-block">
+            For OCRA tokens:
+        </p>
+
+        <p class="help-block">
+            serial number, seed, type, ocrasuite
+        </p>
+
+        <p class="help-block">
+            type (default hotp), otplen (default 6), timeStep (default 30) and
+            ocrasuite are optional.
+        </p></div>
+
+    <div ng-show="form.type==='Yubikey CSV'">
+        <p class="help-block">
+            Here you can upload a csv file for your Yubikey token.
+            The file is supposed to contain one token per line:
+        </p>
+    </div>
+
+
+    <div class="form-group">
+        <label for="importFile">File input</label>
+        <input type="file" class="form-control"
+                id="importFile" ng-model="importFile">
+
+    </div>
+
+    <div class="text-center">
+        <button ng-click="importFile()"
+                ng-disabled="!importFile"
+                class="btn btn-primary">Import token
+        </button>
+    </div>
+</form>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html ng-app="privacyideaApp">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Cornelius Kölbel">
+    <link rel="icon" href="../../favicon.ico">
+    <!-- Custom styles for this template -->
+    <link href="/static/css/signin.css" rel="stylesheet">
+    <link href="/static/contrib/css/animate.css" rel="stylesheet">
+    <link href="/static/css/navbar-fixed-top.css" rel="stylesheet">
+    <link href="/static/contrib/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/contrib/css/bootstrap-theme.css" rel="stylesheet"/>
+
+</head>
+<body ng-controller="mainController">
+
+<div class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="#">privacyIDEA</a>
+        <button type="button" class="navbar-toggle"
+                data-toggle="collapse" data-target=".myMainNavbar"
+                aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </button>
+
+        <div class="navbar-collapse collapse myMainNavbar">
+            <ul class="nav navbar-nav">
+                <li ng-class="{active: $state.includes('token')}"
+                    ng-hide="$state.includes('login')">
+                    <a ui-sref="token">
+                    <span class="glyphicon glyphicon-phone"
+                          aria-hidden="true"></span>
+                        Token View</a></li>
+                <li ng-class="{active: $state.includes('user')}"
+                    ng-show="loggedInUser.role == 'admin'">
+                    <a ui-sref="user">
+                    <span class="glyphicon glyphicon-user"
+                          aria-hidden="true"></span>
+                        User View</a></li>
+                <li ng-class="{active: $state.includes('config')}"
+                    ng-show="loggedInUser.role == 'admin'">
+                    <a ui-sref="config">
+                        <span class="glyphicon glyphicon-list"
+                              aria-hidden="true"></span>
+                        Config
+                    </a>
+                </li>
+                <li ng-class="{active: $state.includes('audit')}"
+                    ng-hide="$state.includes('login')">
+                    <a ui-sref="audit">
+                        <span class="glyphicon glyphicon-search"
+                              aria-hidden="true"></span>
+                        Audit
+                    </a>
+                </li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li><a ui-sref="login" ng-hide="loggedInUser.username">Login</a>
+                </li>
+                <li>
+                    <button ng-show="loggedInUser.username"
+                            ng-click="logout()"
+                            class="btn btn-sm btn-warning">
+                        Logout
+                        {{ loggedInUser.username }} @{{ loggedInUser.realm }}<br>
+                    (Role: {{ loggedInUser.role }})</button>
+                </li>
+            </ul>
+
+
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-danger" ng-show="showError">
+    {{ restError.error.message }}
+	<span class="glyphicon glyphicon-remove"
+		ng-click="errorOK()"></span>
+</div>
+<div class="alert alert-warning" ng-show="logoutWarning">
+	You will be logged out in {{ myCountdown }} second(s).
+</div>
+<div class="container">
+    <div ui-view class="slide"></div>
+</div>
+<!-- /container -->
+<!--
+<button type="button" class="btn btn-default btn-lg">
+  <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
+    Refresh
+</button>
+-->
+<div class="well">
+    <pre>
+      $state = {{$state.current.name}}
+      $stateParams = {{$stateParams}}
+      $state full url = {{ $state.$current.url.source }}
+    </pre>
+
+</div>
+
+<div class="navbar navbar-inverse navbar-fixed-bottom">
+    <div class="container">
+        <p class="navbar-text pull-left">
+            <!-- privacyIDEA-->
+        </p>
+        <a class="navbar-btn btn btn-success pull-right"
+           href="https://netknights.it/leistungen/support/"
+           target="_external">
+            Support
+        </a>
+        <a class="navbar-btn btn btn-danger pull-right"
+                href="https://groups.google.com/forum/#!forum/privacyidea"
+                target="_external">
+            privacyIDEA google group</a>
+    </div>
+</div>
+
+<!--load all javascripts after the HTML part-->
+<script src="/static/contrib/js/angular.js"></script>
+<script src="/static/contrib/js/ui-bootstrap-custom-tpls-0.12.0.js"></script>
+<script src="/static/contrib/js/jquery-1.11.2.min.js"></script>
+<script src="/static/contrib/js/bootstrap.min.js"></script>
+<script src="/static/contrib/js/ngmodules/angular-route.js"></script>
+<script src="/static/contrib/js/ngmodules/angular-ui-router.js"></script>
+<script src="/static/contrib/js/ngmodules/angular-animate.min.js"></script>
+<script src="/static/contrib/js/ngmodules/angular-idle.min.js"></script>
+<script src="/static/js/app.js"></script>
+<script src="/static/js/components/directives.js"></script>
+<script src="/static/js/components/factory/auth.js"></script>
+<script src="/static/js/components/states/config.js"></script>
+<script src="/static/js/components/factory/token.js"></script>
+<script src="/static/js/components/factory/user.js"></script>
+<script src="/static/js/components/factory/config.js"></script>
+<script src="/static/js/components/factory/validate.js"></script>
+<script src="/static/js/components/factory/audit.js"></script>
+<script src="/static/js/controllers/loginControllers.js"></script>
+<script src="/static/js/controllers/tokenControllers.js"></script>
+<script src="/static/js/controllers/configControllers.js"></script>
+<script src="/static/js/controllers/userControllers.js"></script>
+<script src="/static/js/controllers/auditControllers.js"></script>
+
+</body>
+</html>

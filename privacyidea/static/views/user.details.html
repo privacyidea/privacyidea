@@ -1,0 +1,126 @@
+<div class="panel" ng-controller="userDetailsController">
+    <!--
+     The controller provides $scope.User with
+        description: "PulseAudio daemon,,,"
+        email: ""
+        givenname: "PulseAudio"
+        mobile: ""
+        phone: ""
+        surname: "daemon"
+        userid: "115"
+        username: "pulse"
+    -->
+    <h2>Details for user {{ username }} in realm
+        <a ui-sref="config.realms.list">{{ realmname }}</a>
+        <a class="btn btn-default" ui-sref="audit({user: username})">
+        View user in Audit log</a>
+    </h2>
+
+    <div class="panel-body">
+        <div class="col-xs-6">
+            <div class="form-group">
+                <label for="username">Username</label>
+
+                <div name="username">{{ User.username }}</div>
+            </div>
+            <div class="form-group">
+                <label for="givenname">Given name</label>
+
+                <div name="givenname">{{ User.givenname }}</div>
+            </div>
+            <div class="form-group">
+                <label for="surname">Surname</label>
+
+                <div name="surname">{{ User.surname }}</div>
+            </div>
+        </div>
+        <div class="col-xs-6">
+            <div class="form-group">
+                <label for="email">Email</label>
+
+                <div name="email"><a href="mailto:{{ User.email }}">
+                    {{ User.email }}</a></div>
+            </div>
+            <div class="form-group">
+                <label for="phone">Phone</label>
+
+                <div name="phone">{{ User.phone }}</div>
+            </div>
+            <div class="form-group">
+                <label for="mobile">Mobile</label>
+
+                <div name="mobile">{{ User.mobile }}</div>
+            </div>
+        </div>
+    </div>
+    <h3>Tokens for user {{ username }}</h3>
+    <!-- Tokens for user -->
+    <pagination ng-show="tokendata.count > 5"
+                total-items="tokendata.count" ng-model="params.page"
+                items-per-page="{{ tokensPerPage }}"
+                max-size="5"
+                boundary-links="true" ng-change="pageChanged()"></pagination>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead>
+            <tr>
+                <th>serial</th>
+                <th>type</th>
+                <th>Active</th>
+                <th>window</th>
+                <th>description</th>
+                <th>failcounter</th>
+                <th>maxfail</th>
+                <th>otplen</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="token in tokendata.tokens">
+                <td><a ui-sref="token.details({tokenSerial:token.serial,
+            currentToken:token})"
+                       ng-click="$rootScope.returnTo=user.list;">
+                    {{ token.serial }}</a></td>
+                <td>{{ token.tokentype }}</td>
+                <td>
+                <span class="label label-success" ng-show="token.active">
+                    active
+                </span>
+                <span class="label label-danger" ng-hide="token.active">
+                    disabled
+                </span>
+                </td>
+                <td>{{ token.count_window }}</td>
+                <td>{{ token.description }}</td>
+                <td><span class="label"
+                          ng-class="{'label-success': token.failcount==0,
+                                    'label-warning': token.failcount>0,
+                                    'label-danger': token.failcount>=token.maxfail}">
+                    {{ token.failcount }}
+                </span>
+                </td>
+                <td>{{ token.maxfail }}</td>
+                <td>{{ token.otplen }}</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="text-center">
+        <button ng-click="enrollToken()" class="btn btn-primary">
+            Enroll New
+            Token
+        </button>
+    </div>
+
+    <h3>Assign a new token {{ newTokenObject.serial }}</h3>
+
+    <form name="formAssignToken" role="form" validate>
+        <div assign-token new-token-object="newToken"></div>
+        <div class="text-center">
+            <button ng-click="assignToken()"
+                    ng-disabled="formAssignToken.$invalid"
+                    class="btn btn-primary">Assign Token
+            </button>
+        </div>
+    </form>
+</div>

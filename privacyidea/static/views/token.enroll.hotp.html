@@ -1,0 +1,45 @@
+<p class="help-block">
+The HOTP token is an event based token. You can paste a secret key or
+    have the server generate the secret and scan the QR code.
+</p>
+
+<h4>Token data</h4>
+<div class="form-group">
+    <input type="checkbox" ng-model="form.genkey"
+           name="generate" id="generate">
+    <label for="generate">Generate OTP Key on the Server</label>
+
+    <div ng-show="form.genkey">
+        <p class="help-block">
+            The server will create the OTP value
+            and a QR Code
+            will be
+            displayed to you to be scanned.
+        </p>
+    </div>
+</div>
+<div class="form-group" ng-hide="form.genkey">
+    <label for="otpkey">OTP Key</label>
+    <input type="text" ng-pattern="/^[0-9a-fA-F]*$/"
+           autofocus
+           class="form-control"
+           placeholder="Enter OTP key..."
+           ng-model="form.otpkey" name="otpkey">
+</div>
+<div class="form-group">
+    <label for="otplen">OTP length</label>
+    <select class="form-control"
+            id="otplen"
+            ng-model="form.otplen"
+            ng-options="otplen for otplen in formInit.otplens">
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="hashlib">Hash algorithm</label>
+    <select class="form-control"
+            id="hashlib"
+            ng-model="form.hashlib"
+            ng-options="hashlib for hashlib in formInit.hashlibs">
+    </select>
+</div>

@@ -1,0 +1,74 @@
+<h3>Enroll a new token</h3>
+
+<!-- hide the form, after the token was enrolled -->
+<div ng-hide="enrolledToken">
+    <form name="formEnrollToken" role="form" validate>
+
+        <select class="form-control"
+                id="tokentype"
+                ng-change="changeTokenType()"
+                ng-model="form.type"
+                ng-options="type as desc for (type, desc) in formInit.tokenTypes"
+                >
+        </select>
+        <!-- This is the token data section. It differs for every token type-->
+        <ng-include src="'/static/views/token.enroll.' + form.type + '.html'">
+        </ng-include>
+
+        <div ng-show="loggedInUser.role == 'admin'">
+            <h4>Assign token to user</h4>
+
+            <div assign-user new-user-object="newUser" realms="realms"
+                 default-realm="defaultRealm"></div>
+
+            <div class="msg-block"
+                 ng-show="formEnrollToken.otppin2.$error.passwordVerify">
+                <span class="msg-error">OTP PINs do not match!</span>
+            </div>
+        </div>
+        <div class="form-group"
+             ng-show="loggedInUser.role == 'user'">
+            <label for="otppin">PIN</label>
+            <input name="otppin" ng-model="newUser.pin"
+                   type=password class="form-control"
+                   euqals="{{ pin2 }}"
+                   placeholder="Type a password">
+            <input name="otppin2" ng-model="pin2"
+                   type=password class="form-control"
+                   equals="{{ newUser.pin }}"
+                   placeholder="Repeat password">
+        </div>
+
+
+        <div class="text-center">
+            <button ng-click="enrollToken()"
+                    ng-disabled="formEnrollToken.$invalid"
+                    class="btn btn-primary">Enroll Token
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Show this information after the token was enrolled -->
+<div ng-show="enrolledToken">
+    <p>
+        The token was successfully enrolled with serial number
+        <a ui-sref="token.details({tokenSerial:enrolledToken.serial})">
+            {{ enrolledToken.serial }}</a>
+        <span ng-show="newUser.user && loggedInUser.role == 'admin'">
+        for user
+        <a ui-sref="user.details({username:newUser.user, realmname:newUser.realm})"
+                >{{ newUser.user }}</a> in realm
+            {{ newUser.realm }}</span>.
+    </p>
+
+    <!-- This is the token data section. It differs for every token type-->
+    <ng-include src="'/static/views/token.enrolled.' + form.type + '.html'">
+    </ng-include>
+
+    <div class="text-center">
+        <button ng-click="enrolledToken = null;"
+                class="btn btn-primary">Enroll a new token
+        </button>
+    </div>
+</div>

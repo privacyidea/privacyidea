@@ -1,0 +1,56 @@
+<p class="help-block">
+    The Yubikey Token is an USB device that emits an event based One Time
+    Password. You can initialize the Yubikey using the tool ykpersonalize.
+    Paste the secret hex key here.
+    You also need to choose, if the Yubikey emits the additional UID, which
+    is either 12 or 16 characters long. You can check this in the test field.
+</p>
+
+<h4>Token data</h4>
+
+<div class="form-group">
+    <label for="yubikeyTest">Test Yubikey</label>
+    <input type="text"
+           autofocus
+           class="form-control"
+           placeholder="Push Yubikey button here..."
+           ng-model="tempData.yubikeyTest" name="yubikeyTest"
+           ng-change="yubikeyGetLen()">
+</div>
+
+<div class="form-group">
+    <input type="checkbox" ng-model="tempData.yubikeyUid"
+           name="yubikeyUID" id="yubikeyUID">
+    <label for="yubikeyUID">emit a public UID</label>
+
+    <div ng-show="tempData.yubikeyUid">
+    <label for="yubikeyUidLen">Length of UID</label>
+    <select ng-model="tempData.yubikeyUidLen"
+            name="yubikeyUidLen">
+        <option>12</option>
+        <option>16</option>
+    </select>
+        </div>
+</div>
+
+<div class="form-group">
+    <label for="otpkey">OTP Key</label>
+    <input type="text" ng-pattern="/^[0-9a-fA-F]*$/"
+           ng-init="form.genkey=false"
+           autofocus
+           class="form-control"
+           placeholder="Enter OTP key..."
+           required
+           ng-model="form.otpkey" name="otpkey">
+</div>
+<div class="form-group">
+    <label for="otplen">OTP length</label>
+    <select class="form-control"
+            id="otplen"
+            required
+            ng-model="form.otplen">
+        <option>32</option>
+        <option>44</option>
+        <option>48</option>
+    </select>
+</div>

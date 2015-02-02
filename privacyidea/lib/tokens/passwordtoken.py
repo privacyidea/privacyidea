@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 #
 #  privacyIDEA is a fork of LinOTP
+#  2014-12-05 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Migration to flask
+#
 #  May 08, 2014 Cornelius Kölbel
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
@@ -11,47 +14,42 @@
 #            http://www.lsexperts.de
 #            linotp@lsexperts.de
 
-'''
-  Description:  This file contains the definition of the password token class
-  
-  Dependencies: -
-
-'''
+"""
+This file contains the definition of the password token class
+"""
 
 import logging
-from privacyidea.lib.crypto   import zerome
-
+from privacyidea.lib.crypto import zerome
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
 
 optional = True
 required = False
 
-from privacyidea.lib.tokenclass import TokenClass
-
 log = logging.getLogger(__name__)
 
-###############################################
+
 class PasswordTokenClass(TokenClass):
-    '''
+    """
     This Token does use a fixed Password as the OTP value.
     In addition, the OTP PIN can be used with this token.
     This Token can be used for a scenario like losttoken
-    '''
+    """
 
-    class __secretPassword__(object):
+    class _secretPassword(object):
 
         def __init__(self, secObj):
             self.secretObject = secObj
 
-        def getPassword(self):
+        def get_password(self):
             return self.secretObject.getKey()
 
-        def checkOtp(self, anOtpVal):
+        def check_password(self, password):
             res = -1
 
             key = self.secretObject.getKey()
 
-            if key == anOtpVal:
+            if key == password:
                 res = 0
 
             zerome(key)
@@ -62,36 +60,38 @@ class PasswordTokenClass(TokenClass):
     def __init__(self, aToken):
         TokenClass.__init__(self, aToken)
         self.hKeyRequired = True
-        self.setType(u"pw")
+        self.set_type(u"pw")
 
     @classmethod
-    def getClassType(cls):
+    def get_class_type(cls):
         return "pw"
 
     @classmethod
+    def get_class_prefix(cls):
+        return "PW"
+
+    @classmethod
     @log_with(log)
-    def getClassInfo(cls, key=None, ret='all'):
-        '''
-        getClassInfo - returns a subtree of the token definition
+    def get_class_info(cls, key=None, ret='all'):
+        """
+        returns a subtree of the token definition
 
         :param key: subsection identifier
         :type key: string
-
         :param ret: default return value, if nothing is found
         :type ret: user defined
-
         :return: subsection if key exists or user defined
-        :rtype: s.o.
-
-        '''
-        res = {
-               'type'           : 'pw',
-               'title'          : 'Password Token',
-               'description'    : ('A token with a fixed password. Can be combined with the OTP PIN. Is used for the lost token scenario.'),
-               'init'         : {},
-               'config'        : {},
-               'selfservice'   :  {},
-               'policy' : {},
+        :rtype: dict or scalar
+        """
+        res = {'type': 'pw',
+               'title': 'Password Token',
+               'description': ('A token with a fixed password. Can be '
+                               'combined  with the OTP PIN. Is used for the '
+                               'lost token scenario.'),
+               'init': {},
+               'config': {},
+               'selfservice':  {},
+               'policy': {},
                }
         # I don't think we need to define the lost token policies here...
 
@@ -100,39 +100,51 @@ class PasswordTokenClass(TokenClass):
         else:
             if ret == 'all':
                 ret = res
-
         return ret
 
 
 
     def update(self, param):
-
+        """
+        This method is called during the initialization process.
+        :param param: parameters from the token init
+        :type param: dict
+        :return: None
+        """
+        """
+        :param param:
+        :return:
+        """
         TokenClass.update(self, param)
-        # The otplen is determined by the otpkey. So we
-        # call the setOtpLen after the parents update, to overwrite
-        # specified OTP lengths with the length of the password
-        self.setOtpLen(0)
+        self.set_otplen()
 
     @log_with(log)
-    def setOtpLen(self, otplen):
-        '''
+    def set_otplen(self, otplen=0):
+        """
         sets the OTP length to the length of the password
-        '''
-        secretHOtp = self.token.getHOtpKey()
-        sp = PasswordTokenClass.__secretPassword__(secretHOtp)
-        pw_len = len(sp.getPassword())
-        TokenClass.setOtpLen(self, pw_len)
+
+        :param otplen: This is ignored in this class
+        :type otplen: int
+        :result: None
+        """
+        secretHOtp = self.token.get_otpkey()
+        sp = PasswordTokenClass._secretPassword(secretHOtp)
+        pw_len = len(sp.get_password())
+        TokenClass.set_otplen(self, pw_len)
         return
 
     @log_with(log, log_entry=False)
-    def checkOtp(self, anOtpVal, counter, window, options=None):
-        '''
+    def check_otp(self, anOtpVal, counter=None, window=None, options=None):
+        """
         This checks the static password
-        '''
-        log.debug("checkOtp of PasswordToken")
 
-        secretHOtp = self.token.getHOtpKey()
-        sp = PasswordTokenClass.__secretPassword__(secretHOtp)
-        res = sp.checkOtp(anOtpVal)
+        :param anOtpVal: This contains the "OTP" value, which is the static
+        password
+        :return: result of password check, 0 in case of success, -1 if fail
+        :rtype: int
+        """
+        secretHOtp = self.token.get_otpkey()
+        sp = PasswordTokenClass._secretPassword(secretHOtp)
+        res = sp.check_password(anOtpVal)
 
         return res

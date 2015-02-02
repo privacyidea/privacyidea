@@ -5,6 +5,10 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2015-01-27 Rewrite due to flask migration
+#             Cornelius Kölbel <cornelius@privacyidea.org>
+#
+#
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  LSE
 #  contact:  http://www.linotp.org
@@ -24,17 +28,15 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''    
-  Description:  This file contains the definition of the simple pass token class
-  
-  Dependencies: -
+__doc__="""This is the implementation of the simple pass token.
+The simple pass token always returns TRUE as far as the checkOTP is concerned.
+Thus a user with a simple pass token can authenticate by just providing the
+OTP PIN of the token.
 
-'''
+This code is tested in tests/test_lib_tokens_spass
+"""
 
 import logging
-
-from privacyidea.lib.util    import getParam
-from privacyidea.lib.validate import check_pin
 from privacyidea.lib.log import log_with
 
 optional = True
@@ -45,55 +47,51 @@ from privacyidea.lib.tokenclass import TokenClass
 log = logging.getLogger(__name__)
 
 
-
-
 class SpassTokenClass(TokenClass):
-    '''
+    """
     This is a simple pass token.
     It does have no OTP component. The OTP checking will always
     succeed. Of course, an OTP PIN can be used.
-    '''
-    def __init__(self, aToken):
-        TokenClass.__init__(self, aToken)
-        self.setType(u"spass")
+    """
+    def __init__(self, db_token):
+        TokenClass.__init__(self, db_token)
+        self.set_type(u"spass")
         self.mode = ['authenticate']
 
     @classmethod
-    def getClassType(cls):
+    def get_class_type(cls):
         return "spass"
 
     @classmethod
-    def getClassPrefix(cls):
-        return "LSSP"
+    def get_class_prefix(cls):
+        return "PISP"
 
     @classmethod
     @log_with(log)
-    def getClassInfo(cls, key=None, ret='all'):
-        '''
-        getClassInfo - returns a subtree of the token definition
+    def get_class_info(cls, key=None, ret='all'):
+        """
+        returns a subtree of the token definition
+        Is used by lib.token.get_token_info
 
         :param key: subsection identifier
         :type key: string
-
         :param ret: default return value, if nothing is found
         :type ret: user defined
-
         :return: subsection if key exists or user defined
-        :rtype: s.o.
-
-        '''
-        res = {
-               'type'           : 'spass',
-               'title'          : 'Simple Pass Token',
-               'description'    : ('A token that allows the user to simply pass. Can be combined with the OTP PIN.'),
-               'init'         : {'page' : {'html'      : 'spasstoken.mako',
-                                            'scope'      : 'enroll', },
-                                   'title'  : {'html'      : 'spasstoken.mako',
-                                             'scope'     : 'enroll.title', },
-                                   },
-               'config'        : {},
-               'selfservice'   :  {},
-               'policy' : {},
+        :rtype: dict
+        """
+        res = {'type' :'spass',
+               'title' :'Simple Pass Token',
+               'description': ('A token that allows the user to simply pass. '
+                               'Can be combined with the OTP PIN.'),
+               'init': {'page': {'html': 'spasstoken.mako',
+                                 'scope': 'enroll'},
+                        'title': {'html': 'spasstoken.mako',
+                                  'scope': 'enroll.title'}
+               },
+               'config': {},
+               'selfservice': {},
+               'policy': {},
                }
 
         # do we need to define the lost token policies here...
@@ -102,35 +100,42 @@ class SpassTokenClass(TokenClass):
         else:
             if ret == 'all':
                 ret = res
-
         return ret
 
     def update(self, param):
-        # cko: changed for backward compat
-        getParam(param, "pin", optional)
-        if not param.has_key('otpkey'):
+        if 'otpkey' not in param:
             param['genkey'] = 1
 
         TokenClass.update(self, param)
 
-    ## the spass token does not suport challenge response
     def is_challenge_request(self, passw, user, options=None):
-        return False
+        """
+        The spass token does not support challenge response
+        :param passw:
+        :param user:
+        :param options:
+        :return:
+        """
+        return False  # pragma nocover
 
     def is_challenge_response(self, passw, user, options=None, challenges=None):
-        return False
+        return False  # pragma nocover
+
+    def check_otp(self, otpval, counter=None, window=None, options=None):
+        """
+        As we have no otp value we always return true == 0
+        """
+        return 0
 
     @log_with(log)
-    def authenticate(self, passw, user, options=None):
-        '''
+    def authenticate(self, passw, user=None, options=None):
+        """
         in case of a wrong passw, we return a bad matching pin,
         so the result will be an invalid token
-        '''
+        """
         otp_count = -1
-        pin_match = check_pin(self, passw, user=user, options=options)
-        if pin_match == True:
+        pin_match = self.check_pin(passw, user=user, options=options)
+        if pin_match is True:
             otp_count = 0
-        return (pin_match, otp_count, None)
-
-## eof ########################################################################
+        return pin_match, otp_count, None
 

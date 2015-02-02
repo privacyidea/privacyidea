@@ -1,0 +1,177 @@
+<div ng-controller="SqlResolverController">
+
+    <h2 class="form-signin-heading"
+        ng-show="resolvername">Edit SQL Resolver {{ resolvername }}</h2>
+
+    <h2 class="form-signin-heading"
+        ng-hide="resolvername">Create a new SQL Resolver</h2>
+
+    <form name="formResolverAddSql" role="form" validate
+          class="form-horizontal">
+
+
+        <div class="form-group">
+            <label for="resolvername" class="col-sm-3 control-label">Resolver
+                name</label>
+
+            <div class="col-sm-9">
+                <input name="resolvername" id="resolvername"
+                       class="form-control"
+                       ng-model="resolvername" required placeholder="resolver1"
+                       autofocus/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="driver" class="col-sm-3 control-label">
+                Driver</label>
+
+            <div class="col-sm-9">
+                <input name="driver" class="form-control"
+                       ng-model="params.Driver" required
+                       placeholder="mysql"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="server" class="col-sm-3 control-label">Server</label>
+
+            <div class="col-sm-3">
+                <input name="server" class="form-control"
+                       ng-model="params.Server" required
+                       placeholder="127.0.0.1"/>
+            </div>
+            <label for="port" class="col-sm-3 control-label">Port</label>
+
+            <div class="col-sm-3">
+                <input name="port" class="form-control"
+                       ng-model="params.Port" required
+                       placeholder="3306"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="database"
+                   class="col-sm-3 control-label">Database</label>
+
+            <div class="col-sm-9">
+                <input name="database" class="form-control"
+                       ng-model="params.Database"
+                       placeholder="YourDataBase"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="user" class="col-sm-3 control-label">User</label>
+
+            <div class="col-sm-9">
+                <input name="user" class="form-control"
+                       ng-model="params.User"
+                       placeholder="user"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="password" class="col-sm-3 control-label">
+                Password</label>
+
+            <div class="col-sm-9">
+                <input name="password" class="form-control"
+                       type="password"
+                       ng-model="params.Password"
+                       placeholder="topsecret"/>
+            </div>
+        </div>
+        <div class="well">
+            <div class="form-group">
+                <button class="btn btn-info" ng-click="presetWordpress()">
+                    Wordpress
+                </button>
+                <button class="btn btn-info" ng-click="presetOTRS()">
+                    OTRS
+                </button>
+                <button class="btn btn-info" ng-click="presetTine()">
+                    Tine 2.0
+                </button>
+                <button class="btn btn-info" ng-click="presetOwncloud()">
+                    Owncloud
+                </button>
+            </div>
+            <div class="form-group">
+                <label for="table" class="col-sm-3 control-label">Table</label>
+
+                <div class="col-sm-3">
+                    <input name="table" class="form-control"
+                           ng-model="params.Table" required
+                           placeholder="Users"/>
+                </div>
+
+                <label for="limit" class="col-sm-3 control-label">Limit</label>
+
+                <div class="col-sm-3">
+                    <input name="limit" class="form-control"
+                           ng-model="params.Limit" required
+                           placeholder="500"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="mapping"
+                       class="col-sm-3 control-label">Mapping</label>
+
+                <div class="col-sm-9">
+                    <input name="mapping" class="form-control"
+                           ng-model="params.Map" required
+                           placeholder='{ "userid" : "id", "username": "user", "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" ,"password" : "password"}'
+                            />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="where"
+                       class="col-sm-3 control-label">Where statement</label>
+
+                <div class="col-sm-9">
+                    <input name="where" class="form-control"
+                           ng-model="params.Where"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="encoding"
+                       class="col-sm-3 control-label">Database Encoding</label>
+
+                <div class="col-sm-9">
+                    <input name="encoding" class="form-control"
+                           ng-model="params.Encoding" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="conparams"
+                       class="col-sm-3 control-label">Connection
+                    Parameters</label>
+
+                <div class="col-sm-9">
+                    <input name="conparams" class="form-control"
+                           ng-model="params.conParams"/>
+                </div>
+            </div>
+        </div>
+        <div class="text-center" ng-show="showResult">
+            <label class="label"
+                   ng-class="{'label-success':result.result,
+               'label-danger':!result.result}">
+                {{ result.description }}<span class="glyphicon glyphicon-remove"
+                                              ng-click="showResult=false"></span>
+            </label>
+        </div>
+
+        <div class="text-center">
+            <button ng-click="testSQL()"
+                    ng-disabled="formResolverAddSql.$invalid"
+                    class="btn btn-success">Test SQL Resolver
+            </button>
+            <button ng-click="setSQLResolver()"
+                    ng-disabled="formResolverAddSql.$invalid"
+                    class="btn btn-primary">Save Resolver
+            </button>
+        </div>
+
+    </form>
+</div>

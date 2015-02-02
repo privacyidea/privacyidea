@@ -1,8 +1,5 @@
 [report]
 omit =
-    privacyidea/tests/*
-    privacyidea/lib/mschap.py
-    privacyidea/lib/ext/*
 
 exclude_lines =
     pragma: no cover

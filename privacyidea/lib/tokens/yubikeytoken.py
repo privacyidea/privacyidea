@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 #
 #  privacyIDEA is a fork of LinOTP
-#  May 08, 2014 Cornelius Kölbel
+#  2014-12-15 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Adapt during flask migration
+#  2014-05-08 Cornelius Kölbel
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
@@ -24,13 +26,11 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''            
-  Description:  This file contains the definition of the Yubikey token class
-              The yubikey is used in the AES yubico mode
-  
-  Dependencies: -
+__doc__ = """
+This module provides the functionality for the Yubikey AES mode.
 
-'''
+It is tested in tests/test_lib_tokens_yubikey.py
+"""
 
 import logging
 
@@ -43,43 +43,37 @@ import binascii
 optional = True
 required = False
 
-from privacyidea.lib.validate import check_pin
-
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.util import modhex_decode
-from privacyidea.lib.util import checksum
+from privacyidea.lib.utils import modhex_decode
+from privacyidea.lib.utils import checksum
 
 log = logging.getLogger(__name__)
 
 
-
-###############################################
 class YubikeyTokenClass(TokenClass):
     """
     The Yubikey Token in the Yubico AES mode
     """
 
-    def __init__(self, aToken):
-        TokenClass.__init__(self, aToken)
-        self.setType(u"yubikey")
-
+    def __init__(self, db_token):
+        TokenClass.__init__(self, db_token)
+        self.set_type(u"yubikey")
         self.hKeyRequired = True
-        return
 
 
     @classmethod
-    def getClassType(cls):
+    def get_class_type(cls):
         return "yubikey"
 
     @classmethod
-    def getClassPrefix(cls):
+    def get_class_prefix(cls):
         return "UBAM"
 
     @classmethod
     @log_with(log)
-    def getClassInfo(cls, key=None, ret='all'):
+    def get_class_info(cls, key=None, ret='all'):
         """
-        getClassInfo - returns a subtree of the token definition
+        returns a subtree of the token definition
 
         :param key: subsection identifier
         :type key: string
@@ -91,14 +85,13 @@ class YubikeyTokenClass(TokenClass):
         :rtype: s.o.
 
         """
-        res = {
-            'type':          'yubikey',
-            'title':         'Yubikey in Yubico Mode',
-            'description':   ('Yubico token to run the AES OTP mode.'),
-            'init':          {},
-            'config':        {},
-            'selfservice':   {},
-            'policy':        {},
+        res = {'type': 'yubikey',
+               'title': 'Yubikey in AES mode',
+               'description': 'Yubico token to run the AES OTP mode.',
+               'init': {},
+               'config': {},
+               'selfservice': {},
+               'policy': {}
         }
 
         if key is not None and key in res:
@@ -110,27 +103,27 @@ class YubikeyTokenClass(TokenClass):
 
     @log_with(log)
     def check_otp_exist(self, otp, window=None):
-        '''
+        """
         checks if the given OTP value is/are values of this very token.
         This is used to autoassign and to determine the serial number of
         a token.
-        '''
+        """
         if window is None:
-            window = self.getOtpCountWindow()
-        counter = self.getOtpCount()
+            window = self.get_otp_count_window()
+        counter = self.get_otp_count()
 
-        res = self.checkOtp(otp, counter=counter, window=window, options=None)
+        res = self.check_otp(otp, counter=counter, window=window, options=None)
 
         if res >= 0:
             # As usually the counter is increased in lib.token.checkUserPass, we
             # need to do this manually here:
-            self.incOtpCounter(res)
+            self.inc_otp_counter(res)
 
         return res
 
     @log_with(log)
-    def is_challenge_request(self, passw, user, options=None):
-        '''
+    def is_challenge_request(self, passw, user=None, options=None):
+        """
         This method checks, if this is a request, that triggers a challenge.
 
         :param passw: password, which might be pin or pin+otp
@@ -141,32 +134,33 @@ class YubikeyTokenClass(TokenClass):
         :type options: dict
 
         :return: true or false
-        '''
-
-        request_is_valid = False
-
-        pin_match = check_pin(self, passw, user=user, options=options)
+        """
+        trigger_challenge = False
+        options = options or {}
+        pin_match = self.check_pin(passw, user=user, options=options)
         if pin_match is True:
-            request_is_valid = True
+            trigger_challenge = True
 
-        return request_is_valid
+        return trigger_challenge
 
 
     @log_with(log)
-    def checkOtp(self, anOtpVal, counter=None, window=None, options=None):
+    def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
-        checkOtp - validate the token otp against a given otpvalue
+        validate the token otp against a given otpvalue
 
         :param anOtpVal: the to be verified otpvalue
         :type anOtpVal:  string
 
-        :param counter: the counter state. It is not used by the Yubikey because the current counter value
-        is sent encrypted inside the OTP value
+        :param counter: the counter state. It is not used by the Yubikey
+            because the current counter value is sent encrypted inside the
+            OTP value
         :type counter: int
 
-        :param window: the counter +window, which is not used in the Yubikey because the current
-        counter value is sent encrypted inside the OTP, allowing a simple comparison between the encrypted
-        counter value and the stored counter value
+        :param window: the counter +window, which is not used in the Yubikey
+            because the current counter value is sent encrypted inside the
+            OTP, allowing a simple comparison between the encrypted counter
+            value and the stored counter value
         :type window: int
 
         :param options: the dict, which could contain token specific info
@@ -181,8 +175,8 @@ class YubikeyTokenClass(TokenClass):
         """
         res = -1
 
-        serial = self.token.getSerial()
-        secret = self.token.getHOtpKey()
+        serial = self.token.serial
+        secret = self.token.get_otpkey()
 
         # The prefix is the characters in front of the last 32 chars
         yubi_prefix = anOtpVal[:-32]
@@ -200,7 +194,7 @@ class YubikeyTokenClass(TokenClass):
         # CRC-16 checksum of the whole decrypted OTP should give a fixed residual
         # of 0xf0b8 (see Yubikey-Manual - Chapter 6: Implementation details).
         log.debug("calculated checksum (61624): %r" % checksum(msg_hex))
-        if checksum(msg_hex) != 0xf0b8:
+        if checksum(msg_hex) != 0xf0b8:  # pragma nocover
             log.warning("CRC checksum for token %r failed" % serial)
             return -3
 
@@ -214,7 +208,8 @@ class YubikeyTokenClass(TokenClass):
         session_counter = msg_hex[22:24]
         random = msg_hex[24:28]
         crc = msg_hex[28:]
-        log.debug("decrypted: usage_count: %r, session_count: %r" % (usage_counter, session_counter))
+        log.debug("decrypted: usage_count: %r, session_count: %r" %
+                  (usage_counter, session_counter))
 
         # create the counter as integer
         # Note: The usage counter is stored LSB!
@@ -223,11 +218,11 @@ class YubikeyTokenClass(TokenClass):
         count_int = int(count_hex, 16)
         log.debug('decrypted counter: %r' % count_int)
 
-        tokenid = self.getFromTokenInfo("yubikey.tokenid")
+        tokenid = self.get_tokeninfo("yubikey.tokenid")
         if not tokenid:
             log.debug("Got no tokenid for %r. Setting to %r." % (serial, uid))
             tokenid = uid
-            self.addToTokenInfo("yubikey.tokenid", tokenid)
+            self.add_tokeninfo("yubikey.tokenid", tokenid)
 
         if tokenid != uid:
             # wrong token!
@@ -238,8 +233,76 @@ class YubikeyTokenClass(TokenClass):
 
         # TODO: We also could check the timestamp
         # - the timestamp. see http://www.yubico.com/wp-content/uploads/2013/04/YubiKey-Manual-v3_1.pdf
-        log.debug('compare counter to privacyIDEACount: %r' % self.token.privacyIDEACount)
-        if count_int >= self.token.privacyIDEACount:
+        log.debug('compare counter to database counter: %r' % self.token.count)
+        if count_int >= self.token.count:
             res = count_int
 
         return res
+
+
+@log_with(log)
+def check_yubikey_pass(passw):
+    """
+    This only works without a PIN!
+
+    This checks the output of a yubikey in AES mode without providing
+    the serial number.
+    The first 12 (of 44) or 16 of 48) characters are the tokenid, which is
+    stored in the tokeninfo.
+
+    :param passw: The password that consist of the static yubikey prefix and
+        the otp
+    :type passw: string
+
+    :return: True/False and the User-Object of the token owner
+    :rtype: dict
+    """
+    opt = {}
+    res = False
+
+    token_list = []
+
+    # strip the yubico OTP and the PIN
+    modhex_serial = passw[:-32][-16:]
+    try:
+        serialnum = "UBAM" + modhex_decode(modhex_serial)
+    except TypeError as exx:  # pragma nocover
+        log.error("Failed to convert serialnumber: %r" % exx)
+        return res, opt
+
+    # build list of possible yubikey tokens
+    serials = [serialnum]
+    for i in range(1, 3):
+        serials.append("%s_%s" % (serialnum, i))
+
+    from privacyidea.lib.token import get_tokens
+    from privacyidea.lib.token import check_token_list
+    for serial in serials:
+        tokenobject_list = get_tokens(serial=serial)
+        token_list.extend(tokenobject_list)
+
+    if len(token_list) == 0:
+        opt['action_detail'] = ("The serial %s could not be found!" % serialnum)
+        return res, opt
+
+    # FIXME if the Token has set a PIN and the User does not want
+    # to enter the PIN
+    # for authentication, we need to do something different here...
+    # and avoid PIN checking in __checkToken.
+    # We could pass an "option" to __checkToken.
+    (res, opt) = check_token_list(token_list, passw)
+
+    # Now we need to get the user
+    # TODO: Migration
+    #if res is not False and 'serial' in c.audit:
+    #    serial = c.audit.get('serial', None)
+    #    if serial is not None:
+    #        user = getTokenOwner(serial)
+    #        c.audit['user'] = user.login
+    #        c.audit['realm'] = user.realm
+    #        opt = {}
+    #        opt['user'] = user.login
+    #        opt['realm'] = user.realm
+    #        opt['serial'] = serial
+
+    return res, opt

@@ -63,10 +63,41 @@ class privacyIDEAError(Exception):
             res = u"ERR%d: %r" % (self.id, self.message)
         return res
 
-
     def __repr__(self):
-        ret = '%s(description=%r, id=%d)' % (type(self).__name__, self.message, self.id)
+        ret = '%s(description=%r, id=%d)' % (type(self).__name__,
+                                             self.message, self.id)
         return ret
+
+
+class BaseError(Exception):
+    def __init__(self, error, description, status=400, headers=None):
+        Exception.__init__(self)
+        self.error = error
+        self.description = description
+        self.status_code = status
+        self.headers = headers
+        
+    def to_dict(self):
+        return {"status_code": self.status_code,
+                "error": self.error,
+                "description": self.description}
+        
+    def __repr__(self):
+        ret = '%s(error=%r, description=%r, id=%d)' % (type(self).__name__,
+                                                       self.error,
+                                                       self.description,
+                                                       self.status_code)
+        return ret
+
+
+class AuthError(BaseError):
+    def __init__(self, error, description, status=401, headers=None):
+        BaseError.__init__(self, error, description, status, headers)
+        
+
+class PolicyError(BaseError):
+    def __init__(self, error, description, status=403, headers=None):
+        BaseError.__init__(self, error, description, status, headers)
 
 
 class ValidateError(privacyIDEAError):
@@ -105,6 +136,7 @@ class SelfserviceException(privacyIDEAError):
 
 
 class ParameterError(privacyIDEAError):
+    USER_OR_SERIAL = 'You either need to provide user or serial'
     def __init__(self, description="unspecified parameter error!", id=905):
         privacyIDEAError.__init__(self, description=description, id=id)
 

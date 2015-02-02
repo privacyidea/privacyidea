@@ -1,0 +1,20 @@
+<p class="help-block">
+    The SMS Token sends an OTP value to the mobile phone of the user.
+</p>
+
+<h4>Token data</h4>
+
+<div class="form-group">
+    <label for="phone">Phone number</label>
+    <!-- TODO: preset the users phone number, if a user is selected. -->
+    <input type="text"
+           autofocus
+           class="form-control"
+           placeholder="Users phone number..."
+           ng-model="form.phone" name="phone" />
+    <label for="description">Description</label>
+    <input type="text" class="form-control"
+            placeholder="Some nice words..."
+            ng-model="form.description" />
+</div>
+

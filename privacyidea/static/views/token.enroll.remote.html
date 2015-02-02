@@ -1,0 +1,52 @@
+<p class="help-block">
+    The remote token forwards the authentication request to another
+    privacyIDEA server. You can choose if the PIN should be stripped and
+    checked locally.
+</p>
+
+<h4>Token data</h4>
+
+<div class="form-group">
+    <input type="checkbox" ng-model="form['remote.local_checkpin']"
+           name="localPin" id="localPin">
+    <label for="localPin">Check the PIN locally</label>
+</div>
+
+<div class="form-group">
+    <label for="remoteServer">Remote Server</label>
+    <input type="url"
+           required
+           class="form-control"
+           placeholder="The remote Server URL"
+           ng-model="form['remote.server']" name="remoteServer">
+</div>
+
+<div class="form-group">
+    <label for="remoteSerial">Remote Serial</label>
+    <input type="text" ng-model="form['remote.serial']"
+           placeholder="The serial number on the remote server"
+           class="form-control"
+           ng-required="!(form['remote.user'])"
+           name="remoteSerial">
+</div>
+
+<div class="form-group">
+    <label for="remoteUser">Remote User</label>
+    <input type="text" ng-model="form['remote.user']"
+           class="form-control"
+           ng-required="!(form['remote.serial'])"
+           plasceholder="The username on the remote server"
+           name="remoteUser">
+</div>
+<div class="form-group">
+    <label for="remoteRealm">Remote Realm</label>
+    <input type="text" ng-model="form['remote.realm']"
+           class="form-control"
+           name="remoteRealm">
+</div>
+<div class="form-group">
+    <label for="remoteResolver">Remote Resolver</label>
+    <input type="text" ng-model="form['remote.resolver']"
+           class="form-control"
+           name="remoteResolver">
+</div>

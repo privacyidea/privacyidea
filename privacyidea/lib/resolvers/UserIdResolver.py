@@ -3,11 +3,15 @@
 #  product:  privacyIDEA is a fork of LinOTP
 #  module:   resolver library
 #
-#  May, 08 2014 Cornelius Kölbel
-#  http://www.privacyidea.org
-#
+# Dec 01, 2014 Cornelius Kölbel <cornelius@privacyidea.org>
+#               Migration to flask
+#               Adapt methods for tests
+#               Improve comments
+#               100% test code coverage
 # 2014-10-03 fix getUsername function
 #            Cornelius Kölbel <cornelius@privcyidea.org>
+#  May, 08 2014 Cornelius Kölbel
+#  http://www.privacyidea.org
 #
 #  product:  LinOTP2
 #  module:   useridresolver
@@ -60,7 +64,7 @@ class UserIdResolver(object):
               "givenname": 0, "surname": 0, "gender": 0
               }
     name = ""
-    id = ""
+    id = "baseid"
 
     def __init(self):
         """
@@ -82,24 +86,24 @@ class UserIdResolver(object):
         return 'UserIdResolver'
 
     def getResolverType(self):
-        '''
+        """
         getResolverType - return the type of the resolver
 
         :return: returns the string 'ldapresolver'
         :rtype:  string
-        '''
+        """
         return 'UserIdResolver'
 
     @classmethod
     def getResolverClassDescriptor(cls):
-        '''
+        """
         return the descriptor of the resolver, which is
         - the class name and
         - the config description
 
         :return: resolver description dict
         :rtype:  dict
-        '''
+        """
         descriptor = {}
         typ = cls.getResolverClassType()
         descriptor['clazz'] = "useridresolver.UserIdResolver"
@@ -107,23 +111,32 @@ class UserIdResolver(object):
         return {typ: descriptor}
 
     def getResolverDescriptor(self):
-        '''
+        """
         return the descriptor of the resolver, which is
         - the class name and
         - the config description
 
         :return: resolver description dict
         :rtype:  dict
-        '''
+        """
         return UserIdResolver.getResolverClassDescriptor()
 
     def getUserId(self, loginName):
-        """ getUserId(LoginName)
-          - returns the identifier string
-          - empty string if not exist
-
         """
-        return self.id
+        The loginname is resolved to a user_id.
+        Depending on the resolver type the user_id can
+        be an ID (like in /etc/passwd) or a string (like
+        the DN in LDAP)
+
+        It needs to return an emptry string, if the user does
+        not exist.
+
+        :param loginName: The login name of the user
+        :type loginName: sting
+        :return: The ID of the user
+        :rtype: string or int
+        """
+        return "dummy_user_id"
 
     def getUsername(self, userid):
         """
@@ -133,18 +146,20 @@ class UserIdResolver(object):
         :return: username
         :rtype: string
         """
-        return self.name
+        return "dummy_user_name"
 
     def getUserInfo(self, userid):
         """
-        getUserInfo(UserID)
-            This function returns all user information for a given user object
-            identified by UserID.
+        This function returns all user information for a given user object
+        identified by UserID.
+        :param userid: ID of the user in the resolver
+        :type userid: int or string
         :return:  dictionary, if no object is found, the dictionary is empty
+        :rtype: dict
         """
-        return ""
+        return {}
 
-    def getUserList(self, serachDict):
+    def getUserList(self, searchDict={}):
         """
         This function finds the user objects,
         that have the term 'value' in the user object field 'key'
@@ -152,9 +167,11 @@ class UserIdResolver(object):
         :param searchDict:  dict with key values of user attributes -
                     the key may be something like 'loginname' or 'email'
                     the value is a regular expression.
+        :type searchDict: dict
 
         :return: list of dictionaries (each dictionary contains a
                  user object) or an empty string if no object is found.
+        :rtype: list of dicts
         """
         return [{}]
 
@@ -163,52 +180,50 @@ class UserIdResolver(object):
         get resolver specific information
         :return: the resolver identifier string - empty string if not exist
         """
-        return self.name
+        return self.id
 
-    def loadConfig(self, config, conf):
+    def loadConfig(self, config):
+        """
+        Load the configuration from the dict into the Resolver object.
+        If attributes are missing, need to set default values.
+        If required attributes are missing, this should raise an
+        Exception.
+
+        :param config: The configuration values of the resolver
+        :type config: dict
+        """
         return self
 
     def checkPass(self, uid, password):
-        '''
+        """
         This function checks the password for a given uid.
-        - returns true in case of success
-        -         false if password does not match
-        '''
+        returns true in case of success
+        false if password does not match
+
+        :param uid: The uid in the resolver
+        :type uid: string or int
+        :param password: the password to check. Usually in cleartext
+        :type password: string
+        :return: True or False
+        :rtype: bool
+        """
         return False
 
+    @classmethod
+    def testconnection(self, param):
+        """
+        This function lets you test if the parameters can be used to create a
+        working resolver.
+        The implemenation should try to connect to the user store and verify
+        if users can be retrieved.
+        In case of success it should return a text like
+        "Resolver config seems OK. 123 Users found."
 
-def getResolverClass(packageName, className):
-    """
-    helper method to load the UserIdResolver class from a given
-    package in literal. Checks, if the getUserId method exists,
-    if not an error is thrown
-
-    example:
-
-        getResolverClass("PasswdIdResolver", "IdResolver")()
-
-    :param packageName: the name package + module
-    :param className: the name of the class, which should be loaded
-
-    :return: the class object
-    """
-    mod = __import__(packageName, globals(), locals(), [className])
-    klass = getattr(mod, className)
-    ret = ""
-    attribute = ""
-    try:
-        attrs = ["getUserId", "getUsername", "getUserInfo", "getUserList",
-                 "checkPass", "loadConfig",
-                 "getResolverId", "getResolverType", "getResolverDescriptor"
-                 ]
-
-        for att in attrs:
-            attribute = att
-            getattr(klass, att)
-        ret = klass
-    except:
-        raise NameError("IdResolver AttributeError: " + packageName + "." +
-                        className + " instance has no attribute '" +
-                        attribute + "'")
-
-    return ret
+        param param: The parameters that should be saved as the resolver
+        type param: dict
+        return: returns True in case of success and a descriptive text
+        rtype: tuple
+        """
+        success = False
+        desc = "Not implemented"
+        return success, desc
