@@ -1,8 +1,8 @@
-privacyidea (1.5.1~dev1-1trusty) trusty; urgency=low
+privacyidea (1.5.1-1trusty) trusty; urgency=low
 
   * Fix splitting the @-sign to allow users like user@email.com
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 12 Jan 2015 21:08:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 02 Feb 2015 09:08:00 +0200
 
 
 privacyidea (1.5-1trusty) trusty; urgency=low
