@@ -18,17 +18,21 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__ = """This is the login form for the webui.
+__doc__ = """This is the starting point for the single web application.
+Other html code is dynamically loaded via angularJS and located in
+/static/views/...
 """
 __author__ = "Cornelius Kölbel, <cornelius@privacyidea.org>"
 
-from flask import (Blueprint, render_template, current_app)
+from flask import (Blueprint, render_template, request)
 
 login_blueprint = Blueprint('login_blueprint', __name__)
 
 
 @login_blueprint.route('/', methods=['GET'])
-def login():
-
-#    return render_template("index.html")
-    return current_app.send_static_file('templates/index.html')
+def single_page_application():
+    instance = request.path
+    if instance == "/":
+        instance = ""
+    return render_template("index.html", instance=instance)
+#    return current_app.send_static_file('templates/index.html')

@@ -33,15 +33,21 @@ myApp.config(['KeepaliveProvider', 'IdleProvider',
     IdleProvider.timeout(10);
     KeepaliveProvider.interval(3);
 }]);
-myApp.constant("authUrl", "/auth");
-myApp.constant("tokenUrl", "/token");
-myApp.constant("userUrl", "/user");
-myApp.constant("resolverUrl", "/resolver");
-myApp.constant("realmUrl", "/realm");
-myApp.constant("defaultRealmUrl", "/defaultrealm");
-myApp.constant("validateUrl", "/validate");
-myApp.constant("systemUrl", "/system");
-myApp.constant("auditUrl", "/audit");
+
+var instance = window.location.pathname;
+if (instance == "/") {
+    instance = "";
+}
+myApp.constant("instanceUrl", instance);
+myApp.constant("authUrl", instance + "/auth");
+myApp.constant("tokenUrl", instance + "/token");
+myApp.constant("userUrl", instance + "/user");
+myApp.constant("resolverUrl", instance + "/resolver");
+myApp.constant("realmUrl", instance + "/realm");
+myApp.constant("defaultRealmUrl", instance + "/defaultrealm");
+myApp.constant("validateUrl", instance + "/validate");
+myApp.constant("systemUrl", instance + "/system");
+myApp.constant("auditUrl", instance + "/audit");
 myApp.run(['$rootScope', '$state', '$stateParams',
         function ($rootScope, $state, $stateParams) {
 

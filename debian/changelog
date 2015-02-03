@@ -1,3 +1,10 @@
+privacyidea (2.0~dev1-1trusty) trusty; urgency=low
+
+  * Migrate to flask
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 02 Feb 2015 23:44:00 +0200
+
+
 privacyidea (1.5.1-1trusty) trusty; urgency=low
 
   * Fix splitting the @-sign to allow users like user@email.com

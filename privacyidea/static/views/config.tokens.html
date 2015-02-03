@@ -43,7 +43,8 @@
     <div class="col-lg-9 slide panel">
         <form name="formTokenConfig" role="form" validate>
             <ng-include
-                    src="'/static/views/config.token.' + tokentype + '.html'">
+                    src="instanceUrl + '/static/views/config.token.' +
+                    tokentype + '.html'">
             </ng-include>
 
             <div class="text-center">

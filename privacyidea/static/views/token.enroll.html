@@ -12,7 +12,7 @@
                 >
         </select>
         <!-- This is the token data section. It differs for every token type-->
-        <ng-include src="'/static/views/token.enroll.' + form.type + '.html'">
+        <ng-include src="instanceUrl + '/static/views/token.enroll.' + form.type + '.html'">
         </ng-include>
 
         <div ng-show="loggedInUser.role == 'admin'">
@@ -63,7 +63,7 @@
     </p>
 
     <!-- This is the token data section. It differs for every token type-->
-    <ng-include src="'/static/views/token.enrolled.' + form.type + '.html'">
+    <ng-include src="instanceUrl + '/static/views/token.enrolled.' + form.type + '.html'">
     </ng-include>
 
     <div class="text-center">

@@ -187,10 +187,11 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory, $scop
 
 myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                                                     $stateParams, AuthFactory,
-                                                    ConfigFactory) {
+                                                    ConfigFactory, instanceUrl) {
     $scope.loggedInUser = AuthFactory.getUser();
     $scope.newUser = {};
     $scope.tempData = {};
+    $scope.instanceUrl = instanceUrl;
     // System default values for enrollment
     $scope.systemDefault = {};
     // init the user, if token.enroll was called as a normal user

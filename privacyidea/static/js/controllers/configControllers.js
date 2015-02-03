@@ -21,11 +21,12 @@
 myApp.controller("tokenConfigController", function ($scope, $location,
                                                     $rootScope, $state,
                                                     $stateParams,
-                                                    ConfigFactory) {
+                                                    ConfigFactory, instanceUrl) {
     $scope.defaultSMSProvider = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider";
     $scope.tokentype = $stateParams.tokentype || "hotp";
     $scope.form = {};
     $scope.original_params = {};
+    $scope.instanceUrl = instanceUrl;
     $scope.formInit = {
         totpSteps: ["30", "60"],
         hashlibs: ["sha1", "sha256", "sha512"],

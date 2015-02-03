@@ -38,7 +38,7 @@ from flask.ext.migrate import Migrate
 from flask.ext.bootstrap import Bootstrap
 
 
-def create_app(config_name=None, var2=None):
+def create_app(config_name=None, config_file='/etc/privacyidea/pi.cfg'):
     """
     First the configuration from the config.py is loaded depending on the
     config type like "Production" or "Development".
@@ -48,19 +48,22 @@ def create_app(config_name=None, var2=None):
     default settings from config.py
 
     :param config_name: The config name like "Production" or "Testing"
+    :type config_name: basestring
+    :param config_file: The name of a config file to read configuration from
+    :type config_file: basestring
     :return: The flask application
     :rtype: App object
     """
-    #print "configname: %s" % config_name
-    #print "var2      : %s" % var2
+    print "config_name: %s" % config_name
+    print "config_file: %s" % config_file
     app = Flask(__name__, static_folder="static",
                 template_folder="static/templates")
     if config_name:
         app.config.from_object(config[config_name])
 
-    # Try to load the default config from /etc/privacyidea
+    # Try to load the given config_file.
     # If it does not exist, just ignore it.
-    app.config.from_pyfile('/etc/privacyidea/pi.cfg', silent=True)
+    app.config.from_pyfile(config_file, silent=True)
     # Try to load the file, that was specified in the environment variable
     # PRIVACYIDEA_CONFIG_FILE
     # If this file does not exist, we create an error!
@@ -85,4 +88,4 @@ def create_app(config_name=None, var2=None):
     return app
 
 # We create this app to be used in the wsgi script
-wsgi_app = create_app("production")
+wsig_app = create_app("production")

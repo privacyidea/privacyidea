@@ -20,114 +20,120 @@
  */
 
 angular.module('privacyideaApp.config', ['ui.router']).config(
-    ['$stateProvider', '$urlRouterProvider',
+    ['$stateProvider', '$urlRouterProvider', '$locationProvider',
         function ($stateProvider, $urlRouterProvider) {
+            // get the instance, the pathname part
+            var instance = window.location.pathname;
+            if (instance == "/") {
+               instance = "";
+            }
+            var path = instance + "/static/views/";
             $stateProvider
                 .state('config', {
                     url: "/config",
-                    templateUrl: "/static/views/config.html"
+                    templateUrl: path + "config.html"
                 })
                 .state('config.resolvers', {
                     url: "/resolvers",
-                    templateUrl: "/static/views/config.resolvers.html"
+                    templateUrl: path + "config.resolvers.html"
                 })
                 .state('config.resolvers.list', {
                     url: "/list",
-                    templateUrl: "/static/views/config.resolvers.list.html"
+                    templateUrl: path + "config.resolvers.list.html"
                 })
                 .state('config.resolvers.addpasswdresolver', {
                     // Create a new resolver
                     url: "/passwd",
-                    templateUrl: "/static/views/config.resolvers.passwd.html"
+                    templateUrl: path + "config.resolvers.passwd.html"
                 })
                 .state('config.resolvers.editpasswdresolver', {
                     // edit an existing resolver
                     url: "/passwd/{resolvername:.*}",
-                    templateUrl: "/static/views/config.resolvers.passwd.html"
+                    templateUrl: path + "config.resolvers.passwd.html"
                 })
                 .state('config.resolvers.addldapresolver', {
                     url: "/ldap",
-                    templateUrl: "/static/views/config.resolvers.ldap.html"
+                    templateUrl: path + "config.resolvers.ldap.html"
                 })
                 .state('config.resolvers.editldapresolver', {
                     url: "/ldap/{resolvername:.*}",
-                    templateUrl: "/static/views/config.resolvers.ldap.html"
+                    templateUrl: path + "config.resolvers.ldap.html"
                 })
                 .state('config.resolvers.addsqlresolver', {
                     url: "/ldap",
-                    templateUrl: "/static/views/config.resolvers.sql.html"
+                    templateUrl: path + "config.resolvers.sql.html"
                 })
                 .state('config.resolvers.editsqlresolver', {
                     url: "/ldap/{resolvername:.*}",
-                    templateUrl: "/static/views/config.resolvers.sql.html"
+                    templateUrl: path + "config.resolvers.sql.html"
                 })
                 .state('config.system', {
                     url: "/system",
-                    templateUrl: "/static/views/config.system.html"
+                    templateUrl: path + "config.system.html"
                 })
                 .state('config.tokens', {
                     url: "/tokens/{tokentype:.*}",
-                    templateUrl: "/static/views/config.tokens.html"
+                    templateUrl: path + "config.tokens.html"
                 })
                 .state('config.machines', {
                     url: "/machines",
-                    templateUrl: "/static/views/config.machines.html"
+                    templateUrl: path + "config.machines.html"
                 })
                 .state('config.realms', {
                     url: "/realms",
-                    templateUrl: "/static/views/config.realms.html"
+                    templateUrl: path + "config.realms.html"
                 })
                 .state('config.realms.list', {
                     url: "/list",
-                    templateUrl: "/static/views/config.realms.list.html"
+                    templateUrl: path + "config.realms.list.html"
                 })
                 .state('offline', {
                     url: "/offline",
-                    templatesUrl: "/static/views/offline.html"
+                    templatesUrl: path + "offline.html"
                 }).state('login', {
                     url: "/login",
-                    templateUrl: "/static/views/login.html"
+                    templateUrl: path + "login.html"
                 })
                 .state('token', {
                     url: "/token",
-                    templateUrl: "/static/views/token.html"
+                    templateUrl: path + "token.html"
                 })
                 .state('token.list', {
                     url: "/list",
-                    templateUrl: "/static/views/token.list.html",
+                    templateUrl: path + "token.list.html",
                     controller: "tokenController"
                 })
                 .state('token.details', {
                     url: "/details/{tokenSerial:.*}",
-                    templateUrl: "/static/views/token.details.html",
+                    templateUrl: path + "token.details.html",
                     controller: "tokenDetailController"
                 })
                 .state('token.enroll', {
                     url: "/enroll/{realmname:.*}/{username:.*}",
-                    templateUrl: "/static/views/token.enroll.html",
+                    templateUrl: path + "token.enroll.html",
                     controller: "tokenEnrollController"
                 })
                 .state('token.import', {
                     url: "/import",
-                    templateUrl: "/static/views/token.import.html",
+                    templateUrl: path + "token.import.html",
                     controller: "tokenImportController"
                 })
                 .state('audit', {
                     url: "/audit?serial&user",
-                    templateUrl: "/static/views/audit.html",
+                    templateUrl: path + "audit.html",
                     controller: "auditController"
                 })
                 .state('user', {
                     url: "/user",
-                    templateUrl: "/static/views/user.html"
+                    templateUrl: path + "user.html"
                 })
                 .state('user.list', {
                     url: "/list",
-                    templateUrl: "/static/views/user.list.html"
+                    templateUrl: path + "user.list.html"
                 })
                 .state('user.details', {
                     url: "/details/{realmname:.*}/{username:.*}",
-                    templateUrl: "/static/views/user.details.html",
+                    templateUrl: path + "user.details.html",
                     controller: ['$scope', '$stateParams',
                         function ($scope, $stateParams) {
                             $scope.username = $stateParams.username;

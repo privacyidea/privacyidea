@@ -18,7 +18,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.directive('tokenDataEdit', function(AuthFactory) {
+myApp.directive('tokenDataEdit', function(AuthFactory, instanceUrl) {
     return {
         scope: {
             text: '@',
@@ -30,7 +30,7 @@ myApp.directive('tokenDataEdit', function(AuthFactory) {
             callback: '&',
             callbackCancel: '&'
         },
-        templateUrl: "static/views/directive.tokendata.html",
+        templateUrl: instanceUrl + "/static/views/directive.tokendata.html",
         link: function(scope, element, attr, ctrl) {
             scope.loggedInUser = AuthFactory.getUser();
             console.log("tokenDataEdit");
@@ -39,12 +39,12 @@ myApp.directive('tokenDataEdit', function(AuthFactory) {
     }
 });
 
-myApp.directive("piFilter", function () {
+myApp.directive("piFilter", function (instanceUrl) {
     return {
         require: 'ngModel',
         restrict: 'E',
         scope: {},
-        templateUrl: "static/views/directive.filter.table.html",
+        templateUrl: instanceUrl + "/static/views/directive.filter.table.html",
         link: function (scope, element, attr, ctrl) {
             scope.updateFilter = function() {
                 ctrl.$setViewValue(scope.filterValue);
@@ -81,7 +81,7 @@ myApp.directive("piSortBy", function(){
 });
 
 
-myApp.directive('assignUser', function($http, userUrl, AuthFactory) {
+myApp.directive('assignUser', function($http, userUrl, AuthFactory, instanceUrl) {
     /*
     This directive is used to select a user from a realm
 
@@ -92,7 +92,7 @@ myApp.directive('assignUser', function($http, userUrl, AuthFactory) {
             newUserObject: '=',
             realms: '='
         },
-        templateUrl: "static/views/directive.assignuser.html",
+        templateUrl: instanceUrl + "/static/views/directive.assignuser.html",
         link: function (scope, element, attr) {
             console.log("Entering assignUser directive");
             console.log(scope.realms);
@@ -114,7 +114,8 @@ myApp.directive('assignUser', function($http, userUrl, AuthFactory) {
     }
 });
 
-myApp.directive('assignToken', function($http, tokenUrl, AuthFactory) {
+myApp.directive('assignToken', function($http, tokenUrl,
+                                        AuthFactory, instanceUrl) {
     /*
     This directive is used to select a serial number and assign it
     to the user.
@@ -125,7 +126,7 @@ myApp.directive('assignToken', function($http, tokenUrl, AuthFactory) {
         scope: {
             newTokenObject: '='
         },
-        templateUrl: "static/views/directive.assigntoken.html",
+        templateUrl: instanceUrl + "/static/views/directive.assigntoken.html",
         link: function (scope, element, attr) {
             scope.loadSerials = function($viewValue) {
             var auth_token = AuthFactory.getAuthToken();
