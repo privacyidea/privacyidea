@@ -1,3 +1,5 @@
+.. _code_docu:
+
 The code documentaton
 =====================
 

@@ -1,10 +1,8 @@
-.. privacyIDEA documentation master file, created by
-   sphinx-quickstart on Fri Jun 13 07:31:01 2014.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. _welcome:
 
-Welcome to privacyIDEA's documentation!
-=======================================
+######################
+Welcome to privacyIDEA
+######################
 
 The privacyIDEA documentation is work in progress. 
 
@@ -37,8 +35,9 @@ Thanks a lot!
    import/index
    modules/index
 
+##################
 Indices and tables
-==================
+##################
 
 * :ref:`genindex`
 * :ref:`modindex`

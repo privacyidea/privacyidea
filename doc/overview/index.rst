@@ -13,36 +13,35 @@ Other concepts like handling of machines or enrolling certificates
 are coming up, you may monitor this development on Github.
 
 privacyIDEA is a web application written in Python based on the
-`pylons framework`_. You can use any webserver with a wsgi interface
-to run privacyIDEA. E.g. this can be Apache, Nginx or the python
-paster.
+`flask micro framework`_. You can use any webserver with a wsgi interface
+to run privacyIDEA. E.g. this can be Apache, Nginx or even `werkzeug`_.
 
-A device or item used to authenticate is still called a 
+A device or item used to authenticate is still called a
 "token". All token information in stored in an SQL database,
 while you may choose, which database you want to use.
 privacyIDEA uses `SQLAlchemy`_ to map the database to
 internal objects. Thus you may choose to run privacyIDEA
 with SQLite, MySQL, PostgreSQL, Oracle, DB2 or other database.
 
-privacyIDEA provides a Web API, which you can investigate at
-http://api.privacyidea.org/.
+The code is deviced into three layers, the API, the library and the
+database layer. Read about it at :ref:`code_docu`.
+privacyIDEA provides a clean :ref:`rest_api`.
 
-Administrators can use a Web UI or a command line client to 
+Administrators can use a Web UI or a command line client to
 manage authentication devices. Users can login to a self
 service portal.
 
 Authentication is performed via the API or certain plugins for
 FreeRADIUS, simpleSAMLphp, Wordpress, Contao, Dokuwiki... to
-either provide default protocols like RADIUS or SAML or 
+either provide default protocols like RADIUS or SAML or
 to integrate into applications directly.
 
-Due to this flexibility there are also many different ways to 
+Due to this flexibility there are also many different ways to
 install and setup privacyIDEA.
 We will take a look at certain comman ways to setup privacyIDEA
 in the section :ref:`installation`
 but there are still many others.
 
-
-
-.. _pylons framework: http://www.pylonsproject.org/
+.. _flask micro framework: http://flask.pocoo.org/
 .. _SQLAlchemy: http://www.sqlalchemy.org/
+.. _werkzeug: http://werkzeug.pocoo.org/
