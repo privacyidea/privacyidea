@@ -22,11 +22,11 @@ class APIAuditTestCase(MyTestCase):
                 "current") == 1, res)
 
 
-    def test_01_download_audit(self):
-        with self.app.test_request_context('/audit/auditfile.csv',
-                                           method='GET',
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            self.assertTrue(res.mimetype == "text/csv", res.mimetype)
-            self.assertTrue(res.stream)
+    #def test_01_download_audit(self):
+    #    with self.app.test_request_context('/audit/auditfile.csv',
+    #                                       method='GET',
+    #                                       headers={'Authorization': self.at}):
+    #        res = self.app.full_dispatch_request()
+    #        self.assertTrue(res.status_code == 200, res)
+    #        self.assertTrue(res.mimetype == "text/csv", res.mimetype)
+    #        self.assertTrue(res.stream)
