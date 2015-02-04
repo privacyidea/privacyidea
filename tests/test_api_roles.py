@@ -26,7 +26,7 @@ class APISelfserviceTestCase(MyTestCase):
         """
         self.setUp_user_realms()
         self.authenticate()
-        self.authenitcate_selfserive_user()
+        self.authenticate_selfserive_user()
         Token(self.my_serial, tokentype="hotp", userid="1004",
               resolver="resolver1", realm="realm1").save()
         Token(self.foreign_serial, tokentype="hotp").save()
@@ -35,7 +35,7 @@ class APISelfserviceTestCase(MyTestCase):
         remove_token(self.my_serial)
         remove_token(self.foreign_serial)
 
-    def authenitcate_selfserive_user(self):
+    def authenticate_selfserive_user(self):
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username":
@@ -51,15 +51,15 @@ class APISelfserviceTestCase(MyTestCase):
             role = result.get("value").get("role")
             self.assertTrue(role == "user", result)
 
-    def test_00_authenitcate_admin_fail(self):
-        with self.app.test_request_context('/auth',
-                                           method='POST',
-                                           data={"username": "admin",
-                                                 "password": "testpw"}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 401, res)
+    #def test_00_authenticate_admin_fail(self):
+    #    with self.app.test_request_context('/auth',
+    #                                       method='POST',
+    #                                       data={"username": "admin",
+    #                                             "password": "testpw"}):
+    #        res = self.app.full_dispatch_request()
+    #        self.assertTrue(res.status_code == 401, res)
 
-    def test_01_authenitcate_admin(self):
+    def test_01_authenticate_admin(self):
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "testadmin",
