@@ -1,0 +1,78 @@
+.. _upgrade:
+
+Upgrade From privacyIDEA 1.5
+============================
+
+.. warning:: privacyIDEA 2.0 is in an early stage. There are many changes in 
+   database schema, so at least perform a database backup!
+
+Stopping Your Server
+--------------------
+
+Be sure to stop your privacyIDEA server.
+
+Upgrade Software
+----------------
+
+To upgrade the code enter your python virtualenv and run::
+
+   pip install --upgrade privacyidea
+
+Configuration
+-------------
+
+Read about the configuration in the :ref:`cfgfile`.
+
+You can use the old `enckey`, the old `signing keys` and the
+old `database uri`. The values can be found in your old ini-file 
+as ``privacyideaSecretFile``, ``privacyideaAudit.key.private``, 
+``privacyideaAudit.key.public`` and ``sqlalchemy.url``. Your new 
+config file might look like this::
+
+   config_path = "/home/cornelius/tmp/pi20/etc/privacyidea/"
+   # This is your old database URI
+   # Note the three slashes!
+   SQLALCHEMY_DATABASE_URI = "sqlite:///" + config_path + "token.sqlite"
+   # This is new!
+   SECRET_KEY = 't0p s3cr3t'
+   # This is new 
+   #This is used to encrypt the admin passwords
+   PI_PEPPER = "Never know..."
+   # This is used to encrypt the token data and token passwords
+   # This is your old encryption key!
+   PI_ENCFILE = config_path + 'enckey'
+   # THese are your old signing keys
+   # This is used to sign the audit log
+   PI_AUDIT_KEY_PRIVATE = config_path + 'private.pem'
+   PI_AUDIT_KEY_PUBLIC = config_path + 'public.pem'
+
+To verify the new configuration run::
+
+   pi-manage.py create_enckey
+
+It should say, that the enckey already exists!
+
+Migrate The Database
+--------------------
+
+You need to upgrade the database to the new database schema::
+
+   pi-manage.py db upgrade -d lib/privacyidea/migration
+
+
+Create An Administrator
+-----------------------
+
+With privacyIDEA 2.0 the administrators are stored in the database. So you need
+to create new administrator accounts::
+
+   pi-manage.py addadmin <email-address> <admin-name>
+
+Start The Server
+----------------
+
+Run the server::
+
+   pi-manage.py runserver
+
+or add it to your Apache or Nginx configuration.

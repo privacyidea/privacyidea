@@ -45,7 +45,6 @@ import os
 from Crypto.Cipher import AES
 from privacyidea.lib.crypto import zerome
 from privacyidea.lib.crypto import geturandom
-import base64
 from hashlib import sha256
 
 TOKEN_KEY = 0
@@ -264,6 +263,7 @@ class DefaultSecurityModule(SecurityModule):
         self.is_ready = True
 
     # the real interfaces: random, encrypt, decrypt
+    @classmethod
     def random(self, length=32):
         """
         Create and return random bytes.

@@ -3,10 +3,12 @@
 Installation
 ============
 
-Python package index
+Python Package Index
 --------------------
 
 .. index:: pip install, virtual environment
+
+If you want to upgrade from a privacyIDEA 1.5 installation please read :ref:`upgrade`.
 
 You can install privacyidea on usually any linux distribution in a pyhton virtual environment
 like this::
@@ -20,11 +22,29 @@ Now you are within the python virtual environment.
 Within the environment you can now run::
 
   pip install privacyidea
-  pip install privacyideaadm
+
+.. _configuration:
+
+Please see the section :ref:`cfgfile` for a quick setup of your configuration.
+
+
+Then create the encryption key and the signing keys::
+
+   pi-manage.py create_enckey
+   pi-manage.py create_signkey
+
+Create the database and the first administrator::
+
+   pi-manage.py createdb
+   pi-manage.py addadmin admin admin
+
+Now you can run the server for your first test::
+
+   pi-manage.py runserver
+
 
 Depending on the database you want to use, you may have to install additional packages.
 
-TODO: Configuration and setup with webserver
 
 Debian packages
 ---------------

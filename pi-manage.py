@@ -25,23 +25,17 @@
 # ./manage.py createdb
 #
 import os
+import sys
 from getpass import getpass
 from privacyidea.lib.security.default import DefaultSecurityModule
 from privacyidea.lib.auth import create_db_admin
-
-if os.path.exists('.env'):
-    print('Importing environment from .env...')
-    for line in open('.env'):
-        var = line.strip().split('=')
-        if len(var) == 2:
-            os.environ[var[0]] = var[1]
-
 from privacyidea.app import create_app
 from flask.ext.script import Manager
 from privacyidea.app import db
 from flask.ext.migrate import MigrateCommand
 # Wee need to import something, so that the models will be created.
 from privacyidea.models import Admin
+from Crypto.PublicKey import RSA
 
 app = create_app(config_name='production')
 manager = Manager(app)
@@ -49,6 +43,9 @@ manager.add_command('db', MigrateCommand)
 
 @manager.command
 def test():
+    """
+    Run all nosetests.
+    """
     from subprocess import call
     call(['nosetests', '-v',
           '--with-coverage', '--cover-package=privacyidea', '--cover-branches',
@@ -96,8 +93,58 @@ def encrypt_enckey(encfile):
     res = DefaultSecurityModule.password_encrypt(enckey, password)
     print res
 
+
+@manager.command
+def create_enckey():
+    """
+    If the key of the given configuration does not exist, it will be created
+    """
+    print
+    filename = app.config.get("PI_ENCFILE")
+    if os.path.isfile(filename):
+        print("The file \n\t%s\nalready exist. We do not overwrite it!" %
+              filename)
+        sys.exit(1)
+    f = open(filename, "w")
+    f.write(DefaultSecurityModule.random(96))
+    f.close()
+    print "Encryption key written to %s" % filename
+    print "Please ensure to set the access rights for the correct user to 400!"
+
+
+@manager.command
+def create_audit_keys(keysize=2048):
+    """
+    Create the RSA signing keys for the audit log.
+    You may specify an additional keysize.
+    The default keysize is 2048 bit.
+    """
+    filename = app.config.get("PI_AUDIT_KEY_PRIVATE")
+    if os.path.isfile(filename):
+        print("The file \n\t%s\nalready exist. We do not overwrite it!" %
+              filename)
+        sys.exit(1)
+    new_key = RSA.generate(keysize, e=65537)
+    public_key = new_key.publickey().exportKey("PEM")
+    private_key = new_key.exportKey("PEM")
+    f = open(filename, "w")
+    f.write(private_key)
+    f.close()
+
+    f = open(app.config.get("PI_AUDIT_KEY_PUBLIC"), "w")
+    f.write(public_key)
+    f.close()
+    print("Signing keys written to %s and %s" %
+          (filename, app.config.get("PI_AUDIT_KEY_PUBLIC")))
+    print("Please ensure to set the access rights for the correct user to 400!")
+
+
 @manager.command
 def createdb():
+    """
+    Initially create the tables in the database. The database must exist.
+    (SQLite database will be created)
+    """
     print db
     db.create_all()
     db.session.commit()

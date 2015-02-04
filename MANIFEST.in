@@ -1,6 +1,13 @@
 include LICENSE
+include README.md
+
 recursive-include privacyidea *
 recursive-include tools *
 recursive-include authmodules *
-include README.md
-include test.sh
+recursive-include deploy *
+recursive-include migrations *
+recursive-include tests *
+
+# We need to exclude files at the end
+# otherwise they get included again
+global-exclude *.pyc

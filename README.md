@@ -48,17 +48,23 @@ Running it
 
 Create the database:
 
-    ./manage.py createdb
+    ./pi-manage.py createdb
 
 Create the first administrator:
 
-    ./manage.py addadmin <email> <username>
+    ./pi-manage.py addadmin <email> <username>
 
 Run it:
 
-    ./manage.py runserver
+    ./pi-manage.py runserver
 
 Now you can connect to http://localhost:5000 with your browser and login as administrator.
+
+Run in virtualenv
+=================
+
+For running the server in a virtual env see documentation at
+https://www.privacyidea.org/doc/current/installation/index.html#python-package-index.
 
 Run tests
 =========

@@ -8,6 +8,9 @@ Welcome to privacyIDEA's documentation!
 
 The privacyIDEA documentation is work in progress. 
 
+.. warning:: Some information are still from privacyIDEA 1.5 
+   and thus a bit outdated!
+
 If you are missing any information or descriptions
 file an issue at `github <https://github.com/privacyidea/privacyidea/issues>`_ (which would be the preferred way),
 drop a note to info(@)privacyidea.org
@@ -22,6 +25,7 @@ Thanks a lot!
 
    overview/index
    installation/index
+   installation/upgrade
    system/inifile
    webui/login   
    configuration/index

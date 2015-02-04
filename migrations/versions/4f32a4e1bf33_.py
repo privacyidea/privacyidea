@@ -383,15 +383,23 @@ def create_realms():
     print "--------------------------------"
     print "Migrating Realms and tokenrealms"
     for realm in session.query(Realm_old):
-        r = Realm(name=realm.name, id=realm.id, default=realm.default,
-                  option=realm.option)
-        session.add(r)
+        try:
+            r = Realm(name=realm.name, id=realm.id, default=realm.default,
+                      option=realm.option)
+            session.add(r)
+            session.commit()
+        except Exception as (exx):
+            print(exx)
 
     for tokenrealm in session.query(TokenRealm_old):
-        tr = TokenRealm(id=tokenrealm.id, token_id=tokenrealm.token_id,
-                        realm_id=tokenrealm.realm_id)
-        session.add(tr)
-    session.commit()
+        try:
+            tr = TokenRealm(id=tokenrealm.id, token_id=tokenrealm.token_id,
+                            realm_id=tokenrealm.realm_id)
+            session.add(tr)
+            session.commit()
+        except Exception as (exx):
+            session.rollback()
+            print (exx)
 
     print "Add resolvers to the realms"
     realms = session.query(Config_old).\
@@ -402,13 +410,17 @@ def create_realms():
         resolver_list = [x.split(".")[-1] for x in realm.Value.split(",")]
         print "   with resolvers: %s" % resolver_list
         for resolvername in resolver_list:
-            res_id = session.query(Resolver).\
-                filter(Resolver.name == resolvername).first().id
-            realm_id = session.query(Realm).\
-                filter(Realm.name == realmname).first().id
-            rr = ResolverRealm(resolver_id=res_id, realm_id=realm_id)
-            session.add(rr)
-    session.commit()
+            try:
+                res_id = session.query(Resolver).\
+                    filter(Resolver.name == resolvername).first().id
+                realm_id = session.query(Realm).\
+                    filter(Realm.name == realmname).first().id
+                rr = ResolverRealm(resolver_id=res_id, realm_id=realm_id)
+                session.add(rr)
+                session.commit()
+            except Exception as exx:
+                session.rollback()
+                print(exx)
 
     # Remove the realms from the config
     session.query(Config_old).\

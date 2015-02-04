@@ -19,8 +19,8 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import os
 from flask import Flask
-
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.api.token import token_blueprint
 from privacyidea.api.system import system_blueprint
@@ -32,10 +32,12 @@ from privacyidea.api.user import user_blueprint
 from privacyidea.api.audit import audit_blueprint
 from privacyidea.api.auth import jwtauth
 from privacyidea.webui.login import login_blueprint
-from config import config
+from privacyidea.config import config
 from privacyidea.models import db
 from flask.ext.migrate import Migrate
 from flask.ext.bootstrap import Bootstrap
+
+ENV_KEY="PRIVACYIDEA_CONFIGFILE"
 
 
 def create_app(config_name=None, config_file='/etc/privacyidea/pi.cfg'):
@@ -54,8 +56,11 @@ def create_app(config_name=None, config_file='/etc/privacyidea/pi.cfg'):
     :return: The flask application
     :rtype: App object
     """
-    print "config_name: %s" % config_name
-    print "config_file: %s" % config_file
+    print "The configuration name is: %s" % config_name
+    print "Additional configuration can be read from the file %s" % config_file
+    if os.environ.get(ENV_KEY):
+        print("Additional configuration can be read from "
+              "the file %s" % os.environ[ENV_KEY])
     app = Flask(__name__, static_folder="static",
                 template_folder="static/templates")
     if config_name:
@@ -67,7 +72,7 @@ def create_app(config_name=None, config_file='/etc/privacyidea/pi.cfg'):
     # Try to load the file, that was specified in the environment variable
     # PRIVACYIDEA_CONFIG_FILE
     # If this file does not exist, we create an error!
-    app.config.from_envvar('PRIVACYIDEA_CONFIGFILE', silent=True)
+    app.config.from_envvar(ENV_KEY, silent=True)
 
     app.register_blueprint(validate_blueprint, url_prefix='/validate')
     app.register_blueprint(token_blueprint, url_prefix='/token')
