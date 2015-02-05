@@ -74,7 +74,8 @@ angular.module("privacyideaApp")
 
         $scope.enrollToken = function() {
             // go to token.enroll with the users data
-            $state.go("token.enroll", {realmname:$scope.realmname, username:$scope.username});
+            $state.go("token.enroll", {realmname:$scope.realmname,
+                                       username:$scope.username});
             $rootScope.returnTo="user.details({realmname:$scope.realmname, username:$scope.username})";
         };
     });

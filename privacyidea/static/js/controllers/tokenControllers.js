@@ -51,22 +51,10 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory, $scop
 
     $scope.getTokens();
 
-    // Get the realms and fill the realm dropdown box
-    if (AuthFactory.getRole() == 'admin') {
-        ConfigFactory.getRealms(function (data) {
-            $scope.realms = data.result.value;
-            angular.forEach($scope.realms, function (realm, realmname) {
-                if (realm.default) {
-                    // Set the default realm
-                    $scope.defaultRealm = realmname;
-                }
-            });
-        });
-    }
 });
 
 
-    myApp.controller("tokenDetailController", function ($scope,
+myApp.controller("tokenDetailController", function ($scope,
                                                     TokenFactory, UserFactory,
                                                     $stateParams,
                                                     $state, $rootScope,
@@ -194,16 +182,26 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     $scope.instanceUrl = instanceUrl;
     // System default values for enrollment
     $scope.systemDefault = {};
-    // init the user, if token.enroll was called as a normal user
-    if (AuthFactory.getRole() == 'user') {
+
+    // Get the realms and fill the realm dropdown box
+    if (AuthFactory.getRole() == 'admin') {
+        ConfigFactory.getRealms(function (data) {
+            $scope.realms = data.result.value;
+            angular.forEach($scope.realms, function (realm, realmname) {
+                if (realm.default && !$stateParams.realmname) {
+                    // Set the default realm
+                    $scope.newUser = {user: "", realm: realmname};
+                    console.log("tokenEnrollController");
+                    console.log($scope.newUser);
+                }
+            });
+        });
+    } else if (AuthFactory.getRole() == 'user') {
+        // init the user, if token.enroll was called as a normal user
         $scope.newUser.user = AuthFactory.getUser().username;
         $scope.newUser.realm = AuthFactory.getUser().realm;
-    } else {
-        // init the username with default realm
-        $scope.newUser = {user: "", realm: $scope.defaultRealm};
-        console.log("tokenEnrollController");
-        console.log($scope.newUser);
     }
+
     // init the user, if token.enroll was called from the user.details
     if ($stateParams.username) {
         $scope.newUser.user = $stateParams.username;
@@ -228,6 +226,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         otplens: [6, 8],
         hashlibs: ["sha1", "sha256", "sha512"]
     };
+
     // These are values that are also sent to the backend!
     $scope.form = {
         timestep: 30,
