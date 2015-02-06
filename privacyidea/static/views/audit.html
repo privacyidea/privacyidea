@@ -67,8 +67,10 @@
                     {{ audit.serial }}</a></td>
                 <td>{{ audit.token_type }}</td>
                 <td>{{ audit.administrator }}</td>
-                <td>{{ audit.user }}</td>
-                <td>{{ audit.realm }}</td>
+                <td><a ui-sref="user.details({username:audit.user,
+                realmname:audit.realm})">
+                    {{ audit.user }}</a></td>
+                <td><a ui-sref="config.realms.list">{{ audit.realm }}</a></td>
                 <td>{{ audit.client }}</td>
                 <td>{{ audit.info }}</td>
                 <td><span status-class="{{ audit.sig_check }}">
