@@ -284,8 +284,8 @@ class TokenModelTestCase(MyTestCase):
                    realm="*")
         p.save()
         self.assertTrue(p.action == "action1", p)
-        self.assertTrue(p.get().get("action") == "action1", p)
-        self.assertTrue(p.get("action") == "action1", p)
+        self.assertTrue("action1" in p.get().get("action"), p)
+        self.assertTrue("action1" in p.get("action"), p)
         
         p2 = Policy("pol1", active="false",
                     scope="selfservice", action="action1",

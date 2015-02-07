@@ -1,11 +1,19 @@
 # -*- coding: utf-8 -*-
-#  privacyIDEA is a fork of LinOTP
-#  May 08, 2014 Cornelius Kölbel
+#
+#  2015-02-06 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Rewrite for flask migration.
+#             Policies are not handled by decorators as
+#             1. precondition for API calls
+#             2. internal modifications of LIB-functions
+#             3. postcondition for API calls
+#
 #  Jul 07, 2014 add check_machine_policy, Cornelius Kölbel
-
+#  May 08, 2014 Cornelius Kölbel
+#
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  privacyIDEA is a fork of LinOTP
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  AGPLv3
 #  contact:  http://www.linotp.org
@@ -81,41 +89,168 @@ from netaddr import IPNetwork
 from gettext import gettext as _
 
 import logging
-from ..models import (Policy,
-                       db)
+from ..models import (Policy, db)
 log = logging.getLogger(__name__)
+from privacyidea.lib.error import PolicyError, AuthError
 
 
 optional = True
 required = False
 
-
-# This dictionary maps the token_types to actions in the scope gettoken,
-# that define the maximum allowed otp valies in case of getotp/getmultiotp
-MAP_TYPE_GETOTP_ACTION = {"dpw": "max_count_dpw",
-                          "hmac": "max_count_hotp",
-                          "totp": "max_count_totp"}
-
-
-class PolicyException(privacyIDEAError):
-    def __init__(self, description="unspecified error!", id=410):
-        privacyIDEAError.__init__(self, description=description, id=id)
+class SCOPE():
+    AUTHZ = "authorization"
+    ADMIN = "admin"
+    AUTH = "authentication"
+    AUDIT = "audit"
+    USER = "user"   # was selfservice
+    ENROLL = "enrollment"
+    GETTOKEN = "gettoken"
 
 
-class AuthorizeException(privacyIDEAError):
-    def __init__(self, description="unspecified error!", id=510):
-        privacyIDEAError.__init__(self, description=description, id=id)
+class PolicyClass(object):
 
+    """
+    The Policy_Object will contain all database policy entries for easy
+    filtering and mangling.
+    It will be created at the beginning of the request and is supposed to stay
+    alive unchanged during the request.
+    """
+
+    def __init__(self):
+        """
+        Create the Policy_Object from the database table
+
+        """
+        self.policies = []
+        # read the policies from the database and store it in the object
+        policies = Policy.query.all()
+        for pol in policies:
+            # read each policy
+            self.policies.append(pol.get())
+
+    def get_policies(self, name=None, scope=None, realm=None, active=None,
+                     resolver=None, user=None, client=None, action=None):
+        """
+        Return the policies of the given filter values
+
+        :param name:
+        :param scope:
+        :param realm:
+        :param active:
+        :param resolver:
+        :param user:
+        :param client:
+        :param action:
+        :return: list of policies
+        :rtype: list of dicts
+        """
+        reduced_policies = self.policies
+
+        # Do exact matches for "name", "active" and "scope", as these fields
+        # can only contain one entry
+        p = [("name", name), ("active", active), ("scope", scope)]
+        for searchkey, searchvalue in p:
+            if searchvalue is not None:
+                new_policies = []
+                for policy in reduced_policies:
+                    if policy.get(searchkey) == searchvalue:
+                        new_policies.append(policy)
+                reduced_policies = new_policies
+
+        p = [("action", action), ("user", user), ("resolver", resolver),
+             ("realm", realm)]
+        for searchkey, searchvalue in p:
+            if searchvalue is not None:
+                new_policies = []
+                # first we find policies, that really match!
+                # Either with the real value or with a "*"
+                # values can be excluded by a leading "!" or "-"
+                for policy in reduced_policies:
+                    value_found = False
+                    value_excluded = False
+                    # iterate through the list of values:
+                    for value in policy.get(searchkey):
+                        if value[0] in ["!", "-"] and searchvalue == value[1:]:
+                            value_excluded = True
+                        elif value in [searchvalue, "*"]:
+                            value_found = True
+                    if value_found and not value_excluded:
+                        new_policies.append(policy)
+                # We also find the policies with no desctinct information
+                # about the request value
+                for policy in reduced_policies:
+                    if len(policy.get(searchkey)) == 0:
+                        new_policies.append(policy)
+                reduced_policies = new_policies
+
+        # Match the client IP.
+        # Client IPs may be direct machts, may be located in subnets or may
+        # be excluded by a leading "-" or "!" sign.
+        # The client definition in the policy may ba a comma seperated list.
+        # It may start with a "-" or a "!" to exclude the client
+        # from a subnet.
+        # Thus a client 10.0.0.2 matches a policy "10.0.0.0/8, -10.0.0.1" but
+        # the client 10.0.0.1 does not match the policy "10.0.0.0/8, -10.0.0.1".
+        # An empty client definition in the policy matches all clients.
+        if client is not None:
+            new_policies = []
+            for policy in reduced_policies:
+                client_found = False
+                client_excluded = False
+                for polclient in policy.get("client"):
+                    if polclient[0] in ['-', '!']:
+                        # exclude the client?
+                        if IPAddress(client) in IPNetwork(polclient[1:]):
+                            log.debug("the client %s is excluded by %s in "
+                                      "policy %s" % (client, polclient, policy))
+                            client_excluded = True
+                    elif IPAddress(client) in IPNetwork(polclient):
+                        client_found = True
+                if client_found and not client_excluded:
+                    # The client was contained in the defined subnets and was
+                    #  not excluded
+                    new_policies.append(policy)
+
+            # If there is a policy without any client, we also add it to the
+            # accepted list.
+            for policy in reduced_policies:
+                if len(policy.get("client")) == 0:
+                    new_policies.append(policy)
+            reduced_policies = new_policies
+
+        return reduced_policies
+
+    def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
+                          resolver=None, user=None, client=None):
+        """
+        Get the defined action values for a certain action like
+            scope: authorization
+            action: tokentype
+        would return a list of the tokentypes
+
+            scope: authorization
+            action: serial
+        would return a list of allowed serials
+
+        :return: A list of the allowed tokentypes
+        :rtype: list
+        """
+        action_values = []
+        policies = self.get_policies(scope=SCOPE.AUTHZ,
+                                     action=action, active=True,
+                                     realm=realm, resolver=resolver, user=user,
+                                     client=client)
+        for pol in policies:
+            action_dict = pol.get("action", {})
+            action_values.extend(action_dict.get(action, "").split())
+
+        return action_values
 
 # --------------------------------------------------------------------------
 #
 #  NEW STUFF
 #
 #
-
-class PolicyClass(object):
-    # TODO: Migration
-    pass
 
 
 @log_with(log)
@@ -133,13 +268,33 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :param realm: A realm, for which this policy is valid
     :param resolver: A resolver, for which this policy is valid
     :param user: A username or a list of usernames
-    :param time: N/A
+    :param time: N/A    if type()
     :param client: A client IP with optionally a subnet like 172.16.0.0/16
     :param active: If the policy is active or not
     :type active: bool
     :return: The database ID od the the policy
     :rtype: int
     """
+    if type(action) == dict:
+        action_list = []
+        for k, v in action.iteritems():
+            if v is not True:
+                # value key
+                action_list.append("%s=%s" % (k, v))
+            else:
+                # simple boolean value
+                action_list.append(k)
+        action = ", ".join(action_list)
+    if type(action) == list:
+        action = ", ".join(action)
+    if type(realm) == list:
+        realm = ", ".join(realm)
+    if type(user) == list:
+        user = ", ".join(user)
+    if type(resolver) == list:
+        resolver = ", ".join(resolver)
+    if type(client) == list:
+        client = ", ".join(client)
     p = Policy(name, action=action, scope=scope, realm=realm,
                user=user, time=time, client=client, active=active,
                resolver=resolver).save()
@@ -161,271 +316,22 @@ def delete_policy(name):
     return res
 
 
-def _filter_client(policies, client):
-    """
-    This function defines, how a given client is tried to match the client
-    definition in the policy.
-
-    The client definition in the policy may ba a comma seperated list.
-    It may start with a "-" or a "!" to exclude the client
-    from a subnet.
-
-    Thus a client 10.0.0.2 matches a policy "10.0.0.0/8, -10.0.0.1" but
-    the client 10.0.0.1 does not match the policy "10.0.0.0/8, -10.0.0.1".
-
-    An empty client definition in the policy matches all clients.
-
-    :param policies: dictionary of policy definitions
-    :type policies: dict
-    :param client: client IP
-    :type client: basestring
-    :return: new policy dictionary, which only contains the client
-    """
-    ret_policies = {}
-    for polkey, pol in policies.iteritems():
-        pol_client = pol.get("client", "")
-        if pol_client == "":
-            # No client in the policy, the policy matches
-            ret_policies[pol.get("name")] = pol
-        else:
-            pol_clients = [c.strip() for c in pol.get("client").split(
-                ",")]
-            # There are clients in the policy, so we need to check,
-            # if the client matches these client definitions
-            client_found = False
-            client_excluded = False
-            for pc in pol_clients:
-                if pc:
-                    if pc[0] in ['-', '!']:
-                        if IPAddress(client) in IPNetwork(pc[1:]):
-                            log.debug("the client %s is excluded by %s in "
-                                      "policy %s" % (client, pc, pol))
-                            client_excluded = True
-                    elif IPAddress(client) in IPNetwork(pc):
-                        client_found = True
-            if client_found and not client_excluded:
-                # The client was contained in the defined subnets and was
-                #  not excluded
-                ret_policies[polkey] = pol
-    return ret_policies
-
-
-def _filter_realm(policies, realm):
-    """
-    This function defines, how a given realm is tried to match the realm
-    definition in the policy.
-
-    An empty policy realm or an '*' as policy realm matches all realms.
-
-    :param policies:
-    :param realm:
-    :return:
-    """
-    ret_policies = {}
-    for polkey, pol in policies.iteritems():
-        pol_realm = pol.get("realm", "")
-        if pol_realm == "" or pol_realm == "*":
-            ret_policies[polkey] = pol
-        else:
-            if pol.get("realm") == realm:
-                ret_policies[polkey] = pol
-    return ret_policies
-
-
-def _filter_resolver(policies, resolver):
-    """
-    This function defines, how a given resolver is tried to match the resolver
-    definition in the policy.
-
-    An empty policy resolver or an '*' as policy
-    resolver matches
-    all resolvers.
-
-    :param policies:
-    :param resolver:
-    :return:
-    """
-    ret_policies = {}
-    for polkey, pol in policies.iteritems():
-        pol_resolver = pol.get("resolver", "")
-        if pol_resolver == "" or pol_resolver == "*":
-            ret_policies[polkey] = pol
-        else:
-            if pol.get("resolver") == resolver:
-                ret_policies[polkey] = pol
-    return ret_policies
-
-
-def _filter_user(policies, user):
-    """
-    This function defines, how a given username is tried to match the user
-    definition in the policy.
-
-    An empty policy user or an '*' as policy user matches all users.
-
-    The users can be a comma seperated list.
-    Users may be excluded from the policy by adding "-" or "!" infront of the
-    username. Thus you could define a policy, that is valid for all users,
-    except the "admin" and "superroor":
-
-       user = "*, -admin, -superroot"
-
-    :param policies: The policies, that are filtered for the given user
-    :type policies: dict
-    :param user: the user, who should be found in the policies
-    :type user: basestring
-    :return: the filtered policies, stripped by those policies, that are not
-    valid for the given user
-    :rtype: dict
-    """
-    ret_policies = {}
-    for polkey, pol in policies.iteritems():
-        pol_user = pol.get("user", "")
-        if pol_user == "" or pol_user == "*":
-            ret_policies[polkey] = pol
-        else:
-            pol_users = [c.strip() for c in pol.get("user").split(",")]
-            user_found = False
-            user_excluded = False
-            for pu in pol_users:
-                if pu:
-                    if pu[0] in ['-', '!']:
-                        if user == pu[1:]:
-                            log.debug("the user %s is excluded by %s in "
-                                      "policy %s" % (user, pu, pol))
-                            user_excluded = True
-                    elif user == pu or "*" == pu:
-                        user_found = True
-            if user_found and not user_excluded:
-                # The user was contained in the user list and was not excluded
-                ret_policies[polkey] = pol
-    return ret_policies
-
-
-def _filter_action(policies, action):
-    """
-    This function defines, how a given action is tried to match the action
-    definition in the policy.
-
-    Usually an action should not be empty.
-    So if we see an empty action, we ignore this policy!
-
-    action is a comma separated list.
-    An action can either be a single word or a word, followed by '='.
-
-    An action like 'enroll' would allow enrollment (boolean).
-    An action like 'url=' would define some value for 'url' (string).
-
-    This method just checks, if 'enroll' or 'url' would be contained in a
-    policy and does not check for the values after '='.
-
-    Again, you can exclude action like
-    ``*, -setpin``
-    Allowing all actions in the selfservice portal except setting the pin.
-
-    A policy action '*' matches all (boolean) actions.
-
-    :param policies: The policies, that are filtered for the given user
-    :type policies: dict
-    :param action: the action, that should be contained in the policy
-    :type action: basestring
-    :return: the filtered policies, stripped by those policies, that are do
-    not contain the requested action.
-    :rtype: dict
-    """
-    ret_policies = {}
-    for polkey, pol in policies.iteritems():
-        pol_action = pol.get("action", "")
-        pol_actions = [c.strip() for c in pol_action.split(",")]
-        action_found = False
-        action_excluded = False
-        for pa in pol_actions:
-            if pa:
-                # Just for matching purpose split the values from the action
-                pa = pa.split("=")[0]
-                if pa[0] in ['-', '!']:
-                    if action == pa[1:]:
-                        log.debug("the action %s is excluded by %s in "
-                                  "policy %s" % (action, pa, pol))
-                        action_excluded = True
-                elif action == pa or "*" == pa:
-                    action_found = True
-        if action_found and not action_excluded:
-            # The action was contained in the action list and was not
-            # excluded
-            ret_policies[polkey] = pol
-    return ret_policies
-
-
-
-@log_with(log)
-def get_policies(name=None, scope=None, realm=None, active=None,
-                 resolver=None, user=None, client=None, action=None):
-    """
-    read the complete policies from the database and return
-    them in a dictionary.
-    The parameters apply a filter on the database view.
-
-    The client
-    
-    :param name: THe name of the policy
-    :param scope: The scope of the policy
-    :param realm: Only policies with the given realm.
-    :param active: Only active (True) or inactive (False) policies. If None,
-    all policies are returned.
-    :param action: a comma seperated list of actions
-    :param resolver: The resolver of a policy
-    :param user: The user of a policy
-    :param client: The requesting client, ip address
-    :type client: basestring
-    :return: A dictionary with all policies
-    :rtype: dictionary
-    """
-    policies = {}
-    sql_query = Policy.query
-    if name is not None:
-        sql_query = sql_query.filter(Policy.name == name)
-    if scope is not None:
-        sql_query = sql_query.filter(Policy.scope == scope)
-    if active is not None:
-        sql_query = sql_query.filter(Policy.active == active)
-
-    # Fetch the data from the database
-    for pol in sql_query.all():
-        policies[pol.name] = pol.get()
-
-    # Now we do some more sophisticated filtering
-    if resolver is not None:
-        policies = _filter_resolver(policies, resolver)
-    if realm is not None:
-        policies = _filter_realm(policies, realm)
-    if user is not None:
-        policies = _filter_user(policies, user)
-    if client is not None:
-        policies = _filter_client(policies, client)
-    if action is not None:
-        policies = _filter_action(policies, action)
-
-    return policies
-
-
 @log_with(log)
 def export_policies(policies):
     """
-    This function takes a policy dictionary and creates an export file from it
+    This function takes a policy list and creates an export file from it
     
     :param policies: a policy definition
-    :type policies: dictionary
+    :type policies: list of policy dictionaries
     :return: the contents of the file
     :rtype: string
     """
     file_contents = ""
     if len(policies) > 0:
         for policy in policies:
-            file_contents += "[%s]\n" % policy
-            for key in policies.get(policy):
-                file_contents += "%s = %s\n" % (key,
-                                                policies.get(policy).get(key))
+            file_contents += "[%s]\n" % policy.get("name")
+            for key, value in policy.iteritems():
+                file_contents += "%s = %s\n" % (key, value)
             file_contents += "\n"
 
     return file_contents
@@ -449,13 +355,14 @@ def import_policies(file_contents):
     res = 0
     for policy_name in policies.keys():
         ret = set_policy(name=policy_name,
-                         action=policies[policy_name].get("action"),
+                         action=eval(policies[policy_name].get("action")),
                          scope=policies[policy_name].get("scope"),
-                         realm=policies[policy_name].get("realm"),
-                         user=policies[policy_name].get("user"),
-                         resolver=policies[policy_name].get("resolver"),
-                         client=policies[policy_name].get("client"),
-                         time=policies[policy_name].get("time")
+                         realm=eval(policies[policy_name].get("realm", "[]")),
+                         user=eval(policies[policy_name].get("user", "[]")),
+                         resolver=eval(policies[policy_name].get("resolver",
+                                                                 "[]")),
+                         client=eval(policies[policy_name].get("client", "[]")),
+                         time=policies[policy_name].get("time", "")
                          )
         if ret > 0:
             log.debug("import policy %s: %s" % (policy_name, ret))

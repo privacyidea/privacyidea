@@ -41,7 +41,7 @@ from lib.utils import (getParam,
                        send_result)
 from ..lib.log import log_with
 from ..lib.policy import (set_policy,
-                          get_policies,
+                          PolicyClass,
                           export_policies, import_policies,
                           delete_policy)
 from ..lib.error import (ParameterError)
@@ -224,14 +224,17 @@ def get_policy(name=None, export=None):
     scope = getParam(param, "scope")
     active = getParam(param, "active")
 
+    # TODO: move this to the before method
+    P = PolicyClass()
     if not export:
         log.debug("retrieving policy name: %s, realm: %s, scope: %s"
                   % (name, realm, scope))
-        pol = get_policies(name=name, realm=realm, scope=scope, active=active)
+
+        pol = P.get_policies(name=name, realm=realm, scope=scope, active=active)
         ret = send_result(pol)
     else:
         # We want to export all policies
-        pol = get_policies()
+        pol = P.get_policies()
         response = make_response(export_policies(pol))
         response.headers["Content-Disposition"] = ("attachment; "
                                                    "filename=%s" % export)
@@ -436,13 +439,18 @@ def check_policy_api():
     resolver = getParam(param, "resolver", optional)
 
     # We only get active policies
-    policies = get_policies(user=user, realm=realm, resolver=resolver,
-                            scope=scope, action=action, client=client,
-                            active=True)
+    # TODO: Move policies to the before method
+    P = PolicyClass()
+    policies = P.get_policies(user=user, realm=realm, resolver=resolver,
+                              scope=scope, action=action, client=client,
+                              active=True)
     if len(policies) > 0:
         res["allowed"] = True
         res["policy"] = policies
-        g.audit_object.log({'info': "allowed by policy %s" % policies.keys()})
+        policy_names = []
+        for pol in policies:
+            policy_names.append(pol.get("name"))
+        g.audit_object.log({'info': "allowed by policy %s" % policy_names})
     else:
         res["allowed"] = False
         res["info"] = "No policies found"

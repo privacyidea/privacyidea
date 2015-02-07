@@ -991,12 +991,12 @@ def cleanup_challenges():
 class Policy(db.Model):
     '''
     The policy table contains policy definitions which control
-    the bahviour during
+    the behaviour during
         enrollment
         authentication
-        authroization
-        administratration
-        selfservice...
+        authorization
+        administration
+        user actions
     '''
     __tablename__ = "policy"
     id = db.Column(db.Integer, primary_key=True)
@@ -1009,10 +1009,11 @@ class Policy(db.Model):
     user = db.Column(db.Unicode(256), default=u"")
     client = db.Column(db.Unicode(256), default=u"")
     time = db.Column(db.Unicode(64), default=u"")
+    condition = db.Column(db.Integer, default=0, nullable=False)
     
     def __init__(self, name,
                  active=True, scope="", action="", realm="",
-                 resolver="", user="", client="", time=""):
+                 resolver="", user="", client="", time="", condition=0):
         if type(active) in [str, unicode]:
             if active.lower() in ["true", "1"]:
                 active = True
@@ -1027,6 +1028,23 @@ class Policy(db.Model):
         self.user = user
         self.client = client
         self.time = time
+        self.condition = condition
+
+
+    def _split_string(self, value):
+        """
+        Split the value at the "," and returns an array.
+        If value is empty, it returns an empty array.
+        The normal split would return an array with an empty string.
+
+        :param value: The string to be splitted
+        :type value: basestring
+        :return: list
+        """
+        ret = [r.strip() for r in (value or "").split(",")]
+        if ret == ['']:
+            ret = []
+        return ret
 
     def get(self, key=None):
         """
@@ -1037,14 +1055,23 @@ class Policy(db.Model):
         :rytpe: dict or value
         """
         d = {"name": self.name,
-             "action": self.action,
-             "scope": self.scope,
              "active": self.active,
-             "realm": self.realm,
-             "resolver": self.resolver,
-             "user": self.user,
-             "client": self.client,
-             "time": self.time}
+             "scope": self.scope,
+             "realm": self._split_string(self.realm),
+             "resolver": self._split_string(self.resolver),
+             "user": self._split_string(self.user),
+             "client": self._split_string(self.client),
+             "time": self.time,
+             "condition": self.condition}
+        action_list = [x.strip().split("=") for x in (self.action or "").split(
+            ",")]
+        action_dict = {}
+        for a in action_list:
+            if len(a) > 1:
+                action_dict[a[0]] = a[1]
+            else:
+                action_dict[a[0]] = True
+        d["action"] = action_dict
         if key:
             ret = d.get(key)
         else:
@@ -1060,22 +1087,23 @@ class Policy(db.Model):
             ret = self.id
         else:
             update_param = {}
-            if self.action:
+            if self.action is not None:
                 update_param["action"] = self.action
-            if self.scope:
+            if self.scope is not None:
                 update_param["scope"] = self.scope
-            if self.realm:
+            if self.realm is not None:
                 update_param["realm"] = self.realm
-            if self.resolver:
+            if self.resolver is not None:
                 update_param["resolver"] = self.resolver
-            if self.user:
+            if self.user is not None:
                 update_param["user"] = self.user
-            if self.client:
+            if self.client is not None:
                 update_param["client"] = self.client
-            if self.time:
+            if self.time is not None:
                 update_param["time"] = self.time
-            if self.active:
-                update_param["active"] = self.active
+            update_param["active"] = self.active
+            if self.condition is not None:
+                update_param["condition"] = self.condition
             # update
             Policy.query.filter_by(name=self.name,
                                    ).update(update_param)

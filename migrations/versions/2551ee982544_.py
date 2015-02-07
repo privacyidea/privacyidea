@@ -15,7 +15,11 @@ import sqlalchemy as sa
 
 
 def upgrade():
-    op.add_column('tokeninfo', sa.Column('Type', sa.Unicode(length=100), nullable=True))
+    try:
+        op.add_column('tokeninfo', sa.Column('Type', sa.Unicode(length=100), nullable=True))
+    except Exception as exx:
+        print "Count not add the column 'Type' to table tokeninfo"
+        print (exx)
     ### end Alembic commands ###
 
 

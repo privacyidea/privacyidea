@@ -127,7 +127,8 @@ setup(
                   "migrations/script.py.mako"]),
                 ('lib/privacyidea/migrations/versions',
                  ["migrations/versions/2551ee982544_.py",
-                  "migrations/versions/4f32a4e1bf33_.py"])
+                  "migrations/versions/4f32a4e1bf33_.py",
+                  "migrations/versions/2181294eed0b_.py"])
                 ],
     classifiers=["Framework :: Flask",
                  "License :: OSI Approved :: "

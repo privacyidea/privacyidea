@@ -1,7 +1,7 @@
 import json
 from .base import MyTestCase
 from privacyidea.lib.error import (ParameterError, ConfigAdminError)
-from privacyidea.lib.policy import get_policies
+from privacyidea.lib.policy import PolicyClass
 from urllib import urlencode
 
 PWFILE = "tests/testdata/passwords"
@@ -137,7 +137,7 @@ class APIConfigTestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
             self.assertTrue(result["status"] is True, result)
-            self.assertTrue("pol1" in result["value"], res.data)
+            self.assertTrue("pol1" == result["value"][0].get("name"), res.data)
 
     def test_06_export_policy(self):
         with self.app.test_request_context('/policy/export/test.cfg',
@@ -190,8 +190,12 @@ class APIConfigTestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
             self.assertTrue(result["status"] is True, result)
-            self.assertTrue(result["value"]["pol_update_del"]["client"]
-                            == "1.1.1.1",
+            policy = {}
+            for pol in result["value"]:
+                if pol.get("name") == "pol_update_del":
+                    policy = pol
+                    break
+            self.assertTrue("1.1.1.1" in policy.get("client"),
                             res.data)
             
         # delete policy again does not do anything
@@ -220,7 +224,7 @@ class APIConfigTestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
             self.assertTrue(result["status"] is True, result)
-            self.assertTrue(result["value"] == {}, result)
+            self.assertTrue(result["value"] == [], result)
 
     # Resolvers
     def test_08_pretestresolver(self):
@@ -500,10 +504,11 @@ class APIConfigTestCase(MyTestCase):
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"] == 2, result)
             # check if policies are there
-            p1 = get_policies(name="importpol1")
-            self.assertTrue("importpol1" in p1, p1)
-            p2 = get_policies(name="importpol2")
-            self.assertTrue("importpol2" in p2, p2)
+            P = PolicyClass()
+            p1 = P.get_policies(name="importpol1")
+            self.assertTrue(len(p1) == 1, p1)
+            p2 = P.get_policies(name="importpol2")
+            self.assertTrue(len(p2) == 1, p2)
 
         # import empty file
         with self.app.test_request_context("/policy/import/"

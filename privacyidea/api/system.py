@@ -45,8 +45,7 @@ from ..lib.config import (get_privacyidea_config,
                           set_privacyidea_config,
                           delete_privacyidea_config,
                           get_from_config)
-from ..lib.policy import (set_policy,
-                          get_policies, PolicyClass,
+from ..lib.policy import (set_policy, PolicyClass,
                           export_policies, import_policies,
                           delete_policy, get_static_policy_definitions)
 from ..lib.error import (ParameterError,
@@ -147,7 +146,7 @@ def auth_error(error):
 @token_blueprint.app_errorhandler(PolicyError)
 @audit_blueprint.app_errorhandler(PolicyError)
 def policy_error(error):
-    return send_error(error.description), error.status_code
+    return send_error(error.message), error.id
 
 
 @system_blueprint.app_errorhandler(500)

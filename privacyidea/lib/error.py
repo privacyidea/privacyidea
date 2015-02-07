@@ -95,9 +95,9 @@ class AuthError(BaseError):
         BaseError.__init__(self, error, description, status, headers)
         
 
-class PolicyError(BaseError):
-    def __init__(self, error, description, status=403, headers=None):
-        BaseError.__init__(self, error, description, status, headers)
+class PolicyError(privacyIDEAError):
+    def __init__(self, description, id=403):
+        privacyIDEAError.__init__(self, description=description, id=id)
 
 
 class ValidateError(privacyIDEAError):

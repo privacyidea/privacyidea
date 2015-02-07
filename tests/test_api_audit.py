@@ -1,7 +1,6 @@
 import json
 from .base import MyTestCase
 from privacyidea.lib.error import (ParameterError, ConfigAdminError)
-from privacyidea.lib.policy import get_policies
 from urllib import urlencode
 
 PWFILE = "tests/testdata/passwords"

@@ -32,6 +32,9 @@ from lib.utils import required
 from privacyidea.lib.token import (check_user_pass, check_serial_pass)
 from privacyidea.api.lib.utils import remove_session_from_param
 from privacyidea.lib.audit import getAudit
+from privacyidea.api.lib.policy import (postpolicy,
+                                        check_tokentype, check_serial)
+from privacyidea.lib.policy import PolicyClass
 
 validate_blueprint = Blueprint('validate_blueprint', __name__)
 
@@ -42,6 +45,11 @@ def before_request():
     This is executed before the request
     """
     request.all_data = remove_session_from_param(request.values, request.data)
+    # Create a policy_object, that reads the database audit settings
+    # and contains the complete policy definition during the request.
+    # This audit_object can be used in the postpolicy and prepolicy and it
+    # can be passed to the innerpolicies.
+    g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
     g.audit_object.log({"success": False,
                         "action_detail": "",
@@ -66,6 +74,8 @@ def after_request(response):
 
 
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
+@postpolicy(check_tokentype, request=request)
+@postpolicy(check_serial, request=request)
 @check_user_or_serial_in_request
 def check():
     """
