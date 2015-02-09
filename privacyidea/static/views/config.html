@@ -18,6 +18,11 @@
                     <span class="glyphicon glyphicon-briefcase"
                           aria-hidden="true"></span>
                     System</a></li>
+                <li ng-class="{active: $state.includes('config.policies')}">
+                    <a ui-sref="config.policies">
+                    <span class="glyphicon glyphicon-hand-up"
+                          aria-hidden="true"></span>
+                    Policies</a></li>
                 <li ng-class="{active: $state.includes('config.tokens')}">
                     <a ui-sref="config.tokens">
                     <span class="glyphicon glyphicon-phone"

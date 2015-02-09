@@ -1,0 +1,18 @@
+<div class="row" ng-controller="policyListController">
+    <div class="col-lg-3">
+        <div class="pa-sidebar panel">
+            <ul class="nav nav-pills nav-stacked">
+                <li role="presentation"
+                    ng-class="{ active: $state.includes('config.policies.list')}">
+                    <a ui-sref="config.policies.list">All Policies</a></li>
+                <li role="presentation"
+                    ng-class="{ active: $state.includes('config.policies.details')}">
+                    <a ui-sref="config.policies.details">Create new
+                        Policy</a></li>
+            </ul>
+        </div>
+
+    </div>
+    <div ui-view class="col-lg-9 slide panel">
+    </div>
+</div>

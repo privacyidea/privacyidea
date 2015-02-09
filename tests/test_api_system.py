@@ -627,7 +627,7 @@ class APIConfigTestCase(MyTestCase):
 
 
     def test_13_get_policy_defs(self):
-        with self.app.test_request_context('/system/policydefs',
+        with self.app.test_request_context('/policy/defs',
                                            method='GET',
                                            data={},
                                            headers={'Authorization': self.at}):
@@ -641,7 +641,7 @@ class APIConfigTestCase(MyTestCase):
             self.assertTrue("initHOTP" in admin_pol, admin_pol)
             self.assertTrue("initPW" in admin_pol, admin_pol)
 
-        with self.app.test_request_context('/system/policydefs/admin',
+        with self.app.test_request_context('/policy/defs/admin',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()

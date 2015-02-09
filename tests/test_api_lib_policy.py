@@ -108,3 +108,5 @@ class PolicyDecoratorTestCase(MyTestCase):
         r = check_serial(req, resp)
         jresult = json.loads(r.data)
         self.assertTrue(jresult.get("result").get("value"))
+
+

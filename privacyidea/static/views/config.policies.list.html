@@ -1,0 +1,54 @@
+<div class="table-responsive">
+    <table class="table table-bordered table-responsive table-striped">
+        <thead>
+        <tr>
+            <th>Active</th>
+            <th>Policy Name</th>
+            <th>Scope</th>
+            <th>Action</th>
+            <th>Realm</th>
+            <th>User</th>
+            <th>Resolver</th>
+            <th>Client</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="policy in policies">
+            <td>
+                {{ policy.active }}
+            </td>
+            <td>
+                <a ui-sref="config.policies.details({policyname: policy.name})">
+                    {{ policy.name }}</a>
+            </td>
+            <td>
+                {{ policy.scope }}
+            </td>
+            <td>
+                {{ policy.action | limitTo:5 }}
+            </td>
+            <td>
+                {{ policy.realm }}
+            </td>
+            <td>
+                {{ policy.user }}
+            </td>
+            <td>
+                {{ policy.resolver }}
+            </td>
+            <td>
+                {{ policy.client }}
+            </td>
+            <td>
+                <button class="btn btn-danger"
+                        ng-click="delPolicy(policy.name)">
+                        <div class="glyphicon glyphicon-trash">
+                        Delete
+                        </div>
+                </button>
+            </td>
+        </tr>
+
+        </tbody>
+    </table>
+</div>

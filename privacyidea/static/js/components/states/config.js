@@ -71,6 +71,19 @@ angular.module('privacyideaApp.config', ['ui.router']).config(
                     url: "/system",
                     templateUrl: path + "config.system.html"
                 })
+                .state('config.policies', {
+                    url: "/policies",
+                    templateUrl: path + "config.policies.html"
+                })
+                .state('config.policies.list', {
+                    url: "/list",
+                    templateUrl: path + "config.policies.list.html"
+                })
+                .state('config.policies.details', {
+                    url: "/details/{policyname:.*}",
+                    templateUrl: path + "config.policies.details.html",
+                    controller: "policyDetailsController"
+                })
                 .state('config.tokens', {
                     url: "/tokens/{tokentype:.*}",
                     templateUrl: path + "config.tokens.html"

@@ -19,7 +19,9 @@
  *
  */
 myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
-                                         resolverUrl, realmUrl, defaultRealmUrl, systemUrl) {
+                                         resolverUrl, realmUrl,
+                                         policyUrl,
+                                         defaultRealmUrl, systemUrl) {
     /**
      Each service - just like this service factory - is a singleton.
      */
@@ -32,6 +34,38 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
     };
 
     return {
+        delPolicy: function (policyName, callback) {
+            $http.delete(policyUrl + "/" + policyName, {
+                headers: {'Authorization': AuthFactory.getAuthToken()}}
+            ).success(callback
+            ).error(error_func);
+        },
+        setPolicy: function (policyName, params, callback) {
+            $http.post(policyUrl + "/" + policyName, params, {
+                headers: {'Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback
+            ).error(error_func);
+        },
+        getPolicies: function (callback) {
+            $http.get(policyUrl, {
+                headers: {'Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
+        getPolicy: function (policyname, callback) {
+            $http.get(policyUrl + "/" + policyname, {
+                headers: {'Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
+        getPolicyDefs: function (callback) {
+            // Return the policy definitions
+            $http.get(policyUrl + "/defs", {
+                headers: {'Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
         getResolvers: function (callback) {
             $http.get(resolverUrl, {
                 headers: {'Authorization': AuthFactory.getAuthToken()}

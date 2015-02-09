@@ -18,6 +18,199 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+myApp.controller("policyListController", function($scope, $stateParams,
+                                                    $location, ConfigFactory) {
+    if ($location.path() == "/config/policies") {
+        $location.path("/config/policies/list");
+    }
+
+    // Get all policies
+    $scope.getPolicies = function () {
+        ConfigFactory.getPolicies(function(data) {
+            $scope.policies = data.result.value;
+            console.log("Fetched all policies");
+            console.log($scope.policies);
+        });
+    };
+
+    $scope.delPolicy = function (policyName) {
+        ConfigFactory.delPolicy(policyName, function(data) {
+            $scope.getPolicies();
+        });
+    };
+
+    $scope.getPolicies();
+});
+
+myApp.controller("policyDetailsController", function($scope, $stateParams,
+                                                     ConfigFactory, $state) {
+    // init
+    $scope.realms = [];
+    $scope.resolvers = [];
+    $scope.realmsLoaded = false;
+    $scope.resolversLoaded = false;
+    $scope.scopes = [];
+
+    // get init values from the server
+    ConfigFactory.getRealms(function(data){
+        var realms = data.result.value;
+        angular.forEach(realms, function (value, key) {
+            $scope.realms.push({name: key, ticked: false});
+        });
+        // after realms and resolvers have loaded, we can preset the policy values
+        $scope.realmsLoaded = true;
+        if ($scope.resolversLoaded) {
+            $scope.presetEditValues();
+        }
+    });
+    ConfigFactory.getResolvers(function(data) {
+        var resolvers = data.result.value;
+        angular.forEach(resolvers, function(value, key) {
+            $scope.resolvers.push({name: key, ticked: false});
+        });
+        // after realms and resolvers have loaded, we can preset the policy values
+        $scope.resolversLoaded = true;
+        if ($scope.realmsLoaded) {
+            $scope.presetEditValues();
+        }
+    });
+    $scope.params = {
+            action: "",
+            scope: "",
+            realm: "",
+            resolver: "",
+            user: "",
+            active: true,
+            client: ""
+        };
+    $scope.existingPolicyname = $stateParams.policyname;
+    if ($scope.existingPolicyname) {
+        $scope.policyname = $scope.existingPolicyname;
+    }
+
+    ConfigFactory.getPolicyDefs(function (data) {
+        $scope.policyDefs = data.result.value;
+        // fill the scope:
+        angular.forEach($scope.policyDefs, function (value, key) {
+            $scope.scopes.push({name: key, ticked: false})
+        });
+    });
+
+    // define functions
+    $scope.fillActionList = function (scope, policyActions) {
+        // Each time the scope is changed, we need to fill the
+        // action dropdown.
+        // in the case of action values, we need to provide a list of
+        // checkboxes and input fields.
+        // we can do this with include files like at token.enroll
+        console.log(scope);
+        var actions = $scope.policyDefs[scope];
+        console.log(actions);
+        $scope.actions = [];
+        $scope.actionValues = false;
+
+        angular.forEach(actions, function(value, key) {
+            // TODO: we might evaluate value.group and group the actions
+            //$scope.actions.push({name: "GroupName", multiSelectGroup: true})
+            //$scope.actions.push({multiSelectGroup: false})
+            // Check the given policy actions
+            var ticked = false;
+            if (policyActions && policyActions[key] == true) {
+                ticked = true;
+            }
+            $scope.actions.push({name: key, help: value.desc, ticked: ticked});
+            // Check if we need to do actionValues
+            if (value.type != "bool") {
+                $scope.actionValues = true;
+            }
+        });
+    };
+
+    $scope.createPolicy = function () {
+        // get scope
+        var scope = $scope.selectedScope[0].name;
+        var realms = [];
+        var resolvers = [];
+        var actions = [];
+        $scope.params.scope = scope;
+        // get actions
+        // TODO: we need to process the value-actions
+        angular.forEach($scope.selectedActions, function(value, key) {
+            console.log(value);
+            actions.push(value.name);
+            $scope.params.action = actions;
+        });
+        // get realms
+        angular.forEach($scope.selectedRealms, function(value, key) {
+            console.log(value);
+            realms.push(value.name);
+            $scope.params.realm = realms;
+        });
+        // get resolvers
+        angular.forEach($scope.selectedResolvers, function(value, key) {
+            console.log(value);
+            resolvers.push(value.name);
+            $scope.params.resolver = resolvers;
+        });
+        ConfigFactory.setPolicy($scope.policyname, $scope.params,
+            function(data) {
+                console.log(data);
+                // Return to the policy list
+                $scope.getPolicies();
+                $state.go("config.policies.list");
+            })
+    };
+
+    $scope.presetEditValues = function () {
+        console.log("presetEditValues");
+        console.log($scope.policies);
+
+        presetEditValues2 = function(policy) {
+            console.log(policy);
+            // fill $scope.params
+            $scope.params.user = policy.user;
+            $scope.params.active = policy.active;
+            $scope.params.client = policy.client;
+            // tick the realms and the resolvers
+            angular.forEach($scope.realms, function (value, key) {
+                if (policy.realm.indexOf(value.name) > -1) {
+                    $scope.realms[key].ticked = true;
+                }
+            });
+            angular.forEach($scope.resolvers, function (value, key) {
+                if (policy.resolver.indexOf(value.name) > -1) {
+                    $scope.resolvers[key].ticked = true;
+                }
+            });
+            angular.forEach($scope.scopes, function (value, key){
+                if (policy.scope == value.name) {
+                    $scope.scopes[key].ticked = true;
+                } else {
+                    $scope.scopes[key].ticked = false;
+                }
+            });
+            $scope.fillActionList(policy.scope, policy.action);
+        };
+
+        if ($scope.policies) {
+            // We have $scope.policies, since we come from the state policies.list
+            angular.forEach($scope.policies, function (value, key){
+               if (value.name == $stateParams.policyname) {
+                    presetEditValues2(value);
+               }
+            });
+        } else {
+            // We have no $scope.policies, maybe since we are called directly.
+            // So we need to fetch this policy definition
+            ConfigFactory.getPolicy($stateParams.policyname, function (data) {
+                var policy = data.result.value[0];
+                presetEditValues2(policy);
+            });
+        }
+    }
+
+});
+
 myApp.controller("tokenConfigController", function ($scope, $location,
                                                     $rootScope, $state,
                                                     $stateParams,

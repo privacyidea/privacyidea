@@ -98,6 +98,9 @@ optional = True
 required = False
 
 class SCOPE():
+    __doc__ = """This is the list of the allowed scopes that can be used in
+    policy definitions.
+    """
     AUTHZ = "authorization"
     ADMIN = "admin"
     AUTH = "authentication"
@@ -415,24 +418,43 @@ def get_static_policy_definitions(scope=None):
                          'desc' : _('Admin is allowed to view the list of the users.')},
             'checkstatus': {'type': 'bool',
                             'desc' : _('Admin is allowed to check the status of a challenge'
-                                       ' resonse token.')},
+                                       ' resonse token.'),
+                            "group": "tools"},
             'manageToken': {'type': 'bool',
                             'desc' : _('Admin is allowed to manage the realms of a token.')},
             'getserial': {'type': 'bool',
-                          'desc' : _('Admin is allowed to retrieve a serial for a given OTP value.')},
+                          'desc' : _('Admin is allowed to retrieve a serial '
+                                     'for a given OTP value.'),
+                          "group": "tools"},
             'checkserial': {'type': 'bool',
-                            'desc': _('Admin is allowed to check if a serial is unique')},
+                            'desc': _('Admin is allowed to check if a serial '
+                                      'is unique'),
+                            "group": "tools"},
             'copytokenpin': {'type': 'bool',
                              'desc' : _('Admin is allowed to copy the PIN of one token '
-                                        'to another token.')},
+                                        'to another token.'),
+                             "group": "tools"},
             'copytokenuser': {'type': 'bool',
                               'desc' : _('Admin is allowed to copy the assigned user to another'
-                                         ' token, i.e. assign a user ot another token.')},
+                                         ' token, i.e. assign a user ot '
+                                         'another token.'),
+                              "group": "tools"},
             'losttoken': {'type': 'bool',
-                          'desc' : _('Admin is allowed to trigger the lost token workflow.')},
+                          'desc' : _('Admin is allowed to trigger the lost '
+                                     'token workflow.'),
+                          "group": "tools"},
             'getotp': {
                 'type': 'bool',
-                'desc': _('Allow the administrator to retrieve OTP values for tokens.')}
+                'desc': _('Allow the administrator to retrieve OTP values for tokens.'),
+                "group": "tools"},
+            'systemread': {'type': 'bool',
+                     "desc" : _("Admin is allowed to read the system "
+                                "configuration."),
+                    "group": "system"},
+            'systemwrite': {'type': 'bool',
+                      "desc" : _("Admin is allowed to write and modify the "
+                                 "system configuration."),
+                      "group": "system"},
         },
         'gettoken': {
             'max_count_dpw': {'type': 'int',
@@ -445,7 +467,7 @@ def get_static_policy_definitions(scope=None):
                                'desc' : _('When OTP values are retrieved for a TOTP token, '
                                           'this is the maximum number of retrievable OTP values.')},
         },
-        'selfservice': {
+        'user': {
             'assign': {
                 'type': 'bool',
                 'desc': _("The user is allowed to assign an existing token"
@@ -501,12 +523,6 @@ def get_static_policy_definitions(scope=None):
             'auth' : {
                 'type' : 'str',
                 'desc' : _('If set to "otp": Users in this realm need to login with OTP to the selfservice.')}
-            },
-        'system': {
-            'read': {'type': 'bool',
-                     "desc" : _("Admin is allowed to read the system configuration.")},
-            'write': {'type': 'bool',
-                      "desc" : _("Admin is allowed to write and modify the system configuration.")},
             },
         'enrollment': {
             'tokencount': {

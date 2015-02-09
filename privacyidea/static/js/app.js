@@ -21,7 +21,8 @@
 myApp = angular.module("privacyideaApp",
     ['privacyideaAuth',
         'ui.router', 'ui.bootstrap', 'TokenModule',
-        'ngAnimate', 'ngIdle', 'privacyideaApp.config']);
+        'ngAnimate', 'ngIdle', 'privacyideaApp.config',
+    'multi-select']);
 myApp.config(function ($urlRouterProvider) {
     // For any unmatched url, redirect to /token
     $urlRouterProvider.otherwise("/token/");
@@ -48,6 +49,7 @@ myApp.constant("defaultRealmUrl", instance + "/defaultrealm");
 myApp.constant("validateUrl", instance + "/validate");
 myApp.constant("systemUrl", instance + "/system");
 myApp.constant("auditUrl", instance + "/audit");
+myApp.constant("policyUrl", instance + "/policy");
 myApp.run(['$rootScope', '$state', '$stateParams',
         function ($rootScope, $state, $stateParams) {
 

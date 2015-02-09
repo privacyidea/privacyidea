@@ -1,0 +1,134 @@
+<h2 class="form-signin-heading"
+        ng-show="existingPolicyname">Edit Policy {{ existingPolicyname }}
+<button class="btn btn-danger"
+        ng-show="params.active">
+    Disable
+</button>
+<button class="btn btn-success"
+        ng-hide="params.active">
+    Enable
+</button>
+</h2>
+
+<h2 class="form-signin-heading"
+        ng-hide="existingPolicyname">Create a new Policy</h2>
+
+<form name="formPolicyAdd" role="form" validate
+      class="form-horizontal">
+
+    <div class="form-group">
+        <label for="policyname" class="col-sm-3 control-label">Policy
+            Name</label>
+
+        <div class="col-sm-9">
+            <input name="policyname" id="policyname" class="form-control"
+                   ng-model="policyname" required placeholder="policy1"
+                   autofocus required/>
+            <p class="help-block"
+                ng-show="existingPolicyname">
+                If you change the name of the policy, it will create a new policy
+                with the new name!
+            </p>
+        </div>
+
+    </div>
+    <div class="form-group">
+        <label for="scope" class="col-sm-3 control-label">
+            Scope</label>
+
+        <div class="col-sm-9">
+            <div multi-select
+                 input-model="scopes"
+                 output-model="selectedScope"
+                 button-label="name"
+                 item-label="name"
+                 tick-property="ticked"
+                 selection-mode="single"
+                 on-item-click="fillActionList(selectedScope[0].name)"
+                    >
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="action" class="col-sm-3 control-label">Action</label>
+
+        <div class="col-sm-9">
+            <div multi-select
+                 ng-hide="actionValues"
+                 input-model="actions"
+                 output-model="selectedActions"
+                 button-label="name"
+                 item-label="icon name"
+                 tick-property="ticked"
+                 group-property="multiSelectGroup"
+                    >
+            </div>
+            <div ng-show="actionValues">
+                TODO: We need to show Action Values
+            </div>
+
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="realm" class="col-sm-3 control-label">Realm</label>
+
+        <div class="col-sm-9">
+            <div multi-select
+                 input-model="realms"
+                 output-model="selectedRealms"
+                 button-label="icon name"
+                 item-label="icon name maker"
+                 tick-property="ticked"
+                    >
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="resolver" class="col-sm-3 control-label">Resolver</label>
+
+        <div class="col-sm-9">
+            <div multi-select
+                 input-model="resolvers"
+                 output-model="selectedResolvers"
+                 button-label="icon name"
+                 item-label="icon name maker"
+                 tick-property="ticked"
+                    >
+            </div>
+        </div>
+    </div>
+        <div class="form-group">
+        <label for="user" class="col-sm-3 control-label">User</label>
+
+        <div class="col-sm-9">
+            <input name="user" class="form-control"
+                   type="text"
+                   ng-model="params.user"
+                   placeholder="admin, superuser"/>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="client" class="col-sm-3 control-label">Client</label>
+
+        <div class="col-sm-9">
+            <input name="client" class="form-control"
+                   type="text"
+                   ng-model="params.client"
+                   placeholder="10.0.0.0/8, !10.0.0.124"/>
+        </div>
+    </div>
+
+
+    <div class="text-center">
+        <button ng-click="createPolicy()"
+                ng-disabled="formPolicyAdd.$invalid"
+                class="btn btn-primary">
+            <div class="glyphicon glyphicon-plus">
+                Create Policy
+            </div>
+        </button>
+    </div>
+
+</form>
+</div>

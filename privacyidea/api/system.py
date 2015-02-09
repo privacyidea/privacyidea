@@ -45,13 +45,10 @@ from ..lib.config import (get_privacyidea_config,
                           set_privacyidea_config,
                           delete_privacyidea_config,
                           get_from_config)
-from ..lib.policy import (set_policy, PolicyClass,
-                          export_policies, import_policies,
-                          delete_policy, get_static_policy_definitions)
+from ..lib.policy import PolicyClass
 from ..lib.error import (ParameterError,
                          AuthError,
                          PolicyError)
-from ..lib.token import get_dynamic_policy_definitions
 from ..lib.audit import getAudit
 
 from .auth import admin_required
@@ -296,39 +293,6 @@ def delete_config(key=None):
                         'info': key})
     return send_result(res)
 
-
-
-@log_with(log)
-@system_blueprint.route('/policydefs', methods=['GET'])
-@system_blueprint.route('/policydefs/<scope>', methods=['GET'])
-def get_policy_defs(scope=None):
-    """
-    This is a helper function that returns the POSSIBLE policy
-    definitions, that can
-    be used to define your policies.
-
-    :param scope: if given, the function will only return policy
-                  definitions for the given scope.
-
-    :return: The policy definitions of the allowed scope with the actions and
-    action types. The top level key is the scope.
-    :rtype: dict
-    """
-    pol = {}
-    static_pol = get_static_policy_definitions()
-    dynamic_pol = get_dynamic_policy_definitions()
-
-    # combine static and dynamic policies
-    keys = static_pol.keys() + dynamic_pol.keys()
-    pol = {k: dict(static_pol.get(k, {}).items()
-                   + dynamic_pol.get(k, {}).items()) for k in keys}
-
-    if scope:
-        pol = pol.get(scope)
-
-    g.audit_object.log({"success": True,
-                        'info': scope})
-    return send_result(pol)
 
 """
 @log_with(log)
