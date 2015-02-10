@@ -25,19 +25,19 @@
                 {{ policy.scope }}
             </td>
             <td>
-                {{ policy.action | limitTo:5 }}
+                {{ policy.action | json }}
             </td>
             <td>
-                {{ policy.realm }}
+                {{ policy.realm | json }}
             </td>
             <td>
-                {{ policy.user }}
+                {{ policy.user | json }}
             </td>
             <td>
-                {{ policy.resolver }}
+                {{ policy.resolver | json }}
             </td>
             <td>
-                {{ policy.client }}
+                {{ policy.client | json }}
             </td>
             <td>
                 <button class="btn btn-danger"

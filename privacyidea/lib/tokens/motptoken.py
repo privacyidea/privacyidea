@@ -91,7 +91,7 @@ class MotpTokenClass(TokenClass):
                           'title': {'html': 'motptoken.mako',
                                     'scope': 'config.title', },
                           },
-               'selfservice': {'enroll': {'page':
+               'user': {'enroll': {'page':
                                           {'html': 'motptoken.mako',
                                            'scope': 'selfservice.enroll'},
                                           'title':
@@ -107,7 +107,7 @@ class MotpTokenClass(TokenClass):
                                                       'scope': 'selfservice.title.provision'}
                                                      }
                                },
-               'policy': {'selfservice': {'motp_webprovision': {'type': 'bool',
+               'policy': {'user': {'motp_webprovision': {'type': 'bool',
                                                                 'desc': 'Enroll mOTP token via QR-Code.'}
                                           }}
                }

@@ -90,7 +90,7 @@ class YubikeyTokenClass(TokenClass):
                'description': 'Yubico token to run the AES OTP mode.',
                'init': {},
                'config': {},
-               'selfservice': {},
+               'user': {},
                'policy': {}
         }
 

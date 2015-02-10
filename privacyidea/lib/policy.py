@@ -493,10 +493,10 @@ def get_static_policy_definitions(scope=None):
             'getotp': {'type': 'bool',
                        "desc": _("The user is allowed to retrieve OTP values for his own tokens.")},
             'otp_pin_maxlength': {'type': 'int',
-                                  'value': range(0, 100),
+                                  'value': range(0, 32),
                                   "desc": _("Set the maximum allowed length of the OTP PIN.")},
             'otp_pin_minlength': {'type': 'int',
-                                  'value': range(0, 100),
+                                  'value': range(0, 32),
                                   "desc" : _("Set the minimum required lenght of the OTP PIN.")},
             'otp_pin_contents': {'type': 'str',
                                  "desc" : _("Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, (s)pecial, (o)thers. [+/-]!")},
@@ -534,7 +534,7 @@ def get_static_policy_definitions(scope=None):
                         'have assigned.')},
             'otp_pin_random': {
                 'type': 'int',
-                'value': range(0, 100),
+                'value': range(0, 32),
                 "desc": _("Set a random OTP PIN with this lenght for a token.")},
             'otp_pin_encrypt': {
                 'type': 'int',
@@ -572,11 +572,11 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('The text that will be send via SMS for an SMS token. '
                         'Use &lt;otp&gt; and &lt;serial&gt; as parameters.')},
             'otppin': {
-                'type': 'int',
-                'value': [0, 1, 2],
-                'desc': _('Either use the Token PIN (0), use the Userstore '
-                        'Password (1) or use no fixed password '
-                        'component (2).')},
+                'type': 'str',
+                'value': ['token pin', 'userstore', 'none'],
+                'desc': _('Either use the Token PIN , use the Userstore '
+                        'Password or use no fixed password '
+                        'component.')},
             'autosms': {
                 'type': 'bool',
                 'desc': _('If set, a new SMS OTP will be sent after '

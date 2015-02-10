@@ -107,7 +107,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
         var actions = $scope.policyDefs[scope];
         console.log(actions);
         $scope.actions = [];
-        $scope.actionValues = false;
+        $scope.isActionValues = false;
 
         angular.forEach(actions, function(value, key) {
             // TODO: we might evaluate value.group and group the actions
@@ -121,25 +121,77 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             $scope.actions.push({name: key, help: value.desc, ticked: ticked});
             // Check if we need to do actionValues
             if (value.type != "bool") {
-                $scope.actionValues = true;
+                $scope.isActionValues = true;
             }
         });
+
+        if ($scope.isActionValues) {
+            // This holds the array of actionValues
+            $scope.actionValuesStr = {};
+            $scope.actionValuesNum = {};
+            $scope.actionCheckBox = {};
+            $scope.actions = [];
+            // This scope contains action values. We need to create
+            // a list of checkboxes and input fields.
+            angular.forEach(actions, function(value, key) {
+                $scope.actions.push({name: key,
+                                     type: value.type,
+                                     desc: value.desc,
+                                     allowedValues: value.value});
+                // preset the fields
+                if (policyActions && policyActions[key]) {
+                    $scope.actionCheckBox[key] = true;
+                    if (policyActions[key] !== true) {
+                        if (value.type == "str")
+                            $scope.actionValuesStr[key] = policyActions[key];
+                        if (value.type == "int")
+                            $scope.actionValuesNum[key] = parseInt(policyActions[key]);
+                    }
+                }
+            });
+        }
     };
 
     $scope.createPolicy = function () {
+        // This is called to save the policy
         // get scope
         var scope = $scope.selectedScope[0].name;
         var realms = [];
         var resolvers = [];
         var actions = [];
         $scope.params.scope = scope;
+        $scope.params.action = [];
         // get actions
-        // TODO: we need to process the value-actions
-        angular.forEach($scope.selectedActions, function(value, key) {
-            console.log(value);
-            actions.push(value.name);
-            $scope.params.action = actions;
-        });
+
+        if ($scope.isActionValues) {
+            // we need to process the value-actions
+            // iterate through the checkboxes
+            angular.forEach($scope.actionCheckBox, function(value, key){
+                if (value) {
+                    // The action is checked. So try to get an action value.
+                    // either a string, a num or only a bool
+                    var aval = $scope.actionValuesStr[key];
+                    if (aval) {
+                        $scope.params.action.push(key + "=" + aval);
+                    } else {
+                        aval = $scope.actionValuesNum[key];
+                        if (aval === false || aval === undefined) {
+                            // We must avoid getting here if aval==0
+                            // it is a bool value
+                            $scope.params.action.push(key);
+                        } else {
+                            $scope.params.action.push(key + "=" + aval);
+                        }
+                    }
+                }
+            });
+        } else {
+            // We only have boolean actions...
+            angular.forEach($scope.selectedActions, function (value, key) {
+                console.log(value);
+                $scope.params.action.push(value.name);
+            });
+        }
         // get realms
         angular.forEach($scope.selectedRealms, function(value, key) {
             console.log(value);

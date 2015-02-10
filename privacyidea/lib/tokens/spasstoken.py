@@ -90,7 +90,7 @@ class SpassTokenClass(TokenClass):
                                   'scope': 'enroll.title'}
                },
                'config': {},
-               'selfservice': {},
+               'user': {},
                'policy': {},
                }
 

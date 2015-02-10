@@ -102,7 +102,7 @@ class YubicoTokenClass(TokenClass):
                           'title': {'html': 'yubicotoken.mako',
                                     'scope': 'config.title'}
                },
-               'selfservice':  {'enroll': {'page': {
+               'user':  {'enroll': {'page': {
                    'html': 'yubicotoken.mako',
                    'scope': 'selfservice.enroll'},
                                            'title': {'html': 'yubicotoken.mako',

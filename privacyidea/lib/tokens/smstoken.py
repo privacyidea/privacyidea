@@ -113,7 +113,7 @@ class SmsTokenClass(HotpTokenClass):
                           'page': {'html': 'smstoken.mako',
                                    'scope': 'config'}
                },
-               'selfservice': {'enroll': {
+               'user': {'enroll': {
                    'title': {'html': 'smstoken.mako',
                              'scope': 'selfservice.title.enroll'
                    },

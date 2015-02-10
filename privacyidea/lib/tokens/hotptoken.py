@@ -113,7 +113,7 @@ class HotpTokenClass(TokenClass):
                           'title': {'html': 'hotptoken.mako',
                                     'scope': 'config.title', },
                           },
-               'selfservice': {'enroll': {'page': {'html': 'hotptoken.mako',
+               'user': {'enroll': {'page': {'html': 'hotptoken.mako',
                                                    'scope': 'selfservice.'
                                                    'enroll', },
                                           'title': {'html': 'hotptoken.mako',
@@ -121,8 +121,10 @@ class HotpTokenClass(TokenClass):
                                                     'title.enroll', },
                                           },
                                },
-               'policy': {'selfservice': {'hotp_hashlib': {'type': 'int',
-                                                           'value': [1, 2],
+               'policy': {'user': {'hotp_hashlib': {'type': 'int',
+                                                           'value': ["sha1",
+                                                                     "sha256",
+                                                                     "sha512"],
                                                            'desc': desc_self1
                                                            },
                                           'hotp_otplen': {'type': 'int',

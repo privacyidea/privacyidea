@@ -88,7 +88,7 @@ class SSHkeyTokenClass(TokenClass):
                         },
                'config': {},
                # TODO we need to add selfservice!
-               'selfservice': {},
+               'user': {},
                'policy': {},
                }
         if key is not None and key in res:

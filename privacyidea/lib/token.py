@@ -1925,16 +1925,16 @@ def get_dynamic_policy_definitions(scope=None):
     :return: The policy definition for the token or only for the scope.
     """
     pol = {"admin": {},
-           "selfservice": {}}
+           "user": {}}
     for ttype in get_token_types():
         pol['admin']["init%s" % ttype.upper()] = {'type': 'bool',
                                                   'desc': _('Admin is allowed'
                                                             'to initalize %s '
                                                             'tokens.') % ttype.upper()}
 
-        conf = get_tokenclass_info(ttype, section='selfservice')
+        conf = get_tokenclass_info(ttype, section='user')
         if 'enroll' in conf:
-            pol['selfservice']["enroll%s" % ttype.upper()] = {
+            pol['user']["enroll%s" % ttype.upper()] = {
                 'type': 'bool',
                 'desc': _("The user is allowed to enroll a %s token.") % ttype}
 

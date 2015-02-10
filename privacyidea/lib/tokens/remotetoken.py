@@ -121,7 +121,7 @@ class RemoteTokenClass(TokenClass):
                                     'scope': 'config.title', },
                           },
 
-               'selfservice': {},
+               'user': {},
                'policy': {},
                }
 

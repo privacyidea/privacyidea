@@ -90,7 +90,7 @@ class PasswordTokenClass(TokenClass):
                                'lost token scenario.'),
                'init': {},
                'config': {},
-               'selfservice':  {},
+               'user':  {},
                'policy': {},
                }
         # I don't think we need to define the lost token policies here...

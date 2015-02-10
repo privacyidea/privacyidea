@@ -119,7 +119,7 @@ class TotpTokenClass(HotpTokenClass):
                           'title': {'html': 'totptoken.mako',
                                     'scope': 'config.title'},
                           },
-               'selfservice': {'enroll': {'page': {'html': 'totptoken.mako',
+               'user': {'enroll': {'page': {'html': 'totptoken.mako',
                                                    'scope': 'selfservice.'
                                                    'enroll'},
                                           'title': {'html': 'totptoken.mako',
@@ -127,7 +127,7 @@ class TotpTokenClass(HotpTokenClass):
                                                     'title.enroll'},
                                           },
                                },
-               'policy': {'selfservice': {'totp_timestep': {'type': 'int',
+               'policy': {'user': {'totp_timestep': {'type': 'int',
                                                             'value': [30, 60],
                                                             'desc': 'Specify '
                                                             'the time step of '
@@ -135,7 +135,9 @@ class TotpTokenClass(HotpTokenClass):
                                                             ' token.'
                                                             },
                                           'totp_hashlib': {'type': 'int',
-                                                           'value': [1, 2],
+                                                           'value': ["sha1",
+                                                                     "sha256",
+                                                                     "sha512"],
                                                            'desc': 'Specify '
                                                            'the hashlib to be '
                                                            'used. Can be sha1'

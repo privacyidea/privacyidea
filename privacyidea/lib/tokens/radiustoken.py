@@ -96,7 +96,7 @@ class RadiusTokenClass(RemoteTokenClass):
                                    'scope': 'config'},
                           'title': {'html': 'radiustoken.mako',
                                     'scope': 'config.title'}},
-               'selfservice':  {},
+               'user':  {},
                'policy': {},
                }
 
