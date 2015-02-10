@@ -1,10 +1,12 @@
 <h2 class="form-signin-heading"
         ng-show="existingPolicyname">Edit Policy {{ existingPolicyname }}
 <button class="btn btn-danger"
+        ng-click="disablePolicy(existingPolicyname)"
         ng-show="params.active">
     Disable
 </button>
 <button class="btn btn-success"
+        ng-click="enablePolicy(existingPolicyname)"
         ng-hide="params.active">
     Enable
 </button>

@@ -59,6 +59,18 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
             }).success(callback
             ).error(error_func);
         },
+        enablePolicy: function (policyname, callback) {
+            $http.post(policyUrl + "/enable/" + policyname, {}, {
+                headers: {'Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
+        disablePolicy: function (policyname, callback) {
+            $http.post(policyUrl + "/disable/" + policyname, {}, {
+                headers: {'Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
         getPolicyDefs: function (callback) {
             // Return the policy definitions
             $http.get(policyUrl + "/defs", {

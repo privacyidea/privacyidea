@@ -206,7 +206,7 @@ class TokenTestCase(MyTestCase):
 
     def test_09_get_tokenclass_info(self):
         info = get_tokenclass_info("hotp")
-        self.assertTrue("selfservice" in info, info)
+        self.assertTrue("user" in info, info)
         self.assertTrue(info.get("type") == "hotp", info)
 
     def test_10_get_all_token_users(self):
@@ -855,7 +855,7 @@ class TokenTestCase(MyTestCase):
 
     def test_40_dynamic_policies(self):
         p = get_dynamic_policy_definitions()
-        self.assertTrue("selfservice" in p, p)
+        self.assertTrue("user" in p, p)
         self.assertTrue("admin" in p, p)
 
         p = get_dynamic_policy_definitions(scope="admin")

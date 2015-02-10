@@ -611,7 +611,7 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertTrue("config" in ti, ti)
         self.assertTrue("policy" in ti, ti)
         self.assertTrue("title" in ti, ti)
-        self.assertTrue("selfservice" in ti, ti)
+        self.assertTrue("user" in ti, ti)
         config = token.get_class_info("config")
         self.assertTrue("page" in config, config)
         self.assertTrue("title" in config, config)

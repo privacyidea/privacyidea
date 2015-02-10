@@ -97,6 +97,20 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
     });
 
     // define functions
+    $scope.enablePolicy = function (name) {
+        ConfigFactory.enablePolicy(name, function () {
+            $scope.params.active = true;
+            $scope.getPolicies();
+        })
+    };
+
+    $scope.disablePolicy = function (name) {
+        ConfigFactory.disablePolicy(name, function () {
+            $scope.params.active = false;
+            $scope.getPolicies();
+        })
+    };
+
     $scope.fillActionList = function (scope, policyActions) {
         // Each time the scope is changed, we need to fill the
         // action dropdown.

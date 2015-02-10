@@ -15,7 +15,8 @@
         <tbody>
         <tr ng-repeat="policy in policies">
             <td>
-                {{ policy.active }}
+                <span ng-show="policy.active"
+                      class="glyphicon glyphicon-ok"></span>
             </td>
             <td>
                 <a ui-sref="config.policies.details({policyname: policy.name})">

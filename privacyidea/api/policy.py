@@ -43,7 +43,8 @@ from ..lib.log import log_with
 from ..lib.policy import (set_policy,
                           PolicyClass,
                           export_policies, import_policies,
-                          delete_policy, get_static_policy_definitions)
+                          delete_policy, get_static_policy_definitions,
+                          enable_policy)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
 
@@ -67,6 +68,32 @@ policy_blueprint = Blueprint('policy_blueprint', __name__)
 #
 # POLICY functions
 #
+
+@log_with(log)
+@policy_blueprint.route('/enable/<name>', methods=['POST'])
+def enable_policy_api(name):
+    """
+    Enable a given policy by its name.
+    :param name: Name of the policy
+    :return: ID in the database
+    """
+    p = enable_policy(name)
+    g.audit_object.log({"success": True})
+    return send_result(p)
+
+
+@log_with(log)
+@policy_blueprint.route('/disable/<name>', methods=['POST'])
+def disable_policy_api(name):
+    """
+    Disable a given policy by its name.
+    :param name: The name of the policy
+    :return: ID in the database
+    """
+    p = enable_policy(name, False)
+    g.audit_object.log({"success": True})
+    return send_result(p)
+
 
 @log_with(log)
 @policy_blueprint.route('/<name>', methods=['POST'])

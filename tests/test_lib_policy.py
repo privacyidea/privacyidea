@@ -9,7 +9,7 @@ from .base import MyTestCase
 from privacyidea.lib.policy import (set_policy, delete_policy,
                                     import_policies, export_policies,
                                     get_static_policy_definitions,
-                                    PolicyClass, SCOPE)
+                                    PolicyClass, SCOPE, enable_policy)
 
 
 def _check_policy_name(polname, policies):
@@ -105,6 +105,16 @@ class PolicyTestCase(MyTestCase):
                        user="admin, superroot")
         self.assertTrue(p > 0)
 
+        # enable and disable policies
+        policies = PolicyClass().get_policies(active=False)
+        num_old = len(policies)
+        p = enable_policy("pol4", False)
+        policies = PolicyClass().get_policies(active=False)
+        self.assertTrue(num_old + 1 == len(policies), (num_old, len(policies)))
+        p = enable_policy("pol4", True)
+        policies = PolicyClass().get_policies(active=False)
+        self.assertTrue(num_old == len(policies), len(policies))
+
         # find inactive policies
         P = PolicyClass()
         policies = P.get_policies(active=False)
@@ -125,7 +135,7 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(len(policies) == 2, policies)
         # find policies with user admin
         policies = P.get_policies(scope="admin", user="admin")
-        self.assertTrue(len(policies) == 1, policies)
+        self.assertTrue(len(policies) == 1, "%s" % len(policies))
         # find policies with resolver2 and authorization. THe result should
         # be pol2 and pol2a
         policies = P.get_policies(resolver="resolver2", scope=SCOPE.AUTHZ)

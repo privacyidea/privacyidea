@@ -81,7 +81,6 @@ the 172.16.0.17.
 """
 
 from .log import log_with
-from .error import privacyIDEAError
 from configobj import ConfigObj
 
 from netaddr import IPAddress
@@ -91,7 +90,7 @@ from gettext import gettext as _
 import logging
 from ..models import (Policy, db)
 log = logging.getLogger(__name__)
-from privacyidea.lib.error import PolicyError, AuthError
+from privacyidea.lib.error import PolicyError, AuthError, ParameterError
 
 
 optional = True
@@ -173,7 +172,8 @@ class PolicyClass(object):
                     value_excluded = False
                     # iterate through the list of values:
                     for value in policy.get(searchkey):
-                        if value[0] in ["!", "-"] and searchvalue == value[1:]:
+                        if len(value) and value[0] in ["!", "-"] and \
+                                        searchvalue == value[1:]:
                             value_excluded = True
                         elif value in [searchvalue, "*"]:
                             value_found = True
@@ -301,6 +301,21 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     p = Policy(name, action=action, scope=scope, realm=realm,
                user=user, time=time, client=client, active=active,
                resolver=resolver).save()
+    return p
+
+
+@log_with(log)
+def enable_policy(name, enable=True):
+    """
+    Enable or disable the policy with the given name
+    :param name:
+    :return: ID of the policy
+    """
+    if not Policy.query.filter(Policy.name == name).first():
+        raise ParameterError("The policy with name '%s' does not exist" % name)
+
+    # Update the policy
+    p = set_policy(name=name, active=enable)
     return p
 
 

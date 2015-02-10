@@ -652,3 +652,48 @@ class APIConfigTestCase(MyTestCase):
             self.assertTrue("initTOTP" in admin_pol, admin_pol)
             self.assertTrue("initHOTP" in admin_pol, admin_pol)
             self.assertTrue("initPW" in admin_pol, admin_pol)
+
+    def test_14_enable_disable_policy(self):
+        with self.app.test_request_context('/policy/pol2',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            result = json.loads(res.data).get("result")
+            self.assertTrue(res.status_code == 200, res)
+            pol = result.get("value")
+            self.assertTrue(pol[0].get("active"), pol[0])
+
+        # Disable policy
+        with self.app.test_request_context('/policy/disable/pol2',
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            result = json.loads(res.data).get("result")
+            self.assertTrue(res.status_code == 200, res)
+
+        with self.app.test_request_context('/policy/pol2',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            result = json.loads(res.data).get("result")
+            self.assertTrue(res.status_code == 200, res)
+            pol = result.get("value")
+            self.assertFalse(pol[0].get("active"), pol[0])
+
+
+        # enable Policy
+        with self.app.test_request_context('/policy/enable/pol2',
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            result = json.loads(res.data).get("result")
+            self.assertTrue(res.status_code == 200, res)
+
+        with self.app.test_request_context('/policy/pol2',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            result = json.loads(res.data).get("result")
+            self.assertTrue(res.status_code == 200, res)
+            pol = result.get("value")
+            self.assertTrue(pol[0].get("active"), pol[0])
