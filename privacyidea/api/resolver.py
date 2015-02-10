@@ -43,6 +43,8 @@ from ..lib.resolver import (get_resolver_list,
                             delete_resolver, pretestresolver)
 from flask import g
 import logging
+from ..api.lib.policy import prepolicy, check_base_action
+from ..lib.policy import ACTION
 
 
 log = logging.getLogger(__name__)
@@ -72,6 +74,7 @@ def get_resolvers():
 
 @log_with(log)
 @resolver_blueprint.route('/<resolver>', methods=['POST'])
+@prepolicy(check_base_action, request, ACTION.RESOLVERWRITE)
 def set_resolver(resolver=None):
     """
     This creates a new resolver or updates an existing one.
@@ -127,6 +130,7 @@ def set_resolver(resolver=None):
 
 @log_with(log)
 @resolver_blueprint.route('/<resolver>', methods=['DELETE'])
+@prepolicy(check_base_action, request, ACTION.RESOLVERDELETE)
 def delete_resolver_api(resolver=None):
     """
     this function deletes an existing resolver

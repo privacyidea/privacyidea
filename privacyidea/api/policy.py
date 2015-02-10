@@ -41,12 +41,13 @@ from lib.utils import (getParam,
                        send_result)
 from ..lib.log import log_with
 from ..lib.policy import (set_policy,
-                          PolicyClass,
+                          PolicyClass, ACTION,
                           export_policies, import_policies,
                           delete_policy, get_static_policy_definitions,
                           enable_policy)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
+from ..api.lib.policy import prepolicy, check_base_action
 
 from flask import (g,
                     make_response)
@@ -71,6 +72,7 @@ policy_blueprint = Blueprint('policy_blueprint', __name__)
 
 @log_with(log)
 @policy_blueprint.route('/enable/<name>', methods=['POST'])
+@prepolicy(check_base_action, request, ACTION.POLICYWRITE)
 def enable_policy_api(name):
     """
     Enable a given policy by its name.
@@ -84,6 +86,7 @@ def enable_policy_api(name):
 
 @log_with(log)
 @policy_blueprint.route('/disable/<name>', methods=['POST'])
+@prepolicy(check_base_action, request, ACTION.POLICYWRITE)
 def disable_policy_api(name):
     """
     Disable a given policy by its name.
@@ -97,6 +100,7 @@ def disable_policy_api(name):
 
 @log_with(log)
 @policy_blueprint.route('/<name>', methods=['POST'])
+@prepolicy(check_base_action, request, ACTION.POLICYWRITE)
 def set_policy_api(name=None):
     """
     Creates a new policy that defines access or behaviour of different
@@ -281,6 +285,7 @@ def get_policy(name=None, export=None):
 #@system_blueprint.route('/delPolicy/<name>', methods=['POST', 'DELETE'])
 #@policy_blueprint.route('/', methods=['DELETE'])
 @policy_blueprint.route('/<name>', methods=['DELETE'])
+@prepolicy(check_base_action, request, ACTION.POLICYDELETE)
 def delete_policy_api(name=None):
     """
     This deletes the policy of the given name.
@@ -327,6 +332,7 @@ def delete_policy_api(name=None):
 
 @log_with(log)
 @policy_blueprint.route('/import/<filename>', methods=['POST'])
+@prepolicy(check_base_action, request, ACTION.POLICYWRITE)
 def import_policy_api(filename=None):
     """
     This function is used to import policies from a file.

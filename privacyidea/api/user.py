@@ -25,6 +25,8 @@ from flask import (Blueprint,
                    request)
 from lib.utils import (getParam,
                        send_result)
+from ..api.lib.policy import prepolicy, check_base_action
+from ..lib.policy import ACTION
 
 from flask import (g)
 from ..lib.user import get_user_list
@@ -38,6 +40,7 @@ user_blueprint = Blueprint('user_blueprint', __name__)
 
 
 @user_blueprint.route('/', methods=['GET'])
+@prepolicy(check_base_action, request, ACTION.USERLIST)
 def get_users():
     """
     list the users in a realm

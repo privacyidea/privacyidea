@@ -637,9 +637,9 @@ class APIConfigTestCase(MyTestCase):
             policies = result.get("value")
             admin_pol = policies.get("admin")
             self.assertTrue("enable" in admin_pol, admin_pol)
-            self.assertTrue("initTOTP" in admin_pol, admin_pol)
-            self.assertTrue("initHOTP" in admin_pol, admin_pol)
-            self.assertTrue("initPW" in admin_pol, admin_pol)
+            self.assertTrue("enrollTOTP" in admin_pol, admin_pol)
+            self.assertTrue("enrollHOTP" in admin_pol, admin_pol)
+            self.assertTrue("enrollPW" in admin_pol, admin_pol)
 
         with self.app.test_request_context('/policy/defs/admin',
                                            method='GET',
@@ -649,9 +649,9 @@ class APIConfigTestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             admin_pol = result.get("value")
             self.assertTrue("enable" in admin_pol, admin_pol)
-            self.assertTrue("initTOTP" in admin_pol, admin_pol)
-            self.assertTrue("initHOTP" in admin_pol, admin_pol)
-            self.assertTrue("initPW" in admin_pol, admin_pol)
+            self.assertTrue("enrollTOTP" in admin_pol, admin_pol)
+            self.assertTrue("enrollHOTP" in admin_pol, admin_pol)
+            self.assertTrue("enrollPW" in admin_pol, admin_pol)
 
     def test_14_enable_disable_policy(self):
         with self.app.test_request_context('/policy/pol2',

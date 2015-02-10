@@ -25,6 +25,7 @@ myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope, u
                             $state.go('login');
                         } else {
                             $rootScope.restError = error.result;
+                            $rootScope.showError = true;
                         }
                     };
 

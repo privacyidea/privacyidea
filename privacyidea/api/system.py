@@ -45,7 +45,8 @@ from ..lib.config import (get_privacyidea_config,
                           set_privacyidea_config,
                           delete_privacyidea_config,
                           get_from_config)
-from ..lib.policy import PolicyClass
+from ..lib.policy import PolicyClass, ACTION
+from ..api.lib.policy import prepolicy, check_base_action
 from ..lib.error import (ParameterError,
                          AuthError,
                          PolicyError)
@@ -80,6 +81,9 @@ from .audit import audit_blueprint
 def before_request():
     """
     This is executed before the request
+    It is checked, if a user of role admin is logged in.
+
+    Checks for either user OR admin are performed in api/token.py.
     """
     # remove session from param and gather all parameters, either
     # from the Form data or from JSON in the request body.
@@ -88,6 +92,7 @@ def before_request():
     serial = getParam(request.all_data, "serial")
     realm = getParam(request.all_data, "realm")
 
+    g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
     g.audit_object.log({"success": False,
                         "serial": serial,
@@ -181,6 +186,7 @@ def get_config(key=None):
 
 
 @system_blueprint.route('/setConfig', methods=['POST'])
+@prepolicy(check_base_action, request, ACTION.SYSTEMWRITE)
 def set_config():
     """
     set a configuration key or a set of configuration entries
@@ -218,6 +224,7 @@ def set_config():
 
 
 @system_blueprint.route('/setDefault', methods=['POST'])
+@prepolicy(check_base_action, request, ACTION.SYSTEMWRITE)
 def set_default():
     """
     method:
@@ -277,6 +284,7 @@ def set_default():
 
 @log_with(log)
 @system_blueprint.route('/<key>', methods=['DELETE'])
+@prepolicy(check_base_action, request, ACTION.SYSTEMDELETE)
 def delete_config(key=None):
     """
     delete a configuration key

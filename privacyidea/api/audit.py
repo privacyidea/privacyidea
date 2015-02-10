@@ -29,6 +29,8 @@ from flask import (Blueprint,
                    request, current_app, Response,
                    stream_with_context)
 from lib.utils import (send_result)
+from ..api.lib.policy import prepolicy, check_base_action
+from ..lib.policy import ACTION
 from flask import g
 import logging
 from ..lib.audit import search, getAudit
@@ -38,6 +40,7 @@ audit_blueprint = Blueprint('audit_blueprint', __name__)
 
 
 @audit_blueprint.route('/', methods=['GET'])
+@prepolicy(check_base_action, request, ACTION.AUDIT)
 def search_audit():
     """
     return a paginated list of audit entries.
@@ -81,6 +84,7 @@ def search_audit():
 
 
 @audit_blueprint.route('/<csvfile>', methods=['GET'])
+@prepolicy(check_base_action, request, ACTION.AUDIT)
 def download_csv(csvfile=None):
     """
     Download the audit entry as CSV file.

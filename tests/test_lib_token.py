@@ -859,9 +859,9 @@ class TokenTestCase(MyTestCase):
         self.assertTrue("admin" in p, p)
 
         p = get_dynamic_policy_definitions(scope="admin")
-        self.assertTrue("initTOTP" in p, p)
-        self.assertTrue("initHOTP" in p, p)
-        self.assertTrue("initPW" in p, p)
+        self.assertTrue("enrollTOTP" in p, p)
+        self.assertTrue("enrollHOTP" in p, p)
+        self.assertTrue("enrollPW" in p, p)
 
     def test_41_get_tokens_paginate(self):
         for serial in ["S1", "S2", "S3", "A8", "B", "X"]:

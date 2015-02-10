@@ -9,14 +9,125 @@ from .base import MyTestCase
 from privacyidea.lib.policy import (set_policy, delete_policy,
                                     PolicyClass, SCOPE)
 from privacyidea.api.lib.policy import (check_serial, check_tokentype,
-                                        no_detail_on_success, no_detail_on_fail)
+                                        no_detail_on_success,
+                                        no_detail_on_fail,
+                                        check_token_upload,
+                                        check_base_action, check_token_init)
 
 from flask import Response, Request, g
 from werkzeug.test import EnvironBuilder
 from privacyidea.lib.error import PolicyError
 
 
-class PolicyDecoratorTestCase(MyTestCase):
+class PrePolicyDecoratorTestCase(MyTestCase):
+
+    def test_01_check_token_action(self):
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+        req.all_data = {"serial": "SomeSerial"}
+
+        # Set a policy, that does allow the action
+        set_policy(name="pol1",
+                   scope=SCOPE.ADMIN,
+                   action="enable", client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+
+        # Action enable is cool
+        r = check_base_action(request=req, action="enable")
+        self.assertTrue(r)
+
+        # Another action - like "disable" - is not allowed
+        # An exception is
+        self.assertRaises(PolicyError,
+                          check_base_action, req, "disable")
+
+        # A normal user can "disable", since no user policies are defined.
+        g.logged_in_user = {"username": "user1",
+                            "role": "user"}
+        r = check_base_action(req, "disable")
+        self.assertTrue(r)
+        delete_policy("pol1")
+
+    def test_02_check_token_init(self):
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+        req.all_data = {"type": "totp"}
+
+        # Set a policy, that does allow the action
+        set_policy(name="pol1",
+                   scope=SCOPE.ADMIN,
+                   action="enrollTOTP, enrollHOTP",
+                   client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+
+        # Enrolling TOTP is cool
+        r = check_token_init(req)
+        self.assertTrue(r)
+
+        # Another Token type can not be enrolled:
+        # An exception is raised
+        req.all_data = {"type": "motp"}
+        self.assertRaises(PolicyError,
+                          check_token_init, req)
+
+        # A normal user can "enroll", since no user policies are defined.
+        g.logged_in_user = {"username": "user1",
+                            "role": "user"}
+        r = check_token_init(req)
+        self.assertTrue(r)
+        # finally delete policy
+        delete_policy("pol1")
+
+
+    def test_03_check_token_upload(self):
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+        req.all_data = {"filename": "token.xml"}
+
+        # Set a policy, that does allow the action
+        set_policy(name="pol1",
+                   scope=SCOPE.ADMIN,
+                   action="enrollTOTP, enrollHOTP, import",
+                   client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+
+        # Try to import tokens
+        r = check_token_upload(req)
+        self.assertTrue(r)
+
+        # The admin can not upload from another IP address
+        # An exception is raised
+        env["REMOTE_ADDR"] = "192.168.0.1"
+        req = Request(env)
+        req.all_data = {"filename": "token.xml"}
+        self.assertRaises(PolicyError,
+                          check_token_upload, req)
+        # finally delete policy
+        delete_policy("pol1")
+
+
+class PostPolicyDecoratorTestCase(MyTestCase):
 
     def test_01_check_tokentype(self):
         # http://werkzeug.pocoo.org/docs/0.10/test/#environment-building

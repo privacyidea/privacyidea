@@ -27,6 +27,7 @@ myApp.factory("ValidateFactory", function ($http, $state, $rootScope, validateUr
                 $state.go('login');
             } else {
                 $rootScope.restError = error.result;
+                $rootScope.showError = true;
             }
         };
 

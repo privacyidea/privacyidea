@@ -24,14 +24,15 @@ These are the policy decorators for the API calls.
 This module uses the policy base functions from
 privacyidea.lib.policy but also components from flask like g.
 
-The functions of this module are tested in tests/test_api_lib_policy.py
+Wrapping the functions in a decorator class enables easy modular testing.
 
+The functions of this module are tested in tests/test_api_lib_policy.py
 """
 import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.error import PolicyError
 from flask import g
-from privacyidea.lib.policy import SCOPE
+from privacyidea.lib.policy import SCOPE, ACTION
 import functools
 import json
 import re
@@ -39,11 +40,136 @@ import re
 optional = True
 required = False
 
+class prepolicy(object):
+    """
+    This is the decorator wrapper to call a specific function before an API
+    call.
+    The prepolicy decorator is to be used in the API calls.
+    """
+    def __init__(self, function, request, action=None):
+        """
+        :param function: This is the policy function the is to be called
+        :type function: function
+        :param request: The original request object, that needs to be passed
+        :type request: Request Object
+        """
+        self.action = action
+        self.request = request
+        self.function = function
+
+    def __call__(self, wrapped_function):
+        """
+        This decorates the given function. The prepolicy decorator is ment
+        for API functions on the API level.
+
+        If some error occur the a PolicyException is raised.
+
+        The decorator function can modify the request data.
+
+        :param wrapped_function: The function, that is decorated.
+        :type wrapped_function: API function
+        :return: None
+        """
+        @functools.wraps(wrapped_function)
+        def policy_wrapper(*args, **kwds):
+            self.function(request=self.request,
+                          action=self.action)
+            return wrapped_function(*args, **kwds)
+
+        return policy_wrapper
+
+
+def check_base_action(request=None, action=None):
+    """
+    This decorator function takes the request and verifies the given action
+    for the SCOPE ADMIN or USER.
+    :param req:
+    :param action:
+    :return: True otherwise raises an Exception
+    """
+    ERROR = {"user": "User actions are defined, but this action is not "
+                     "allowed!",
+             "admin": "Admin actions are defined, but this action is not "
+                      "allowed!"}
+    params = request.all_data
+    policy_object = g.policy_object
+    username = g.logged_in_user.get("username")
+    role = g.logged_in_user.get("role")
+    scope = SCOPE.ADMIN
+    if role == "user":
+        scope = SCOPE.USER
+    action = policy_object.get_policies(action=action,
+                                        user=username,
+                                        realm=params.get("realm"),
+                                        scope=scope,
+                                        client=request.remote_addr)
+    action_at_all = policy_object.get_policies(scope=scope)
+    if len(action_at_all) and len(action) == 0:
+        raise PolicyError(ERROR.get(role))
+    return True
+
+
+def check_token_upload(request=None, action=None):
+    """
+    This decorator function takes the request and verifies the given action
+    for scope ADMIN
+    :param req:
+    :param filename:
+    :return:
+    """
+    params = request.all_data
+    policy_object = g.policy_object
+    username = g.logged_in_user.get("username")
+    action = policy_object.get_policies(action="import",
+                                        user=username,
+                                        realm=params.get("realm"),
+                                        scope=SCOPE.ADMIN,
+                                        client=request.remote_addr)
+    action_at_all = policy_object.get_policies(scope=SCOPE.ADMIN)
+    if len(action_at_all) and len(action) == 0:
+        raise PolicyError("Admin actions are defined, but you are not allowed"
+                          " to upload token files.")
+    return True
+
+
+def check_token_init(request=None, action=None):
+    """
+    This decorator function takes the request and verifies
+    if the requested tokentype is allowed to be enrolled in the SCOPE ADMIN
+    or the SCOPE USER.
+    :param request:
+    :param action:
+    :return: True or an Exception is raised
+    """
+    ERROR = {"user": "User actions are defined, you are not allowed to "
+                     "enroll this token type!",
+             "admin": "Admin actions are defined, but you are not allowed to "
+                      "enroll this token type!"}
+    params = request.all_data
+    policy_object = g.policy_object
+    username = g.logged_in_user.get("username")
+    role = g.logged_in_user.get("role")
+    scope = SCOPE.ADMIN
+    if role == "user":
+        scope = SCOPE.USER
+    tokentype = params.get("type", "HOTP")
+    action = "enroll%s" % tokentype.upper()
+    action = policy_object.get_policies(action=action,
+                                        user=username,
+                                        realm=params.get("realm"),
+                                        scope=scope,
+                                        client=request.remote_addr)
+    action_at_all = policy_object.get_policies(scope=scope)
+    if len(action_at_all) and len(action) == 0:
+        raise PolicyError(ERROR.get(role))
+    return True
+
 
 class postpolicy(object):
     """
     Decorator that allows to call a specific function after the decorated
-    function
+    function.
+    The postpolicy decorator is to be used in the API calls.
     """
     def __init__(self, function, request=None):
         """
@@ -174,7 +300,7 @@ def no_detail_on_success(request, response):
     policy_object = g.policy_object
 
     # get the serials from a policy definition
-    detailPol = policy_object.get_policies(action="no_detail_on_success",
+    detailPol = policy_object.get_policies(action=ACTION.NODETAILSUCCESS,
                                            scope=SCOPE.AUTHZ,
                                            client=request.remote_addr)
 
@@ -203,7 +329,7 @@ def no_detail_on_fail(request, response):
     policy_object = g.policy_object
 
     # get the serials from a policy definition
-    detailPol = policy_object.get_policies(action="no_detail_on_fail",
+    detailPol = policy_object.get_policies(action=ACTION.NODETAILFAIL,
                                            scope=SCOPE.AUTHZ,
                                            client=request.remote_addr)
 

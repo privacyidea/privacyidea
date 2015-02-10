@@ -54,7 +54,9 @@ from lib.utils import getParam
 from flask import request, g
 from privacyidea.lib.audit import getAudit
 from flask import current_app
-from privacyidea.lib.policy import PolicyClass
+from privacyidea.lib.policy import PolicyClass, ACTION
+from privacyidea.api.lib.policy import (prepolicy, check_base_action,
+                                        check_token_init, check_token_upload)
 from privacyidea.api.auth import (user_required, admin_required)
 from privacyidea.api.audit import audit_blueprint
 
@@ -79,11 +81,14 @@ def before_request():
     This is executed before the request.
 
     user_required checks if there is a logged in admin or user
+
+    The checks for ONLY admin are preformed in api/system.py
     """
     # remove session from param and gather all parameters, either
     # from the Form data or from JSON in the request body.
     request.all_data = remove_session_from_param(request.values, request.data)
 
+    g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
     if g.logged_in_user.get("role") == "user":
         # A user is calling this API
@@ -116,6 +121,7 @@ def before_request():
 
 
 @token_blueprint.route('/init', methods=['POST'])
+@prepolicy(check_token_init, request)
 @log_with(log, log_entry=False)
 def init():
     """
@@ -239,6 +245,7 @@ def init():
     return send_result(True, details=response_details)
 
 
+# TODO: MAXTOKENUSER and MAXTOKENREALM policy
 @token_blueprint.route('/', methods=['GET'])
 @log_with(log)
 def list_api():
@@ -324,8 +331,9 @@ def list_api():
     else:
         return send_result(tokens)
 
-
+# TODO: MAXTOKENUSER and MAXTOKENREALM policy
 @token_blueprint.route('/assign', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.ASSIGN)
 @log_with(log)
 def assign_api():
     """
@@ -343,6 +351,7 @@ def assign_api():
 
 
 @token_blueprint.route('/unassign', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.UNASSIGN)
 @log_with(log)
 def unassign_api():
     """
@@ -362,6 +371,7 @@ def unassign_api():
 
 @token_blueprint.route('/enable', methods=['POST'])
 @token_blueprint.route('/enable/<serial>', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.ENABLE)
 @log_with(log)
 def enable_api(serial=None):
     """
@@ -393,6 +403,7 @@ def enable_api(serial=None):
 
 @token_blueprint.route('/disable', methods=['POST'])
 @token_blueprint.route('/disable/<serial>', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.DISABLE)
 @log_with(log)
 def disable_api(serial=None):
     """
@@ -425,6 +436,7 @@ def disable_api(serial=None):
 
 
 @token_blueprint.route('/<serial>', methods=['DELETE'])
+@prepolicy(check_base_action, request, action=ACTION.DELETE)
 @log_with(log)
 def delete_api(serial=None):
     """
@@ -447,6 +459,7 @@ def delete_api(serial=None):
 
 @token_blueprint.route('/reset', methods=['POST'])
 @token_blueprint.route('/reset/<serial>', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.RESET)
 @log_with(log)
 def reset_api(serial=None):
     """
@@ -477,6 +490,7 @@ def reset_api(serial=None):
 
 @token_blueprint.route('/resync', methods=['POST'])
 @token_blueprint.route('/resync/<serial>', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.RESYNC)
 @log_with(log)
 @admin_required
 def resync_api(serial=None):
@@ -508,6 +522,7 @@ def resync_api(serial=None):
 
 @token_blueprint.route('/setpin', methods=['POST'])
 @token_blueprint.route('/setpin/<serial>', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.SETPIN)
 @log_with(log)
 def setpin_api(serial=None):
     """
@@ -558,6 +573,7 @@ def setpin_api(serial=None):
 
 @token_blueprint.route('/set', methods=['POST'])
 @token_blueprint.route('/set/<serial>', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.SET)
 @log_with(log)
 @admin_required
 def set_api(serial=None):
@@ -647,6 +663,7 @@ def set_api(serial=None):
 
 @token_blueprint.route('/realm/<serial>', methods=['POST'])
 @log_with(log)
+@prepolicy(check_base_action, request, action=ACTION.TOKENREALMS)
 @admin_required
 def tokenrealm_api(serial=None):
     """
@@ -678,6 +695,7 @@ def tokenrealm_api(serial=None):
 
 @token_blueprint.route('/load/<filename>', methods=['POST'])
 @log_with(log)
+@prepolicy(check_token_upload, request)
 @admin_required
 def loadtokens_api(filename=None):
     """
@@ -786,6 +804,7 @@ def loadtokens_api(filename=None):
 
 @token_blueprint.route('/copypin', methods=['POST'])
 @log_with(log)
+@prepolicy(check_base_action, request, action=ACTION.COPYTOKENPIN)
 @admin_required
 def copypin_api():
     """
@@ -811,6 +830,7 @@ def copypin_api():
 
 
 @token_blueprint.route('/copyuser', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.COPYTOKENUSER)
 @log_with(log)
 @admin_required
 def copyuser_api():
@@ -837,6 +857,7 @@ def copyuser_api():
 
 
 @token_blueprint.route('/lost/<serial>', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.LOSTTOKEN)
 @log_with(log)
 @admin_required
 def lost_api(serial=None):

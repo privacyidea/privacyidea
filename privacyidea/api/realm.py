@@ -53,7 +53,8 @@ from ..lib.realm import (set_default_realm,
                          get_default_realm,
                          set_realm,
                          delete_realm)
-from ..lib.error import (ParameterError)
+from ..lib.policy import ACTION
+from ..api.lib.policy import prepolicy, check_base_action
 from flask import g
 from gettext import gettext as _
 import logging
@@ -72,6 +73,7 @@ defaultrealm_blueprint = Blueprint('defaultrealm_blueprint', __name__)
 
 @log_with(log)
 @realm_blueprint.route('/<realm>', methods=['POST'])
+@prepolicy(check_base_action, request, ACTION.RESOLVERWRITE)
 def set_realm_api(realm=None):
     """
     This call creates a new realm or reconfigures a realm.
@@ -201,6 +203,7 @@ def get_realms_api():
 
 @log_with(log)
 @defaultrealm_blueprint.route('/<realm>', methods=['POST'])
+@prepolicy(check_base_action, request, ACTION.RESOLVERWRITE)
 def set_default_realm_api(realm=None):
     """
     This call sets the default realm.
@@ -218,6 +221,7 @@ def set_default_realm_api(realm=None):
 
 @log_with(log)
 @defaultrealm_blueprint.route('', methods=['DELETE'])
+@prepolicy(check_base_action, request, ACTION.RESOLVERDELETE)
 def delete_default_realm_api(realm=None):
     """
     This call deletes the default realm.
@@ -290,6 +294,7 @@ def get_default_realm_api():
 @log_with(log)
 #@system_blueprint.route('/delRealm', methods=['POST', 'DELETE'])
 @realm_blueprint.route('/<realm>', methods=['DELETE'])
+@prepolicy(check_base_action, request, ACTION.RESOLVERDELETE)
 def delete_realm_api(realm=None):
     """
     This call deletes the given realm.
