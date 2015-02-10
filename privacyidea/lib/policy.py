@@ -558,7 +558,8 @@ def get_static_policy_definitions(scope=None):
             'tokenlabel': {
                 'type': 'str',
                 'desc': _("Set label for a new enrolled Google Authenticator. "
-                          "Possible tags are &lt;u&gt; (user), &lt;r&gt; (realm), &lt;s&gt; (serial).")},
+                          "Possible tags are <u> (user), <r> ("
+                          "realm), <s> (serial).")},
             'autoassignment': {
                 'type': 'int',
                 'value': [6, 8],
@@ -636,14 +637,14 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('The Realm of the user is set to this very realm. '
                         'This is important if the user is not contained in '
                         'the default realm and can not pass his realm.')},
-            'detail_on_success': {
+            'no_detail_on_success': {
                 'type': 'bool',
                 'desc': _('In case of successful authentication additional '
-                        'detail information will be returned.')},
-            'detail_on_fail': {
+                        'no detail information will be returned.')},
+            'no_detail_on_fail': {
                 'type': 'bool',
                 'desc': _('In case of failed authentication additional '
-                        'detail information will be returned.')}
+                        'no detail information will be returned.')}
             },
         'audit': {
             'view': {

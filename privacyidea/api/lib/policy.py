@@ -22,7 +22,7 @@
 """
 These are the policy decorators for the API calls.
 This module uses the policy base functions from
-privacyidea.lib.policy but also compontens from flask like g.
+privacyidea.lib.policy but also components from flask like g.
 
 The functions of this module are tested in tests/test_api_lib_policy.py
 
@@ -38,6 +38,7 @@ import re
 
 optional = True
 required = False
+
 
 class postpolicy(object):
     """
@@ -130,3 +131,87 @@ def check_serial(request, response):
             raise PolicyError("Serial is not allowed for authentication!")
     return response
 
+
+def set_tokenlabel(request, response):
+    """
+    This policy function is to be used as a decorator in the API init function.
+    It adds the token label to the URL that generates the QR code.
+
+    TODO: This is an internal config function.
+
+    :param request:
+    :param response:
+    :return:
+    """
+    pass
+
+
+def set_detail_on_fail(request, response):
+    """
+    This policy function is used with the AUTHZ scope.
+    If the boolean value detail_on_fail is set, the details will be set if
+    the authentication request failed.
+
+    :param request:
+    :param response:
+    :return:
+    """
+    pass
+
+
+def no_detail_on_success(request, response):
+    """
+    This policy function is used with the AUTHZ scope.
+    If the boolean value no_detail_on_success is set,
+    the details will be stripped if
+    the authentication request was successful.
+
+    :param request:
+    :param response:
+    :return:
+    """
+    content = json.loads(response.data)
+    policy_object = g.policy_object
+
+    # get the serials from a policy definition
+    detailPol = policy_object.get_policies(action="no_detail_on_success",
+                                           scope=SCOPE.AUTHZ,
+                                           client=request.remote_addr)
+
+    if len(detailPol):
+        # The policy was set, we need to strip the details, if the
+        # authentication was successful. (value=true)
+        if content.get("result", {}).get("value"):
+            del content["detail"]
+            response.data = json.dumps(content)
+
+    return response
+
+
+def no_detail_on_fail(request, response):
+    """
+    This policy function is used with the AUTHZ scope.
+    If the boolean value no_detail_on_fail is set,
+    the details will be stripped if
+    the authentication request failed.
+
+    :param request:
+    :param response:
+    :return:
+    """
+    content = json.loads(response.data)
+    policy_object = g.policy_object
+
+    # get the serials from a policy definition
+    detailPol = policy_object.get_policies(action="no_detail_on_fail",
+                                           scope=SCOPE.AUTHZ,
+                                           client=request.remote_addr)
+
+    if len(detailPol):
+        # The policy was set, we need to strip the details, if the
+        # authentication was successful. (value=true)
+        if content.get("result", {}).get("value") is False:
+            del content["detail"]
+            response.data = json.dumps(content)
+
+    return response

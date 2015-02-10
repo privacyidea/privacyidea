@@ -33,7 +33,8 @@ from privacyidea.lib.token import (check_user_pass, check_serial_pass)
 from privacyidea.api.lib.utils import remove_session_from_param
 from privacyidea.lib.audit import getAudit
 from privacyidea.api.lib.policy import (postpolicy,
-                                        check_tokentype, check_serial)
+                                        check_tokentype, check_serial,
+                                        no_detail_on_fail, no_detail_on_success)
 from privacyidea.lib.policy import PolicyClass
 
 validate_blueprint = Blueprint('validate_blueprint', __name__)
@@ -74,6 +75,8 @@ def after_request(response):
 
 
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
+@postpolicy(no_detail_on_fail, request=request)
+@postpolicy(no_detail_on_success, request=request)
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
 @check_user_or_serial_in_request
@@ -138,6 +141,9 @@ def simplecheck():
     Either a ``serial`` or a ``user`` is required to authenticate.
     The PIN and OTP value is sent in the parameter ``pass``.
 
+    TODO: This API call does not honour the policies AUTHZ:tokentype and
+    AUTHZ:serial!
+
     :param serial: The serial number of the token, that tries to authenticate.
     :param user: The loginname/username of the user, who tries to authenticate.
     :param realm: The realm of the user, who tries to authenticate. If the
@@ -178,5 +184,7 @@ def simplecheck():
 
 
 @validate_blueprint.route('/samlcheck', methods=['POST', 'GET'])
+@postpolicy(check_tokentype, request=request)
+@postpolicy(check_serial, request=request)
 def samlcheck():
     raise NotImplementedError("samlcheck is not implemented, yet")
