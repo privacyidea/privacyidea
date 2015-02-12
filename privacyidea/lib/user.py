@@ -194,6 +194,8 @@ class User(object):
                  like (1000, "passwdresolver", "resolver1")
         :rtype: tuple
         """
+        if not self.resolver:
+            self.get_resolvers()
         rtype = get_resolver_type(self.resolver)
         y = get_resolver_object(self.resolver)
         uid = y.getUserId(self.login)
