@@ -1,4 +1,5 @@
 import os
+import logging
 basedir = os.path.abspath(os.path.dirname(__file__))
 basedir = "/".join(basedir.split("/")[:-1]) + "/"
 
@@ -11,6 +12,8 @@ class Config:
     PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
     PI_AUDIT_KEY_PRIVATE = os.path.join(basedir, "tests/testdata/private.pem")
     PI_AUDIT_KEY_PUBLIC = os.path.join(basedir, "tests/testdata/public.pem")
+    PI_LOGFILE = "privacyidea.log"
+    PI_LOGLEVEL = logging.INFO
     # PI_AUDIT_SQL_URI = sqlite://
 
 
@@ -19,6 +22,7 @@ class DevelopmentConfig(Config):
     SECRET_KEY = os.environ.get('SECRET_KEY') or 't0p s3cr3t'
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
+    PI_LOGLEVEL = logging.DEBUG
 
 
 class TestingConfig(Config):
@@ -31,6 +35,7 @@ class TestingConfig(Config):
     PI_PEPPER = ""
     # This is only for testing encrypted files
     PI_ENCFILE_ENC = "tests/testdata/enckey.enc"
+    PI_LOGLEVEL = logging.DEBUG
 
 
 class ProductionConfig(Config):
@@ -47,6 +52,7 @@ class ProductionConfig(Config):
     # This is used to sign the audit log
     PI_AUDIT_KEY_PRIVATE = os.path.join(config_path, "private.pem")
     PI_AUDIT_KEY_PUBLIC = os.path.join(config_path, "public.pem")
+    PI_LOGLEVEL = logging.WARNING
 
 
 config = {

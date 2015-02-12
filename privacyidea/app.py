@@ -20,6 +20,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import os
+import logging
 from flask import Flask
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.api.token import token_blueprint
@@ -89,6 +90,14 @@ def create_app(config_name=None, config_file='/etc/privacyidea/pi.cfg'):
     db.init_app(app)
     migrate = Migrate(app, db)
     bootstrap = Bootstrap(app)
+
+    # Create the logger
+    # Read log file from config
+    from logging import handlers
+    fhandler = handlers.RotatingFileHandler(app.config["PI_LOGFILE"])
+    # read level from config
+    fhandler.setLevel(app.config["PI_LOGLEVEL"])
+    logging.getLogger("privacyidea").addHandler(fhandler)
 
     return app
 
