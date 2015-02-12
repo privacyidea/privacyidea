@@ -521,7 +521,7 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
     }
 
     $scope.presetAD = function () {
-        $scope.params.LOGINNAMEATTRIBUTE = "sAMAcountName";
+        $scope.params.LOGINNAMEATTRIBUTE = "sAMAccountName";
         $scope.params.LDAPSEARCHFILTER = "(sAMAccountName=*)(objectClass=person)";
         $scope.params.LDAPFILTER = "(&(sAMAccountName=%s)(objectClass=person))";
         $scope.params.USERINFO = '{ "username": "sAMAccountName", "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }';
