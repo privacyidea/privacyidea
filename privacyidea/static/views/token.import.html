@@ -44,17 +44,21 @@
     </div>
 
 
-    <div class="form-group">
-        <label for="importFile">File input</label>
-        <input type="file" class="form-control"
-                id="importFile" ng-model="importFile">
-
-    </div>
-
     <div class="text-center">
-        <button ng-click="importFile()"
-                ng-disabled="!importFile"
-                class="btn btn-primary">Import token
+        <button class="btn btn-primary" ng-file-select
+                ng-file-change="upload($files)">Select file and import
         </button>
     </div>
 </form>
+
+<div ng-show="uploadedFile">
+    <div>
+        Progress: {{ progressPercentage }}%
+    </div>
+    <div>
+        Uploaded File: {{ uploadedFile }}
+    </div>
+    <div>
+        Uploaded Tokens: {{ uploadedTokens }}
+    </div>
+</div>

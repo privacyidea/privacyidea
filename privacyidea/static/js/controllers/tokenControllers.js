@@ -285,12 +285,39 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
 });
 
 
-myApp.controller("tokenImportController", function ($scope) {
+myApp.controller("tokenImportController", function ($scope, $upload,
+                                                    AuthFactory) {
     $scope.formInit = {
         fileTypes: ["OATH CSV", "Yubikey CSV"]
     };
     // These are values that are also sent to the backend!
     $scope.form = {
         type: "OATH CSV"
+    };
+
+    $scope.upload = function (files) {
+        if (files && files.length) {
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                $upload.upload({
+                    url: 'token/load/filename',
+                    headers: {'Authorization': AuthFactory.getAuthToken()},
+                    fields: {type: $scope.form.type},
+                    file: file
+                }).progress(function (evt) {
+                    $scope.progressPercentage = parseInt(100.0 * evt.loaded / evt.total);
+                }).success(function (data, status, headers, config) {
+                    $scope.uploadedFile = config.file.name;
+                    $scope.uploadedTokens = data.result.value;
+                }).error(function (error) {
+                    if (error.result.error.code == -401) {
+                        $state.go('login');
+                    } else {
+                        $rootScope.showError = true;
+                        $rootScope.restError = error.result;
+                    }
+                });
+            }
+        }
     };
 });
