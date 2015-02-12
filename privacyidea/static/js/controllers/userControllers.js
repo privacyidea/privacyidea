@@ -137,6 +137,9 @@ angular.module("privacyideaApp")
                         $scope.defaultRealm = realmname;
                         if (!$scope.selectedRealm) {
                             $scope.selectedRealm = $scope.defaultRealm;
+                            // Only load the users, if we know, what the
+                            // default realm is
+                            $scope._getUsers();
                         }
                     }
                 });
@@ -144,7 +147,6 @@ angular.module("privacyideaApp")
         };
 
         $scope.getRealms();
-        $scope._getUsers();
 
         $scope.changeRealm = function () {
             $scope.params = {page: 1};
