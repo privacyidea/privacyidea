@@ -101,7 +101,8 @@ myApp.directive('assignUser', function($http, userUrl, AuthFactory, instanceUrl)
             var auth_token = AuthFactory.getAuthToken();
             return $http({
                 method: 'GET',
-                url: userUrl + "?username=*" + $viewValue + "*",
+                url: userUrl + "?username=*" + $viewValue + "*" +
+                    "&realm=" + scope.newUserObject.realm,
                 headers: {'Authorization': auth_token}
             }).then(function ($response) {
                 return $response.data.result.value.map(function (item) {

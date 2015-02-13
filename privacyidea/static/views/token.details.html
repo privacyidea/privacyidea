@@ -256,7 +256,7 @@
 
 <h4 ng-hide="token.user_id">Assign User</h4>
 <form ng-hide="token.user_id" name="formAssignToken" role="form" validate>
-    <div assign-user new-user-object="newUser"></div>
+    <div assign-user new-user-object="newUser" realms="realms"></div>
 
     <div class="text-center">
         <button ng-click="assignUser()"

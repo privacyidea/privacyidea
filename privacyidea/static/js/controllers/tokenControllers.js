@@ -59,7 +59,8 @@ myApp.controller("tokenDetailController", function ($scope,
                                                     $stateParams,
                                                     $state, $rootScope,
                                                     ValidateFactory,
-                                                    AuthFactory) {
+                                                    AuthFactory,
+                                                    ConfigFactory) {
     $scope.tokenSerial = $stateParams.tokenSerial;
     $scope.editCountWindow = false;
     $scope.selectedRealms = {};
@@ -68,6 +69,7 @@ myApp.controller("tokenDetailController", function ($scope,
     // scroll to the top of the page
     document.body.scrollTop = document.documentElement.scrollTop = 0;
 
+    // define functions
     $scope.get = function () {
         TokenFactory.getTokenForSerial($scope.tokenSerial, function (data) {
             $scope.token = data.result.value.tokens[0];
@@ -103,8 +105,6 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.reset = function () {
         TokenFactory.reset($scope.tokenSerial, $scope.get);
     };
-
-    $scope.get();
 
     $scope.startEditRealm = function () {
         // fill the selectedRealms with the realms of the token
@@ -171,6 +171,13 @@ myApp.controller("tokenDetailController", function ($scope,
         });
     };
 
+
+    // initialize
+    $scope.get();
+
+    ConfigFactory.getRealms(function (data) {
+            $scope.realms = data.result.value;
+    });
 });
 
 myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
