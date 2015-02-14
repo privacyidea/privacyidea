@@ -114,7 +114,6 @@ class ACTION():
     __doc__ = """This is the list of usual actions."""
     ASSIGN = "assign"
     AUDIT = "auditlog"
-    AUTHORIZE = "authorize"
     COPYTOKENPIN = "copytokenpin"
     COPYTOKENUSER = "copytokenuser"
     DELETE = "delete"
@@ -670,18 +669,14 @@ def get_static_policy_definitions(scope=None):
                 }
             },
         SCOPE.AUTHZ: {
-            ACTION.AUTHORIZE: {
-                'type': 'bool',
-                'desc': _('The user/realm will be authorized to login '
-                        'to the clients IPs.')},
             ACTION.TOKENTYPE: {
                 'type': 'str',
                 'desc': _('The user will only be authenticated with this '
-                        'very tokentype.')},
+                          'very tokentype.')},
             ACTION.SERIAL: {
                 'type': 'str',
                 'desc': _('The user will only be authenticated if the serial '
-                        'number of the token matches this regexp.')},
+                          'number of the token matches this regexp.')},
             ACTION.SETREALM: {
                 'type': 'str',
                 'desc': _('The Realm of the user is set to this very realm. '
