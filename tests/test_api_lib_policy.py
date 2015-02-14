@@ -7,14 +7,14 @@ import json
 from .base import MyTestCase
 
 from privacyidea.lib.policy import (set_policy, delete_policy,
-                                    PolicyClass, SCOPE)
+                                    PolicyClass, SCOPE, ACTION)
 from privacyidea.api.lib.policy import (check_serial, check_tokentype,
                                         no_detail_on_success,
                                         no_detail_on_fail,
                                         check_token_upload,
                                         check_base_action, check_token_init,
                                         check_max_token_user,
-                                        check_max_token_realm)
+                                        check_max_token_realm, set_realm)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms)
 from privacyidea.lib.user import User
@@ -228,6 +228,51 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         delete_policy("pol1")
         remove_token("NEW001")
         remove_token("NEW002")
+
+    def test_06_set_realm(self):
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+
+        # Set a policy, that allows two tokens per realm
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTHZ,
+                   action="%s=%s" % (ACTION.SETREALM, self.realm1),
+                   realm="somerealm")
+        g.policy_object = PolicyClass()
+
+        # request, that matches the policy
+        req.all_data = {"realm": "somerealm"}
+        set_realm(req)
+        # Check, if the realm was modified to the realm specified in the policy
+        self.assertTrue(req.all_data.get("realm") == self.realm1)
+
+        # A request, that does not match the policy:
+        req.all_data = {"realm": "otherrealm"}
+        set_realm(req)
+        # Check, if the realm is still the same
+        self.assertEqual(req.all_data.get("realm"), "otherrealm")
+
+        # If there are several policies, which will produce different realms,
+        #  we get an exception
+        set_policy(name="pol2",
+                   scope=SCOPE.AUTHZ,
+                   action="%s=%s" % (ACTION.SETREALM, "ConflictRealm"),
+                   realm="somerealm")
+        g.policy_object = PolicyClass()
+        # This request will trigger two policies with different realms to set
+        req.all_data = {"realm": "somerealm"}
+        self.assertRaises(PolicyError, set_realm, req)
+
+        # finally delete policy
+        delete_policy("pol1")
+        delete_policy("pol2")
 
 
 class PostPolicyDecoratorTestCase(MyTestCase):

@@ -136,7 +136,7 @@ def check_max_token_realm(request=None, action=None):
     user_object = get_user_from_param(params)
     if user_object:
         realm = user_object.realm
-    else:
+    else:  # pragma: no cover
         realm = params.get("realm")
 
     if realm:
@@ -151,6 +151,51 @@ def check_max_token_realm(request=None, action=None):
             already_assigned_tokens = len(tokenobject_list)
             if already_assigned_tokens >= int(max(limit_list)):
                 raise PolicyError(ERROR)
+    return True
+
+
+def set_realm(request=None, action=None):
+    """
+    Pre Policy
+    This pre condition gets the current realm and verifies if the realm
+    should be rewritten due to the policy definition.
+    I takes the realm from the request and - if a policy matches - replaces
+    this realm with the realm defined in the policy
+
+    Check ACTION.SETREALM
+
+    This decorator should wrap
+        /validate/check
+
+    :param req: The request that is intercepted during the API call
+    :type req: Request Object
+    :param action: An optional Action
+    :type action: basestring
+    :returns: Always true. Modified the parameter request
+    """
+    user_object = get_user_from_param(request.all_data)
+    # At the moment a realm parameter with no user parameter returns a user
+    # object like "@realm". If this is changed one day, we need to also fetch
+    #  the realm
+    if user_object:
+        realm = user_object.realm
+    else:  # pragma: no cover
+        realm = request.all_data.get("realm")
+
+    policy_object = g.policy_object
+    new_realm = policy_object.get_action_values(ACTION.SETREALM,
+                                                scope=SCOPE.AUTHZ,
+                                                realm=realm,
+                                                client=request.remote_addr)
+    # reduce the entries to unique entries
+    new_realm = list(set(new_realm))
+    if len(new_realm) > 1:
+        raise PolicyError("I do not know, to which realm I should set the "
+                          "new realm. Conflicting policies exist.")
+    elif len(new_realm) == 1:
+        # There is one specific realm, which we set in the request
+        request.all_data["realm"] = new_realm[0]
+
     return True
 
 
@@ -339,19 +384,6 @@ def set_tokenlabel(request, response):
     It adds the token label to the URL that generates the QR code.
 
     TODO: This is an internal config function.
-
-    :param request:
-    :param response:
-    :return:
-    """
-    pass
-
-
-def set_detail_on_fail(request, response):
-    """
-    This policy function is used with the AUTHZ scope.
-    If the boolean value detail_on_fail is set, the details will be set if
-    the authentication request failed.
 
     :param request:
     :param response:

@@ -32,9 +32,10 @@ from lib.utils import required
 from privacyidea.lib.token import (check_user_pass, check_serial_pass)
 from privacyidea.api.lib.utils import remove_session_from_param
 from privacyidea.lib.audit import getAudit
-from privacyidea.api.lib.policy import (postpolicy,
+from privacyidea.api.lib.policy import (postpolicy, prepolicy,
                                         check_tokentype, check_serial,
-                                        no_detail_on_fail, no_detail_on_success)
+                                        no_detail_on_fail,
+                                        no_detail_on_success, set_realm)
 from privacyidea.lib.policy import PolicyClass
 
 validate_blueprint = Blueprint('validate_blueprint', __name__)
@@ -79,6 +80,7 @@ def after_request(response):
 @postpolicy(no_detail_on_success, request=request)
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
+@prepolicy(set_realm, request=request)
 @check_user_or_serial_in_request
 def check():
     """
