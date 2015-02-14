@@ -12,7 +12,12 @@ from privacyidea.api.lib.policy import (check_serial, check_tokentype,
                                         no_detail_on_success,
                                         no_detail_on_fail,
                                         check_token_upload,
-                                        check_base_action, check_token_init)
+                                        check_base_action, check_token_init,
+                                        check_max_token_user,
+                                        check_max_token_realm)
+from privacyidea.lib.token import (init_token, get_tokens, remove_token,
+                                   set_realms)
+from privacyidea.lib.user import User
 
 from flask import Response, Request, g
 from werkzeug.test import EnvironBuilder
@@ -125,6 +130,104 @@ class PrePolicyDecoratorTestCase(MyTestCase):
                           check_token_upload, req)
         # finally delete policy
         delete_policy("pol1")
+
+    def test_04_check_max_token_user(self):
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+        req.all_data = {"user": "cornelius",
+                        "realm": self.realm1}
+
+        # Set a policy, that allows two tokens per user
+        set_policy(name="pol1",
+                   scope=SCOPE.ENROLL,
+                   action="max_token_per_user=2")
+        g.policy_object = PolicyClass()
+        # The user has one token, everything is fine.
+        self.setUp_user_realms()
+        tokenobject = init_token({"serial": "NEW001", "type": "hotp",
+                                  "otpkey": "1234567890123456"},
+                                  user=User(login="cornelius",
+                                            realm=self.realm1))
+        tokenobject_list = get_tokens(user=User(login="cornelius",
+                                           realm=self.realm1))
+        self.assertTrue(len(tokenobject_list) == 1)
+        self.assertTrue(check_max_token_user(req))
+
+        # Now the user gets his second token
+        tokenobject = init_token({"serial": "NEW002", "type": "hotp",
+                                  "otpkey": "1234567890123456"},
+                                  user=User(login="cornelius",
+                                            realm=self.realm1))
+        tokenobject_list = get_tokens(user=User(login="cornelius",
+                                           realm=self.realm1))
+        self.assertTrue(len(tokenobject_list) == 2)
+
+        # The user has two tokens. The check that will run in this case,
+        # before the user would be assigned the 3rd token, will raise a
+        # PolicyError
+        self.assertRaises(PolicyError,
+                          check_max_token_user, req)
+
+        # finally delete policy
+        delete_policy("pol1")
+        remove_token("NEW001")
+        remove_token("NEW002")
+
+    def test_05_check_max_token_realm(self):
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+        req.all_data = {"realm": self.realm1}
+
+        # Set a policy, that allows two tokens per realm
+        set_policy(name="pol1",
+                   scope=SCOPE.ENROLL,
+                   action="max_token_per_realm=2",
+                   realm=self.realm1)
+        g.policy_object = PolicyClass()
+        self.setUp_user_realms()
+        # Add the first token into the realm
+        tokenobject = init_token({"serial": "NEW001", "type": "hotp",
+                                  "otpkey": "1234567890123456"})
+        set_realms("NEW001", [self.realm1])
+        # check the realm, only one token is in it the policy condition will
+        # pass
+        tokenobject_list = get_tokens(realm=self.realm1)
+        self.assertTrue(len(tokenobject_list) == 1)
+        self.assertTrue(check_max_token_realm(req))
+
+        # add a second token to the realm
+        tokenobject = init_token({"serial": "NEW002", "type": "hotp",
+                                  "otpkey": "1234567890123456"})
+        set_realms("NEW002", [self.realm1])
+        tokenobject_list = get_tokens(realm=self.realm1)
+        self.assertTrue(len(tokenobject_list) == 2)
+
+        # request with a user object, not with a realm
+        req.all_data = {"user": "cornelius@%s" % self.realm1}
+
+        # Now a new policy check will fail, since there are already two
+        # tokens in the realm
+        self.assertRaises(PolicyError,
+                          check_max_token_realm, req)
+
+        # finally delete policy
+        delete_policy("pol1")
+        remove_token("NEW001")
+        remove_token("NEW002")
 
 
 class PostPolicyDecoratorTestCase(MyTestCase):

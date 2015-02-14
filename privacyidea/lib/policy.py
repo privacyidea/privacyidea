@@ -51,14 +51,14 @@ A policy has the attributes
  * active
 
 ``name`` is the unique identifier of a policy. ``scope`` is the area,
-where this policy is ment for. This can be values like admin, selfservice,
+where this policy is meant for. This can be values like admin, selfservice,
 authentication...
 ``scope`` takes only one value.
 
 ``active`` is bool and indicates, whether a policy is active or not.
 
 ``action``, ``realm``, ``resolver``, ``user`` and ``client`` can take a comma
-seperated list of values.
+separated list of values.
 
 realm and resolver
 ------------------
@@ -96,6 +96,7 @@ from privacyidea.lib.error import PolicyError, AuthError, ParameterError
 optional = True
 required = False
 
+
 class SCOPE():
     __doc__ = """This is the list of the allowed scopes that can be used in
     policy definitions.
@@ -113,6 +114,7 @@ class ACTION():
     __doc__ = """This is the list of usual actions."""
     ASSIGN = "assign"
     AUDIT = "auditlog"
+    AUTHORIZE = "authorize"
     COPYTOKENPIN = "copytokenpin"
     COPYTOKENUSER = "copytokenuser"
     DELETE = "delete"
@@ -122,8 +124,8 @@ class ACTION():
     LOSTTOKEN = 'losttoken'
     MAXTOKENREALM = "max_token_per_realm"
     MAXTOKENUSER = "max_token_per_user"
-    NODETAILSUCCESS = 'no_detail_on_success'
-    NODETAILFAIL = 'no_detail_on_fail'
+    NODETAILSUCCESS = "no_detail_on_success"
+    NODETAILFAIL = "no_detail_on_fail"
     POLICYDELETE = "policydelete"
     POLICYWRITE = "policywrite"
     RESET = "reset"
@@ -132,14 +134,14 @@ class ACTION():
     RESYNC = "resync"
     SET = "set"
     SETPIN = "setpin"
-    SERIAL = 'serial'
+    SETREALM = "setrealm"
+    SERIAL = "serial"
     SYSTEMDELETE = "configdelete"
     SYSTEMWRITE = "configwrite"
-    TOKENREALMS = 'tokentealms'
-    TOKENTYPE = 'tokentype'
+    TOKENREALMS = "tokentealms"
+    TOKENTYPE = "tokentype"
     UNASSIGN = "unassign"
     USERLIST = "userlist"
-
 
 
 class PolicyClass(object):
@@ -272,7 +274,7 @@ class PolicyClass(object):
         :rtype: list
         """
         action_values = []
-        policies = self.get_policies(scope=SCOPE.AUTHZ,
+        policies = self.get_policies(scope=scope,
                                      action=action, active=True,
                                      realm=realm, resolver=resolver, user=user,
                                      client=client)
@@ -436,7 +438,7 @@ def get_static_policy_definitions(scope=None):
     """
 
     pol = {
-        'admin': {
+        SCOPE.ADMIN: {
             ACTION.ENABLE: {'type': 'bool',
                        'desc' : _('Admin is allowed to enable tokens.')},
             ACTION.DISABLE: {'type': 'bool',
@@ -530,7 +532,7 @@ def get_static_policy_definitions(scope=None):
                                'desc' : _('When OTP values are retrieved for a TOTP token, '
                                           'this is the maximum number of retrievable OTP values.')},
         },
-        'user': {
+        SCOPE.USER: {
             ACTION.ASSIGN: {
                 'type': 'bool',
                 'desc': _("The user is allowed to assign an existing token"
@@ -587,7 +589,7 @@ def get_static_policy_definitions(scope=None):
                 'type' : 'str',
                 'desc' : _('If set to "otp": Users in this realm need to login with OTP to the selfservice.')}
             },
-        'enrollment': {
+        SCOPE.ENROLL: {
             ACTION.MAXTOKENREALM: {
                 'type': 'int',
                 'desc': _('Limit the number of allowed tokens in a realm.')},
@@ -630,7 +632,7 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('The length of the validity for the temporary '
                         'token (in days).')},
             },
-        'authentication': {
+        SCOPE.AUTH: {
             'smstext': {
                 'type': 'str',
                 'desc': _('The text that will be send via SMS for an SMS token. '
@@ -667,8 +669,8 @@ def get_static_policy_definitions(scope=None):
                         'should be used.')
                 }
             },
-        'authorization': {
-            'authorize': {
+        SCOPE.AUTHZ: {
+            ACTION.AUTHORIZE: {
                 'type': 'bool',
                 'desc': _('The user/realm will be authorized to login '
                         'to the clients IPs.')},
@@ -680,7 +682,7 @@ def get_static_policy_definitions(scope=None):
                 'type': 'str',
                 'desc': _('The user will only be authenticated if the serial '
                         'number of the token matches this regexp.')},
-            'setrealm': {
+            ACTION.SETREALM: {
                 'type': 'str',
                 'desc': _('The Realm of the user is set to this very realm. '
                         'This is important if the user is not contained in '

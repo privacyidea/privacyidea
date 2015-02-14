@@ -56,7 +56,9 @@ from privacyidea.lib.audit import getAudit
 from flask import current_app
 from privacyidea.lib.policy import PolicyClass, ACTION
 from privacyidea.api.lib.policy import (prepolicy, check_base_action,
-                                        check_token_init, check_token_upload)
+                                        check_token_init, check_token_upload,
+                                        check_max_token_user,
+                                        check_max_token_realm)
 from privacyidea.api.auth import (user_required, admin_required)
 from privacyidea.api.audit import audit_blueprint
 
@@ -121,6 +123,8 @@ def before_request():
 
 
 @token_blueprint.route('/init', methods=['POST'])
+@prepolicy(check_max_token_realm, request)
+@prepolicy(check_max_token_user, request)
 @prepolicy(check_token_init, request)
 @log_with(log, log_entry=False)
 def init():
@@ -331,8 +335,10 @@ def list_api():
     else:
         return send_result(tokens)
 
-# TODO: MAXTOKENUSER and MAXTOKENREALM policy
+
 @token_blueprint.route('/assign', methods=['POST'])
+@prepolicy(check_max_token_realm, request)
+@prepolicy(check_max_token_user, request)
 @prepolicy(check_base_action, request, action=ACTION.ASSIGN)
 @log_with(log)
 def assign_api():
@@ -663,6 +669,7 @@ def set_api(serial=None):
 
 @token_blueprint.route('/realm/<serial>', methods=['POST'])
 @log_with(log)
+@prepolicy(check_max_token_realm, request)
 @prepolicy(check_base_action, request, action=ACTION.TOKENREALMS)
 @admin_required
 def tokenrealm_api(serial=None):

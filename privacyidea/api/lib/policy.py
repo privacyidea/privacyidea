@@ -33,6 +33,8 @@ log = logging.getLogger(__name__)
 from privacyidea.lib.error import PolicyError
 from flask import g
 from privacyidea.lib.policy import SCOPE, ACTION
+from privacyidea.lib.user import get_user_from_param
+from privacyidea.lib.token import get_tokens
 import functools
 import json
 import re
@@ -77,6 +79,79 @@ class prepolicy(object):
             return wrapped_function(*args, **kwds)
 
         return policy_wrapper
+
+
+def check_max_token_user(request=None, action=None):
+    """
+    Pre Policy
+    This checks the maximum token per user policy.
+    Check ACTION.MAXTOKENUSER
+
+    This decorator can wrap:
+        /token/init  (with a realm and user)
+        /token/assign
+
+    :param req:
+    :param action:
+    :return: True otherwise raises an Exception
+    """
+    ERROR = "The number of tokens for this user is limited!"
+    params = request.all_data
+    user_object = get_user_from_param(params)
+    if user_object:
+        policy_object = g.policy_object
+        limit_list = policy_object.get_action_values(ACTION.MAXTOKENUSER,
+                                                     scope=SCOPE.ENROLL,
+                                                     realm=user_object.realm,
+                                                     user=user_object.login,
+                                                     client=request.remote_addr)
+        if len(limit_list) > 0:
+            # we need to check how many tokens the user already has assigned!
+            tokenobject_list = get_tokens(user=user_object)
+            already_assigned_tokens = len(tokenobject_list)
+            if already_assigned_tokens >= int(max(limit_list)):
+                raise PolicyError(ERROR)
+    return True
+
+
+def check_max_token_realm(request=None, action=None):
+    """
+    Pre Policy
+    This checks the maximum token per realm.
+    Check ACTION.MAXTOKENREALM
+
+    This decorator can wrap:
+        /token/init  (with a realm and user)
+        /token/assign
+        /token/tokenrealms
+
+    :param req: The request that is intercepted during the API call
+    :type req: Request Object
+    :param action: An optional Action
+    :type action: basestring
+    :return: True otherwise raises an Exception
+    """
+    ERROR = "The number of tokens in this realm is limited!"
+    params = request.all_data
+    user_object = get_user_from_param(params)
+    if user_object:
+        realm = user_object.realm
+    else:
+        realm = params.get("realm")
+
+    if realm:
+        policy_object = g.policy_object
+        limit_list = policy_object.get_action_values(ACTION.MAXTOKENREALM,
+                                                     scope=SCOPE.ENROLL,
+                                                     realm=realm,
+                                                     client=request.remote_addr)
+        if len(limit_list) > 0:
+            # we need to check how many tokens the user already has assigned!
+            tokenobject_list = get_tokens(realm=realm)
+            already_assigned_tokens = len(tokenobject_list)
+            if already_assigned_tokens >= int(max(limit_list)):
+                raise PolicyError(ERROR)
+    return True
 
 
 def check_base_action(request=None, action=None):

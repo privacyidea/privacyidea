@@ -896,7 +896,9 @@ def set_realms(serial, realms=None):
     Thus, setting realms=[] clears all realms assignments.
 
     :param serial: the serial number of the token
+    :type serial: basestring
     :param realms: A list of realm names
+    :type realms: list
     :return: the number of tokens, to which realms where added. As a serial
     number should be unique, this is either 1 or 0.
     :rtype: int
