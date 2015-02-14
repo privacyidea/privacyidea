@@ -121,10 +121,12 @@ def check():
     user = get_user_from_param(request.all_data)
     serial = getParam(request.all_data, "serial")
     password = getParam(request.all_data, "pass", required)
+    options = {"g": g,
+               "clientip": request.remote_addr}
     if serial:
-        result, details = check_serial_pass(serial, password)
+        result, details = check_serial_pass(serial, password, options=options)
     else:
-        result, details = check_user_pass(user, password)
+        result, details = check_user_pass(user, password, options=options)
 
     g.audit_object.log({"info": details.get("message"),
                         "success": result,

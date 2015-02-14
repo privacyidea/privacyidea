@@ -3,7 +3,6 @@ This test file tests the lib.policy.py
 
 The lib.policy.py only depends on the database model.
 """
-import json
 from .base import MyTestCase
 
 from privacyidea.lib.policy import (set_policy, delete_policy,
@@ -325,4 +324,5 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue("OATH" in ttypes)
         self.assertTrue("mOTP" in ttypes)
         self.assertFalse("TOTP" in ttypes)
+
 

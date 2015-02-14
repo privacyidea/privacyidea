@@ -61,6 +61,7 @@ from ..models import (TokenRealm, Challenge, cleanup_challenges)
 from .challenge import get_challenges
 from .crypto import encryptPassword
 from .crypto import decryptPassword
+from .policydecorators import libpolicy, policy_otppin
 
 
 DATE_FORMAT = "%d/%m/%y %H:%M"
@@ -291,7 +292,7 @@ class TokenClass(object):
         """
         return (False, "get_multi_otp not implemented for this tokentype", {})
 
-
+    @libpolicy(policy_otppin)
     def check_pin(self, pin, user=None, options=None):
         """
         Check the PIN of the given Password.
@@ -303,19 +304,15 @@ class TokenClass(object):
         :param pin: the PIN (static password component), that is to be checked.
         :type pin: string
         :param user: for certain PIN policies (e.g. checking against the
-                     user store, otppin==1) this is the user, whose
-                     password would be checked.
+                     user store) this is the user, whose
+                     password would be checked. But at the moment we are
+                     checking against the userstore in the decorator
+                     "policy_otppin".
         :type user: User object
         :param options: the optional request parameters
         :return: If the PIN is correct, return True
         :rtype: bool
         """
-        # TODO: Migration, how are we doing the policies?
-        # I recommend decorators.
-        # Policy = PolicyClass(request, config, c,
-        #                     get_privacyidea_config())
-        # pin_policies = Policy.get_pin_policies(user)
-
         # check PIN against the token database
         res = self.token.check_pin(pin)
         return res
@@ -886,11 +883,6 @@ class TokenClass(object):
         :return: tuple of (split status, pin, otp value)
         :rtype: tuple
         """
-        # TODO: Migration, add policy logic
-        # Policy = PolicyClass(request, config, c,
-        #                      get_privacyidea_config())
-        # pin_policies = Policy.get_pin_policies(user)
-
         # The database field is always an integer
         otplen = self.token.otplen
         if get_prepend_pin():

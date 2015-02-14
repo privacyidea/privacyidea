@@ -89,9 +89,9 @@ from gettext import gettext as _
 
 import logging
 from ..models import (Policy, db)
-log = logging.getLogger(__name__)
-from privacyidea.lib.error import PolicyError, AuthError, ParameterError
+from privacyidea.lib.error import ParameterError
 
+log = logging.getLogger(__name__)
 
 optional = True
 required = False
@@ -125,6 +125,7 @@ class ACTION():
     MAXTOKENUSER = "max_token_per_user"
     NODETAILSUCCESS = "no_detail_on_success"
     NODETAILFAIL = "no_detail_on_fail"
+    OTPPIN = "otppin"
     POLICYDELETE = "policydelete"
     POLICYWRITE = "policywrite"
     RESET = "reset"
@@ -141,6 +142,14 @@ class ACTION():
     TOKENTYPE = "tokentype"
     UNASSIGN = "unassign"
     USERLIST = "userlist"
+
+
+class ACTIONVALUE():
+    __doc__ = """This is a list of usual action values for e.g. policy
+    action-values like otppin."""
+    TOKENPIN = "tokenpin"
+    USERSTORE = "userstore"
+    NONE = "none"
 
 
 class PolicyClass(object):
@@ -635,13 +644,14 @@ def get_static_policy_definitions(scope=None):
             'smstext': {
                 'type': 'str',
                 'desc': _('The text that will be send via SMS for an SMS token. '
-                        'Use &lt;otp&gt; and &lt;serial&gt; as parameters.')},
-            'otppin': {
+                          'Use <otp> and <serial> as parameters.')},
+            ACTION.OTPPIN: {
                 'type': 'str',
-                'value': ['token pin', 'userstore', 'none'],
+                'value': [ACTIONVALUE.TOKENPIN, ACTIONVALUE.USERSTORE,
+                          ACTIONVALUE.NONE],
                 'desc': _('Either use the Token PIN , use the Userstore '
-                        'Password or use no fixed password '
-                        'component.')},
+                          'Password or use no fixed password '
+                          'component.')},
             'autosms': {
                 'type': 'bool',
                 'desc': _('If set, a new SMS OTP will be sent after '
