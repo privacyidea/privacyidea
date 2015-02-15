@@ -563,8 +563,9 @@ def get_static_policy_definitions(scope=None):
             ACTION.RESET: {
                         'type': 'bool',
                         'desc': _('The user is allowed to reset the failcounter of his tokens.')},
-            'setOTPPIN': {'type': 'bool',
-                          "desc": _("The user is allowed to set the OTP PIN of his tokens.")},
+            ACTION.SETPIN: {'type': 'bool',
+                            "desc": _("The user is allowed to set the OTP PIN "
+                                     "of his tokens.")},
             'setMOTPPIN': {'type': 'bool',
                            "desc": _("The user is allowed to set the mOTP PIN of his mOTP tokens.")},
             'getotp': {'type': 'bool',
