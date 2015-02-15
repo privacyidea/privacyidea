@@ -62,6 +62,10 @@ from privacyidea.lib.config import (get_token_class, get_token_prefix,
 from privacyidea.lib.user import get_user_info
 from gettext import gettext as _
 from privacyidea.lib.realm import realm_is_defined
+from privacyidea.lib.policydecorators import (libpolicy,
+                                              policy_user_does_not_exist,
+                                              policy_user_has_no_token,
+                                              policy_user_passthru)
 
 log = logging.getLogger(__name__)
 
@@ -134,7 +138,6 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
             # exact match
             sql_query = sql_query.filter(func.lower(Token.description) ==
                                          description.lower())
-
 
     if assigned is not None:
         # filter if assigned or not
@@ -1632,16 +1635,17 @@ def check_serial_pass(serial, passw, options=None):
 
     return res, reply_dict
 
+
+@libpolicy(policy_user_passthru)
+@libpolicy(policy_user_has_no_token)
+@libpolicy(policy_user_does_not_exist)
 @log_with(log)
 def check_user_pass(user, passw, options=None):
     """
     This function checks the otp for a given user.
-    Here we need to iterate through all tokens and we can break
-    as soon as we hit the first match
+    It is called by the API /validate/check and simplecheck
 
     If the OTP matches, True is returned and the otp counter is increased.
-
-    TODO: We need to take into account PassOnUserNotFound and PassOnUserNoToken
 
     :param user: The user who is trying to authenticate
     :type user: User object

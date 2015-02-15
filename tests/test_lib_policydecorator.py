@@ -10,11 +10,15 @@ from .base import MyTestCase
 from privacyidea.lib.policy import (set_policy, delete_policy,
                                     PolicyClass, SCOPE,
                                     ACTION, ACTIONVALUE)
-from privacyidea.lib.policydecorators import policy_otppin
+from privacyidea.lib.policydecorators import (policy_otppin,
+                                              policy_user_does_not_exist,
+                                              policy_user_passthru,
+                                              policy_user_has_no_token)
 from privacyidea.lib.user import User
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
-from privacyidea.lib.token import init_token, remove_token
+from privacyidea.lib.token import init_token, remove_token, check_user_pass
+from privacyidea.lib.error import UserError
 
 
 def _check_policy_name(polname, policies):
@@ -140,4 +144,79 @@ class LibPolicyTestCase(MyTestCase):
                           "test", options=options,
                           user=None)
         self.assertTrue(r)
+        delete_policy("pol1")
+        remove_token("T001")
+
+    def test_04_user_does_not_exist(self):
+        user = User("MisterX", realm="NoRealm")
+        passw = "wrongPW"
+        options = {}
+        # A non-existing user will fail to authenticate without a policy
+        self.assertRaises(UserError, policy_user_does_not_exist,
+                          check_user_pass, user, passw, options)
+
+        # Now we set a policy, that a non existing user will authenticate
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTH,
+                   action=ACTION.PASSNOUSER)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        options = {"g": g}
+        rv = policy_user_does_not_exist(check_user_pass, user, passw,
+                                        options=options)
+        self.assertTrue(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         u"The user does not exist, but is accepted due "
+                         u"to policy 'pol1'.")
+        delete_policy("pol1")
+
+    def test_05_user_has_no_tokens(self):
+        user = User("cornelius", realm="r1")
+        passw = "test"
+        options = {}
+        # A user with no tokens will fail to authenticate
+        rv = policy_user_has_no_token(check_user_pass, user, passw, options)
+        self.assertFalse(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         "The user has no tokens assigned")
+
+        # Now we set a policy, that a non existing user will authenticate
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTH,
+                   action=ACTION.PASSNOTOKEN)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        options = {"g": g}
+        rv = policy_user_has_no_token(check_user_pass, user, passw,
+                                      options=options)
+        self.assertTrue(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         u"The user has not token, but is accepted due to "
+                         u"policy 'pol1'.")
+        delete_policy("pol1")
+
+    def test_06_passthru(self):
+        user = User("cornelius", realm="r1")
+        passw = "test"
+        options = {}
+        # A user with no tokens will fail to authenticate
+        rv = policy_user_passthru(check_user_pass, user, passw, options)
+        self.assertFalse(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         "The user has no tokens assigned")
+
+        # Now we set a PASSTHRU policy, so that the user may authenticate
+        # against his userstore
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTH,
+                   action=ACTION.PASSTHRU)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        options = {"g": g}
+        rv = policy_user_has_no_token(check_user_pass, user, passw,
+                                      options=options)
+        self.assertTrue(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         u"The user authenticated against his userstore "
+                         u"according to policy 'pol1'.")
         delete_policy("pol1")

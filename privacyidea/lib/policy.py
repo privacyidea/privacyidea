@@ -126,6 +126,9 @@ class ACTION():
     NODETAILSUCCESS = "no_detail_on_success"
     NODETAILFAIL = "no_detail_on_fail"
     OTPPIN = "otppin"
+    PASSNOTOKEN = "passOnNoToken"
+    PASSNOUSER = "passOnNoUser"
+    PASSTHRU = "passthru"
     POLICYDELETE = "policydelete"
     POLICYWRITE = "policywrite"
     RESET = "reset"
@@ -656,16 +659,22 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _('If set, a new SMS OTP will be sent after '
                         'successful authentication with one SMS OTP.')},
-            'passthru': {
+            ACTION.PASSTHRU: {
                 'type': 'bool',
-                'desc': _('If set, the user in this realm will be authenticated '
-                        'against the UserIdResolver, if the user has no '
-                        'tokens assigned.')
+                'desc': _('If set, the user in this realm will be '
+                          'authenticated against the UserIdResolver,'
+                          ' if the user has no tokens assigned.')
                 },
-            'passOnNoToken': {
+            ACTION.PASSNOTOKEN: {
                 'type': 'bool',
-                'desc': _('If the user has no token, the authentication request '
-                        'for this user will always be true.')
+                'desc': _('If the user has no token, the authentication '
+                          'request for this user will always be true.')
+                },
+            ACTION.PASSNOUSER: {
+                'type': 'bool',
+                'desc': _('If the user user does not exist, '
+                          'the authentication request for this '
+                          'non-existing user will always be true.')
                 },
             'qrtanurl': {
                 'type': 'str',
@@ -675,7 +684,7 @@ def get_static_policy_definitions(scope=None):
             'challenge_response': {
                 'type': 'str',
                 'desc': _('A list of tokentypes for which challenge response '
-                        'should be used.')
+                          'should be used.')
                 }
             },
         SCOPE.AUTHZ: {

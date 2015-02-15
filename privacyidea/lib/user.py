@@ -198,8 +198,11 @@ class User(object):
             self.get_resolvers()
         rtype = get_resolver_type(self.resolver)
         y = get_resolver_object(self.resolver)
+        if y is None:
+            raise UserError("The resolver '%s' does not exist!" %
+                            self.resolver)
         uid = y.getUserId(self.login)
-        return (uid, rtype, self.resolver)
+        return uid, rtype, self.resolver
        
     def get_user_info(self):
         """

@@ -77,6 +77,115 @@ class libpolicy(object):
         return policy_wrapper
 
 
+def policy_user_has_no_token(wrapped_function, user_object, passw,
+                               options=None):
+    """
+    This decorator checks if the user has a token at all.
+    If the user has a token, the wrapped function is called.
+
+    The wrapped function is usually token.check_user_pass, which takes the
+    arguments (user, passw, options={})
+
+    :param wrapped_function:
+    :param user_object:
+    :param passw:
+    :param options: Dict containing values for "g" and "clientip"
+    :return: Tuple of True/False and reply-dictionary
+    """
+    from privacyidea.lib.token import get_tokens
+    options = options or {}
+    g = options.get("g")
+    if g:
+        clientip = options.get("clientip")
+        policy_object = g.policy_object
+        pass_no_token = policy_object.get_policies(action=ACTION.PASSNOTOKEN,
+                                                   scope=SCOPE.AUTH,
+                                                   realm=user_object.realm,
+                                                   user=user_object.login,
+                                                   client=clientip)
+        if len(pass_no_token) > 0:
+            # Now we need to check, if the user really has no token.
+            tokencount = get_tokens(user=user_object, count=True)
+            if tokencount == 0:
+                return True, {"message": "The user has not token, but is "
+                                         "accepted due to policy '%s'." %
+                                         pass_no_token[0].get("name")}
+
+    # If nothing else returned, we return the wrapped function
+    return wrapped_function(user_object, passw, options)
+
+
+def policy_user_does_not_exist(wrapped_function, user_object, passw,
+                               options=None):
+    """
+    This decorator checks, if the user does exist at all.
+    If the user does exist, the wrapped function is called.
+
+    The wrapped function is usually token.check_user_pass, which takes the
+    arguments (user, passw, options={})
+
+    :param wrapped_function:
+    :param user_object:
+    :param passw:
+    :param options: Dict containing values for "g" and "clientip"
+    :return: Tuple of True/False and reply-dictionary
+    """
+    options = options or {}
+    g = options.get("g")
+    if g:
+        clientip = options.get("clientip")
+        policy_object = g.policy_object
+        pass_no_user = policy_object.get_policies(action=ACTION.PASSNOUSER,
+                                                  scope=SCOPE.AUTH,
+                                                  realm=user_object.realm,
+                                                  user=user_object.login,
+                                                  client=clientip)
+        if len(pass_no_user) > 0:
+            return True, {"message": "The user does not exist, but is "
+                                     "accepted due to policy '%s'." %
+                                     pass_no_user[0].get("name")}
+
+    # If nothing else returned, we return the wrapped function
+    return wrapped_function(user_object, passw, options)
+
+
+def policy_user_passthru(wrapped_function, user_object, passw, options=None):
+    """
+    This decorator checks the policy settings of ACTION.PASSTHRU.
+    If the authentication against the userstore is not successful,
+    the wrapped function is called.
+
+    The wrapped function is usually token.check_user_pass, which takes the
+    arguments (user, passw, options={})
+
+    :param wrapped_function:
+    :param user_object:
+    :param passw:
+    :param options: Dict containing values for "g" and "clientip"
+    :return: Tuple of True/False and reply-dictionary
+    """
+    options = options or {}
+    g = options.get("g")
+    if g:
+        clientip = options.get("clientip")
+        policy_object = g.policy_object
+        pass_thru = policy_object.get_policies(action=ACTION.PASSTHRU,
+                                               scope=SCOPE.AUTH,
+                                               realm=user_object.realm,
+                                               user=user_object.login,
+                                               client=clientip)
+        if len(pass_thru) > 0:
+            # Now we need to check the userstore password
+            if user_object.check_password(passw):
+                return True, {"message": "The user authenticated against his "
+                                         "userstore according to "
+                                         "policy '%s'." %
+                                         pass_thru[0].get("name")}
+
+    # If nothing else returned, we return the wrapped function
+    return wrapped_function(user_object, passw, options)
+
+
 def policy_otppin(wrapped_function, *args, **kwds):
     """
     Decorator to decorate the tokenclass.check_pin function.

@@ -139,7 +139,3 @@ class ParameterError(privacyIDEAError):
     USER_OR_SERIAL = 'You either need to provide user or serial'
     def __init__(self, description="unspecified parameter error!", id=905):
         privacyIDEAError.__init__(self, description=description, id=id)
-
-
-#eof###########################################################################
-

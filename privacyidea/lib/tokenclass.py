@@ -290,7 +290,7 @@ class TokenClass(object):
         :return: True/False, error text, OTP dictionary
         :rtype: Tuple
         """
-        return (False, "get_multi_otp not implemented for this tokentype", {})
+        return False, "get_multi_otp not implemented for this tokentype", {}
 
     @libpolicy(policy_otppin)
     def check_pin(self, pin, user=None, options=None):
