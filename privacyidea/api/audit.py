@@ -29,7 +29,7 @@ from flask import (Blueprint,
                    request, current_app, Response,
                    stream_with_context)
 from lib.utils import (send_result)
-from ..api.lib.policy import prepolicy, check_base_action
+from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policy import ACTION
 from flask import g
 import logging

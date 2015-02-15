@@ -20,7 +20,8 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-These are the policy decorators for the API calls.
+These are the policy decorators as PRE conditions for the API calls.
+I.e. these conditions are executed before the wrapped API call.
 This module uses the policy base functions from
 privacyidea.lib.policy but also components from flask like g.
 
@@ -79,6 +80,36 @@ class prepolicy(object):
             return wrapped_function(*args, **kwds)
 
         return policy_wrapper
+
+
+def init_tokenlabel(request=None, action=None):
+    """
+    This policy function is to be used as a decorator in the API init function.
+    It adds the tokenlabel definition to the params like this:
+    params : { "tokenlabel": "<u>@<r>" }
+
+    It uses the policy SCOPE.ENROLL, ACTION.TOKENLABEL to set the tokenlabel
+    of Smartphone tokens during enrollment and this fill the details of the
+    response.
+    """
+    params = request.all_data
+    policy_object = g.policy_object
+    user_object = get_user_from_param(params)
+    # get the serials from a policy definition
+    label_pols = policy_object.get_action_values(action=ACTION.TOKENLABEL,
+                                                 scope=SCOPE.ENROLL,
+                                                 user=user_object.login,
+                                                 realm=user_object.realm,
+                                                 client=request.remote_addr)
+
+    label_pols = list(set(label_pols))
+    if len(label_pols) > 1:
+        raise PolicyError("There are conflicting tokenlabel definitions!")
+    elif len(label_pols) == 1:
+        # The policy was set, so we need to set the tokenlabel in the request.
+        request.all_data["tokenlabel"] = label_pols[0]
+
+    return True
 
 
 def check_max_token_user(request=None, action=None):
@@ -283,168 +314,3 @@ def check_token_init(request=None, action=None):
     if len(action_at_all) and len(action) == 0:
         raise PolicyError(ERROR.get(role))
     return True
-
-
-class postpolicy(object):
-    """
-    Decorator that allows to call a specific function after the decorated
-    function.
-    The postpolicy decorator is to be used in the API calls.
-    """
-    def __init__(self, function, request=None):
-        """
-        :param function: This is the policy function the is to be called
-        :type function: function
-        :param request: The original request object, that needs to be passed
-        :type request: Request Object
-        """
-        self.request = request
-        self.function = function
-
-    def __call__(self, wrapped_function):
-        """
-        This decorates the given function. The postpolicy decorator is ment
-        for API functions on the API level.
-        The wrapped_function should return a response object.
-
-        :param wrapped_function: The function, that is decorated.
-        :type wrapped_function: API function
-        :return: Response object
-        """
-        @functools.wraps(wrapped_function)
-        def policy_wrapper(*args, **kwds):
-            response = wrapped_function(*args, **kwds)
-            return self.function(self.request, response, *args, **kwds)
-
-        return policy_wrapper
-
-
-def check_tokentype(request, response):
-    """
-    This policy function is to be used in a decorator of an API function.
-    It checks, if the token, that was used in the API call is of a type that
-    is allowed to be used.
-
-    If not, a PolicyException is raised.
-
-    :param response: The response of the decorated function
-    :type response: Response object
-    :return: A new (maybe modified) response
-    """
-    content = json.loads(response.data)
-    tokentype = content.get("detail", {}).get("type")
-    policy_object = g.policy_object
-
-    allowed_tokentypes = policy_object.get_action_values("tokentype",
-                                                 scope=SCOPE.AUTHZ,
-                                                 client=request.remote_addr)
-    if tokentype and len(allowed_tokentypes) > 0:
-        if tokentype not in allowed_tokentypes:
-            # TODO: adapt the audit log!!!
-            raise PolicyError("Tokentype not allowed for authentication!")
-    return response
-
-
-def check_serial(request, response):
-    """
-    This policy function is to be used in a decorator of an API function.
-    It checks, if the token, that was used in the API call has a serial
-    number that is allowed to be used.
-
-    If not, a PolicyException is raised.
-
-    :param response: The response of the decorated function
-    :type response: Response object
-    :return: A new (maybe modified) response
-    """
-    content = json.loads(response.data)
-    policy_object = g.policy_object
-    serial = content.get("detail", {}).get("serial")
-    # get the serials from a policy definition
-    allowed_serials = policy_object.get_action_values("serial",
-                                                    scope=SCOPE.AUTHZ,
-                                                    client=request.remote_addr)
-
-    # If we can compare a serial and if we do serial matching!
-    if serial and len(allowed_serials) > 0:
-        serial_matches = False
-        for allowed_serial in allowed_serials:
-            if re.search(allowed_serial, serial):
-                serial_matches = True
-                break
-        if serial_matches is False:
-            # TODO: adapt the audit log!!!
-            raise PolicyError("Serial is not allowed for authentication!")
-    return response
-
-
-def set_tokenlabel(request, response):
-    """
-    This policy function is to be used as a decorator in the API init function.
-    It adds the token label to the URL that generates the QR code.
-
-    TODO: This is an internal config function.
-
-    :param request:
-    :param response:
-    :return:
-    """
-    pass
-
-
-def no_detail_on_success(request, response):
-    """
-    This policy function is used with the AUTHZ scope.
-    If the boolean value no_detail_on_success is set,
-    the details will be stripped if
-    the authentication request was successful.
-
-    :param request:
-    :param response:
-    :return:
-    """
-    content = json.loads(response.data)
-    policy_object = g.policy_object
-
-    # get the serials from a policy definition
-    detailPol = policy_object.get_policies(action=ACTION.NODETAILSUCCESS,
-                                           scope=SCOPE.AUTHZ,
-                                           client=request.remote_addr)
-
-    if len(detailPol):
-        # The policy was set, we need to strip the details, if the
-        # authentication was successful. (value=true)
-        if content.get("result", {}).get("value"):
-            del content["detail"]
-            response.data = json.dumps(content)
-
-    return response
-
-
-def no_detail_on_fail(request, response):
-    """
-    This policy function is used with the AUTHZ scope.
-    If the boolean value no_detail_on_fail is set,
-    the details will be stripped if
-    the authentication request failed.
-
-    :param request:
-    :param response:
-    :return:
-    """
-    content = json.loads(response.data)
-    policy_object = g.policy_object
-
-    # get the serials from a policy definition
-    detailPol = policy_object.get_policies(action=ACTION.NODETAILFAIL,
-                                           scope=SCOPE.AUTHZ,
-                                           client=request.remote_addr)
-
-    if len(detailPol):
-        # The policy was set, we need to strip the details, if the
-        # authentication was successful. (value=true)
-        if content.get("result", {}).get("value") is False:
-            del content["detail"]
-            response.data = json.dumps(content)
-
-    return response

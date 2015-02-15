@@ -46,7 +46,7 @@ from ..lib.config import (get_privacyidea_config,
                           delete_privacyidea_config,
                           get_from_config)
 from ..lib.policy import PolicyClass, ACTION
-from ..api.lib.policy import prepolicy, check_base_action
+from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.error import (ParameterError,
                          AuthError,
                          PolicyError)

@@ -163,6 +163,8 @@ class HotpTokenClass(TokenClass):
         This is the e.g. the enrollment URL for a Google Authenticator.
         """
         response_detail = TokenClass.get_init_detail(self, params, user)
+        params = params or {}
+        tokenlabel = params.get("tokenlabel", "<s>")
         # If the init_details contain an OTP key the OTP key
         # should be displayed as an enrollment URL
         otpkey = self.init_details.get('otpkey')
@@ -174,7 +176,8 @@ class HotpTokenClass(TokenClass):
                                         user=user.login,
                                         realm=user.realm,
                                         type=tok_type.lower(),
-                                        serial=self.get_serial())
+                                        serial=self.get_serial(),
+                                        tokenlabel=tokenlabel)
                     response_detail["googleurl"] = {"description":
                                                     _("URL for google "
                                                       "Authenticator"),
@@ -187,7 +190,8 @@ class HotpTokenClass(TokenClass):
                                        user=user.login,
                                        realm=user.realm,
                                        type=tok_type,
-                                       serial=self.get_serial())
+                                       serial=self.get_serial(),
+                                       tokenlabel=tokenlabel)
                     response_detail["oathurl"] = {"description": _("URL for"
                                                                    " OATH "
                                                                    "token"),

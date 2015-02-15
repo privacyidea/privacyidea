@@ -63,9 +63,9 @@ from privacyidea.lib.user import get_user_info
 from gettext import gettext as _
 from privacyidea.lib.realm import realm_is_defined
 from privacyidea.lib.policydecorators import (libpolicy,
-                                              policy_user_does_not_exist,
-                                              policy_user_has_no_token,
-                                              policy_user_passthru)
+                                              auth_user_does_not_exist,
+                                              auth_user_has_no_token,
+                                              auth_user_passthru)
 
 log = logging.getLogger(__name__)
 
@@ -1636,9 +1636,9 @@ def check_serial_pass(serial, passw, options=None):
     return res, reply_dict
 
 
-@libpolicy(policy_user_passthru)
-@libpolicy(policy_user_has_no_token)
-@libpolicy(policy_user_does_not_exist)
+@libpolicy(auth_user_passthru)
+@libpolicy(auth_user_has_no_token)
+@libpolicy(auth_user_does_not_exist)
 @log_with(log)
 def check_user_pass(user, passw, options=None):
     """

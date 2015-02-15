@@ -43,7 +43,7 @@ from ..lib.resolver import (get_resolver_list,
                             delete_resolver, pretestresolver)
 from flask import g
 import logging
-from ..api.lib.policy import prepolicy, check_base_action
+from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policy import ACTION
 
 

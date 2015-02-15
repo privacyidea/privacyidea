@@ -54,7 +54,7 @@ from ..lib.realm import (set_default_realm,
                          set_realm,
                          delete_realm)
 from ..lib.policy import ACTION
-from ..api.lib.policy import prepolicy, check_base_action
+from ..api.lib.prepolicy import prepolicy, check_base_action
 from flask import g
 from gettext import gettext as _
 import logging

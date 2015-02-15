@@ -47,7 +47,7 @@ from ..lib.policy import (set_policy,
                           enable_policy)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
-from ..api.lib.policy import prepolicy, check_base_action
+from ..api.lib.prepolicy import prepolicy, check_base_action
 
 from flask import (g,
                     make_response)

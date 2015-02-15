@@ -141,6 +141,7 @@ class ACTION():
     SERIAL = "serial"
     SYSTEMDELETE = "configdelete"
     SYSTEMWRITE = "configwrite"
+    TOKENLABEL = "tokenlabel"
     TOKENREALMS = "tokentealms"
     TOKENTYPE = "tokentype"
     UNASSIGN = "unassign"
@@ -611,12 +612,14 @@ def get_static_policy_definitions(scope=None):
             'otp_pin_random': {
                 'type': 'int',
                 'value': range(0, 32),
-                "desc": _("Set a random OTP PIN with this lenght for a token.")},
+                "desc": _("Set a random OTP PIN with this length for a "
+                          "token.")},
             'otp_pin_encrypt': {
                 'type': 'int',
-                'value': [0, 1],
-                "desc": _("If set to 1, the OTP PIN is encrypted. The normal behaviour is the PIN is hashed.")},
-            'tokenlabel': {
+                'value': ["encrypt", "hash"],
+                "desc": _("The OTP PIN can be hashed or encrypted. Hashed is "
+                          "the normal behaviour.")},
+            ACTION.TOKENLABEL: {
                 'type': 'str',
                 'desc': _("Set label for a new enrolled Google Authenticator. "
                           "Possible tags are <u> (user), <r> ("

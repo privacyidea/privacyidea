@@ -32,10 +32,11 @@ from lib.utils import required
 from privacyidea.lib.token import (check_user_pass, check_serial_pass)
 from privacyidea.api.lib.utils import remove_session_from_param
 from privacyidea.lib.audit import getAudit
-from privacyidea.api.lib.policy import (postpolicy, prepolicy,
-                                        check_tokentype, check_serial,
-                                        no_detail_on_fail,
-                                        no_detail_on_success, set_realm)
+from privacyidea.api.lib.prepolicy import (prepolicy, set_realm)
+from privacyidea.api.lib.postpolicy import (postpolicy,
+                                            check_tokentype, check_serial,
+                                            no_detail_on_fail,
+                                            no_detail_on_success)
 from privacyidea.lib.policy import PolicyClass
 
 validate_blueprint = Blueprint('validate_blueprint', __name__)

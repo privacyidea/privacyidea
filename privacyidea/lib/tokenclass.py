@@ -61,7 +61,7 @@ from ..models import (TokenRealm, Challenge, cleanup_challenges)
 from .challenge import get_challenges
 from .crypto import encryptPassword
 from .crypto import decryptPassword
-from .policydecorators import libpolicy, policy_otppin
+from .policydecorators import libpolicy, auth_otppin
 
 
 DATE_FORMAT = "%d/%m/%y %H:%M"
@@ -292,7 +292,7 @@ class TokenClass(object):
         """
         return False, "get_multi_otp not implemented for this tokentype", {}
 
-    @libpolicy(policy_otppin)
+    @libpolicy(auth_otppin)
     def check_pin(self, pin, user=None, options=None):
         """
         Check the PIN of the given Password.
@@ -307,7 +307,7 @@ class TokenClass(object):
                      user store) this is the user, whose
                      password would be checked. But at the moment we are
                      checking against the userstore in the decorator
-                     "policy_otppin".
+                     "auth_otppin".
         :type user: User object
         :param options: the optional request parameters
         :return: If the PIN is correct, return True

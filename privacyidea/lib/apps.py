@@ -71,57 +71,56 @@ def create_motp_url(key, user=None, realm=None, serial=""):
 
 @log_with(log)
 def create_google_authenticator_url(key=None, user=None,
-                                        realm=None, type="hotp",
-                                        serial=""):
-    '''
+                                    realm=None, type="hotp",
+                                    serial="mylabel", tokenlabel="<s>"):
+    """
     This creates the google authenticator URL.
     This url may only be 119 characters long.
     Otherwise we qrcode.js can not create the qrcode.
     If the URL would be longer, we shorten the username
     
     We expect the key to be hexlified!
-    '''
+    """
     # policy depends on some lib.util
 
     if "hotp" == type.lower():
         type = "hotp"
 
+    # We need realm und user to be a string
+    realm = realm or ""
+    user = user or ""
+
     key_bin = binascii.unhexlify(key)
     # also strip the padding =, as it will get problems with the google app.
     otpkey = base64.b32encode(key_bin).strip('=')
 
-    #'url' : "otpauth://hotp/%s?secret=%s&counter=0" % ( user@realm, otpkey )
     base_len = len("otpauth://%s/?secret=%s&counter=0" % (type, otpkey))
     max_len = 119
     allowed_label_len = max_len - base_len
-    log.debug("we have got %s characters left for the token label" % str(allowed_label_len))
+    log.debug("we have got %s characters left for the token label" %
+              str(allowed_label_len))
+    label = tokenlabel.replace("<s>",
+                               serial).replace("<u>",
+                                               user).replace("<r>", realm)
 
-    #Policy = PolicyClass(request, config, c,
-    #                     get_privacyIDEA_config())
-    #label = Policy.get_tokenlabel(user, realm, serial)
-    label = serial or "mylabel"
     label = label[0:allowed_label_len]
-
     url_label = quote(label)
 
     return "otpauth://%s/%s?secret=%s&counter=0" % (type, url_label, otpkey)
 
 @log_with(log)
 def create_oathtoken_url(otpkey=None, user=None, realm=None,
-                         type="hotp", serial=""):
-    #'url' : 'oathtoken:///addToken?name='+serial +
-    #                '&key='+otpkey+
-    #                '&timeBased=false&counter=0&numDigites=6&lockdown=true',
-
+                         type="hotp", serial="mylabel", tokenlabel="<s>"):
     timebased = ""
     if "totp" == type.lower():
         timebased = "&timeBased=true"
+    # We need realm und user to be a string
+    realm = realm or ""
+    user = user or ""
 
-    # TODO: Migration: Here we need a ConfigPolicy
-    #Policy = PolicyClass(request, config, c,
-    #                     get_privacyIDEA_config())
-    # label = Policy.get_tokenlabel(user, realm, serial)
-    label = "mylabel"
+    label = tokenlabel.replace("<s>",
+                               serial).replace("<u>",
+                                               user).replace("<r>", realm)
     url_label = quote(label)
 
     url = "oathtoken:///addToken?name=%s&lockdown=true&key=%s%s" % (

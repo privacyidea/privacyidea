@@ -8,13 +8,14 @@ from .base import MyTestCase
 
 from privacyidea.lib.policy import (set_policy, delete_policy,
                                     PolicyClass, SCOPE, ACTION)
-from privacyidea.api.lib.policy import (check_serial, check_tokentype,
-                                        no_detail_on_success,
-                                        no_detail_on_fail,
-                                        check_token_upload,
-                                        check_base_action, check_token_init,
-                                        check_max_token_user,
-                                        check_max_token_realm, set_realm)
+from privacyidea.api.lib.prepolicy import (check_token_upload,
+                                           check_base_action, check_token_init,
+                                           check_max_token_user,
+                                           check_max_token_realm, set_realm,
+                                           init_tokenlabel)
+from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
+                                            no_detail_on_success,
+                                            no_detail_on_fail)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms)
 from privacyidea.lib.user import User
@@ -273,6 +274,34 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # finally delete policy
         delete_policy("pol1")
         delete_policy("pol2")
+
+    def test_06_set_tokenlabel(self):
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+
+        # Set a policy that defines the tokenlabel
+        set_policy(name="pol1",
+                   scope=SCOPE.ENROLL,
+                   action="%s=%s" % (ACTION.TOKENLABEL, "<u>@<r>"))
+        g.policy_object = PolicyClass()
+
+        # request, that matches the policy
+        req.all_data = {"realm": "somerealm",
+                        "user": "cornelius",
+                        "realm": "home"}
+        init_tokenlabel(req)
+
+        # Check, if the tokenlabel was added
+        self.assertEqual(req.all_data.get("tokenlabel"), "<u>@<r>")
+        # finally delete policy
+        delete_policy("pol1")
 
 
 class PostPolicyDecoratorTestCase(MyTestCase):

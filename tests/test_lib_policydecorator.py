@@ -10,10 +10,10 @@ from .base import MyTestCase
 from privacyidea.lib.policy import (set_policy, delete_policy,
                                     PolicyClass, SCOPE,
                                     ACTION, ACTIONVALUE)
-from privacyidea.lib.policydecorators import (policy_otppin,
-                                              policy_user_does_not_exist,
-                                              policy_user_passthru,
-                                              policy_user_has_no_token)
+from privacyidea.lib.policydecorators import (auth_otppin,
+                                              auth_user_does_not_exist,
+                                              auth_user_passthru,
+                                              auth_user_has_no_token)
 from privacyidea.lib.user import User
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
@@ -55,11 +55,11 @@ class LibPolicyTestCase(MyTestCase):
         options = {"g": g}
 
         # NONE with empty PIN -> success
-        r = policy_otppin(self.fake_check_otp, None,
+        r = auth_otppin(self.fake_check_otp, None,
                           "", options=options, user=my_user)
         self.assertTrue(r)
         # NONE with some pin -> fail
-        r = policy_otppin(self.fake_check_otp, None,
+        r = auth_otppin(self.fake_check_otp, None,
                           "some pin", options=options, user=my_user)
         self.assertFalse(r)
 
@@ -72,11 +72,11 @@ class LibPolicyTestCase(MyTestCase):
         g.policy_object = P
         options = {"g": g}
 
-        r = policy_otppin(self.fake_check_otp, None,
+        r = auth_otppin(self.fake_check_otp, None,
                           "FAKE", options=options,
                           user=my_user)
         self.assertTrue(r)
-        r = policy_otppin(self.fake_check_otp, None,
+        r = auth_otppin(self.fake_check_otp, None,
                           "Wrong Pin", options=options,
                           user=my_user)
         self.assertFalse(r)
@@ -103,13 +103,13 @@ class LibPolicyTestCase(MyTestCase):
         options = {"g": g}
 
         # Wrong password
-        r = policy_otppin(self.fake_check_otp, None,
+        r = auth_otppin(self.fake_check_otp, None,
                           "WrongPW", options=options,
                           user=User("cornelius", realm="r1"))
         self.assertFalse(r)
 
         # Correct password from userstore: "test"
-        r = policy_otppin(self.fake_check_otp, None,
+        r = auth_otppin(self.fake_check_otp, None,
                           "test", options=options,
                           user=User("cornelius", realm="r1"))
         self.assertTrue(r)
@@ -133,14 +133,14 @@ class LibPolicyTestCase(MyTestCase):
 
         # Wrong password
         # Not identified by the user but by the token owner
-        r = policy_otppin(self.fake_check_otp, token,
+        r = auth_otppin(self.fake_check_otp, token,
                           "WrongPW", options=options,
                           user=None)
         self.assertFalse(r)
 
         # Correct password from userstore: "test"
         # Not identified by the user but by the token owner
-        r = policy_otppin(self.fake_check_otp, token,
+        r = auth_otppin(self.fake_check_otp, token,
                           "test", options=options,
                           user=None)
         self.assertTrue(r)
@@ -152,7 +152,7 @@ class LibPolicyTestCase(MyTestCase):
         passw = "wrongPW"
         options = {}
         # A non-existing user will fail to authenticate without a policy
-        self.assertRaises(UserError, policy_user_does_not_exist,
+        self.assertRaises(UserError, auth_user_does_not_exist,
                           check_user_pass, user, passw, options)
 
         # Now we set a policy, that a non existing user will authenticate
@@ -162,7 +162,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
         options = {"g": g}
-        rv = policy_user_does_not_exist(check_user_pass, user, passw,
+        rv = auth_user_does_not_exist(check_user_pass, user, passw,
                                         options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"),
@@ -175,7 +175,7 @@ class LibPolicyTestCase(MyTestCase):
         passw = "test"
         options = {}
         # A user with no tokens will fail to authenticate
-        rv = policy_user_has_no_token(check_user_pass, user, passw, options)
+        rv = auth_user_has_no_token(check_user_pass, user, passw, options)
         self.assertFalse(rv[0])
         self.assertEqual(rv[1].get("message"),
                          "The user has no tokens assigned")
@@ -187,7 +187,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
         options = {"g": g}
-        rv = policy_user_has_no_token(check_user_pass, user, passw,
+        rv = auth_user_has_no_token(check_user_pass, user, passw,
                                       options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"),
@@ -200,7 +200,7 @@ class LibPolicyTestCase(MyTestCase):
         passw = "test"
         options = {}
         # A user with no tokens will fail to authenticate
-        rv = policy_user_passthru(check_user_pass, user, passw, options)
+        rv = auth_user_passthru(check_user_pass, user, passw, options)
         self.assertFalse(rv[0])
         self.assertEqual(rv[1].get("message"),
                          "The user has no tokens assigned")
@@ -213,7 +213,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
         options = {"g": g}
-        rv = policy_user_has_no_token(check_user_pass, user, passw,
+        rv = auth_user_has_no_token(check_user_pass, user, passw,
                                       options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"),

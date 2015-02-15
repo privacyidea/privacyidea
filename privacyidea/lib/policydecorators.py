@@ -77,7 +77,7 @@ class libpolicy(object):
         return policy_wrapper
 
 
-def policy_user_has_no_token(wrapped_function, user_object, passw,
+def auth_user_has_no_token(wrapped_function, user_object, passw,
                                options=None):
     """
     This decorator checks if the user has a token at all.
@@ -115,7 +115,7 @@ def policy_user_has_no_token(wrapped_function, user_object, passw,
     return wrapped_function(user_object, passw, options)
 
 
-def policy_user_does_not_exist(wrapped_function, user_object, passw,
+def auth_user_does_not_exist(wrapped_function, user_object, passw,
                                options=None):
     """
     This decorator checks, if the user does exist at all.
@@ -149,7 +149,7 @@ def policy_user_does_not_exist(wrapped_function, user_object, passw,
     return wrapped_function(user_object, passw, options)
 
 
-def policy_user_passthru(wrapped_function, user_object, passw, options=None):
+def auth_user_passthru(wrapped_function, user_object, passw, options=None):
     """
     This decorator checks the policy settings of ACTION.PASSTHRU.
     If the authentication against the userstore is not successful,
@@ -186,7 +186,7 @@ def policy_user_passthru(wrapped_function, user_object, passw, options=None):
     return wrapped_function(user_object, passw, options)
 
 
-def policy_otppin(wrapped_function, *args, **kwds):
+def auth_otppin(wrapped_function, *args, **kwds):
     """
     Decorator to decorate the tokenclass.check_pin function.
     Depending on the ACTION.OTPPIN it

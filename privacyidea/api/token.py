@@ -55,10 +55,11 @@ from flask import request, g
 from privacyidea.lib.audit import getAudit
 from flask import current_app
 from privacyidea.lib.policy import PolicyClass, ACTION
-from privacyidea.api.lib.policy import (prepolicy, check_base_action,
-                                        check_token_init, check_token_upload,
-                                        check_max_token_user,
-                                        check_max_token_realm)
+from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
+                                           check_token_init, check_token_upload,
+                                           check_max_token_user,
+                                           check_max_token_realm,
+                                           init_tokenlabel)
 from privacyidea.api.auth import (user_required, admin_required)
 from privacyidea.api.audit import audit_blueprint
 
@@ -126,6 +127,7 @@ def before_request():
 @prepolicy(check_max_token_realm, request)
 @prepolicy(check_max_token_user, request)
 @prepolicy(check_token_init, request)
+@prepolicy(init_tokenlabel, request)
 @log_with(log, log_entry=False)
 def init():
     """
