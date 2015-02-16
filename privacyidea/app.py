@@ -94,9 +94,10 @@ def create_app(config_name=None, config_file='/etc/privacyidea/pi.cfg'):
     # Create the logger
     # Read log file from config
     from logging import handlers
-    fhandler = handlers.RotatingFileHandler(app.config["PI_LOGFILE"])
+    fhandler = handlers.RotatingFileHandler(app.config.get("PI_LOGFILE",
+                                                           "privacyidea.log"))
     # read level from config
-    fhandler.setLevel(app.config["PI_LOGLEVEL"])
+    fhandler.setLevel(app.config.get("PI_LOGLEVEL", logging.INFO))
     logging.getLogger("privacyidea").addHandler(fhandler)
 
     return app
