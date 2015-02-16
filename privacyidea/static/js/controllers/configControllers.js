@@ -497,16 +497,18 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
     /*
      BINDDN, BINDPW, LDAPURI, TIMEOUT, LDAPBASE, LOGINNAMEATTRIBUTE,
      LDAPSEARCHFILTER,
-     LDAPFILTER, USERINFO, SIZELIMIT, NOREFERRALS, CACERTIFICATE
+     LDAPFILTER, USERINFO, SIZELIMIT, NOREFERRALS, CACERTIFICATE, AUTHTYPE
      */
     $scope.params = {
         SIZELIMIT: 500,
         TIMEOUT: 5,
         UIDTYPE: "DN",
-        type: 'ldapresolver'
+        type: 'ldapresolver',
+        AUTHTYPE: "Simple"
     };
     $scope.result = {};
     $scope.resolvername = $stateParams.resolvername;
+    $scope.authtypes = ["Simple", "SASL Digest-MD5"];
 
     if ($scope.resolvername) {
         /* If we have a resolvername, we do an Edit
@@ -528,6 +530,7 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
         $scope.params.NOREFERRALS = true;
         $scope.params.SIZELIMIT = 500;
         $scope.params.UIDTYPE = "DN";
+        $scope.params.AUTHTYPE = "SASL Digest-MD5";
     };
 
     $scope.presetLDAP = function () {
@@ -538,6 +541,7 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
         $scope.params.NOREFERRALS = true;
         $scope.params.SIZELIMIT = 500;
         $scope.params.UIDTYPE = "entryUUID";
+        $scope.params.AUTHTYPE = "SASL Digest-MD5";
     };
 
     $scope.setLDAPResolver = function () {

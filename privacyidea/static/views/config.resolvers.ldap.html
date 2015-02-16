@@ -49,11 +49,22 @@
     <div class="form-group">
         <label for="bindpw" class="col-sm-3 control-label">Bind Password</label>
 
-        <div class="col-sm-9">
+        <div class="col-sm-3">
             <input name="bindpw" class="form-control"
                    type="password"
                    ng-model="params.BINDPW"
                    placeholder="topsecret"/>
+        </div>
+
+        <label for="authtype" class="col-sm-3 control-label">Bind
+            Type</label>
+
+        <div class="col-sm-3">
+            <select class="form-control"
+                    ng-model="params.AUTHTYPE"
+                    name="authtype"
+                    ng-options="select for select in authtypes">
+            </select>
         </div>
     </div>
     <div class="form-group">
