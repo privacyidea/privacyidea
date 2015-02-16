@@ -10,6 +10,10 @@ concerned. But privacyIDEA is completely licensed under the AGPLv3.
 
 [![Build Status][BS img]][Build Status]
 [![Coverage Status][CS img]][Coverage Status]
+[![Downloads](https://pypip.in/download/privacyidea/badge.svg)](https://pypi.python.org/pypi/privacyidea/)
+[![Latest Version](https://pypip.in/version/privacyidea/badge.svg)](https://pypi.python.org/pypi/privacyidea/)
+[![License](https://pypip.in/license/privacyidea/badge.svg)](https://pypi.python.org/pypi/privacyidea/)
+
 
 [Build Status]: https://travis-ci.org/privacyidea/privacyidea
 [Coverage Status]: https://coveralls.io/r/privacyidea/privacyidea
