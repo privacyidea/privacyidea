@@ -41,7 +41,12 @@ TODO:
   * redundancy  -> pool (http://ldap3.readthedocs.org/)
 '''
 
-    
+
+class AUTHTYPE():
+    SIMPLE = "Simple"
+    SASL_DIGEST_MD5 = "SASL Digest-MD5"
+
+
 class IdResolver (UserIdResolver):
 
     @classmethod
@@ -87,14 +92,14 @@ class IdResolver (UserIdResolver):
                               use_ssl=self.ssl,
                               connect_timeout=self.timeout)
         try:
-            l = ldap3.Connection(server,
-                                 user=DN,
-                                 password=password,
-                                 auto_bind=True,
-                                 client_strategy=ldap3.SYNC,
-                                 authentication=ldap3.SIMPLE,
-                                 check_names=True,
-                                 auto_referrals=not self.noreferrals)
+            l = self.create_connection(authtype=self.authtype,
+                                       server=server,
+                                       user=DN,
+                                       password=password,
+                                       auto_referrals=not self.noreferrals)
+            l.open()
+            if not l.bind():
+                raise Exception("Wrong credentials")
             l.unbind()
         except Exception, e:
             log.warning("failed to check password for %r/%r: %r"
@@ -147,14 +152,14 @@ class IdResolver (UserIdResolver):
             server = ldap3.Server(self.server, port=self.port,
                                   use_ssl=self.ssl,
                                   connect_timeout=self.timeout)
-            self.l = ldap3.Connection(server,
-                                      user=self.binddn,
-                                      password=self.bindpw,
-                                      auto_bind=True,
-                                      client_strategy=ldap3.SYNC,
-                                      authentication=ldap3.SIMPLE,
-                                      check_names=True,
-                                      auto_referrals=not self.noreferrals)
+            self.l = self.create_connection(authtype=self.authtype,
+                                            server=server,
+                                            user=self.binddn,
+                                            password=self.bindpw,
+                                            auto_referrals=not self.noreferrals)
+            self.l.open()
+            if not self.l.bind():
+                raise Exception("Wrong credentials")
             self.i_am_bound = True
 
     def getUserInfo(self, userId):
@@ -351,6 +356,7 @@ class IdResolver (UserIdResolver):
         self.noreferrals = config.get("NOREFERRALS", False)
         self.certificate = config.get("CACERTIFICATE")
         self.resolverId = self.uri
+        self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
         
         return self
 
@@ -389,6 +395,7 @@ class IdResolver (UserIdResolver):
         descriptor['config'] = {'LDAPURI': 'string',
                                 'LDAPBASE': 'string',
                                 'BINDDN': 'string',
+                                'AUTHTYPE': 'string',
                                 'BINDPW': 'password',
                                 'TIMEOUT': 'int',
                                 'SIZELIMIT': 'int',
@@ -421,7 +428,8 @@ class IdResolver (UserIdResolver):
         Parameters are:
             BINDDN, BINDPW, LDAPURI, TIMEOUT, LDAPBASE, LOGINNAMEATTRIBUTE,
             LDAPSEARCHFILTER,
-            LDAPFILTER, USERINFO, SIZELIMIT, NOREFERRALS, CACERTIFICATE
+            LDAPFILTER, USERINFO, SIZELIMIT, NOREFERRALS, CACERTIFICATE,
+            AUTHTYPE
         """
         success = False
         try:
@@ -430,13 +438,16 @@ class IdResolver (UserIdResolver):
                                   use_ssl=ssl,
                                   connect_timeout=float(param.get("TIMEOUT",
                                                                   5)))
-            l = ldap3.Connection(server, user=param.get("BINDDN"),
-                                 password=param.get("BINDPW"),
-                                 auto_bind=True,
-                                 client_strategy=ldap3.SYNC,
-                                 authentication=ldap3.SIMPLE,
-                                 check_names=True,
-                                 auto_referrals=not param.get("NOREFERRALS"))
+            l = self.create_connection(authtype=param.get("AUTHTYPE",
+                                                          AUTHTYPE.SIMPLE),
+                                       server=server,
+                                       user=param.get("BINDDN"),
+                                       password=param.get("BINDPW"),
+                                       auto_referrals=not param.get(
+                                           "NOREFERRALS"))
+            l.open()
+            if not l.bind():
+                raise Exception("Wrong credentials")
             # search for users...
             l.search(search_base=param["LDAPBASE"],
                      search_scope=ldap3.SUBTREE,
@@ -454,3 +465,33 @@ class IdResolver (UserIdResolver):
             desc = "%r" % e
         
         return success, desc
+
+    @classmethod
+    def create_connection(self, authtype=None, server=None, user=None,
+                          password=None, auto_bind=False,
+                          client_strategy=ldap3.SYNC,
+                          check_names=True,
+                          auto_referrals=False):
+        if authtype == AUTHTYPE.SIMPLE:
+            l = ldap3.Connection(server,
+                                 user=user,
+                                 password=password,
+                                 auto_bind=auto_bind,
+                                 client_strategy=client_strategy,
+                                 authentication=ldap3.SIMPLE,
+                                 check_names=check_names,
+                                 auto_referrals=auto_referrals)
+        elif authtype == AUTHTYPE.SASL_DIGEST_MD5:
+            sasl_credentials = (str(user), str(password))
+            l = ldap3.Connection(server,
+                                 sasl_mechanism="DIGEST-MD5",
+                                 sasl_credentials=sasl_credentials,
+                                 auto_bind=auto_bind,
+                                 client_strategy=client_strategy,
+                                 authentication=ldap3.SASL,
+                                 check_names=check_names,
+                                 auto_referrals=auto_referrals)
+        else:
+            raise Exception("Authtype %s not supported" % authtype)
+
+        return l

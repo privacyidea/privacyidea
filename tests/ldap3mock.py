@@ -97,6 +97,13 @@ class Connection(object):
     def set_directory(self, directory):
         self.directory = directory
 
+    def open(self):
+        return
+
+    def bind(self):
+        # TODO: we could check passwords here.
+        return True
+
     def search(self, search_base=None, search_scope=None,
                search_filter=None, attributes=None, paged_size=5):
         self.response = []
