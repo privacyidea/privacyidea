@@ -8,7 +8,7 @@ Standards-Version: 3.9.5
 Package: python-privacyidea
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, python-flask-migrate, python-qrcode, python-netaddr,
- python-pyrad, python-yaml, python-configobj
+ python-pyrad, python-yaml, python-configobj, python-imaging
 Replaces: privacyidea (<< 2.0)
 Description: two-factor authentication system e.g. for OTP devices
  privacyIDEA: identity, multifactor authentication, authorization.
