@@ -1,0 +1,18 @@
+deploy/debian/pi.cfg				etc/privacyidea/
+deploy/nginx/privacyideaapp.py			etc/privacyidea/
+
+# rotate audit
+#config/debian/cron.daily/privacyidea-rotate-audit etc/cron.daily/
+
+# man page
+#doc/_build/man/privacyidea-server.1 	usr/share/man/man1
+
+# uwsgi and nginx config
+deploy/nginx/sites-available/privacyidea	etc/nginx/sites-available/
+deploy/uwsgi/apps-available/privacyidea.xml	etc/uwsgi/apps-available/
+
+# This is needed, when we create more than one binary package
+#debian/tmp/usr/bin/* usr/bin/
+#debian/tmp/usr/share/* usr/share/
+#debian/tmp/usr/lib/python* usr/lib/
+#debian/tmp/etc/* etc/

@@ -135,6 +135,7 @@ class Audit(AuditBase):
 
         # create a Session
         self.session = Session()
+        self.session._model_changes = {}
         try:
             metadata.create_all(self.engine)
         except OperationalError as exx:  # pragma: no cover

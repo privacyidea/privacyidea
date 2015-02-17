@@ -1,10 +1,8 @@
 Flask==0.10.1
-Flask-Bootstrap==3.3.0.1
 Flask-Cache==0.13.1
 Flask-Migrate==1.2.0
 Flask-SQLAlchemy==2.0
 Flask-Script==2.0.5
-Flask-WTF==0.10.2
 Jinja2==2.7.3
 Mako==1.0.0
 MarkupSafe==0.23
@@ -15,7 +13,6 @@ PyYAML==3.11
 Pygments==2.0.1
 SQLAlchemy==0.9.8
 Sphinx==1.2.3
-WTForms==2.0.1
 Werkzeug==0.9.6
 alembic==0.6.7
 argparse==1.2.1

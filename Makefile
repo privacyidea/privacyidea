@@ -10,9 +10,11 @@ info:
 	@echo "make ppa-dev      - upload to launchpad development repo"
 	
 #VERSION=1.3~dev5
-VERSION=2.0~dev1
+VERSION=2.0~dev2
 SERIES="trusty precise"
 LOCAL_SERIES=`lsb_release -a | grep Codename | cut -f2`
+SRCDIRS=deploy authmodules migrations doc tests debian tools privacyidea 
+SRCFILES=setup.py MANIFEST.in Makefile Changelog LICENSE pi-manage.py requirements.txt
 
 translate:
 	# according to http://docs.pylonsproject.org/projects/pylons-webframework/en/latest/i18n.html#using-babel
@@ -74,18 +76,16 @@ debianize:
 	make clean
 	make doc-man
 	mkdir -p DEBUILD/privacyidea.org
-	cp -r * DEBUILD/privacyidea.org || true
-	# pylons TEST ARE BREAKING with pylons 1.0.1! Only allow 1.0.1 for debian package!
-	sed s/'"Pylons>=0.9.7,<=1.0",'/'"Pylons>=0.9.7",'/g setup.py > DEBUILD/privacyidea.org/setup.py
+	cp -r ${SRCDIRS} ${SRCFILES} DEBUILD/privacyidea.org || true
 	# We need to touch this, so that our config files 
 	# are written to /etc
 	touch DEBUILD/privacyidea.org/PRIVACYIDEA_PACKAGE
 	cp LICENSE DEBUILD/privacyidea.org/debian/copyright
-	cp LICENSE DEBUILD/privacyidea.org/debian/privacyidea.copyright
+	cp LICENSE DEBUILD/privacyidea.org/debian/python-privacyidea.copyright
 	cp LICENSE DEBUILD/privacyidea.org/debian/privacyidea-all.copyright
 	cp authmodules/FreeRADIUS/copyright DEBUILD/privacyidea.org/debian/privacyidea-radius.copyright
 	cp authmodules/simpleSAMLphp/copyright DEBUILD/privacyidea.org/debian/privacyidea-simplesamlphp.copyright
-	(cd DEBUILD; tar -zcf privacyidea_${VERSION}.orig.tar.gz --exclude=privacyidea.org/debian privacyidea.org)
+	(cd DEBUILD; tar -zcf python-privacyidea_${VERSION}.orig.tar.gz --exclude=privacyidea.org/debian privacyidea.org)
 
 builddeb:
 	make debianize

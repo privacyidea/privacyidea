@@ -4,7 +4,7 @@ import os
 import glob
 import sys
 
-VERSION="2.0dev1"
+VERSION="2.0dev2"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -37,12 +37,8 @@ setup(
              'tools/privacyidea-create-pwidresolver-user',
              'tools/privacyidea-create-sqlidresolver-user',
              'tools/privacyidea-pip-update',
-             'tools/privacyidea-create-enckey',
-             'tools/privacyidea-create-auditkeys',
              'tools/privacyidea-create-certificate',
-             'tools/privacyidea-create-database',
              'tools/privacyidea-fix-access-rights',
-             'tools/totp-token',
              'tools/privacyidea-create-ad-users',
              'tools/privacyidea-setup',
              'tools/privacyidea-backup',
@@ -58,12 +54,10 @@ setup(
                  "six==1.8.0"],
     },
     install_requires=["Flask==0.10.1",
-                      "Flask-Bootstrap==3.3.0.1",
                       "Flask-Cache==0.13.1",
                       "Flask-Migrate==1.2.0",
                       "Flask-SQLAlchemy==2.0",
                       "Flask-Script==2.0.5",
-                      "Flask-WTF==0.10.2",
                       "Jinja2==2.7.3",
                       "Mako==1.0.0",
                       "MarkupSafe==0.23",
@@ -73,7 +67,6 @@ setup(
                       "PyYAML==3.11",
                       "Pygments==2.0.1",
                       "SQLAlchemy==0.9.8",
-                      "WTForms==2.0.1",
                       "Werkzeug==0.9.6",
                       "alembic==0.6.7",
                       "argparse==1.2.1",
@@ -107,12 +100,8 @@ setup(
                  ["tools/privacyidea-convert-token.1",
                   "tools/privacyidea-create-pwidresolver-user.1",
                   "tools/privacyidea-create-sqlidresolver-user.1",
-                  "tools/totp-token.1",
                   "tools/privacyidea-pip-update.1",
-                  "tools/privacyidea-create-enckey.1",
-                  "tools/privacyidea-create-auditkeys.1",
                   "tools/privacyidea-create-certificate.1",
-                  "tools/privacyidea-create-database.1",
                   "tools/privacyidea-fix-access-rights.1"
                   ]),
                 ('lib/privacyidea/authmodules/FreeRADIUS',

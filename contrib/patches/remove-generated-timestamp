@@ -1,0 +1,10 @@
+--- python-ldap3/ldap3/setup.py	2015-02-17 10:37:51.556095419 +0100
++++ setup.py	2015-02-17 10:43:37.468112646 +0100
+@@ -45,7 +45,6 @@
+ project_version_file = open(path.join(__package_folder__, __package_name__, 'version.py'), 'w+')
+ project_version_file.write('\n'.join([
+     '# version file for ' + __package_name__,
+-    '# generated on ' + datetime.now().__str__(),
+     '# on system ' + str(uname()),
+     '# with Python ' + python_version() + ' - ' + str(python_build()) + ' - ' + python_compiler(),
+     '#',

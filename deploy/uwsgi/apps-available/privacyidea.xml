@@ -1,0 +1,21 @@
+<uwsgi>
+    <plugin>python</plugin>
+    <socket>/run/uwsgi/app/privacyidea/privacyidea.socket</socket>
+    <chdir>/etc/privacyidea/</chdir>
+    <module>privacyideaapp</module>
+    <master/>
+    <processes>8</processes>
+    <harakiri>60</harakiri>
+    <reload-mercy>8</reload-mercy>
+    <cpu-affinity>1</cpu-affinity>
+    <stats>/tmp/stats.socket</stats>
+    <max-requests>2000</max-requests>
+    <limit-as>512</limit-as>
+    <reload-on-as>256</reload-on-as>
+    <reload-on-rss>192</reload-on-rss>
+    <no-orphans/>
+    <uid>privacyidea</uid>
+    <gid>www-data</gid>
+    <vacuum/>
+</uwsgi>
+

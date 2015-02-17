@@ -1,0 +1,25 @@
+server {
+        listen  80;
+        server_name     $hostname;
+        return 301 https://$hostname$request_uri;
+}
+
+server {
+        listen 443 ssl;
+        server_name     $hostname;
+        ssl_certificate /etc/ssl/certs/privacyidea-bundle.crt;
+        ssl_certificate_key /etc/ssl/private/privacyidea.key;
+        ssl_ciphers ALL:!aNULL:!ADH:!eNULL:!LOW:!EXP:RC4+RSA:+HIGH:+MEDIUM;
+
+        access_log      /var/log/privacyidea/access.log;
+        error_log       /var/log/privacyidea/error.log info;
+
+        location / {
+                uwsgi_pass      unix:/run/uwsgi/app/privacyidea/privacyidea.socket;
+                include         uwsgi_params;
+                uwsgi_param     UWSGI_SCHEME $scheme;
+                uwsgi_param     SERVER_SOFTWARE nginx/$nginx_version;
+                uwsgi_param SCRIPT_NAME '';
+        }
+}
+

@@ -533,6 +533,7 @@ class IdResolver (UserIdResolver):
 
         # create a Session
         self.session = Session()
+        self.session._model_changes = {}
         self.db = SQLSoup(self.engine)
         self.TABLE = self.db.entity(self.table)
         
