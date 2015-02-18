@@ -2,14 +2,15 @@ Source: python-privacyidea
 Maintainer: Cornelius Kölbel <cornelius@privacyidea.org>
 Section: python
 Priority: optional
-Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.6.6-3), debhelper (>= 7.4.3), python-setuptools
+Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.7), debhelper (>= 7.4.3), python-setuptools
 Standards-Version: 3.9.5
 
 Package: python-privacyidea
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, python-flask-migrate, python-qrcode, python-netaddr,
- python-pyrad, python-yaml, python-configobj, python-imaging
+ python-pyrad, python-yaml, python-configobj
 Replaces: privacyidea (<< 2.0)
+X-Python-Version: >= 2.7
 Description: two-factor authentication system e.g. for OTP devices
  privacyIDEA: identity, multifactor authentication, authorization.
  This package contains the python module for privacyIDEA. If you want

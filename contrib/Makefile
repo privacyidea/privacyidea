@@ -11,14 +11,46 @@ CONTRIB4=python-flask-migrate
 VERSION4=1.3.0
 
 CONTRIB5=python-flask-sqlalchemy
-VERSION5=2.0-20150217
+DATE=`date +"%Y%m%d"`
+VERSION5=2.0-$(DATE)
 URL5=https://github.com/mitsuhiko/flask-sqlalchemy.git
 
 CONTRIB6=python-flask-script
 VERSION6=2.0.6
 URL6=https://github.com/smurfix/flask-script.git
 
-ME=Cornelius Kölbel <cornelius.koelbel@netknights.it>
+CONTRIB7=python-flask
+TAG7=0.10.1
+VERSION7=$(TAG7)-$(DATE)
+URL7=https://github.com/mitsuhiko/flask.git
+
+CONTRIB8=python-itsdangerous
+TAG8=0.24
+VERSION8=$(TAG8)-$(DATE)
+URL8=https://github.com/mitsuhiko/itsdangerous.git
+
+CONTRIB9=python-pillow
+TAG9=2.7.0
+VERSION9=$(TAG9)
+URL9=https://github.com/python-pillow/Pillow.git
+
+CONTRIB10=python-cffi
+VERSION10=0.8.6
+URL10=https://pypi.python.org/packages/source/c/cffi/cffi-0.8.6.tar.gz
+
+CONTRIB11=python-bcrypt
+VERSION11=1.1.0
+URL11=https://pypi.python.org/packages/source/b/bcrypt/bcrypt-1.1.0.tar.gz
+
+CONTRIB12=python-qrcode
+VERSION12=5.1
+URL12=https://pypi.python.org/packages/source/q/qrcode/qrcode-5.1.tar.gz
+
+CONTRIB13=python-sqlsoup
+VERSION13=0.9.0
+URL13=https://pypi.python.org/packages/source/s/sqlsoup/sqlsoup-0.9.0.tar.gz
+
+ME=Cornelius Koelbel <cornelius.koelbel@netknights.it>
 
 
 ubuntu:
@@ -27,18 +59,101 @@ ubuntu:
 	make flask-cache
 	make ldap3
 
-debian:
-	make clean
-	make pyjwt
-	make flask-cache
-	make ldap3
-	make flask-migrate
-	make flask-sqlalchemy
-	make flask-script
+wheezy:
+	make clean 
+	make pyjwt || true
+	make flask-cache || true
+	make ldap3 || true
+	make flask-migrate || true
+	make flask-sqlalchemy || true
+	make flask-script || true
+	make flask || true
+	make itsdangerous || true
+	make pillow || true
+	make cffi || true
+	make bcrypt || true
+	make qrcode || true
+	make sqlsoup || true
+
+
+bcrypt:
+	mkdir -p $(CONTRIB11)
+	(cd $(CONTRIB11); curl $(URL11) -o bcrypt.tgz; tar -zxf bcrypt.tgz) 
+	(cd $(CONTRIB11); cd bcrypt-$(VERSION11); python setup.py sdist; cp dist/* ..)
+	(cd $(CONTRIB11); py2dsc -m '$(ME)' bcrypt-$(VERSION11).tar.gz || true)
+	(cd $(CONTRIB11)/deb_dist; rm -fr bcrypt-$(VERSION11).orig)
+	(cd $(CONTRIB11)/deb_dist; rm -fr bcrypt_$(VERSION11).orig.tar.gz)
+	(cd $(CONTRIB11)/deb_dist; cp -r bcrypt-$(VERSION11) bcrypt-$(VERSION11).orig)
+	(cd $(CONTRIB11)/deb_dist; tar -zcf bcrypt_$(VERSION11).orig.tar.gz bcrypt-$(VERSION11).orig --exclude=debian)  
+	(cd $(CONTRIB11)/deb_dist/bcrypt-$(VERSION11); debuild --no-lintian || true)
+	(cd $(CONTRIB11)/deb_dist; cp -r bcrypt-$(VERSION11) bcrypt-$(VERSION11).orig)
+	(cd $(CONTRIB11)/deb_dist; tar -zcf bcrypt_$(VERSION11).orig.tar.gz bcrypt-$(VERSION11).orig --exclude=debian)  
+	(cd $(CONTRIB11)/deb_dist/bcrypt-$(VERSION11); debuild --no-lintian)
+
+
+#rm bcrypt-1.1.0.orig/ -fr
+#rm bcrypt_1.1.0.orig.tar.gz 
+#mkdir bcrypt-1.1.0.orig
+#cp -r bcrypt-1.1.0/* bcrypt-1.1.0.orig
+#tar -zcf bcrypt_1.1.0.orig.tar.gz bcrypt-1.1.0.orig/ --exclude=debian
+#cd bcrypt-1.1.0
+#debuild
+
+cffi:
+	mkdir -p $(CONTRIB10)
+	(cd $(CONTRIB10); curl $(URL10) -o cffi.tgz; tar -zxf cffi.tgz) 
+	(cd $(CONTRIB10); cd cffi-$(VERSION10); python setup.py sdist; cp dist/* ..)
+	(cd $(CONTRIB10); py2dsc -m '$(ME)' cffi-$(VERSION10).tar.gz)
+	(cd $(CONTRIB10)/deb_dist/cffi-$(VERSION10); debuild --no-lintian)
+
+
+qrcode:
+	mkdir -p $(CONTRIB12)
+	(cd $(CONTRIB12); curl $(URL12) -o qrcode.tgz; tar -zxf qrcode.tgz) 
+	(cd $(CONTRIB12); cd qrcode-$(VERSION12); python setup.py sdist; cp dist/* ..)
+	(cd $(CONTRIB12); py2dsc -m '$(ME)' qrcode-$(VERSION12).tar.gz)
+	(cd $(CONTRIB12)/deb_dist/qrcode-$(VERSION12); debuild --no-lintian)
+
+sqlsoup:
+	mkdir -p $(CONTRIB13)
+	(cd $(CONTRIB13); curl $(URL13) -o sqlsoup.tgz; tar -zxf sqlsoup.tgz) 
+	(cd $(CONTRIB13); cd sqlsoup-$(VERSION13); python setup.py sdist; cp dist/* ..)
+	(cd $(CONTRIB13); py2dsc -m '$(ME)' sqlsoup-$(VERSION13).tar.gz)
+	(cd $(CONTRIB13)/deb_dist/sqlsoup-$(VERSION13); debuild --no-lintian)
+
+
+
+pillow:  
+	mkdir -p $(CONTRIB9)
+	(cd $(CONTRIB9); git clone $(URL9); cd Pillow; git checkout $(TAG9))
+	(cd $(CONTRIB9); cd Pillow; touch setup.cfg)
+	(cd $(CONTRIB9); cd Pillow; python setup.py sdist; cp dist/* ..)
+	(cd $(CONTRIB9); py2dsc -m '$(ME)' Pillow-$(VERSION9).tar.gz)
+	(cd $(CONTRIB9)/deb_dist/pillow-$(VERSION9); debuild --no-lintian)
+
+
+
+flask:
+	mkdir -p $(CONTRIB7)
+	(cd $(CONTRIB7); git clone $(URL7); cd flask; git checkout $(TAG7))
+	(cd $(CONTRIB7); cd flask; touch setup.cfg)
+	(cd $(CONTRIB7); cd flask; python setup.py sdist; cp dist/* ..)
+	(cd $(CONTRIB7); py2dsc -m '$(ME)' Flask-$(VERSION7).tar.gz)
+	(cd $(CONTRIB7)/deb_dist/flask-$(VERSION7); debuild --no-lintian)
+
+itsdangerous:
+	mkdir -p $(CONTRIB8)
+	(cd $(CONTRIB8); git clone $(URL8); cd itsdangerous; git checkout $(TAG8))
+	(cd $(CONTRIB8); cd itsdangerous; touch setup.cfg)
+	(cd $(CONTRIB8); cd itsdangerous; python setup.py sdist; cp dist/* ..)
+	(cd $(CONTRIB8); py2dsc -m '$(ME)' itsdangerous-$(TAG8).tar.gz)
+	(cd $(CONTRIB8)/deb_dist/itsdangerous-$(TAG8); debuild --no-lintian)
+
 
 flask-script:
 	mkdir -p $(CONTRIB6)
 	(cd $(CONTRIB6); git clone $(URL6))
+	(cd $(CONTRIB6); cd flask-script; touch setup.cfg)
 	(cd $(CONTRIB6); cd flask-script; python setup.py sdist; cp dist/* ..)
 	(cd $(CONTRIB6); py2dsc -m '$(ME)' Flask-Script-$(VERSION6).tar.gz)
 	(cd $(CONTRIB6)/deb_dist/flask-script-$(VERSION6); debuild)
@@ -55,6 +170,7 @@ flask-sqlalchemy:
 flask-migrate:
 	mkdir -p $(CONTRIB4)
 	(cd $(CONTRIB4); git clone https://github.com/miguelgrinberg/Flask-Migrate.git)
+	(cd $(CONTRIB4); cd Flask-Migrate; touch setup.cfg)
 	(cd $(CONTRIB4); cd Flask-Migrate; python setup.py sdist; cp dist/* ..)
 	(cd $(CONTRIB4); py2dsc -m '$(ME)' Flask-Migrate-$(VERSION4).tar.gz)
 	(cd $(CONTRIB4)/deb_dist/flask-migrate-$(VERSION4); debuild)
@@ -63,6 +179,7 @@ flask-migrate:
 ldap3:
 	mkdir -p $(CONTRIB3)
 	(cd $(CONTRIB3); git clone https://github.com/cannatag/ldap3.git)
+	(cd $(CONTRIB3); cd ldap3; touch setup.cfg)
 	(cd $(CONTRIB3); cd ldap3; patch < ../../patches/remove-generated-timestamp)
 	(cd $(CONTRIB3); cd ldap3; python setup.py sdist; cp dist/* ..)
 	(cd $(CONTRIB3); py2dsc -m '$(ME)' ldap3-$(VERSION3).tar.gz)
@@ -90,3 +207,10 @@ clean:
 	rm -fr $(CONTRIB4)
 	rm -fr $(CONTRIB5)
 	rm -fr $(CONTRIB6)
+	rm -fr $(CONTRIB7)
+	rm -fr $(CONTRIB8)
+	rm -fr $(CONTRIB9)
+	rm -fr $(CONTRIB10)
+	rm -fr $(CONTRIB11)
+	rm -fr $(CONTRIB12)
+	rm -fr $(CONTRIB13)

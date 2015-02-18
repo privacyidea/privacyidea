@@ -93,7 +93,7 @@ builddeb:
 	cp debian/changelog DEBUILD/privacyidea.org/debian/
 	sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g debian/changelog > DEBUILD/privacyidea.org/debian/changelog
 	################# Build
-	(cd DEBUILD/privacyidea.org; debuild)
+	(cd DEBUILD/privacyidea.org; debuild --no-lintian)
 
 ppa-dev:
 	################### Check for the series
