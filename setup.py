@@ -4,7 +4,7 @@ import os
 import glob
 import sys
 
-VERSION="2.0dev2"
+VERSION="2.0dev3"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))

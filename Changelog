@@ -1,4 +1,19 @@
-Version 1.4, 2015-01-12
+Version 2.0, 2015-02-XX
+
+  * Migrate privacyIDEA to Flask Web framework
+  * The WebUI was migrated to bootstrap and angularJS
+  * The database model was restructered to allow an easier handling and
+    programming
+  * Use the pi-manage.py tool to migrate old data
+  * provide ubuntu packages for privacyidea base package and
+    privacyidea-apache2 and privacyidea-nginx
+  * provide pi-manage.py tool to manage the installation and create new admins.
+  * policies are restructered. Internally the policies now use decorators to
+    have a minimum code impact. No all policies are migrated, yet.
+  * OCRA token and Email token is not migrated, yet.
+
+
+Version 1.5.1, 2015-01-12
 
   * Fix splitting the @-sign to allow users like user@email.com@realm1
 
