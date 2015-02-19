@@ -1,10 +1,13 @@
 CONTRIB1=python-flask-cache
-VERSION1=0.13
+URL1=https://pypi.python.org/packages/source/F/Flask-Cache/Flask-Cache-0.13.1.tar.gz
+VERSION1=0.13.1
 
 CONTRIB2=python-pyjwt
-VERSION2=0.4.1
+URL2=https://pypi.python.org/packages/source/P/PyJWT/PyJWT-0.4.3.tar.gz
+VERSION2=0.4.3
 
 CONTRIB3=python-ldap3
+URL3=https://pypi.python.org/packages/source/l/ldap3/ldap3-0.9.7.4.tar.gz
 VERSION3=0.9.7.4
 
 CONTRIB4=python-flask-migrate
@@ -50,8 +53,12 @@ CONTRIB13=python-sqlsoup
 VERSION13=0.9.0
 URL13=https://pypi.python.org/packages/source/s/sqlsoup/sqlsoup-0.9.0.tar.gz
 
-ME=Cornelius Koelbel <cornelius.koelbel@netknights.it>
+ME=Cornelius Kölbel <cornelius@privacyidea.org>
 
+info:
+	@echo "make ubuntu - build packages for ubuntu 14.04LTS"
+	@echo "make wheezy - build packages for Wheezy"
+	@echo "make clean."
 
 ubuntu:
 	make clean
@@ -166,7 +173,6 @@ flask-sqlalchemy:
 	(cd $(CONTRIB5); py2dsc -m '$(ME)' Flask-SQLAlchemy-$(VERSION5).tar.gz)
 	(cd $(CONTRIB5)/deb_dist/flask-sqlalchemy-$(VERSION5); debuild)
 
-
 flask-migrate:
 	mkdir -p $(CONTRIB4)
 	(cd $(CONTRIB4); git clone https://github.com/miguelgrinberg/Flask-Migrate.git)
@@ -178,28 +184,53 @@ flask-migrate:
 
 ldap3:
 	mkdir -p $(CONTRIB3)
-	(cd $(CONTRIB3); git clone https://github.com/cannatag/ldap3.git)
-	(cd $(CONTRIB3); cd ldap3; touch setup.cfg)
-	(cd $(CONTRIB3); cd ldap3; patch < ../../patches/remove-generated-timestamp)
-	(cd $(CONTRIB3); cd ldap3; python setup.py sdist; cp dist/* ..)
+	mkdir -p DEBUILD
+	(cd $(CONTRIB3); curl $(URL3) -o temp.tgz; tar -zxf temp.tgz)
+	(cd $(CONTRIB3); cd ldap3-$(VERSION3); touch setup.cfg)
+	(cd $(CONTRIB3); cd ldap3-$(VERSION3); patch < ../../patches/remove-generated-timestamp)
+	(cd $(CONTRIB3); cd ldap3-$(VERSION3); python setup.py sdist; cp dist/* ..)
 	(cd $(CONTRIB3); py2dsc -m '$(ME)' ldap3-$(VERSION3).tar.gz)
-	(cd $(CONTRIB3)/deb_dist/ldap3-$(VERSION3); debuild)
+	(cd $(CONTRIB3)/deb_dist/ldap3-$(VERSION3); dch -i --distribution trusty -M "built for privacyidea")
+	(cd $(CONTRIB3)/deb_dist/ldap3-$(VERSION3); debuild -sa -S)
+	(cd $(CONTRIB3)/deb_dist/ldap3-$(VERSION3); debuild -b)
+	(cp $(CONTRIB3)/deb_dist/* DEBUILD || true)
 
 
 pyjwt:
 	mkdir -p $(CONTRIB2)
-	(cd $(CONTRIB2); git clone https://github.com/jpadilla/pyjwt.git)
-	(cd $(CONTRIB2); cd pyjwt; python setup.py sdist; cp dist/* ..)
+	mkdir -p DEBUILD
+	(cd $(CONTRIB2); curl $(URL2) -o temp.tgz; tar -zxf temp.tgz)
+	(cd $(CONTRIB2); cd PyJWT-$(VERSION2); python setup.py sdist; cp dist/* ..)
 	(cd $(CONTRIB2); py2dsc -m '$(ME)' PyJWT-$(VERSION2).tar.gz)
-	(cd $(CONTRIB2)/deb_dist/pyjwt-$(VERSION2); debuild)
+	(cd $(CONTRIB2)/deb_dist/pyjwt-$(VERSION2); dch -i --distribution trusty -M "built for privacyidea")
+	(cd $(CONTRIB2)/deb_dist/pyjwt-$(VERSION2); debuild -sa -S)
+	(cd $(CONTRIB2)/deb_dist/pyjwt-$(VERSION2); debuild -b)
+	(cp $(CONTRIB2)/deb_dist/* DEBUILD || true)
 
 
 flask-cache:
 	mkdir -p $(CONTRIB1)
-	(cd $(CONTRIB1); git clone https://github.com/thadeusb/flask-cache.git)
-	(cd $(CONTRIB1); cd flask-cache; python setup.py sdist; cp dist/* ..)
+	mkdir -p DEBUILD
+	(cd $(CONTRIB1); curl $(URL1) -o temp.tgz; tar -zxf temp.tgz) 
+	(cd $(CONTRIB1); cd Flask-Cache-$(VERSION1); python setup.py sdist; cp dist/* ..)
 	(cd $(CONTRIB1); py2dsc -m '$(ME)' Flask-Cache-$(VERSION1).tar.gz)
-	(cd $(CONTRIB1)/deb_dist/flask-cache-$(VERSION1); debuild)
+	(cd $(CONTRIB1)/deb_dist/flask-cache-$(VERSION1); dch -i --distribution trusty -M "built for privacyidea")
+	(cd $(CONTRIB1)/deb_dist/flask-cache-$(VERSION1); debuild -sa -S)
+	(cd $(CONTRIB1)/deb_dist/flask-cache-$(VERSION1); debuild -b)
+	(cp $(CONTRIB1)/deb_dist/* DEBUILD || true)
+
+ppa-dev:
+	dput ppa:privacyidea/privacyidea-dev DEBUILD/flask-cache_${VERSION1}-*_source.changes || true
+	dput ppa:privacyidea/privacyidea-dev DEBUILD/pyjwt_${VERSION2}-*_source.changes || true
+	dput ppa:privacyidea/privacyidea-dev DEBUILD/ldap3_${VERSION3}-*_source.changes || true
+
+ppa:
+	dput ppa:privacyidea/privacyidea DEBUILD/flask-cache_${VERSION1}-*_source.changes || true
+	dput ppa:privacyidea/privacyidea DEBUILD/pyjwt_${VERSION2}-*_source.changes || true
+	dput ppa:privacyidea/privacyidea DEBUILD/ldap3_${VERSION3}-*_source.changes || true
+
+	
+
 clean:
 	rm -fr $(CONTRIB1)
 	rm -fr $(CONTRIB2)
@@ -214,3 +245,4 @@ clean:
 	rm -fr $(CONTRIB11)
 	rm -fr $(CONTRIB12)
 	rm -fr $(CONTRIB13)
+	rm -fr DEBUILD
