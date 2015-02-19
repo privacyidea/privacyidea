@@ -28,7 +28,8 @@ import os
 import sys
 from getpass import getpass
 from privacyidea.lib.security.default import DefaultSecurityModule
-from privacyidea.lib.auth import create_db_admin
+from privacyidea.lib.auth import (create_db_admin, list_db_admin,
+                                  delete_db_admin)
 from privacyidea.app import create_app
 from flask.ext.script import Manager
 from privacyidea.app import db
@@ -39,21 +40,14 @@ from Crypto.PublicKey import RSA
 
 app = create_app(config_name='production')
 manager = Manager(app)
+admin_manager = Manager(usage='Create new administrators or modify existing '
+                              'ones.')
 manager.add_command('db', MigrateCommand)
-
-@manager.command
-def test():
-    """
-    Run all nosetests.
-    """
-    from subprocess import call
-    call(['nosetests', '-v',
-          '--with-coverage', '--cover-package=privacyidea', '--cover-branches',
-          '--cover-erase', '--cover-html', '--cover-html-dir=cover'])
+manager.add_command('admin', admin_manager)
 
 
-@manager.command
-def addadmin(email, username, password=None):
+@admin_manager.command
+def add(username, email, password=None):
     """
     Register a new administrator in the database.
     """
@@ -68,6 +62,46 @@ def addadmin(email, username, password=None):
     create_db_admin(app, username, email, password)
     print('Admin {0} was registered successfully.'.format(username))
 
+@admin_manager.command
+def list():
+    """
+    List all administrators.
+    """
+    list_db_admin()
+
+@admin_manager.command
+def delete(username):
+    """
+    Delete an existing administrator.
+    """
+    delete_db_admin(username)
+
+@admin_manager.command
+def change(username, email=None, password_prompt=False):
+    """
+    Change the email address or the password of an existing administrator.
+    """
+    if password_prompt:
+        password = getpass()
+        password2 = getpass(prompt='Confirm: ')
+        if password != password2:
+            import sys
+            sys.exit('Error: passwords do not match.')
+    else:
+        password = None
+
+    create_db_admin(app, username, email, password)
+
+
+@manager.command
+def test():
+    """
+    Run all nosetests.
+    """
+    from subprocess import call
+    call(['nosetests', '-v',
+          '--with-coverage', '--cover-package=privacyidea', '--cover-branches',
+          '--cover-erase', '--cover-html', '--cover-html-dir=cover'])
 
 @manager.command
 def encrypt_enckey(encfile):

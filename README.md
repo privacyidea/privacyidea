@@ -1,13 +1,6 @@
 privacyIDEA
 ===========
 
-privacyIDEA is an open solution for strong two-factor authentication.
-privacyIDEA does to not bind you to any decision of the authentication
-protocol or it does not dictate you where your user information should be
-stored. This is achieved by its totally modular architecture.
-privacyIDEA is not only open as far as its modular architecture is
-concerned. But privacyIDEA is completely licensed under the AGPLv3.
-
 [![Build Status][BS img]][Build Status]
 [![Coverage Status][CS img]][Coverage Status]
 [![Downloads](https://pypip.in/download/privacyidea/badge.svg)](https://pypi.python.org/pypi/privacyidea/)
@@ -21,8 +14,15 @@ concerned. But privacyIDEA is completely licensed under the AGPLv3.
 [BS img]: https://travis-ci.org/privacyidea/privacyidea.svg?branch=master
 [CS img]: https://coveralls.io/repos/privacyidea/privacyidea/badge.png?branch=master
 
-Dev Version 2.0
-===============
+privacyIDEA is an open solution for strong two-factor authentication.
+privacyIDEA does to not bind you to any decision of the authentication
+protocol or it does not dictate you where your user information should be
+stored. This is achieved by its totally modular architecture.
+privacyIDEA is not only open as far as its modular architecture is
+concerned. But privacyIDEA is completely licensed under the AGPLv3.
+
+Version 2.0
+===========
 
 The new 2.0 branch is based on flask and sqlalchemy as the python backend. The web UI is based
 on angularJS and bootstrap.
@@ -56,7 +56,7 @@ Create the database:
 
 Create the first administrator:
 
-    ./pi-manage.py addadmin <email> <username>
+    ./pi-manage.py admin add <username> <email>
 
 Run it:
 

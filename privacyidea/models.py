@@ -601,12 +601,19 @@ class Admin(db.Model):
             ret = self.username
         else:
             # update
+            update_dict = {}
+            if self.email:
+                update_dict["email"] = self.email
+            if self.password:
+                update_dict["password"] = self.password
             Admin.query.filter_by(username=self.username)\
-                .update({'email': self.email,
-                         'password': self.password})
+                .update(update_dict)
             ret = c.username
         db.session.commit()
-        return ret
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
 
 
 class Config(db.Model):

@@ -43,10 +43,26 @@ def verify_db_admin(username, password):
     return success
 
 
-def create_db_admin(app, username, email, password):
-    key = app.config.get("PI_PEPPER", "missing")
-    pw_dig = passlib.hash.pbkdf2_sha512.encrypt(key + password,
-                                                rounds=10023,
-                                                salt_size=10)
+def create_db_admin(app, username, email=None, password=None):
+    if password:
+        key = app.config.get("PI_PEPPER", "missing")
+        pw_dig = passlib.hash.pbkdf2_sha512.encrypt(key + password,
+                                                    rounds=10023,
+                                                    salt_size=10)
+    else:
+        pw_dig = None
     user = Admin(email=email, username=username, password=pw_dig)
     user.save()
+
+
+def list_db_admin():
+    admins = Admin.query.all()
+    print "Name \t email"
+    print 30*"="
+    for admin in admins:
+        print "%s \t %s" % (admin.username, admin.email)
+
+
+def delete_db_admin(username):
+    print "Deleting admin %s" % username
+    Admin.query.filter(Admin.username == username).first().delete()
