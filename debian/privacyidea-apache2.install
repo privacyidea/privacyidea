@@ -1,0 +1,5 @@
+deploy/debian/pi.cfg                            etc/privacyidea/
+deploy/apache/privacyideaapp.wsgi               etc/privacyidea/
+
+# apache config
+deploy/apache/sites-available/privacyidea.conf	etc/apache2/sites-available/

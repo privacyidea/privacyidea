@@ -79,7 +79,7 @@ Package: privacyidea-nginx
 Architecture: all
 Depends: ${misc:Depends}, python-privacyidea, python-mysqldb, nginx-full, uwsgi, 
  uwsgi-plugin-python, mysql-server, mysql-client
-Conflicts: apache2
+Conflicts: apache2, privacyidea-apache2
 Description: two-factor authentication system. This is a meta package to install privacyidea with nginx
  privacyIDEA: identity, multifactor authentication, authorization.
  This is the package that install all requirements to run privacyIDEA in the
@@ -90,7 +90,7 @@ Package: privacyidea-apache2
 Architecture: all
 Depends: ${misc:Depends}, python-privacyidea, privacyideaadm, python-mysqldb, apache2,
  mysql-server, mysql-client, libapache2-mod-wsgi
-Conflicts: nginx, nginx-full
+Conflicts: nginx, nginx-full, privacyidea-nginx
 Description: two-factor authentication system. This is a meta package to install privacyidea with nginx
  privacyIDEA: identity, multifactor authentication, authorization.
  This is the package that installs all requirements to run privacyIDEA in the

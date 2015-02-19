@@ -91,12 +91,12 @@ create_database() {
 	fi
 }
 
-enable_nginx_uwsgi() {
-        rm -f /etc/nginx/sites-enabled/*
-        rm -f /etc/uwsgi/apps-enabled/*
-        ln -s /etc/nginx/sites-available/privacyidea /etc/nginx/sites-enabled/
-	ln -s /etc/uwsgi/apps-available/privacyidea.xml /etc/uwsgi/apps-enabled/
-
+enable_apache() {
+        rm -f /etc/apache2/sites-enabled/*
+	a2enmod wsgi
+	a2enmod headers
+	a2enmod ssl
+	a2ensite privacyidea
 	ln -s /etc/ssl/certs/privacyideaserver.pem /etc/ssl/certs/privacyidea-bundle.crt || true
 	ln -s /etc/ssl/private/privacyideaserver.key /etc/ssl/private/privacyidea.key || true
 }
@@ -106,14 +106,12 @@ case "$1" in
   configure)
 	adapt_pi_cfg
 	create_database
-	enable_nginx_uwsgi
+	enable_apache
 	create_user
 	create_files
 	create_certificate
-	update-rc.d nginx defaults
-	update-rc.d uwsgi defaults
-	service uwsgi restart
-	service nginx restart
+	update-rc.d apache2 defaults
+	service apache2 restart
   ;;
 
   abort-upgrade|abort-remove|abort-deconfigure)
