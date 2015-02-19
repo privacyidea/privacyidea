@@ -610,6 +610,7 @@ class Admin(db.Model):
                 .update(update_dict)
             ret = c.username
         db.session.commit()
+        return ret
 
     def delete(self):
         db.session.delete(self)

@@ -390,7 +390,7 @@ class TokenModelTestCase(MyTestCase):
         # create an admin user
         adminname = Admin(username="admin", password="secret",
                           email="admin@privacyidea.org").save()
-        self.assertTrue(adminname == "admin", adminname)
+        self.assertEqual(adminname, "admin")
         password1 = Admin.query.filter_by(username="admin").first().password
 
         # update admin - change the password
