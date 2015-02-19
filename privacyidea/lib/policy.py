@@ -474,20 +474,20 @@ def get_static_policy_definitions(scope=None):
                        'desc' : _('Admin is allowed to remove tokens from the database.')},
             ACTION.USERLIST: {'type': 'bool',
                          'desc' : _('Admin is allowed to view the list of the users.')},
-            'checkstatus': {'type': 'bool',
-                            'desc' : _('Admin is allowed to check the status of a challenge'
-                                       ' resonse token.'),
-                            "group": "tools"},
+            # 'checkstatus': {'type': 'bool',
+            #                 'desc' : _('Admin is allowed to check the status of a challenge'
+            #                            ' resonse token.'),
+            #                 "group": "tools"},
             ACTION.TOKENREALMS: {'type': 'bool',
                             'desc' : _('Admin is allowed to manage the realms of a token.')},
-            'getserial': {'type': 'bool',
-                          'desc' : _('Admin is allowed to retrieve a serial '
-                                     'for a given OTP value.'),
-                          "group": "tools"},
-            'checkserial': {'type': 'bool',
-                            'desc': _('Admin is allowed to check if a serial '
-                                      'is unique'),
-                            "group": "tools"},
+            # 'getserial': {'type': 'bool',
+            #               'desc' : _('Admin is allowed to retrieve a serial '
+            #                          'for a given OTP value.'),
+            #               "group": "tools"},
+            # 'checkserial': {'type': 'bool',
+            #                 'desc': _('Admin is allowed to check if a serial '
+            #                           'is unique'),
+            #                 "group": "tools"},
             ACTION.COPYTOKENPIN: {'type': 'bool',
                              'desc' : _('Admin is allowed to copy the PIN of one token '
                                         'to another token.'),
@@ -501,10 +501,10 @@ def get_static_policy_definitions(scope=None):
                           'desc' : _('Admin is allowed to trigger the lost '
                                      'token workflow.'),
                           "group": "tools"},
-            'getotp': {
-                'type': 'bool',
-                'desc': _('Allow the administrator to retrieve OTP values for tokens.'),
-                "group": "tools"},
+            # 'getotp': {
+            #     'type': 'bool',
+            #     'desc': _('Allow the administrator to retrieve OTP values for tokens.'),
+            #     "group": "tools"},
             ACTION.SYSTEMWRITE: {'type': 'bool',
                                 "desc" : _("Admin is allowed to write and modify the "
                                  "system configuration."),
@@ -533,17 +533,17 @@ def get_static_policy_definitions(scope=None):
                            "desc": _("Admin is allowed to view the Audit log."),
                            "group": "system"}
         },
-        'gettoken': {
-            'max_count_dpw': {'type': 'int',
-                              'desc' : _('When OTP values are retrieved for a DPW token, '
-                                         'this is the maximum number of retrievable OTP values.')},
-            'max_count_hotp': {'type': 'int',
-                               'desc' : _('When OTP values are retrieved for a HOTP token, '
-                                          'this is the maximum number of retrievable OTP values.')},
-            'max_count_totp': {'type': 'int',
-                               'desc' : _('When OTP values are retrieved for a TOTP token, '
-                                          'this is the maximum number of retrievable OTP values.')},
-        },
+        # 'gettoken': {
+        #     'max_count_dpw': {'type': 'int',
+        #                       'desc' : _('When OTP values are retrieved for a DPW token, '
+        #                                  'this is the maximum number of retrievable OTP values.')},
+        #     'max_count_hotp': {'type': 'int',
+        #                        'desc' : _('When OTP values are retrieved for a HOTP token, '
+        #                                   'this is the maximum number of retrievable OTP values.')},
+        #     'max_count_totp': {'type': 'int',
+        #                        'desc' : _('When OTP values are retrieved for a TOTP token, '
+        #                                   'this is the maximum number of retrievable OTP values.')},
+        # },
         SCOPE.USER: {
             ACTION.ASSIGN: {
                 'type': 'bool',
@@ -566,41 +566,41 @@ def get_static_policy_definitions(scope=None):
             ACTION.SETPIN: {'type': 'bool',
                             "desc": _("The user is allowed to set the OTP PIN "
                                      "of his tokens.")},
-            'setMOTPPIN': {'type': 'bool',
-                           "desc": _("The user is allowed to set the mOTP PIN of his mOTP tokens.")},
-            'getotp': {'type': 'bool',
-                       "desc": _("The user is allowed to retrieve OTP values for his own tokens.")},
-            'otp_pin_maxlength': {'type': 'int',
-                                  'value': range(0, 32),
-                                  "desc": _("Set the maximum allowed length of the OTP PIN.")},
-            'otp_pin_minlength': {'type': 'int',
-                                  'value': range(0, 32),
-                                  "desc" : _("Set the minimum required lenght of the OTP PIN.")},
-            'otp_pin_contents': {'type': 'str',
-                                 "desc" : _("Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, (s)pecial, (o)thers. [+/-]!")},
-            'activateQR': {'type': 'bool',
-                           "desc": _("The user is allowed to enroll a QR token.")},
-            'webprovisionOATH': {'type': 'bool',
-                                 "desc": _("The user is allowed to enroll an OATH token.")},
-            'webprovisionGOOGLE': {'type': 'bool',
-                                   "desc": _("The user is allowed to enroll a Google Authenticator event based token.")},
-            'webprovisionGOOGLEtime': {'type': 'bool',
-                                       "desc": _("The user is allowed to enroll a Google Authenticator time based token.")},
-            'max_count_dpw': {'type': 'int',
-                              "desc": _("This is the maximum number of OTP values, the user is allowed to retrieve for a DPW token.")},
-            'max_count_hotp': {'type': 'int',
-                               "desc": _("This is the maximum number of OTP values, the user is allowed to retrieve for a HOTP token.")},
-            'max_count_totp': {'type': 'int',
-                               "desc": _("This is the maximum number of OTP values, the user is allowed to retrieve for a TOTP token.")},
+            # 'setMOTPPIN': {'type': 'bool',
+            #                "desc": _("The user is allowed to set the mOTP PIN of his mOTP tokens.")},
+            # 'getotp': {'type': 'bool',
+            #            "desc": _("The user is allowed to retrieve OTP values for his own tokens.")},
+            # 'otp_pin_maxlength': {'type': 'int',
+            #                       'value': range(0, 32),
+            #                       "desc": _("Set the maximum allowed length of the OTP PIN.")},
+            # 'otp_pin_minlength': {'type': 'int',
+            #                       'value': range(0, 32),
+            #                       "desc" : _("Set the minimum required lenght of the OTP PIN.")},
+            # 'otp_pin_contents': {'type': 'str',
+            #                      "desc" : _("Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, (s)pecial, (o)thers. [+/-]!")},
+            # 'activateQR': {'type': 'bool',
+            #                "desc": _("The user is allowed to enroll a QR token.")},
+            # 'webprovisionOATH': {'type': 'bool',
+            #                      "desc": _("The user is allowed to enroll an OATH token.")},
+            # 'webprovisionGOOGLE': {'type': 'bool',
+            #                        "desc": _("The user is allowed to enroll a Google Authenticator event based token.")},
+            # 'webprovisionGOOGLEtime': {'type': 'bool',
+            #                            "desc": _("The user is allowed to enroll a Google Authenticator time based token.")},
+            # 'max_count_dpw': {'type': 'int',
+            #                   "desc": _("This is the maximum number of OTP values, the user is allowed to retrieve for a DPW token.")},
+            # 'max_count_hotp': {'type': 'int',
+            #                    "desc": _("This is the maximum number of OTP values, the user is allowed to retrieve for a HOTP token.")},
+            # 'max_count_totp': {'type': 'int',
+            #                    "desc": _("This is the maximum number of OTP values, the user is allowed to retrieve for a TOTP token.")},
             ACTION.AUDIT: {
                 'type': 'bool',
                 'desc': _('Allow the user to view his own token history.')},
-            'getserial': {
-                'type': 'bool',
-                'desc': _('Allow the user to search an unassigned token by OTP value.')},
-            'auth' : {
-                'type' : 'str',
-                'desc' : _('If set to "otp": Users in this realm need to login with OTP to the selfservice.')}
+            # 'getserial': {
+            #     'type': 'bool',
+            #     'desc': _('Allow the user to search an unassigned token by OTP value.')},
+            # 'auth' : {
+            #     'type' : 'str',
+            #     'desc' : _('If set to "otp": Users in this realm need to login with OTP to the selfservice.')}
             },
         SCOPE.ENROLL: {
             ACTION.MAXTOKENREALM: {
@@ -610,48 +610,48 @@ def get_static_policy_definitions(scope=None):
                 'type': 'int',
                 'desc': _('Limit the number of tokens a user may have '
                           'assigned.')},
-            'otp_pin_random': {
-                'type': 'int',
-                'value': range(0, 32),
-                "desc": _("Set a random OTP PIN with this length for a "
-                          "token.")},
-            'otp_pin_encrypt': {
-                'type': 'int',
-                'value': ["encrypt", "hash"],
-                "desc": _("The OTP PIN can be hashed or encrypted. Hashed is "
-                          "the normal behaviour.")},
+            # 'otp_pin_random': {
+            #     'type': 'int',
+            #     'value': range(0, 32),
+            #     "desc": _("Set a random OTP PIN with this length for a "
+            #               "token.")},
+            # 'otp_pin_encrypt': {
+            #     'type': 'int',
+            #     'value': ["encrypt", "hash"],
+            #     "desc": _("The OTP PIN can be hashed or encrypted. Hashed is "
+            #               "the normal behaviour.")},
             ACTION.TOKENLABEL: {
                 'type': 'str',
                 'desc': _("Set label for a new enrolled Google Authenticator. "
                           "Possible tags are <u> (user), <r> ("
                           "realm), <s> (serial).")},
-            'autoassignment': {
-                'type': 'int',
-                'value': [6, 8],
-                'desc': _("Users can assign a token just by using the "
-                          "unassigned token to authenticate. This is the lenght"
-                          " of the OTP value - either 6, 8, 32, 48.")},
-            'ignore_autoassignment_pin': {
-                'type': 'bool',
-                'desc' : _("Do not set password from auto assignment as token pin.")},
-            'lostTokenPWLen': {
-                'type': 'int',
-                'desc': _('The length of the password in case of '
-                        'temporary token (lost token).')},
-            'lostTokenPWContents': {
-                'type': 'str',
-                'desc': _('The contents of the temporary password, '
-                        'described by the characters C, c, n, s.')},
-            'lostTokenValid': {
-                'type': 'int',
-                'desc': _('The length of the validity for the temporary '
-                        'token (in days).')},
+            # 'autoassignment': {
+            #     'type': 'int',
+            #     'value': [6, 8],
+            #     'desc': _("Users can assign a token just by using the "
+            #               "unassigned token to authenticate. This is the lenght"
+            #               " of the OTP value - either 6, 8, 32, 48.")},
+            # 'ignore_autoassignment_pin': {
+            #     'type': 'bool',
+            #     'desc' : _("Do not set password from auto assignment as token pin.")},
+            # 'lostTokenPWLen': {
+            #     'type': 'int',
+            #     'desc': _('The length of the password in case of '
+            #             'temporary token (lost token).')},
+            # 'lostTokenPWContents': {
+            #     'type': 'str',
+            #     'desc': _('The contents of the temporary password, '
+            #             'described by the characters C, c, n, s.')},
+            # 'lostTokenValid': {
+            #     'type': 'int',
+            #     'desc': _('The length of the validity for the temporary '
+            #             'token (in days).')},
             },
         SCOPE.AUTH: {
-            'smstext': {
-                'type': 'str',
-                'desc': _('The text that will be send via SMS for an SMS token. '
-                          'Use <otp> and <serial> as parameters.')},
+            # 'smstext': {
+            #     'type': 'str',
+            #     'desc': _('The text that will be send via SMS for an SMS token. '
+            #               'Use <otp> and <serial> as parameters.')},
             ACTION.OTPPIN: {
                 'type': 'str',
                 'value': [ACTIONVALUE.TOKENPIN, ACTIONVALUE.USERSTORE,
@@ -659,10 +659,10 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('Either use the Token PIN , use the Userstore '
                           'Password or use no fixed password '
                           'component.')},
-            'autosms': {
-                'type': 'bool',
-                'desc': _('If set, a new SMS OTP will be sent after '
-                        'successful authentication with one SMS OTP.')},
+            # 'autosms': {
+            #     'type': 'bool',
+            #     'desc': _('If set, a new SMS OTP will be sent after '
+            #             'successful authentication with one SMS OTP.')},
             ACTION.PASSTHRU: {
                 'type': 'bool',
                 'desc': _('If set, the user in this realm will be '
@@ -680,16 +680,16 @@ def get_static_policy_definitions(scope=None):
                           'the authentication request for this '
                           'non-existing user will always be true.')
                 },
-            'qrtanurl': {
-                'type': 'str',
-                'desc': _('The URL for the half automatic mode that should be '
-                        'used in a QR Token')
-                },
-            'challenge_response': {
-                'type': 'str',
-                'desc': _('A list of tokentypes for which challenge response '
-                          'should be used.')
-                }
+            # 'qrtanurl': {
+            #     'type': 'str',
+            #     'desc': _('The URL for the half automatic mode that should be '
+            #             'used in a QR Token')
+            #     },
+            # 'challenge_response': {
+            #     'type': 'str',
+            #     'desc': _('A list of tokentypes for which challenge response '
+            #               'should be used.')
+            #     }
             },
         SCOPE.AUTHZ: {
             ACTION.TOKENTYPE: {
@@ -714,41 +714,41 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('In case of failed authentication additional '
                         'no detail information will be returned.')}
             },
-        'ocra': {
-            'request': {
-                'type': 'bool',
-                'desc': _('Allow to do a ocra/request.')},
-            'status': {
-                'type': 'bool',
-                'desc': _('Allow to check the transaction status.')},
-            'activationcode': {
-                'type': 'bool',
-                'desc': _('Allow to do an ocra/getActivationCode.')},
-            'calcOTP': {
-                'type': 'bool',
-                'desc': _('Allow to do an ocra/calculateOtp.')}
-        },
-        'machine': {
-                    'create': {'type': 'bool',
-                               'desc': _("Create a new client "
-                                         "machine definition")
-                               },
-                    'delete': {'type': 'bool',
-                               'desc': _("delete a client machine defintion")},
-                    'show': {'type': 'bool',
-                             'desc': _("list the client machine definitions")},
-                    'addtoken': {'type': 'bool',
-                                 'desc': _("add a token to a client machine")},
-                    'deltoken': {'type': 'bool',
-                                 'desc': _("delete a token from "
-                                           "a client machine")},
-                    'showtoken': {'type': 'bool',
-                                  'desc': _("list the tokens and "
-                                            "client machines")},
-                    'gettokenapps': {'type': 'bool',
-                                  'desc': _("get the authentication items "
-                                            "for a client machine")}
-                    }
+        # 'ocra': {
+        #     'request': {
+        #         'type': 'bool',
+        #         'desc': _('Allow to do a ocra/request.')},
+        #     'status': {
+        #         'type': 'bool',
+        #         'desc': _('Allow to check the transaction status.')},
+        #     'activationcode': {
+        #         'type': 'bool',
+        #         'desc': _('Allow to do an ocra/getActivationCode.')},
+        #     'calcOTP': {
+        #         'type': 'bool',
+        #         'desc': _('Allow to do an ocra/calculateOtp.')}
+        # },
+        # 'machine': {
+        #             'create': {'type': 'bool',
+        #                        'desc': _("Create a new client "
+        #                                  "machine definition")
+        #                        },
+        #             'delete': {'type': 'bool',
+        #                        'desc': _("delete a client machine defintion")},
+        #             'show': {'type': 'bool',
+        #                      'desc': _("list the client machine definitions")},
+        #             'addtoken': {'type': 'bool',
+        #                          'desc': _("add a token to a client machine")},
+        #             'deltoken': {'type': 'bool',
+        #                          'desc': _("delete a token from "
+        #                                    "a client machine")},
+        #             'showtoken': {'type': 'bool',
+        #                           'desc': _("list the tokens and "
+        #                                     "client machines")},
+        #             'gettokenapps': {'type': 'bool',
+        #                           'desc': _("get the authentication items "
+        #                                     "for a client machine")}
+        #             }
     }
     if scope:
         ret = pol.get(scope, {})
