@@ -60,7 +60,7 @@ log = logging.getLogger(__name__)
 def create_key_from_password(password):
     """
     Create a key from the given password.
-    This is used to encrypt and decrypt the encKey file.
+    This is used to encrypt and decrypt the enckey file.
 
     :param password:
     :return:
