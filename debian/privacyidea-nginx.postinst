@@ -38,6 +38,10 @@ create_files() {
         chown -R $USERNAME /etc/privacyidea
         chmod 600 /etc/privacyidea/enckey
         chmod 600 /etc/privacyidea/private.pem
+        # we need to change access right, otherwise each local user could call
+        # pi-manage.py
+        chgrp root /etc/privacyidea/pi.cfg
+        chmod 640 /etc/privacyidea/pi.cfg
 }
 
 create_certificate() {
