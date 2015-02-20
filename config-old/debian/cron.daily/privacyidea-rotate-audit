@@ -1,3 +1,0 @@
-#!/bin/bash
-python /usr/lib/python2.7/dist-packages/privacyidea/lib/auditmodules/sqlaudit.py -f /etc/privacyidea/privacyidea.ini
-
