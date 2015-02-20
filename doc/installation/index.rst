@@ -3,14 +3,20 @@
 Installation
 ============
 
+The two ways described here to install privacyIDEA are
+
+ * the installation via the python package index, which can be used on
+   any Linux distribution and
+ * ready made debian packages for Ubuntu 14.04LTS.
+
+If you want to upgrade from a privacyIDEA 1.5 installation please read :ref:`upgrade`.
+
 Python Package Index
 --------------------
 
 .. index:: pip install, virtual environment
 
-If you want to upgrade from a privacyIDEA 1.5 installation please read :ref:`upgrade`.
-
-You can install privacyidea on usually any linux distribution in a python
+You can install privacyidea on usually any Linux distribution in a python
 virtual environment
 like this::
 
@@ -53,7 +59,8 @@ Debian packages
 .. index:: ubuntu
 
 There are ready made debian packages for Ubuntu 14.04 LTS.
-These are available in a public ppa repository, so that the installation
+These are available in a public ppa repository [#ppa]_,
+so that the installation
 will automatically resolve all dependencies. 
 Install it like this::
 
@@ -79,17 +86,17 @@ administrator and you are done::
 FreeRADIUS
 ..........
 
-privacyIDEA has a perl module to "translate" RADIUS requests to requests to the
+privacyIDEA has a perl module to "translate" RADIUS requests to the API of the
 privacyIDEA server. This module plugs into FreeRADIUS. The FreeRADIUS does not
 have to run on the same machine like privacyIDEA.
-To install this module::
+To install this module run::
 
    apt-get install privacyidea-radius
 
-If you are running your FreeRADIUS server on another distribution, you may download
-the module at [#rlmPerl]_.
+If you want to run your FreeRADIUS server on another distribution, you
+may download the module at [#rlmPerl]_.
 
-Then you need configure your FreeRADIUS site and the perl module.
+Then you need to configure your FreeRADIUS site and the perl module.
 
 .. note:: The perl module is not thread safe, so you need to start FreeRADIUS 
    with the -t switch.
@@ -153,5 +160,6 @@ A usual configuration will look like this::
 
 .. rubric:: Footnotes
 
+.. [#ppa] https://launchpad.net/~privacyidea
 .. [#rlmPerl] https://github.com/privacyidea/privacyidea/tree/master/authmodules/FreeRADIUS
 .. [#simpleSAML]  https://github.com/privacyidea/privacyidea/tree/master/authmodules/simpleSAMLphp

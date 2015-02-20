@@ -9,19 +9,32 @@ The administrator can see all the tokens of all realms he is allowed to manage i
 tokenview. Each token can be located in several realms and be assigned to one 
 user. The administrator can see all the details of the token.
 
-The administrator can select one or more tokens to perfom actions on the
-selected tokens.
+.. figure:: token-view.png
+   :width: 500
 
-Functions for one token
------------------------
+   *Token View*
 
-The buttons on the top ``Lost token``, ``Token info``, ``Resync Token``, ``set token realm``
-and ``get OTP`` are functions that work on one single token.
+The administrator can click on one token, to show more details of this token
+and to perform actions on this token.
 
-.. index:: Lost token
+Token Details
+=============
+
+The Token Details give you more information about the token and also let the
+administrator perform specific tasks for this token.
+
+.. figure:: token-detail.png
+   :width: 500
+
+   *Token Detail*
+
 
 Lost token
 ..........
+
+.. index:: Lost token
+
+**(TODO)**: Not migrated, yet.
 
 When a user has lost a token, the administrator can create a temporary password
 token for the user to login.
@@ -39,19 +52,12 @@ The lost token is deactivated.
 
 .. _tokeninfo:
 
-Token info
-..........
+Token settings
+..............
 
 .. index:: maxfail, failcount, token description, count window
 
-The ``Token info`` button opens a new dialog.
-   
-.. figure:: tokeninfo.png
-   :width: 500
-
-   *The tokeninfo dialog with all token details*
-
-In tokeninfo you can change the following settings:
+You can change the following token settings.
 
 **MaxFail and FailCount**
 
@@ -150,14 +156,6 @@ with him.
    could login as the user/owner of this very token.
 
 
-Functions for multiple tokens
------------------------------
-
-On the left side there are buttons for functions, that can be performed on several 
-tokens at once.
-
-The administrator can select multiple tokens and click on of the buttons.
-
 .. _enroll_token:
 
 enroll
@@ -177,18 +175,14 @@ assign
 ......
 
 This function is used to assign a token to a user.
-The administrator can select one user on the userview and then 
-select several tokens on the tokenview. 
-Clicking the button ``assign`` will assign all tokens to the 
-selected user.
-
+Select a realm and start typing a username to find the user, to whom the
+token should be assigned.
 
 unassign
 ........
 
-The administrator can select several tokens and click the button 
-``unassign``. If a token is unassigned it does not belong the user 
-anymore. The user can not use this token to authenticate.
+In the token details view you can unassign the token. After that, the token
+can be assigned to a new user.
 
 enable
 ......
@@ -223,57 +217,4 @@ delete
 Selecting tokens and clicking the button ``delete`` will remove the
 tokens from the database.
 The token information can not be recovered. But all events that
-occured with this token still remain in the audit log.
-
-Columns
--------
-
-The columns of the tokenview can be rearranged and you can sort 
-the columns.
-
-Underneath the list is a search field. You can search for tokens
-with certain criteria in the columns. You can use the  wildcard "*".
-
-You could dearch for "10" in the column "count", thus finding all 
-tokens that have reached the maximum fail count.
-
-The list of the tokens provides detailed information on the tokens.
-
-**active**
-
-   This indicates if the token is enabled or disabled.
-
-**username**
-
-   This is the username of the user the token is assigned to.
-   This is the name that is used to login.
-
-.. note:: If it displays */:no user info:/* this indicates that
-   the UserIdResolver is not able to determine the loginname/username.
-
-   You should check the UserIdResolver and the log file for errors.
-   
-**realm**
-  
-   A token can be assigned to several realms. This column either displays
-   one realm or several realms.
-
-**count**
-
-   This is the failcounter. You can keep track, if the user has problems
-   logging in.
-   If this value reaches the ``max failcount`` the token can not be used
-   to authenticate anymore until the failcounter is resetted.
-
-**max failcount**
-
-   This works with the ``count`` column.
-
-**userid / resolver**
-
-   These columns represent the assignment to the user. 
-   Depending on the resolver and type of resolver the ``userid``
-   can look different. This can be an integer, a distinguished name
-   or an objectGUID or entryUUID.
-
-
+occurred with this token still remain in the audit log.

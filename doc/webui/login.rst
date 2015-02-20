@@ -19,8 +19,8 @@ append the realm to the username like ``username@realm``.
 Login for normal users
 ----------------------
 
-Normal users authenticate at the login form to access the
-self service portal. By default users need to authenticate
+Normal users authenticate at the login form to be able to manage their own
+tokens. By default users need to authenticate
 with the password from their user source.
 
 E.g. if the users are located in an LDAP or Active Directory
@@ -32,25 +32,23 @@ the user needs to authenticate with his LDAP/AD password.
    I.e. this way the user needs to authenticate with
    a second factor/token to access the self service
    portal. (see the policy section :ref:`policy_auth_otp`)
+   **(TODO)**
 
 Login for administrators
 ------------------------
 
 Administrators can authenticate at this login form to access
-the management UI and also access the self service portal,
-if the account they login with is also contained in a realm.
+the management UI.
 
-By default administrators are defined in a file, that is
-configured the ini-file. (see :ref:`_inifile_superusers`).
-Administrators defined in this file, need to login with 
-the "virtual" realm ``admin``. 
+Administrators are stored in the database table ``Admin`` and can be managed
+with the tool::
 
-E.g. the administrator "administrator" defined in this
-file needs to login as ``administrator@admin`` with
-the password stored in this file.
+   pi-manage.py admin ...
+
+The administrator just logs in with his username.
 
 .. note:: You can configure privacyIDEA to authenticate administrators
    against privacyIDEA itself, so that administrators
    need to login with a second factor. See :ref:`inifile_superusers`
-   how to do this.
+   how to do this. **(TODO)**
 

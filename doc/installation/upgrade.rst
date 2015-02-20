@@ -3,7 +3,7 @@
 Upgrade From privacyIDEA 1.5
 ============================
 
-.. warning:: privacyIDEA 2.0 is in an early stage. There are many changes in 
+.. warning:: privacyIDEA 2.0 introduces many changes in
    database schema, so at least perform a database backup!
 
 Stopping Your Server
@@ -57,14 +57,19 @@ Migrate The Database
 
 You need to upgrade the database to the new database schema::
 
-   pi-manage.py db upgrade -d lib/privacyidea/migration
+   pi-manage.py db upgrade -d lib/privacyidea/migrations
 
+.. note:: In the Ubuntu package the migrations folder is located at
+   ``/usr/lib/privacyidea/migrations/``.
 
 Create An Administrator
 -----------------------
 
-With privacyIDEA 2.0 the administrators are stored in the database. So you need
-to create new administrator accounts::
+With privacyIDEA 2.0 the administrators are stored in the database.
+The password of the administrator is salted and also peppered, to avoid
+having a database administrator slip in a rogue password.
+
+You need to create new administrator accounts::
 
    pi-manage.py addadmin <email-address> <admin-name>
 

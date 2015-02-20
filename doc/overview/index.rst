@@ -17,19 +17,19 @@ privacyIDEA is a web application written in Python based on the
 to run privacyIDEA. E.g. this can be Apache, Nginx or even `werkzeug`_.
 
 A device or item used to authenticate is still called a
-"token". All token information in stored in an SQL database,
+"token". All token information is stored in an SQL database,
 while you may choose, which database you want to use.
 privacyIDEA uses `SQLAlchemy`_ to map the database to
 internal objects. Thus you may choose to run privacyIDEA
 with SQLite, MySQL, PostgreSQL, Oracle, DB2 or other database.
 
-The code is deviced into three layers, the API, the library and the
+The code is divided into three layers, the API, the library and the
 database layer. Read about it at :ref:`code_docu`.
 privacyIDEA provides a clean :ref:`rest_api`.
 
 Administrators can use a Web UI or a command line client to
-manage authentication devices. Users can login to a self
-service portal.
+manage authentication devices. Users can log in to the Web UI to manage their
+ own tokens.
 
 Authentication is performed via the API or certain plugins for
 FreeRADIUS, simpleSAMLphp, Wordpress, Contao, Dokuwiki... to
@@ -38,7 +38,7 @@ to integrate into applications directly.
 
 Due to this flexibility there are also many different ways to
 install and setup privacyIDEA.
-We will take a look at certain comman ways to setup privacyIDEA
+We will take a look at common ways to setup privacyIDEA
 in the section :ref:`installation`
 but there are still many others.
 

@@ -5,7 +5,7 @@ UserIdResolvers
 
 .. index:: useridresolvers, LDAP, Active Directory
 
-Each organisation or compancy usually has its users managed at a central location.
+Each organisation or company usually has its users managed at a central location.
 This is why privacyIDEA does not provide its own user management but rather
 connects to existing user stores.
 
@@ -25,16 +25,19 @@ user stores:
  * Flatfile resolver,
  * LDAP resolver,
  * SQL resolver,
- * SCIM resolver.
+ * SCIM resolver. **(TODO)**: Not yet migrated.
 
-.. note:: New resolvers can be added easily. See the module section for this
+.. note:: New resolver types (python modules) can be added easily. See the
+   module section for this
    (:ref:`code_useridresolvers`).
 
 You can create as many UserIdResolvers as you wish and edit existing resolvers.
 When you have added all configuration data, most UIs of the UserIdResolvers have a
-butten "Test resolver", so that you can test your configuration before saving it.
+button "Test resolver", so that you can test your configuration before saving
+it.
 
-.. note:: Using the policy ``otppin=1`` users can authenticate with the password
+.. note:: Using the policy ``authentication:otppin=userstore`` users can
+   authenticate with the password
    from their user store, being the LDAP password, SQL password or password
    from flat file.
 
@@ -49,8 +52,8 @@ Flatfile resolvers read files like ``/etc/passwd``.
 
 .. note:: The file ``/etc/passwd`` does not contain the unix password.
    Thus, if you create a flatfile resolver from this file the functionality
-   with ``otppin=1`` is not available. You can create a flatfile with 
-   passwords using the tool privacyidea-create-pwidresolver-user.
+   with ``otppin=userstore`` is not available. You can create a flatfile with
+   passwords using the tool ``privacyidea-create-pwidresolver-user``.
 
 Create a flat file like this::
    
@@ -63,7 +66,8 @@ LDAP resolver
 
 .. index:: LDAP resolver, OpenLDAP, Active Directory, FreeIPA, Penrose, Novell eDirectory
 
-The LDAP resolver can be used to access any kind of LDAP service like OpenLDAP, Active Directory,
+The LDAP resolver can be used to access any kind of LDAP service like
+OpenLDAP, Active Directory,
 FreeIPA, Penrose, Novell eDirectory.
 
 .. figure:: images/ldap-resolver.png
@@ -74,9 +78,9 @@ FreeIPA, Penrose, Novell eDirectory.
 In case of Active Directory connections you might need to check the box
 ``No anonymous referral chasing``. The underlying LDAP library is only
 able to do anonymous referral chasing. Active Directory will produce an
-error in this case. (See http://blogs.technet.com/b/ad/archive/2009/07/06/referral-chasing.aspx)
+error in this case [#adreferrals]_.
 
-The ``LoginName`` attribute is the attribute that hold the loginname. It
+The ``LoginName`` attribute is the attribute that holds the loginname. It
 can be changed to your needs.
 
 The searchfilter and the userfilter are used for forward and backward 
@@ -150,7 +154,7 @@ which privayIDEA attribute. The known attributes are:
 You can add an additional ``Where statement`` if you do not want to use
 all users from the table.
 
-.. note:: The ``Additional connaction parameters``
+.. note:: The ``Additional connection parameters``
    refer to the SQLAlchemy connection but are not used at the moment.
 
 SCIM resolver
@@ -161,8 +165,8 @@ SCIM resolver
 SCIM is a "System for Cross-domain Identity Management". SCIM is a REST-based 
 protocol that can be used to ease identity management in the cloud.
 
-The SCIM resolver is tested in basic functions with 
-`OSIAM <http://www.osiam.org>`_, the "Open Source Idenitty & Access Management".
+The SCIM resolver is tested in basic functions with OSIAM [#osiam]_,
+the "Open Source Idenitty & Access Management".
 
 To connect to a SCIM service you need to provide a URL to an authentication 
 server and a URL to the resource server. The authentication server is used to
@@ -180,3 +184,7 @@ The available attributes for the ``Attribute mapping`` are:
  * mobile,
  * email.
 
+.. rubric:: Footnotes
+
+.. [#adreferrals] http://blogs.technet.com/b/ad/archive/2009/07/06/referral-chasing.aspx
+.. [#osiam] http://www.osiam.org

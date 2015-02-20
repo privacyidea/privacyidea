@@ -41,15 +41,20 @@ Each realm has to have a unique name. The name of the realm is
 case insensitive. If you create a new realm with the same name
 like an existing realm, the existing realm gets overwritten.
 
-The *Edit Realm* dialog gives you list of the available resolvers.
-You can click on the resolvers to mark it to be added to this realm.
-Holding the Ctrl-key while clicking lets you select multiple
-resolvers.
+If you click *Edit Realm* you can select which userresolver should be
+contained in this realm. A realm can contain several resolvers.
+
+.. figure:: images/edit-realm.png
+   :width: 500
+
+   *Edit a realm*
 
 .. _autocreate_realm:
 
 Autocreate realm
 ................
+
+**(TODO)**: Not migrated yet.
 
 .. index:: realm autocreation
 

@@ -5,6 +5,8 @@ Tools
 
 .. index:: tools
 
+**(TODO)**: Not yet migrated.
+
 The menu ``tools`` contains some helpful tools to manage your tokens.
 
 Get Serial by OTP value

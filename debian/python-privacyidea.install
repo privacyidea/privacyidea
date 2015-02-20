@@ -20,4 +20,5 @@ doc/_build/man/privacyidea-server.1 	usr/share/man/man1
 debian/tmp/usr/bin/* usr/bin/
 debian/tmp/usr/share/* usr/share/
 debian/tmp/usr/lib/python* usr/lib/
+debian/tmp/usr/lib/privacyidea/migrations/* usr/lib/privacyidea/migrations/
 #debian/tmp/etc/* etc/

@@ -1,12 +1,17 @@
 .. _system_config:
 
-System config
+System Config
 -------------
 
 .. index:: system config, token default settings,
 
-The system configuration has three tabs: Settings, 
+The system configuration has three logical topics: Settings,
 token default settings and GUI settings.
+
+.. figure:: images/system-config.png
+   :width: 500
+
+   *The system config*
 
 Settings
 ........
@@ -14,9 +19,9 @@ Settings
 ``splitAtSign`` defines if the username like *user@company* 
 given during authentication should
 be split into the loginname *user* and the realm name *company*.
-In most cases this is the wanted behavious.
+In most cases this is the wanted behaviour.
 
-But given your users login with email addresses like *user@gmail.com* and
+But given your users log in with email addresses like *user@gmail.com* and
 *otheruser@outlook.com* you probably do not want to split.
 
 ``Return SAML attributes`` defines if during an SAML authentication request
@@ -64,10 +69,12 @@ send another client information (in this case the RADIUS client) so that
 the policy is evaluated for the RADIUS client. This field takes a comma seperated list of IP addresses.
 
 ``maximum concurrent OCRA challenges`` defines how many OCRA requests for
-a single OCRA token are allowed to be active simultaniously.
+a single OCRA token are allowed to be active simultaniously. **(TODO)**: Not
+migrated, yet.
 
 ``OCRA challenge timeout`` defines how many seconds an OCRA challenge is kept
-active. The response must be sent within this timeout.
+active. The response must be sent within this timeout. **(TODO)**: Not
+migrated, yet.
 
 Token default settings
 ......................
@@ -109,10 +116,12 @@ OCRA settings
 ~~~~~~~~~~~~~
 
 ``default OCRA suite`` is the OCRA suite that is set for an OCRA token 
-during enrollment if no OCRA suite is specified.
+during enrollment if no OCRA suite is specified. **(TODO)**: Not
+migrated, yet.
 
 ``default QR suite`` is the OCRA suite that is set for a QR token 
-during enrollment if no OCRA suite is specified.
+during enrollment if no OCRA suite is specified. **(TODO)**: Not
+migrated, yet.
 
 
 .. _gui_settings:

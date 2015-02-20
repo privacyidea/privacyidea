@@ -25,7 +25,8 @@ Thanks a lot!
    installation/index
    installation/upgrade
    system/inifile
-   webui/login   
+   system/wsgiscript
+   webui/login
    configuration/index
    tokenview/index
    userview/index
