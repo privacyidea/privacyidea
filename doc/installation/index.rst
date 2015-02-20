@@ -75,31 +75,6 @@ administrator and you are done::
 
    pi-manage.py admin add admin admin@localhost
 
-.. _appliance: 
-
-Appliance
-~~~~~~~~~
-
-.. index:: appliance
-
-There is also the possibility to install privacyIDEA
-on an Ubuntu 14.04 system
-in an appliance like way::
-
-   add-apt-repository ppa:privacyidea/privacyidea
-   apt-get update
-   apt-get install privacyidea-appliance privacyidea-radius
-
-which will setup a system containing everything.
-It also provides a tool to easily configure privacyIDEA,
-manage your RADIUS clients and create and restore backups.
-
-To take closer look at this tool read :ref:`privacyidea-setup`.
-
-Application packages
-~~~~~~~~~~~~~~~~~~~~
-
-We also provide debian packages for certain applications.
 
 FreeRADIUS
 ..........
@@ -112,7 +87,7 @@ To install this module::
    apt-get install privacyidea-radius
 
 If you are running your FreeRADIUS server on another distribution, you may download
-the module at [#rlm_perl]_.
+the module at [#rlmPerl]_.
 
 Then you need configure your FreeRADIUS site and the perl module.
 
@@ -178,5 +153,5 @@ A usual configuration will look like this::
 
 .. rubric:: Footnotes
 
-.. [#rlm_perl] https://github.com/privacyidea/privacyidea/tree/master/authmodules/FreeRADIUS
+.. [#rlmPerl] https://github.com/privacyidea/privacyidea/tree/master/authmodules/FreeRADIUS
 .. [#simpleSAML]  https://github.com/privacyidea/privacyidea/tree/master/authmodules/simpleSAMLphp

@@ -26,6 +26,9 @@
 #
 import os
 import sys
+import datetime
+import re
+from subprocess import call, Popen
 from getpass import getpass
 from privacyidea.lib.security.default import DefaultSecurityModule
 from privacyidea.lib.auth import (create_db_admin, list_db_admin,
@@ -42,9 +45,10 @@ app = create_app(config_name='production')
 manager = Manager(app)
 admin_manager = Manager(usage='Create new administrators or modify existing '
                               'ones.')
+backup_manager = Manager(usage='Create database backup and restore')
 manager.add_command('db', MigrateCommand)
 manager.add_command('admin', admin_manager)
-
+manager.add_command('backup', backup_manager)
 
 @admin_manager.command
 def add(username, email, password=None):
@@ -92,13 +96,101 @@ def change(username, email=None, password_prompt=False):
 
     create_db_admin(app, username, email, password)
 
+@backup_manager.command
+def create(directory="/var/lib/privacyidea/backup/"):
+    """
+    Create a new backup of the database and the configuration. This does not
+    backup the encryption key!
+    """
+    CONF_DIR = "/etc/privacyidea/"
+    # INIFILE = "%s/pi.cfg" % CONF_DIR
+    DATE = datetime.datetime.now().strftime("%Y%m%d-%H%M")
+    BASE_NAME = "privacyidea-backup"
+    sqlfile = "%s/dbdump-%s.sql" % (directory, DATE)
+    backup_file = "%s/%s-%s.tgz" % (directory, BASE_NAME, DATE)
+
+    sqluri = app.config.get("SQLALCHEMY_DATABASE_URI")
+    sqltype = sqluri.split(":")[0]
+    if sqltype == "sqlite":
+        productive_file = sqluri[len("sqlite:///"):]
+        print "Backup SQLite %s" % productive_file
+        sqlfile = "%s/db-%s.sqlite" % (directory, DATE)
+        call(["cp", productive_file, sqlfile])
+    elif sqltype == "mysql":
+        m = re.match("mysql://(.*):(.*)@(.*)/(.*)", sqluri)
+        username = m.groups()[0]
+        password = m.groups()[1]
+        datahost = m.groups()[2]
+        database = m.groups()[3]
+        call("mysqldump -u %s --password=%s -h %s %s > %s" % (username,
+                                                              password,
+                                                              datahost,
+                                                              database,
+                                                              sqlfile),
+             shell=True)
+
+    else:
+        print "unsupported SQL syntax: %s" % sqltype
+        sys.exit(2)
+
+    call(["mkdir", "-p", directory])
+    call(["tar", "-zcf", backup_file, CONF_DIR, sqlfile])
+    os.unlink(sqlfile)
+    os.chmod(backup_file, 0600)
+
+@backup_manager.command
+def restore(backup_file):
+    """
+    Restore a previously made backup. You need to specify the tgz file.
+    """
+    SQLALCHEMY_DATABASE_URI = None
+    directory = os.path.dirname(backup_file)
+    call(["tar", "-zxf", backup_file, "-C", "/"])
+    print 60*"="
+    """
+    The restore of the SQL file will not work, since at the moment we "
+    can not be sure to know the correct SQLALCHEMY_DATABASE_URI. The "
+    right URI "
+    was just restored to /etc/privacyidea/pi.cfg. So please take a "
+    look into that file and restore the SQL dumb from the file "
+    /var/lib/privacyidea/backup/*.[sql,sqlite]")
+    """
+    execfile("/etc/privacyidea/pi.cfg")
+    # Now we know the variable SQLALCHEMY_DATABASE_URI
+    sqluri = SQLALCHEMY_DATABASE_URI
+    if sqluri is None:
+        print "No SQLALCHEMY_DATABASE_URI found in /etc/privacyidea/pi.cfg"
+        sys.exit(2)
+    sqltype = sqluri.split(":")[0]
+    if sqltype == "sqlite":
+        productive_file = sqluri[len("sqlite:///"):]
+        print "Restore SQLite %s" % productive_file
+        sqlfile = "%s/db-*.sqlite" % (directory)
+        call(["cp", sqlfile, productive_file])
+        os.unlink(sqlfile)
+    elif sqltype == "mysql":
+        m = re.match("mysql://(.*):(.*)@(.*)/(.*)", sqluri)
+        username = m.groups()[0]
+        password = m.groups()[1]
+        datahost = m.groups()[2]
+        database = m.groups()[3]
+        sqlfile = "%s/dbdump-*.sql" % (directory)
+        call("mysql -u %s --password=%s -h %s %s < %s" % (username,
+                                                          password,
+                                                          datahost,
+                                                          database,
+                                                          sqlfile), shell=True)
+        os.unlink(sqlfile)
+    else:
+        print "unsupported SQL syntax: %s" % sqltype
+        sys.exit(2)
+
 
 @manager.command
 def test():
     """
     Run all nosetests.
     """
-    from subprocess import call
     call(['nosetests', '-v',
           '--with-coverage', '--cover-package=privacyidea', '--cover-branches',
           '--cover-erase', '--cover-html', '--cover-html-dir=cover'])
