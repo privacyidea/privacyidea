@@ -12,7 +12,7 @@ if [ -f /usr/share/dbconfig-common/dpkg/postinst.pgsql  ]; then
 fi
 
 unset_sites () {
-	a2dissite privacyidea
+	rm -f /etc/apache2/sites-enabled/privacyidea.conf
 }
 
 

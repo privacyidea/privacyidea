@@ -33,11 +33,14 @@ from privacyidea.api.user import user_blueprint
 from privacyidea.api.audit import audit_blueprint
 from privacyidea.api.auth import jwtauth
 from privacyidea.webui.login import login_blueprint
+from privacyidea.lib.log import SecureFormatter
 from privacyidea.config import config
 from privacyidea.models import db
 from flask.ext.migrate import Migrate
 
 ENV_KEY="PRIVACYIDEA_CONFIGFILE"
+MY_LOG_FORMAT = "[%(asctime)s][%(process)d][%(thread)d][%(levelname)s][%(" \
+                "name)s:%(lineno)d] %(message)s"
 
 
 def create_app(config_name="development",
@@ -101,7 +104,14 @@ def create_app(config_name="development",
     # Read log file from config
     from logging import handlers
     fhandler = handlers.RotatingFileHandler(app.config.get("PI_LOGFILE",
-                                                           "privacyidea.log"))
+                                                           "privacyidea.log"),
+                                            backupCount=4,
+                                            maxBytes=10000000)
+
+
+    formatter = SecureFormatter(MY_LOG_FORMAT)
+    # Set the formatter
+    fhandler.setFormatter(formatter)
     # read level from config
     fhandler.setLevel(app.config.get("PI_LOGLEVEL", logging.INFO))
     logging.getLogger("privacyidea").addHandler(fhandler)

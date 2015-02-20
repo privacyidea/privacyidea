@@ -28,7 +28,6 @@ create_user() {
 create_files() {
         mkdir -p /var/log/privacyidea
         mkdir -p /var/lib/privacyidea
-        touch /var/lib/privacyidea/token.sqlite
         touch /var/log/privacyidea/privacyidea.log
 	pi-manage.py create_enckey || true
 	pi-manage.py createdb || true
@@ -108,10 +107,10 @@ enable_nginx_uwsgi() {
 case "$1" in
 
   configure)
+	create_user
 	adapt_pi_cfg
 	create_database
 	enable_nginx_uwsgi
-	create_user
 	create_files
 	create_certificate
 	update-rc.d nginx defaults

@@ -1,4 +1,4 @@
-python-privacyidea (2.0~dev3-1trusty) trusty; urgency=low
+python-privacyidea (2.0~dev5-1trusty) trusty; urgency=low
 
   * Migrate to flask
   * change the name of the debian package as the package only
