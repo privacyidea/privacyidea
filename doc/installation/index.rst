@@ -10,7 +10,8 @@ Python Package Index
 
 If you want to upgrade from a privacyIDEA 1.5 installation please read :ref:`upgrade`.
 
-You can install privacyidea on usually any linux distribution in a pyhton virtual environment
+You can install privacyidea on usually any linux distribution in a python
+virtual environment
 like this::
 
   virtualenv /opt/privacyidea
@@ -36,7 +37,7 @@ Then create the encryption key and the signing keys::
 Create the database and the first administrator::
 
    pi-manage.py createdb
-   pi-manage.py addadmin admin admin
+   pi-manage.py admin add admin admin@localhost
 
 Now you can run the server for your first test::
 
@@ -58,12 +59,21 @@ Install it like this::
 
    add-apt-repository ppa:privacyidea/privacyidea
    apt-get update
-   apt-get install privacyidea privacyideaadm
+   apt-get install python-privacyidea privacyideaadm
 
 Optionally you can also install necessary configuration files to run
 privacyIDEA within the Nginx Webserver::
 
    apt-get install privacyidea-nginx
+
+Alternatively you can install privacyIDEA running in an Apache webserver::
+
+   apt-get install privacyidea-apache2
+
+After installing in Nginx or Apache2 you only need to create your first
+administrator and you are done::
+
+   pi-manage.py admin add admin admin@localhost
 
 .. _appliance: 
 
@@ -72,7 +82,7 @@ Appliance
 
 .. index:: appliance
 
-There is also the possibility to install privacyIDEA 
+There is also the possibility to install privacyIDEA
 on an Ubuntu 14.04 system
 in an appliance like way::
 
@@ -81,8 +91,8 @@ in an appliance like way::
    apt-get install privacyidea-appliance privacyidea-radius
 
 which will setup a system containing everything.
-It also provides a tool to easily configure privacyIDEA, add administrators and
-manage your RADIUS clients.
+It also provides a tool to easily configure privacyIDEA,
+manage your RADIUS clients and create and restore backups.
 
 To take closer look at this tool read :ref:`privacyidea-setup`.
 

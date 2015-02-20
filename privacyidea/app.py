@@ -40,16 +40,17 @@ from flask.ext.migrate import Migrate
 ENV_KEY="PRIVACYIDEA_CONFIGFILE"
 
 
-def create_app(config_name=None, config_file='/etc/privacyidea/pi.cfg'):
+def create_app(config_name="development",
+               config_file='/etc/privacyidea/pi.cfg'):
     """
     First the configuration from the config.py is loaded depending on the
-    config type like "Production" or "Development".
+    config type like "production" or "development" or "testing".
 
     Then the environment variable PRIVACYIDEA_CONFIGFILE is checked for a
     config file, that contains additional settings, that will overwrite the
     default settings from config.py
 
-    :param config_name: The config name like "Production" or "Testing"
+    :param config_name: The config name like "production" or "testing"
     :type config_name: basestring
     :param config_file: The name of a config file to read configuration from
     :type config_file: basestring
@@ -66,9 +67,16 @@ def create_app(config_name=None, config_file='/etc/privacyidea/pi.cfg'):
     if config_name:
         app.config.from_object(config[config_name])
 
-    # Try to load the given config_file.
-    # If it does not exist, just ignore it.
-    app.config.from_pyfile(config_file, silent=True)
+    try:
+        # Try to load the given config_file.
+        # If it does not exist, just ignore it.
+        app.config.from_pyfile(config_file, silent=True)
+    except IOError:
+        print 50*"!"
+        print "  WARNING: privacyidea create_app has no access"
+        print "  to %s!" % config_file
+        print 50*"!"
+
     # Try to load the file, that was specified in the environment variable
     # PRIVACYIDEA_CONFIG_FILE
     # If this file does not exist, we create an error!
@@ -99,6 +107,3 @@ def create_app(config_name=None, config_file='/etc/privacyidea/pi.cfg'):
     logging.getLogger("privacyidea").addHandler(fhandler)
 
     return app
-
-# We create this app to be used in the wsgi script
-wsig_app = create_app("production")

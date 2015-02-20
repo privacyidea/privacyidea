@@ -6,7 +6,7 @@ privacyIDEA
 [![Downloads](https://pypip.in/download/privacyidea/badge.svg)](https://pypi.python.org/pypi/privacyidea/)
 [![Latest Version](https://pypip.in/version/privacyidea/badge.svg)](https://pypi.python.org/pypi/privacyidea/)
 [![License](https://pypip.in/license/privacyidea/badge.svg)](https://pypi.python.org/pypi/privacyidea/)
-[![Documentation Status](https://readthedocs.org/projects/privacyidea/badge/?version=latest)](https://readthedocs.org/projects/privacyidea/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/privacyidea/badge/?version=latest)](http://privacyidea.readthedocs.org/en/latest/)
 
 [Build Status]: https://travis-ci.org/privacyidea/privacyidea
 [Coverage Status]: https://coveralls.io/r/privacyidea/privacyidea

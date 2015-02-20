@@ -114,7 +114,7 @@ def encrypt_enckey(encfile):
     The password based encrypted encryption key is a hex combination of an IV
     and the encrypted data.
 
-    The result can be piped to a new encKey file.
+    The result can be piped to a new enckey file.
     """
     password = getpass()
     password2 = getpass(prompt='Confirm: ')
