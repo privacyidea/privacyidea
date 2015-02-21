@@ -239,6 +239,7 @@ The Apache2 needs a wsgi script that could be located at
 Finally you need to create a Apache2 configuration
 ``/etc/apache2/sites-available/privacyidea.conf`` which might look like this::
 
+   WSGIPythonHome /opt/privacyidea/privacyidea-venv
    <VirtualHost _default_:443>
 	ServerAdmin webmaster@localhost
 	# You might want to change this
