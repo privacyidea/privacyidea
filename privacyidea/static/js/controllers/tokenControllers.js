@@ -175,9 +175,14 @@ myApp.controller("tokenDetailController", function ($scope,
     // initialize
     $scope.get();
 
-    ConfigFactory.getRealms(function (data) {
-            $scope.realms = data.result.value;
-    });
+    if ($scope.loggedInUser.role == "admin") {
+        // If the user is admin, we can fetch all realms
+        ConfigFactory.getRealms(function (data) {
+                $scope.realms = data.result.value;
+        });
+    }
+    // If the loggedInUser is only a user, we do not need the realm list,
+    // as we do not assign a token
 });
 
 myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
