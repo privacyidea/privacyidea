@@ -1,3 +1,9 @@
+python-privacyidea (2.1~dev0) trusty; urgency=low
+
+  * Fix logout problem of user
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Sat, 21 Feb 2015 16:00:00 +0200
+
 python-privacyidea (2.0-1) trusty; urgency=low
 
   * Migrate to flask

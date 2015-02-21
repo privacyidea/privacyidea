@@ -6,14 +6,16 @@ info:
 	@echo "make doc-html     - create the documentation as html"
 	@echo "make pypi         - upload package to pypi"
 	@echo "make debianzie    - prepare the debian build environment in DEBUILD"
-	@echo "make builddeb     - build .deb file locally on ubuntu 14.04!"
+	@echo "make builddeb     - build .deb file locally on ubuntu 14.04LTS!"
+	@echo "make venvdeb      - build .deb file, that contains the whole setup in a virtualenv."
+	@echo "                    This is to be used with debian Wheezy"
 	@echo "make ppa-dev      - upload to launchpad development repo"
 	
 #VERSION=1.3~dev5
-VERSION=2.0
+VERSION=2.1~dev0
 SERIES="trusty precise"
 LOCAL_SERIES=`lsb_release -a | grep Codename | cut -f2`
-SRCDIRS=deploy authmodules migrations doc tests debian tools privacyidea 
+SRCDIRS=deploy authmodules migrations doc tests tools privacyidea 
 SRCFILES=setup.py MANIFEST.in Makefile Changelog LICENSE pi-manage.py requirements.txt
 
 translate:
@@ -75,7 +77,7 @@ redhat:
 debianize:
 	make clean
 	make doc-man
-	mkdir -p DEBUILD/privacyidea.org
+	mkdir -p DEBUILD/privacyidea.org/debian
 	cp -r ${SRCDIRS} ${SRCFILES} DEBUILD/privacyidea.org || true
 	# We need to touch this, so that our config files 
 	# are written to /etc
@@ -90,10 +92,16 @@ debianize:
 builddeb:
 	make debianize
 	################## Renew the changelog
-	cp debian/changelog DEBUILD/privacyidea.org/debian/
-	sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g debian/changelog > DEBUILD/privacyidea.org/debian/changelog
+	cp -r deploy/debian-ubuntu/* DEBUILD/privacyidea.org/debian/
+	sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
 	################# Build
 	(cd DEBUILD/privacyidea.org; debuild --no-lintian)
+
+venvdeb:
+	make debianize
+	cp -r deploy/debian-virtualenv/* DEBUILD/privacyidea.org/debian/
+	sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g deploy/debian-virtualenv/changelog > DEBUILD/privacyidea.org/debian/changelog
+	(cd DEBUILD/privacyidea.org; DH_VIRTUALENV_INSTALL_ROOT=/opt/privacyidea dpkg-buildpackage -us -uc)
 
 ppa-dev:
 	################### Check for the series
@@ -105,7 +113,7 @@ ppa-dev:
 	################# Build
 	(cd DEBUILD/privacyidea.org; debuild -sa -S)
 	################ Upload to launchpad:
-	dput ppa:privacyidea/privacyidea-dev DEBUILD/python-privacyidea_${VERSION}-*_source.changes
+	dput ppa:privacyidea/privacyidea-dev DEBUILD/python-privacyidea_${VERSION}*_source.changes
 
 ppa-dev-all:
 	make debianize
@@ -113,7 +121,7 @@ ppa-dev-all:
 	    cp debian/changelog DEBUILD/privacyidea.org/debian/ ; \
 	    sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g debian/changelog > DEBUILD/privacyidea.org/debian/changelog ; \
 	    (cd DEBUILD/privacyidea.org; debuild) ; \
-	    dput ppa:privacyidea/privacyidea-dev DEBUILD/python-privacyidea_${VERSION}-*_source.changes; \
+	    dput ppa:privacyidea/privacyidea-dev DEBUILD/python-privacyidea_${VERSION}*_source.changes; \
 	done
 
 

@@ -1,0 +1,97 @@
+Source: privacyidea
+Maintainer: Cornelius Kölbel <cornelius@privacyidea.org>
+Section: python
+Priority: optional
+Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.6.6-3), debhelper (>= 7.4.3), python-setuptools, python-pylons, python-qrcode, python-netaddr, python-ldap, python-pyrad, python-yaml, python-configobj, python-repoze.who, python-httplib2, python-crypto, python-docutils, python-repoze.who-plugins
+Standards-Version: 3.9.5
+
+Package: python-privacyidea
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}
+Description: two-factor authentication system e.g. for OTP devices
+ privacyIDEA: identity, multifactor authentication, authorization.
+ privacyIDEA is an open solution for strong two-factor authentication.
+ privacyIDEA aims to not bind you to any decision of the authentication protocol 
+ or it does not dictate you where your user information should be stored. 
+ This is achieved by its totally modular architecture.
+ privacyIDEA is not only open as far as its modular architecture is concerned. 
+ But privacyIDEA is completely licensed under the AGPLv3.
+
+Package: privacyidea-radius
+Architecture: all
+Depends: ${misc:Depends}, libwww-perl, libconfig-inifiles-perl, libdata-dump-perl, libtry-tiny-perl, freeradius
+Description: FreeRADIUS module for privacyIDEA, OTP authentication
+ privacyIDEA: identity, multifactor authentication, authorization.
+ privacyIDEA is an open solution for strong two-factor authentication.
+ privacyIDEA aims to not bind you to any decision of the authentication protocol 
+ or it does not dictate you where your user information should be stored.
+ This is achieved by its totally modular architecture.
+ privacyIDEA is not only open as far as its modular architecture is concerned.
+ But privacyIDEA is completely licensed under the AGPLv3.
+
+
+Package: privacyidea-simplesamlphp
+Architecture: all
+Depends: ${misc:Depends}, simplesamlphp
+Description: SimpleSAMLphp module for privacyIDEA to do two factor authentication 
+ This package add two factor authentication to simpleSAMLphp.
+ privacyIDEA: identity, multifactor authentication, authorization.
+ privacyIDEA is an open solution for strong two-factor authentication.
+ privacyIDEA aims to not bind you to any decision of the authentication protocol
+ or it does not dictate you where your user information should be stored.
+ This is achieved by its totally modular architecture.
+ privacyIDEA is not only open as far as its modular architecture is concerned.
+ But privacyIDEA is completely licensed under the AGPLv3.
+
+
+Package: privacyidea-otrs
+Architecture: all
+Depends: ${misc:Depends}, libwww-perl, libconfig-inifiles-perl, libdata-dump-perl, libtry-tiny-perl
+Description: OTRS module for privacyIDEA, OTP authentication
+ privacyIDEA: identity, multifactor authentication, authorization.
+ privacyIDEA is an open solution for strong two-factor authentication.
+ privacyIDEA aims to not bind you to any decision of the authentication protocol
+ or it does not dictate you where your user information should be stored.
+ This is achieved by its totally modular architecture.
+ privacyIDEA is not only open as far as its modular architecture is concerned.
+ But privacyIDEA is completely licensed under the AGPLv3.
+
+
+
+Package: privacyidea-all
+Architecture: all
+Depends: ${misc:Depends}, privacyidea, privacyidea-radius, privacyidea-otrs, privacyideaadm
+Description: two-factor authenticaion system. This is a metapackage to install everything.
+ privacyIDEA: identity, multifactor authentication, authorization.
+ privacyIDEA is an open solution for strong two-factor authentication.
+ privacyIDEA aims to not bind you to any decision of the authentication protocol
+ or it does not dictate you where your user information should be stored.
+ This is achieved by its totally modular architecture.
+ privacyIDEA is not only open as far as its modular architecture is concerned.
+ But privacyIDEA is completely licensed under the AGPLv3.
+
+Package: privacyidea-nginx
+Architecture: all
+Depends: ${misc:Depends}, privacyidea, privacyideaadm, python-mysqldb, nginx-full, uwsgi, 
+ uwsgi-plugin-python, mysql-server, mysql-client
+Conflicts: apache2
+Description: two-factor authentication system. This is a meta package to install privacyidea with nginx
+ privacyIDEA: identity, multifactor authentication, authorization.
+ privacyIDEA is an open solution for strong two-factor authentication.
+ privacyIDEA aims to not bind you to any decision of the authentication protocol
+ or it does not dictate you where your user information should be stored.
+ This is achieved by its totally modular architecture.
+ privacyIDEA is not only open as far as its modular architecture is concerned.
+ But privacyIDEA is completely licensed under the AGPLv3.
+
+Package: privacyidea-appliance
+Architecture: all
+Depends: ${misc:Depends}, privacyidea-nginx, python-dialog
+Description: two-factor authentication system. This is a setup tool for easy system setup.
+ privacyIDEA: identity, multifactor authentication, authorization.
+ privacyIDEA is an open solution for strong two-factor authentication.
+ privacyIDEA aims to not bind you to any decision of the authentication protocol
+ or it does not dictate you where your user information should be stored.
+ This is achieved by its totally modular architecture.
+ privacyIDEA is not only open as far as its modular architecture is concerned.
+ But privacyIDEA is completely licensed under the AGPLv3.

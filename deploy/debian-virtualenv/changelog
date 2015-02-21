@@ -1,0 +1,184 @@
+privacyidea-venv (2.1~dev0) trusty; urgency=low
+
+  * Fix logout problem of user
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Sat, 21 Feb 2015 16:00:00 +0200
+
+python-privacyidea (2.0-1) trusty; urgency=low
+
+  * Migrate to flask
+  * change the name of the debian package as the package only
+    contains the python module.
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Sat, 21 Feb 2015 14:00:00 +0200
+
+
+privacyidea (1.5.1-1trusty) trusty; urgency=low
+
+  * Fix splitting the @-sign to allow users like user@email.com
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 02 Feb 2015 09:08:00 +0200
+
+
+privacyidea (1.5-1trusty) trusty; urgency=low
+
+  * Fix the postinstall script for not broken repoze.who
+  * adapt the dependency for python webob
+  * add fix for users in policies.
+  * Working on #61
+  * Closing #63, allow upper and lower case DN in LDAP resolver
+  * Fix the empty result audit search problem
+  * Fix the port problem with SQL resolver
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 25 Dec 2014 16:30:00 +0200
+
+privacyidea (1.4-1) trusty; urgency=low
+
+  * Add "wrong password" message on login screen
+  * Speed up tests
+  * Add help on logon screen.
+  * Add helper dialog to setup first realm
+  * Add simplesamlphp module and deb package
+  * Fixed the session timeout bug in the management UI
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 06 Oct 2014 16:50:00 +0200
+
+privacyidea (1.4~dev5-1) trusty; urgency=low
+
+  * Add wrong password message on login screen
+  * Speed up tests
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 06 Oct 2014 09:10:00 +0200
+
+privacyidea (1.4~dev4-1) trusty; urgency=low
+
+  * Add help on logon screen.
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 02 Oct 2014 11:20:00 +0200
+
+privacyidea (1.4~dev3-1) trusty; urgency=low
+
+  * Add helper dialog to setup first realm
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Tue, 30 Sep 2014 11:10:00 +0200
+
+privacyidea (1.4~dev2-1) trusty; urgency=low
+
+  * Add simplesamlphp module and deb package
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 29 Sep 2014 11:40:00 +0200
+
+privacyidea (1.4~dev1-1) trusty; urgency=low
+
+  * Fixed the session timeout bug in the management UI
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 24 Sep 2014 19:10:00 +0200
+
+privacyidea (1.3.2-1) trusty; urgency=low
+
+  * Add uwsgi and nginx configuration
+  * Add nginx package
+  * Add meta packages to easily install radius dependencies. (#33)
+  * Add package for appliance
+  * Add appliance style: privacyidea-setup-tui
+  * Add privacyidea-otrs and remove the authmodules from the
+    core package
+  * Add first implementation of Token2 token type
+  * Change depend in builddepend
+  * Add missing SSL certificate
+  * Add missing python-dialog dependency
+  * Remove pylons download link, that caused timeout problems.
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 22 Sep 2014 10:00:00 +0200
+
+privacyidea (1.3.1-1) trusty; urgency=low
+
+  * Fixed bug, that avoided to delete MachineTokens with options (#27)
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 20 Aug 2014 18:30:00 +0200
+
+privacyidea (1.3-1) trusty; urgency=low
+
+  * add support for Daplug dongle in keyboard mode
+  * Allow login with admin@realm, even with RealmBox.  (#26)
+  * inactive tokens will not work with the machine-app
+  * Added MachineUser database moduel
+  * PEP8 beautify
+  * Add about dialog
+  * added recommends for mysql and salt
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 18 Aug 2014 17:00:00 +0200
+
+privacyidea (1.3~dev5-1) trusty; urgency=low
+
+  * Allow login with admin@realm, even with RealmBox.  (#26)
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 15 Aug 2014 15:37:00 +0200
+
+privacyidea (1.3~dev4-1) trusty; urgency=low
+
+  * fix minor bugs in selfservice portal
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Tue, 13 Aug 2014 17:40:00 +0200
+
+privacyidea (1.3~dev3-1) trusty; urgency=low
+
+  * add support for Daplug dongle in keyboard mode
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Tue, 12 Aug 2014 18:32:00 +0200
+
+privacyidea (1.3~dev2-1) trusty; urgency=low
+
+  * machine requires IP address
+  * the machine-app listing also returns the information, if the token
+    is active
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 11 Aug 2014 10:40:00 +0200
+
+
+privacyidea (1.3~dev1-1) trusty; urgency=low
+
+  * Added MachineUser database moduel
+  * PEP8 beautify
+  * Add about dialog
+  * added recommends for mysql and salt
+ 
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 06 Aug 2014 14:14:00 +0200
+
+privacyidea (1.3~dev0-2) trusty; urgency=low
+
+  * Fixed the missing run directory (#23)
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 31 Jul 2014 09:28:00 +0200
+ 
+privacyidea (1.3~dev0-1) trusty; urgency=low
+
+  * Fix resolver error #22
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 30 Jul 2014 16:24:00 +0200
+
+privacyidea (1.2.2-1) trusty; urgency=low
+
+  * Fixed the sqlsoup dependency
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 23 Jul 2014 17:57:00 +0200
+
+
+privacyidea (1.2.1-1) trusty; urgency=low
+
+  * machine controller: make the challenge usable also in normal mode
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 18 Jul 2014 16:51:00 +0200
+
+
+privacyidea (1.2-1) trusty; urgency=low
+
+  * Added 
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Tue, 15 Jul 2014 15:15:55 +0200
+
+privacyidea (1.2~dev2-1) trusty; urgency=low
+
+  * initial ubuntu release
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 14 Jul 2014 18:56:55 +0200

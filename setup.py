@@ -4,8 +4,8 @@ import os
 import glob
 import sys
 
-#VERSION="2.0dev5"
-VERSION="2.0"
+VERSION="2.1dev0"
+#VERSION="2.0"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -89,7 +89,7 @@ setup(
     ],
     include_package_data=True,
     data_files=[('etc/privacyidea/',
-                 ['deploy/privacyideaapp.wsgi',
+                 ['deploy/apache/privacyideaapp.wsgi',
                   'tests/testdata/dictionary',
                   'deploy/privacyidea/enckey',
                   'deploy/privacyidea/private.pem',
