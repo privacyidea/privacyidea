@@ -10,8 +10,10 @@ Audit log
 Base class
 ..........
 
-.. autoclass:: privacyidea.lib.audit.AuditBase
+.. autoclass:: privacyidea.lib.auditmodules.base.AuditBase
    :members:
+   :undoc-members:
+
 
 SQL Audit module
 ................

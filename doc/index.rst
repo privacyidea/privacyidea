@@ -1,10 +1,8 @@
-.. _welcome:
-
 ######################
 Welcome to privacyIDEA
 ######################
 
-As alwas the privacyIDEA documentation is work in progress.
+As always the privacyIDEA documentation is work in progress.
 
 .. note:: Some parts are marked as "**(TODO)** Not yet implemented".
    These are components that have not been migrated from 1.5 to 2.0.
