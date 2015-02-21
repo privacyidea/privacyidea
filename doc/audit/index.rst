@@ -3,10 +3,15 @@
 Audit
 =====
 
-.. index: Audit
+.. index:: Audit
 
 The systems provides a sophisticated audit log, that can be viewed in the 
 WebUI.
+
+.. figure:: auditlog.png
+   :width: 500
+
+   *Audit Log*
 
 privacyIDEA comes with an SQL audit module. (see :ref:`code_audit`)
 

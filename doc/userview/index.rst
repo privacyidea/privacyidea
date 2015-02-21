@@ -14,6 +14,12 @@ to manage.
 
 You can select one of the realms in the left drop down box. The administrator
 will only see the realms in the drop down box, that he is allowed to manage.
+**(TODO)** No migrated, yet.
+
+.. figure:: user-view.png
+   :width: 500
+
+   *User View. List all users in a realm.*
 
 The list shows the users from the select realm. The username, surname,
 given name, email and phone are filled according to the definition of 
@@ -27,19 +33,39 @@ perform on the users are limited.
 
 .. note:: You can not create or modify users in privacyIDEA!
 
+.. _user_details:
+
+User Details
+------------
+
+When clicking on a username, you can see the users details and perform
+several actions on the user.
+
+.. figure:: user-detail.png
+   :width: 500
+
+   *User Details.*
+
+You see a list of the users tokens and change to the :ref:`token_details`.
+
+
 Enroll tokens
--------------
+.............
 
-The usual action to do is to enroll a token. To enroll a token to a specific user
-you can search for the user, select the user and then click the button
-*enroll* on the left side.
-
-In the enrollment dialog you can choose which token type you want to enroll.
-
+In the users details view you can enroll additional tokens to the user. In
+the enrollment dialog the user will be selected and you only need to choose
+what tokentype you wish to enroll for this user.
 
 Assign tokens
--------------
+.............
 
-If you want to assign an existing token to a user, you need to select the
-user and select the token in the :ref:`tokenview` and then you can 
-click the button *assign*.
+You can assign a new, already existing token to the user. Just start typing
+the token serial number. The system will search for tokens, that are not
+assigned yet and present you a list to choose from.
+
+View Audit Log
+..............
+
+You can also click *View user in Audit log* which will take you to the
+:ref:`audit` log with a filter on this very user, so that you will only see
+audit entries regarding this user.

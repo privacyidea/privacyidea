@@ -28,7 +28,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-"""
+__doc__="""
 The code of this module is tested in tests/test_api_system.py
 """
 from flask import (Blueprint,

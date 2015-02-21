@@ -9,41 +9,31 @@ The scope *authentication* gives you more detailed
 possibilities to authenticate the user or to define 
 what happens during authentication.
 
-Authentication polcies take the realm, the user
-and the client into account.
-
 Technically the authentication policies apply
-to the :ref:`validate_controller`.
+to the REST API :ref:`rest_validate` and are checked
+using :ref:`code_policy` and
+:ref:`policy_decorators`.
 
 The following actions are available in the scope 
 *authentication*:
-
-smstext
-~~~~~~~
-
-type: string
-
-This is the text that is sent via SMS to the user trying to
-authenticate with an SMS token.
-You can use the tags *<otp>* and *<serial>*.
 
 
 otppin
 ~~~~~~
 
-type: int
+type: string
 
 This action defines how the fixed password part during
 authentication should be validated.
 Each token has its own OTP PIN, but you can choose 
 how the authentication should be processed:
 
-``otppin=0``
+``otppin=tokenpin``
 
    This is the default behaviour. The user needs to
    pass the OTP PIN concatenated with the OTP value.
 
-``otppin=1``
+``otppin=userstore``
 
    The user needs to pass the user store password
    concatenated with the OTP value. It does not matter
@@ -57,19 +47,11 @@ how the authentication should be processed:
    So if the user is locked or the password was
    changed authentication will fail.
 
-``otppin=2``
+``otppin=none``
 
    The user does not have to pass any fixed password.
    Authentication is only done via the OTP value.
 
-autosms
-~~~~~~~
-
-type: bool
-
-A new OTP value will be sent via SMS if the user authenticated
-successfully with his SMS token. Thus the user does not
-have to trigger a new SMS when he wants to login again.
 
 passthru
 ~~~~~~~~
@@ -105,8 +87,22 @@ for this user will always be true.
 .. warning:: Only use this if you know exactly what
    you are doing.
 
+passOnNoUser
+~~~~~~~~~~~~
+
+.. index:: passOnNoUser
+
+type: bool
+
+If the user does not exist, the authentication request is successful.
+
+.. warning:: Only use this if you know exactly what you are doing.
+
+
 qrtanurl
 ~~~~~~~~
+
+**(TODO)**: not yet migrated.
 
 type: string
 
@@ -116,8 +112,31 @@ To this URL the TAN/OTP value will be pushed.
 challenge_response
 ~~~~~~~~~~~~~~~~~~
 
+**(TODO)**: not yet migrated.
+
 type: string
 
 This is a list of token types for which challenge response can
 be used during authentication.
 
+smstext
+~~~~~~~
+
+**(TODO)**: not yet migrated.
+
+type: string
+
+This is the text that is sent via SMS to the user trying to
+authenticate with an SMS token.
+You can use the tags *<otp>* and *<serial>*.
+
+autosms
+~~~~~~~
+
+**(TODO)**: not yet migrated.
+
+type: bool
+
+A new OTP value will be sent via SMS if the user authenticated
+successfully with his SMS token. Thus the user does not
+have to trigger a new SMS when he wants to login again.

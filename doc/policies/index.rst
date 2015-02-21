@@ -15,15 +15,14 @@ privacyIDEA knows the scopes:
    :maxdepth: 1
 
    admin
-   system
-   selfservice
-   enrollment
+   user
    authentication
    authorization
-   audit
-   machine
-   ocra
-   gettoken
+   enrollment
+   audit  **(TODO)**: not migrated, yet.
+   machine **(TODO)**: not migrated, yet.
+   ocra **(TODO)**: not migrated, yet.
+   gettoken **(TODO)**: not migrated, yet.
 
 You can define as many policies as you wish to.
 The logic of the policies in the scopes is additive.
@@ -31,7 +30,7 @@ The logic of the policies in the scopes is additive.
 .. figure:: policies.png
    :width: 500
 
-   *policy definition*
+   *Policy Definition*
 
 Each policy can contain the following attributes:
 
@@ -52,41 +51,44 @@ Each policy can contain the following attributes:
   set of actions. 
   An action describes that something is `allowed` or
   that some behaviour is configured.
-  A policy can contain several actions, seperated
-  with a comma. Some scopes allow to use the wildcard `*` which
-  indicates that all actions are allowed.
+  A policy can contain several actions.
   Actions can be of type `boolean`, `string` or `integer`.
-  Boolean actions are enabled by just adding this action.
-  `string` and `integer` actions need to be configured like this::
-      
-      action=<value>
+  Boolean actions are enabled by just adding this action - like
+  ``scope=user:action=disable``, which allows the user to disable his own
+  tokens.
+  `string` and `integer` actions require an additional value - like
+  ``scope=authentication:action='otppin=userstore'``.
 
 **user**
 
   This is the user, for whom this policy is valid. Depending on the scope
   the user is either an administrator or a normal authenticating user.
 
-.. note:: In certain scopes the authentication ``user`` 
-   contain a list of users and
-   also resolvers, which are identified by a ":". The notation
-   is *user:resolver*. A policy containing *user=:resolver1* will only
-   be valid for the users in *resolver1*.
+  If this field is left blank, this policy is valid for all users.
 
+**resolver**
+
+  This policy will be valid for all users in this resolver.
+
+  If this field is left blank, this policy is valid for all resolvers.
 
 **realm**
 
   This is the realm, for which this policy is valid.
+
+  If this field is left blank, this policy is valid for all realms.
 
 .. _client_policies:
 
 **client**
 
   This is the requesting client, for which this action is valid.
-  I.e. you can define different policies if the user access the
-  selfservice from different IP addresses like the internal
+  I.e. you can define different policies if the user access is
+  allowed to manage his tokens from different IP addresses like the internal
   network or remotely via the firewall.
 
-  You can enter an IP address or a subnet (like 10.2.0.0/16).
+  You can enter several IP addresses or subnets divided by comma
+  (like ``10.2.0.0/16, 192.168.0.1``).
 
 **time**
 

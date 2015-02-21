@@ -6,40 +6,32 @@ Authorization policies
 .. index:: authorization policies
 
 The scope *authorization* provides means to define
-what should happen if a user prooved his identity 
+what should happen if a user proved his identity
 and authenticated successfully.
- 
+
 Authorization policies take the realm, the user
 and the client into account.
 
 Technically the authorization policies apply
-to the :ref:`validate_controller`.
+to the :ref:`rest_validate` and are checked
+using :ref:`code_policy` and
+:ref:`policy_decorators`.
 
 The following actions are available in the scope 
 *authorization*:
-
-authorize
-~~~~~~~~~
-
-type: bool
-
-If this is set, only this realm will be authorized from the 
-certain client IP.
-
-As long as not policy *action: authorize* is set, all
-users and realms from all client IPs will be allowed.
-
-.. note:: If you start to use the authorize-action you will
-   need to define all authorizations for all realms and clients.
 
 tokentype
 ~~~~~~~~~
 
 type: string
 
-Users will only be auhorized with this very tokentype. 
-The string can hold a comma seperated list of 
+Users will only be authorized with this very tokentype.
+The string can hold a comma separated list of
 case insensitive tokentypes.
+
+This is checked after the authentication request, so that a valid OTP value
+is wasted, so that it can not be used, even if the user was not authorized at
+this request
 
 .. note:: Combining this with the client IP
    you can use this to allow remote access to 
@@ -55,6 +47,10 @@ type: string
 Users will only be authorized with the serial number.
 The string can hold a regular expression as serial
 number.
+
+This is checked after the authentication request, so that a valid OTP value
+is wasted, so that it can not be used, even if the user was not authorized at
+this request
 
 .. note:: Combining this with the client IP
    you can use this to allow remote access to 
@@ -77,20 +73,27 @@ the realm in this action.
    the realm needs to be available during authentication
    since the user is not located in the default realm.
 
-detail_on_success
+no_detail_on_success
+~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Usually an authentication response returns additional information like the
+serial number of the token that was used to authenticate or the reason why
+the authentication request failed.
+
+If this action is set and the user authenticated successfully
+this additional information will not be returned.
+
+no_detail_on_fail
 ~~~~~~~~~~~~~~~~~
 
 type: bool
 
-If this action is set and the user authenticated successfully
-additional information will be returned:
-The realm, the username, the tokentype and the serial number.
+Usually an authentication response returns additional information like the
+serial number of the token that was used to authenticate or the reason why
+the authentication request failed.
 
-detail_on_fail
-~~~~~~~~~~~~~~
-
-type: bool
-
-If this action is set and the user failed to authenticate
-additional information about the error will be returned.
+If this action is set and the user fails to authenticate
+this additional information will not be returned.
 

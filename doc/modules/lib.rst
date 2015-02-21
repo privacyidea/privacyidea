@@ -6,30 +6,17 @@ library functions
 .. index:: library
 
 .. automodule:: privacyidea.lib
-
-.. _code_policy_class:
-
-Users
-.....
-
-.. automodule:: privacyidea.lib.user
-
-Token Class
-...........
-
-.. autoclass:: privacyidea.lib.tokenclass.TokenClass
    :members:
+   :undoc-members:
 
-Token functions
-...............
+For further details see the following modules:
 
-.. automodule:: privacyidea.lib.token
+.. toctree::
 
-.. _code_application_class:
-
-..
-   Application Class
-   .................
-
-   .. autoclass:: privacyidea.lib.applications.MachineApplicationBase
-       :members:
+   lib/users
+   lib/tokenclass
+   lib/tokenfunction
+   lib/applicationclass
+   lib/policy
+   lib/apipolicy
+   lib/policydecorator

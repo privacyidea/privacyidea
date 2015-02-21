@@ -4,10 +4,11 @@
 Welcome to privacyIDEA
 ######################
 
-The privacyIDEA documentation is work in progress. 
+As alwas the privacyIDEA documentation is work in progress.
 
-.. warning:: Some information are still from privacyIDEA 1.5 
-   and thus a bit outdated!
+.. note:: Some parts are marked as "**(TODO)** Not yet implemented".
+   These are components that have not been migrated from 1.5 to 2.0.
+   If you are missing an important, not-yet-migrated part, drop us a note!
 
 If you are missing any information or descriptions
 file an issue at `github <https://github.com/privacyidea/privacyidea/issues>`_ (which would be the preferred way),

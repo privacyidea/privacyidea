@@ -7,14 +7,17 @@ Admin policies
 
 Admin policies are used to regulate the actions that administrators are
 allowed to do.
-Technically admin policies controll the use of the :ref:`admin_controller`
-and are checked using the method ``getAdminPolicies``
-of the :ref:`code_policy_class`.
+Technically admin policies control the use of the REST
+API :ref:`rest_token`, :ref:`rest_system`, :ref:`rest_realm` and
+:ref:`rest_resolver`.
+
+Admin policies are implemented as decorators in :ref:`code_policy` and
+:ref:`policy_decorators`.
 
 The ``user`` in the admin policies refers to the administrator.
 
 All administrative actions also refer to the defined realm. Meaning
-and administrator may have many rights in one realm and only a few
+an administrator may have many rights in one realm and only a few
 rights in another realm.
 
 Creating a policy with ``scope:admin``, ``user:frank``, ``action:enable``
@@ -25,10 +28,7 @@ realm *sales*.
 .. note:: As long as no admin policy is defined all administrators
    are allowed to do everything.
 
-.. note:: In the scope admin you can use the wildcard "*" in the
-   actions to create a superuser, who is allowed to do everything.
-
-The following actions are available in the scope 
+The following actions are available in the scope
 *admin*:
 
 init
@@ -63,7 +63,7 @@ set
 type: bool
 
 Tokens can have additional token information, which can be
-viewed in the tokeninfo dialog (see :ref:`tokeninfo`).
+viewed in the :ref:`token_details`.
 
 If the ``set`` action is defined, the administrator allowed
 to set those token information.
@@ -179,6 +179,8 @@ administrator of another realm can not manage the token anymore.
 getserial
 ~~~~~~~~~
 
+**(TODO)** Not yet migrated.
+
 type: bool
 
 .. index:: getserial
@@ -187,13 +189,11 @@ If the ``getserial`` action is defined, the administrator is
 allowed to calculate the token serial number for a given OTP
 value.
 
-.. figure:: images/getserial.png
-   :width: 500
-
-   *The tool to determine the token serial number for a given OTP value*
 
 copytokenuser
 ~~~~~~~~~~~~~
+
+**(TODO)** Not yet migrated.
 
 type: bool
 
@@ -206,6 +206,8 @@ should be able to perform this task manually.
 
 copytokenpin
 ~~~~~~~~~~~~
+
+**(TODO)** Not yet migrated.
 
 type: bool
 
@@ -220,6 +222,8 @@ should be able to perform this task manually.
 losttoken
 ~~~~~~~~~
 
+**(TODO)** Not yet migrated.
+
 type: bool
 
 If the ``losttoken`` action is defined, the adminstrator is 
@@ -230,6 +234,8 @@ and ``copytokenpin`` are not necessary!
 
 getotp
 ~~~~~~
+
+**(TODO)** Not yet migrated.
 
 type: bool
 

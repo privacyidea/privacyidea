@@ -1,48 +1,37 @@
-.. _selfservice_policies:
+.. _user_policies:
 
-Selfservice policies
---------------------
+User Policies
+-------------
 
-.. index:: selfservice policies
+.. index:: selfservice policies, user policies
 
-In the selfservice portal users can manage their own tokens.
-User can login to the selfservice portal with the username of their
+In the Web UI users can manage their own tokens.
+User can login to the Web UI with the username of their
 useridresolver. I.e. if a user is found in an LDAP resolver pointing
 to Active Directory the user needs to login with his domain
 password.
 
-Selfservice policies are used to define, which actions users are
-allowed to perform in the selfservice portal.
-Selfservice policies are defined per realm. You can enter the wildcard "*"
-as realm or you can enter a comma seperated realm list.
+User policies are used to define, which actions users are
+allowed to perform.
 
 .. index:: client policies
 
-The selfservice policies also respect the ``client`` input, where you
-can enter an IP address or a subnet (like 10.2.0.0/16).
+The user policies also respect the ``client`` input, where you
+can enter a list of IP addresses and subnets (like 10.2.0.0/16).
 
 Using the ``client`` parameter you can allow different actions in
-selfservice if the user either logs in from the internal network
+if the user either logs in from the internal network
 or remotely from the internet via the firewall.
 
-.. note:: The ``user`` in the selfservice policy can contain a list of users and
-   also resolvers, which are identified by a ":". The notation
-   is *user:resolver*. A policy containing *user=:resolver1* will only
-   be valid for the users in *resolver1*.
+Technically user policies control the use of the REST API
+:ref:`rest_token` and are checked using :ref:`code_policy` and
+:ref:`policy_decorators`.
 
-Technically selfservice policies control the use of the :ref:`selfservice_controller`
-and are checked using the method ``getSelfserviceActions``
-of the :ref:`code_policy_class`.
+.. note:: If no user policy is defined, the user has
+   all actions available to him, to manage his tokens.
 
-.. note:: If no selfservice policy is defined, the user has 
-   no actions available in the selfservice portal.
-
-.. note:: In the scope selfservice you can use the wildcard "*" in the
-   ``realm`` parameter but not in the ``action`` parameter.
-   You need to specify each action, the user should be allowed to use.
-
-The following actions are available in the scope 
-*selfservice*:
+The following actions are available in the scope
+*user*:
 
 enroll
 ~~~~~~
@@ -50,7 +39,7 @@ enroll
 type: bool
 
 There are ``enroll`` actions per token type. Thus you can 
-create policy that allow the user to enroll 
+create policies that allow the user to enroll
 SMS tokens but not to enroll HMAC tokens.
 
 assgin
@@ -127,12 +116,17 @@ The user is allowed to set the mOTP PIN of mOTP tokens.
 getotp
 ~~~~~~
 
+**(TODO)**: not yet migrated.
+
 type: bool
 
 The user is allowed to retrieve OTP values from a token.
 
 otp_pin_maxlength
 ~~~~~~~~~~~~~~~~~
+
+**(TODO)**: not yet migrated.
+
 type: integer
 
 range: 0 - 100
@@ -142,6 +136,9 @@ use when setting the OTP PIN.
 
 otp_pin_minlength
 ~~~~~~~~~~~~~~~~~
+
+**(TODO)**: not yet migrated.
+
 type: integer
 
 range: o - 100
@@ -151,6 +148,9 @@ OTP PIN.
 
 otp_pin_contents
 ~~~~~~~~~~~~~~~~
+
+**(TODO)**: not yet migrated.
+
 type: string
 
 contents: cnso+-
@@ -198,33 +198,18 @@ characters from the sum of the two groups.
 
 activateQR
 ~~~~~~~~~~
+
+**(TODO)**: not yet migrated.
+
 type: bool
 
 The user is allowed to enroll a QR token.
 
-webprovisionOATH
-~~~~~~~~~~~~~~~~
-type: bool
-
-The user is allowed to enroll an HMAC token using the QR code for the
-OATH token iOS app.
-
-webprovisionGOOGLE
-~~~~~~~~~~~~~~~~~~
-type: bool
-
-The uses is allowed to enroll a Google Authenticator event based using
-the QR code for the Google Authenticator.
-
-webprovisionGOOGLEtime
-~~~~~~~~~~~~~~~~~~~~~~
-type: bool
-
-The user is allowed to enroll a Google Authenticator time based using
-the QR code for the Google Authenticator.
-
 max_count_dpw
 ~~~~~~~~~~~~~
+
+**(TODO)**: not yet migrated.
+
 type: integer
 
 This works together with the ``getotp`` action. This is the maximum
@@ -232,6 +217,9 @@ number of OTP values the user may retrieve from DPW tokens.
 
 max_count_hotp
 ~~~~~~~~~~~~~~
+
+**(TODO)**: not yet migrated.
+
 type: integer
 
 This works together with the ``getotp`` action. This is the maximum
@@ -239,13 +227,16 @@ number of OTP values the user may retrieve from HOTP tokens.
 
 max_count_totp
 ~~~~~~~~~~~~~~
+
+**(TODO)**: not yet migrated.
+
 type: integer
 
 This works together with the ``getotp`` action. This is the maximum
 number of OTP values the user may retrieve from TOTP tokens.
 
-history
-~~~~~~~
+auditlog
+~~~~~~~~
 type: bool
 
 This action allows the user to view and search the audit log
@@ -253,6 +244,9 @@ for actions with his own tokens.
 
 getserial
 ~~~~~~~~~
+
+**(TODO)**: not yet migrated.
+
 type: bool
 
 This action allows the user to search for the serial number
@@ -262,6 +256,9 @@ of an unassigned token by entering an OTP value.
 
 auth
 ~~~~
+
+**(TODO)**: not yet migrated.
+
 type: string
 
 If this action is set to *auth=otp*, the users need to

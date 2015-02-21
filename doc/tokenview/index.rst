@@ -17,8 +17,10 @@ user. The administrator can see all the details of the token.
 The administrator can click on one token, to show more details of this token
 and to perform actions on this token.
 
+.. _token_details:
+
 Token Details
-=============
+-------------
 
 The Token Details give you more information about the token and also let the
 administrator perform specific tasks for this token.
@@ -28,6 +30,8 @@ administrator perform specific tasks for this token.
 
    *Token Detail*
 
+At the bottom you see the assigned user. You can click on the username and
+change to the :ref:`user_details`.
 
 Lost token
 ..........

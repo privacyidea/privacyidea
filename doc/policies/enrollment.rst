@@ -9,18 +9,18 @@ The scope *enrollment* defines what happens during enrollment
 either by an administrator or during the user self enrollment.
 
 Enrollment policies take the realms, the client (see :ref:`policies`)
-and the user
-settings into account.
+and the user settings into account.
 
-Technically enrollment policies control the use of the *init* and *assign*-methods
-in the :ref:`admin_controller` and :ref:`selfservice_controller`.
-Several functions are used from the :ref:`code_policy_class`.
+Technically enrollment policies control the use of the
+REST API :ref:`rest_token` and specially the *init* and *assign*-methods.
+
+Technically the decorators in :ref:`code_api_policy` are used.
 
 The following actions are available in the scope 
 *enrollment*:
 
-tokencount
-~~~~~~~~~~
+max_token_per_realm
+~~~~~~~~~~~~~~~~~~~
 
 type: int
 
@@ -30,8 +30,8 @@ This is the maximum allowed number of tokens in the specified realm.
    imported a pool of hardware tokens you can thus limit the
    consumed hardware tokens per realm.
 
-maxtoken
-~~~~~~~~
+max_token_per_user
+~~~~~~~~~~~~~~~~~~
 
 type: int
 
@@ -40,8 +40,25 @@ Limit the maximum number of tokens per user in this realm.
 .. note:: If you do not set this action, a user may have
    unlimited tokens assigned.
 
+
+tokenlabel
+~~~~~~~~~~
+
+type: string
+
+This sets the label for a newly enrolled Google Authenticator.
+Possible tags to be replaces are <u> for user, <r> for realm an
+<s> for the serial number.
+
+The default behaviour is to use the serial number.
+
+.. note:: This is useful to identify the token in the Authenticator App.
+
+
 otp_pin_random
 ~~~~~~~~~~~~~~
+
+**(TODO)** Not yet migrated.
 
 type: int
 
@@ -54,6 +71,8 @@ to set a certain OTP PIN.
 otp_pin_encrypt
 ~~~~~~~~~~~~~~~
 
+**(TODO)** Not yet migrated.
+
 type: int
 
 values: 0 or 1
@@ -61,23 +80,12 @@ values: 0 or 1
 If set to *1* the OTP PIN of a token will be encrypted. The default
 behaviour is to hash the OTP PIN, which is safer.
 
-tokenlabel
-~~~~~~~~~~
-
-type: string
-
-This sets the label for a newly enrolled Google Authenticator. 
-Possible tags to be replaces are <u> for user, <r> for realm an
-<s> for the serial number.
-
-The default behaviour is to use the serial number.
-
-.. note:: This is useful to identify the token in the Authenticator App.
-
 .. _autoassignment:
 
 autoassignment
 ~~~~~~~~~~~~~~
+
+**(TODO)** Not yet migrated.
 
 .. index:: autoassignment
 
@@ -99,6 +107,8 @@ and the user is successfully authenticated.
 ignore_autoassignment_pin
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
+**(TODO)** Not yet migrated.
+
 type: bool
 
 If this action is set, the assigned token does not get a PIN
@@ -106,6 +116,8 @@ during autoassignment.
 
 lostTokenPWLen
 ~~~~~~~~~~~~~~
+
+**(TODO)** Not yet migrated.
 
 .. index:: lost token
 
@@ -115,6 +127,8 @@ This is the length of the generated password for the lost token process.
  
 lostTokenPWContents
 ~~~~~~~~~~~~~~~~~~~
+
+**(TODO)** Not yet migrated.
 
 type: string
 
@@ -133,6 +147,8 @@ password like *AC#!49MK))*.
 
 lostTokenValid
 ~~~~~~~~~~~~~~
+
+**(TODO)** Not yet migrated.
 
 type: int
 
