@@ -1,4 +1,4 @@
-Source: python-privacyidea
+Source: privacyidea-venv
 Maintainer: Cornelius Kölbel <cornelius@privacyidea.org>
 Section: python
 Priority: optional

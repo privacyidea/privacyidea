@@ -88,6 +88,7 @@ debianize:
 	cp authmodules/FreeRADIUS/copyright DEBUILD/privacyidea.org/debian/privacyidea-radius.copyright
 	cp authmodules/simpleSAMLphp/copyright DEBUILD/privacyidea.org/debian/privacyidea-simplesamlphp.copyright
 	(cd DEBUILD; tar -zcf python-privacyidea_${VERSION}.orig.tar.gz --exclude=privacyidea.org/debian privacyidea.org)
+	(cd DEBUILD; tar -zcf privacyidea-venv_${VERSION}.orig.tar.gz --exclude=privacyidea.org/debian privacyidea.org)
 
 builddeb:
 	make debianize

@@ -1,4 +1,4 @@
-This file contains config information for building packages for different
+This directory contains config information for building packages for different
 deployment strategies.
 
 debian
