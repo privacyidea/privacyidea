@@ -10,7 +10,7 @@ info:
 	@echo "make ppa-dev      - upload to launchpad development repo"
 	
 #VERSION=1.3~dev5
-VERSION=2.0~dev5
+VERSION=2.0
 SERIES="trusty precise"
 LOCAL_SERIES=`lsb_release -a | grep Codename | cut -f2`
 SRCDIRS=deploy authmodules migrations doc tests debian tools privacyidea 

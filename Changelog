@@ -1,4 +1,4 @@
-Version 2.0, 2015-02-XX
+Version 2.0, 2015-02-21
 
   * Migrate privacyIDEA to Flask Web framework
   * The WebUI was migrated to bootstrap and angularJS
