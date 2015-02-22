@@ -206,6 +206,9 @@ Create a config ``/etc/privacyidea/pi.cfg`` like this::
    #DEBUG = 10
    PI_LOGLEVEL = 20
 
+You need to create the above mentioned logging directory
+``/var/log/privacyidea``.
+
 You need to create the above mentioned database with the
 corresponding user access::
 
