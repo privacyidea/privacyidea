@@ -1,4 +1,4 @@
-python-privacyidea (2.1~dev0) trusty; urgency=low
+python-privacyidea (2.1~dev1) trusty; urgency=low
 
   * Fix logout problem of user
 

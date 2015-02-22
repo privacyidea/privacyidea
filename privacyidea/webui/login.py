@@ -31,7 +31,7 @@ login_blueprint = Blueprint('login_blueprint', __name__)
 
 @login_blueprint.route('/', methods=['GET'])
 def single_page_application():
-    instance = request.path
+    instance = request.script_root
     if instance == "/":
         instance = ""
     return render_template("index.html", instance=instance)

@@ -251,7 +251,7 @@ Finally you need to create a Apache2 configuration
 	DocumentRoot /var/www
 	<Directory />
 		# For Apache 2.4 you need to set this:
-		Require all granted
+		# Require all granted
 		Options FollowSymLinks
 		AllowOverride None
 	</Directory>
