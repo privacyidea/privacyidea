@@ -28,6 +28,7 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     TESTING = True
     # This is used to encrypt the auth token
+    SUPERUSER_REALM = ['adminrealm']
     SECRET_KEY = 'secret'
     SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')

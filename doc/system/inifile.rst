@@ -20,7 +20,7 @@ file at any location and set the environment variable.
 The file should contain the following contents::
 
    # The realm, where users are allowed to login as administrators
-   SUPERUSER_REALM = super
+   SUPERUSER_REALM = ['super', 'administrators']
    # Your database
    SQLALCHEMY_DATABASE_URI = 'sqlite:////etc/privacyidea/data.sqlite'
    # This is used to encrypt the auth_token
@@ -43,3 +43,6 @@ If you are using a config file other than ``/etc/privacyidea/pi.cfg``
 you need to set the environment variable::
 
    export PRIVACYIDEA_CONFIGFILE=/your/config/file
+
+The ``SUPERUSER_REALM`` is a list of realms, in which the users get the role
+of an administrator.

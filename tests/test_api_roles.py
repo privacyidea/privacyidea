@@ -9,6 +9,7 @@ from .base import MyTestCase
 from privacyidea.lib.error import (TokenAdminError)
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token)
 from privacyidea.models import Token
+from privacyidea.lib.realm import (set_realm, delete_realm)
 
 
 PWFILE = "tests/testdata/passwords"
@@ -28,6 +29,7 @@ class APISelfserviceTestCase(MyTestCase):
         Token(self.my_serial, tokentype="hotp", userid="1004",
               resolver="resolver1", realm="realm1").save()
         Token(self.foreign_serial, tokentype="hotp").save()
+
 
     def tearDown(self):
         remove_token(self.my_serial)
@@ -71,6 +73,33 @@ class APISelfserviceTestCase(MyTestCase):
             # check that this is a user
             role = result.get("value").get("role")
             self.assertTrue(role == "admin", result)
+
+    def test_01_authenticate_admin_from_realm(self):
+        # Define an admin realm!
+        (added, failed) = set_realm("adminrealm",
+                                    [self.resolvername1])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+
+        # "selfservice" is a user in adminrealm. He should be able to
+        # authenticate
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username":
+                                                     "selfservice@adminrealm",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("status"), res.data)
+            # In self.at_user we store the user token
+            self.at_admin = result.get("value").get("token")
+            # check that this is a user
+            role = result.get("value").get("role")
+            self.assertTrue(role == "admin", result)
+
+        delete_realm("adminrealm")
+
 
     def test_02_user_not_allowed(self):
         self.authenticate_selfserive_user()

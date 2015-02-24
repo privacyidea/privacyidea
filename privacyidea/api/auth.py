@@ -44,17 +44,12 @@ from privacyidea.lib.user import User
 from privacyidea.lib.user import split_user
 
 
-# TODO: provide the user object
-#
-#class LoginUser(object):
-#    def __init__(self, uid, username, role=None):
-#        self.id = uid
-#        self.username = username
-#        self.role = role
-
-
 jwtauth = Blueprint('jwtauth', __name__)
 
+
+class ROLE():
+    ADMIN = "admin"
+    USER = "user"
 
 @jwtauth.before_request
 def before_request():
@@ -152,7 +147,7 @@ def get_auth_token():
     secret = current_app.secret_key
     # This is the default role for the logged in user.
     # The role privileges may be risen to "admin"
-    role = "user"
+    role = ROLE.USER
     # The way the user authenticated. This could be
     # "password" = The admin user DB or the user store
     # "pi" = The admin or the user is authenticated against privacyIDEA
@@ -165,7 +160,7 @@ def get_auth_token():
     admin_auth = False
     user_auth = False
     if verify_db_admin(username, password):
-        role = "admin"
+        role = ROLE.ADMIN
         admin_auth = True
 
     if not admin_auth:
@@ -173,6 +168,11 @@ def get_auth_token():
         user_obj = User(username, realm)
         if user_obj.check_password(password):
             user_auth = True
+
+        # If the realm is in the SUPERUSER_REALM then the authorization role
+        # is risen to "admin".
+        if realm in current_app.config.get("SUPERUSER_REALM"):
+            role = ROLE.ADMIN
 
     if not admin_auth and not user_auth:
         raise AuthError("Authentication failure",
