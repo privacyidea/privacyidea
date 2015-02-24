@@ -68,9 +68,7 @@ myApp.config(['$httpProvider', function ($httpProvider) {
             responseError: function (rejection) {
                 if(rejection.status == 0) {
                     // The API is offline, not reachable
-                    var error = { error: { message: "The privacyIDEA system seems to be offline. The API is not reachable!"}};
-                    $rootScope.restError = error;
-                    $rootScope.showError = true;
+                    addError("The privacyIDEA system seems to be offline. The API is not reachable!");
                     return;
                 }
                 return $q.reject(rejection);
@@ -79,3 +77,30 @@ myApp.config(['$httpProvider', function ($httpProvider) {
     });
 
 }]);
+
+
+function addError(message, wait) {
+    if (!wait) {
+        wait = 30000;
+    }
+    $('#alerts').append(
+        '<div class="alert alert-danger">' +
+            '<button type="button" class="close" data-dismiss="alert">' +
+            '&times;</button>' + message + '</div>');
+    setTimeout(function(){
+        $('#alerts').children('.alert:first-child').remove();
+    }, wait);
+}
+
+function addInfo(message, wait) {
+    if (!wait) {
+        wait = 5000;
+    }
+    $('#alerts').append(
+        '<div class="alert alert-info">' +
+            '<button type="button" class="close" data-dismiss="alert">' +
+            '&times;</button>' + message + '</div>');
+    setTimeout(function(){
+        $('#alerts').children('.alert:first-child').remove();
+    }, wait);
+}

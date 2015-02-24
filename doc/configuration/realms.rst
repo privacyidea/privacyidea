@@ -51,10 +51,8 @@ contained in this realm. A realm can contain several resolvers.
 
 .. _autocreate_realm:
 
-Autocreate realm
+Autocreate Realm
 ................
-
-**(TODO)**: Not migrated yet.
 
 .. index:: realm autocreation
 
@@ -78,6 +76,3 @@ a cookie in your browser.
    So if you create a new realm manually and want this new
    realm to be the default realm, you need to set this new
    realm to be default manually.
-
-.. note:: You can also create this local defrealm via the
-   menu at "Tools" -> "Create default realm with local users".

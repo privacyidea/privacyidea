@@ -86,9 +86,7 @@ angular.module("privacyideaApp")
                 console.log($scope.loggedInUser);
                 $location.path("/token");
             }).error(function (error) {
-                $rootScope.restError = error.result;
-                $rootScope.showError = true;
-                console.log("clear the form");
+                addError("Wrong credentials.", 3000);
             }).then(function () {
                     // We delete the login object, so that the password is not
                     // contained in the scope
@@ -111,5 +109,11 @@ angular.module("privacyideaApp")
         $scope.errorOK = function () {
             // This will hide the error again
             $rootScope.showError = false;
+        };
+
+        $rootScope.showInfo = false;
+        $scope.infoOK = function () {
+            // This will hide the error again
+            $rootScope.showInfo = false;
         };
     });

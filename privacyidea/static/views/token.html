@@ -36,6 +36,8 @@
                 <div>
                     total tokens: {{ tokendata.count }}
                 </div>
+                <ng-include src="instanceUrl + '/static/views/dialog.autocreate_realm.html'">
+                </ng-include>
 
             </div>
 
@@ -43,7 +45,9 @@
 
         <div ui-view class="col-lg-9 slide panel">
         </div>
+
     </div>
+
 
 </div>
 

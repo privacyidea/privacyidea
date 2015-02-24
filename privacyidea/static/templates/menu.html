@@ -58,11 +58,8 @@
     </div>
 </div>
 
-<div class="alert alert-danger" ng-show="showError">
-    {{ restError.error.message }}
-	<span class="glyphicon glyphicon-remove"
-		ng-click="errorOK()"></span>
-</div>
+<div id="alerts"></div>
+
 <div class="alert alert-warning" ng-show="logoutWarning">
 	You will be logged out in {{ myCountdown }} second(s).
 </div>

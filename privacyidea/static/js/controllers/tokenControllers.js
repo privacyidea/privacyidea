@@ -18,7 +18,9 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("tokenController", function (TokenFactory, ConfigFactory, $scope, $location, AuthFactory) {
+myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
+                                              $scope, $location, AuthFactory,
+                                              $rootScope) {
     $scope.params = {page: 1, sortdir: "asc"};
     $scope.reverse = false;
     $scope.loggedInUser = AuthFactory.getUser();
@@ -50,6 +52,39 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory, $scop
     };
 
     $scope.getTokens();
+
+    /*
+     * Functions to check and to create a default realm. At the moment this is
+     * in the tokenview, as the token view is the first view. This could be
+     * changed to be located anywhere else.
+     */
+    ConfigFactory.getRealms(function(data) {
+        // Check if there is a realm defined, or if we should display the
+        // Auto Create Dialog
+        number_of_realms = Object.keys(data.result.value).length;
+        if ( number_of_realms == 0 ) {
+            $('#dialogAutoCreateRealm').modal();
+        }
+    });
+
+    $scope.createDefaultRealm = function () {
+        var resolver_params = {type: "passwdresolver", filename: "/etc/passwd"};
+        var realm_params = {resolvers: "deflocal"};
+        ConfigFactory.setResolver("deflocal",
+            resolver_params,
+            function(data) {
+                if (data.result.value) {
+                    // The resolver is created, we can create the realm
+                    ConfigFactory.setRealm("defrealm",
+                        realm_params, function (data) {
+                            if (data.result.value) {
+                                addInfo("Realm defrealm created.");
+                            }
+                        });
+                }
+        });
+
+    }
 
 });
 
@@ -325,8 +360,7 @@ myApp.controller("tokenImportController", function ($scope, $upload,
                     if (error.result.error.code == -401) {
                         $state.go('login');
                     } else {
-                        $rootScope.showError = true;
-                        $rootScope.restError = error.result;
+                        addError(error.result);
                     }
                 });
             }
