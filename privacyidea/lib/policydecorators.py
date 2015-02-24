@@ -2,7 +2,7 @@
 #
 #  2015-02-06 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Rewrite for flask migration.
-#             Policies are not handled by decorators as
+#             Policies ar75 not handled by decorators as
 #             1. precondition for API calls
 #             2. internal modifications of LIB-functions
 #             3. postcondition for API calls
@@ -20,7 +20,7 @@
 #
 # This code is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNE7SS FOR A PARTICULAR PURPOSE.  See the
 # GNU AFFERO GENERAL PUBLIC LICENSE for more details.
 #
 # You should have received a copy of the GNU Affero General Public
@@ -207,8 +207,8 @@ def auth_otppin(wrapped_function, *args, **kwds):
     options = kwds.get("options") or {}
     g = options.get("g")
     if g:
-        pin = args[1]
         token = args[0]
+        pin = args[1]
         clientip = options.get("clientip")
         user_object = kwds.get("user")
         if not user_object:
@@ -219,6 +219,10 @@ def auth_otppin(wrapped_function, *args, **kwds):
             if not user_object and len(realms):
                 # if the token has not owner, we take a realm.
                 user_object = User("", realm=realms[0])
+        if not user_object:
+            # If we still have no user and no tokenrealm, we create an empty
+            # user object.
+            user_object=User("", realm="")
         # get the policy
         policy_object = g.policy_object
         otppin_list = policy_object.get_action_values(ACTION.OTPPIN,

@@ -56,11 +56,18 @@ class LibPolicyTestCase(MyTestCase):
 
         # NONE with empty PIN -> success
         r = auth_otppin(self.fake_check_otp, None,
-                          "", options=options, user=my_user)
+                        "", options=options, user=my_user)
         self.assertTrue(r)
+        # NONE with empty PIN -> success, even if the authentication is done
+        # for a serial and not a user, since the policy holds for all realms
+        token = init_token({"type": "HOTP", "otpkey": "1234"})
+        r = auth_otppin(self.fake_check_otp, token,
+                        "", options=options, user=None)
+        self.assertTrue(r)
+
         # NONE with some pin -> fail
         r = auth_otppin(self.fake_check_otp, None,
-                          "some pin", options=options, user=my_user)
+                        "some pin", options=options, user=my_user)
         self.assertFalse(r)
 
         delete_policy("pol1")
@@ -73,12 +80,12 @@ class LibPolicyTestCase(MyTestCase):
         options = {"g": g}
 
         r = auth_otppin(self.fake_check_otp, None,
-                          "FAKE", options=options,
-                          user=my_user)
+                        "FAKE", options=options,
+                        user=my_user)
         self.assertTrue(r)
         r = auth_otppin(self.fake_check_otp, None,
-                          "Wrong Pin", options=options,
-                          user=my_user)
+                        "Wrong Pin", options=options,
+                        user=my_user)
         self.assertFalse(r)
         delete_policy("pol1")
 
