@@ -38,6 +38,8 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
                                             no_detail_on_fail,
                                             no_detail_on_success)
 from privacyidea.lib.policy import PolicyClass
+import logging
+log = logging.getLogger(__name__)
 
 validate_blueprint = Blueprint('validate_blueprint', __name__)
 
@@ -169,6 +171,8 @@ def simplecheck():
     user = get_user_from_param(request.all_data)
     serial = getParam(request.all_data, "serial")
     password = getParam(request.all_data, "pass", required)
+    log.warning("Deprecation Warning: simplecheck will be removed in version "
+                "2.2! Do not use it anymore")
     if serial:
         result, details = check_serial_pass(serial, password)
     else:

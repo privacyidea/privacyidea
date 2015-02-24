@@ -85,6 +85,8 @@ administrator and you are done::
    pi-manage.py admin add admin admin@localhost
 
 
+.. _install_ubuntu_freeradius:
+
 FreeRADIUS
 ..........
 
@@ -95,69 +97,23 @@ To install this module run::
 
    apt-get install privacyidea-radius
 
-If you want to run your FreeRADIUS server on another distribution, you
-may download the module at [#rlmPerl]_.
+For further details see :ref:`freeradius_plugin`.
 
-Then you need to configure your FreeRADIUS site and the perl module.
-
-.. note:: The perl module is not thread safe, so you need to start FreeRADIUS 
-   with the -t switch.
+.. _install_ubuntu_simplesaml:
 
 SimpleSAMLphp
 .............
 
-Starting with 1.4 privacyIDEA also supports SAML via a plugin for simpleSAMLphp [#simpleSAML]_.
-The simpleSAMLphp service does not need to run on the same machine like the privacyIDEA
-server.
+Starting with 1.4 privacyIDEA also supports SAML via a plugin
+for simpleSAMLphp [#simpleSAML]_.
+The simpleSAMLphp service does not need to run on the same machine
+like the privacyIDEA server.
 
 To install it on a Ubuntu 14.04 system please run::
 
    apt-get install privacyidea-simplesamlphp
 
-Follow the simpleSAMLphp instructions to configure your authsources.php.
-A usual configuration will look like this::
-
-    'example-privacyidea' => array(
-        'privacyidea:privacyidea',
-
-        /*
-         * The name of the privacyidea server and the protocol
-         * A port can be added by a colon
-         * Required.
-         */
-        'privacyideaserver' => 'https://your.server.com',
-
-        /*
-         * Check if the hostname matches the name in the certificate
-         * Optional.
-         */
-        'sslverifyhost' => False,
-
-        /*
-         * Check if the certificate is valid, signed by a trusted CA
-         * Optional.
-         */
-        'sslverifypeer' => False,
-        
-        /*
-         * The realm where the user is located in.
-         * Optional.
-         */
-        'realm' => '',
-        
-        /*
-         * This is the translation from privacyIDEA attribute names to 
-         * SAML attribute names.
-         */
-         'attributemap' => array('username' => 'samlLoginName',
-                                 'surname' => 'surName',
-                                 'givenname' => 'givenName',
-                                 'email' => 'emailAddress',
-                                 'phone' => 'telePhone',
-                                 'mobile' => 'mobilePhone',
-                                 ),
-    ),
-
+For further details see :ref:`simplesaml_plugin`.
 
 Debian Packages
 ---------------
@@ -302,5 +258,4 @@ The files in ``/etc/privacyidea`` and the logfiles in
 .. rubric:: Footnotes
 
 .. [#ppa] https://launchpad.net/~privacyidea
-.. [#rlmPerl] https://github.com/privacyidea/privacyidea/tree/master/authmodules/FreeRADIUS
 .. [#simpleSAML]  https://github.com/privacyidea/privacyidea/tree/master/authmodules/simpleSAMLphp

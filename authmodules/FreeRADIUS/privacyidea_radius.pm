@@ -1,8 +1,11 @@
 #
 #    privacyIDEA, fork of LinOTP (radius_linotp.pm)
-#    2014, June 25    Cornelius Kölbel
-#                     changed the used modules from Config::Files to Config::IniFile
-#		      to make it easily run on CentOS with EPEL, without CPAN
+#
+#    2015-02-25 cornelius kölbel <cornelius@privacyidea.org>
+#               remove the usage of simplecheck and use /validate/check
+#    2014-06-25 Cornelius Kölbel
+#               changed the used modules from Config::Files to Config::IniFile
+#		        to make it easily run on CentOS with EPEL, without CPAN
 #                      
 #    Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 # 
@@ -85,17 +88,17 @@ could be defined in a dedicated configuration file, which is expected to be:
   
 This configuration file could contain default definition for URL and REALM like
   [Default]
-  URL = http://192.168.56.1:5001/validate/simplecheck
+  URL = http://192.168.56.1:5001/validate/check
   REALM =  
 
 But as well could contain "Access-Type" specific configurations, e.g. for the 
 Access-Type 'scope1', this would look like:
 
   [Default]
-  URL = https://localhost/validate/simplecheck
+  URL = https://localhost/validate/check
   REALM =  
   [scope1]
-  URL = http://192.168.56.1:5001/validate/simplecheck
+  URL = http://192.168.56.1:5001/validate/check
   REALM = mydefault
 
 =head1 AUTHOR
@@ -121,9 +124,11 @@ use LWP 6;
 use Config::IniFiles;
 use Data::Dump;
 use Try::Tiny;
+use JSON qw( decode_json );
+
 
 # use ...
-# This is very important ! Without this script will not get the filled  hashesh from main.
+# This is very important ! Without this script will not get the filled hashes from main.
 use vars qw(%RAD_REQUEST %RAD_REPLY %RAD_CHECK %RAD_CONFIG );
 
 # This is hash wich hold original request from radius
@@ -192,7 +197,7 @@ if ( -e $CONFIG_FILE ) {
 }
 else {
     $Config->{FSTAT} = "not found!";
-    $Config->{URL}     = 'https://127.0.0.1/validate/simplecheck';
+    $Config->{URL}     = 'https://127.0.0.1/validate/check';
     $Config->{REALM}   = '';
     $Config->{RESCONF} = "";
     $Config->{Debug}   = "FALSE";
@@ -295,51 +300,49 @@ sub authenticate {
 	}
     my $response = $ua->post( $URL, \%params );
     my $content  = $response->decoded_content();
-
-    die "Error at $URL\n ", $response->status_line, "\n Aborting"
-      unless $response->is_success;
-
     if ( $debug == true ) {
         &radiusd::radlog( Debug, "Content $content" );
     }
     $RAD_REPLY{'Reply-Message'} = "privacyIDEA server denied access!";
     my $g_return = RLM_MODULE_REJECT;
 
-    if ( $content eq $LIN_OK ) {
-        &radiusd::radlog( Info, "privacyIDEA access granted" );
+    if ( $response->is_success ) {
+        # This was an OK 200 response
+        my $decoded = decode_json( $content );
+        my $message = $decoded->{detail}{message};
+        if ( $decoded->{result}{value} ) {
+            &radiusd::radlog( Info, "privacyIDEA access granted" );
+            $RAD_REPLY{'Reply-Message'} = "privacyIDEA access granted";
+            $g_return = RLM_MODULE_OK;
+        }
+        elsif ( $decoded->{result}{status} ) {
+
+            if ( $decoded->{detail}{transaction_id} ) {
+                ## we are in challenge response mode:
+                ## 1. split the response in fail, state and challenge
+                ## 2. show the client the challenge and the state
+                ## 3. get the response and
+                ## 4. submit the response and the state to linotp and
+                ## 5. reply ok or reject
+                $RAD_REPLY{'State'} = $decoded->{detail}{transaction_id};
+                $RAD_REPLY{'Reply-Message'} = $decoded->{detail}{message};
+                $RAD_CHECK{'Response-Packet-Type'} = "Access-Challenge";
+                $g_return  = RLM_MODULE_HANDLED;
+            } else {
+                &radiusd::radlog( Info, "privacyIDEA access denied" );
+                #$RAD_REPLY{'Reply-Message'} = "privacyIDEA access denied";
+                $RAD_REPLY{'Reply-Message'} = $decoded->{detail}{message};
+                $g_return = RLM_MODULE_REJECT;
+            }
+        }
+
+
+    } else {
+        my $status = $response->status_line;
+        &radiusd::radlog( Info, "privacyIDEA request failed: $status" );
         $RAD_REPLY{'Reply-Message'} = "privacyIDEA access granted";
-        $g_return = RLM_MODULE_OK;
-    }
-    elsif ( $content eq $LIN_FAIL ) {
-        &radiusd::radlog( Info, "privacyIDEA access failed" );
-        $RAD_REPLY{'Reply-Message'} = "privacyIDEA access failed";
         $g_return = RLM_MODULE_FAIL;
     }
-    elsif ( $content eq $LIN_FAIL ) {
-        &radiusd::radlog( Info, "privacyIDEA server denied access!" );
-        $RAD_REPLY{'Reply-Message'} = "privacyIDEA server denied access!";
-        $g_return = RLM_MODULE_REJECT;
-    }
-    elsif (( substr( $content, 0, length($LIN_REJECT) ) eq $LIN_REJECT )
-        && ( length($content) > length($LIN_REJECT) ) )
-    {
-        ## we are in challenge response mode:
-        ## 1. split the response in fail, state and challenge
-        ## 2. show the client the challenge and the state
-        ## 3. get the response and
-        ## 4. submit the response and the state to linotp and
-        ## 5. reply ok or reject
-
-        &radiusd::radlog( Info, "Challenge Mode:" );
-        my ( $ok, $state, $challenge ) = split( / +/, $content, 3 );
-        if ( length($challenge) == 0 ) { $challenge = ""; }
-
-        $RAD_REPLY{'State'}                = $state;
-        $RAD_REPLY{'Reply-Message'}        = $challenge;
-        $RAD_CHECK{'Response-Packet-Type'} = "Access-Challenge";
-        $g_return                          = RLM_MODULE_HANDLED;
-    }
-
     &radiusd::radlog( Info, "return $ret_hash->{$g_return}" );
     return $g_return;
 
