@@ -6,7 +6,7 @@ implementation is contained in api/auth.py, api/token.py api/audit.py
 """
 import json
 from .base import MyTestCase
-from privacyidea.lib.error import (TokenAdminError)
+from privacyidea.lib.error import (TokenAdminError, UserError)
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token)
 from privacyidea.models import Token
 from privacyidea.lib.realm import (set_realm, delete_realm)
@@ -56,8 +56,8 @@ class APISelfserviceTestCase(MyTestCase):
                                            method='POST',
                                            data={"username": "admin",
                                                  "password": "testpw"}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 401, res)
+            self.assertRaises(UserError, self.app.full_dispatch_request)
+
 
     def test_01_authenticate_admin(self):
         with self.app.test_request_context('/auth',

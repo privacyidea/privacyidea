@@ -26,6 +26,9 @@ with the password from their user source.
 E.g. if the users are located in an LDAP or Active Directory
 the user needs to authenticate with his LDAP/AD password.
 
+.. note:: The user my either login with his password from the userstore
+   or with any of his tokens.
+
 .. note:: The administrator may change this behaviour
    by creating an according policy, which then requires
    the user to authenticate against privacyIDEA itself.
@@ -49,6 +52,6 @@ The administrator just logs in with his username.
 
 .. note:: You can configure privacyIDEA to authenticate administrators
    against privacyIDEA itself, so that administrators
-   need to login with a second factor. See :ref:`inifile_superusers`
-   how to do this. **(TODO)**
+   need to login with a second factor. See SUPERUSER_REALM in
+   :ref:`inifile_superusers` how to do this.
 

@@ -42,6 +42,9 @@ from datetime import (datetime,
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.user import User
 from privacyidea.lib.user import split_user
+from privacyidea.lib.token import check_user_pass
+from privacyidea.lib.policy import PolicyClass
+from privacyidea.lib.realm import get_default_realm
 
 
 jwtauth = Blueprint('jwtauth', __name__)
@@ -56,7 +59,7 @@ def before_request():
     """
     This is executed before the request
     """
-
+    g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
     g.audit_object.log({"success": False,
                         "client": request.remote_addr,
@@ -165,13 +168,27 @@ def get_auth_token():
 
     if not admin_auth:
         username, realm = split_user(username)
+        realm = realm or get_default_realm()
         user_obj = User(username, realm)
+
+        # TODO: At the moment the user can either login with his Store
+        # password or with a token We need to change this to honor a policy
+
+        # check the password of the user
         if user_obj.check_password(password):
             user_auth = True
 
+        else:
+            # check if the given password matches an OTP token
+            options = {"g": g,
+                       "clientip": request.remote_addr}
+            check, _dict = check_user_pass(user_obj, password, options=options)
+            if check:
+                user_auth = True
+
         # If the realm is in the SUPERUSER_REALM then the authorization role
         # is risen to "admin".
-        if realm in current_app.config.get("SUPERUSER_REALM"):
+        if realm in current_app.config.get("SUPERUSER_REALM", []):
             role = ROLE.ADMIN
 
     if not admin_auth and not user_auth:
@@ -253,7 +270,7 @@ def check_auth_token(required_role=None):
         # If we require a certain role like "admin", but the users role does
         # not match
         raise AuthError("Authentication failure",
-                        "Your do not have the necessary role (%s) to access "
+                        "You do not have the necessary role (%s) to access "
                         "this resouce!" % (required_role),
                         status=401)
     g.logged_in_user = {"username": r.get("username"),

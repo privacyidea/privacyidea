@@ -155,6 +155,10 @@ class User(object):
         If no resolver attribute exists at the moment, the user is searched
         in the realm and according to this the resolver attribute is set.
         (aka getResolversOfUser)
+
+        .. note:: If the user does not exist in the realm, then an empty
+           list is returned!
+
         :return: list of resolvers for self.login
         :rtype: list of strings
         """
@@ -196,6 +200,10 @@ class User(object):
         """
         if not self.resolver:
             self.get_resolvers()
+        if len(self.resolver) == 0:
+            # The resolver list is empty
+            raise UserError("The user can not be found in any resolver in "
+                            "this realm!")
         rtype = get_resolver_type(self.resolver)
         y = get_resolver_object(self.resolver)
         if y is None:

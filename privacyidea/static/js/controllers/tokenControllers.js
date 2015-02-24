@@ -58,14 +58,16 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
      * in the tokenview, as the token view is the first view. This could be
      * changed to be located anywhere else.
      */
-    ConfigFactory.getRealms(function(data) {
-        // Check if there is a realm defined, or if we should display the
-        // Auto Create Dialog
-        number_of_realms = Object.keys(data.result.value).length;
-        if ( number_of_realms == 0 ) {
-            $('#dialogAutoCreateRealm').modal();
-        }
-    });
+    if ($scope.loggedInUser == "admin") {
+        ConfigFactory.getRealms(function (data) {
+            // Check if there is a realm defined, or if we should display the
+            // Auto Create Dialog
+            number_of_realms = Object.keys(data.result.value).length;
+            if (number_of_realms == 0) {
+                $('#dialogAutoCreateRealm').modal();
+            }
+        });
+    }
 
     $scope.createDefaultRealm = function () {
         var resolver_params = {type: "passwdresolver", filename: "/etc/passwd"};
