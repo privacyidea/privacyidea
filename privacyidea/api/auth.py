@@ -54,6 +54,53 @@ class ROLE():
     ADMIN = "admin"
     USER = "user"
 
+
+# TODO: Add a policy decorator, that sets the check_otp parameter to true
+def check_webui_user(user_obj,
+                     password,
+                     options=None,
+                     superuser_realms=None,
+                     check_otp=False):
+    """
+    This function authenticates the user at the web ui.
+    It checks against the userstore and against OTP/privacyidea.
+    It returns true/false if the user authenticated successfully and the
+    role of the user.
+
+    :param user_obj: The user who tries to authenticate
+    :type user_obj: User Object
+    :param password: Password, static and or OTP
+    :param options: additional options like g and clientip
+    :type options: dict
+    :param superuser_realms: list of realms, that contain admins
+    :type superuser_realms: list
+    :param check_otp: If set, the user is not authenticated against the
+    userstore but against privacyidea
+    :return: tuple of bool and string
+    """
+    options = options or {}
+    superuser_realms = superuser_realms or []
+    user_auth = False
+    role = ROLE.USER
+
+    if check_otp:
+        # check if the given password matches an OTP token
+        check, _dict = check_user_pass(user_obj, password, options=options)
+        if check:
+            user_auth = True
+    else:
+        # check the password of the user against the userstore
+        if user_obj.check_password(password):
+            user_auth = True
+
+    # If the realm is in the SUPERUSER_REALM then the authorization role
+    # is risen to "admin".
+    if user_obj.realm in superuser_realms:
+        role = ROLE.ADMIN
+
+    return user_auth, role
+
+
 @jwtauth.before_request
 def before_request():
     """
@@ -167,29 +214,18 @@ def get_auth_token():
         admin_auth = True
 
     if not admin_auth:
+        # The user could not be identified against the admin database,
+        # so we do the rest of the check
         username, realm = split_user(username)
         realm = realm or get_default_realm()
         user_obj = User(username, realm)
-
-        # TODO: At the moment the user can either login with his Store
-        # password or with a token We need to change this to honor a policy
-
-        # check the password of the user
-        if user_obj.check_password(password):
-            user_auth = True
-
-        else:
-            # check if the given password matches an OTP token
-            options = {"g": g,
-                       "clientip": request.remote_addr}
-            check, _dict = check_user_pass(user_obj, password, options=options)
-            if check:
-                user_auth = True
-
-        # If the realm is in the SUPERUSER_REALM then the authorization role
-        # is risen to "admin".
-        if realm in current_app.config.get("SUPERUSER_REALM", []):
-            role = ROLE.ADMIN
+        options = {"g": g,
+                   "clientip": request.remote_addr}
+        superuser_realms = current_app.config.get("SUPERUSER_REALM", [])
+        user_auth, role = check_webui_user(user_obj,
+                                           password,
+                                           options=options,
+                                           superuser_realms=superuser_realms)
 
     if not admin_auth and not user_auth:
         raise AuthError("Authentication failure",

@@ -56,7 +56,8 @@ class APISelfserviceTestCase(MyTestCase):
                                            method='POST',
                                            data={"username": "admin",
                                                  "password": "testpw"}):
-            self.assertRaises(UserError, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
 
 
     def test_01_authenticate_admin(self):
