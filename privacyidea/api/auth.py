@@ -62,8 +62,8 @@ def check_webui_user(user_obj,
                      superuser_realms=None,
                      check_otp=False):
     """
-    This function authenticates the user at the web ui.
-    It checks against the userstore and against OTP/privacyidea.
+    This function is used to authenticate the user at the web ui.
+    It checks against the userstore or against OTP/privacyidea (check_otp).
     It returns true/false if the user authenticated successfully and the
     role of the user.
 
