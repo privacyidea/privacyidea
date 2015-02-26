@@ -343,6 +343,8 @@ myApp.controller("configController", function ($scope, $location,
 
     // TODO: This information needs to be fetched from the server
     $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver'];
+    // TODO: This information needs to be fetched from the server
+    $scope.availableMachineResolverTypes = ['hosts'];
 
     $scope.isChecked = function (val) {
         // check if val is set
@@ -351,7 +353,7 @@ myApp.controller("configController", function ($scope, $location,
 
     $scope.getResolvers = function () {
         ConfigFactory.getResolvers(function (data) {
-            $scope.resolvers = data.result.value
+            $scope.resolvers = data.result.value;
         });
     };
 
@@ -359,6 +361,19 @@ myApp.controller("configController", function ($scope, $location,
         ConfigFactory.delResolver(name, function (data) {
             $scope.resolvers = data.result.value;
             $scope.getResolvers();
+        });
+    };
+
+    $scope.getMachineResolvers = function () {
+        ConfigFactory.getMachineResolvers(function (data) {
+            $scope.machineResolvers = data.result.value;
+        });
+    };
+
+    $scope.delMachineResolver = function (name) {
+        ConfigFactory.delMachineResolver(name, function (data) {
+            $scope.machineResolvers = data.result.value;
+            $scope.getMachineResolvers();
         });
     };
 
@@ -490,6 +505,63 @@ myApp.controller("PasswdResolverController", function ($scope, ConfigFactory, $s
             $scope.getResolvers();
             $state.go("config.resolvers.list");
         });
+    };
+});
+
+myApp.controller("hostsResolverController", function ($scope,
+                                                      ConfigFactory,
+                                                      $state, $stateParams) {
+    $scope.params = {
+        type: 'hosts',
+        fileName: "/etc/hosts"
+    };
+
+    $scope.resolvername = $stateParams.resolvername;
+    if ($scope.resolvername) {
+        /* If we have a resolvername, we do an Edit
+         and we need to fill all the $scope.params */
+        ConfigFactory.getMachineResolver($scope.resolvername, function (data) {
+            var resolver = data.result.value[$scope.resolvername];
+            $scope.params = resolver.data;
+            $scope.params.type = 'hosts';
+        });
+    }
+
+    $scope.setMachineResolver = function () {
+        ConfigFactory.setMachineResolver($scope.resolvername, $scope.params, function (data) {
+            $scope.set_result = data.result.value;
+            $scope.getMachineResolvers();
+            $state.go("config.mresolvers.list");
+        });
+    };
+
+});
+
+myApp.controller("machineResolverController", function ($scope,
+                                                        ConfigFactory,
+                                                        $state, $rootScope,
+                                                        $location) {
+    if ($location.path() == "/config/machineresolvers") {
+        $location.path("/config/machineresolvers/list");
+    }
+
+    $scope.getMachineResolvers = function () {
+        ConfigFactory.getMachineResolvers(function (data) {
+            $scope.machineResolvers = data.result.value;
+        });
+    };
+    $scope.getMachineResolvers();
+
+    $scope.delResolver = function(resolvername) {
+        ConfigFactory.delMachineResolver(resolvername, function(data){
+            $scope.getMachineResolvers();
+        });
+    };
+
+    $scope.editResolver = function(resolvername, r_type) {
+        // change the view to the config.mresolvers.edit
+        $state.go("config.mresolvers.edit" + r_type, {'resolvername': resolvername});
+        $rootScope.returnTo = "config.mresolvers.list";
     };
 });
 

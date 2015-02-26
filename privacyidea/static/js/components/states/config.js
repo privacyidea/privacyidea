@@ -67,6 +67,24 @@ angular.module('privacyideaApp.config', ['ui.router']).config(
                     url: "/ldap/{resolvername:.*}",
                     templateUrl: path + "config.resolvers.sql.html"
                 })
+                .state('config.mresolvers', {
+                    url: "/machineresolvers",
+                    templateUrl: path + "config.machineresolvers.html"
+                })
+                .state('config.mresolvers.list', {
+                    url: "/list",
+                    templateUrl: path + "config.mresolvers.list.html"
+                })
+                .state('config.mresolvers.addhosts', {
+                    // Create a new resolver
+                    url: "/hosts",
+                    templateUrl: path + "config.mresolvers.hosts.html"
+                })
+                .state('config.mresolvers.edithosts', {
+                    // edit an existing resolver
+                    url: "/hosts/{resolvername:.*}",
+                    templateUrl: path + "config.mresolvers.hosts.html"
+                })
                 .state('config.system', {
                     url: "/system",
                     templateUrl: path + "config.system.html"
@@ -88,10 +106,10 @@ angular.module('privacyideaApp.config', ['ui.router']).config(
                     url: "/tokens/{tokentype:.*}",
                     templateUrl: path + "config.tokens.html"
                 })
-                .state('config.machines', {
-                    url: "/machines",
-                    templateUrl: path + "config.machines.html"
-                })
+//                .state('config.machines', {
+//                    url: "/machines",
+//                    templateUrl: path + "config.machines.html"
+//                })
                 .state('config.realms', {
                     url: "/realms",
                     templateUrl: path + "config.realms.html"

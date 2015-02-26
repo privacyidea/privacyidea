@@ -178,8 +178,7 @@ def get_resolver_list(filter_resolver_type=None,
     
     for reso in resolvers:
         r = {"resolvername": reso.name,
-             "type": reso.rtype,
-             "active": reso.isactive}
+             "type": reso.rtype}
         # Add resolver config data
         data = {}
         for conf in reso.rconfig:

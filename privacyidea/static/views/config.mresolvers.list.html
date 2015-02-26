@@ -1,0 +1,29 @@
+<div>
+    <table class="table table-bordered table-responsive table-striped">
+        <thead>
+        <tr>
+            <th>Resolver name</th>
+            <th>type</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="resolver in machineResolvers">
+            <td>
+                {{ resolver.resolvername }}
+            </td>
+            <td>
+                {{ resolver.type }}
+            </td>
+            <td>
+                <button class="btn btn-sm btn-primary"
+                        ng-click="editResolver(resolver.resolvername,
+                        resolver.type)"
+                        >Edit</button>
+                <button class="btn btn-sm btn-danger"
+                        ng-click="delResolver(resolver.resolvername)">
+                    <div class="glyphicon glyphicon-trash">
+                    Delete</div></button>
+            </td>
+        </tr>
+        </tbody>
+</div>

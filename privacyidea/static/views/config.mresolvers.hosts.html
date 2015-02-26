@@ -1,0 +1,45 @@
+<div ng-controller="hostsResolverController">
+
+    <h2 class="form-signin-heading"
+        ng-show="resolvername">Edit hosts Machine Resolver
+        {{ resolvername }}</h2>
+
+    <h2 class="form-signin-heading"
+        ng-hide="resolvername">Create a new hosts Machine Resolver</h2>
+
+    <form name="formMResolverAddHosts" role="form" validate>
+
+        <div class="form-group">
+            <label for="resolvername" class="col-sm-3 control-label">Resolver
+                name</label>
+
+            <div class="col-sm-9">
+                <input name="resolvername" id="resolvername"
+                       class="form-control"
+                       ng-model="resolvername" required
+                       placeholder="MachineResolver1"
+                       autofocus/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="resolverfile"
+                   class="col-sm-3 control-label">File name</label>
+
+            <div class="col-sm-9">
+                <input name="resolverfile" id="resolverfile"
+                       class="form-control"
+                       ng-model="params.filename" required
+                       placeholder="/etc/hosts"
+                       autofocus/>
+            </div>
+        </div>
+        <div class="text-center">
+            <button ng-click="setMachineResolver()"
+                    ng-disabled="formMResolverAddHosts.$invalid"
+                    class="btn btn-primary">Save resolver
+            </button>
+        </div>
+
+    </form>
+
+</div>

@@ -44,6 +44,7 @@ myApp.constant("authUrl", instance + "/auth");
 myApp.constant("tokenUrl", instance + "/token");
 myApp.constant("userUrl", instance + "/user");
 myApp.constant("resolverUrl", instance + "/resolver");
+myApp.constant("machineResolverUrl", instance + "/machineresolver");
 myApp.constant("realmUrl", instance + "/realm");
 myApp.constant("defaultRealmUrl", instance + "/defaultrealm");
 myApp.constant("validateUrl", instance + "/validate");

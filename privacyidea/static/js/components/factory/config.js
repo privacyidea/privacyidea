@@ -20,6 +20,7 @@
  */
 myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
                                          resolverUrl, realmUrl,
+                                         machineResolverUrl,
                                          policyUrl,
                                          defaultRealmUrl, systemUrl) {
     /**
@@ -90,6 +91,18 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
             }).success(callback
             ).error(error_func);
         },
+        getMachineResolver: function (resolvername, callback) {
+            $http.get(machineResolverUrl + "/" + resolvername, {
+                headers: {'Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
+        getMachineResolvers: function (callback) {
+            $http.get(machineResolverUrl, {
+                headers: {'Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
         getRealms: function (callback) {
             $http.get(realmUrl, {
                 headers: {'Authorization': AuthFactory.getAuthToken()}
@@ -102,6 +115,12 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
                           'Content-Type': 'application/json'}}).success(
                 callback).error(error_func);
         },
+        setMachineResolver: function (name, params, callback) {
+            $http.post(machineResolverUrl + "/" + name, params,
+                {headers: {'Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}}).success(
+                callback).error(error_func);
+        },
         testResolver: function (params, callback) {
             $http.post(resolverUrl + "/test", params,
                 {headers: {'Authorization': AuthFactory.getAuthToken(),
@@ -110,6 +129,12 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
         },
         delResolver: function(name, callback) {
             $http.delete(resolverUrl + "/" + name, {
+                headers: {'Authorization': AuthFactory.getAuthToken() }
+            }).success(callback).error(error_func);
+
+        },
+        delMachineResolver: function(name, callback) {
+            $http.delete(machineResolverUrl + "/" + name, {
                 headers: {'Authorization': AuthFactory.getAuthToken() }
             }).success(callback).error(error_func);
 
