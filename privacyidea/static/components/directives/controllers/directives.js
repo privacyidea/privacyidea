@@ -30,7 +30,7 @@ myApp.directive('tokenDataEdit', function(AuthFactory, instanceUrl) {
             callback: '&',
             callbackCancel: '&'
         },
-        templateUrl: instanceUrl + "/static/views/directive.tokendata.html",
+        templateUrl: instanceUrl + "/static/components/directives/views/directive.tokendata.html",
         link: function(scope, element, attr, ctrl) {
             scope.loggedInUser = AuthFactory.getUser();
             console.log("tokenDataEdit");
@@ -44,7 +44,7 @@ myApp.directive("piFilter", function (instanceUrl) {
         require: 'ngModel',
         restrict: 'E',
         scope: {},
-        templateUrl: instanceUrl + "/static/views/directive.filter.table.html",
+        templateUrl: instanceUrl + "/static/components/directives/views/directive.filter.table.html",
         link: function (scope, element, attr, ctrl) {
             scope.updateFilter = function() {
                 ctrl.$setViewValue(scope.filterValue);
@@ -92,7 +92,7 @@ myApp.directive('assignUser', function($http, userUrl, AuthFactory, instanceUrl)
             newUserObject: '=',
             realms: '='
         },
-        templateUrl: instanceUrl + "/static/views/directive.assignuser.html",
+        templateUrl: instanceUrl + "/static/components/directives/views/directive.assignuser.html",
         link: function (scope, element, attr) {
             console.log("Entering assignUser directive");
             console.log(scope.realms);
@@ -127,7 +127,7 @@ myApp.directive('assignToken', function($http, tokenUrl,
         scope: {
             newTokenObject: '='
         },
-        templateUrl: instanceUrl + "/static/views/directive.assigntoken.html",
+        templateUrl: instanceUrl + "/static/components/directives/views/directive.assigntoken.html",
         link: function (scope, element, attr) {
             scope.loadSerials = function($viewValue) {
             var auth_token = AuthFactory.getAuthToken();

@@ -21,7 +21,12 @@
 myApp = angular.module("privacyideaApp",
     ['privacyideaAuth',
         'ui.router', 'ui.bootstrap', 'TokenModule',
-        'ngAnimate', 'ngIdle', 'privacyideaApp.config',
+        'ngAnimate', 'ngIdle',
+        'privacyideaApp.auditStates',
+        'privacyideaApp.configStates',
+        'privacyideaApp.tokenStates',
+        'privacyideaApp.userStates',
+        'privacyideaApp.loginStates',
     'multi-select', 'angularFileUpload']);
 myApp.config(function ($urlRouterProvider) {
     // For any unmatched url, redirect to /token

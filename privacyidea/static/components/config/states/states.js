@@ -1,0 +1,121 @@
+/**
+ * http://www.privacyidea.org
+ * (c) cornelius kölbel, cornelius@privacyidea.org
+ *
+ * 2015-01-11 Cornelius Kölbel, <cornelius@privacyidea.org>
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+angular.module('privacyideaApp.configStates', ['ui.router']).config(
+    ['$stateProvider',
+        function ($stateProvider) {
+            // get the instance, the pathname part
+            var instance = window.location.pathname;
+            if (instance == "/") {
+               instance = "";
+            }
+            var configpath = instance + "/static/components/config/views/";
+            $stateProvider
+                .state('config', {
+                    url: "/config",
+                    templateUrl: configpath + "config.html"
+                })
+                .state('config.resolvers', {
+                    url: "/resolvers",
+                    templateUrl: configpath + "config.resolvers.html"
+                })
+                .state('config.resolvers.list', {
+                    url: "/list",
+                    templateUrl: configpath + "config.resolvers.list.html"
+                })
+                .state('config.resolvers.addpasswdresolver', {
+                    // Create a new resolver
+                    url: "/passwd",
+                    templateUrl: configpath + "config.resolvers.passwd.html"
+                })
+                .state('config.resolvers.editpasswdresolver', {
+                    // edit an existing resolver
+                    url: "/passwd/{resolvername:.*}",
+                    templateUrl: configpath + "config.resolvers.passwd.html"
+                })
+                .state('config.resolvers.addldapresolver', {
+                    url: "/ldap",
+                    templateUrl: configpath + "config.resolvers.ldap.html"
+                })
+                .state('config.resolvers.editldapresolver', {
+                    url: "/ldap/{resolvername:.*}",
+                    templateUrl: configpath + "config.resolvers.ldap.html"
+                })
+                .state('config.resolvers.addsqlresolver', {
+                    url: "/ldap",
+                    templateUrl: configpath + "config.resolvers.sql.html"
+                })
+                .state('config.resolvers.editsqlresolver', {
+                    url: "/ldap/{resolvername:.*}",
+                    templateUrl: configpath + "config.resolvers.sql.html"
+                })
+                .state('config.mresolvers', {
+                    url: "/machineresolvers",
+                    templateUrl: configpath + "config.machineresolvers.html"
+                })
+                .state('config.mresolvers.list', {
+                    url: "/list",
+                    templateUrl: configpath + "config.mresolvers.list.html"
+                })
+                .state('config.mresolvers.addhosts', {
+                    // Create a new resolver
+                    url: "/hosts",
+                    templateUrl: configpath + "config.mresolvers.hosts.html"
+                })
+                .state('config.mresolvers.edithosts', {
+                    // edit an existing resolver
+                    url: "/hosts/{resolvername:.*}",
+                    templateUrl: configpath + "config.mresolvers.hosts.html"
+                })
+                .state('config.system', {
+                    url: "/system",
+                    templateUrl: configpath + "config.system.html"
+                })
+                .state('config.policies', {
+                    url: "/policies",
+                    templateUrl: configpath + "config.policies.html"
+                })
+                .state('config.policies.list', {
+                    url: "/list",
+                    templateUrl: configpath + "config.policies.list.html"
+                })
+                .state('config.policies.details', {
+                    url: "/details/{policyname:.*}",
+                    templateUrl: configpath + "config.policies.details.html",
+                    controller: "policyDetailsController"
+                })
+                .state('config.tokens', {
+                    url: "/tokens/{tokentype:.*}",
+                    templateUrl: configpath + "config.tokens.html"
+                })
+//                .state('config.machines', {
+//                    url: "/machines",
+//                    templateUrl: path + "config.machines.html"
+//                })
+                .state('config.realms', {
+                    url: "/realms",
+                    templateUrl: configpath + "config.realms.html"
+                })
+                .state('config.realms.list', {
+                    url: "/list",
+                    templateUrl: configpath + "config.realms.list.html"
+                });
+        }]);
