@@ -317,3 +317,27 @@ def pretestresolver(resolvertype, params):
     r_obj_class = get_resolver_class(resolvertype)
     (success, desc) = r_obj_class.testconnection(params)
     return success, desc
+
+
+@log_with(log)
+def get_machines(hostname=None, ip=None):
+    """
+    This returns a list of machines from ALL resolvers matching this criterion.
+
+    :param hostname: The hostname of the machine
+    :type hostname: basestring
+    :param ip: The IPAddress of the machine
+    :type ip: netaddr.IPAddress
+    :return:
+    """
+    resolver_list = get_resolver_list()
+    all_machines = []
+
+    for resolver in resolver_list.keys():
+        # The resolvernames are the keys of the dictionary
+        reso_obj = get_resolver_object(resolver)
+        resolver_machines = reso_obj.get_machines(hostname=hostname,
+                                                  substring=True)
+        all_machines += resolver_machines
+
+    return all_machines

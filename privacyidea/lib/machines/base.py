@@ -35,8 +35,9 @@ class Machine(object):
     information like expiry or decommission...
     """
 
-    def __init__(self, machine_id, hostname=None, ip=None):
+    def __init__(self, resolver_name, machine_id, hostname=None, ip=None):
         self.id = machine_id
+        self.resolver_name = resolver_name
         self.hostname = hostname
         if type(ip) in [basestring, str, unicode]:
             self.ip = netaddr.IPAddress(ip)
@@ -99,10 +100,14 @@ class BaseMachineResolver(object):
     def get_type(self):
         return self.type
 
-    def get_machines(self, machine_id=None, hostname=None, ip=None):
+    def get_machines(self, machine_id=None, hostname=None, ip=None,
+                     substring=False):
         """
         Return a list of all machine objects in this resolver
 
+        :param substring: If set to true, it will also match search_hostnames,
+        that only are a subnet of the machines hostname.
+        :type substring: bool
         :return: list of machine objects
         """
         return []

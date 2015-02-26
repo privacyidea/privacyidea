@@ -36,7 +36,8 @@ class HostsMachineResolver(BaseMachineResolver):
 
     type = "hosts"
 
-    def get_machines(self, machine_id=None, hostname=None, ip=None):
+    def get_machines(self, machine_id=None, hostname=None, ip=None,
+                     substring=False):
         machines = []
 
         f = open(self.filename, "r")
@@ -48,17 +49,23 @@ class HostsMachineResolver(BaseMachineResolver):
                 line_hostname = split_line[1:]
                 if machine_id:
                     if machine_id == line_id:
-                        return [Machine(line_id,
+                        return [Machine(self.name, line_id,
                                         hostname=line_hostname, ip=line_ip)]
                 elif hostname or ip:
-                    h_match = not hostname or (hostname in line_hostname)
+                    if substring:
+                        h_match = not hostname or \
+                                  len([x for x in line_hostname if hostname in x])
+                    else:
+                        h_match = not hostname or (hostname in line_hostname)
+
                     i_match = not ip or (ip == line_ip)
                     if h_match and i_match:
-                        machines.append(Machine(line_id,
+                        machines.append(Machine(self.name, line_id,
                                                  hostname=line_hostname,
                                                  ip=line_ip))
                 else:
-                    machines.append(Machine(line_id, hostname=line_hostname,
+                    machines.append(Machine(self.name, line_id,
+                                            hostname=line_hostname,
                                             ip=line_ip))
         finally:
             f.close()

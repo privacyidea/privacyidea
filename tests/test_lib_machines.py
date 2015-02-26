@@ -15,22 +15,23 @@ from privacyidea.lib.machines.base import Machine, MachineResolverError
 import netaddr
 from privacyidea.lib.machine import (get_resolver_list, save_resolver,
                                      delete_resolver, get_resolver_config,
-                                     get_resolver_object, pretestresolver)
+                                     get_resolver_object, pretestresolver,
+                                     get_machines)
 
 
 class MachineObjectTestCase(MyTestCase):
 
     def test_01_create_machine(self):
-        m = Machine("id1", ip="1.2.3.4")
+        m = Machine("noResolver", "id1", ip="1.2.3.4")
         self.assertEqual(m.ip, netaddr.IPAddress("1.2.3.4"))
 
-        m = Machine("id2", ip=netaddr.IPAddress("1.2.3.4"))
+        m = Machine("noResolver", "id2", ip=netaddr.IPAddress("1.2.3.4"))
         self.assertEqual(m.ip, netaddr.IPAddress("1.2.3.4"))
 
     def test_02_has_attributes(self):
 
-        m1 = Machine("id1", hostname="gandalf", ip="1.2.3.4")
-        m2 = Machine("id2", hostname=["gandalf", "borodin"],
+        m1 = Machine("noResolver", "id1", hostname="gandalf", ip="1.2.3.4")
+        m2 = Machine("noResolver", "id2", hostname=["gandalf", "borodin"],
                      ip=[netaddr.IPAddress("1.2.3.4"), netaddr.IPAddress(
                          "2.3.4.5")])
 
@@ -114,6 +115,17 @@ class MachineResolverTestCase(MyTestCase):
     def test_05_pretest(self):
         (result, desc) = pretestresolver("hosts", {"filename": "/dev/null"})
 
+    def test_06_get_all_machines(self):
+        # get machines from all resolvers
+        machines = get_machines()
+        self.assertEqual(len(machines), 4)
+        machines = get_machines(hostname="n")
+        self.assertEqual(len(machines), 3)
+
+        for machine in machines:
+            # check if each machines is in resolver "testresolver"
+            self.assertEqual(machine.resolver_name, "testresolver")
+
     def test_99_delete_resolver(self):
         delete_resolver("testresolver")
         l = get_resolver_list(filter_resolver_name="testresolver")
@@ -166,6 +178,11 @@ class HostsMachineTestCase(MyTestCase):
         machines = self.mreso.get_machines(hostname="gandalf",
                                            ip=netaddr.IPAddress("192.168.0.1"))
         self.assertEqual(len(machines), 1)
+
+        # THere are 3 machines, whose name contains an "n"
+        machines = self.mreso.get_machines(hostname="n",
+                                           substring=True)
+        self.assertEqual(len(machines), 3)
 
     def test_03_get_single_machine(self):
         machine = self.mreso.get_machines(machine_id="192.168.0.1")[0]
