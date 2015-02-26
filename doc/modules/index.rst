@@ -49,3 +49,4 @@ On the DB level you can simply modify all objects.
    useridresolvers
    api
    audit
+   machineresolvers

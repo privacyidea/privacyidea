@@ -23,4 +23,5 @@ Now you can take a look at the several REST endpoints.
    api/token
    api/user
    api/policy
+   api/machineresolver
 

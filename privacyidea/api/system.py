@@ -69,10 +69,12 @@ from .realm import defaultrealm_blueprint
 from .user import user_blueprint
 from .token import token_blueprint
 from .audit import audit_blueprint
+from .machineresolver import machineresolver_blueprint
 
 
 @system_blueprint.before_request
 @resolver_blueprint.before_request
+@machineresolver_blueprint.before_request
 @realm_blueprint.before_request
 @defaultrealm_blueprint.before_request
 @policy_blueprint.before_request

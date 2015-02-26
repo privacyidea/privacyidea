@@ -121,6 +121,8 @@ class ACTION():
     ENABLE = "enable"
     IMPORT = "importtokens"
     LOSTTOKEN = 'losttoken'
+    MACHINERESOLVERWRITE = "mresolverwrite"
+    MACHINERESOLVERDELETE = "mresolverdelete"
     MAXTOKENREALM = "max_token_per_realm"
     MAXTOKENUSER = "max_token_per_user"
     NODETAILSUCCESS = "no_detail_on_success"
@@ -529,6 +531,16 @@ def get_static_policy_definitions(scope=None):
                                  "desc" : _("Admin is allowed to delete "
                                             "resolvers and realms."),
                                  "group": "system"},
+            ACTION.MACHINERESOLVERWRITE: {'type': 'bool',
+                                          'desc': _("Admin is allowed to "
+                                                    "write and modify the "
+                                                    "machine resolvers."),
+                                          'group': "system"},
+            ACTION.MACHINERESOLVERDELETE: {'type': 'bool',
+                                           'desc': _("Admin is allowed to "
+                                                     "delete "
+                                                     "machine resolvers."),
+                                           'group': "system"},
             ACTION.AUDIT: {'type': 'bool',
                            "desc": _("Admin is allowed to view the Audit log."),
                            "group": "system"}

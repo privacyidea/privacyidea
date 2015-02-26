@@ -19,10 +19,10 @@ PasswdResolver
 .. autoclass:: privacyidea.lib.resolvers.PasswdIdResolver.IdResolver
    :members:
 
-# LDAPResolver
-# ............
-#
-#.. autoclass:: privacyidea.lib.resolvers.LDAPIdResolver.IdResolver
-#   :members:
+LDAPResolver
+............
+
+.. autoclass:: privacyidea.lib.resolvers.LDAPIdResolver.IdResolver
+   :members:
 
 

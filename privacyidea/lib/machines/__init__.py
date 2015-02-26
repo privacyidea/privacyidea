@@ -21,8 +21,10 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 __doc__ = '''
-MachineResolvers are used to find machines in directories like LDAP, Active
-Directory, puppet, salt...
+Machine Resolvers are used to find machines in directories like LDAP, Active
+Directory, puppet, salt, or the /etc/hosts file.
+
+Machines can then be used to assign applications and tokens to those machines.
 '''
 from base import BaseMachineResolver
 
