@@ -38,6 +38,7 @@ from ..models import Config, db
 from .crypto import encryptPassword
 from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver
+from .machines.base import BaseMachineResolver
 from datetime import datetime
 
 log = logging.getLogger(__name__)
@@ -244,6 +245,40 @@ def get_token_classes():
 
     return token_classes
 
+def get_machine_resolver_class_dict():
+    """
+    get a dictionary of the machine resolver classes and a dictionary of the
+    machines resolver types like this:
+
+    ({'privacyidea.lib.machines.hosts.HostsMachineResolver':
+      <class 'privacyidea.lib.machines.hosts.HostsMachineResolver'>},
+     {'privacyidea.lib.machines.hosts.HostsMachineResolver':
+      'hosts'})
+
+    :return: tuple of two dicts
+    """
+    resolverclass_dict = {}
+    resolvertype_dict = {}
+
+    modules = get_machine_resolver_module_list()
+    for module in modules:
+        log.debug("module: %s" % module)
+        for name in dir(module):
+            obj = getattr(module, name)
+            if inspect.isclass(obj) and \
+                    (issubclass(obj, BaseMachineResolver)) and \
+                    (obj != BaseMachineResolver):
+                try:
+                    class_name = "%s.%s" % (module.__name__, obj.__name__)
+                    resolverclass_dict[class_name] = obj
+                    resolvertype_dict[class_name] = obj.type
+
+                except Exception as e:  # pragma: no cover
+                    log.error("error constructing machine resolver "
+                              "class_list: %r" % e)
+
+    return resolverclass_dict, resolvertype_dict
+
 
 #@cache.memoize(1)
 def get_resolver_class_dict():
@@ -292,7 +327,7 @@ def get_resolver_class_dict():
                     log.error("error constructing resolverclass_list: %r"
                                  % e)
 
-    return (resolverclass_dict, resolverprefix_dict)
+    return resolverclass_dict, resolverprefix_dict
 
 
 @log_with(log)
@@ -329,6 +364,21 @@ def get_resolver_list():
                 module_list.add(module.strip())
 
     return module_list
+
+@log_with(log)
+#@cache.memoize(1)
+def get_machine_resolver_class_list():
+    """
+    get the list of the class names of the machine resolvers like
+    "machines.hosts.HostsMachineResolver".
+
+    :return: list of machine resolver class names from the config file
+    :rtype: list
+    """
+    class_list = []
+    class_list.append("machines.hosts.HostsMachineResolver")
+    return class_list
+
 
 
 @log_with(log)
@@ -432,14 +482,6 @@ def get_resolver_module_list():
         if mod_name == '\\' or len(mod_name.strip()) == 0:
             continue
 
-        # TODO: This seems superflous, as a module will only be
-        # loaded once into sys.modules. So it should not matter if it is
-        # already loaded
-        # load all token class implementations
-        #if mod_name in sys.modules:
-        #    module = sys.modules[mod_name]
-        #    log.debug('module %s loaded' % (mod_name))
-        #else:
         try:
             log.debug("import module: %s" % mod_name)
             exec("import %s" % mod_name)
@@ -449,6 +491,38 @@ def get_resolver_module_list():
             module = None
             log.warning('unable to load resolver module : %r (%r)'
                         % (mod_name, exx))
+
+        if module is not None:
+            modules.append(module)
+
+    return modules
+
+
+#@cache.memoize(1)
+def get_machine_resolver_module_list():
+    """
+    return the list of modules of the available machines resolver classes
+    like base, hosts
+
+    :return: list of resolver modules
+    """
+
+    # def load_resolver_modules
+    class_list = get_machine_resolver_class_list()
+    log.debug("using the class list: %s" % class_list)
+
+    modules = []
+    for class_name in class_list:
+        try:
+            module_name = ".".join(class_name.split(".")[:-1])
+            log.debug("import module: %s" % module_name)
+            exec("import %s" % module_name)
+            module = eval(module_name)
+
+        except Exception as exx:  # pragma: no cover
+            module = None
+            log.warning('unable to load machine resolver module : %r (%r)'
+                        % (module_name, exx))
 
         if module is not None:
             modules.append(module)

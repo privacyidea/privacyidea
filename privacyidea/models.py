@@ -1292,6 +1292,7 @@ class MachineResolver(MethodsMixin, db.Model):
                      unique=True, nullable=False)
     rtype = db.Column(db.Unicode(255), default=u"",
                       nullable=False)
+    isactive = db.Column(db.Boolean(), default=True, nullable=False)
     rconfig = db.relationship('MachineResolverConfig',
                               lazy='dynamic',
                               backref='machineresolver')

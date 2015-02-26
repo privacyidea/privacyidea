@@ -1,23 +1,24 @@
 """
-This test file tests the lib.conifg
+This test file tests the lib.config
 
 The lib.config only depends on the database model.
 """
 from .base import MyTestCase
 from privacyidea.lib.config import (get_resolver_list,
-                                     get_resolver_classes,
-                                     get_resolver_class_dict,
-                                     get_resolver_types,
-                                     get_resolver_module_list,
-                                     get_from_config,
-                                     get_privacyidea_config,
-                                     set_privacyidea_config,
-                                     delete_privacyidea_config,
-                                     get_token_list,
-                                     get_token_module_list,
-                                     get_token_class_dict,
-                                     get_token_types,
-                                     get_token_classes, get_token_prefix
+                                    get_resolver_classes,
+                                    get_resolver_class_dict,
+                                    get_resolver_types,
+                                    get_resolver_module_list,
+                                    get_from_config,
+                                    get_privacyidea_config,
+                                    set_privacyidea_config,
+                                    delete_privacyidea_config,
+                                    get_token_list,
+                                    get_token_module_list,
+                                    get_token_class_dict,
+                                    get_token_types,
+                                    get_token_classes, get_token_prefix,
+                                    get_machine_resolver_class_dict
                                     )
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PWResolver
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
@@ -198,3 +199,8 @@ class ConfigTestCase(MyTestCase):
         self.assertTrue(r.get("mySecretData") == "soho",
                         r.get("mySecretData"))
 
+    def test_05_machine_resolvers(self):
+        (classes, types) = get_machine_resolver_class_dict()
+        self.assertTrue("hosts" in types.values(), types.values())
+        self.assertTrue("privacyidea.lib.machines.hosts.HostsMachineResolver"
+                        in classes.keys(), classes)
