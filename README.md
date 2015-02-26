@@ -27,9 +27,6 @@ Version 2.0
 The new 2.0 branch is based on flask and sqlalchemy as the python backend. The web UI is based
 on angularJS and bootstrap.
 
-At the moment the 2.0 branch is not ready for production. 
-For productive use please use privacyIDEA 1.5.1.
-
 You can follow the setup instructions and play around.
 You are also welcome to take a look at the hopefully tidy code and contribute.
 
