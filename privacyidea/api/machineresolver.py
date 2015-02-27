@@ -29,7 +29,7 @@ from lib.utils import (getParam,
                        required,
                        send_result)
 from ..lib.log import log_with
-from ..lib.machine import (get_resolver_list, save_resolver, delete_resolver,
+from ..lib.machineresolver import (get_resolver_list, save_resolver, delete_resolver,
                            pretestresolver)
 from flask import g
 import logging

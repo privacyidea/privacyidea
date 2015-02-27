@@ -1141,7 +1141,7 @@ class MachineToken(MethodsMixin, db.Model):
     machineresolver_id = db.Column(db.Integer(), nullable=False)
     machine_id = db.Column(db.Unicode(255), nullable=False)
     application = db.Column(db.Unicode(64))
-    # This connect the machine with the token and make the machines visible
+    # This connects the machine with the token and makes the machines visible
     # in the token as "machine_list".
     token = db.relationship('Token',
                             lazy='joined',
@@ -1225,14 +1225,14 @@ class MachineUser(db.Model):
                 'application': self.application}
 """
 
-"""
+
 class MachineTokenOptions(db.Model):
-    '''
+    """
     This class holds an Option for the token assigned to
     a certain client machine.
     Each Token-Clientmachine-Combination can have several
     options.
-    '''
+    """
     __tablename__ = 'machinetokenoptions'
     id = db.Column(db.Integer(), primary_key=True, nullable=False)
     machinetoken_id = db.Column(db.Integer(),
@@ -1250,7 +1250,7 @@ class MachineTokenOptions(db.Model):
         db.session.add(self)
         db.session.commit()
 
-"""
+
 """
 class MachineUserOptions(db.Model):
     '''

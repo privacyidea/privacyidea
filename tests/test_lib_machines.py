@@ -13,10 +13,10 @@ from privacyidea.lib.machines import BaseMachineResolver
 from privacyidea.lib.machines.hosts import HostsMachineResolver
 from privacyidea.lib.machines.base import Machine, MachineResolverError
 import netaddr
-from privacyidea.lib.machine import (get_resolver_list, save_resolver,
+from privacyidea.lib.machineresolver import (get_resolver_list, save_resolver,
                                      delete_resolver, get_resolver_config,
-                                     get_resolver_object, pretestresolver,
-                                     get_machines)
+                                     get_resolver_object, pretestresolver)
+from privacyidea.lib.machine import get_machines
 
 
 class MachineObjectTestCase(MyTestCase):
