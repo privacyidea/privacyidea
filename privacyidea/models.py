@@ -33,6 +33,7 @@ from .lib.crypto import (encrypt,
                          SecretObj,
                          get_rand_digit_str)
 
+from sqlalchemy import and_
 from .lib.log import log_with
 log = logging.getLogger(__name__)
 
@@ -1239,6 +1240,11 @@ class MachineTokenOptions(db.Model):
                                 db.ForeignKey('machinetoken.id'))
     mt_key = db.Column(db.Unicode(64), nullable=False)
     mt_value = db.Column(db.Unicode(64), nullable=False)
+    # This connects the MachineTokenOption with the MachineToken and makes the
+    # options visible in the MachineToken as "option_list".
+    machinetoken = db.relationship('MachineToken',
+                                   lazy='joined',
+                                   backref='option_list')
     
     def __init__(self, machinetoken_id, key, value):
         log.debug("setting %r to %r for MachineToken %s" % (key,
@@ -1363,3 +1369,53 @@ class MachineResolverConfig(db.Model):
             ret = c.id
         db.session.commit()
         return ret
+
+
+def get_token_id(serial):
+    """
+    Return the database token ID for a given serial number
+    :param serial:
+    :return: token ID
+    :rtpye: int
+    """
+    token = Token.query.filter(Token.serial == serial).first()
+    return token.id
+
+def get_machineresolver_id(resolvername):
+    """
+    Return the database ID of the machine resolver
+    :param resolvername:
+    :return:
+    """
+    mr = MachineResolver.query.filter(MachineResolver.name ==
+                                      resolvername).first()
+    return mr.id
+
+
+def get_machinetoken_id(machine_id, resolver_name, serial, application):
+    """
+    Returns the ID in the machinetoken table
+
+    :param machine_id: The resolverdependent machine_id
+    :type machine_id: basestring
+    :param resolver_name: The name of the resolver
+    :type resolver_name: basestring
+    :param serial: the serial number of the token
+    :type serial: basestring
+    :param application: The application type
+    :type application: basestring
+    :return: The ID of the machinetoken entry
+    :rtype: int
+    """
+    token_id = get_token_id(serial)
+    resolver = MachineResolver.query.filter(MachineResolver.name ==
+                                            resolver_name).first()
+
+    mt = MachineToken.query.filter(and_(MachineToken.token_id == token_id,
+                                        MachineToken.machineresolver_id ==
+                                        resolver.id,
+                                        MachineToken.machine_id == machine_id,
+                                        MachineToken.application ==
+                                        application)).first()
+    return mt.id
+
