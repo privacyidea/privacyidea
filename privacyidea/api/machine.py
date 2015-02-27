@@ -51,6 +51,8 @@ def list_machines():
 
     :param hostname: only show machines, that match this hostname as substring
     :param ip: only show machines, that exactly match this IP address
+    :param id: filter for substring matching ids
+    :param resolver: filter for substring matching resolvers
     
     :return: json result with "result": true and the machine list in "value".
 
@@ -96,7 +98,10 @@ def list_machines():
     ip = getParam(request.all_data, "ip")
     if ip:
         ip = netaddr.IPAddress(ip)
-    machines = get_machines(hostname=hostname, ip=ip)
+    id = getParam(request.all_data, "id")
+    resolver = getParam(request.all_data, "resolver")
+
+    machines = get_machines(hostname=hostname, ip=ip, id=id, resolver=resolver)
     # this returns a list of Machine Object. This is not JSON serialiable,
     # so we need to convert the Machine Object to dict
     machines = [mobject.get_dict() for mobject in machines]

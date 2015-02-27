@@ -38,35 +38,54 @@ class HostsMachineResolver(BaseMachineResolver):
 
     def get_machines(self, machine_id=None, hostname=None, ip=None,
                      substring=False):
+        """
+        Return matching machines.
+
+        :param machine_id: can be matched as substring
+        :param hostname: can be matched as substring
+        :param ip: can not be matched as substring
+        :param substring: Whether the filtering shoulf be a substring matching
+        :return: list of Machine Objects
+        """
         machines = []
 
         f = open(self.filename, "r")
         try:
             for line in f:
                 split_line = line.split()
+                if len(split_line) < 2:
+                    # skip lines with less than 2 columns
+                    continue
+                if split_line[0][0] == "#":
+                    # skip comments
+                    continue
                 line_id = split_line[0]
                 line_ip = netaddr.IPAddress(split_line[0])
                 line_hostname = split_line[1:]
                 if machine_id:
-                    if machine_id == line_id:
+                    if not substring and machine_id == line_id:
                         return [Machine(self.name, line_id,
                                         hostname=line_hostname, ip=line_ip)]
-                elif hostname or ip:
+                    if substring and machine_id not in line_id:
+                        # do not append this machine!
+                        continue
+                if hostname:
                     if substring:
-                        h_match = not hostname or \
-                                  len([x for x in line_hostname if hostname in x])
+                        h_match = len([x for x in line_hostname if hostname in x])
                     else:
-                        h_match = not hostname or (hostname in line_hostname)
+                        h_match = hostname in line_hostname
+                    if not h_match:
+                        # do not append this machine!
+                        continue
 
-                    i_match = not ip or (ip == line_ip)
-                    if h_match and i_match:
-                        machines.append(Machine(self.name, line_id,
-                                                 hostname=line_hostname,
-                                                 ip=line_ip))
-                else:
-                    machines.append(Machine(self.name, line_id,
-                                            hostname=line_hostname,
-                                            ip=line_ip))
+                if ip:
+                    if ip != line_ip:
+                        # Do not append this machine!
+                        continue
+
+                machines.append(Machine(self.name, line_id,
+                                        hostname=line_hostname,
+                                        ip=line_ip))
         finally:
             f.close()
         return machines

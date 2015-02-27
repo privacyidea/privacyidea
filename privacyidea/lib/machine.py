@@ -318,23 +318,32 @@ def pretestresolver(resolvertype, params):
 
 
 @log_with(log)
-def get_machines(hostname=None, ip=None):
+def get_machines(hostname=None, ip=None, id=None, resolver=None):
     """
     This returns a list of machines from ALL resolvers matching this criterion.
 
-    :param hostname: The hostname of the machine
+    :param hostname: The hostname of the machine, substring matching
     :type hostname: basestring
     :param ip: The IPAddress of the machine
     :type ip: netaddr.IPAddress
-    :return:
+    :param id: The id of the machine, substring matching
+    :type id: basestring
+    :param resolver: The resolver of the machine, substring matching
+    :type resolver: basestring
+    :return: list of Machine Objects.
     """
     resolver_list = get_resolver_list()
     all_machines = []
 
-    for resolver in resolver_list.keys():
+    for reso in resolver_list.keys():
         # The resolvernames are the keys of the dictionary
-        reso_obj = get_resolver_object(resolver)
+        if resolver and resolver not in reso:
+            # filter for other resolvers
+            continue
+        reso_obj = get_resolver_object(reso)
         resolver_machines = reso_obj.get_machines(hostname=hostname,
+                                                  ip=ip,
+                                                  machine_id=id,
                                                   substring=True)
         all_machines += resolver_machines
 

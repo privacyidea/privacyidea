@@ -17,18 +17,23 @@
                     <a ui-sref="token">
                     <span class="glyphicon glyphicon-phone"
                           aria-hidden="true"></span>
-                        Token View</a></li>
+                        Tokens</a></li>
                 <li ng-class="{active: $state.includes('user')}"
                     ng-show="loggedInUser.role == 'admin'">
                     <a ui-sref="user">
                     <span class="glyphicon glyphicon-user"
                           aria-hidden="true"></span>
-                        User View</a></li>
+                        Users</a></li>
+                <li ng-class="{active: $state.includes('machine')}"
+                    ng-show="loggedInUser.role == 'admin'">
+                    <a ui-sref="machine">
+                    <span class="glyphicon glyphicon-tasks"
+                          aria-hidden="true"></span>
+                        Machines</a></li>
                 <li ng-class="{active: $state.includes('config')}"
                     ng-show="loggedInUser.role == 'admin'">
                     <a ui-sref="config">
-                        <span class="glyphicon glyphicon-list"
-                        <span class="glyphicon glyphicon-list"
+                        <span class="glyphicon glyphicon-cog"
                               aria-hidden="true"></span>
                         Config
                     </a>

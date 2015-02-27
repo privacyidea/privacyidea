@@ -1,0 +1,40 @@
+<pagination ng-show="machinecount > machinesPerPage"
+            total-items="machinecount" ng-model="params.page"
+            items-per-page="{{ machinesPerPage }}"
+            max-size="5"
+            boundary-links="true" ng-change="pageChanged()"></pagination>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead>
+        <tr>
+            <th>hostname
+                <pi-filter ng-model="params.hostnameFilter"
+                         ng-change="_getMachines()"></pi-filter>
+            </th>
+            <th>IP Address
+                <pi-filter ng-model="params.ipFilter"
+                         ng-change="_getMachines()"></pi-filter>
+            </th>
+            <th>Id
+                <pi-filter ng-model="params.idFilter"
+                         ng-change="_getMachines()"></pi-filter>
+            </th>
+            <th>Machine Resolver
+                <pi-filter ng-model="params.resolverFilter"
+                         ng-change="_getMachines()"></pi-filter>
+            </th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="machine in machinelist">
+            <td><a ui-sref="machine.details({machineid:machine.id,
+                    machineresolver:machine.resolver_name})">
+                {{ machine.hostname }}</a></td>
+            <td>{{ machine.ip }}</td>
+            <td>{{ machine.id }}</td>
+            <td>{{ machine.resolver_name }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>

@@ -26,6 +26,7 @@ myApp = angular.module("privacyideaApp",
         'privacyideaApp.configStates',
         'privacyideaApp.tokenStates',
         'privacyideaApp.userStates',
+        'privacyideaApp.machineStates',
         'privacyideaApp.loginStates',
     'multi-select', 'angularFileUpload']);
 myApp.config(function ($urlRouterProvider) {
@@ -50,6 +51,7 @@ myApp.constant("tokenUrl", instance + "/token");
 myApp.constant("userUrl", instance + "/user");
 myApp.constant("resolverUrl", instance + "/resolver");
 myApp.constant("machineResolverUrl", instance + "/machineresolver");
+myApp.constant("machineUrl", instance + "/machine");
 myApp.constant("realmUrl", instance + "/realm");
 myApp.constant("defaultRealmUrl", instance + "/defaultrealm");
 myApp.constant("validateUrl", instance + "/validate");
@@ -87,7 +89,7 @@ myApp.config(['$httpProvider', function ($httpProvider) {
 
 function addError(message, wait) {
     if (!wait) {
-        wait = 30000;
+        wait = 15000;
     }
     $('#alerts').append(
         '<div class="alert alert-danger">' +
