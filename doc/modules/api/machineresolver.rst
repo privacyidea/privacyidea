@@ -1,4 +1,4 @@
-.. _rest_resolver:
+.. _rest_machineresolver:
 
 Machine Resolver endpoints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

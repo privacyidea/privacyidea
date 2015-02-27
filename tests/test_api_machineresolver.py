@@ -1,8 +1,5 @@
 import json
 from .base import MyTestCase
-from privacyidea.lib.error import (ParameterError, ConfigAdminError)
-from privacyidea.lib.policy import PolicyClass
-from urllib import urlencode
 
 HOSTSFILE = "tests/testdata/hosts"
 

@@ -38,7 +38,6 @@ from ..models import (MachineResolver,
                       MachineResolverConfig)
 from ..api.lib.utils import required
 from ..api.lib.utils import getParam
-from .error import ConfigAdminError
 from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
 from privacyidea.lib.config import get_machine_resolver_class_dict

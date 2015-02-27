@@ -76,6 +76,22 @@ class Machine(object):
         elif type(self.ip) == netaddr.IPAddress:
             return ip == self.ip
 
+    def get_dict(self):
+        """
+        Convert the object attributes to a dict
+        :return: dict of attributes
+        """
+        ip = self.ip
+        if type(self.ip) == list:
+            ip = ["%s" % i for i in ip]
+        elif type(self.ip) == netaddr.IPAddress:
+            ip = "%s" % ip
+
+        d = {"hostname": self.hostname,
+             "ip": ip,
+             "resolver_name": self.resolver_name,
+             "id": self.id}
+        return d
 
 class MachineResolverError(Exception):
     pass

@@ -34,6 +34,7 @@ from privacyidea.api.audit import audit_blueprint
 from privacyidea.api.auth import jwtauth
 from privacyidea.webui.login import login_blueprint
 from privacyidea.api.machineresolver import machineresolver_blueprint
+from privacyidea.api.machine import machine_blueprint
 from privacyidea.lib.log import SecureFormatter
 from privacyidea.config import config
 from privacyidea.models import db
@@ -99,6 +100,7 @@ def create_app(config_name="development",
     app.register_blueprint(audit_blueprint, url_prefix='/audit')
     app.register_blueprint(machineresolver_blueprint,
                            url_prefix='/machineresolver')
+    app.register_blueprint(machine_blueprint, url_prefix='/machine')
     
     db.init_app(app)
     migrate = Migrate(app, db)

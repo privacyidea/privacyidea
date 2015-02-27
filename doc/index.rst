@@ -31,6 +31,7 @@ Thanks a lot!
    userview/index
    policies/index
    audit/index
+   machines/index
    application_plugins/index
    tools/index
    import/index
