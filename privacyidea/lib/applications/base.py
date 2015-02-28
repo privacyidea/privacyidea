@@ -19,6 +19,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import logging
+import sys, os
 log = logging.getLogger(__name__)
 from privacyidea.lib.log import log_with
 from importlib import import_module as dyn_import
@@ -80,8 +81,8 @@ def get_auth_item(application,
     # should be able to run as class or as object
     auth_class = mod.MachineApplication
     auth_item = auth_class.get_authentication_item(token_type,
-                                                 serial,
-                                                 challenge=challenge)
+                                                   serial,
+                                                   challenge=challenge)
     return auth_item
 
 
@@ -90,3 +91,38 @@ def is_application_allow_bulk_call(application_module):
     mod = dyn_import(application_module)
     auth_class = mod.MachineApplication
     return auth_class.allow_bulk_call
+
+
+@log_with(log)
+def get_application_types():
+    """
+    This function returns a dictionary of application types with the
+    corresponding available attributes.
+
+    {"luks": {"options": {"required": [],
+                          "optional": ["slot", "partition"]}}
+     "ssh": {"options": {"required": [],
+                         "optional": ["user"]}}
+    }
+
+    :return: dictionary describing the applications
+    """
+    ret = {}
+    current_module = sys.modules[__name__]
+    module_dir = os.path.dirname(current_module.__file__)
+
+    # load all modules and get their application names
+    files = [os.path.basename(f)[:-3] for f in os.listdir(module_dir) if
+             f.endswith(".py")]
+    for f in files:
+        if f not in ["base", "__init__"]:
+            try:
+                mod = dyn_import("privacyidea.lib.applications.%s" % f)
+                name = mod.MachineApplication.application_name
+                options = mod.MachineApplication.get_options()
+                ret[name] = {"options": options}
+            except Exception:
+                pass
+
+
+    return ret

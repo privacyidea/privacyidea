@@ -85,4 +85,4 @@ class MachineApplication(MachineApplicationBase):
         returns a dictionary with a list of required and optional options
         """
         return {'required': [],
-                'optional': ['option_user']}
+                'optional': ['user']}

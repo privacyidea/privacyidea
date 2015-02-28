@@ -31,6 +31,7 @@ from privacyidea.api.realm import defaultrealm_blueprint
 from privacyidea.api.policy import policy_blueprint
 from privacyidea.api.user import user_blueprint
 from privacyidea.api.audit import audit_blueprint
+from privacyidea.api.application import application_blueprint
 from privacyidea.api.auth import jwtauth
 from privacyidea.webui.login import login_blueprint
 from privacyidea.api.machineresolver import machineresolver_blueprint
@@ -101,6 +102,7 @@ def create_app(config_name="development",
     app.register_blueprint(machineresolver_blueprint,
                            url_prefix='/machineresolver')
     app.register_blueprint(machine_blueprint, url_prefix='/machine')
+    app.register_blueprint(application_blueprint, url_prefix='/application')
     
     db.init_app(app)
     migrate = Migrate(app, db)

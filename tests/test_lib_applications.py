@@ -10,7 +10,8 @@ from privacyidea.lib.applications.ssh import (MachineApplication as
 from privacyidea.lib.applications.luks import (MachineApplication as
                                                LUKSApplication)
 from privacyidea.lib.applications import (get_auth_item,
-                                          is_application_allow_bulk_call)
+                                          is_application_allow_bulk_call,
+                                          get_application_types)
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
 
@@ -37,7 +38,7 @@ class SSHApplicationTestCase(MyTestCase):
         # Can run as class
         options = SSHApplication.get_options()
         self.assertEqual(options["required"], [])
-        self.assertEqual(options["optional"], ["option_user"])
+        self.assertEqual(options["optional"], ["user"])
 
     def test_02_get_auth_item(self):
         serial = "ssh1"
@@ -64,8 +65,7 @@ class LUKSApplicationTestCase(MyTestCase):
         # Can run as class
         options = LUKSApplication.get_options()
         self.assertEqual(options["required"], [])
-        self.assertEqual(options["optional"], ['option_slot',
-                                               'option_partition'])
+        self.assertEqual(options["optional"], ['slot', 'partition'])
 
     def test_02_get_auth_item(self):
         serial = "UBOM12345"
@@ -114,3 +114,14 @@ class BaseApplicationTestCase(MyTestCase):
         bulk = is_application_allow_bulk_call(
             "privacyidea.lib.applications.base")
         self.assertFalse(bulk)
+
+
+    def test_04_get_application_types(self):
+        apps = get_application_types()
+        self.assertTrue("luks" in apps.keys())
+        self.assertTrue("ssh" in apps.keys())
+        self.assertEqual(apps["ssh"]["options"]["optional"], ["user"])
+        self.assertEqual(apps["luks"]["options"]["optional"], ["slot",
+                                                               "partition"])
+
+

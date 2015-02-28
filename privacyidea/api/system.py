@@ -71,6 +71,7 @@ from .token import token_blueprint
 from .audit import audit_blueprint
 from .machineresolver import machineresolver_blueprint
 from .machine import machine_blueprint
+from .application import application_blueprint
 
 
 @system_blueprint.before_request
@@ -81,6 +82,7 @@ from .machine import machine_blueprint
 @defaultrealm_blueprint.before_request
 @policy_blueprint.before_request
 @user_blueprint.before_request
+@application_blueprint.before_request
 @admin_required
 def before_request():
     """
@@ -119,6 +121,7 @@ def before_request():
 @user_blueprint.after_request
 @token_blueprint.after_request
 @audit_blueprint.after_request
+@application_blueprint.after_request
 def after_request(response):
     """
     This function is called after a request
@@ -139,6 +142,7 @@ def after_request(response):
 @user_blueprint.app_errorhandler(AuthError)
 @token_blueprint.app_errorhandler(AuthError)
 @audit_blueprint.app_errorhandler(AuthError)
+@application_blueprint.app_errorhandler(AuthError)
 def auth_error(error):
     return send_error(error.description, error_code=-401), error.status_code
 
@@ -151,6 +155,7 @@ def auth_error(error):
 @user_blueprint.app_errorhandler(PolicyError)
 @token_blueprint.app_errorhandler(PolicyError)
 @audit_blueprint.app_errorhandler(PolicyError)
+@application_blueprint.app_errorhandler(PolicyError)
 def policy_error(error):
     return send_error(error.message), error.id
 
@@ -163,6 +168,7 @@ def policy_error(error):
 @user_blueprint.app_errorhandler(500)
 @token_blueprint.app_errorhandler(500)
 @audit_blueprint.app_errorhandler(500)
+@application_blueprint.app_errorhandler(500)
 def internal_error(error):
     """
     This function is called when an internal error (500) occurs.

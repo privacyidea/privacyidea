@@ -20,6 +20,10 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
+This endpoint is used to create, modify, list and delete Machine Resolvers.
+Machine Resolvers fetch machine information from remote machine stores like a
+hosts file or an Active Directory.
+
 The code of this module is tested in tests/test_api_machineresolver.py
 """
 from flask import (Blueprint,
