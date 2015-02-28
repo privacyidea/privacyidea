@@ -33,9 +33,8 @@
     </div>
     <h3>Tokens and Applications for machine {{ machineid }}</h3>
 
-    <!--
-    <pagination ng-show="tokendata.count > 5"
-                total-items="tokendata.count" ng-model="params.page"
+    <pagination ng-show="tokenCount > tokensPerPage"
+                total-items="tokenCount" ng-model="params.page"
                 items-per-page="{{ tokensPerPage }}"
                 max-size="5"
                 boundary-links="true" ng-change="pageChanged()"></pagination>
@@ -44,63 +43,59 @@
         <table class="table table-bordered table-striped">
             <thead>
             <tr>
-                <th>serial</th>
-                <th>type</th>
-                <th>Active</th>
-                <th>window</th>
-                <th>description</th>
-                <th>failcounter</th>
-                <th>maxfail</th>
-                <th>otplen</th>
+                <th>Serial</th>
+                <th>Application</th>
+                <th>Options</th>
+                <th></th>
             </tr>
             </thead>
             <tbody>
-            <tr ng-repeat="token in tokendata.tokens">
+            <tr ng-repeat="token in tokendata">
                 <td><a ui-sref="token.details({tokenSerial:token.serial,
-            currentToken:token})"
-                       ng-click="$rootScope.returnTo=user.list;">
-                    {{ token.serial }}</a></td>
-                <td>{{ token.tokentype }}</td>
+                        currentToken:token})"
+                       ng-click="$rootScope.returnTo=machine.list;">
+                    {{ token.serial }}</a> ({{ token.type  }})</td>
+                <td>{{ token.application }}</td>
                 <td>
-                <span class="label label-success" ng-show="token.active">
-                    active
-                </span>
-                <span class="label label-danger" ng-hide="token.active">
-                    disabled
-                </span>
+                    {{ token.options | json }}
                 </td>
-                <td>{{ token.count_window }}</td>
-                <td>{{ token.description }}</td>
-                <td><span class="label"
-                          ng-class="{'label-success': token.failcount==0,
-                                    'label-warning': token.failcount>0,
-                                    'label-danger': token.failcount>=token.maxfail}">
-                    {{ token.failcount }}
-                </span>
+                <td>
+                    <button class="btn btn-danger"
+                            ng-click="detachMachineToken(token.serial,
+                            token.application)">Detach
+                    </button>
+                    <button class="btn btn-primary"
+                            ng-click="editMachineToken(token.serial,
+                            token.application)">Edit Options
+                    </button>
                 </td>
-                <td>{{ token.maxfail }}</td>
-                <td>{{ token.otplen }}</td>
             </tr>
             </tbody>
         </table>
     </div>
-    <div class="text-center">
-        <button ng-click="enrollToken()" class="btn btn-primary">
-            Enroll New
-            Token
-        </button>
-    </div>
 
-    <h3>Assign a new token {{ newTokenObject.serial }}</h3>
+    <h3>Attach a new token {{ newToken.serial }}</h3>
 
-    <form name="formAssignToken" role="form" validate>
-        <div assign-token new-token-object="newToken"></div>
+    <form name="formAttachToken" role="form" validate>
+        <div attach-token new-token-object="newToken"></div>
+
+        <div class="form-group">
+            <label for="application">Application</label>
+            <select class="form-control"
+                id="application"
+                ng-model="form.application"
+                ng-required="1"
+                ng-options="app for app in formInit.application"
+                >
+        </select>
+        </div>
+
         <div class="text-center">
-            <button ng-click="assignToken()"
-                    ng-disabled="formAssignToken.$invalid"
-                    class="btn btn-primary">Assign Token
+            <button ng-click="attachToken()"
+                    ng-disabled="formAttachToken.$invalid"
+                    class="btn btn-primary">Attach Token
             </button>
         </div>
     </form>
-    -->
+
 </div>

@@ -20,7 +20,7 @@
  */
 
 myApp.factory("MachineFactory", function (AuthFactory, $http, $state,
-                                          $rootScope, machineUrl) {
+                                          $rootScope, machineUrl, applicationUrl) {
         var error_func = function (error) {
                         if (error.result.error.code == -401) {
                             $state.go('login');
@@ -35,6 +35,32 @@ myApp.factory("MachineFactory", function (AuthFactory, $http, $state,
                     headers: {'Authorization': AuthFactory.getAuthToken() },
                     params: params
                 }).success(callback
+                ).error(error_func)
+            },
+            getMachineTokens: function(params, callback) {
+                $http.get(machineUrl + "/token", {
+                    headers: {'Authorization': AuthFactory.getAuthToken()},
+                    params: params
+            }).success(callback
+                ).error(error_func)
+            },
+            attachTokenMachine: function(params, callback) {
+                $http.post(machineUrl + "/token", params, {
+                    headers: {'Authorization': AuthFactory.getAuthToken()}
+                }).success(callback).error(error_func)
+            },
+            detachTokenMachine: function(params, callback) {
+                // /token/<serial>/<machineid>/<resolver>/<application>
+                $http.delete(machineUrl + "/token/" + params.serial + "/" +
+                    params.machineid + "/" + params.resolver + "/" +
+                    params.application,
+                    { headers: {'Authorization': AuthFactory.getAuthToken()}
+                }).success(callback).error(error_func)
+            },
+            getApplicationDefinition: function(callback) {
+                $http.get(applicationUrl, {
+                    headers: {'Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
                 ).error(error_func)
             }
         }

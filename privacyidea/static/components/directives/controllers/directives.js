@@ -148,6 +148,37 @@ myApp.directive('assignToken', function($http, tokenUrl,
 });
 
 
+myApp.directive('attachToken', function($http, tokenUrl,
+                                        AuthFactory, instanceUrl) {
+    /*
+    This directive is used to select a serial number and attach it to a machine
+
+    newTokenObject consists of .serial
+     */
+    return {
+        scope: {
+            newTokenObject: '='
+        },
+        templateUrl: instanceUrl + "/static/components/directives/views/directive.attachtoken.html",
+        link: function (scope, element, attr) {
+            scope.loadSerials = function($viewValue) {
+            var auth_token = AuthFactory.getAuthToken();
+            return $http({
+                method: 'GET',
+                url: tokenUrl,
+                headers: {'Authorization': auth_token},
+                params: {serial: "*" + $viewValue + "*"}
+            }).then(function ($response) {
+                return $response.data.result.value.tokens.map(function (item) {
+                    return item.serial + " (" + item.tokentype + ")";
+                });
+            });
+            };
+        }
+    }
+});
+
+
 myApp.directive('equals', function() {
   return {
     restrict: 'A', // only activate on element attribute

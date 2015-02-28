@@ -26,16 +26,18 @@ angular.module("privacyideaApp")
         $scope.params = {page: 1};
         // scroll to the top of the page
         document.body.scrollTop = document.documentElement.scrollTop = 0;
-
-        $scope._getMachineToken = function () {
-        };
-        $scope._getMachineApplication = function () {
-        };
+        // read the application definition from the server
+        MachineFactory.getApplicationDefinition(function(data){
+            $scope.Applications = data.result.value;
+            var applications = [];
+            for(var k in $scope.Applications) applications.push(k);
+            $scope.formInit = { application: applications};
+        });
 
         // Change the pagination
         $scope.pageChanged = function () {
             console.log('Page changed to: ' + $scope.params.page);
-            $scope._getMachineToken();
+            $scope.getMachineTokens();
         };
 
         $scope.getMachineDetails = function () {
@@ -47,6 +49,46 @@ angular.module("privacyideaApp")
             })
         };
 
+        $scope.getMachineTokens = function () {
+            MachineFactory.getMachineTokens({machineid: $scope.machineid,
+                    resolver: $scope.machineresolver},
+                function (data) {
+                    tokenlist = data.result.value;
+                    $scope.tokenCount = tokenlist.length;
+                    var start = ($scope.params.page - 1) * $scope.tokensPerPage;
+                    var stop = start + $scope.tokensPerPage;
+                    $scope.tokendata = tokenlist.slice(start, stop);
+                })
+        };
+
         $scope.getMachineDetails();
+        $scope.getMachineTokens();
+
+        $scope.attachToken = function () {
+            // newToken.serial, application
+            MachineFactory.attachTokenMachine({serial: fixSerial($scope.newToken.serial),
+                application: $scope.form.application,
+                machineid: $scope.machineid,
+                resolver: $scope.machineresolver
+            }, function (data) {
+                $scope.getMachineTokens();
+            });
+        };
+
+        $scope.detachMachineToken = function(serial, application) {
+            MachineFactory.detachTokenMachine({serial: serial,
+                application: application,
+                machineid: $scope.machineid,
+                resolver: $scope.machineresolver
+            }, function (data) {
+                $scope.getMachineTokens();
+            });
+        };
+
+        $scope.editMachineToken = function(serial, application) {
+            // TODO edit MachineToken option
+            console.log(serial);
+            console.log(application);
+        }
 
     });

@@ -268,3 +268,77 @@
         </button>
     </div>
 </form>
+
+<!-- ============ Machines ======================= -->
+
+<h4>Machines this token is attached to</h4>
+
+
+    <pagination ng-show="machineCount > machinesPerPage"
+                total-items="machineCount" ng-model="params.page"
+                items-per-page="{{ machinesPerPage }}"
+                max-size="5"
+                boundary-links="true" ng-change="pageChanged()"></pagination>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead>
+            <tr>
+                <th>Machine ID</th>
+                <th>Resolver</th>
+                <th>Application</th>
+                <th>Options</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="machine in machinedata">
+                <td>
+                    <a ui-sref="machine.details({machineid:machine.machine_id,
+                    machineresolver:machine.resolver})"
+                       ng-click="$rootScope.returnTo=token.list;">
+                    {{ machine.machine_id }}</a></td>
+                <td>{{ machine.resolver }}</td>
+                <td>{{ machine.application }}</td>
+                <td>
+                    {{ machine.options | json }}
+                </td>
+                <td>
+                    <button class="btn btn-danger"
+                            ng-click="detachMachineToken(machine.machine_id,machine.resolver, machine.application)">Detach
+                    </button>
+                    <button class="btn btn-primary"
+                            ng-click="editMachineToken(token.serial,
+                            token.application)">Edit Options
+                    </button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+<h4>Attach to a new Machine</h4>
+<form name="formAttachToken" role="form" validate>
+        <!-- TODO -->
+        <!--
+        <div attach-token new-token-object="newToken"></div>
+        -->
+
+        <div class="form-group">
+            <label for="application">Application</label>
+            <select class="form-control"
+                id="application"
+                ng-model="form.application"
+                ng-required="1"
+                ng-options="app for app in formInit.application"
+                >
+        </select>
+        </div>
+
+        <div class="text-center">
+            <button ng-click="attachToken()"
+                    ng-disabled="formAttachToken.$invalid"
+                    class="btn btn-primary">Attach Token
+            </button>
+        </div>
+    </form>
