@@ -124,6 +124,7 @@ class ACTION():
     MACHINERESOLVERWRITE = "mresolverwrite"
     MACHINERESOLVERDELETE = "mresolverdelete"
     MACHINELIST = "machinelist"
+    MACHINETOKENS = "manage_machine_tokens"
     MAXTOKENREALM = "max_token_per_realm"
     MAXTOKENUSER = "max_token_per_user"
     NODETAILSUCCESS = "no_detail_on_success"
@@ -480,6 +481,9 @@ def get_static_policy_definitions(scope=None):
             ACTION.MACHINELIST: {'type': 'bool',
                                  'desc' : _('The Admin is allowed to list '
                                             'the machines.')},
+            ACTION.MACHINETOKENS: {'type': 'bool',
+                                   'desc': _('The Admin is allowed to attach '
+                                             'and detach tokens to machines.')},
             # 'checkstatus': {'type': 'bool',
             #                 'desc' : _('Admin is allowed to check the status of a challenge'
             #                            ' resonse token.'),

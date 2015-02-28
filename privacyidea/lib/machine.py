@@ -181,7 +181,7 @@ def detach_token(serial, application, hostname=None, machine_id=None,
                                                      resolver_name)
 
     mtid = get_machinetoken_id(machine_id, resolver_name, serial,
-                                application)
+                               application)
     token_id = get_token_id(serial)
     machineresolver_id = get_machineresolver_id(resolver_name)
     # Delete MachineTokenOptions
@@ -273,7 +273,7 @@ def list_machine_tokens(hostname=None,
 
 
     sql_query = MachineToken.query.filter(and_(MachineToken.machine_id ==
-                                           machine_id,
+                                          machine_id,
                     MachineToken.machineresolver_id == machineresolver_id))
     if application:
         sql_query = sql_query.filter(MachineToken.application.like("%%s%" %
@@ -289,6 +289,8 @@ def list_machine_tokens(hostname=None,
         for option in option_list:
             options[option.mt_key] = option.mt_value
         res.append({"serial": row.token.serial,
+                    "machine_id": machine_id,
+                    "resolver": resolver_name,
                     "type": row.token.tokentype,
                     "application": row.application,
                     "options": options})
@@ -318,7 +320,8 @@ def list_token_machines(serial):
         res.append({"machine_id": machine.machine_id,
                     "application": machine.application,
                     "resolver": resolver_name,
-                    "options": options})
+                    "options": options,
+                    "serial": serial})
 
     return res
 

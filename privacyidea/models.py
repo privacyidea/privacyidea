@@ -1245,7 +1245,7 @@ class MachineTokenOptions(db.Model):
     machinetoken = db.relationship('MachineToken',
                                    lazy='joined',
                                    backref='option_list')
-    
+
     def __init__(self, machinetoken_id, key, value):
         log.debug("setting %r to %r for MachineToken %s" % (key,
                                                             value,
@@ -1253,7 +1253,21 @@ class MachineTokenOptions(db.Model):
         self.machinetoken_id = machinetoken_id
         self.mt_key = key
         self.mt_value = value
-        db.session.add(self)
+
+        # TODO: if the combination machinetoken_id / mt_key already exist,
+        # we need
+        # to update
+        c = MachineTokenOptions.query.filter_by(
+            machinetoken_id=self.machinetoken_id,
+            mt_key=self.mt_key).first()
+        if c is None:
+            # create a new one
+            db.session.add(self)
+        else:
+            # update
+            MachineTokenOptions.query.filter_by(
+                machinetoken_id=self.machinetoken_id,
+                mt_key=self.mt_key).update({'mt_value': self.mt_value})
         db.session.commit()
 
 
@@ -1407,6 +1421,7 @@ def get_machinetoken_id(machine_id, resolver_name, serial, application):
     :return: The ID of the machinetoken entry
     :rtype: int
     """
+    ret = None
     token_id = get_token_id(serial)
     resolver = MachineResolver.query.filter(MachineResolver.name ==
                                             resolver_name).first()
@@ -1417,5 +1432,7 @@ def get_machinetoken_id(machine_id, resolver_name, serial, application):
                                         MachineToken.machine_id == machine_id,
                                         MachineToken.application ==
                                         application)).first()
-    return mt.id
+    if mt:
+        ret = mt.id
+    return ret
 

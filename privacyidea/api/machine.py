@@ -32,7 +32,9 @@ from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policy import ACTION
 
 from flask import (g)
-from ..lib.machine import get_machines
+from ..lib.machine import (get_machines, attach_token, detach_token,
+                           add_option, delete_option,
+                           list_token_machines, list_machine_tokens)
 import logging
 import netaddr
 
@@ -45,7 +47,7 @@ machine_blueprint = Blueprint('machine_blueprint', __name__)
 
 @machine_blueprint.route('/', methods=['GET'])
 @prepolicy(check_base_action, request, ACTION.MACHINELIST)
-def list_machines():
+def list_machines_api():
     """
     List all machines that can be found in the machine resolvers.
 
@@ -85,7 +87,7 @@ def list_machines():
               },
               {
                 "id": "1908209x48x2183",
-                "hostname": [ "london.example.com" ]
+                "hostname": [ "london.example.com" ],
                 "ip": "2.4.5.6",
                 "resolver_name": "machineresolver1"
               }
@@ -109,3 +111,190 @@ def list_machines():
                         'info': "hostname: %s, ip: %s" % (hostname, ip)})
     
     return send_result(machines)
+
+
+@machine_blueprint.route('/token', methods=['POST'])
+@prepolicy(check_base_action, request, ACTION.MACHINETOKENS)
+def attach_token_api():
+    """
+    Attach an existing token to a machine with a certain application.
+
+    :param hostname: identify the machine by the hostname
+    :param machineid: identify the machine by the machine ID and the resolver
+    name
+    :param resolver: identify the machine by the machine ID and the resolver name
+    :param serial: identify the token by the serial number
+    :param application: the name of the application like "luks" or "ssh".
+
+    Parameters not listed will be treated as additional options.
+
+    :return: json result with "result": true and the machine list in "value".
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+       POST /token HTTP/1.1
+       Host: example.com
+       Accept: application/json
+
+       { "hostname": "puckel.example.com",
+         "machienid": "12313098",
+         "resolver": "machineresolver1",
+         "serial": "tok123",
+         "application": "luks" }
+
+    """
+    hostname = getParam(request.all_data, "hostname")
+    machineid = getParam(request.all_data, "machineid")
+    resolver = getParam(request.all_data, "resolver")
+    serial = getParam(request.all_data, "serial", optional=False)
+    application = getParam(request.all_data, "application", optional=False)
+
+    # get additional options:
+    options = {}
+    for key in request.all_data.keys():
+        if key not in ["hostname", "machineid", "resolver", "serial",
+                       "application"]:
+            # We use the key as additional option
+            options[key] = request.all_data.get(key)
+
+    mt_object = attach_token(serial, application, hostname=hostname,
+                             machine_id=machineid, resolver_name=resolver,
+                             options=options)
+
+    g.audit_object.log({'success': True,
+                        'info': "serial: %s, application: %s" % (serial,
+                                                                 application)})
+
+    return send_result(mt_object.id)
+
+
+@machine_blueprint.route('/token/<serial>/<machineid>/<resolver>/<application>',
+                         methods=['DELETE'])
+@prepolicy(check_base_action, request, ACTION.MACHINETOKENS)
+def detach_token_api(serial, machineid, resolver, application):
+    """
+    Detach a token from a machine with a certain application.
+
+    :param machineid: identify the machine by the machine ID and the resolver
+    name
+    :param resolver: identify the machine by the machine ID and the resolver name
+    :param serial: identify the token by the serial number
+    :param application: the name of the application like "luks" or "ssh".
+
+    :return: json result with "result": true and the machine list in "value".
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+       DELETE /token HTTP/1.1
+       Host: example.com
+       Accept: application/json
+
+       { "hostname": "puckel.example.com",
+         "resolver": "machineresolver1",
+         "application": "luks" }
+
+    """
+    r = detach_token(serial, application,
+                     machine_id=machineid, resolver_name=resolver)
+
+    g.audit_object.log({'success': True,
+                        'info': "serial: %s, application: %s" % (serial,
+                                                                 application)})
+
+    return send_result(r)
+
+
+
+@machine_blueprint.route('/token', methods=['GET'])
+@prepolicy(check_base_action, request, ACTION.MACHINETOKENS)
+def list_machinetokens_api():
+    """
+    Return a list of MachineTokens either for a given machine or for a given
+    token.
+
+    :param serial: Return the MachineTokens for a the given Token
+    :param hostname: Identify the machine by the hostname
+    :param machineid: Identify the machine by the machine ID and the resolver
+    name
+    :param resolver: Identify the machine by the machine ID and the resolver
+    name
+    :return:
+    """
+    hostname = getParam(request.all_data, "hostname")
+    machineid = getParam(request.all_data, "machineid")
+    resolver = getParam(request.all_data, "resolver")
+    serial = getParam(request.all_data, "serial")
+    application = getParam(request.all_data, "application")
+
+    res = []
+
+    if not hostname and not machineid and not resolver:
+        # We return the list of the machines for the given serial
+        res = list_token_machines(serial)
+    else:
+        res = list_machine_tokens(hostname=hostname, machine_id=machineid,
+                                  resolver_name=resolver)
+
+    g.audit_object.log({'success': True,
+                        'info': "serial: %s, hostname: %s" % (serial,
+                                                              hostname)})
+    return send_result(res)
+
+
+@machine_blueprint.route('/tokenoption', methods=['POST'])
+@prepolicy(check_base_action, request, ACTION.MACHINETOKENS)
+def set_option_api():
+    """
+    This sets a Machine Token option or deletes it, if the value is empty.
+
+    :param hostname: identify the machine by the hostname
+    :param machineid: identify the machine by the machine ID and the resolver
+    name
+    :param resolver: identify the machine by the machine ID and the resolver name
+    :param serial: identify the token by the serial number
+    :param application: the name of the application like "luks" or "ssh".
+
+    Parameters not listed will be treated as additional options.
+
+    :return:
+    """
+
+    hostname = getParam(request.all_data, "hostname")
+    machineid = getParam(request.all_data, "machineid")
+    resolver = getParam(request.all_data, "resolver")
+    serial = getParam(request.all_data, "serial", optional=False)
+    application = getParam(request.all_data, "application", optional=False)
+
+    # get additional options:
+    options_add = {}
+    options_del = []
+    for key in request.all_data.keys():
+        if key not in ["hostname", "machineid", "resolver", "serial",
+                       "application"]:
+            # We use the key as additional option
+            value = request.all_data.get(key)
+            if value:
+                options_add[key] = request.all_data.get(key)
+            else:
+                options_del.append(key)
+
+    o_add = add_option(serial=serial, application=application,
+                       hostname=hostname,
+                       machine_id=machineid, resolver_name=resolver,
+                       options=options_add)
+    o_del = len(options_del)
+    for k in options_del:
+        delete_option(serial=serial, application=application,
+                      hostname=hostname,
+                      machine_id=machineid, resolver_name=resolver,
+                      key=k)
+
+    g.audit_object.log({'success': True,
+                        'info': "serial: %s, application: %s" % (serial,
+                                                                 application)})
+
+    return send_result({"added": o_add, "deleted": o_del})
