@@ -56,17 +56,42 @@
                        ng-click="$rootScope.returnTo=machine.list;">
                     {{ token.serial }}</a> ({{ token.type  }})</td>
                 <td>{{ token.application }}</td>
-                <td>
+                <td ng-hide="token.optionsEdit">
                     {{ token.options | json }}
                 </td>
-                <td>
+                <td ng-show="token.optionsEdit">
+                    <div class="form-group"
+                         ng-repeat="option in Applications[form.application].options.required">
+                        <label for="option_{{ option }}">{{ option | capitalize }}</label>
+                        <input name="option_{{ option }}"
+                               ng-model="token.options[option]"
+                               class="form-control" ng-required="1"
+                               placeholder="required">
+                    </div>
+                    <div class="form-group"
+                         ng-repeat="option in Applications[form.application].options.optional">
+                        <label for="option_{{ option }}">{{ option | capitalize }}</label>
+                        <input name="option_{{ option }}"
+                               ng-model="token.options[option]"
+                               class="form-control" placeholder="optional">
+                    </div>
+                </td>
+                <td ng-hide="token.optionsEdit">
+                    <button class="btn btn-primary"
+                            ng-click="token.optionsEdit=true">Edit Options
+                    </button>
                     <button class="btn btn-danger"
                             ng-click="detachMachineToken(token.serial,
                             token.application)">Detach
                     </button>
+                </td>
+                <td ng-show="token.optionsEdit">
                     <button class="btn btn-primary"
-                            ng-click="editMachineToken(token.serial,
-                            token.application)">Edit Options
+                            ng-click="saveOptions(token.serial,
+                            token.application)">Save Options
+                    </button>
+                    <button class="btn btn-danger"
+                            ng-click="token.optionsEdit=false">Cancel
                     </button>
                 </td>
             </tr>
@@ -88,6 +113,22 @@
                 ng-options="app for app in formInit.application"
                 >
         </select>
+        </div>
+        <!-- Options for a new MachineToken -->
+        <div class="form-group"
+             ng-repeat="option in Applications[form.application].options.required">
+            <label for="option_{{ option }}">{{ option | capitalize }}</label>
+            <input name="option_{{ option }}"
+                   ng-model="form.options[option]"
+                   class="form-control" ng-required="1"
+                    placeholder="required">
+        </div>
+        <div class="form-group"
+             ng-repeat="option in Applications[form.application].options.optional">
+            <label for="option_{{ option }}">{{ option | capitalize }}</label>
+            <input name="option_{{ option }}"
+                   ng-model="form.options[option]"
+                   class="form-control" placeholder="optional">
         </div>
 
         <div class="text-center">

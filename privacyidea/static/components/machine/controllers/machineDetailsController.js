@@ -66,11 +66,18 @@ angular.module("privacyideaApp")
 
         $scope.attachToken = function () {
             // newToken.serial, application
-            MachineFactory.attachTokenMachine({serial: fixSerial($scope.newToken.serial),
-                application: $scope.form.application,
-                machineid: $scope.machineid,
-                resolver: $scope.machineresolver
-            }, function (data) {
+            var params = $scope.form.options;
+            // First we set all the application specific option than add the
+            // needed standard values
+            params["serial"] = fixSerial($scope.newToken.serial);
+            params["application"] = $scope.form.application;
+            params["machineid"] = $scope.machineid;
+            params["resolver"] = $scope.machineresolver;
+            MachineFactory.attachTokenMachine(params, function (data) {
+                // clear form
+                $scope.form.application = null;
+                $scope.newToken = null;
+                $scope.form.options = {};
                 $scope.getMachineTokens();
             });
         };

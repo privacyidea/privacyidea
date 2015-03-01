@@ -124,47 +124,51 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.get();
 
     if ($scope.loggedInUser.role == "admin") {
+        // These are functions that can only be used by administrators.
         // If the user is admin, we can fetch all realms
+        // If the loggedInUser is only a user, we do not need the realm list,
+        // as we do not assign a token
         ConfigFactory.getRealms(function (data) {
                 $scope.realms = data.result.value;
         });
-    }
-    // If the loggedInUser is only a user, we do not need the realm list,
-    // as we do not assign a token
-    // read the application definition from the server
-    MachineFactory.getApplicationDefinition(function(data){
-        $scope.Applications = data.result.value;
-        var applications = [];
-        for(var k in $scope.Applications) applications.push(k);
-        $scope.formInit = { application: applications};
-    });
 
-    $scope.getMachines = function () {
-        MachineFactory.getMachineTokens({serial: $scope.tokenSerial},
-                function (data) {
-                    machinelist = data.result.value;
-                    console.log(machinelist);
-                    $scope.machineCount = machinelist.length;
-                    var start = ($scope.params.page - 1) * $scope.machinesPerPage;
-                    var stop = start + $scope.machinesPerPage;
-                    $scope.machinedata = machinelist.slice(start, stop);
-                })
-    };
-    // Change the pagination
-    $scope.pageChanged = function () {
-        console.log('Page changed to: ' + $scope.params.page);
-        $scope.getMachines();
-    };
 
-    $scope.detachMachineToken = function (machineid, resolver, application) {
-        MachineFactory.detachTokenMachine({serial: $scope.tokenSerial,
-                application: application,
-                machineid: machineid,
-                resolver: resolver
-        }, function (data) {
-            $scope.getMachines();
+        // read the application definition from the server
+        MachineFactory.getApplicationDefinition(function(data){
+            $scope.Applications = data.result.value;
+            var applications = [];
+            for(var k in $scope.Applications) applications.push(k);
+            $scope.formInit = { application: applications};
         });
-    };
 
-    $scope.getMachines();
+        $scope.detachMachineToken = function (machineid, resolver, application) {
+            MachineFactory.detachTokenMachine({serial: $scope.tokenSerial,
+                    application: application,
+                    machineid: machineid,
+                    resolver: resolver
+            }, function (data) {
+                $scope.getMachines();
+            });
+        };
+        $scope.getMachines = function () {
+            MachineFactory.getMachineTokens({serial: $scope.tokenSerial},
+                    function (data) {
+                        machinelist = data.result.value;
+                        console.log(machinelist);
+                        $scope.machineCount = machinelist.length;
+                        var start = ($scope.params.page - 1) * $scope.machinesPerPage;
+                        var stop = start + $scope.machinesPerPage;
+                        $scope.machinedata = machinelist.slice(start, stop);
+                    })
+        };
+        // Change the pagination
+        $scope.pageChanged = function () {
+            console.log('Page changed to: ' + $scope.params.page);
+            $scope.getMachines();
+        };
+
+        $scope.getMachines();
+    }  // End of admin functions
+
+
 });

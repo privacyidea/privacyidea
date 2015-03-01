@@ -270,8 +270,8 @@
 </form>
 
 <!-- ============ Machines ======================= -->
-
-<h4>Machines this token is attached to</h4>
+<div ng-show="loggedInUser.role == 'admin'">
+    <h4>Machines this token is attached to</h4>
 
 
     <pagination ng-show="machineCount > machinesPerPage"
@@ -297,7 +297,7 @@
                     <a ui-sref="machine.details({machineid:machine.machine_id,
                     machineresolver:machine.resolver})"
                        ng-click="$rootScope.returnTo=token.list;">
-                    {{ machine.machine_id }}</a></td>
+                        {{ machine.machine_id }}</a></td>
                 <td>{{ machine.resolver }}</td>
                 <td>{{ machine.application }}</td>
                 <td>
@@ -305,7 +305,8 @@
                 </td>
                 <td>
                     <button class="btn btn-danger"
-                            ng-click="detachMachineToken(machine.machine_id,machine.resolver, machine.application)">Detach
+                            ng-click="detachMachineToken(machine.machine_id,machine.resolver, machine.application)">
+                        Detach
                     </button>
                     <button class="btn btn-primary"
                             ng-click="editMachineToken(token.serial,
@@ -317,8 +318,9 @@
         </table>
     </div>
 
-<h4>Attach to a new Machine</h4>
-<form name="formAttachToken" role="form" validate>
+    <h4>Attach to a new Machine</h4>
+
+    <form name="formAttachToken" role="form" validate>
         <!-- TODO -->
         <!--
         <div attach-token new-token-object="newToken"></div>
@@ -327,12 +329,12 @@
         <div class="form-group">
             <label for="application">Application</label>
             <select class="form-control"
-                id="application"
-                ng-model="form.application"
-                ng-required="1"
-                ng-options="app for app in formInit.application"
-                >
-        </select>
+                    id="application"
+                    ng-model="form.application"
+                    ng-required="1"
+                    ng-options="app for app in formInit.application"
+                    >
+            </select>
         </div>
 
         <div class="text-center">
@@ -342,3 +344,4 @@
             </button>
         </div>
     </form>
+</div>

@@ -13,7 +13,7 @@
         <div class="navbar-collapse collapse myMainNavbar">
             <ul class="nav navbar-nav">
                 <li ng-class="{active: $state.includes('token')}"
-                    ng-hide="$state.includes('login')">
+                    ng-show="loggedInUser.role">
                     <a ui-sref="token">
                     <span class="glyphicon glyphicon-phone"
                           aria-hidden="true"></span>
@@ -39,7 +39,7 @@
                     </a>
                 </li>
                 <li ng-class="{active: $state.includes('audit')}"
-                    ng-hide="$state.includes('login')">
+                    ng-show="loggedInUser.role">
                     <a ui-sref="audit">
                         <span class="glyphicon glyphicon-search"
                               aria-hidden="true"></span>
