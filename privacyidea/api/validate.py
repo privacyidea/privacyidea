@@ -73,6 +73,9 @@ def after_request(response):
     # completely so that we do not have an audit_object
     if "audit_object" in g:
         g.audit_object.finalize_log()
+
+    # No chaching!
+    response.headers['Cache-Control'] = 'no-cache'
     return response
 
 

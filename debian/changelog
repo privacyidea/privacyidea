@@ -1,3 +1,10 @@
+python-privacyidea (2.0.1-1trusty) trusty; urgency=low
+
+  * Fix no-cache problem with IE11
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Sun, 01 Mar 2015 16:40:00 +0200
+
+
 python-privacyidea (2.0~dev5-1trusty) trusty; urgency=low
 
   * Migrate to flask
