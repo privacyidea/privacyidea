@@ -150,6 +150,19 @@ myApp.controller("tokenDetailController", function ($scope,
                 $scope.getMachines();
             });
         };
+
+        $scope.saveOptions = function(machineid, resolver, application, options) {
+            var params = options;
+            params["machineid"] = machineid;
+            params["resolver"] = resolver;
+            params["serial"] = $scope.tokenSerial;
+            params["application"] = application;
+            MachineFactory.saveOptions(params, function (data) {
+                $scope.getMachineTokens();
+                console.log(data);
+            });
+        };
+
         $scope.getMachines = function () {
             MachineFactory.getMachineTokens({serial: $scope.tokenSerial},
                     function (data) {

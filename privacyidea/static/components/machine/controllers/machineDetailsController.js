@@ -92,10 +92,15 @@ angular.module("privacyideaApp")
             });
         };
 
-        $scope.editMachineToken = function(serial, application) {
-            // TODO edit MachineToken option
-            console.log(serial);
-            console.log(application);
-        }
-
+        $scope.saveOptions = function(serial, application, options) {
+            var params = options;
+            params["machineid"] = $scope.machineid;
+            params["resolver"] = $scope.machineresolver;
+            params["serial"] = serial;
+            params["application"] = application;
+            MachineFactory.saveOptions(params, function (data) {
+                $scope.getMachineTokens();
+                console.log(data);
+            });
+        };
     });

@@ -62,6 +62,11 @@ myApp.factory("MachineFactory", function (AuthFactory, $http, $state,
                     headers: {'Authorization': AuthFactory.getAuthToken()}
             }).success(callback
                 ).error(error_func)
+            },
+            saveOptions: function(params, callback) {
+                $http.post(machineUrl + "/tokenoption", params, {
+                    headers: {'Authorization': AuthFactory.getAuthToken()}
+                }).success(callback).error(error_func)
             }
         }
 

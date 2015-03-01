@@ -300,17 +300,57 @@
                         {{ machine.machine_id }}</a></td>
                 <td>{{ machine.resolver }}</td>
                 <td>{{ machine.application }}</td>
-                <td>
-                    {{ machine.options | json }}
+                <!-- Options -->
+                <td ng-hide="machine.optionsEdit">
+                    <span ng-repeat="option
+                    in Applications[machine.application].options.required">
+                        <b>{{ option | capitalize }}:</b>
+                        {{ machine.options[option] }}<br>
+                    </span>
+                    <span ng-repeat="option
+                    in Applications[machine.application].options.optional">
+                        <b>{{ option | capitalize }}:</b>
+                        {{ machine.options[option] }}<br>
+                    </span>
                 </td>
-                <td>
-                    <button class="btn btn-danger"
-                            ng-click="detachMachineToken(machine.machine_id,machine.resolver, machine.application)">
-                        Detach
-                    </button>
+                <!-- Edit options -->
+                <td ng-show="machine.optionsEdit">
+                    <div class="form-group"
+                         ng-repeat="option
+                         in Applications[machine.application].options.required">
+                        <label for="option_{{ option }}">{{ option | capitalize }}</label>
+                        <input name="option_{{ option }}"
+                               ng-model="machine.options[option]"
+                               class="form-control" ng-required="1"
+                               placeholder="required">
+                    </div>
+                    <div class="form-group"
+                         ng-repeat="option
+                         in Applications[machine.application].options.optional">
+                        <label for="option_{{ option }}">{{ option | capitalize }}</label>
+                        <input name="option_{{ option }}"
+                               ng-model="machine.options[option]"
+                               class="form-control" placeholder="optional">
+                    </div>
+                </td>
+                <td ng-hide="machine.optionsEdit">
                     <button class="btn btn-primary"
-                            ng-click="editMachineToken(token.serial,
-                            token.application)">Edit Options
+                            ng-click="machine.optionsEdit=true">Edit Options
+                    </button>
+                    <button class="btn btn-danger"
+                            ng-click="detachMachineToken(machine.machine_id,
+                            machine.resolver, machine.application)">Detach
+                    </button>
+                </td>
+                <td ng-show="machine.optionsEdit">
+                    <button class="btn btn-primary"
+                            ng-click="saveOptions(machine.machine_id,
+                            machine.resolver, machine.application,
+                            machine.options);
+                            machine.optionsEdit=false">Save Options
+                    </button>
+                    <button class="btn btn-danger"
+                            ng-click="machine.optionsEdit=false">Cancel
                     </button>
                 </td>
             </tr>

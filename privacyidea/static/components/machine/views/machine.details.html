@@ -57,11 +57,21 @@
                     {{ token.serial }}</a> ({{ token.type  }})</td>
                 <td>{{ token.application }}</td>
                 <td ng-hide="token.optionsEdit">
-                    {{ token.options | json }}
+                    <span ng-repeat="option
+                    in Applications[token.application].options.required">
+                        <b>{{ option | capitalize }}:</b>
+                        {{ token.options[option] }}<br>
+                    </span>
+                    <span ng-repeat="option
+                    in Applications[token.application].options.optional">
+                        <b>{{ option | capitalize }}:</b>
+                        {{ token.options[option] }}<br>
+                    </span>
+
                 </td>
                 <td ng-show="token.optionsEdit">
                     <div class="form-group"
-                         ng-repeat="option in Applications[form.application].options.required">
+                         ng-repeat="option in Applications[token.application].options.required">
                         <label for="option_{{ option }}">{{ option | capitalize }}</label>
                         <input name="option_{{ option }}"
                                ng-model="token.options[option]"
@@ -69,7 +79,7 @@
                                placeholder="required">
                     </div>
                     <div class="form-group"
-                         ng-repeat="option in Applications[form.application].options.optional">
+                         ng-repeat="option in Applications[token.application].options.optional">
                         <label for="option_{{ option }}">{{ option | capitalize }}</label>
                         <input name="option_{{ option }}"
                                ng-model="token.options[option]"
@@ -88,7 +98,8 @@
                 <td ng-show="token.optionsEdit">
                     <button class="btn btn-primary"
                             ng-click="saveOptions(token.serial,
-                            token.application)">Save Options
+                            token.application, token.options);
+                            token.optionsEdit=false">Save Options
                     </button>
                     <button class="btn btn-danger"
                             ng-click="token.optionsEdit=false">Cancel
