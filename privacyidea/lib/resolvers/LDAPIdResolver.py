@@ -108,6 +108,29 @@ class IdResolver (UserIdResolver):
         
         return True
 
+    def _trim_result(self, result_list):
+        """
+        The resultlist can contain entries of type:searchResEntry and of
+        type:searchResRef. If self.noreferrals is true, all type:searchResRef
+        will be removed.
+
+        :param result_list: The result list of a LDAP search
+        :type result_list: resultlist (list of dicts)
+        :return: new resultlist
+        """
+        if self.noreferrals:
+            new_list = []
+            for result in result_list:
+                if result.get("type") == "searchResEntry":
+                    new_list.append(result)
+                elif result.get("type") == "searchResRef":
+                    # This is a Referral
+                    pass
+        else:
+            new_list = result_list
+
+        return new_list
+
     def _get_uid(self, entry):
         uid = None
         if type(entry.get(self.uidtype)) == list:
@@ -139,6 +162,7 @@ class IdResolver (UserIdResolver):
                               search_filter=filter,
                               attributes=self.userinfo.values())
             r = self.l.response
+            r = self._trim_result(r)
             if len(r) > 1:  # pragma: no cover
                 raise Exception("Found more than one object for uid %r"
                                 % userId)
@@ -188,6 +212,7 @@ class IdResolver (UserIdResolver):
                               attributes=self.userinfo.values())
 
         r = self.l.response
+        r = self._trim_result(r)
         if len(r) > 1:  # pragma: no cover
             raise Exception("Found more than one object for uid %r" % userId)
 
@@ -236,6 +261,7 @@ class IdResolver (UserIdResolver):
                       attributes=attributes)
 
         r = self.l.response
+        r = self._trim_result(r)
         if len(r) > 1:  # pragma: no cover
             raise Exception("Found more than one object for Loginname %r" %
                             LoginName)
