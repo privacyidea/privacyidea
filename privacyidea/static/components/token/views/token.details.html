@@ -59,17 +59,18 @@
                 </button>
             </td>
         </tr>
-        <tr>
+        <tr ng-hide="token.tokentype == 'spass'">
             <td>OTP Length</td>
             <td>{{ token.otplen }}</td>
             <td></td>
         </tr>
-        <tr>
+        <tr ng-hide="token.tokentype == 'spass'">
             <td>Count</td>
             <td>{{ token.count }}</td>
             <td></td>
         </tr>
-        <tr token-data-edit text="Count Window"
+        <tr ng-hide="token.tokentype == 'spass'"
+            token-data-edit text="Count Window"
             button-text="Set count window"
             token-data="{{ token.count_window }}"
             token-key="count_window"
@@ -77,7 +78,8 @@
             callback-cancel="get()"
             callback="set(key, value)"
             logged-in-user="loggedInUser"></tr>
-        <tr token-data-edit text="Sync Window"
+        <tr ng-hide="token.tokentype == 'spass'"
+            token-data-edit text="Sync Window"
             button-text="Set sync window"
             token-data="{{ token.sync_window }}"
             token-key="sync_window"
@@ -138,7 +140,7 @@
 
         <!-- =================== TOKEN FUNCTIONS =============================== -->
 
-        <tr>
+        <tr ng-hide="token.tokentype == 'spass'">
             <td>
                 <input type="text" ng-model="otp1"
                        class="form-control"
