@@ -27,7 +27,7 @@ myApp.factory("AuditFactory", function (AuthFactory, $http, $state, $rootScope, 
             if (error.result.error.code == -401) {
                 $state.go('login');
             } else {
-                addError(error.result);
+                addError(error.result.error.message);
             }
         };
 

@@ -24,7 +24,7 @@ myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope, u
                         if (error.result.error.code == -401) {
                             $state.go('login');
                         } else {
-                            addError(error.result);
+                            addError(error.result.error.message);
                         }
                     };
 

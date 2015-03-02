@@ -26,7 +26,7 @@ myApp.factory("ValidateFactory", function ($http, $state, $rootScope, validateUr
             if (error.result.error.code == -401) {
                 $state.go('login');
             } else {
-                addError(error.result);
+                addError(error.result.error.message);
             }
         };
 
