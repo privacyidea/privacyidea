@@ -85,7 +85,8 @@ class UserIdResolver(object):
         """
         return 'UserIdResolver'
 
-    def getResolverType(self):
+    @classmethod
+    def getResolverType(cls):
         """
         getResolverType - return the type of the resolver
 

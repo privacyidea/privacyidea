@@ -426,13 +426,17 @@ class IdResolver (UserIdResolver):
                     "phone",
                     "password"]:
             try:
-                if r.get(self.map.get(key)):
-                    val = r.get(self.map.get(key))
+                raw_value = r.get(self.map.get(key))
+                if raw_value:
+                    val = raw_value.decode(self.encoding)
+                    #val = r.get(self.map.get(key))
+                    #val = val.encode(self.encoding)
                     # val is a unicode!
                     # log.error("CKO: %r" % val)
                     # log.error("CKO: %r" % type(val))
                     user[key] = val
-            except UnicodeEncodeError:  # pragma: no cover
+            except UnicodeDecodeError:  # pragma: no cover
+                user[key] = "decoding_error"
                 log.error("Failed to convert user: %r" % r)
                 log.error(traceback.format_exc())
         
@@ -476,6 +480,7 @@ class IdResolver (UserIdResolver):
             user = self._get_user_from_mapped_object(r)
             if "id" in user:
                 users.append(user)
+
         return users
     
     def getResolverId(self):
@@ -490,7 +495,8 @@ class IdResolver (UserIdResolver):
     def getResolverClassType(cls):
         return 'sqlresolver'
 
-    def getResolverType(self):
+    @classmethod
+    def getResolverType(cls):
         return IdResolver.getResolverClassType()
     
     def loadConfig(self, config):
@@ -513,7 +519,7 @@ class IdResolver (UserIdResolver):
         self.map = yaml.load(usermap)
         self.reverse_map = dict([[v, k] for k, v in self.map.items()])
         self.where = config.get('Where', "")
-        self.encoding = config.get('Encoding', "latin1")
+        self.encoding = str(config.get('Encoding') or "latin1")
         self.conParams = config.get('conParams', "")
         
         # create the connectstring like
@@ -527,7 +533,8 @@ class IdResolver (UserIdResolver):
         self.connect_string = self._create_connect_string(params)
         log.info("using the connect string %s" % self.connect_string)
         self.engine = create_engine(self.connect_string,
-                                    encoding=self.encoding)
+                                    encoding=self.encoding,
+                                    convert_unicode=False)
         # create a configured "Session" class
         Session = sessionmaker(bind=self.engine)
 
@@ -539,15 +546,16 @@ class IdResolver (UserIdResolver):
         
         return self
 
-    def getResolverDescriptor(self):
+    @classmethod
+    def getResolverClassDescriptor(cls):
         descriptor = {}
-        typ = self.getResolverType()
+        typ = cls.getResolverType()
         descriptor['clazz'] = "useridresolver.SQLIdResolver.IdResolver"
         descriptor['config'] = {'Server': 'string',
                                 'Driver': 'string',
                                 'Database': 'string',
                                 'User': 'string',
-                                'Password': 'string',
+                                'Password': 'password',
                                 'Port': 'int',
                                 'Limit': 'int',
                                 'Table': 'string',

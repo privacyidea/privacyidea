@@ -434,9 +434,6 @@ class IdResolver (UserIdResolver):
                                 'CACERTIFICATE': 'string'}
         return {typ: descriptor}
 
-    def getResolverDescriptor(self):
-        return IdResolver.getResolverClassDescriptor()
-
     @classmethod
     def testconnection(self, param):
         """
