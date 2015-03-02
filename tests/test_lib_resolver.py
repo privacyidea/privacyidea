@@ -55,6 +55,7 @@ class SQLResolverTestCase(MyTestCase):
                   'Server': '/tests/testdata/',
                   'Database': "testuser.sqlite",
                   'Table': 'users',
+                  'Encoding': 'utf8',
                   'Map': '{ "username": "username", \
                     "userid" : "id", \
                     "email" : "email", \

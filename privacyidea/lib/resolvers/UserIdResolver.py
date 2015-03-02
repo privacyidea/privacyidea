@@ -122,6 +122,7 @@ class UserIdResolver(object):
         """
         return UserIdResolver.getResolverClassDescriptor()
 
+
     def getUserId(self, loginName):
         """
         The loginname is resolved to a user_id.

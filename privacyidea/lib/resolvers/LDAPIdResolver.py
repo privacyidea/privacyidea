@@ -336,6 +336,9 @@ class IdResolver (UserIdResolver):
     def getResolverClassType(cls):
         return 'ldapresolver'
 
+    def getResolverDescriptor(self):
+        return IdResolver.getResolverClassDescriptor()
+
     @classmethod
     def getResolverType(cls):
         return IdResolver.getResolverClassType()

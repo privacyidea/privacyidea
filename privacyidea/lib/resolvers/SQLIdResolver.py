@@ -428,13 +428,12 @@ class IdResolver (UserIdResolver):
             try:
                 raw_value = r.get(self.map.get(key))
                 if raw_value:
-                    val = raw_value.decode(self.encoding)
-                    #val = r.get(self.map.get(key))
-                    #val = val.encode(self.encoding)
-                    # val is a unicode!
-                    # log.error("CKO: %r" % val)
-                    # log.error("CKO: %r" % type(val))
+                    if type(raw_value) == 'str':
+                        val = raw_value.decode(self.encoding)
+                    else:
+                        val = raw_value
                     user[key] = val
+
             except UnicodeDecodeError:  # pragma: no cover
                 user[key] = "decoding_error"
                 log.error("Failed to convert user: %r" % r)
@@ -564,6 +563,9 @@ class IdResolver (UserIdResolver):
                                 'Encoding': 'string',
                                 'conParams': 'string'}
         return {typ: descriptor}
+
+    def getResolverDescriptor(self):
+        return IdResolver.getResolverClassDescriptor()
 
     @classmethod
     def _create_connect_string(self, param):
