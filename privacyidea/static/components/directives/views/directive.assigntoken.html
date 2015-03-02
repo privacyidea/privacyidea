@@ -4,8 +4,7 @@ This is the directive for assigning tokens to users.
 <div class="form-group">
     <label for="serial">Serial</label>
     <input name="serial" type="text" ng-model="newTokenObject.serial"
-           placeholder="start typing a serial number of a token that is not
-           assigned, yet."
+           placeholder="start typing a serial number of a token that is notassigned, yet."
            typeahead="serial for serial in loadSerials($viewValue)"
            typeahead-loading="loadingSerials" class="form-control" >
     <i ng-show="loadingSerials" class="glyphicon glyphicon-refresh">Loading

@@ -1,0 +1,13 @@
+<!--
+This is the directive for attaching machines to tokens.
+-->
+<div class="form-group">
+    <label for="serial">Machine</label>
+    <input name="serial" type="text" ng-model="newMachine"
+           placeholder="start typing a machine."
+           typeahead="serial for serial in loadMachines($viewValue)"
+           typeahead-loading="loadingMachines" class="form-control" >
+    <i ng-show="loadingMachines" class="glyphicon glyphicon-refresh">Loading
+        Machines...
+    </i>
+</div>

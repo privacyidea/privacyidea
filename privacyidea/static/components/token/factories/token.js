@@ -46,6 +46,32 @@ function fixSerial(serial) {
     return serial;
 }
 
+
+function fixMachine(machinestr) {
+    /*
+     * This takes a machinestring of the format of
+     *   <hostname> [<IP>] (<machineid> in <machineresolver>)
+     * and returns a machineObject of
+     *  mo.id
+     *  mo.resolver
+     *  mo.hostname
+     *  mo.ip
+     */
+    var machineObject = {};
+    console.log("Machine In: " + machinestr);
+    if (machinestr) {
+        var stripMachine = machinestr.match(/^(.*) \[(.*)\] \((.*) in (.*)\)$/);
+        if (stripMachine != undefined) {
+            machineObject = {id: stripMachine[3], resolver: stripMachine[4],
+                hostname: stripMachine[1], ip: stripMachine[2]};
+        }
+    } else {
+        machineObject = {id: 0, resolver: "", hostname: "", ip: 0};
+    }
+    console.log("Machine Object Out: " + machineObject);
+    return machineObject;
+}
+
 angular.module("TokenModule", ["privacyideaAuth"])
     .factory("TokenFactory", function (AuthFactory, $http, $state, $rootScope, tokenUrl) {
         /**

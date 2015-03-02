@@ -362,11 +362,8 @@
 
     <h4>Attach to a new Machine</h4>
 
-    <form name="formAttachToken" role="form" validate>
-        <!-- TODO -->
-        <!--
-        <div attach-token new-token-object="newToken"></div>
-        -->
+    <form name="formAttachMachine" role="form" validate>
+        <div attach-machine new-machine="newMachine"></div>
 
         <div class="form-group">
             <label for="application">Application</label>
@@ -379,10 +376,27 @@
             </select>
         </div>
 
+        <!-- Options for a new MachineToken -->
+        <div class="form-group"
+             ng-repeat="option in Applications[form.application].options.required">
+            <label for="option_{{ option }}">{{ option | capitalize }}</label>
+            <input name="option_{{ option }}"
+                   ng-model="form.options[option]"
+                   class="form-control" ng-required="1"
+                    placeholder="required">
+        </div>
+        <div class="form-group"
+             ng-repeat="option in Applications[form.application].options.optional">
+            <label for="option_{{ option }}">{{ option | capitalize }}</label>
+            <input name="option_{{ option }}"
+                   ng-model="form.options[option]"
+                   class="form-control" placeholder="optional">
+        </div>
+
         <div class="text-center">
-            <button ng-click="attachToken()"
-                    ng-disabled="formAttachToken.$invalid"
-                    class="btn btn-primary">Attach Token
+            <button ng-click="attachMachine()"
+                    ng-disabled="formAttachMachine.$invalid"
+                    class="btn btn-primary">Attach Machine
             </button>
         </div>
     </form>

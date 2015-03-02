@@ -14,6 +14,7 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.loggedInUser = AuthFactory.getUser();
     $scope.machinesPerPage = 5;
     $scope.params = {page: 1};
+    $scope.form = {options: {}};
     // scroll to the top of the page
     document.body.scrollTop = document.documentElement.scrollTop = 0;
 
@@ -123,6 +124,10 @@ myApp.controller("tokenDetailController", function ($scope,
     // initialize
     $scope.get();
 
+    //----------------------------------------------------------------
+    //   Admin functions
+    //
+
     if ($scope.loggedInUser.role == "admin") {
         // These are functions that can only be used by administrators.
         // If the user is admin, we can fetch all realms
@@ -141,6 +146,25 @@ myApp.controller("tokenDetailController", function ($scope,
             $scope.formInit = { application: applications};
         });
 
+        $scope.attachMachine = function () {
+            // newToken.serial, application
+            var params = $scope.form.options;
+            // First we set all the application specific option than add the
+            // needed standard values
+            var machineObject = fixMachine($scope.newMachine);
+            params["serial"] = $scope.tokenSerial;
+            params["application"] = $scope.form.application;
+            params["machineid"] = machineObject.id;
+            params["resolver"] = machineObject.resolver;
+            MachineFactory.attachTokenMachine(params, function (data) {
+                // clear form
+                $scope.form.application = null;
+                $scope.newToken = null;
+                $scope.form.options = {};
+                $scope.getMachines();
+            });
+        };
+
         $scope.detachMachineToken = function (machineid, resolver, application) {
             MachineFactory.detachTokenMachine({serial: $scope.tokenSerial,
                     application: application,
@@ -158,7 +182,7 @@ myApp.controller("tokenDetailController", function ($scope,
             params["serial"] = $scope.tokenSerial;
             params["application"] = application;
             MachineFactory.saveOptions(params, function (data) {
-                $scope.getMachineTokens();
+                $scope.getMachines();
                 console.log(data);
             });
         };

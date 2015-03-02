@@ -179,6 +179,37 @@ myApp.directive('attachToken', function($http, tokenUrl,
 });
 
 
+myApp.directive('attachMachine', function($http, machineUrl,
+                                          AuthFactory, instanceUrl) {
+    /*
+    This directive is used to select a machine.
+     */
+    return {
+        scope: {
+            newMachine: '='
+        },
+        templateUrl: instanceUrl + "/static/components/directives/views/directive.attachmachine.html",
+        link: function (scope, element, attr) {
+            scope.loadMachines = function($viewValue) {
+            var auth_token = AuthFactory.getAuthToken();
+            return $http({
+                method: 'GET',
+                url: machineUrl,
+                headers: {'Authorization': auth_token},
+                params: {any: $viewValue}
+            }).then(function ($response) {
+                console.log($response.data.result.value);
+                return $response.data.result.value.map(function (item) {
+                    return item.hostname + " [" + item.ip + "] (" +
+                        item.id + " in " + item.resolver_name + ")";
+                });
+            });
+            };
+        }
+    }
+});
+
+
 myApp.directive('equals', function() {
   return {
     restrict: 'A', // only activate on element attribute
