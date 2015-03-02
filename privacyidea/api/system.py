@@ -122,6 +122,8 @@ def before_request():
 @token_blueprint.after_request
 @audit_blueprint.after_request
 @application_blueprint.after_request
+@machine_blueprint.after_request
+@machineresolver_blueprint.after_request
 def after_request(response):
     """
     This function is called after a request
