@@ -168,10 +168,6 @@ class HostsMachineTestCase(MyTestCase):
         machines = self.mreso.get_machines()
         self.assertEqual(len(machines), 4)
 
-    def test_02_get_machines(self):
-        machines = self.mreso.get_machines()
-        self.assertEqual(len(machines), 4)
-
         machines = self.mreso.get_machines(hostname="gandalf")
         self.assertEqual(len(machines), 1)
 
@@ -183,6 +179,24 @@ class HostsMachineTestCase(MyTestCase):
         machines = self.mreso.get_machines(hostname="n",
                                            substring=True)
         self.assertEqual(len(machines), 3)
+
+    def test_02_get_machines_any(self):
+        machines = self.mreso.get_machines(any="19")
+        # 3 machines with IP 192...
+        self.assertEqual(len(machines), 3)
+
+        machines = self.mreso.get_machines(any="in")
+        # 3 machines: pippIN and borodIN
+        self.assertEqual(len(machines), 2)
+
+        machines = self.mreso.get_machines(any="0")
+        # 4 machines: all IP addresses
+        self.assertEqual(len(machines), 4)
+
+        machines = self.mreso.get_machines(any="gandalf")
+        # Only one machine
+        self.assertEqual(len(machines), 1)
+
 
     def test_03_get_single_machine(self):
         machine = self.mreso.get_machines(machine_id="192.168.0.1")[0]

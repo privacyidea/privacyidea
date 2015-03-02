@@ -36,7 +36,7 @@ class HostsMachineResolver(BaseMachineResolver):
 
     type = "hosts"
 
-    def get_machines(self, machine_id=None, hostname=None, ip=None,
+    def get_machines(self, machine_id=None, hostname=None, ip=None, any=None,
                      substring=False):
         """
         Return matching machines.
@@ -44,7 +44,10 @@ class HostsMachineResolver(BaseMachineResolver):
         :param machine_id: can be matched as substring
         :param hostname: can be matched as substring
         :param ip: can not be matched as substring
-        :param substring: Whether the filtering shoulf be a substring matching
+        :param substring: Whether the filtering should be a substring matching
+        :type substring: bool
+        :param any: a substring that matches EITHER hostname, machineid or ip
+        :type any: basestring
         :return: list of Machine Objects
         """
         machines = []
@@ -62,26 +65,36 @@ class HostsMachineResolver(BaseMachineResolver):
                 line_id = split_line[0]
                 line_ip = netaddr.IPAddress(split_line[0])
                 line_hostname = split_line[1:]
-                if machine_id:
-                    if not substring and machine_id == line_id:
-                        return [Machine(self.name, line_id,
-                                        hostname=line_hostname, ip=line_ip)]
-                    if substring and machine_id not in line_id:
-                        # do not append this machine!
-                        continue
-                if hostname:
-                    if substring:
-                        h_match = len([x for x in line_hostname if hostname in x])
-                    else:
-                        h_match = hostname in line_hostname
-                    if not h_match:
-                        # do not append this machine!
-                        continue
+                if any:
+                    # check if machineid, ip or hostname matches a substring
+                    if any not in line_id and \
+                        len([x for x in line_hostname if any in x]) <= 0 \
+                            and any not in "%s" % line_ip:
+                            # "any" was provided but did not match either
+                            # hostname, ip or machine_id
+                            continue
 
-                if ip:
-                    if ip != line_ip:
-                        # Do not append this machine!
-                        continue
+                else:
+                    if machine_id:
+                        if not substring and machine_id == line_id:
+                            return [Machine(self.name, line_id,
+                                            hostname=line_hostname, ip=line_ip)]
+                        if substring and machine_id not in line_id:
+                            # do not append this machine!
+                            continue
+                    if hostname:
+                        if substring:
+                            h_match = len([x for x in line_hostname if hostname in x])
+                        else:
+                            h_match = hostname in line_hostname
+                        if not h_match:
+                            # do not append this machine!
+                            continue
+
+                    if ip:
+                        if ip != line_ip:
+                            # Do not append this machine!
+                            continue
 
                 machines.append(Machine(self.name, line_id,
                                         hostname=line_hostname,

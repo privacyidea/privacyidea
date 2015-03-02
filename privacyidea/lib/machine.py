@@ -47,9 +47,8 @@ log = logging.getLogger(__name__)
 from privacyidea.lib.log import log_with
 
 
-
 @log_with(log)
-def get_machines(hostname=None, ip=None, id=None, resolver=None):
+def get_machines(hostname=None, ip=None, id=None, resolver=None, any=None):
     """
     This returns a list of machines from ALL resolvers matching this criterion.
 
@@ -61,6 +60,8 @@ def get_machines(hostname=None, ip=None, id=None, resolver=None):
     :type id: basestring
     :param resolver: The resolver of the machine, substring matching
     :type resolver: basestring
+    :param any: a substring, that matches EITHER of hostname, ip or resolver
+    :type any: basestring
     :return: list of Machine Objects.
     """
     resolver_list = get_resolver_list()
@@ -74,7 +75,7 @@ def get_machines(hostname=None, ip=None, id=None, resolver=None):
         reso_obj = get_resolver_object(reso)
         resolver_machines = reso_obj.get_machines(hostname=hostname,
                                                   ip=ip,
-                                                  machine_id=id,
+                                                  machine_id=id, any=any,
                                                   substring=True)
         all_machines += resolver_machines
 

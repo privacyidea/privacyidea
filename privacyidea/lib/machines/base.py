@@ -116,7 +116,7 @@ class BaseMachineResolver(object):
     def get_type(self):
         return self.type
 
-    def get_machines(self, machine_id=None, hostname=None, ip=None,
+    def get_machines(self, machine_id=None, hostname=None, ip=None, any=None,
                      substring=False):
         """
         Return a list of all machine objects in this resolver
@@ -124,6 +124,8 @@ class BaseMachineResolver(object):
         :param substring: If set to true, it will also match search_hostnames,
         that only are a subnet of the machines hostname.
         :type substring: bool
+        :param any: a substring that matches EITHER hostname, machineid or ip
+        :type any: basestring
         :return: list of machine objects
         """
         return []

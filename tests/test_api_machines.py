@@ -37,6 +37,20 @@ class APIMachinesTestCase(MyTestCase):
             self.assertTrue("ip" in result["value"][0].keys())
             self.assertTrue("resolver_name" in result["value"][0].keys())
 
+    def test_01_get_machine_list_any(self):
+        with self.app.test_request_context('/machine/?any=192',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result["status"], True)
+            self.assertEqual(len(result["value"]), 3)
+            self.assertTrue("hostname" in result["value"][0].keys())
+            self.assertTrue("id" in result["value"][0].keys())
+            self.assertTrue("ip" in result["value"][0].keys())
+            self.assertTrue("resolver_name" in result["value"][0].keys())
+
     def test_02_attach_token(self):
         serial = "S1"
         # create token
