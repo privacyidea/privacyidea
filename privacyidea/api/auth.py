@@ -235,6 +235,7 @@ def get_auth_token():
     # Add the authtype to the JWT, so that we could use it for access
     # definitions
     token = jwt.encode({"username": username,
+                        "realm": realm,
                         "nonce": geturandom(hex=True),
                         "role": role,
                         "authtype": authtype,
@@ -310,5 +311,6 @@ def check_auth_token(required_role=None):
                         "this resouce!" % (required_role),
                         status=401)
     g.logged_in_user = {"username": r.get("username"),
+                        "realm": r.get("realm"),
                         "role": r.get("role")}
 

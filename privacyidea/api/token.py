@@ -98,7 +98,10 @@ def before_request():
         # In case the token API is called by the user and not by the admin we
         #  need to restrict the token view.
         CurrentUser = get_user_from_param({"user":
-                                               g.logged_in_user.get("username")})
+                                               g.logged_in_user.get(
+                                                   "username"),
+                                           "realm": g.logged_in_user.get(
+                                               "realm")})
         request.all_data["user"] = CurrentUser.login
         request.all_data["realm"] = CurrentUser.realm
         g.audit_object.log({"user": CurrentUser.login,
