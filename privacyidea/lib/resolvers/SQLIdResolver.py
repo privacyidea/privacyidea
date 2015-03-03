@@ -428,7 +428,7 @@ class IdResolver (UserIdResolver):
             try:
                 raw_value = r.get(self.map.get(key))
                 if raw_value:
-                    if type(raw_value) == 'str':
+                    if type(raw_value) == str:
                         val = raw_value.decode(self.encoding)
                     else:
                         val = raw_value

@@ -14,12 +14,17 @@ privacyIDEA
 [BS img]: https://travis-ci.org/privacyidea/privacyidea.svg?branch=master
 [CS img]: https://coveralls.io/repos/privacyidea/privacyidea/badge.png?branch=master
 
-privacyIDEA is an open solution for strong two-factor authentication.
+privacyIDEA is an open solution for strong two-factor authentication like 
+OTP tokens, SMS, Smartphones or SSH keys.
 privacyIDEA does to not bind you to any decision of the authentication
 protocol or it does not dictate you where your user information should be
 stored. This is achieved by its totally modular architecture.
 privacyIDEA is not only open as far as its modular architecture is
 concerned. But privacyIDEA is completely licensed under the AGPLv3.
+
+It supports a wide varity of authentication devices like OTP tokens 
+(HMAC, HOTP, TOTP, OCRA, mOTP), Yubikey (HOTP, TOTP, AES), Smartphone
+Apps like Google Authenticator, SMS, Email, SSH keys.
 
 Version 2.0
 ===========
