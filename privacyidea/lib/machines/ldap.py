@@ -41,6 +41,7 @@ import traceback
 import logging
 from privacyidea.lib.resolvers.LDAPIdResolver import AUTHTYPE
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver
+from gettext import gettext as _
 
 log = logging.getLogger(__name__)
 
@@ -269,4 +270,40 @@ class LdapMachineResolver(BaseMachineResolver):
         :param params:
         :return:
         """
-        return False, "Not Implemented"
+        success = False
+        try:
+            (host, port, ssl) = IdResolver.split_uri(params.get("LDAPURI"))
+            server = ldap3.Server(host, port=port,
+                                  use_ssl=ssl,
+                                  connect_timeout=float(params.get("TIMEOUT",
+                                                                  5)))
+            l = IdResolver.create_connection(authtype=\
+                                                 params.get("AUTHTYPE",
+                                                            AUTHTYPE.SIMPLE),
+                                             server=server,
+                                             user=params.get("BINDDN"),
+                                             password=params.get("BINDPW"),
+                                             auto_referrals=not params.get(
+                                                 "NOREFERRALS"))
+            l.open()
+            if not l.bind():
+                raise Exception("Wrong credentials")
+            # search for users...
+            l.search(search_base=params["LDAPBASE"],
+                     search_scope=ldap3.SUBTREE,
+                     search_filter="(&" + params["SEARCHFILTER"] + ")",
+                     attributes=[ params["HOSTNAMEATTRIBUTE"] ])
+
+            count = len([x for x in l.response if x.get("type") ==
+                         "searchResEntry"])
+            desc = _("Your LDAP config seems to be OK, %i machine objects "
+                     "found.")\
+                % count
+
+            l.unbind()
+            success = True
+
+        except Exception, e:
+            desc = "%r" % e
+
+        return success, desc

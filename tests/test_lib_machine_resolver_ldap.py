@@ -32,22 +32,22 @@ LDAPDirectory = [{"dn": "cn=admin,ou=example,o=test",
                                 }
                  }]
 
+MYCONFIG = {"HOSTNAMEATTRIBUTE": "dNSHostName",
+            "LDAPURI": "ldap://1.2.3.4",
+            "IDATTRIBUTE": "DN",
+            "LDAPBASE": "o=test",
+            "BINDDN": "cn=admin,ou=example,o=test",
+            "BINDPW": "secret",
+            "SEARCHFILTER": "(objectClass=computer)",
+            "REVERSEFITLER": "(&(dNSHostName=%s)(objectClass=computer))"}
+
 
 class LdapMachineTestCase(MyTestCase):
     """
     Test the LDAP Resolver
     """
     mreso = LdapMachineResolver("myResolver",
-                                config={"HOSTNAMEATTRIBUTE": "dNSHostName",
-                                        "LDAPURI": "ldap://1.2.3.4",
-                                        "IDATTRIBUTE": "DN",
-                                        "LDAPBASE": "o=test",
-                                        "BINDDN": "cn=admin,ou=example,o=test",
-                                        "BINDPW": "secret",
-                                        "SEARCHFILTER": "("
-                                                        "objectClass=computer)",
-                                        "REVERSEFITLER": "(&(dNSHostName=%s)("
-                                                         "objectClass=computer))"})
+                                config=MYCONFIG)
 
     mrAD = LdapMachineResolver("myreso",
                                config={"LDAPURI": "ldap://172.16.200.202",
@@ -126,3 +126,10 @@ class LdapMachineTestCase(MyTestCase):
         id = self.mreso.get_machine_id(hostname="machine1.example.test")
         self.assertEqual(id, "cn=machine1,ou=example,o=test")
 
+    @ldap3mock.activate
+    def test_07_testconnection(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        (success, desc) = LdapMachineResolver.testconnection(MYCONFIG)
+        self.assertTrue(success)
+        self.assertEqual(desc, "Your LDAP config seems to be OK, 3 "
+                               "machine objects found.")
