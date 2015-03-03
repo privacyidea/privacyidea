@@ -85,6 +85,16 @@ angular.module('privacyideaApp.configStates', ['ui.router']).config(
                     url: "/hosts/{resolvername:.*}",
                     templateUrl: configpath + "config.mresolvers.hosts.html"
                 })
+                .state('config.mresolvers.addldap', {
+                    // Create a new resolver
+                    url: "/ldap",
+                    templateUrl: configpath + "config.mresolvers.ldap.html"
+                })
+                .state('config.mresolvers.editldap', {
+                    // edit an existing resolver
+                    url: "/ldap/{resolvername:.*}",
+                    templateUrl: configpath + "config.mresolvers.ldap.html"
+                })
                 .state('config.system', {
                     url: "/system",
                     templateUrl: configpath + "config.system.html"

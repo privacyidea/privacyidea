@@ -238,7 +238,6 @@ class LdapMachineResolver(BaseMachineResolver):
         self.reverse_map = {self.ip_attribute: "ip",
                             self.hostname_attribute: "hostname",
                             self.id_attribute: "id"}
-        self.reverse_filter = config.get("REVERSEFILTER")
         self.noreferrals = config.get("NOREFERRALS", False)
         self.certificate = config.get("CACERTIFICATE")
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
@@ -255,7 +254,6 @@ class LdapMachineResolver(BaseMachineResolver):
                                              "IDATTRIBUTE": "string",
                                              "IPATTRIBUTE": "string",
                                              "SEARCHFILTER": "string",
-                                             "REVERSEFILTER": "string",
                                              "NOREFERRALS": "bool",
                                              "CACERTIFICATE": "string",
                                              "AUTHTYPE": "string"}}}

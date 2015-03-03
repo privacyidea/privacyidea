@@ -118,13 +118,19 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
         setMachineResolver: function (name, params, callback) {
             $http.post(machineResolverUrl + "/" + name, params,
                 {headers: {'Authorization': AuthFactory.getAuthToken(),
-                          'Content-Type': 'application/json'}}).success(
+                           'Content-Type': 'application/json'}}).success(
                 callback).error(error_func);
         },
         testResolver: function (params, callback) {
             $http.post(resolverUrl + "/test", params,
                 {headers: {'Authorization': AuthFactory.getAuthToken(),
-                          'Content-Type': 'application/json'}}).success(
+                           'Content-Type': 'application/json'}}).success(
+                callback).error(error_func);
+        },
+        testMachineResolver: function (params, callback) {
+            $http.post(machineResolverUrl + "/test", params,
+                {headers: {'Authorization': AuthFactory.getAuthToken(),
+                           'Content-Type': 'application/json'}}).success(
                 callback).error(error_func);
         },
         delResolver: function(name, callback) {

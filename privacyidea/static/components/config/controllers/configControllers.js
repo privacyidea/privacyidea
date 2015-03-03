@@ -344,7 +344,7 @@ myApp.controller("configController", function ($scope, $location,
     // TODO: This information needs to be fetched from the server
     $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver'];
     // TODO: This information needs to be fetched from the server
-    $scope.availableMachineResolverTypes = ['hosts'];
+    $scope.availableMachineResolverTypes = ['hosts', 'ldap'];
 
     $scope.isChecked = function (val) {
         // check if val is set

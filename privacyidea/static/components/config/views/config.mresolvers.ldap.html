@@ -1,0 +1,168 @@
+<div ng-controller="ldapMachineResolverController">
+
+    <h2 class="form-signin-heading"
+        ng-show="resolvername">Edit LDAP Machine Resolver
+        {{ resolvername }}</h2>
+
+    <h2 class="form-signin-heading"
+        ng-hide="resolvername">Create a new hosts Machine Resolver</h2>
+
+
+
+<form name="formMachineResolverAddLdap" role="form" validate
+      class="form-horizontal">
+
+    <div class="form-group">
+        <label for="resolvername" class="col-sm-3 control-label">Resolver
+            name</label>
+
+        <div class="col-sm-9">
+            <input name="resolvername" id="resolvername" class="form-control"
+                   ng-model="resolvername" required placeholder="resolver1"
+                   autofocus/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="serveruri" class="col-sm-3 control-label">
+            Server URI</label>
+
+        <div class="col-sm-9">
+            <input name="serveruri" class="form-control"
+                   ng-model="params.LDAPURI" required
+                   placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="basedn" class="col-sm-3 control-label">Base DN</label>
+
+        <div class="col-sm-9">
+            <input name="basedn" class="form-control"
+                   ng-model="params.LDAPBASE" required
+                   placeholder="ou=users,dc=domain,dc=tld"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="binddn" class="col-sm-3 control-label">Bind DN</label>
+
+        <div class="col-sm-9">
+            <input name="binddn" class="form-control"
+                   ng-model="params.BINDDN"
+                   placeholder="cn=admin,ou=users,dc=domain,dc=tld"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="bindpw" class="col-sm-3 control-label">Bind Password</label>
+
+        <div class="col-sm-3">
+            <input name="bindpw" class="form-control"
+                   type="password"
+                   ng-model="params.BINDPW"
+                   placeholder="topsecret"/>
+        </div>
+
+        <label for="authtype" class="col-sm-3 control-label">Bind
+            Type</label>
+
+        <div class="col-sm-3">
+            <select class="form-control"
+                    ng-model="params.AUTHTYPE"
+                    name="authtype"
+                    ng-options="select for select in authtypes">
+            </select>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="timeout" class="col-sm-3 control-label">Timeout
+            (seconds)</label>
+
+        <div class="col-sm-3">
+            <input name="timeout" class="form-control"
+                   ng-model="params.TIMEOUT" required
+                   placeholder="5"/>
+        </div>
+
+        <label for="sizelimit" class="col-sm-3 control-label">Size Limit</label>
+
+        <div class="col-sm-3">
+            <input name="sizelimit" class="form-control"
+                   ng-model="params.SIZELIMIT" required
+                   placeholder="500"/>
+        </div>
+    </div>
+
+    <div class="well">
+        <button class="btn btn-info" ng-click="presetAD()">
+            Preset Active Directory
+        </button>
+        <div class="form-group">
+            <input name="noreferrals" id="noreferrals"
+                   ng-model="params.NOREFERRALS"
+                   type="checkbox"/>
+            <label for="noreferrals">No anonymous referral chasing</label>
+        </div>
+        <div class="form-group">
+            <label for="machineIdAttribute"
+                   class="col-sm-3 control-label">Machine ID Attribute</label>
+
+            <div class="col-sm-9">
+
+                <input name="machineIdAttribute" class="form-control"
+                       ng-model="params.IDATTRIBUTE" required
+                       placeholder="An Attribute or the DN to identify the machine"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="ldapsearchfilter"
+                   class="col-sm-3 control-label">Search Filter</label>
+
+            <div class="col-sm-9">
+                <input name="ldapsearchfilter" class="form-control"
+                       ng-model="params.SEARCHFILTER" required
+                       placeholder="(objectClass=computer)"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="hostnameattribute"
+                   class="col-sm-3 control-label">Hostname Attribute</label>
+
+            <div class="col-sm-9">
+                <input name="hostnameattribute" class="form-control"
+                       ng-model="params.HOSTNAMEATTRIBUTE" required
+                       placeholder='dNSHostName'
+                        />
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="ipattribute"
+                   class="col-sm-3 control-label">IP Address Attribute</label>
+
+            <div class="col-sm-9">
+                <input name="ipattribute" class="form-control"
+                       ng-model="params.IPATTRIBUTE"
+                       placeholder='An Attribute that contains the IP address.'
+                        />
+            </div>
+        </div>
+    </div>
+    <div class="text-center" ng-show="showResult">
+        <label class="label"
+               ng-class="{'label-success':result.result,
+               'label-danger':!result.result}">
+            {{ result.description }}<span class="glyphicon glyphicon-remove"
+                                          ng-click="showResult=false"></span>
+        </label>
+    </div>
+
+    <div class="text-center">
+        <button ng-click="testResolver()"
+                ng-disabled="formMachineResolverAddLdap.$invalid"
+                class="btn btn-success">Test LDAP Resolver
+        </button>
+        <button ng-click="setLDAPMachineResolver()"
+                ng-disabled="formMachineResolverAddLdap.$invalid"
+                class="btn btn-primary">Save resolver
+        </button>
+    </div>
+
+</form>
+</div>

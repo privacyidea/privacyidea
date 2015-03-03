@@ -21,7 +21,7 @@
                     ng-class="{active:
                     $state.includes('config.mresolvers.add'+mResolvertype) }">
                     <a ui-sref="config.mresolvers.add{{ mResolvertype }}">
-                        New {{ mResolvertype }}Resolver</a>
+                        New {{ mResolvertype | uppercase }} Resolver</a>
                 </li>
             </ul>
         </div>
