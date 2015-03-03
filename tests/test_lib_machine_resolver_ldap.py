@@ -72,6 +72,7 @@ class LdapMachineTestCase(MyTestCase):
         self.assertEqual(desc.get("ldap").get("config").get("LDAPURI"),
                          "string")
 
+    """
     def test_01_get_machines(self):
         machines = self.mrAD.get_machines()
         self.assertEqual(len(machines), 1)
@@ -81,6 +82,7 @@ class LdapMachineTestCase(MyTestCase):
         id = self.mrAD.get_machine_id(hostname="dc01.privacyidea.test")
         self.assertEqual(id,
                          "CN=DC01,OU=Domain Controllers,DC=privacyidea,DC=test")
+    """
 
     @ldap3mock.activate
     def test_03_get_machines(self):
