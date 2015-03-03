@@ -376,7 +376,11 @@ def get_machine_resolver_class_list():
     :rtype: list
     """
     class_list = []
+    # TODO: We should read all classes inherited by BaseMachineResolver under
+    # machines/
+    # Otherwise we need to add a line here for each new MachineResolver.
     class_list.append("machines.hosts.HostsMachineResolver")
+    class_list.append("machines.ldap.LdapMachineResolver")
     return class_list
 
 

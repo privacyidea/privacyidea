@@ -20,7 +20,7 @@ class APIMachineResolverTestCase(MyTestCase):
             self.assertFalse(result.get("value"), result)
             self.assertEqual("Not Implemented", detail.get("description"))
 
-    def test_02_resolvers(self):
+    def test_02_resolvers_hosts(self):
 
         # create a machine resolver
         with self.app.test_request_context('/machineresolver/machineresolver1',
@@ -113,3 +113,41 @@ class APIMachineResolverTestCase(MyTestCase):
             self.assertTrue(result["status"] is True, result)
             # Trying to delete a non existing resolver returns -1
             self.assertTrue(result["value"] == -1, result)
+
+
+    def test_03_resolvers_ldap(self):
+
+        # create a machine resolver
+        with self.app.test_request_context('/machineresolver/machineresolver2',
+                                           data={'type': 'ldap',
+                                                 'LDAPURI': "ldap://1.2.3.4",
+                                                 'LDAPBASE': "dc=ex,dc=com"},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result["status"] is True, result)
+            self.assertTrue(result["value"] == 1, result)
+
+        with self.app.test_request_context('/machineresolver/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result["status"] is True, result)
+            self.assertTrue("machineresolver2" in result["value"], result)
+            self.assertTrue("LDAPURI" in result["value"]["machineresolver2"][
+                "data"])
+
+        # delete the resolver
+        with self.app.test_request_context('/machineresolver/machineresolver2',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            print res.data
+            result = json.loads(res.data).get("result")
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(result["status"] is True, result)
+            self.assertTrue(result["value"] == 1, result)

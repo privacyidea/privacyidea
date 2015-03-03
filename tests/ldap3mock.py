@@ -115,20 +115,28 @@ class Connection(object):
             cur = search_filter[0:pos]
             cur = cur[1:-1]
             (k, v) = cur.split("=")
-            if v!="*":
+            if v != "*":
                 condition[k] = v
             search_filter = search_filter[pos:]
         for entry in self.directory:
             dn = entry.get("dn")
             if dn.endswith(search_base):
                 # The entry is in the correct search base
-                # FIXME We use our own searchfilter (cn=*)
                 filtered = False
                 for k, v in condition.iteritems():
                     filtered = True
                     if entry.get("attributes").get(k) == v:
-                        self.response.append(entry)
+                        # exact matching
+                        filtered = False
+                    elif "*" in v:
+                        # rough substring matching
+                        # We assume, that there are only leading and trailing
+                        #  asterisks
+                        v = v.replace("*", "")
+                        if v in entry.get("attributes").get(k, ""):
+                            filtered = False
                 if not filtered:
+                    entry["type"] = "searchResEntry"
                     self.response.append(entry)
 
         return True

@@ -390,22 +390,22 @@ class IdResolver (UserIdResolver):
         return self
 
     @classmethod
-    def split_uri(self, uri):
+    def split_uri(cls, uri):
         ldap_elems = uri.split(":")
         if len(ldap_elems) == 3:
             server = ldap_elems[1].strip("/")
             port = ldap_elems[2]
             if ldap_elems[0].lower() == "ldaps":
-                ssl=True
+                ssl = True
             else:
-                ssl=False
+                ssl = False
         if len(ldap_elems) == 2:
             server = ldap_elems[1].strip("/")
             port = None
             if ldap_elems[0].lower() == "ldaps":
-                ssl=True
+                ssl = True
             else:
-                ssl=False
+                ssl = False
         return server, port, ssl
 
     @classmethod
@@ -434,7 +434,8 @@ class IdResolver (UserIdResolver):
                                 'USERINFO': 'string',
                                 'UIDTYPE': 'string',
                                 'NOREFERRALS': 'bool',
-                                'CACERTIFICATE': 'string'}
+                                'CACERTIFICATE': 'string',
+                                'AUTHTYPE': 'string'}
         return {typ: descriptor}
 
     @classmethod
