@@ -62,7 +62,12 @@ class MethodsMixin(object):
 
 class Token(MethodsMixin, db.Model):
     """
-    The Token table contains all token information.
+    The table "token" contains the basic token data like
+     * serial number
+     * assigned user
+     * secret key...
+    while the table "tokeninfo" contains additional information that is specific
+    to the tokentype.
     """
     __tablename__ = 'token'
     id = db.Column(db.Integer,
@@ -528,9 +533,13 @@ class Token(MethodsMixin, db.Model):
 
 class TokenInfo(MethodsMixin, db.Model):
     """
-    The Info Table for additional, flexible information store with each token.
-    The idea of the tokeninfo table is, that new token types can easily store
-    long additional information.
+    The table "tokeninfo" is used to store additional, long information that
+    is specific to the tokentype.
+    E.g. the tokentype "TOTP" has additional entries in the tokeninfo table
+    for "timeStep" and "timeWindow", which are stored in the
+    column "Key" and "Value".
+
+    The tokeninfo is reference by the foraign key to the "token" table.
     """
     __tablename__ = 'tokeninfo'
     id = db.Column(db.Integer, primary_key=True)
@@ -584,7 +593,9 @@ class TokenInfo(MethodsMixin, db.Model):
 class Admin(db.Model):
     """
     The administrators for managing the system.
-    Certain realms can be defined to be administrative realms in addition
+    To manage the administrators use the command pi-manage.py.
+
+    In addition certain realms can be defined to be administrative realms.
     """
     __tablename__ = "admin"
     username = db.Column(db.Unicode(120),
@@ -620,7 +631,10 @@ class Admin(db.Model):
 
 class Config(db.Model):
     """
-    The config table holds all the configuration in key value pairs.
+    The config table holds all the system configuration in key value pairs.
+
+    Additional configuration for realms, resolvers and machine resolvers is
+    stored in specific tables.
     """
     __tablename__ = "config"
     Key = db.Column(db.Unicode(255),
@@ -653,6 +667,11 @@ class Config(db.Model):
 
 
 class Realm(MethodsMixin, db.Model):
+    """
+    The realm table contains the defined realms. User Resolvers can be
+    grouped to realms. This very table contains just contains the names of
+    the realms. The linking to resolvers is stored in the table "resolverrealm".
+    """
     __tablename__ = 'realm'
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     name = db.Column(db.Unicode(255), default=u'',
@@ -681,6 +700,11 @@ class Realm(MethodsMixin, db.Model):
         
 
 class Resolver(MethodsMixin, db.Model):
+    """
+    The table "resolver" contains the names and types of the defined User
+    Resolvers. As each Resolver can have different required config values the
+    configuration of the resolvers is stored in the table "resolverconfig".
+    """
     __tablename__ = 'resolver'
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     name = db.Column(db.Unicode(255), default=u"",
@@ -709,7 +733,12 @@ class Resolver(MethodsMixin, db.Model):
 class ResolverConfig(db.Model):
     """
     Each Resolver can have multiple configuration entries.
-    The config entries are referenced by the id of the resolver
+    Each Resolver type can have different required config values. Therefor
+    the configuratinon is stored in simple key/value pairs. If the type of a
+    config entry is set to "password" the value of this config entry is stored
+    encrypted.
+
+    The config entries are referenced by the id of the resolver.
     """
     __tablename__ = 'resolverconfig'
     id = db.Column(db.Integer, primary_key=True)
@@ -806,7 +835,11 @@ class ResolverRealm(MethodsMixin, db.Model):
     
 
 class TokenRealm(MethodsMixin, db.Model):
-    """This table stores in which realms a token is assign"""
+    """
+    This table stored to wich realms a token is assigned. A token is in the
+    realm of the user it is assigned to. But a token can also be put into
+    many additional realms.
+    """
     __tablename__ = 'tokenrealm'
     id = db.Column(db.Integer(), primary_key=True, nullable=True)
     token_id = db.Column(db.Integer(),
@@ -998,15 +1031,15 @@ def cleanup_challenges():
 
 
 class Policy(db.Model):
-    '''
+    """
     The policy table contains policy definitions which control
     the behaviour during
-        enrollment
-        authentication
-        authorization
-        administration
-        user actions
-    '''
+     * enrollment
+     * authentication
+     * authorization
+     * administration
+     * user actions
+    """
     __tablename__ = "policy"
     id = db.Column(db.Integer, primary_key=True)
     active = db.Column(db.Boolean, default=True)
