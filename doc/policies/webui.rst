@@ -5,6 +5,8 @@ WebUI Policies
 
 .. index:: WebUI Login, WebUI Policy, Login Policy
 
+.. _policy_login_mode:
+
 login_mode
 ~~~~~~~~~~
 

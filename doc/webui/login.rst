@@ -34,8 +34,7 @@ the user needs to authenticate with his LDAP/AD password.
    the user to authenticate against privacyIDEA itself.
    I.e. this way the user needs to authenticate with
    a second factor/token to access the self service
-   portal. (see the policy section :ref:`policy_auth_otp`)
-   **(TODO)**
+   portal. (see the policy section :ref:`policy_login_mode`)
 
 Login for administrators
 ------------------------

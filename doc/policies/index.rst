@@ -21,7 +21,6 @@ privacyIDEA knows the scopes:
    enrollment
    webui
    audit  **(TODO)**: not migrated, yet.
-   machine **(TODO)**: not migrated, yet.
    ocra **(TODO)**: not migrated, yet.
    gettoken **(TODO)**: not migrated, yet.
 
