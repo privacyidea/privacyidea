@@ -108,6 +108,7 @@ class SCOPE():
     USER = "user"   # was selfservice
     ENROLL = "enrollment"
     GETTOKEN = "gettoken"
+    WEBUI = "webui"
 
 
 class ACTION():
@@ -121,6 +122,7 @@ class ACTION():
     DISABLE = "disable"
     ENABLE = "enable"
     IMPORT = "importtokens"
+    LOGINMODE = "login_mode"
     LOSTTOKEN = 'losttoken'
     MACHINERESOLVERWRITE = "mresolverwrite"
     MACHINERESOLVERDELETE = "mresolverdelete"
@@ -151,6 +153,12 @@ class ACTION():
     TOKENTYPE = "tokentype"
     UNASSIGN = "unassign"
     USERLIST = "userlist"
+
+
+class LOGINMODE():
+    __doc__ = """This is the list of possible values for the login mode."""
+    USERSTORE = "userstore"
+    PRIVACYIDEA = "privacyIDEA"
 
 
 class ACTIONVALUE():
@@ -623,9 +631,6 @@ def get_static_policy_definitions(scope=None):
             # 'getserial': {
             #     'type': 'bool',
             #     'desc': _('Allow the user to search an unassigned token by OTP value.')},
-            # 'auth' : {
-            #     'type' : 'str',
-            #     'desc' : _('If set to "otp": Users in this realm need to login with OTP to the selfservice.')}
             },
         SCOPE.ENROLL: {
             ACTION.MAXTOKENREALM: {
@@ -739,6 +744,17 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('In case of failed authentication additional '
                         'no detail information will be returned.')}
             },
+        SCOPE.WEBUI: {
+            ACTION.LOGINMODE: {
+                'type': 'str',
+                'desc': _(
+                    'If set to "privacyIDEA" the users and admins need to '
+                    'authenticate against privacyIDEA when they log in '
+                    'to the Web UI. Defaults to "userstore"'),
+                'value': [LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA],
+            }
+        }
+
         # 'ocra': {
         #     'request': {
         #         'type': 'bool',
@@ -753,27 +769,6 @@ def get_static_policy_definitions(scope=None):
         #         'type': 'bool',
         #         'desc': _('Allow to do an ocra/calculateOtp.')}
         # },
-        # 'machine': {
-        #             'create': {'type': 'bool',
-        #                        'desc': _("Create a new client "
-        #                                  "machine definition")
-        #                        },
-        #             'delete': {'type': 'bool',
-        #                        'desc': _("delete a client machine defintion")},
-        #             'show': {'type': 'bool',
-        #                      'desc': _("list the client machine definitions")},
-        #             'addtoken': {'type': 'bool',
-        #                          'desc': _("add a token to a client machine")},
-        #             'deltoken': {'type': 'bool',
-        #                          'desc': _("delete a token from "
-        #                                    "a client machine")},
-        #             'showtoken': {'type': 'bool',
-        #                           'desc': _("list the tokens and "
-        #                                     "client machines")},
-        #             'gettokenapps': {'type': 'bool',
-        #                           'desc': _("get the authentication items "
-        #                                     "for a client machine")}
-        #             }
     }
     if scope:
         ret = pol.get(scope, {})

@@ -22,6 +22,14 @@
 from privacyidea.models import Admin
 import passlib.hash
 from flask import current_app
+from privacyidea.lib.token import check_user_pass
+from privacyidea.lib.policydecorators import libpolicy, login_mode
+
+
+class ROLE():
+    ADMIN = "admin"
+    USER = "user"
+
 
 def verify_db_admin(username, password):
     """
@@ -66,3 +74,49 @@ def list_db_admin():
 def delete_db_admin(username):
     print "Deleting admin %s" % username
     Admin.query.filter(Admin.username == username).first().delete()
+
+
+@libpolicy(login_mode)
+def check_webui_user(user_obj,
+                     password,
+                     options=None,
+                     superuser_realms=None,
+                     check_otp=False):
+    """
+    This function is used to authenticate the user at the web ui.
+    It checks against the userstore or against OTP/privacyidea (check_otp).
+    It returns true/false if the user authenticated successfully and the
+    role of the user.
+
+    :param user_obj: The user who tries to authenticate
+    :type user_obj: User Object
+    :param password: Password, static and or OTP
+    :param options: additional options like g and clientip
+    :type options: dict
+    :param superuser_realms: list of realms, that contain admins
+    :type superuser_realms: list
+    :param check_otp: If set, the user is not authenticated against the
+    userstore but against privacyidea
+    :return: tuple of bool and string
+    """
+    options = options or {}
+    superuser_realms = superuser_realms or []
+    user_auth = False
+    role = ROLE.USER
+
+    if check_otp:
+        # check if the given password matches an OTP token
+        check, _dict = check_user_pass(user_obj, password, options=options)
+        if check:
+            user_auth = True
+    else:
+        # check the password of the user against the userstore
+        if user_obj.check_password(password):
+            user_auth = True
+
+    # If the realm is in the SUPERUSER_REALM then the authorization role
+    # is risen to "admin".
+    if user_obj.realm in superuser_realms:
+        role = ROLE.ADMIN
+
+    return user_auth, role

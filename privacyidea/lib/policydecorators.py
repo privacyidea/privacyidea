@@ -35,7 +35,7 @@ The functions of this module are tested in tests/test_lib_policy_decorator.py
 import logging
 from privacyidea.lib.error import PolicyError
 import functools
-from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE
+from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE
 from privacyidea.lib.user import User
 
 log = logging.getLogger(__name__)
@@ -184,6 +184,52 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
 
     # If nothing else returned, we return the wrapped function
     return wrapped_function(user_object, passw, options)
+
+
+def login_mode(wrapped_function, *args, **kwds):
+    """
+    Decorator to decorate the lib.auth.check_webui_user function.
+    Depending on ACTION.LOGINMODE it sets the check_otp paramter, to signal
+    that the authentication should be performed against privacyIDEA.
+
+    :param wrapped_function: Usually the function check_webui_user
+    :param args: arguments user_obj and password
+    :param kwds: keyword arguments like options and !check_otp!
+    kwds["options"] contains the flask g
+    :return: calls the original function with the modified "check_otp" argument
+    """
+    ERROR = "There are contradicting policies for the action %s!" % \
+            ACTION.LOGINMODE
+    # if tokenclass.check_pin is called in any other way, options may be None
+    #  or it might have no element "g".
+    options = kwds.get("options") or {}
+    g = options.get("g")
+    if g:
+        # We need the user but we do not need the password
+        user_object = args[0]
+        clientip = options.get("clientip")
+        # get the policy
+        policy_object = g.policy_object
+        login_mode_list = policy_object.get_action_values(ACTION.LOGINMODE,
+                                                          scope=SCOPE.WEBUI,
+                                                          realm=user_object.realm,
+                                                          user=user_object.login,
+                                                          client=clientip)
+
+        if len(login_mode_list) > 0:
+            # There is a login mode policy
+            # reduce the list:
+            login_mode_list = list(set(login_mode_list))
+            if len(login_mode_list) > 1:  # pragma: no cover
+                # We can not decide how to handle the request, so we raise an
+                # exception
+                raise PolicyError(ERROR)
+
+            if login_mode_list[0] == LOGINMODE.PRIVACYIDEA:
+                # The original function should check against privacyidea!
+                kwds["check_otp"] = True
+
+    return wrapped_function(*args, **kwds)
 
 
 def auth_otppin(wrapped_function, *args, **kwds):

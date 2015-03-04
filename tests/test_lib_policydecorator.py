@@ -9,11 +9,12 @@ from .base import MyTestCase
 
 from privacyidea.lib.policy import (set_policy, delete_policy,
                                     PolicyClass, SCOPE,
-                                    ACTION, ACTIONVALUE)
+                                    ACTION, ACTIONVALUE, LOGINMODE)
 from privacyidea.lib.policydecorators import (auth_otppin,
                                               auth_user_does_not_exist,
                                               auth_user_passthru,
-                                              auth_user_has_no_token)
+                                              auth_user_has_no_token,
+                                              login_mode)
 from privacyidea.lib.user import User
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
@@ -221,9 +222,46 @@ class LibPolicyTestCase(MyTestCase):
         g.policy_object = PolicyClass()
         options = {"g": g}
         rv = auth_user_has_no_token(check_user_pass, user, passw,
-                                      options=options)
+                                    options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"),
                          u"The user authenticated against his userstore "
                          u"according to policy 'pol1'.")
         delete_policy("pol1")
+
+    def test_07_login_mode(self):
+        # a realm: cornelius@r1: PW: test
+
+        def check_webui_user_userstore(user_obj, password,
+                                       options=None, superuser_realms=None,
+                                       check_otp=False):
+            self.assertEqual(check_otp, False)
+
+        def check_webui_user_privacyidea(user_obj, password,
+                                         options=None, superuser_realms=None,
+                                         check_otp=False):
+            self.assertEqual(check_otp, True)
+
+        user_obj = User("cornelius", "r1")
+
+        g = FakeFlaskG()
+        P = PolicyClass()
+        g.policy_object = P
+        options = {"g": g}
+
+        # No policy, the function is called with check_otp=False
+        login_mode(check_webui_user_userstore, user_obj, "",
+                   options=options, superuser_realms="", check_otp=False)
+
+        set_policy(name="pol2",
+                   scope=SCOPE.WEBUI,
+                   action="%s=%s" % (ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+        g = FakeFlaskG()
+        P = PolicyClass()
+        g.policy_object = P
+        options = {"g": g}
+
+        # Policy is set, the function is called with check_otp=True
+        login_mode(check_webui_user_privacyidea, user_obj, "",
+                   options=options, superuser_realms="", check_otp=False)
+

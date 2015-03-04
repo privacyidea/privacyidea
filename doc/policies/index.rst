@@ -19,6 +19,7 @@ privacyIDEA knows the scopes:
    authentication
    authorization
    enrollment
+   webui
    audit  **(TODO)**: not migrated, yet.
    machine **(TODO)**: not migrated, yet.
    ocra **(TODO)**: not migrated, yet.

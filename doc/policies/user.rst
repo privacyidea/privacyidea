@@ -252,30 +252,4 @@ type: bool
 This action allows the user to search for the serial number
 of an unassigned token by entering an OTP value.
 
-.. _policy_auth_otp:
-
-auth
-~~~~
-
-**(TODO)**: not yet migrated.
-
-type: string
-
-If this action is set to *auth=otp*, the users need to
-authenticate against privacyIDEA when logging into the selfservie portal.
-I.e. they can not login with their domain password anymore
-but need to authenticate with one of their tokens.
-
-.. note:: To have this action working correctly, you need to
-   set the parameter ``privacyideaURL`` in the privacyidea.ini file.
-
-.. warning:: If you set this action and the user deletes or disables
-   all his tokens, he will not be able to authenticate anymore.
-
-.. note:: A sensible way to use this, is to combine this action in 
-   a policy with the ``client`` parameter: requiring the users to
-   login to the selfservice portal remotely from the internet with
-   OTP but still login from within the LAN with the domain password.
-
-
 
