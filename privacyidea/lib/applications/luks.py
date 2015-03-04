@@ -31,8 +31,8 @@ class MachineApplication(MachineApplicationBase):
     This is the application for LUKS.
 
     required options:
-        option_slot
-        option_partition
+        slot
+        partition
     """
     application_name = "luks"
 

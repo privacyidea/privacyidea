@@ -34,7 +34,8 @@ from ..lib.policy import ACTION
 from flask import (g)
 from ..lib.machine import (get_machines, attach_token, detach_token,
                            add_option, delete_option,
-                           list_token_machines, list_machine_tokens)
+                           list_token_machines, list_machine_tokens,
+                           get_auth_items)
 import logging
 import netaddr
 
@@ -267,7 +268,6 @@ def set_option_api():
 
     :return:
     """
-
     hostname = getParam(request.all_data, "hostname")
     machineid = getParam(request.all_data, "machineid")
     resolver = getParam(request.all_data, "resolver")
@@ -303,3 +303,57 @@ def set_option_api():
                                                                  application)})
 
     return send_result({"added": o_add, "deleted": o_del})
+
+
+@machine_blueprint.route('/authitem', methods=['GET'])
+@machine_blueprint.route('/authitem/<application>', methods=['GET'])
+@prepolicy(check_base_action, request, ACTION.AUTHITEMS)
+def get_auth_items_api(application=None):
+    """
+    This fetches the authentication items for a given application and the
+    given client machine.
+
+    :param challenge: A challenge for which the authentication item is
+    calculated. In case of the Yubikey this can be a challenge that produces
+    a response. The authentication item is the combination of the challenge
+    and the response.
+
+    :type challenge: basestring
+    :param hostname: The hostname of the machine
+    :type hostname: basestring
+
+    :return: dictionary with lists of authentication items
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+       HTTP/1.1 200 OK
+       Content-Type: application/json
+
+        {
+          "id": 1,
+          "jsonrpc": "2.0",
+          "result": {
+            "status": true,
+            "value": { "ssh": [ { "username": "....",
+                                  "sshkey": "...."
+                                }
+                              ],
+                       "luks": [ { "slot": ".....",
+                                   "challenge": "...",
+                                   "response": "...",
+                                   "partition": "..."
+                               ]
+                     }
+          },
+          "version": "privacyIDEA unknown"
+        }
+    """
+    challenge = getParam(request.all_data, "challenge")
+    hostname = getParam(request.all_data, "hostname", optional=False)
+
+    ret = get_auth_items(hostname, ip=request.remote_addr,
+                         application=application, challenge=challenge)
+    return send_result(ret)
+

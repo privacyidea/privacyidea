@@ -4,11 +4,30 @@ This testcase is used to test the REST API  in api/machines.py
 from .base import MyTestCase
 import json
 from privacyidea.lib.token import init_token, get_tokens
+from privacyidea.lib.machine import attach_token
 
 HOSTSFILE = "tests/testdata/hosts"
 
+SSHKEY = "ssh-rsa " \
+         "AAAAB3NzaC1yc2EAAAADAQABAAACAQDJy0rLoxqc8SsY8DVAFijMsQyCv" \
+         "hBu4K40hdZOacXK4O6OgnacnSKN56MP6pzz2+4svzvDzwvkFsvf34pbsgD" \
+         "F67PPSCsimmjEQjf0UfamBKh0cl181CbPYsph3UTBOCgHh3FFDXBduPK4DQz" \
+         "EVQpmqe80h+lsvQ81qPYagbRW6fpd0uWn9H7a/qiLQZsiKLL07HGB+NwWue4os" \
+         "0r9s4qxeG76K6QM7nZKyC0KRAz7CjAf+0X7YzCOu2pzyxVdj/T+KArFcMmq8V" \
+         "dz24mhcFFXTzU3wveas1A9rwamYWB+Spuohh/OrK3wDsrryStKQv7yofgnPMs" \
+         "TdaL7XxyQVPCmh2jVl5ro9BPIjTXsre9EUxZYFVr3EIECRDNWy3xEnUHk7Rzs" \
+         "734Rp6XxGSzcSLSju8/MBzUVe35iXfXDRcqTcoA0700pIb1ANYrPUO8Up05v4" \
+         "EjIyBeU61b4ilJ3PNcEVld6FHwP3Z7F068ef4DXEC/d7pibrp4Up61WYQIXV/" \
+         "utDt3NDg/Zf3iqoYcJNM/zIZx2j1kQQwqtnbGqxJMrL6LtClmeWteR4420uZx" \
+         "afLE9AtAL4nnMPuubC87L0wJ88un9teza/N02KJMHy01Yz3iJKt3Ou9eV6kqO" \
+         "ei3kvLs5dXmriTHp6g9whtnN6/Liv9SzZPJTs8YfThi34Wccrw== " \
+         "NetKnights GmbH"
+
 
 class APIMachinesTestCase(MyTestCase):
+
+    serial2 = "ser1"
+    serial3 = "UBOM12345"
 
     def test_00_create_machine_resolver(self):
         # create a machine resolver
@@ -184,3 +203,74 @@ class APIMachinesTestCase(MyTestCase):
         token_obj = get_tokens(serial=serial)[0]
         self.assertEqual(len(token_obj.token.machine_list), 0)
 
+
+    def test_10_auth_items(self):
+        # create an SSH token
+        token_obj = init_token({"serial": self.serial2, "type": "sshkey",
+                                "sshkey": SSHKEY})
+        self.assertEqual(token_obj.type, "sshkey")
+
+        # Attach the token to the machine "gandalf" with the application SSH
+        r = attach_token(hostname="gandalf", serial=self.serial2,
+                         application="ssh", options={"user": "testuser"})
+
+        self.assertEqual(r.machine_id, "192.168.0.1")
+
+        # fetch the auth_items for application SSH on machine gandalf
+        with self.app.test_request_context(
+                '/machine/authitem/ssh?hostname=gandalf',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result["status"], True)
+            sshkey = result["value"].get("ssh")[0].get("sshkey")
+            self.assertTrue(sshkey.startswith("ssh-rsa"), sshkey)
+
+
+        # fetch the auth_items on machine gandalf for all applications
+        with self.app.test_request_context(
+                '/machine/authitem?hostname=gandalf',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            sshkey = result["value"].get("ssh")[0].get("sshkey")
+            self.assertTrue(sshkey.startswith("ssh-rsa"), sshkey)
+
+        token_obj = init_token({"serial": self.serial3, "type": "totp",
+                                "otpkey": "12345678"})
+        self.assertEqual(token_obj.type, "totp")
+
+        # Attach the token to the machine "gandalf" with the application SSH
+        r = attach_token(hostname="gandalf", serial=self.serial3,
+                         application="luks", options={"slot": "1",
+                                                      "partition": "/dev/sda1"})
+
+        self.assertEqual(r.machine_id, "192.168.0.1")
+
+        # fetch the auth_items on machine gandalf for application luks
+        with self.app.test_request_context(
+                '/machine/authitem/luks?hostname=gandalf',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            slot = result["value"].get("luks")[0].get("slot")
+            self.assertEqual(slot, "1")
+
+        # fetch the auth_items on machine gandalf for application luks
+        with self.app.test_request_context(
+                '/machine/authitem/luks?hostname=gandalf&challenge=abcdef',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            slot = result["value"].get("luks")[0].get("slot")
+            self.assertEqual(slot, "1")
+            response = result["value"].get("luks")[0].get("response")
+            self.assertEqual(response, "93235fc7d1d444d0ec014ea9eafcc44fc65b73eb")

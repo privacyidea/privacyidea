@@ -30,7 +30,7 @@ class MachineApplication(MachineApplicationBase):
     This is the application for SSH.
 
     Possible options:
-        option_user
+        user
 
     """
     application_name = "ssh"

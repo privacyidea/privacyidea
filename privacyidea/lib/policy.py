@@ -114,6 +114,7 @@ class ACTION():
     __doc__ = """This is the list of usual actions."""
     ASSIGN = "assign"
     AUDIT = "auditlog"
+    AUTHITEMS = "fetch_authentication_items"
     COPYTOKENPIN = "copytokenpin"
     COPYTOKENUSER = "copytokenuser"
     DELETE = "delete"
@@ -479,11 +480,15 @@ def get_static_policy_definitions(scope=None):
             ACTION.USERLIST: {'type': 'bool',
                          'desc' : _('Admin is allowed to view the list of the users.')},
             ACTION.MACHINELIST: {'type': 'bool',
-                                 'desc' : _('The Admin is allowed to list '
+                                 'desc': _('The Admin is allowed to list '
                                             'the machines.')},
             ACTION.MACHINETOKENS: {'type': 'bool',
                                    'desc': _('The Admin is allowed to attach '
                                              'and detach tokens to machines.')},
+            ACTION.AUTHITEMS: {'type': 'bool',
+                               'desc': _('The Admin is allowed to fetch '
+                                         'authentication items of tokens '
+                                         'assigned to machines.')},
             # 'checkstatus': {'type': 'bool',
             #                 'desc' : _('Admin is allowed to check the status of a challenge'
             #                            ' resonse token.'),

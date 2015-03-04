@@ -19,19 +19,55 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import logging
-import sys, os
-log = logging.getLogger(__name__)
+import sys
+import os
 from privacyidea.lib.log import log_with
-from importlib import import_module as dyn_import
-# except:
-# importlib is not available in python 2.6
-# But we will not run on python 2.6 anyway
-#    def dyn_import(name):
-#        mod = __import__(name)
-#        components = name.split('.')
-#        for comp in components[1:]:
-#            mod = getattr(mod, comp)
-#        return mod
+from importlib import import_module
+log = logging.getLogger(__name__)
+
+
+def get_machine_application_class_list():
+    """
+    Get the list of class names of applications like
+    "lib.applications.luks.MachineApplication".
+
+    :return: list of application class names
+    :rtype: list
+    """
+    class_list = []
+    # TODO: We should read all classes inherited by MachineApplicationBase under
+    # lib/applications/
+    # Otherwise we need to add a line here for each new Application
+    class_list.append("privacyidea.lib.applications.luks.MachineApplication")
+    class_list.append("privacyidea.lib.applications.ssh.MachineApplication")
+    class_list.append("privacyidea.lib.applications.base.MachineApplicationBase")
+    return class_list
+
+
+def get_machine_application_class_dict():
+    """
+    get a dictionary of the application classes with the type as the key.
+
+    :return: {'base':
+                <class
+                'privacyidea.lib.applications.base.MachineApplicationBase'>
+              'luks': <class
+              'privacyidea.lib.applications.base.MachineApplication'>
+              }
+    """
+    ret = {}
+    long_class_names = get_machine_application_class_list()
+    for long_class_name in long_class_names:
+        module_name = ".".join(long_class_name.split(".")[:-1])
+        class_name = long_class_name.split(".")[-1:]
+
+        mod = import_module(module_name)
+        # should be able to run as class or as object
+        auth_class = mod.MachineApplication
+        mtype = auth_class.application_name
+
+        ret[mtype] = auth_class
+    return ret
 
 
 class MachineApplication(object):
@@ -72,14 +108,14 @@ class MachineApplication(object):
 
 @log_with(log)
 def get_auth_item(application,
-                  application_module,
                   token_type,
                   serial,
                   challenge=None):
 
-    mod = dyn_import(application_module)
+    # application_module from application
+    class_dict = get_machine_application_class_dict()
     # should be able to run as class or as object
-    auth_class = mod.MachineApplication
+    auth_class = class_dict.get(application)
     auth_item = auth_class.get_authentication_item(token_type,
                                                    serial,
                                                    challenge=challenge)
@@ -88,7 +124,7 @@ def get_auth_item(application,
 
 @log_with(log)
 def is_application_allow_bulk_call(application_module):
-    mod = dyn_import(application_module)
+    mod = import_module(application_module)
     auth_class = mod.MachineApplication
     return auth_class.allow_bulk_call
 
@@ -117,7 +153,7 @@ def get_application_types():
     for f in files:
         if f not in ["base", "__init__"]:
             try:
-                mod = dyn_import("privacyidea.lib.applications.%s" % f)
+                mod = import_module("privacyidea.lib.applications.%s" % f)
                 name = mod.MachineApplication.application_name
                 options = mod.MachineApplication.get_options()
                 ret[name] = {"options": options}

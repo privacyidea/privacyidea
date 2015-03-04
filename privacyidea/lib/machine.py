@@ -28,8 +28,6 @@ It depends on the database model models.py and on the machineresolver
 lib/machineresolver.py, so this can be tested standalone without realms,
 tokens and webservice!
 """
-import logging
-from log import log_with
 from .machineresolver import get_resolver_list, get_resolver_object
 from privacyidea.models import Token
 from privacyidea.models import (MachineToken, db, MachineTokenOptions,
@@ -45,6 +43,8 @@ from sqlalchemy import and_
 import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.log import log_with
+from privacyidea.lib.applications.base import get_auth_item
+
 
 
 @log_with(log)
@@ -277,8 +277,7 @@ def list_machine_tokens(hostname=None,
                                           machine_id,
                     MachineToken.machineresolver_id == machineresolver_id))
     if application:
-        sql_query = sql_query.filter(MachineToken.application.like("%%s%" %
-                                                                   application))
+        sql_query = sql_query.filter(MachineToken.application == application)
     if serial:
         token_id = get_token_id(serial)
         sql_query = sql_query.filter(MachineToken.token_id == token_id)
@@ -327,13 +326,74 @@ def list_token_machines(serial):
     return res
 
 
-
-
 def _get_host_identifier(hostname, machine_id, resolver_name):
+    """
+    This returns the combiniation of machine_id and resolver_name for some
+    of the given values. This is used when attaching and detaching tokens to
+    a machine to create a uniquely identifyable machine object.
 
+    :param hostname:
+    :param machine_id:
+    :param resolver_name:
+    :return:
+    """
     if hostname:
         (machine_id, resolver_name) = get_machine_id(hostname)
     if not (machine_id and resolver_name):  # pragma: no cover
         raise Exception("Incomplete tuple of machine_id and resolver_name")
 
     return machine_id, resolver_name
+
+
+def get_auth_items(hostname, ip=None, application=None, challenge=None):
+    """
+    Return the authentication items for a given hostname and the application.
+    The hostname is used to identify the machine object. Then all attached
+    tokens to this machines and its applications are searched.
+
+    :param hostname:
+    :param ip:
+    :param application:
+    :param challenge:
+    :return: dictionary of lists of the application auth items
+
+    **Example response**:
+
+    .. sourcecode:: json
+
+       { "luks": [ { "slot": "....",
+                     "partition": "....",
+                     "challenge": "....",
+                     "response": "...." }
+                 ],
+         "ssh": [ { "username": "....",
+                    "sshkey": "...."},
+                  { "username": "....",
+                    "sshkey": "...." }
+                 ] }
+    """
+    #
+    # TODO: We should check, if the IP Address matches the hostname
+    #
+    auth_items = {}
+    machinetokens = list_machine_tokens(hostname=hostname,
+                                        application=application)
+
+    for mtoken in machinetokens:
+        auth_item = get_auth_item(mtoken.get("application"),
+                                  mtoken.get("type"),
+                                  mtoken.get("serial"),
+                                  challenge)
+        if auth_item:
+            if mtoken.get("application") not in auth_items:
+                # we create a new empty list for the new application type
+                auth_items[mtoken.get("application")] = []
+
+            # Add the options the the auth_item
+            for k, v in mtoken.get("options", {}).iteritems():
+                auth_item[k] = v
+
+            # append the auth_item to the list
+            auth_items[mtoken.get("application")].append(auth_item)
+
+    return auth_items

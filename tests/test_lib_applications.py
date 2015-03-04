@@ -105,9 +105,7 @@ class BaseApplicationTestCase(MyTestCase):
         self.assertEqual(options["optional"], [])
 
     def test_02_get_auth_item(self):
-        auth_item = get_auth_item("base",
-                                  "privacyidea.lib.applications.base",
-                                  "hotp", "serial")
+        auth_item = get_auth_item("base", "hotp", "serial")
         self.assertEqual(auth_item, "nothing")
 
     def test_03_allow_bulk_call(self):

@@ -6,9 +6,26 @@ HOSTSFILE = "tests/testdata/hosts"
 from .base import MyTestCase
 from privacyidea.lib.machine import (attach_token, detach_token, add_option,
                                      delete_option, list_machine_tokens,
-                                     list_token_machines)
+                                     list_token_machines, get_auth_items)
 from privacyidea.lib.token import init_token, get_tokens
 from privacyidea.lib.machineresolver import save_resolver
+
+
+sshkey = "ssh-rsa " \
+         "AAAAB3NzaC1yc2EAAAADAQABAAACAQDJy0rLoxqc8SsY8DVAFijMsQyCv" \
+         "hBu4K40hdZOacXK4O6OgnacnSKN56MP6pzz2+4svzvDzwvkFsvf34pbsgD" \
+         "F67PPSCsimmjEQjf0UfamBKh0cl181CbPYsph3UTBOCgHh3FFDXBduPK4DQz" \
+         "EVQpmqe80h+lsvQ81qPYagbRW6fpd0uWn9H7a/qiLQZsiKLL07HGB+NwWue4os" \
+         "0r9s4qxeG76K6QM7nZKyC0KRAz7CjAf+0X7YzCOu2pzyxVdj/T+KArFcMmq8V" \
+         "dz24mhcFFXTzU3wveas1A9rwamYWB+Spuohh/OrK3wDsrryStKQv7yofgnPMs" \
+         "TdaL7XxyQVPCmh2jVl5ro9BPIjTXsre9EUxZYFVr3EIECRDNWy3xEnUHk7Rzs" \
+         "734Rp6XxGSzcSLSju8/MBzUVe35iXfXDRcqTcoA0700pIb1ANYrPUO8Up05v4" \
+         "EjIyBeU61b4ilJ3PNcEVld6FHwP3Z7F068ef4DXEC/d7pibrp4Up61WYQIXV/" \
+         "utDt3NDg/Zf3iqoYcJNM/zIZx2j1kQQwqtnbGqxJMrL6LtClmeWteR4420uZx" \
+         "afLE9AtAL4nnMPuubC87L0wJ88un9teza/N02KJMHy01Yz3iJKt3Ou9eV6kqO" \
+         "ei3kvLs5dXmriTHp6g9whtnN6/Liv9SzZPJTs8YfThi34Wccrw== " \
+         "NetKnights GmbH"
+
 
 class MachineTokenTestCase(MyTestCase):
     """
@@ -16,6 +33,7 @@ class MachineTokenTestCase(MyTestCase):
     """
     serial = "myToken"
     resolvername = "reso1"
+    serial2 = "ser1"
 
     def test_00_setup(self):
         token1 = init_token({"type": "spass", "serial": self.serial})
@@ -87,3 +105,23 @@ class MachineTokenTestCase(MyTestCase):
         self.assertEqual(len(machinelist), 1)
         self.assertEqual(machinelist[0].get("resolver"), "reso1")
         self.assertEqual(machinelist[0].get("machine_id"), "192.168.0.1")
+
+
+    def test_10_auth_items(self):
+        # create an SSH token
+        token_obj = init_token({"serial": self.serial2, "type": "sshkey",
+                                "sshkey": sshkey})
+        self.assertEqual(token_obj.type, "sshkey")
+
+        # Attach the token to the machine "gandalf" with the application SSH
+        r = attach_token(hostname="gandalf", serial=self.serial2,
+                         application="ssh", options={"user": "testuser"})
+
+        self.assertEqual(r.machine_id, "192.168.0.1")
+
+        # fetch the auth_items for application SSH on machine gandalf
+        ai = get_auth_items("gandalf", ip="192.168.0.1", application="ssh")
+        sshkey_auth_items = ai.get("ssh")
+        self.assertEquals(len(sshkey_auth_items), 1)
+        self.assertTrue(sshkey_auth_items[0].get("sshkey").startswith(
+            "ssh-rsa"))

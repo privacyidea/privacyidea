@@ -29,7 +29,7 @@ The code is tested in tests/test_lib_config
 import logging
 import sys
 import inspect
-
+from importlib import import_module
 from flask import current_app
 
 from .log import log_with
@@ -382,7 +382,6 @@ def get_machine_resolver_class_list():
     class_list.append("machines.hosts.HostsMachineResolver")
     class_list.append("machines.ldap.LdapMachineResolver")
     return class_list
-
 
 
 @log_with(log)
