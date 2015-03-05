@@ -109,8 +109,8 @@ ppa-dev:
 	@echo "You need to specify a parameter series like $(SERIES)"
 	echo $(SERIES) | grep $(series)
 	################## Renew the changelog
-	cp debian/changelog DEBUILD/privacyidea.org/debian/
-	sed -e s/"trusty) trusty; urgency"/"$(series)) $(series); urgency"/g debian/changelog > DEBUILD/privacyidea.org/debian/changelog
+	cp deploy/debian-ubuntu/changelog DEBUILD/privacyidea.org/debian/
+	sed -e s/"trusty) trusty; urgency"/"$(series)) $(series); urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
 	################# Build
 	(cd DEBUILD/privacyidea.org; debuild -sa -S)
 	################ Upload to launchpad:
@@ -119,8 +119,8 @@ ppa-dev:
 ppa-dev-all:
 	make debianize
 	for series in "precise trusty"; do \
-	    cp debian/changelog DEBUILD/privacyidea.org/debian/ ; \
-	    sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g debian/changelog > DEBUILD/privacyidea.org/debian/changelog ; \
+	    cp deploy/debian-ubuntu/changelog DEBUILD/privacyidea.org/debian/ ; \
+	    sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog ; \
 	    (cd DEBUILD/privacyidea.org; debuild) ; \
 	    dput ppa:privacyidea/privacyidea-dev DEBUILD/python-privacyidea_${VERSION}*_source.changes; \
 	done
@@ -134,8 +134,8 @@ ppa:
 ppa-all:
 	make debianize
 	for series in "precise trusty"; do \
-            cp debian/changelog DEBUILD/privacyidea.org/debian/ ; \
-            sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g debian/changelog > DEBUILD/privacyidea.org/debian/changelog ; \
+            cp deploy/debian-ubuntu/changelog DEBUILD/privacyidea.org/debian/ ; \
+            sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog ; \
             (cd DEBUILD/privacyidea.org; debuild) ; \
 	    dput ppa:privacyidea/privacyidea DEBUILD/python-privacyidea_${VERSION}-*_source.changes; \
         done

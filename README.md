@@ -74,7 +74,7 @@ Run in virtualenv
 =================
 
 For running the server in a virtual env see documentation at
-https://www.privacyidea.org/doc/current/installation/index.html#python-package-index.
+http://privacyidea.readthedocs.org/en/latest/installation/index.html#python-package-index.
 
 Run tests
 =========
