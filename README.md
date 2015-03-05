@@ -26,13 +26,17 @@ It supports a wide varity of authentication devices like OTP tokens
 (HMAC, HOTP, TOTP, OCRA, mOTP), Yubikey (HOTP, TOTP, AES), Smartphone
 Apps like Google Authenticator, SMS, Email, SSH keys.
 
-Version 2.0
-===========
+Version 2
+=========
 
-The new 2.0 branch is based on flask and sqlalchemy as the python backend. The web UI is based
+The new version 2.x is based on flask and sqlalchemy as the python backend. The
+web UI is based
 on angularJS and bootstrap.
 
-You can follow the setup instructions and play around.
+With version 2 the code was cleaned up and it was emphasized to keep a good
+code coverage. The design separates the database layer from the library layer
+and from the REST API layer. Thus allowing easy unit testing in each layer.
+
 You are also welcome to take a look at the hopefully tidy code and contribute.
 
 I try to keep up a good test coverage. So run tests!
