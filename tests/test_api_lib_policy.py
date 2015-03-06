@@ -12,7 +12,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_base_action, check_token_init,
                                            check_max_token_user,
                                            check_max_token_realm, set_realm,
-                                           init_tokenlabel)
+                                           init_tokenlabel, init_random_pin)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             no_detail_on_success,
                                             no_detail_on_fail)
@@ -300,6 +300,34 @@ class PrePolicyDecoratorTestCase(MyTestCase):
 
         # Check, if the tokenlabel was added
         self.assertEqual(req.all_data.get("tokenlabel"), "<u>@<r>")
+        # finally delete policy
+        delete_policy("pol1")
+
+    def test_07_set_random_pin(self):
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+
+        # Set a policy that defines the tokenlabel
+        set_policy(name="pol1",
+                   scope=SCOPE.ENROLL,
+                   action="%s=%s" % (ACTION.OTPPINRANDOM, "12"))
+        g.policy_object = PolicyClass()
+
+        # request, that matches the policy
+        req.all_data = {"realm": "somerealm",
+                        "user": "cornelius",
+                        "realm": "home"}
+        init_random_pin(req)
+
+        # Check, if the tokenlabel was added
+        self.assertEqual(len(req.all_data.get("pin")), 12)
         # finally delete policy
         delete_policy("pol1")
 

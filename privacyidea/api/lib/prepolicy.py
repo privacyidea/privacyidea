@@ -36,6 +36,7 @@ from flask import g
 from privacyidea.lib.policy import SCOPE, ACTION
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.token import get_tokens
+from privacyidea.lib.utils import generate_password
 import functools
 import json
 import re
@@ -80,6 +81,35 @@ class prepolicy(object):
             return wrapped_function(*args, **kwds)
 
         return policy_wrapper
+
+
+def init_random_pin(request=None, action=None):
+    """
+    This policy function is to be used as a decorator in the API init function.
+    If the policy is set accordingly it adds a random PIN to the
+    request.all_data like.
+
+    It uses the policy SCOPE.ENROLL, ACTION.OTPPINRANDOM to set a random OTP
+    PIN during Token enrollment
+    """
+    params = request.all_data
+    policy_object = g.policy_object
+    user_object = get_user_from_param(params)
+    # get the length of the random PIN from the policies
+    pin_pols = policy_object.get_action_values(action=ACTION.OTPPINRANDOM,
+                                               scope=SCOPE.ENROLL,
+                                               user=user_object.login,
+                                               realm=user_object.realm,
+                                               client=request.remote_addr)
+
+    pin_pols = list(set(pin_pols))
+    if len(pin_pols) > 1:
+        raise PolicyError("There are conflicting random_pin definitions!")
+    elif len(pin_pols) == 1:
+        log.debug("Creating random OTP PIN with length %s" % pin_pols[0])
+        request.all_data["pin"] = generate_password(size=int(pin_pols[0]))
+
+    return True
 
 
 def init_tokenlabel(request=None, action=None):

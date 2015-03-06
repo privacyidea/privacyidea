@@ -61,7 +61,7 @@ def before_request():
     g.audit_object.log({"success": False,
                         "client": request.remote_addr,
                         "client_user_agent": request.user_agent.browser,
-                        "privcyidea_server": request.host,
+                        "privacyidea_server": request.host,
                         "action": "%s %s" % (request.method, request.url_rule),
                         "action_detail": "",
                         "info": ""})

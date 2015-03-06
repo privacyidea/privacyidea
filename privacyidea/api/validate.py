@@ -60,7 +60,7 @@ def before_request():
                         "action_detail": "",
                         "client": request.remote_addr,
                         "client_user_agent": request.user_agent.browser,
-                        "privcyidea_server": request.host,
+                        "privacyidea_server": request.host,
                         "action": "%s %s" % (request.method, request.url_rule),
                         "info": ""})
 

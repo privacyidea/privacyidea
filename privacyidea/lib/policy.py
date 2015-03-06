@@ -133,6 +133,7 @@ class ACTION():
     NODETAILSUCCESS = "no_detail_on_success"
     NODETAILFAIL = "no_detail_on_fail"
     OTPPIN = "otppin"
+    OTPPINRANDOM = "otp_pin_random"
     PASSNOTOKEN = "passOnNoToken"
     PASSNOUSER = "passOnNoUser"
     PASSTHRU = "passthru"
@@ -613,12 +614,6 @@ def get_static_policy_definitions(scope=None):
             #                      "desc" : _("Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, (s)pecial, (o)thers. [+/-]!")},
             # 'activateQR': {'type': 'bool',
             #                "desc": _("The user is allowed to enroll a QR token.")},
-            # 'webprovisionOATH': {'type': 'bool',
-            #                      "desc": _("The user is allowed to enroll an OATH token.")},
-            # 'webprovisionGOOGLE': {'type': 'bool',
-            #                        "desc": _("The user is allowed to enroll a Google Authenticator event based token.")},
-            # 'webprovisionGOOGLEtime': {'type': 'bool',
-            #                            "desc": _("The user is allowed to enroll a Google Authenticator time based token.")},
             # 'max_count_dpw': {'type': 'int',
             #                   "desc": _("This is the maximum number of OTP values, the user is allowed to retrieve for a DPW token.")},
             # 'max_count_hotp': {'type': 'int',
@@ -640,11 +635,11 @@ def get_static_policy_definitions(scope=None):
                 'type': 'int',
                 'desc': _('Limit the number of tokens a user may have '
                           'assigned.')},
-            # 'otp_pin_random': {
-            #     'type': 'int',
-            #     'value': range(0, 32),
-            #     "desc": _("Set a random OTP PIN with this length for a "
-            #               "token.")},
+            ACTION.OTPPINRANDOM: {
+                'type': 'int',
+                'value': range(0, 32),
+                "desc": _("Set a random OTP PIN with this length for a "
+                          "token.")},
             # 'otp_pin_encrypt': {
             #     'type': 'int',
             #     'value': ["encrypt", "hash"],

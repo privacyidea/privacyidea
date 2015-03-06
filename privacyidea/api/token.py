@@ -59,7 +59,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            check_token_init, check_token_upload,
                                            check_max_token_user,
                                            check_max_token_realm,
-                                           init_tokenlabel)
+                                           init_tokenlabel, init_random_pin)
 from privacyidea.api.auth import (user_required, admin_required)
 from privacyidea.api.audit import audit_blueprint
 
@@ -119,7 +119,7 @@ def before_request():
                         "realm": realm,
                         "client": request.remote_addr,
                         "client_user_agent": request.user_agent.browser,
-                        "privcyidea_server": request.host,
+                        "privacyidea_server": request.host,
                         "action": "%s %s" % (request.method, request.url_rule),
                         "action_detail": "",
                         "info": ""})
@@ -131,6 +131,7 @@ def before_request():
 @prepolicy(check_max_token_user, request)
 @prepolicy(check_token_init, request)
 @prepolicy(init_tokenlabel, request)
+@prepolicy(init_random_pin, request)
 @log_with(log, log_entry=False)
 def init():
     """
