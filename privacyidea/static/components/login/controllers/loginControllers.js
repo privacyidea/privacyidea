@@ -80,6 +80,7 @@ angular.module("privacyideaApp")
                     data.result.value.realm,
                     data.result.value.token,
                     data.result.value.role);
+                $scope.privacyideaVersionNumber = data.versionnumber;
                 $scope.loggedInUser = AuthFactory.getUser();
                 Idle.watch();
                 console.log("successfully authenticated");
@@ -99,6 +100,7 @@ angular.module("privacyideaApp")
             // logout: Clear the user and the auth_token.
             AuthFactory.dropUser();
             $scope.loggedInUser = {};
+            $scope.privacyideaVersionNumber = null;
             $scope.logoutWarning = false;
             $scope.myCountdown = "";
             $state.go("login");

@@ -28,22 +28,31 @@
     <div ui-view class="slide"></div>
 </div>
 
+{% raw %}
 <div class="navbar navbar-inverse navbar-fixed-bottom">
     <div class="container">
         <p class="navbar-text pull-left">
-            <!-- privacyIDEA-->
+            privacyIDEA
+            {{ privacyideaVersionNumber }}
         </p>
         <a class="navbar-btn btn btn-success pull-right"
            href="https://netknights.it/leistungen/support/"
            target="_external">
             Support
         </a>
-        <a class="navbar-btn btn btn-danger pull-right"
+        <a class="navbar-text pull-right"
                 href="https://groups.google.com/forum/#!forum/privacyidea"
                 target="_external">
             privacyIDEA google group</a>
+        <a class="navbar-text pull-right"
+           ng-show="privacyideaVersionNumber"
+                href="http://privacyidea.readthedocs.org/en/v{{ privacyideaVersionNumber }}"
+                target="documentation">
+            Online Documentation
+        </a>
     </div>
 </div>
+{% endraw %}
 
 <!--load all javascripts after the HTML part-->
 <script src="{{ instance }}/static/contrib/js/angular.js"></script>

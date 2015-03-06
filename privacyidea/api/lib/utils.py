@@ -116,6 +116,7 @@ def send_result(obj, rid=1, details=None):
            "result": {"status": True,
                       "value": obj},
            "version": get_version(),
+           "versionnumber": get_version_number(),
            "id": rid}
 
     if details is not None and len(details) > 0:
