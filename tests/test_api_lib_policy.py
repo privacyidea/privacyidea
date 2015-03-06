@@ -148,7 +148,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # Set a policy, that allows two tokens per user
         set_policy(name="pol1",
                    scope=SCOPE.ENROLL,
-                   action="max_token_per_user=2")
+                   action="%s=%s" % (ACTION.MAXTOKENUSER, 2))
         g.policy_object = PolicyClass()
         # The user has one token, everything is fine.
         self.setUp_user_realms()
@@ -175,6 +175,15 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # PolicyError
         self.assertRaises(PolicyError,
                           check_max_token_user, req)
+
+
+        # The check for a token, that has no username in it, must not
+        # succeed. I.e. in the realm new tokens must be enrollable.
+        req.all_data = {}
+        self.assertTrue(check_max_token_user(req))
+
+        req.all_data = {"realm": self.realm1}
+        self.assertTrue(check_max_token_user(req))
 
         # finally delete policy
         delete_policy("pol1")

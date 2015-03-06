@@ -159,7 +159,7 @@ def check_max_token_user(request=None, action=None):
     ERROR = "The number of tokens for this user is limited!"
     params = request.all_data
     user_object = get_user_from_param(params)
-    if user_object:
+    if user_object.login:
         policy_object = g.policy_object
         limit_list = policy_object.get_action_values(ACTION.MAXTOKENUSER,
                                                      scope=SCOPE.ENROLL,
