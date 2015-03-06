@@ -31,10 +31,11 @@
 {% raw %}
 <div class="navbar navbar-inverse navbar-fixed-bottom">
     <div class="container">
-        <p class="navbar-text pull-left">
+        <a ng-click="about()"
+            class="navbar-text pull-left">
             privacyIDEA
             {{ privacyideaVersionNumber }}
-        </p>
+        </a>
         <a class="navbar-btn btn btn-success pull-right"
            href="https://netknights.it/leistungen/support/"
            target="_external">
@@ -53,6 +54,9 @@
     </div>
 </div>
 {% endraw %}
+
+<ng-include src="'{{ instance }}/static/components/dialogs/views/dialog.about.html'">
+</ng-include>
 
 <!--load all javascripts after the HTML part-->
 <script src="{{ instance }}/static/contrib/js/angular.js"></script>

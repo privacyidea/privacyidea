@@ -107,6 +107,10 @@ angular.module("privacyideaApp")
             Idle.unwatch();
         };
 
+        $scope.about = function() {
+            $('#dialogAbout').modal();
+        };
+
         $rootScope.showError = false;
         $scope.errorOK = function () {
             // This will hide the error again
