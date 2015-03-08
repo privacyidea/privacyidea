@@ -5,7 +5,7 @@ The lib.policy.py only depends on the database model.
 """
 PWFILE2 = "tests/testdata/passwords"
 
-from .base import MyTestCase
+from .base import MyTestCase, FakeFlaskG
 
 from privacyidea.lib.policy import (set_policy, delete_policy,
                                     PolicyClass, SCOPE,
@@ -32,10 +32,6 @@ def _check_policy_name(polname, policies):
             contained = True
             break
     return contained
-
-
-class FakeFlaskG():
-    policy_object = None
 
 
 class LibPolicyTestCase(MyTestCase):

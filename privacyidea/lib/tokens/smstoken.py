@@ -46,6 +46,7 @@ from privacyidea.api.lib.utils import required
 from privacyidea.lib.config import get_from_config
 #from privacyidea.lib.policy import PolicyClass
 #from pylons import request, config, tmpl_context as c
+from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.log import log_with
 from privacyidea.lib.smsprovider.SMSProvider import get_sms_provider_class
 from json import loads
@@ -62,17 +63,20 @@ keylen = {'sha1': 20,
           'sha512': 64}
 
 
+class SMSACTION():
+    SMSTEXT = "smstext"
+    SMSAUTO = "smsautosend"
+
+
 class SmsTokenClass(HotpTokenClass):
     """
     implementation of the sms token class
     """
     def __init__(self, db_token):
-        TokenClass.__init__(self, db_token)
+        HotpTokenClass.__init__(self, db_token)
         self.set_type(u"sms")
         self.mode = ['challenge']
         self.hKeyRequired = True
-#        self.Policy = PolicyClass(request, config, c,
-#                                  get_privacyIDEA_config())
 
     @classmethod
     def get_class_type(cls):
@@ -103,24 +107,20 @@ class SmsTokenClass(HotpTokenClass):
                'title': _('SMS Token'),
                'description':
                     _('sms challenge-response token - hmac event based'),
-               'init': {'title': {'html': 'smstoken.mako',
-                                  'scope': 'enroll.title'},
-                        'page': {'html': 'smstoken.mako',
-                                 'scope'      : 'enroll'}
-                        },
-               'config': {'title': {'html': 'smstoken.mako',
-                                    'scope': 'config.title'},
-                          'page': {'html': 'smstoken.mako',
-                                   'scope': 'config'}
+               'policy': {
+                   SCOPE.AUTH: {
+                        SMSACTION.SMSTEXT: {
+                            'type': 'str',
+                            'desc': _('The text that will be send via SMS for'
+                                      ' an SMS token. Use <otp> and <serial> '
+                                      'as parameters.')},
+                        SMSACTION.SMSAUTO: {
+                            'type': 'bool',
+                            'desc': _('If set, a new SMS OTP will be sent '
+                                      'after successful authentication with '
+                                      'one SMS OTP.')},
+                   }
                },
-               'user': {'enroll': {
-                   'title': {'html': 'smstoken.mako',
-                             'scope': 'selfservice.title.enroll'
-                   },
-                   'page': {'html': 'smstoken.mako',
-                            'scope': 'selfservice.enroll'}
-               }
-               }
         }
 
         if key is not None and key in res:
@@ -190,6 +190,7 @@ class SmsTokenClass(HotpTokenClass):
         """
         success = False
         sms = ""
+        options = options or {}
         return_message = ""
         attributes = {'state': transactionid}
 
@@ -201,13 +202,8 @@ class SmsTokenClass(HotpTokenClass):
             # Gateway error, since checkPIN is successful. A bail
             # out would cancel the checking of the other tokens
             try:
-
-                if options is not None and type(options) == dict:
-                    user = options.get('user', None)
-                    #if user:
-                    #    _sms_ret, message = self.Policy.get_auth_smstext(
-                    #                            realm=user.realm)
-                success, return_message = self._send_sms()
+                message = self._get_sms_text(options)
+                success, return_message = self._send_sms(message=message)
             except Exception as e:
                 info = ("The PIN was correct, but the "
                         "SMS could not be sent: %r" % e)
@@ -217,15 +213,15 @@ class SmsTokenClass(HotpTokenClass):
         timeout = self._get_sms_timeout()
         expiry_date = datetime.datetime.now() + \
                                     datetime.timedelta(seconds=timeout)
-        data = {'valid_until' : "%s" % expiry_date}
+        data = {'valid_until': "%s" % expiry_date}
 
         return success, return_message, data, attributes
 
     @log_with(log)
-    def check_otp(self, anOtpVal, counter, window, options=None):
+    def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
         check the otpval of a token against a given counter
-        in the + window range
+        and the window
 
         :param passw: the to be verified passw/pin
         :type passw: string
@@ -233,19 +229,15 @@ class SmsTokenClass(HotpTokenClass):
         :return: counter if found, -1 if not found
         :rtype: int
         """
-        ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window)
-        # TODO: Migration
-        #if ret >= 0:
-        #    if self.Policy.get_auth_AutoSMSPolicy():
-        #        user = None
-        #        message = "<otp>"
-        #        if options is not None and type(options) == dict:
-        #            user = options.get('user', None)
-        #            if user:
-        #                sms_ret, message = self.Policy.get_auth_smstext(
-        ## realm=user.realm)
-        #        self.incOtpCounter(ret, reset=False)
-        #        success, message = self._send_sms(message=message)
+        options = options or {}
+        ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
+        if ret >= 0:
+            if self._get_auto_sms(options):
+                message = self._get_sms_text(options)
+                self.inc_otp_counter(ret, reset=False)
+                success, message = self._send_sms(message=message)
+                log.debug("AutoSMS: send new SMS: %s" % success)
+                log.debug("AutoSMS: %s" % message)
         return ret
 
     @log_with(log)
@@ -270,8 +262,7 @@ class SmsTokenClass(HotpTokenClass):
         message = message.replace("<serial>", serial)
 
         log.debug("sending SMS to phone number %s " % phone)
-        (SMSProvider, SMSProviderClass) = \
-            self._get_sms_provider()
+        (SMSProvider, SMSProviderClass) = self._get_sms_provider()
         log.debug("smsprovider: %s, class: %s" % (SMSProvider,
                                                   SMSProviderClass))
 
@@ -339,3 +330,69 @@ class SmsTokenClass(HotpTokenClass):
             timeout = 5 * 60
         return timeout
 
+    def _get_sms_text(self, options):
+        """
+        This returns the SMSTEXT from the policy "smstext"
+
+        :param options: contains user and g object.
+        :optins type: dict
+        :return: Message template
+        :rtype: basestring
+        """
+        message = "<otp>"
+        g = options.get("g")
+        username = None
+        realm = None
+        user_object = options.get("user")
+        if user_object:
+            username = user_object.login
+            realm = user_object.realm
+        if g:
+            clientip = options.get("clientip")
+            policy_object = g.policy_object
+            messages = policy_object.\
+                get_action_values(action=SMSACTION.SMSTEXT,
+                                  scope=SCOPE.AUTH,
+                                  realm=realm,
+                                  user=username,
+                                  client=clientip)
+            messages = list(set(messages))
+            if len(messages) > 1:  # pragma: no-cover
+                # Conflicting texts
+                raise Exception("There are conflicting messages in the "
+                                "smstext!")
+
+            if len(messages) == 1:
+                message = messages[0]
+
+        return message
+
+    def _get_auto_sms(self, options):
+        """
+        This returns the AUTOSMS setting.
+
+        :param options: contains user and g object.
+        :optins type: dict
+        :return: True if an SMS should be sent automatically
+        :rtype: bool
+        """
+        autosms = False
+        g = options.get("g")
+        user_object = options.get("user")
+        username = None
+        realm = None
+        if user_object:
+            username = user_object.login
+            realm = user_object.realm
+        if g:
+            clientip = options.get("clientip")
+            policy_object = g.policy_object
+            autosmspol = policy_object.\
+                get_policies(action=SMSACTION.SMSAUTO,
+                             scope=SCOPE.AUTH,
+                             realm=realm,
+                             user=username,
+                             client=clientip)
+            autosms = len(autosmspol) >= 1
+
+        return autosms

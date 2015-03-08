@@ -1930,18 +1930,22 @@ def get_dynamic_policy_definitions(scope=None):
     this scope.
     :return: The policy definition for the token or only for the scope.
     """
-    pol = {"admin": {},
-           "user": {}}
+    from privacyidea.lib.policy import SCOPE
+
+    pol = {SCOPE.ADMIN: {},
+           SCOPE.USER: {},
+           SCOPE.AUTH: {},
+           SCOPE.ENROLL: {},
+           SCOPE.AUTHZ: {}}
     for ttype in get_token_types():
-        pol['admin']["enroll%s" % ttype.upper()] = {'type': 'bool',
-                                                    'desc': _('Admin is allowed'
-                                                              'to initalize %s '
-                                                              'tokens.') %
-                                                            ttype.upper()}
+        pol[SCOPE.ADMIN]["enroll%s" % ttype.upper()] \
+            = {'type': 'bool',
+               'desc': _('Admin is allowed to initalize %s tokens.') %
+                       ttype.upper()}
 
         conf = get_tokenclass_info(ttype, section='user')
         if 'enroll' in conf:
-            pol['user']["enroll%s" % ttype.upper()] = {
+            pol[SCOPE.USER]["enroll%s" % ttype.upper()] = {
                 'type': 'bool',
                 'desc': _("The user is allowed to enroll a %s token.") % ttype}
 
@@ -1949,7 +1953,7 @@ def get_dynamic_policy_definitions(scope=None):
         # into the global definitions
         policy = get_tokenclass_info(ttype, section='policy')
 
-        # get all policy sections like: admin, selfservice . . '''
+        # get all policy sections like: admin, user, enroll, auth, authz
         pol_keys = pol.keys()
 
         for pol_section in policy.keys():

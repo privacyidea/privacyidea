@@ -10,6 +10,10 @@ from privacyidea.lib.auth import create_db_admin
 PWFILE = "tests/testdata/passwords"
 
 
+class FakeFlaskG():
+    policy_object = None
+
+
 class MyTestCase(unittest.TestCase):
     resolvername1 = "resolver1"
     resolvername2 = "Resolver2"

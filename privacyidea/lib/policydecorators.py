@@ -78,7 +78,7 @@ class libpolicy(object):
 
 
 def auth_user_has_no_token(wrapped_function, user_object, passw,
-                               options=None):
+                           options=None):
     """
     This decorator checks if the user has a token at all.
     If the user has a token, the wrapped function is called.

@@ -3,14 +3,15 @@ This test file tests the lib.tokens.smstoken
 """
 PWFILE = "tests/testdata/passwords"
 
-from .base import MyTestCase
+from .base import MyTestCase, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.lib.tokens.smstoken import SmsTokenClass
+from privacyidea.lib.tokens.smstoken import SmsTokenClass, SMSACTION
 from privacyidea.models import (Token, Config, Challenge)
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
+from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
 import datetime
 import responses
 
@@ -421,7 +422,51 @@ class SMSTokenTestCase(MyTestCase):
         r = token.check_challenge_response(passw=otp)
         self.assertTrue(r, r)
 
-    def test_19_failed_loading(self):
+    @responses.activate
+    def test_19_smstext(self):
+        # create a SMSTEXT policy:
+        p = set_policy(name="smstext",
+                       action="%s=%s" % (SMSACTION.SMSTEXT, "'Your <otp>'"),
+                       scope=SCOPE.AUTH)
+        self.assertTrue(p > 0)
+
+        g = FakeFlaskG()
+        P = PolicyClass()
+        g.policy_object = P
+        options = {"g": g}
+
+        responses.add(responses.POST,
+                      self.SMSHttpUrl,
+                      body=self.success_body)
+        transactionid = "123456098712"
+        set_privacyidea_config("sms.providerConfig", self.SMSProviderConfig)
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = SmsTokenClass(db_token)
+        c = token.create_challenge(transactionid, options=options)
+        self.assertTrue(c[0], c)
+        otp_message = c[1]
+        self.assertTrue(c[3].get("state"), transactionid)
+        self.assertEqual(otp_message, "Your 287922")
+
+        # check for the challenges response
+        # r = token.check_challenge_response(passw="287922")
+        # self.assertTrue(r, r)
+
+        # Test AUTOSMS
+        p = set_policy(name="autosms",
+                       action=SMSACTION.SMSAUTO,
+                       scope=SCOPE.AUTH)
+        self.assertTrue(p > 0)
+
+        g = FakeFlaskG()
+        P = PolicyClass()
+        g.policy_object = P
+        options = {"g": g}
+
+        r = token.check_otp("287922", options=options)
+        self.assertTrue(r > 0, r)
+
+    def test_21_failed_loading(self):
         transactionid = "123456098712"
         set_privacyidea_config("sms.providerConfig", "noJSON")
         set_privacyidea_config("sms.provider",
@@ -429,6 +474,7 @@ class SMSTokenTestCase(MyTestCase):
                                "HttpSMSProvider.HttpSMSProviderWRONG")
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = SmsTokenClass(db_token)
+
         c = token.create_challenge(transactionid)
         self.assertFalse(c[0], c)
         self.assertTrue("The PIN was correct, but" in c[1], c[1])

@@ -99,6 +99,35 @@ If the user does not exist, the authentication request is successful.
 .. warning:: Only use this if you know exactly what you are doing.
 
 
+
+smstext
+~~~~~~~
+
+.. index:: SMS policy, SMS text
+
+type: string
+
+This is the text that is sent via SMS to the user trying to
+authenticate with an SMS token.
+You can use the tags *<otp>* and *<serial>*.
+
+.. note:: You need to put the text into quotes, otherwise it will be split
+and interpreted as list of words.
+
+.. example:: 'This is your OTP value <otp>.'
+
+smsautosend
+~~~~~~~~~~~
+
+.. index:: SMS automatic resend
+
+type: bool
+
+A new OTP value will be sent via SMS if the user authenticated
+successfully with his SMS token. Thus the user does not
+have to trigger a new SMS when he wants to login again.
+
+
 qrtanurl
 ~~~~~~~~
 
@@ -118,25 +147,3 @@ type: string
 
 This is a list of token types for which challenge response can
 be used during authentication.
-
-smstext
-~~~~~~~
-
-**(TODO)**: not yet migrated.
-
-type: string
-
-This is the text that is sent via SMS to the user trying to
-authenticate with an SMS token.
-You can use the tags *<otp>* and *<serial>*.
-
-autosms
-~~~~~~~
-
-**(TODO)**: not yet migrated.
-
-type: bool
-
-A new OTP value will be sent via SMS if the user authenticated
-successfully with his SMS token. Thus the user does not
-have to trigger a new SMS when he wants to login again.

@@ -307,7 +307,18 @@ class PolicyClass(object):
                                      client=client)
         for pol in policies:
             action_dict = pol.get("action", {})
-            action_values.extend(action_dict.get(action, "").split())
+            action_value = action_dict.get(action, "")
+            """
+            We must distinguish actions like:
+                tokentype=totp hotp motp,
+            where the string represents a list divided by spaces, and
+                smstext='your otp is <otp>'
+            where the spaces are part of the string.
+            """
+            if action_value.startswith("'") and action_value.endswith("'"):
+                action_values.append(action_dict.get(action)[1:-1])
+            else:
+                action_values.extend(action_dict.get(action, "").split())
 
         return action_values
 
@@ -672,10 +683,6 @@ def get_static_policy_definitions(scope=None):
             #             'token (in days).')},
             },
         SCOPE.AUTH: {
-            # 'smstext': {
-            #     'type': 'str',
-            #     'desc': _('The text that will be send via SMS for an SMS token. '
-            #               'Use <otp> and <serial> as parameters.')},
             ACTION.OTPPIN: {
                 'type': 'str',
                 'value': [ACTIONVALUE.TOKENPIN, ACTIONVALUE.USERSTORE,
@@ -683,10 +690,6 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('Either use the Token PIN , use the Userstore '
                           'Password or use no fixed password '
                           'component.')},
-            # 'autosms': {
-            #     'type': 'bool',
-            #     'desc': _('If set, a new SMS OTP will be sent after '
-            #             'successful authentication with one SMS OTP.')},
             ACTION.PASSTHRU: {
                 'type': 'bool',
                 'desc': _('If set, the user in this realm will be '
