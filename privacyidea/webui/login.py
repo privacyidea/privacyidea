@@ -34,5 +34,8 @@ def single_page_application():
     instance = request.script_root
     if instance == "/":
         instance = ""
-    return render_template("index.html", instance=instance)
-#    return current_app.send_static_file('templates/index.html')
+    # The backend URL should come from the configuration of the system.
+    backend_url = ""
+    return render_template("index.html", instance=instance,
+                           backendUrl=backend_url)
+

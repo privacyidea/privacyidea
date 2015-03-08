@@ -45,20 +45,21 @@ var instance = window.location.pathname;
 if (instance == "/") {
     instance = "";
 }
+var backendUrl = "";
 myApp.constant("instanceUrl", instance);
-myApp.constant("authUrl", instance + "/auth");
-myApp.constant("tokenUrl", instance + "/token");
-myApp.constant("userUrl", instance + "/user");
-myApp.constant("resolverUrl", instance + "/resolver");
-myApp.constant("machineResolverUrl", instance + "/machineresolver");
-myApp.constant("machineUrl", instance + "/machine");
-myApp.constant("applicationUrl", instance + "/application");
-myApp.constant("realmUrl", instance + "/realm");
-myApp.constant("defaultRealmUrl", instance + "/defaultrealm");
-myApp.constant("validateUrl", instance + "/validate");
-myApp.constant("systemUrl", instance + "/system");
-myApp.constant("auditUrl", instance + "/audit");
-myApp.constant("policyUrl", instance + "/policy");
+myApp.constant("authUrl", backendUrl + instance + "/auth");
+myApp.constant("tokenUrl", backendUrl + instance + "/token");
+myApp.constant("userUrl", backendUrl + instance + "/user");
+myApp.constant("resolverUrl", backendUrl + instance + "/resolver");
+myApp.constant("machineResolverUrl", backendUrl + instance + "/machineresolver");
+myApp.constant("machineUrl", backendUrl + instance + "/machine");
+myApp.constant("applicationUrl", backendUrl + instance + "/application");
+myApp.constant("realmUrl", backendUrl + instance + "/realm");
+myApp.constant("defaultRealmUrl", backendUrl + instance + "/defaultrealm");
+myApp.constant("validateUrl", backendUrl + instance + "/validate");
+myApp.constant("systemUrl", backendUrl + instance + "/system");
+myApp.constant("auditUrl", backendUrl + instance + "/audit");
+myApp.constant("policyUrl", backendUrl + instance + "/policy");
 myApp.run(['$rootScope', '$state', '$stateParams',
         function ($rootScope, $state, $stateParams) {
 
