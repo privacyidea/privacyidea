@@ -15,9 +15,9 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            init_tokenlabel, init_random_pin)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             no_detail_on_success,
-                                            no_detail_on_fail)
+                                            no_detail_on_fail, autoassign)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
-                                   set_realms)
+                                   set_realms, check_user_pass)
 from privacyidea.lib.user import User
 
 from flask import Response, Request, g
@@ -506,5 +506,55 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         new_response = no_detail_on_fail(req, resp)
         jresult = json.loads(new_response.data)
         self.assertTrue("detail" in jresult, jresult)
+
+        delete_policy("pol2")
+
+
+    def test_05_autoassign(self):
+        # init a token, that does has no uwser
+        self.setUp_user_realms()
+        tokenobject = init_token({"serial": "UASSIGN1", "type": "hotp",
+                                  "otpkey": "3132333435363738393031"
+                                            "323334353637383930"},
+                                 tokenrealms=[self.realm1])
+
+        # The request with an OTP value and a PIN of a user, who has not
+        # token assigned
+        builder = EnvironBuilder(method='POST',
+                                 data={},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+        req.all_data = {"user": "autoassignuser", "realm": self.realm1,
+                        "pass": "test287082"}
+        # The response with a failed request
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": False},
+               "version": "privacyIDEA test",
+               "id": 1}
+        resp = Response(json.dumps(res))
+
+        # Set the autoassign policy
+        set_policy(name="pol2",
+                   scope=SCOPE.ENROLL,
+                   action=ACTION.AUTOASSIGN, client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+
+        new_response = autoassign(req, resp)
+        jresult = json.loads(new_response.data)
+        self.assertTrue(jresult.get("result").get("value"), jresult)
+        self.assertEqual(jresult.get("detail").get("serial"), "UASSIGN1")
+
+        # test the token with test287082 will fail
+        res, dict = check_user_pass(User("autoassignuser", self.realm1),
+                               "test287082")
+        self.assertFalse(res)
+
+        # test the token with test359152 will succeed
+        res, dict = check_user_pass(User("autoassignuser", self.realm1),
+                               "test359152")
+        self.assertTrue(res)
 
         delete_policy("pol2")

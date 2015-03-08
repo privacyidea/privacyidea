@@ -31,8 +31,8 @@ class MyTestCase(unittest.TestCase):
     def setUp_user_realms(self):
         # create user realm
         rid = save_resolver({"resolver": self.resolvername1,
-                               "type": "passwdresolver",
-                               "fileName": PWFILE})
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
         self.assertTrue(rid > 0, rid)
 
         (added, failed) = set_realm(self.realm1,

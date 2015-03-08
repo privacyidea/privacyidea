@@ -55,6 +55,33 @@ The default behaviour is to use the serial number.
 .. note:: This is useful to identify the token in the Authenticator App.
 
 
+.. _autoassignment:
+
+autoassignment
+~~~~~~~~~~~~~~
+
+.. index:: autoassignment
+
+type: bool
+
+Users can assign a token just by using this token. The user can take
+a token from a pool of unassigned tokens. When this policy is set,
+and the user has no token assigned, autoassignment will be done:
+The user authenticates with a new PIN and an OTP value from the token.
+If the OTP value is correct the token gets assigned to the user and the given
+PIN is set as the OTP PIN.
+
+.. note:: Requirements are:
+
+  1. The user must have no other tokens assign.
+  2. The token must be not assigned to any user.
+  3. The token must be located in the realm of the authenticating user.
+
+.. warning:: In this case assigning the token is only a
+one-factor-authentication: the possession of the token.
+
+
+
 otp_pin_random
 ~~~~~~~~~~~~~~
 
@@ -80,39 +107,6 @@ values: 0 or 1
 If set to *1* the OTP PIN of a token will be encrypted. The default
 behaviour is to hash the OTP PIN, which is safer.
 
-.. _autoassignment:
-
-autoassignment
-~~~~~~~~~~~~~~
-
-**(TODO)** Not yet migrated.
-
-.. index:: autoassignment
-
-type: int
-
-value: 6 or 8
-
-Users can assign a token just by using this token. The user can take
-a token from a pool of unassigned tokens. When this policy is set,
-and the user has no token assigned, autoassignment will be done:
-The user authenticates with his user store (e.g. LDAP) password
-together with the OTP value of the not-assigned-token.
-The system will check the password and try to identify the token and
-check the OTP value. Therefor the action needs to contain the length
-of the OTP value (either 6 or 8).
-If it succeeds the token gets assigned to the user, the OTP PIN is set
-and the user is successfully authenticated.
-
-ignore_autoassignment_pin
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-**(TODO)** Not yet migrated.
-
-type: bool
-
-If this action is set, the assigned token does not get a PIN
-during autoassignment.
 
 lostTokenPWLen
 ~~~~~~~~~~~~~~

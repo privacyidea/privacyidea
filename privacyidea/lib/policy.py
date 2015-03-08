@@ -116,6 +116,7 @@ class ACTION():
     ASSIGN = "assign"
     AUDIT = "auditlog"
     AUTHITEMS = "fetch_authentication_items"
+    AUTOASSIGN = "autoassignment"
     COPYTOKENPIN = "copytokenpin"
     COPYTOKENUSER = "copytokenuser"
     DELETE = "delete"
@@ -650,12 +651,10 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("Set label for a new enrolled Google Authenticator. "
                           "Possible tags are <u> (user), <r> ("
                           "realm), <s> (serial).")},
-            # 'autoassignment': {
-            #     'type': 'int',
-            #     'value': [6, 8],
-            #     'desc': _("Users can assign a token just by using the "
-            #               "unassigned token to authenticate. This is the lenght"
-            #               " of the OTP value - either 6, 8, 32, 48.")},
+            ACTION.AUTOASSIGN: {
+                'type': 'bool',
+                'desc': _("Users can assign a token just by using the "
+                          "unassigned token to authenticate.")},
             # 'ignore_autoassignment_pin': {
             #     'type': 'bool',
             #     'desc' : _("Do not set password from auto assignment as token pin.")},

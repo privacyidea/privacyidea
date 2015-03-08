@@ -36,7 +36,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm)
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
                                             no_detail_on_fail,
-                                            no_detail_on_success)
+                                            no_detail_on_success, autoassign)
 from privacyidea.lib.policy import PolicyClass
 import logging
 log = logging.getLogger(__name__)
@@ -86,6 +86,7 @@ def after_request(response):
 @postpolicy(no_detail_on_success, request=request)
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
+@postpolicy(autoassign, request=request)
 @prepolicy(set_realm, request=request)
 @check_user_or_serial_in_request
 def check():
