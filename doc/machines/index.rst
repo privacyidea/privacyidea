@@ -36,35 +36,27 @@ Parameters:
 
 ``user`` (optional, default=root)
 
-When the SSH token type is assigned to a client, the user specified in the user paramter
+When the SSH token type is assigned to a client, the user specified in the
+user parameter
 can login with the private key of the SSH token.
 
-To enroll SSH tokens to the client systems you have to use the privacyIDEA admin client.
+In the ``sshd_config`` file you need to configure the ``AuthorizedKeysCommand``.
+Set it to::
 
-To distribute the SSH tokens the privacyIDEA admin client uses salt [#saltstack]_.
+   privacyidea-authorizedkeys
 
-In version 1.3 the command line interface of the admin client was heavily improved, so
-that you can simply distribute the SSH keys by calling the following command on the
-salt master::
+This will fetch the SSH public keys for the requesting machine.
 
-   privacyidea-ssh-assign @secrets.txt
+The command expects a configuration file
+*/etc/privacyidea/authorizedkeyscommand* which looks like this::
 
-This script will call all SSH authentication items and will use salt to push these 
-to the clients.
+   [Default]
+   url=https://localhost
+   admin=admin
+   password=test
 
-The ``secrets.txt`` file contains the connection data to the privacyIDEA server.
-
-Thus you can check the access rights of ``secrets.txt`` and use this call in a 
-cron job.
-
-The secrets.txt just takes the command line parameters and might look like this::
-   
-   --url
-   https://localhost:5001
-   --admin
-   admin@admin
-   --password
-   secretPassword
+.. note:: To disable a SSH key for all servers, you simple can disable the
+SSH token in privacyIDEA.
 
 
 LUKS

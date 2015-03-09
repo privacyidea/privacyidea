@@ -57,7 +57,7 @@ class MachineApplication(MachineApplicationBase):
         """
         ret = {}
         if token_type.lower() == "sshkey":
-            toks = get_tokens(serial=serial)
+            toks = get_tokens(serial=serial, active=True)
             if len(toks) == 1:
                 # tokenclass is a SSHkeyTokenClass
                 tokclass = toks[0]

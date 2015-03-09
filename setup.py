@@ -4,7 +4,7 @@ import os
 import glob
 import sys
 
-VERSION="2.1dev2"
+VERSION="2.1dev4"
 #VERSION="2.0"
 
 # Taken from kennethreitz/requests/setup.py

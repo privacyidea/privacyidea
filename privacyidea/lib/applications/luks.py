@@ -68,7 +68,7 @@ class MachineApplication(MachineApplicationBase):
                 # create the response. We need to get
                 # the HMAC key and calculate a HMAC response for
                 # the challenge
-                toks = get_tokens(serial=serial)
+                toks = get_tokens(serial=serial, active=True)
                 if len(toks) == 1:
                     # tokenclass is a TimeHmacTokenClass
                     (_r, _p, otp, _c) = toks[0].get_otp(challenge=challenge_hex,
