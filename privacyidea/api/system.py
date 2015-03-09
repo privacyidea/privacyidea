@@ -197,6 +197,9 @@ def get_config(key=None):
         result = get_from_config()
     else:
         result = get_from_config(key)
+
+    g.audit_object.log({"success": True,
+                        "info": key})
     return send_result(result)
 
 

@@ -43,6 +43,16 @@ angular.module('privacyideaApp.tokenStates', ['ui.router']).config(
                     templateUrl: tokenpath + "token.details.html",
                     controller: "tokenDetailController"
                 })
+                .state('token.lost', {
+                    url: "/lost/{tokenSerial:.*}",
+                    templateUrl: tokenpath + "token.lost.html",
+                    controller: "tokenLostController"
+                })
+                .state('token.getserial', {
+                    url: "/getserial",
+                    templateUrl: tokenpath + "token.getserial.html",
+                    controller: "getSerialController"
+                })
                 .state('token.enroll', {
                     url: "/enroll/{realmname:.*}/{username:.*}",
                     templateUrl: tokenpath + "token.enroll.html",

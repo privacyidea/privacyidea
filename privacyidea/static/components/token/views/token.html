@@ -30,9 +30,24 @@
                             <span class="glyphicon glyphicon-upload"></span>
                             Import Tokens</a>
                     </li>
-
+                    <hr>
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('token.lost')}"
+                        ng-show="$state.includes('token.details')||
+                        $state.includes('token.lost')">
+                        <a ui-sref="token.lost({tokenSerial:tokenSerial})">
+                            <span class="glyphicon glyphicon-eye-open"></span>
+                            Lost Token</a>
+                    </li>
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('token.getserial')}">
+                        <a ui-sref="token.getserial">
+                            <span class="glyphicon glyphicon-question-sign">
+                            </span>
+                            Get Serial</a>
+                    </li>
                 </ul>
-                <hr>
+
                 <div>
                     total tokens: {{ tokendata.count }}
                 </div>

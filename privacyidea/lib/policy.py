@@ -125,6 +125,9 @@ class ACTION():
     IMPORT = "importtokens"
     LOGINMODE = "login_mode"
     LOSTTOKEN = 'losttoken'
+    LOSTTOKENPWLEN = "losttoken_PW_length"
+    LOSTTOKENPWCONTENTS = "losttoken_PW_contents"
+    LOSTTOKENVALID = "losttoken_valid"
     MACHINERESOLVERWRITE = "mresolverwrite"
     MACHINERESOLVERDELETE = "mresolverdelete"
     MACHINELIST = "machinelist"
@@ -534,9 +537,9 @@ def get_static_policy_definitions(scope=None):
                                          'another token.'),
                               "group": "tools"},
             ACTION.LOSTTOKEN: {'type': 'bool',
-                          'desc' : _('Admin is allowed to trigger the lost '
-                                     'token workflow.'),
-                          "group": "tools"},
+                               'desc': _('Admin is allowed to trigger the '
+                                          'lost token workflow.'),
+                               "group": "tools"},
             # 'getotp': {
             #     'type': 'bool',
             #     'desc': _('Allow the administrator to retrieve OTP values for tokens.'),
@@ -669,18 +672,20 @@ def get_static_policy_definitions(scope=None):
             # 'ignore_autoassignment_pin': {
             #     'type': 'bool',
             #     'desc' : _("Do not set password from auto assignment as token pin.")},
-            # 'lostTokenPWLen': {
-            #     'type': 'int',
-            #     'desc': _('The length of the password in case of '
-            #             'temporary token (lost token).')},
-            # 'lostTokenPWContents': {
-            #     'type': 'str',
-            #     'desc': _('The contents of the temporary password, '
-            #             'described by the characters C, c, n, s.')},
-            # 'lostTokenValid': {
-            #     'type': 'int',
-            #     'desc': _('The length of the validity for the temporary '
-            #             'token (in days).')},
+            ACTION.LOSTTOKENPWLEN: {
+                'type': 'int',
+                'value': range(1, 32),
+                'desc': _('The length of the password in case of '
+                          'temporary token (lost token).')},
+            ACTION.LOSTTOKENPWCONTENTS: {
+                'type': 'str',
+                'desc': _('The contents of the temporary password, '
+                          'described by the characters C, c, n, s.')},
+            ACTION.LOSTTOKENVALID: {
+                'type': 'int',
+                'range': range(1, 61),
+                'desc': _('The length of the validity for the temporary '
+                          'token (in days).')},
             },
         SCOPE.AUTH: {
             ACTION.OTPPIN: {
