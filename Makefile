@@ -127,9 +127,14 @@ ppa-dev-all:
 
 
 ppa:
-	make debianize
+	cp deploy/debian-ubuntu/changelog DEBUILD/privacyidea.org/debian/
+	sed -e s/"trusty) trusty; urgency"/"$(series)) $(series); urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
+	################# Build
 	(cd DEBUILD/privacyidea.org; debuild -sa -S)
-	dput ppa:privacyidea/privacyidea DEBUILD/python-privacyidea_${VERSION}-*_source.changes
+	 ################ Upload to launchpad:
+	dput ppa:privacyidea/privacyidea DEBUILD/python-privacyidea_${VERSION}*_source.changes
+
+
 
 ppa-all:
 	make debianize
