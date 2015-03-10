@@ -1,3 +1,17 @@
+privacyidea-venv (2.1-1) wheezy; urgency=low
+
+  * Add Machine-Application framework to support LUKS and SSH
+    to manage SSH keys and provide Yubikeys to boot LUKS
+    encrypted machines. #100, #10
+  * Add Machine Resolvers for hosts and LDAP/AD #96
+  * Migrate more policies like SMS policies. #95
+  * Restructure WebUI code to ease development #97
+  * Fix logout problem of user #92
+  * Fix user list for AD (referrals) #99
+  * Fix max_token_per_user policy #101
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Tue, 10 Mar 2015 10:30:00 +0200
+
 privacyidea-venv (2.1~dev2) trusty; urgency=low
 
   * Add MachineTokens to Token.Details and Machine.Details view.

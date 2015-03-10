@@ -1,3 +1,16 @@
+Version 2.1, 2015-03-10
+
+  * Add Machine-Application framework to support LUKS and SSH
+    to manage SSH keys and provide Yubikeys to boot LUKS
+    encrypted machines. #100, #10
+  * Add Machine Resolvers for hosts and LDAP/AD #96
+  * Migrate more policies like SMS policies. #95
+  * Restructure WebUI code to ease development #97
+  * Fix logout problem of user #92
+  * Fix user list for AD (referrals) #99
+  * Fix max_token_per_user policy #101
+
+
 Version 2.0, 2015-02-21
 
   * Migrate privacyIDEA to Flask Web framework
