@@ -11,7 +11,7 @@ Replaces: privacyidea (<< 2.0)
 Breaks: privacyidea (<< 2.0)
 Conflicts: python-privacyidea
 Pre-Depends: dpkg (>= 1.16.1), python2.7-minimal, ${misc:Pre-Depends}
-Depends: ${python:Depends}, ${misc:Depends}, python-virtualenv
+Depends: ${python:Depends}, ${misc:Depends}
 X-Python-Version: >= 2.7
 Description: two-factor authentication system e.g. for OTP devices
  privacyIDEA: identity, multifactor authentication, authorization.

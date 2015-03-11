@@ -1,3 +1,9 @@
+python-privacyidea (2.2~dev0) trusty; urgency=low
+
+  * Initial dev package
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 11 Mar 2015 17:30:00 +0200
+
 python-privacyidea (2.1-1trusty) trusty; urgency=low
 
   * Add Machine-Application framework to support LUKS and SSH

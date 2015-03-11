@@ -189,7 +189,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
 def login_mode(wrapped_function, *args, **kwds):
     """
     Decorator to decorate the lib.auth.check_webui_user function.
-    Depending on ACTION.LOGINMODE it sets the check_otp paramter, to signal
+    Depending on ACTION.LOGINMODE it sets the check_otp parameter, to signal
     that the authentication should be performed against privacyIDEA.
 
     :param wrapped_function: Usually the function check_webui_user
