@@ -25,13 +25,13 @@ def get_file_contents(file_path):
 setup(
     name='privacyIDEA',
     version=VERSION,
-    description='privacyIDEA: identity, multifactor authentication, '
+    description='privacyIDEA: identity, multifactor authentication (OTP), '
                 'authorization, audit',
     author='privacyidea.org',
     license='AGPLv3',
     author_email='cornelius@privacyidea.org',
     url='http://www.privacyidea.org',
-    keywords='OTP two factor authentication management security',
+    keywords='OTP, two factor authentication, management, security',
     packages=find_packages(),
     scripts=['pi-manage.py',
              'tools/privacyidea-convert-token',

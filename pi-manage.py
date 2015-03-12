@@ -46,9 +46,14 @@ manager = Manager(app)
 admin_manager = Manager(usage='Create new administrators or modify existing '
                               'ones.')
 backup_manager = Manager(usage='Create database backup and restore')
+realm_manager = Manager(usage='Create new realms')
+resolver_manager = Manager(usage='Create new resolver')
 manager.add_command('db', MigrateCommand)
 manager.add_command('admin', admin_manager)
 manager.add_command('backup', backup_manager)
+manager.add_command('realm', realm_manager)
+manager.add_command('resolver', resolver_manager)
+
 
 @admin_manager.command
 def add(username, email, password=None):
@@ -274,6 +279,43 @@ def createdb():
     print db
     db.create_all()
     db.session.commit()
+
+@resolver_manager.command
+def create(name, rtype, filename):
+    """
+    Create a new resolver with name and type (ldapresolver, sqlresolver).
+    Read the necessary resolver parameters from the filename. The file should
+    contain a python dictionary.
+
+    :param name: The name of the resolver
+    :param rtype: The type of the resolver like ldapresolver or sqlresolver
+    :param filename: The name of the config file.
+    :return:
+    """
+    from privacyidea.lib.resolver import save_resolver
+    import ast
+
+    f = open(filename, 'r')
+    contents = f.read()
+    f.close()
+    params = ast.literal_eval(contents)
+    params["resolver"] = name
+    params["type"] = rtype
+    save_resolver(params)
+
+
+@realm_manager.command
+def create(name, resolver):
+    """
+    Create a new realm.
+    This will create a new realm with the given resolver.
+    *restriction*: The new realm will only contain one resolver!
+
+    :return:
+    """
+    from privacyidea.lib.realm import set_realm
+    set_realm(name, [resolver])
+
 
 if __name__ == '__main__':
     manager.run()
