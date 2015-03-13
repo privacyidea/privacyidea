@@ -394,7 +394,7 @@ class IdResolver (UserIdResolver):
         ldap_elems = uri.split(":")
         if len(ldap_elems) == 3:
             server = ldap_elems[1].strip("/")
-            port = ldap_elems[2]
+            port = int(ldap_elems[2])
             if ldap_elems[0].lower() == "ldaps":
                 ssl = True
             else:
