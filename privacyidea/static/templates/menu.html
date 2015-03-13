@@ -14,25 +14,25 @@
             <ul class="nav navbar-nav">
                 <li ng-class="{active: $state.includes('token')}"
                     ng-show="loggedInUser.role">
-                    <a ui-sref="token">
+                    <a ui-sref="token.list">
                     <span class="glyphicon glyphicon-phone"
                           aria-hidden="true"></span>
                         Tokens</a></li>
                 <li ng-class="{active: $state.includes('user')}"
                     ng-show="loggedInUser.role == 'admin'">
-                    <a ui-sref="user">
+                    <a ui-sref="user.list">
                     <span class="glyphicon glyphicon-user"
                           aria-hidden="true"></span>
                         Users</a></li>
                 <li ng-class="{active: $state.includes('machine')}"
                     ng-show="loggedInUser.role == 'admin'">
-                    <a ui-sref="machine">
+                    <a ui-sref="machine.list">
                     <span class="glyphicon glyphicon-tasks"
                           aria-hidden="true"></span>
                         Machines</a></li>
                 <li ng-class="{active: $state.includes('config')}"
                     ng-show="loggedInUser.role == 'admin'">
-                    <a ui-sref="config">
+                    <a ui-sref="config.system">
                         <span class="glyphicon glyphicon-cog"
                               aria-hidden="true"></span>
                         Config

@@ -35,5 +35,9 @@ angular.module('privacyideaApp.loginStates', ['ui.router']).config(
                 }).state('login', {
                     url: "/login",
                     templateUrl: loginpath + "login.html"
+                }).state('initial_login', {
+                    // This is the state, when no login path is specified
+                    url: "",
+                    templateUrl: loginpath + "login.html"
                 })
         }]);

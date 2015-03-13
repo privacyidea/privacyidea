@@ -58,7 +58,7 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
      * in the tokenview, as the token view is the first view. This could be
      * changed to be located anywhere else.
      */
-    if ($scope.loggedInUser == "admin") {
+    if ($scope.loggedInUser.role == "admin") {
         ConfigFactory.getRealms(function (data) {
             // Check if there is a realm defined, or if we should display the
             // Auto Create Dialog
@@ -67,25 +67,6 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
                 $('#dialogAutoCreateRealm').modal();
             }
         });
-    }
-
-    $scope.createDefaultRealm = function () {
-        var resolver_params = {type: "passwdresolver", filename: "/etc/passwd"};
-        var realm_params = {resolvers: "deflocal"};
-        ConfigFactory.setResolver("deflocal",
-            resolver_params,
-            function(data) {
-                if (data.result.value) {
-                    // The resolver is created, we can create the realm
-                    ConfigFactory.setRealm("defrealm",
-                        realm_params, function (data) {
-                            if (data.result.value) {
-                                addInfo("Realm defrealm created.");
-                            }
-                        });
-                }
-        });
-
     }
 
 });
