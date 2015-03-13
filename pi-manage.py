@@ -304,6 +304,29 @@ def create(name, rtype, filename):
     save_resolver(params)
 
 
+@resolver_manager.command
+def list():
+    """
+    list the available resolvers and the type
+    """
+    from privacyidea.lib.resolver import get_resolver_list
+    resolver_list = get_resolver_list()
+    for name, resolver in resolver_list.iteritems():
+        print "%16s - (%s)" % (name, resolver.get("type"))
+
+
+@realm_manager.command
+def list():
+    """
+    list the available realms
+    """
+    from privacyidea.lib.realm import get_realms
+    realm_list = get_realms()
+    for name, realm_data in realm_list.iteritems():
+        resolvernames = [x.get("name") for x in realm_data.get("resolver")]
+        print "%16s: %s" % (name, resolvernames)
+
+
 @realm_manager.command
 def create(name, resolver):
     """
