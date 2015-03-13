@@ -14,7 +14,7 @@ from privacyidea.lib.applications.offline import (MachineApplication as
 from privacyidea.lib.applications import (get_auth_item,
                                           is_application_allow_bulk_call,
                                           get_application_types)
-from privacyidea.lib.token import init_token
+from privacyidea.lib.token import init_token, get_tokens
 from privacyidea.lib.user import User
 from privacyidea.lib.crypto import verify_salted_hash_256, salted_hash_256
 
@@ -124,6 +124,9 @@ class OfflineApplicationTestCase(MyTestCase):
         self.assertTrue(verify_salted_hash_256("254676",
                                                auth_item.get("response").get(
                                                    5)))
+        # After calling auth_item the token should be deactivated
+        toks = get_tokens(serial=serial)
+        self.assertFalse(toks[0].token.active)
 
     def test_03_get_auth_item_unsupported(self):
         # unsupported token type

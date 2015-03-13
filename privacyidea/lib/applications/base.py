@@ -22,6 +22,7 @@ import logging
 import sys
 import os
 from privacyidea.lib.log import log_with
+import privacyidea.lib.applications
 from importlib import import_module
 log = logging.getLogger(__name__)
 
@@ -35,12 +36,14 @@ def get_machine_application_class_list():
     :rtype: list
     """
     class_list = []
-    # TODO: We should read all classes inherited by MachineApplicationBase under
-    # lib/applications/
-    # Otherwise we need to add a line here for each new Application
-    class_list.append("privacyidea.lib.applications.luks.MachineApplication")
-    class_list.append("privacyidea.lib.applications.ssh.MachineApplication")
-    class_list.append("privacyidea.lib.applications.base.MachineApplicationBase")
+    # We add each python module in this directory to the class list
+    path = os.path.dirname(privacyidea.lib.applications.__file__)
+    files = os.listdir(path)
+    modules = [f.split(".")[0] for f in files if f.endswith(".py") and f !=
+               "__init__.py"]
+    for module in modules:
+        class_list.append("privacyidea.lib.applications.%s.MachineApplication"
+                          % module)
     return class_list
 
 

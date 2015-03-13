@@ -73,6 +73,7 @@ class MachineApplication(MachineApplicationBase):
                 otps = otp_dict.get("otp")
                 for key in otps.keys():
                     otps[key] = salted_hash_256(otps.get(key))
+                toks[0].enable(False)
                 ret["response"] = otps
 
         else:
