@@ -1,5 +1,5 @@
 """
-This test file tests the applications definitinos standalone
+This test file tests the applications definitions standalone
 lib/applications/*
 """
 
@@ -9,11 +9,14 @@ from privacyidea.lib.applications.ssh import (MachineApplication as
                                               SSHApplication)
 from privacyidea.lib.applications.luks import (MachineApplication as
                                                LUKSApplication)
+from privacyidea.lib.applications.offline import (MachineApplication as
+                                                  OfflineApplication)
 from privacyidea.lib.applications import (get_auth_item,
                                           is_application_allow_bulk_call,
                                           get_application_types)
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
+from privacyidea.lib.crypto import verify_salted_hash_256, salted_hash_256
 
 SSHKEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDO1rx377" \
          "cmSSs/89j/0u5aEiXa7bYArHn7zFNCBaVnDUiK9JDNkpWB" \
@@ -91,6 +94,42 @@ class LUKSApplicationTestCase(MyTestCase):
         auth_item = LUKSApplication.get_authentication_item("unsupported", "s")
         self.assertEqual(auth_item, {})
 
+
+class OfflineApplicationTestCase(MyTestCase):
+
+    def test_00_salted_hash(self):
+        h = salted_hash_256("test", salt="saltsalt")
+        r = verify_salted_hash_256("test", h)
+        self.assertTrue(r)
+
+    def test_01_get_options(self):
+        # Can run as class
+        options = OfflineApplication.get_options()
+        self.assertEqual(options["required"], [])
+        self.assertEqual(options["optional"], ['user', 'count'])
+
+    def test_02_get_auth_item(self):
+        serial = "OATH1"
+        # create realm
+        self.setUp_user_realms()
+        user = User("cornelius", realm=self.realm1)
+        # create ssh token
+        init_token({"serial": serial, "type": "hotp", "otpkey": OTPKEY},
+                   user=user)
+
+        auth_item = OfflineApplication.get_authentication_item("hotp", serial)
+        self.assertTrue(verify_salted_hash_256("755224",
+                                               auth_item.get("response").get(
+                                                   0)))
+        self.assertTrue(verify_salted_hash_256("254676",
+                                               auth_item.get("response").get(
+                                                   5)))
+
+    def test_03_get_auth_item_unsupported(self):
+        # unsupported token type
+        auth_item = OfflineApplication.get_authentication_item("unsupported",
+                                                               "s")
+        self.assertEqual(auth_item, {})
 
 
 class BaseApplicationTestCase(MyTestCase):
