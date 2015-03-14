@@ -1,5 +1,6 @@
 """
 This testcase is used to test the REST API  in api/machines.py
+to fetch machine information and to attach token to machines
 """
 from .base import MyTestCase
 import json
@@ -22,12 +23,14 @@ SSHKEY = "ssh-rsa " \
          "afLE9AtAL4nnMPuubC87L0wJ88un9teza/N02KJMHy01Yz3iJKt3Ou9eV6kqO" \
          "ei3kvLs5dXmriTHp6g9whtnN6/Liv9SzZPJTs8YfThi34Wccrw== " \
          "NetKnights GmbH"
+OTPKEY = "3132333435363738393031323334353637383930"
 
 
 class APIMachinesTestCase(MyTestCase):
 
     serial2 = "ser1"
     serial3 = "UBOM12345"
+    serial4 = "OATH1234"
 
     def test_00_create_machine_resolver(self):
         # create a machine resolver
@@ -204,7 +207,7 @@ class APIMachinesTestCase(MyTestCase):
         self.assertEqual(len(token_obj.token.machine_list), 0)
 
 
-    def test_10_auth_items(self):
+    def test_10_auth_items_ssh(self):
         # create an SSH token
         token_obj = init_token({"serial": self.serial2, "type": "sshkey",
                                 "sshkey": SSHKEY})
@@ -240,6 +243,8 @@ class APIMachinesTestCase(MyTestCase):
             sshkey = result["value"].get("ssh")[0].get("sshkey")
             self.assertTrue(sshkey.startswith("ssh-rsa"), sshkey)
 
+    def test_11_auth_items_luks(self):
+        # create TOTP/Yubikey token
         token_obj = init_token({"serial": self.serial3, "type": "totp",
                                 "otpkey": "12345678"})
         self.assertEqual(token_obj.type, "totp")
@@ -273,4 +278,33 @@ class APIMachinesTestCase(MyTestCase):
             slot = result["value"].get("luks")[0].get("slot")
             self.assertEqual(slot, "1")
             response = result["value"].get("luks")[0].get("response")
-            self.assertEqual(response, "93235fc7d1d444d0ec014ea9eafcc44fc65b73eb")
+            self.assertEqual(response,
+                             "93235fc7d1d444d0ec014ea9eafcc44fc65b73eb")
+
+    def test_12_auth_items_offline(self):
+        #create HOTP token for offline usage
+        token_obj = init_token({"serial": self.serial4, "type": "hotp",
+                                "otpkey": OTPKEY})
+        self.assertEqual(token_obj.type, "hotp")
+
+        # Attach the token to the machine "gandalf" with the application offline
+        r = attach_token(hostname="gandalf", serial=self.serial4,
+                         application="offline", options={"user": "cornelius",
+                                                         "count": 17})
+
+        self.assertEqual(r.machine_id, "192.168.0.1")
+
+        # fetch the auth_items on machine gandalf for application "offline"
+        with self.app.test_request_context(
+                '/machine/authitem/offline?hostname=gandalf',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            offline_auth_item = result["value"].get("offline")[0]
+            username = offline_auth_item.get("user")
+            self.assertEqual(username, "cornelius")
+            # check, if we got 17 otp values
+            self.assertEqual(len(offline_auth_item.get("response")), 17)
+

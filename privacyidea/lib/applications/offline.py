@@ -39,8 +39,9 @@ class MachineApplication(MachineApplicationBase):
 
     The server stores the information, which OTP values were issued.
 
-    required options:
-        user
+    options options:
+      * user: a username.
+      * count: is the number of OTP values returned
 
     """
     application_name = "offline"
@@ -49,7 +50,7 @@ class MachineApplication(MachineApplicationBase):
     def get_authentication_item(cls,
                                 token_type,
                                 serial,
-                                challenge=None):
+                                challenge=None, options=None):
         """
         :param token_type: the type of the token. At the moment
                            we only support "HOTP" token. Supporting time
@@ -63,9 +64,9 @@ class MachineApplication(MachineApplicationBase):
         :return auth_item: A list of hashed OTP values
         """
         ret = {}
+        options = options or {}
         if token_type.lower() == "hotp":
-            # TODO: make this configurable
-            count = 100
+            count = int(options.get("count", 100))
             # get the token
             toks = get_tokens(serial=serial)
             if len(toks) == 1:
@@ -75,6 +76,11 @@ class MachineApplication(MachineApplicationBase):
                     otps[key] = salted_hash_256(otps.get(key))
                 toks[0].enable(False)
                 ret["response"] = otps
+                user_object = toks[0].get_user()
+                if user_object:
+                    uInfo = user_object.get_user_info()
+                    if "username" in uInfo:
+                        ret["username"] = uInfo.get("username")
 
         else:
             log.info("Token %r, type %r is not supported by"

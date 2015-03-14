@@ -383,7 +383,8 @@ def get_auth_items(hostname, ip=None, application=None, challenge=None):
         auth_item = get_auth_item(mtoken.get("application"),
                                   mtoken.get("type"),
                                   mtoken.get("serial"),
-                                  challenge)
+                                  challenge,
+                                  options=mtoken.get("options"))
         if auth_item:
             if mtoken.get("application") not in auth_items:
                 # we create a new empty list for the new application type

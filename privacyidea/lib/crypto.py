@@ -250,14 +250,14 @@ def hash(val, seed, algo=None):
     return m.digest()
 
 
-def salted_hash_256(data, salt_length=8, salt=None):
+def salted_hash_256(data, salt_length=16, salt=None):
     if not salt:
         salt = geturandom(salt_length)
     h = '{SSHA256}' + base64.b64encode(sha256(data + salt).digest() + salt)
     return h
 
 
-def verify_salted_hash_256(data, h, salt_length=8):
+def verify_salted_hash_256(data, h, salt_length=16):
     h_raw = h[len('{SSHA256}'):]
     h_bin = base64.b64decode(h_raw)
     salt = h_bin[-salt_length:]

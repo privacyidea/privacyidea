@@ -40,7 +40,7 @@ class MachineApplication(MachineApplicationBase):
     def get_authentication_item(cls,
                                 token_type,
                                 serial,
-                                challenge=None):
+                                challenge=None, options=None):
         """
         :param token_type: the type of the token. At the moment
                            we only support yubikeys, tokentype "TOTP".
@@ -55,6 +55,7 @@ class MachineApplication(MachineApplicationBase):
                            a "response".
         """
         ret = {}
+        options = options or {}
         if token_type.lower() == "totp" and serial.startswith("UBOM"):
                 # create a challenge of 32 byte
                 # Although the yubikey is capable of doing 64byte challenges

@@ -93,7 +93,7 @@ class MachineApplication(object):
     def get_authentication_item(cls,
                                 token_type,
                                 serial,
-                                challenge=None):
+                                challenge=None, options=None):
         """
         returns a dictionary of authentication items
         like public keys, challenges, responses...
@@ -113,15 +113,17 @@ class MachineApplication(object):
 def get_auth_item(application,
                   token_type,
                   serial,
-                  challenge=None):
+                  challenge=None, options=None):
 
+    options = options or {}
     # application_module from application
     class_dict = get_machine_application_class_dict()
     # should be able to run as class or as object
     auth_class = class_dict.get(application)
     auth_item = auth_class.get_authentication_item(token_type,
                                                    serial,
-                                                   challenge=challenge)
+                                                   challenge=challenge,
+                                                   options=options)
     return auth_item
 
 

@@ -46,7 +46,7 @@ class MachineApplication(MachineApplicationBase):
     def get_authentication_item(cls,
                                 token_type,
                                 serial,
-                                challenge=None):
+                                challenge=None, options=None):
         """
         :param token_type: the type of the token. At the moment
                            we support the tokenype "sshkey"
@@ -55,6 +55,7 @@ class MachineApplication(MachineApplicationBase):
                            returns a dictionary with a "challenge" and
                            a "response".
         """
+        options = options or {}
         ret = {}
         if token_type.lower() == "sshkey":
             toks = get_tokens(serial=serial, active=True)
