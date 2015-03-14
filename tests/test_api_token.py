@@ -1,7 +1,7 @@
 from .base import MyTestCase
 import json
 from privacyidea.lib.error import (TokenAdminError, ParameterError)
-from privacyidea.lib.token import get_tokens
+from privacyidea.lib.token import get_tokens, init_token
 from privacyidea.lib.user import User
 from urllib import urlencode
 
@@ -9,6 +9,9 @@ PWFILE = "tests/testdata/passwords"
 IMPORTFILE = "tests/testdata/import.oath"
 IMPORTFILE2 = "tests/testdata/empty.oath"
 YUBICOFILE = "tests/testdata/yubico-oath.csv"
+OTPKEY = "3132333435363738393031323334353637383930"
+OTPKEY2 = "010fe88d31948c0c2e3258a4b0f7b11956a258ef"
+OTPVALUES2 = ["551536", "703671", "316522", "413789"]
 
 
 class APITokenTestCase(MyTestCase):
@@ -634,3 +637,61 @@ class APITokenTestCase(MyTestCase):
                                       serial="lostLOST001")
         self.assertTrue(len(tokenobject_list) == 1, tokenobject_list)
 
+    def test_14_get_serial_by_otp(self):
+        self._create_temp_token("T1")
+        self._create_temp_token("T2")
+        self._create_temp_token("T3")
+        init_token({"serial": "GETSERIAL",
+                    "otpkey": OTPKEY})
+
+
+        # multiple tokens are matching!
+        with self.app.test_request_context('/token/getserial/162583',
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            self.assertRaises(TokenAdminError, self.app.full_dispatch_request)
+
+        init_token({"serial": "GETSERIAL2",
+                    "otpkey": OTPKEY2})
+
+        with self.app.test_request_context('/token/getserial/316522',
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            self.assertEqual(value.get("serial"), "GETSERIAL2")
+
+        # If one OTP values was found, it can not be used again
+        with self.app.test_request_context('/token/getserial/316522',
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            self.assertEqual(value.get("serial"), None)
+
+
+        # Will not find an assigned token
+        with self.app.test_request_context('/token/getserial/413789'
+                                           '?assigned=1',
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            self.assertNotEqual(value.get("serial"), "GETSERIAL2")
+
+        # Will find a substr
+        with self.app.test_request_context('/token/getserial/413789'
+                                           '?unassigned=1&string=SERIAL',
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            self.assertEqual(value.get("serial"), "GETSERIAL2")

@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2015-03-14 Cornelius Kölbel, <cornelius@privacyidea.org>
+#            Add get_serial_by_otp
 # 2014-12-08 Cornelius Kölbel, <cornelius@privacyidea.org>
 #            Complete rewrite during flask migration
 #            Try to provide REST API
@@ -41,7 +43,8 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          set_pin, set_description, set_count_window,
                          set_sync_window, set_count_auth,
                          set_hashlib, set_max_failcount, set_realms,
-                         copy_token_user, copy_token_pin, lost_token)
+                         copy_token_user, copy_token_pin, lost_token,
+                         get_serial_by_otp, get_tokens)
 from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
 from privacyidea.lib.error import (ParameterError, TokenAdminError)
@@ -894,4 +897,45 @@ def lost_api(serial=None):
     return send_result(res)
 
 
+@token_blueprint.route('/getserial/<otp>', methods=['GET'])
+@prepolicy(check_base_action, request, action=ACTION.GETSERIAL)
+@log_with(log)
+@admin_required
+def get_serial_by_otp_api(otp=None):
+    """
+    Get the serial number for a given OTP value.
+    If the administrator has a token, he does not know to whom it belongs,
+    he can type in the OTP value and gets the serial number of the token, that
+    generates this very OTP value.
 
+    :param otp: The gicen OTP value
+    :param type: Limit the search to this token type
+    :param unassigned: If set=1, only search in unassigned tokens
+    :param assigned: If set=1, only search in assigned tokens
+    :param serial: This can be a substring of serial numbers to search in.
+    :param window: The number of OTP look ahead (default=10)
+    :return: The serial number of the token found
+    """
+    ttype = getParam(request.all_data, "type")
+    unassigned_param = getParam(request.all_data, "unassigned")
+    assigned_param = getParam(request.all_data, "assigned")
+    serial_substr = getParam(request.all_data, "serial")
+    window = int(getParam(request.all_data, "window", default=10))
+
+    serial_substr = serial_substr or ""
+
+    assigned = None
+    if unassigned_param:
+        assigned = False
+    if assigned_param:
+        assigned = True
+
+    tokenobj_list = get_tokens(tokentype=ttype,
+                               serial="*%s*" % serial_substr,
+                               assigned=assigned)
+    serial = get_serial_by_otp(tokenobj_list, otp=otp, window=window)
+
+    g.audit_object.log({"success": True,
+                        "info": "get %s by OTP" % serial})
+
+    return send_result({"serial": serial})

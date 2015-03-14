@@ -122,6 +122,7 @@ class ACTION():
     DELETE = "delete"
     DISABLE = "disable"
     ENABLE = "enable"
+    GETSERIAL = "getserial"
     IMPORT = "importtokens"
     LOGINMODE = "login_mode"
     LOSTTOKEN = 'losttoken'
@@ -518,11 +519,12 @@ def get_static_policy_definitions(scope=None):
             #                            ' resonse token.'),
             #                 "group": "tools"},
             ACTION.TOKENREALMS: {'type': 'bool',
-                            'desc' : _('Admin is allowed to manage the realms of a token.')},
-            # 'getserial': {'type': 'bool',
-            #               'desc' : _('Admin is allowed to retrieve a serial '
-            #                          'for a given OTP value.'),
-            #               "group": "tools"},
+                                 'desc' : _('Admin is allowed to manage the '
+                                            'realms of a token.')},
+            ACTION.GETSERIAL: {'type': 'bool',
+                               'desc': _('Admin is allowed to retrieve a serial'
+                                         ' for a given OTP value.'),
+                               "group": "tools"},
             # 'checkserial': {'type': 'bool',
             #                 'desc': _('Admin is allowed to check if a serial '
             #                           'is unique'),

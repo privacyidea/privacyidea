@@ -642,8 +642,9 @@ def get_token_by_otp(token_list, otp="", window=10):
     :param token_list: the list of token objects to be investigated
     :type token_list: list of token objects
     :param otp: the otp value, that needs to be found
-    :type otp: str
+    :type otp: basestring
     :param window: the window of search
+    :type window: int
 
     :return: The token, that creates this OTP value
     :rtype: Tokenobject
@@ -677,6 +678,7 @@ def get_serial_by_otp(token_list, otp="", window=10):
     :type token_list: list of token objects
     :param otp: the otp value, that needs to be found
     :param window: the window of search
+    :type window: int
 
     :return: the serial for a given OTP value and the user
     :rtype: basestring
