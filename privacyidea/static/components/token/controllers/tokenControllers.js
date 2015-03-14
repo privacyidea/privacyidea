@@ -24,6 +24,7 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
     $scope.params = {page: 1, sortdir: "asc"};
     $scope.reverse = false;
     $scope.loggedInUser = AuthFactory.getUser();
+    $scope.selectedToken = {serial: null};
     // go to the list view by default
     if ($location.path() == "/token") {
         $location.path("/token/list");

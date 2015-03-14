@@ -8,6 +8,8 @@ myApp.controller("tokenDetailController", function ($scope,
                                                     ConfigFactory,
                                                     MachineFactory) {
     $scope.tokenSerial = $stateParams.tokenSerial;
+    // This is the parents object
+    $scope.selectedToken.serial = $scope.tokenSerial;
     $scope.editCountWindow = false;
     $scope.selectedRealms = {};
     $scope.newUser = {user: "", realm: $scope.defaultRealm};

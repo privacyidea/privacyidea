@@ -35,7 +35,7 @@
                         ng-class="{active: $state.includes('token.lost')}"
                         ng-show="$state.includes('token.details')||
                         $state.includes('token.lost')">
-                        <a ui-sref="token.lost({tokenSerial:tokenSerial})">
+                        <a ui-sref="token.lost({tokenSerial:selectedToken.serial})">
                             <span class="glyphicon glyphicon-eye-open"></span>
                             Lost Token</a>
                     </li>
