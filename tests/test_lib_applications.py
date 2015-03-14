@@ -98,7 +98,7 @@ class LUKSApplicationTestCase(MyTestCase):
 class OfflineApplicationTestCase(MyTestCase):
 
     def test_00_salted_hash(self):
-        h = salted_hash_256("test", salt="saltsalt")
+        h = salted_hash_256("test", salt="saltsaltsaltsalt")
         r = verify_salted_hash_256("test", h)
         self.assertTrue(r)
 
