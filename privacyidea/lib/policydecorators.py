@@ -327,27 +327,32 @@ def config_lost_token(wrapped_function, *args, **kwds):
         serial = args[0]
         toks = get_tokens(serial=serial)
         if len(toks) == 1:
+            username = None
+            realm = None
             user_object = toks[0].get_user()
+            if user_object:
+                username = user_object.login
+                realm = user_object.realm
             clientip = options.get("clientip")
             # get the policy
             policy_object = g.policy_object
             contents_list = policy_object.get_action_values(
                 ACTION.LOSTTOKENPWCONTENTS,
                 scope=SCOPE.ENROLL,
-                realm=user_object.realm,
-                user=user_object.login,
+                realm=realm,
+                user=username,
                 client=clientip)
             validity_list = policy_object.get_action_values(
                 ACTION.LOSTTOKENVALID,
                 scope=SCOPE.ENROLL,
-                realm=user_object.realm,
-                user=user_object.login,
+                realm=realm,
+                user=username,
                 client=clientip)
             pw_len_list = policy_object.get_action_values(
                 ACTION.LOSTTOKENPWLEN,
                 scope=SCOPE.ENROLL,
-                realm=user_object.realm,
-                user=user_object.login,
+                realm=realm,
+                user=username,
                 client=clientip)
 
             if len(contents_list) > 0:
