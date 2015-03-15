@@ -7,7 +7,9 @@ implementation is contained in api/auth.py, api/token.py api/audit.py
 import json
 from .base import MyTestCase
 from privacyidea.lib.error import (TokenAdminError, UserError)
-from privacyidea.lib.token import (get_tokens, remove_token, enable_token)
+from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
+                                   assign_token, unassign_token)
+from privacyidea.lib.user import User
 from privacyidea.models import Token
 from privacyidea.lib.realm import (set_realm, delete_realm)
 
@@ -185,6 +187,7 @@ class APISelfserviceTestCase(MyTestCase):
 
     def test_04_user_can_not_delete_another_token(self):
         self.authenticate_selfserive_user()
+        assign_token(self.foreign_serial, User("cornelius", self.realm1))
         with self.app.test_request_context('/token/%s' % self.foreign_serial,
                                            method='DELETE',
                                            headers={'Authorization':
@@ -198,6 +201,33 @@ class APISelfserviceTestCase(MyTestCase):
         tokenobject_list = get_tokens(serial=self.foreign_serial)
         self.assertTrue(len(tokenobject_list) == 1, len(tokenobject_list))
 
+    def test_04_user_can_not_disable_another_token(self):
+        self.authenticate_selfserive_user()
+        assign_token(self.foreign_serial, User("cornelius", self.realm1))
+        with self.app.test_request_context('/token/disable/%s' %
+                                                   self.foreign_serial,
+                                           method='POST',
+                                           headers={'Authorization':
+                                                        self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            response = json.loads(res.data)
+            self.assertFalse(response.get("result").get("value"),
+                             response.get("result"))
+        # check if the token still is enabled!
+        tokenobject_list = get_tokens(serial=self.foreign_serial)
+        self.assertTrue(len(tokenobject_list) == 1, len(tokenobject_list))
+        self.assertTrue(tokenobject_list[0].token.active)
+
+    def test_04_user_can_not_lost_another_token(self):
+        self.authenticate_selfserive_user()
+        assign_token(self.foreign_serial, User("cornelius", self.realm1))
+        with self.app.test_request_context('/token/lost/%s' %
+                                                   self.foreign_serial,
+                                           method='POST',
+                                           headers={'Authorization':
+                                                        self.at_user}):
+            self.assertRaises(TokenAdminError, self.app.full_dispatch_request)
 
     def test_05_user_can_disable_token(self):
         self.authenticate_selfserive_user()
@@ -401,10 +431,10 @@ class APISelfserviceTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 401, res)
 
-        # Can not call lost token
-        with self.app.test_request_context('/token/lost/%s' % serial,
-                                            method="POST",
-                                            headers={'Authorization':
+        # Can not call get_serial token
+        with self.app.test_request_context('/token/getserial/12345',
+                                           method="GET",
+                                           headers={'Authorization':
                                                          self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 401, res)

@@ -44,6 +44,14 @@
                placeholder="an optional serial substring">
     </div>
 
+    <div class="form-group">
+        <label for="window">Count Window</label>
+        <input name="window" ng-model="params.window"
+               type="number"
+               class="form-control"
+               placeholder="The number of lookahead OTP values. Default 10.">
+    </div>
+
     <div class="text-center">
         <button ng-click="getSerial()"
                 ng-disabled="formGetSerial.$invalid"

@@ -179,8 +179,6 @@ administrator of another realm can not manage the token anymore.
 getserial
 ~~~~~~~~~
 
-**(TODO)** Not yet migrated.
-
 type: bool
 
 .. index:: getserial
@@ -188,6 +186,17 @@ type: bool
 If the ``getserial`` action is defined, the administrator is
 allowed to calculate the token serial number for a given OTP
 value.
+
+losttoken
+~~~~~~~~~
+
+type: bool
+
+If the ``losttoken`` action is defined, the adminstrator is
+allowed to perform the lost token process.
+
+To only perform the lost token process the actions ``copytokenuser``
+and ``copytokenpin`` are not necessary!
 
 
 copytokenuser
@@ -218,19 +227,6 @@ knowing the PIN.
 This functionality is also used during the lost token process.
 But you only need to define this action, if the administrator
 should be able to perform this task manually.
-
-losttoken
-~~~~~~~~~
-
-**(TODO)** Not yet migrated.
-
-type: bool
-
-If the ``losttoken`` action is defined, the adminstrator is 
-allowed to perform the lost token process.
-
-To only perform the lost token process the actions ``copytokenuser``
-and ``copytokenpin`` are not necessary!
 
 getotp
 ~~~~~~

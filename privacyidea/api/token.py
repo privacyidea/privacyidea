@@ -885,13 +885,19 @@ def lost_api(serial=None):
 
     You can call the function like this:
         POST /token/lost/serial
-        POST /token/lost?serial=<serial>
 
     :param serial: the serial number of the lost token.
     :type serial: basestring
-    :return: returns value=True in case of success
+    :return: returns value=dictionary in case of success
     :rtype: bool
     """
+    # check if a user is given, that the user matches the token owner.
+    userobj = get_user_from_param(request.all_data)
+    if userobj:
+        toks = get_tokens(serial=serial, user=userobj)
+        if len(toks) == 0:
+            raise TokenAdminError("The user %s does not own the token %s" % (
+                userobj, serial))
     res = lost_token(serial)
 
     g.audit_object.log({"success": True})
