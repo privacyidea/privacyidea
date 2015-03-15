@@ -685,7 +685,7 @@ def get_static_policy_definitions(scope=None):
                           'described by the characters C, c, n, s.')},
             ACTION.LOSTTOKENVALID: {
                 'type': 'int',
-                'range': range(1, 61),
+                'value': range(1, 61),
                 'desc': _('The length of the validity for the temporary '
                           'token (in days).')},
             },

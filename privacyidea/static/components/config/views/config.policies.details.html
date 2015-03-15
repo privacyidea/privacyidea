@@ -79,8 +79,17 @@
 
                         <td class="policyaction">
                             <select class="form-control"
-                                    ng-show="action.allowedValues"
+                                    ng-show="action.allowedValues && action.type=='str'"
                                     ng-model="actionValuesStr[action.name]"
+                                    ng-disabled="!actionCheckBox[action.name]"
+                                    name="action.name"
+                                    ng-options="select for select in action
+                                    .allowedValues"
+                                    >
+                            </select>
+                            <select class="form-control"
+                                    ng-show="action.allowedValues && action.type=='int'"
+                                    ng-model="actionValuesNum[action.name]"
                                     ng-disabled="!actionCheckBox[action.name]"
                                     name="action.name"
                                     ng-options="select for select in action
