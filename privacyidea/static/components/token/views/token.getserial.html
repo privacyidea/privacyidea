@@ -63,7 +63,8 @@
 </p>
 <div ng-hide="newOtp">
 <div class="alert alert-success" ng-show="serial">
-    The Serial number for the OTP value {{ otp }} is {{ serial }}.
+    The Serial number for the OTP value {{ otp }} is
+    <a ui-sref="token.details({tokenSerial:serial})">{{ serial }}</a>.
 </div>
 
 <div class="alert alert-warning" ng-show="serial===null">
