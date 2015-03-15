@@ -22,10 +22,9 @@
 #
 from privacyidea.lib.applications import MachineApplicationBase
 import logging
-log = logging.getLogger(__name__)
 from privacyidea.lib.crypto import salted_hash_256
 from privacyidea.lib.token import get_tokens
-
+log = logging.getLogger(__name__)
 
 class MachineApplication(MachineApplicationBase):
     """
@@ -70,13 +69,20 @@ class MachineApplication(MachineApplicationBase):
             # get the token
             toks = get_tokens(serial=serial)
             if len(toks) == 1:
-                (res, err, otp_dict) = toks[0].get_multi_otp(count=count)
+                token_obj = toks[0]
+                (res, err, otp_dict) = token_obj.get_multi_otp(count=count)
                 otps = otp_dict.get("otp")
                 for key in otps.keys():
                     otps[key] = salted_hash_256(otps.get(key))
-                toks[0].enable(False)
+                # Disable the token, that is used for offline authentication
+                token_obj.enable(False)
+                # increase the counter by the consumed values and
+                # also store it in tokeninfo.
+                token_obj.inc_otp_counter(counter=count)
+                token_obj.add_tokeninfo(key="offline_counter",
+                                        value=count)
                 ret["response"] = otps
-                user_object = toks[0].get_user()
+                user_object = token_obj.get_user()
                 if user_object:
                     uInfo = user_object.get_user_info()
                     if "username" in uInfo:

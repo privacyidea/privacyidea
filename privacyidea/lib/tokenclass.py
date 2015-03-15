@@ -823,9 +823,9 @@ class TokenClass(object):
         """
         Increase the otp counter and store the token in the database
         :param counter: the new counter value. If counter is given, than
-                        the counter is increased to counter+1
+                        the counter is increased by (counter+1)
                         If the counter is not given, the counter is increased
-                        +1
+                        by +1
         :type counter: int
         :param reset: reset the failcounter if set to True
         :type reset: bool
