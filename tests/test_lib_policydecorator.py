@@ -14,7 +14,7 @@ from privacyidea.lib.policydecorators import (auth_otppin,
                                               auth_user_does_not_exist,
                                               auth_user_passthru,
                                               auth_user_has_no_token,
-                                              login_mode)
+                                              login_mode, config_lost_token)
 from privacyidea.lib.user import User
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
@@ -260,4 +260,44 @@ class LibPolicyTestCase(MyTestCase):
         # Policy is set, the function is called with check_otp=True
         login_mode(check_webui_user_privacyidea, user_obj, "",
                    options=options, superuser_realms="", check_otp=False)
+
+    def test_08_config_lost_token_policy(self):
+
+        def func1(serial, validity=10, contents="Ccns", pw_len=16,
+                  options=None):
+            self.assertEqual(validity, 10)
+            self.assertEqual(contents, "Ccns")
+            self.assertEqual(pw_len, 16)
+
+        def func2(serial, validity=10, contents="Ccns", pw_len=16,
+                  options=None):
+            self.assertEqual(validity, 5)
+            self.assertEqual(contents, "C")
+            self.assertEqual(pw_len, 3)
+
+        init_token({"serial": "LOST001", "type": "hotp", "genkey": 1},
+                   user=User("cornelius", realm="r1"))
+
+        g = FakeFlaskG()
+        P = PolicyClass()
+        g.policy_object = P
+        options = {"g": g}
+
+        # No policy, the function is called with default values
+        config_lost_token(func1, "LOST001", options=options)
+
+        set_policy(name="lost_pol2",
+                   scope=SCOPE.ENROLL,
+                   action="%s=%s, %s=%s,"
+                          "%s=%s" % (ACTION.LOSTTOKENPWCONTENTS, "C",
+                                     ACTION.LOSTTOKENVALID, 5,
+                                     ACTION.LOSTTOKENPWLEN, 3))
+        g = FakeFlaskG()
+        P = PolicyClass()
+        g.policy_object = P
+        options = {"g": g}
+
+        # Policy is set, the function is called with check_otp=True
+        config_lost_token(func2, "LOST001", options=options)
+
 

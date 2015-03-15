@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-03-15 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Add decorator for losttoken
 #  2015-02-06 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Rewrite for flask migration.
-#             Policies ar75 not handled by decorators as
+#             Policies handled by decorators as
 #             1. precondition for API calls
 #             2. internal modifications of LIB-functions
 #             3. postcondition for API calls
@@ -297,5 +299,83 @@ def auth_otppin(wrapped_function, *args, **kwds):
                 return rv is not None
 
     # call and return the original check_pin function
+    return wrapped_function(*args, **kwds)
+
+
+def config_lost_token(wrapped_function, *args, **kwds):
+    """
+    Decorator to decorate the lib.token.lost_token function.
+    Depending on ACTION.LOSTTOKENVALID, ACTION.LOSTTOKENPWCONTENTS,
+    ACTION.LOSTTOKENPWLEN it sets the check_otp parameter, to signal
+    how the lostToken should be generated.
+
+    :param wrapped_function: Usually the function lost_token()
+    :param args: argument "serial" as the old serial number
+    :param kwds: keyword arguments like "validity", "contents", "pw_len"
+    kwds["options"] contains the flask g
+
+    :return: calls the original function with the modified "validity",
+    "contents" and "pw_len" argument
+    """
+    # if called in any other way, options may be None
+    #  or it might have no element "g".
+    from privacyidea.lib.token import get_tokens
+    options = kwds.get("options") or {}
+    g = options.get("g")
+    if g:
+        # We need the old serial number, to determine the user - if it exist.
+        serial = args[0]
+        toks = get_tokens(serial=serial)
+        if len(toks) == 1:
+            user_object = toks[0].get_user()
+            clientip = options.get("clientip")
+            # get the policy
+            policy_object = g.policy_object
+            contents_list = policy_object.get_action_values(
+                ACTION.LOSTTOKENPWCONTENTS,
+                scope=SCOPE.ENROLL,
+                realm=user_object.realm,
+                user=user_object.login,
+                client=clientip)
+            validity_list = policy_object.get_action_values(
+                ACTION.LOSTTOKENVALID,
+                scope=SCOPE.ENROLL,
+                realm=user_object.realm,
+                user=user_object.login,
+                client=clientip)
+            pw_len_list = policy_object.get_action_values(
+                ACTION.LOSTTOKENPWLEN,
+                scope=SCOPE.ENROLL,
+                realm=user_object.realm,
+                user=user_object.login,
+                client=clientip)
+
+            if len(contents_list) > 0:
+                contents_list = list(set(contents_list))
+                if len(contents_list) > 1:  # pragma: no cover
+                    # We can not decide how to handle the request, so we raise an
+                    # exception
+                    raise PolicyError("There are contradicting policies for the "
+                                      "action %s" % ACTION.LOSTTOKENPWCONTENTS)
+                kwds["contents"] = contents_list[0]
+
+            if len(validity_list) > 0:
+                validity_list = list(set(validity_list))
+                if len(validity_list) > 1:  # pragma: no cover
+                    # We can not decide how to handle the request, so we raise an
+                    # exception
+                    raise PolicyError("There are contradicting policies for the "
+                                      "action %s" % ACTION.LOSTTOKENVALID)
+                kwds["validity"] = int(validity_list[0])
+
+            if len(pw_len_list) > 0:
+                pw_len_list = list(set(pw_len_list))
+                if len(pw_len_list) > 1:  # pragma: no cover
+                    # We can not decide how to handle the request, so we raise an
+                    # exception
+                    raise PolicyError("There are contradicting policies for the "
+                                      "action %s" % ACTION.LOSTTOKENPWLEN)
+                kwds["pw_len"] = int(pw_len_list[0])
+
     return wrapped_function(*args, **kwds)
 

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2015-03-15 Cornelius Kölbel, <cornelius@privacyidea.org>
+#             Add policy decorator for lost_token password
 #  2014-12-08 Cornelius Kölbel, <cornelius@privacyidea.org>
 #             Rewrite the module for operation with flask
 #             assure >95% code coverage
@@ -49,7 +51,7 @@ from sqlalchemy import (and_, func)
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.decorators import (check_user_or_serial,
-                                         check_copy_serials)
+                                        check_copy_serials)
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.utils import generate_password
 from privacyidea.lib.log import log_with
@@ -57,15 +59,16 @@ from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
                                 MachineToken)
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
-                                     get_token_types,
-                                     get_inc_fail_count_on_false_pin)
+                                    get_token_types,
+                                    get_inc_fail_count_on_false_pin)
 from privacyidea.lib.user import get_user_info
 from gettext import gettext as _
 from privacyidea.lib.realm import realm_is_defined
 from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_does_not_exist,
                                               auth_user_has_no_token,
-                                              auth_user_passthru)
+                                              auth_user_passthru,
+                                              config_lost_token)
 
 log = logging.getLogger(__name__)
 
@@ -1484,8 +1487,6 @@ def copy_token_user(serial_from, serial_to):
     tokenobject_list_to[0].save()
     return True
 
-#@log_with(log)
-
 @check_copy_serials
 def copy_token_realms(serial_from, serial_to):
     """
@@ -1502,7 +1503,9 @@ def copy_token_realms(serial_from, serial_to):
 
 
 @log_with(log)
-def lost_token(serial, new_serial=None, password=None, default_validity=0):
+@libpolicy(config_lost_token)
+def lost_token(serial, new_serial=None, password=None,
+               validity=10, contents="Ccns", pw_len=16, options=None):
     """
     This is the workflow to handle a lost token.
     The token <serial> is lost and will be disabled. A new token of type
@@ -1513,11 +1516,20 @@ def lost_token(serial, new_serial=None, password=None, default_validity=0):
     :param serial: Token serial number
     :param new_serial: new serial number
     :param password: new password
-    :param default_validity: set the token to be valid
+    :param validity: Number of days, the new token should be valid
+    :type validity: int
+    :param contents: The contents of the generated password. "C": upper case
+    characters, "c": lower case characters, "n": digits and "s": special
+    characters
+    :type contents: A string like "Ccn"
+    :param pw_len: The length of the generated password
+    :type pw_len: int
+    :param options: optional values for the decorator passed from the upper
+    API level
+    :type optins: dict
 
     :return: result dictionary
     """
-
     res = {}
     new_serial = new_serial or "lost%s" % serial
     user = get_token_owner(serial)
@@ -1528,34 +1540,6 @@ def lost_token(serial, new_serial=None, password=None, default_validity=0):
         err = "You can only define a lost token for an assigned token."
         log.warning("%s" % err)
         raise TokenAdminError(err, id=2012)
-
-    # TODO: Migration, what about the policy stuff...
-    """
-    Policy = PolicyClass(request, config, c,
-                         get_privacyIDEA_config())
-    pol = Policy.get_client_policy(get_client(),
-                                    scope="enrollment", realm=user.realm,
-                                    user=user.login, userObj=user)
-
-    pw_len = Policy.getPolicyActionValue(pol, "lostTokenPWLen")
-    validity = Policy.getPolicyActionValue(pol, "lostTokenValid",
-                                                      max=False)
-    contents = Policy.getPolicyActionValue(pol,
-                                            "lostTokenPWContents", String=True)
-    """
-    pw_len = 16
-    validity = 10
-    contents = "cCns"
-
-    """
-    if validity == -1:
-        validity = 10
-    if 0 != default_validity:
-        validity = default_validity
-
-    if pw_len == -1:
-        pw_len = 10
-    """
 
     character_pool = "%s%s%s" % (string.ascii_lowercase,
                                  string.ascii_uppercase, string.digits)
@@ -1575,8 +1559,8 @@ def lost_token(serial, new_serial=None, password=None, default_validity=0):
 
     res['serial'] = new_serial
 
-    tokenobject = init_token({"otpkey": password, "serial" : new_serial,
-                              "type" : "pw",
+    tokenobject = init_token({"otpkey": password, "serial": new_serial,
+                              "type": "pw",
                               "description": "temporary replacement for %s" %
                                              serial})
 

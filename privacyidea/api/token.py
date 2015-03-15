@@ -898,7 +898,10 @@ def lost_api(serial=None):
         if len(toks) == 0:
             raise TokenAdminError("The user %s does not own the token %s" % (
                 userobj, serial))
-    res = lost_token(serial)
+
+    options = {"g": g,
+               "clientip": request.remote_addr}
+    res = lost_token(serial, options=options)
 
     g.audit_object.log({"success": True})
     return send_result(res)
