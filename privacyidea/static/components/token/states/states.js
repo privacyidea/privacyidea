@@ -51,7 +51,7 @@ angular.module('privacyideaApp.tokenStates', ['ui.router']).config(
                 .state('token.getserial', {
                     url: "/getserial",
                     templateUrl: tokenpath + "token.getserial.html",
-                    controller: "getSerialController"
+                    controller: "tokenGetSerialController"
                 })
                 .state('token.enroll', {
                     url: "/enroll/{realmname:.*}/{username:.*}",

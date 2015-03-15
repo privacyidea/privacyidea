@@ -40,6 +40,7 @@
                             Lost Token</a>
                     </li>
                     <li role="presentation"
+                        ng-show="loggedInUser.role == 'admin'"
                         ng-class="{active: $state.includes('token.getserial')}">
                         <a ui-sref="token.getserial">
                             <span class="glyphicon glyphicon-question-sign">

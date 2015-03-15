@@ -2,8 +2,63 @@
 </h3>
 <p class="help-block">
     By entering an OTP value you can get the serial number of the token.
+    You can also enter additional optional parameters, to narrow down the
+    search for the token. So you can only search within certain token types
+    or in assigned or unassigned tokens.
 </p>
 
-<p class="alert alert-warning">
-    Not yet implemented.
+<form name="formGetSerial" role="form" validate>
+    <div class="form-group">
+        <label for="otp">OTP Value</label>
+        <input name="otp" ng-model="otp"
+               ng-required="1"
+               class="form-control"
+               ng-change="newOtp=true"
+               placeholder="enter some OTP value">
+    </div>
+
+    <div class="form-group">
+            <label for="tokentype">Token Type</label>
+    <select class="form-control"
+            name="tokentype"
+            ng-model="params.type"
+            ng-options="type as desc for (type, desc) in formInit.tokenTypes"
+            >
+    </select>
+    </div>
+
+    <div class="form-group">
+            <label for="assigned">Assignment State</label>
+    <select class="form-control"
+            name="assigned"
+            ng-model="assigned"
+            ng-options="assi as desc for (assi, desc) in formInit.assigned"
+            >
+    </select>
+    </div>
+
+    <div class="form-group">
+        <label for="serial">Serial Substring</label>
+        <input name="serial" ng-model="params.serial"
+               class="form-control"
+               placeholder="an optional serial substring">
+    </div>
+
+    <div class="text-center">
+        <button ng-click="getSerial()"
+                ng-disabled="formGetSerial.$invalid"
+                class="btn btn-primary">Get Serial Number
+        </button>
+    </div>
+</form>
+<p>
 </p>
+<div ng-hide="newOtp">
+<div class="alert alert-success" ng-show="serial">
+    The Serial number for the OTP value {{ otp }} is {{ serial }}.
+</div>
+
+<div class="alert alert-warning" ng-show="serial===null">
+    No Serial number could be found for OTP value {{ otp }}.
+</div>
+</div>

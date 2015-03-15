@@ -875,12 +875,13 @@ def copyuser_api():
 @token_blueprint.route('/lost/<serial>', methods=['POST'])
 @prepolicy(check_base_action, request, action=ACTION.LOSTTOKEN)
 @log_with(log)
-@admin_required
 def lost_api(serial=None):
     """
     Mark the specified token as lost and create a new temporary token.
     This new token gets the new serial number "lost<old-serial>" and
     a certain validity period and the PIN of the lost token.
+
+    This method can be called by either the admin or the user on his own tokens.
 
     You can call the function like this:
         POST /token/lost/serial

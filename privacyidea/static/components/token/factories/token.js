@@ -134,6 +134,13 @@ angular.module("TokenModule", ["privacyideaAuth"])
                     }).success(callback
                 ).error(error_func)
             },
+            getserial: function(otp, params, callback) {
+                $http.get(tokenUrl + "/getserial/" + otp, {
+                    headers: {'Authorization': AuthFactory.getAuthToken()},
+                    params: params
+                }).success(callback
+                ).error(error_func)
+            },
             reset: function (serial, callback) {
                 $http.post(tokenUrl + "/reset", {"serial": serial},
                     {
