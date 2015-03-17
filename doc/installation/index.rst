@@ -3,11 +3,12 @@
 Installation
 ============
 
-The two ways described here to install privacyIDEA are
+The ways described here to install privacyIDEA are
 
- * the installation via the python package index, which can be used on
+ * the installation via the :ref:`pip_install`, which can be used on
    any Linux distribution and
- * ready made debian packages for Ubuntu 14.04LTS.
+ * ready made :ref:`install_ubuntu` for Ubuntu 14.04LTS and
+ * ready made :ref:`install_wheezy` for Debian Wheezy.
 
 If you want to upgrade from a privacyIDEA 1.5 installation please read :ref:`upgrade`.
 
@@ -54,6 +55,8 @@ Now you can run the server for your first test::
 
 Depending on the database you want to use, you may have to install additional packages.
 
+
+.. _install_ubuntu:
 
 Ubuntu Packages
 ---------------
@@ -114,6 +117,9 @@ To install it on a Ubuntu 14.04 system please run::
    apt-get install privacyidea-simplesamlphp
 
 For further details see :ref:`simplesaml_plugin`.
+
+
+.. _install_wheezy:
 
 Debian Packages
 ---------------
