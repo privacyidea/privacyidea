@@ -6,7 +6,12 @@ Overview
 .. index:: overview, token
 
 privacyIDEA is a system that is used to manage devices for two
-factor authentication.
+factor authentication. Using privacyIDEA you can enhance your existing
+applications like local login,
+VPN, remote access, SSH connections, access to web sites or web portals with
+a second factor during authentication. Thus boosting the security of your
+existing applications.
+
 In the beginning there were OTP tokens, but other means to
 authenticate like SSH keys are added.
 Other concepts like handling of machines or enrolling certificates
