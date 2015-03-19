@@ -1068,7 +1068,7 @@ def resync_token(serial, otp1, otp2, options=None):
 @check_user_or_serial
 def reset_token(serial, user=None):
     """
-    Reset the
+    Reset the failcounter
     :param serial:
     :param user:
     :return: The number of tokens, that were resetted
@@ -1789,7 +1789,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
         # We did not find a valid token and no challenge.
         # But there are tokens, with a matching pin.
         # So we increase the failcounter. Return failure.
-        for tokenobject in tokenobject_list:
+        for tokenobject in pin_matching_token_list:
             tokenobject.inc_failcount()
             reply_dict["message"] = "wrong otp value"
             # write the serial numbers to the audit log
@@ -1803,7 +1803,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
         # Depending of IncFailCountOnFalsePin, we increase the failcounter.
         reply_dict["message"] = "wrong otp pin"
         if get_inc_fail_count_on_false_pin():
-            for tokenobject in tokenobject_list:
+            for tokenobject in invalid_token_list:
                 # TODO: Evaluate incfailcount
                 tokenobject.inc_failcount()
 

@@ -17,7 +17,8 @@ from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.models import (Token,
                                  Config,
                                  Challenge, TokenRealm)
-from privacyidea.lib.config import (set_privacyidea_config, get_token_types)
+from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
+                                    get_inc_fail_count_on_false_pin)
 import datetime
 from privacyidea.lib.token import (create_tokenclass_object,
                                     get_tokens,
@@ -228,8 +229,111 @@ class ValidateAPITestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(res.data == ":-(", res.data)
 
-    def test_06_saml_check(self):
-                # test successful authentication
+    def test_06_fail_counter(self):
+        # test if a user has several tokens that the fail counter is increased
+        # reset the failcounter
+        reset_token(serial="SE1")
+        init_token({"serial": "s2",
+                    "genkey": 1,
+                    "pin": "test"}, user=User("cornelius", self.realm1))
+        init_token({"serial": "s3",
+                    "genkey": 1,
+                    "pin": "test"}, user=User("cornelius", self.realm1))
+        # Now the user cornelius has 3 tokens.
+        # SE1 with pin "pin"
+        # token s2 with pin "test" and
+        # token s3 with pin "test".
+
+        self.assertTrue(get_inc_fail_count_on_false_pin())
+        # We give an OTP PIN that does not match any token.
+        # The failcounter of all tokens will be increased
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "XXXX123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertFalse(result.get("value"))
+
+        tok = get_tokens(serial="SE1")[0]
+        self.assertEqual(tok.token.failcount, 1)
+        tok = get_tokens(serial="s2")[0]
+        self.assertEqual(tok.token.failcount, 1)
+        tok = get_tokens(serial="s3")[0]
+        self.assertEqual(tok.token.failcount, 1)
+
+        # Now we give the matching OTP PIN of one token.
+        # Only one failcounter will be increased
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "pin123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(detail.get("serial"), "SE1")
+            self.assertEqual(detail.get("message"), "wrong otp value")
+
+        # Only the failcounter of SE1 (the PIN matching token) is increased!
+        tok = get_tokens(serial="SE1")[0]
+        self.assertEqual(tok.token.failcount, 2)
+        tok = get_tokens(serial="s2")[0]
+        self.assertEqual(tok.token.failcount, 1)
+        tok = get_tokens(serial="s3")[0]
+        self.assertEqual(tok.token.failcount, 1)
+
+        set_privacyidea_config("IncFailCountOnFalsePin", False)
+        self.assertFalse(get_inc_fail_count_on_false_pin())
+        reset_token(serial="SE1")
+        reset_token(serial="s2")
+        reset_token(serial="s3")
+        # If we try to authenticate with an OTP PIN that does not match any
+        # token NO failcounter is increased!
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "XXXX123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertFalse(result.get("value"))
+
+        tok = get_tokens(serial="SE1")[0]
+        self.assertEqual(tok.token.failcount, 0)
+        tok = get_tokens(serial="s2")[0]
+        self.assertEqual(tok.token.failcount, 0)
+        tok = get_tokens(serial="s3")[0]
+        self.assertEqual(tok.token.failcount, 0)
+
+        # Now we give the matching OTP PIN of one token.
+        # Only one failcounter will be increased
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "pin123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(detail.get("serial"), "SE1")
+            self.assertEqual(detail.get("message"), "wrong otp value")
+
+        # Only the failcounter of SE1 (the PIN matching token) is increased!
+        tok = get_tokens(serial="SE1")[0]
+        self.assertEqual(tok.token.failcount, 1)
+        tok = get_tokens(serial="s2")[0]
+        self.assertEqual(tok.token.failcount, 0)
+        tok = get_tokens(serial="s3")[0]
+        self.assertEqual(tok.token.failcount, 0)
+
+
+
+    def test_10_saml_check(self):
+        # test successful authentication
         with self.app.test_request_context('/validate/samlcheck',
                                            method='POST',
                                            data={"user": "cornelius",

@@ -28,10 +28,13 @@ But given your users log in with email addresses like *user@gmail.com* and
 additional SAML attributes should be returned.
 Usuall an authentication response only returns *true* or *false*.
 
-If ``FailCounterIncOnFalsePin`` is set the failcounter of all tokens of 
-a user will be increased. When given a false PIN the system can not identify
-the token the user wants to login with. So it either increases the failcounter
-of all tokens of this user or none.
+If during authentication the given PIN matches a token but the OTP value is
+wrong the failcounter of
+the tokens for which the PIN matches, is increased.
+If the given PIN does not match any token, by default no failcounter is
+increased. The later behaviour can be adapted by ``FailCounterIncOnFalsePin``.
+If ``FailCounterIncOnFalsePin`` is set and the given OTP PIN does not match
+any token, the failcounter of *all* tokens is increased.
 
 ``PrependPin`` defines if the OTP PIN should be given in front ("pin123456") 
 or in the back ("12345pin") of the OTP value.

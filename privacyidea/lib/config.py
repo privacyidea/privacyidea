@@ -587,7 +587,12 @@ def get_inc_fail_count_on_false_pin():
     :return: True of False
     :rtype: bool
     """
-    r = get_from_config(key="IncFailCountOnFalsePin", default=True)
+    r = get_from_config(key="IncFailCountOnFalsePin")
+    if r is None:
+        # The default is True, but we need to set it in the database on the
+        # first occurrence
+        set_privacyidea_config("IncFailCountOnFalsePin", True)
+        r = True
     if not isinstance(r, bool):
         # if it is a string we convert it
         r = r.lower() == "true"
@@ -603,6 +608,11 @@ def get_prepend_pin():
     :rtype: bool
     """
     r = get_from_config(key="PrependPin", default="true")
+    if r is None:
+        # The default is True, but we need to set it in the database on the
+        # first occurrence
+        set_privacyidea_config("PrependPin", True)
+        r = True
     # The values are strings, so we need to compare:
     r = (r.lower() == "true" or r == "1")
     return r
