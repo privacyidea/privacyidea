@@ -24,6 +24,9 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.get = function () {
         TokenFactory.getTokenForSerial($scope.tokenSerial, function (data) {
             $scope.token = data.result.value.tokens[0];
+            $scope.max_auth_count = parseInt($scope.token.info.count_auth_max);
+            $scope.max_success_auth_count = parseInt($scope.token.info.count_auth_success_max);
+            console.log($scope.token);
         });
     };
 
@@ -75,6 +78,13 @@ myApp.controller("tokenDetailController", function ($scope,
         console.log(Object.keys($scope.selectedRealms));
         TokenFactory.setrealm($scope.tokenSerial, Object.keys($scope.selectedRealms), $scope.get);
         $scope.cancelEditRealm();
+    };
+
+    $scope.saveTokenInfo = function () {
+        TokenFactory.set_dict($scope.tokenSerial,
+            {count_auth_max: $scope.max_auth_count,
+             count_auth_success_max: $scope.max_success_auth_count},
+            $scope.get);
     };
 
     $scope.assignUser = function () {

@@ -98,8 +98,45 @@
             logged-in-user="loggedInUser"></tr>
         <tr>
             <td>Info</td>
-            <td>{{ token.info | json }}</td>
-            <td></td>
+            <td>{{ token.info | json }}
+                <div ng-show="editTokenInfo">
+                    <div class="form-group">
+                        <label for="max_auth_count">
+                            Maximum Authentication Count
+                        </label>
+                        <input ng-model="max_auth_count"
+                               id="max_auth_count"
+                               type="number"
+                                placeholder="Max allowed auths">
+                    </div>
+                    <div class="form-group">
+                        <label for="max_success_auth_count">
+                            Maximum Success Authentication Count
+                        </label>
+                        <input ng-model="max_success_auth_count"
+                               type="number"
+                               placeholder="Max allowed successful auths"
+                               id="max_success_auth_count">
+                    </div>
+                </div>
+            </td>
+            <td>
+                <div ng-show="loggedInUser.role == 'admin'">
+                    <button class="btn btn-primary"
+                            ng-hide="editTokenInfo"
+                            ng-click="editTokenInfo=1">Edit
+                    </button>
+                    <button class="btn btn-primary"
+                            ng-show="editTokenInfo"
+                            ng-click="editTokenInfo=0; saveTokenInfo()">Save
+                        Token Info
+                    </button>
+                    <button class="btn btn-danger"
+                            ng-show="editTokenInfo"
+                            ng-click="editTokenInfo=0">Cancel
+                    </button>
+                </div>
+            </td>
         </tr>
         <tr>
             <td>Realms</td>

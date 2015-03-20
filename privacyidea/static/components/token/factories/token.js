@@ -166,6 +166,13 @@ angular.module("TokenModule", ["privacyideaAuth"])
                     }).success(callback
                 ).error(error_func)
             },
+            set_dict: function (serial, params, callback) {
+                $http.post(tokenUrl + "/set/" + serial, params,
+                    {
+                        headers: {'Authorization': AuthFactory.getAuthToken()}
+                    }).success(callback
+                ).error(error_func)
+            },
             setrealm: function (serial, realms, callback) {
                 $http.post(tokenUrl + "/realm/" + serial, {realms: realms},
                     {

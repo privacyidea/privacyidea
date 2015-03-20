@@ -1264,8 +1264,7 @@ def set_hashlib(serial, hashlib="sha1", user=None):
 
 @log_with(log)
 @check_user_or_serial
-def set_count_auth(serial, count, user=None, max=False,
-                     success=False):
+def set_count_auth(serial, count, user=None, max=False, success=False):
     """
     The auth counters are stored in the token info database field.
     There are different counters, that can be set
@@ -1753,9 +1752,17 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
     if len(valid_token_list) > 0:
         # One ore more successfully authenticating tokens found
         # We need to return success
-        res = True
         reply_dict["message"] = "matching %i tokens" % len(valid_token_list)
         # write serial numbers or something to audit log
+        for token_obj in valid_token_list:
+            token_obj.inc_count_auth()
+            token_obj.inc_count_auth_success()
+            # Check if the max auth is succeeded
+            if token_obj.check_auth_counter():
+                res = True
+        # if the auth counter check failed for ALL tokens, we adapt the message
+        if res is False:
+            reply_dict["message"] = "Authentication counter exceeded"
         if len(valid_token_list) == 1:
             reply_dict["serial"] = valid_token_list[0].token.serial
             reply_dict["type"] = valid_token_list[0].token.tokentype
@@ -1766,8 +1773,12 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
         if tokenobject.check_otp(passw) >= 0:
             # OTP matches
             res = True
+            tokenobject.inc_count_auth()
+            tokenobject.inc_count_auth_success()
             reply_dict["message"] = "Found matching challenge"
             tokenobject.challenge_janitor()
+        else:
+            tokenobject.inc_count_auth()
 
     elif len(challenge_request_token_list) > 0:
         # A challenge token was found.
@@ -1792,6 +1803,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
         for tokenobject in pin_matching_token_list:
             tokenobject.inc_failcount()
             reply_dict["message"] = "wrong otp value"
+            for token_obj in pin_matching_token_list:
+                token_obj.inc_count_auth()
             # write the serial numbers to the audit log
             if len(pin_matching_token_list) == 1:
                 reply_dict["serial"] = pin_matching_token_list[0].token.serial
@@ -1804,8 +1817,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
         reply_dict["message"] = "wrong otp pin"
         if get_inc_fail_count_on_false_pin():
             for tokenobject in invalid_token_list:
-                # TODO: Evaluate incfailcount
                 tokenobject.inc_failcount()
+                tokenobject.inc_count_auth()
 
     return res, reply_dict
 

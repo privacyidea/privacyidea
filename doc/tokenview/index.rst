@@ -117,7 +117,7 @@ You can change the following token settings.
 
    The HOTP algorith can be used with SHA1 or SHA256.
 
-**Auth max**
+**Tokeninfo - Auth max**
 
    The administrator can set a value how often this token 
    may be used for authentication. If the number of authentication
@@ -126,17 +126,21 @@ You can change the following token settings.
 
 .. note:: This way you could create tokens, that can be used only once.
 
-**Auth max success**
+**Tokeninfo - Auth max success**
 
    The administrator can set a value how often this token
    may be used to successfully authenticate.
 
-**Valid start**
+**Tokeninfo - Valid start**
+
+   **(TODO)**
 
    A timestamp can be set. The token will only be usable for authentication
    after this start time.
 
-**Valid end**   
+**Tokeninfo - Valid end**
+
+   **(TODO)**
 
    A timestamp can be set. The token can only be used before this end time.
   
@@ -145,6 +149,7 @@ You can change the following token settings.
 
 Resync Token
 ............
+
 .. index:: resync token
 
 The administrator can select one token and then enter two consecutive 

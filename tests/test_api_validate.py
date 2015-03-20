@@ -330,6 +330,34 @@ class ValidateAPITestCase(MyTestCase):
         tok = get_tokens(serial="s3")[0]
         self.assertEqual(tok.token.failcount, 0)
 
+    def test_07_authentication_counter_exceeded(self):
+        token_obj = init_token({"serial": "pass1", "pin": "123456",
+                                "type": "spass"})
+        token_obj.set_count_auth_max(5)
+
+        for i in range(1, 5):
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"serial": "pass1",
+                                                     "pass": "123456"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                result = json.loads(res.data).get("result")
+                self.assertEqual(result.get("value"), True)
+
+        # The 6th authentication will fail
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": "pass1",
+                                                 "pass": "123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("value"), False)
+            self.assertEqual(detail.get("message"), "Authentication counter "
+                                                    "exceeded")
+
 
 
     def test_10_saml_check(self):
