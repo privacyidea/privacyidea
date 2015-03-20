@@ -62,7 +62,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            check_token_init, check_token_upload,
                                            check_max_token_user,
                                            check_max_token_realm,
-                                           init_tokenlabel, init_random_pin)
+                                           init_tokenlabel, init_random_pin,
+                                           encrypt_pin)
 from privacyidea.api.auth import (user_required, admin_required)
 from privacyidea.api.audit import audit_blueprint
 
@@ -135,6 +136,7 @@ def before_request():
 @prepolicy(check_token_init, request)
 @prepolicy(init_tokenlabel, request)
 @prepolicy(init_random_pin, request)
+@prepolicy(encrypt_pin, request)
 @log_with(log, log_entry=False)
 def init():
     """
@@ -349,6 +351,7 @@ def list_api():
 @prepolicy(check_max_token_realm, request)
 @prepolicy(check_max_token_user, request)
 @prepolicy(check_base_action, request, action=ACTION.ASSIGN)
+@prepolicy(encrypt_pin, request)
 @log_with(log)
 def assign_api():
     """
@@ -360,7 +363,8 @@ def assign_api():
     user = get_user_from_param(request.all_data, required)
     serial = getParam(request.all_data, "serial", required)
     pin = getParam(request.all_data, "pin")
-    res = assign_token(serial, user, pin=pin)
+    encrypt_pin = getParam(request.all_data, "encryptpin")
+    res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin)
     g.audit_object.log({"success": True})
     return send_result(res)
 
@@ -538,6 +542,7 @@ def resync_api(serial=None):
 @token_blueprint.route('/setpin', methods=['POST'])
 @token_blueprint.route('/setpin/<serial>', methods=['POST'])
 @prepolicy(check_base_action, request, action=ACTION.SETPIN)
+@prepolicy(encrypt_pin, request)
 @log_with(log)
 def setpin_api(serial=None):
     """
@@ -568,6 +573,7 @@ def setpin_api(serial=None):
     sopin = getParam(request.all_data, "sopin")
     otppin = getParam(request.all_data, "otppin")
     user = get_user_from_param(request.all_data)
+    encrypt_pin = getParam(request.all_data, "encryptpin")
 
     res = 0
     if userpin:
@@ -580,7 +586,7 @@ def setpin_api(serial=None):
 
     if otppin:
         g.audit_object.add_to_log({'action_detail': "otppin, "})
-        res += set_pin(serial, otppin, user=user)
+        res += set_pin(serial, otppin, user=user, encrypt_pin=encrypt_pin)
 
     g.audit_object.log({"success": True})
     return send_result(res)

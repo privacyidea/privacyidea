@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2015-03-20 Cornelius Kölbel, <cornelius@privacyidea.org>
+#             Add policy decorator for encryptpin
 #  2015-03-15 Cornelius Kölbel, <cornelius@privacyidea.org>
 #             Add policy decorator for lost_token password
 #  2014-12-08 Cornelius Kölbel, <cornelius@privacyidea.org>
@@ -949,7 +951,7 @@ def set_defaults(serial):
 
 
 @log_with(log)
-def assign_token(serial, user, pin=None, param=None):
+def assign_token(serial, user, pin=None, encrypt_pin=False):
     """
     Assign token to a user.
     If the PIN is given, the PIN is reset.
@@ -960,12 +962,13 @@ def assign_token(serial, user, pin=None, param=None):
     :type user: User object
     :param pin: The PIN for the newly assigned token.
     :type pin: basestring
-    :param param:
+    :param encrypt_pin: Whether the PIN should be stored in an encrypted way
+    :type encrypt_pin: bool
+
     :return: True if the token was assigned, in case of an error an exception
     is thrown
     :rtype: bool
     """
-    param = param or {}
     tokenobject_list = get_tokens(serial=serial)
 
     if len(tokenobject_list) == 0:
@@ -988,7 +991,7 @@ def assign_token(serial, user, pin=None, param=None):
     tokenobject.set_realms([user.realm])
 
     if pin is not None:
-        tokenobject.set_pin(pin)
+        tokenobject.set_pin(pin, encrypt=encrypt_pin)
 
     # reset the OtpFailCounter
     tokenobject.set_failcount(0)
@@ -1085,7 +1088,7 @@ def reset_token(serial, user=None):
 
 @log_with(log)
 @check_user_or_serial
-def set_pin(serial, pin, user=None, param=None):
+def set_pin(serial, pin, user=None, encrypt_pin=False):
     """
     Set the token PIN of the token. This is the static part that can be used
     to authenticate.
@@ -1097,13 +1100,10 @@ def set_pin(serial, pin, user=None, param=None):
     :type used: User object
     :param serial: If the serial is specified, the PIN for this very token
     will be set.
-    :param param: Optional parameters, token specific
     :return: The number of PINs set (usually 1)
     :rtype: int
     """
-    param = param or {}
-
-    if (isinstance(user, basestring)):
+    if isinstance(user, basestring):
         # check if by accident the wrong parameter (like PIN)
         # is put into the user attribute
         log.warning("Parameter user must not be a string: %r" % user)
@@ -1113,7 +1113,7 @@ def set_pin(serial, pin, user=None, param=None):
     tokenobject_list = get_tokens(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
-        tokenobject.set_pin(pin)
+        tokenobject.set_pin(pin, encrypt=encrypt_pin)
         tokenobject.save()
 
     return len(tokenobject_list)
@@ -1525,7 +1525,7 @@ def lost_token(serial, new_serial=None, password=None,
     :type pw_len: int
     :param options: optional values for the decorator passed from the upper
     API level
-    :type optins: dict
+    :type options: dict
 
     :return: result dictionary
     """

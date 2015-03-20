@@ -967,3 +967,30 @@ class TokenTestCase(MyTestCase):
 
         self.assertTrue(tokens[0].get("serial") == "hotptoken")
         self.assertTrue(tokens[-1].get("serial") == "AUTO001")
+
+    def test_43_encryptpin(self):
+        serial = "ENC01"
+        # encrypt pin on init
+        init_token({"serial": serial,
+                    "genkey": 1,
+                    "pin": "Hallo",
+                    "encryptpin": True})
+        tokenobj = get_tokens(serial=serial)[0]
+        self.assertEqual(tokenobj.token.pin_hash[0:2], "@@")
+
+        # set a hashed pin
+        set_pin(serial, "test", encrypt_pin=False)
+        tokenobj = get_tokens(serial=serial)[0]
+        self.assertTrue(tokenobj.token.pin_hash[0:2] != "@@")
+
+        # set an encrypted PIN
+        set_pin(serial, "test", encrypt_pin=True)
+        tokenobj = get_tokens(serial=serial)[0]
+        self.assertEqual(tokenobj.token.pin_hash[0:2], "@@")
+
+        # assign the token with a PIN
+        assign_token(serial, User(login="cornelius", realm=self.realm1),
+                     pin="WellWell", encrypt_pin=True)
+        # check if pinhash starts with "@@" to indicate the encryption
+        tokenobj = get_tokens(serial=serial)[0]
+        self.assertEqual(tokenobj.token.pin_hash[0:2], "@@")

@@ -414,7 +414,7 @@ class TokenClass(object):
         if pin is not None:
             storeHashed = True
             enc = getParam(param, "encryptpin", optional)
-            if enc is not None and "true" == enc.lower():
+            if enc is not None and (enc is True or enc.lower() == "true"):
                 storeHashed = False
             self.token.set_pin(pin, storeHashed)
 

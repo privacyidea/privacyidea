@@ -85,12 +85,10 @@ one-factor-authentication: the possession of the token.
 otp_pin_random
 ~~~~~~~~~~~~~~
 
-**(TODO)** Not yet migrated.
-
 type: int
 
-Generates a random OTP PIN during self enrollment. Thus the user is forced
-to set a certain OTP PIN.
+Generates a random OTP PIN of the given length during enrollment. Thus the user
+is forced to set a certain OTP PIN.
 
 .. note:: At the moment this randomly generated PIN is not used.
    It could be used to be sent via a PIN letter in the future.
@@ -98,20 +96,14 @@ to set a certain OTP PIN.
 otp_pin_encrypt
 ~~~~~~~~~~~~~~~
 
-**(TODO)** Not yet migrated.
+type: bool
 
-type: int
-
-values: 0 or 1
-
-If set to *1* the OTP PIN of a token will be encrypted. The default
+If set the OTP PIN of a token will be encrypted. The default
 behaviour is to hash the OTP PIN, which is safer.
 
 
 lostTokenPWLen
 ~~~~~~~~~~~~~~
-
-**(TODO)** Not yet migrated.
 
 .. index:: lost token
 
@@ -121,8 +113,6 @@ This is the length of the generated password for the lost token process.
  
 lostTokenPWContents
 ~~~~~~~~~~~~~~~~~~~
-
-**(TODO)** Not yet migrated.
 
 type: string
 
@@ -141,8 +131,6 @@ password like *AC#!49MK))*.
 
 lostTokenValid
 ~~~~~~~~~~~~~~
-
-**(TODO)** Not yet migrated.
 
 type: int
 

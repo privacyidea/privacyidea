@@ -122,6 +122,7 @@ class ACTION():
     DELETE = "delete"
     DISABLE = "disable"
     ENABLE = "enable"
+    ENCRYPTPIN = "encrypt_pin"
     GETSERIAL = "getserial"
     IMPORT = "importtokens"
     LOGINMODE = "login_mode"
@@ -657,11 +658,10 @@ def get_static_policy_definitions(scope=None):
                 'value': range(0, 32),
                 "desc": _("Set a random OTP PIN with this length for a "
                           "token.")},
-            # 'otp_pin_encrypt': {
-            #     'type': 'int',
-            #     'value': ["encrypt", "hash"],
-            #     "desc": _("The OTP PIN can be hashed or encrypted. Hashed is "
-            #               "the normal behaviour.")},
+            ACTION.ENCRYPTPIN: {
+                'type': 'bool',
+                "desc": _("The OTP PIN can be hashed or encrypted. Hashing "
+                          "the PIN is the default behaviour.")},
             ACTION.TOKENLABEL: {
                 'type': 'str',
                 'desc': _("Set label for a new enrolled Google Authenticator. "

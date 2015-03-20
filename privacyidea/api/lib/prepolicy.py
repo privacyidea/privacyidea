@@ -44,11 +44,14 @@ import re
 optional = True
 required = False
 
+
 class prepolicy(object):
     """
     This is the decorator wrapper to call a specific function before an API
     call.
     The prepolicy decorator is to be used in the API calls.
+    A prepolicy decorator then will modify the request data or raise an
+    exception
     """
     def __init__(self, function, request, action=None):
         """
@@ -108,6 +111,35 @@ def init_random_pin(request=None, action=None):
     elif len(pin_pols) == 1:
         log.debug("Creating random OTP PIN with length %s" % pin_pols[0])
         request.all_data["pin"] = generate_password(size=int(pin_pols[0]))
+
+    return True
+
+
+def encrypt_pin(request=None, action=None):
+    """
+    This policy function is to be used as a decorator for several API functions.
+    E.g. token/assign, token/setpin, token/init
+    If the policy is set to define the PIN to be encrypted,
+    the request.all_data is modified like this:
+    encryptpin = True
+
+    It uses the policy SCOPE.ENROLL, ACTION.ENCRYPTPIN
+    """
+    params = request.all_data
+    policy_object = g.policy_object
+    user_object = get_user_from_param(params)
+    # get the length of the random PIN from the policies
+    pin_pols = policy_object.get_policies(action=ACTION.ENCRYPTPIN,
+                                          scope=SCOPE.ENROLL,
+                                          user=user_object.login,
+                                          realm=user_object.realm,
+                                          client=request.remote_addr)
+
+    if len(pin_pols) > 0:
+        request.all_data["encryptpin"] = "True"
+    else:
+        if "encryptpin" in request.all_data:
+            del request.all_data["encryptpin"]
 
     return True
 
