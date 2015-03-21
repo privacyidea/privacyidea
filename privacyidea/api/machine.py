@@ -355,5 +355,8 @@ def get_auth_items_api(application=None):
 
     ret = get_auth_items(hostname, ip=request.remote_addr,
                          application=application, challenge=challenge)
+    g.audit_object.log({'success': True,
+                        'info': "host: %s, application: %s" % (hostname,
+                                                               application)})
     return send_result(ret)
 
