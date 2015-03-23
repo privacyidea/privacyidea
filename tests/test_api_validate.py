@@ -355,9 +355,8 @@ class ValidateAPITestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             detail = json.loads(res.data).get("detail")
             self.assertEqual(result.get("value"), False)
-            self.assertEqual(detail.get("message"), "Authentication counter "
-                                                    "exceeded")
-
+            self.assertTrue("Authentication counter exceeded"
+                            in detail.get("message"))
 
 
     def test_10_saml_check(self):

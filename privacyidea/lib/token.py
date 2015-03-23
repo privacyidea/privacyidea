@@ -1752,20 +1752,27 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
     if len(valid_token_list) > 0:
         # One ore more successfully authenticating tokens found
         # We need to return success
-        reply_dict["message"] = "matching %i tokens" % len(valid_token_list)
+        message_list = ["matching %i tokens" % len(valid_token_list)]
         # write serial numbers or something to audit log
         for token_obj in valid_token_list:
             token_obj.inc_count_auth()
             token_obj.inc_count_auth_success()
             # Check if the max auth is succeeded
-            if token_obj.check_auth_counter():
+            if not token_obj.check_auth_counter():
+                message_list.append("Authentication counter exceeded")
+            # Check if the token is disabled
+            elif not token_obj.is_active():
+                message_list.append("Token is disabled")
+            # TODO: Add validity period check
+            else:
+                # The token is active and the auth counters are ok.
                 res = True
-        # if the auth counter check failed for ALL tokens, we adapt the message
-        if res is False:
-            reply_dict["message"] = "Authentication counter exceeded"
         if len(valid_token_list) == 1:
+            # If only one token was found, we add the serial number and token
+            #  type
             reply_dict["serial"] = valid_token_list[0].token.serial
             reply_dict["type"] = valid_token_list[0].token.tokentype
+        reply_dict["message"] = ", ".join(message_list)
 
     elif len(challenge_response_token_list) > 0:
         # A challenge token was found.

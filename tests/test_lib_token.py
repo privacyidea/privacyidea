@@ -687,6 +687,10 @@ class TokenTestCase(MyTestCase):
            7         4e5b397         82162583     162583
            8        2823443f        673399871     399871
            9        2679dc69        645520489     520489
+           10                                     403154
+           11                                     481090
+           12                                     868912
+           13                                     736127
         """
         hotp_tokenobject = tokenobject_list[0]
         old_counter = hotp_tokenobject.token.count
@@ -711,6 +715,18 @@ class TokenTestCase(MyTestCase):
         res, reply = check_token_list(tokenobject_list, "hotppin520489")
         self.assertTrue(res)
         self.assertTrue(hotp_tokenobject.token.failcount == 0)
+
+        # Now we disable the hotp_tokenobject. If the token is disabled,
+        # we must not be able to authenticate anymore with this very token.
+        # But if the OTP value is valid, the counter is increased, anyway!
+        old_counter = hotp_tokenobject.token.count
+        hotp_tokenobject.enable(False)
+        res, reply = check_token_list(tokenobject_list, "hotppin403154")
+        self.assertFalse(res)
+        self.assertTrue("Token is disabled" in reply.get("message"))
+        self.assertEqual(old_counter + 1, hotp_tokenobject.token.count)
+        # enable the token again
+        hotp_tokenobject.enable(True)
 
     def test_35_check_serial_pass(self):
         hotp_tokenobject = get_tokens(serial="hotptoken")[0]
