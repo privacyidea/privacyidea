@@ -14,9 +14,7 @@ from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
-from privacyidea.models import (Token,
-                                 Config,
-                                 Challenge, TokenRealm)
+from privacyidea.models import (Token)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
                                     get_inc_fail_count_on_false_pin)
 import datetime
@@ -210,25 +208,6 @@ class ValidateAPITestCase(MyTestCase):
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is False, result)
 
-    def test_05_simple_check_user(self):
-        # test successful authentication
-        with self.app.test_request_context('/validate/simplecheck',
-                                           method='POST',
-                                           data={"user": "cornelius",
-                                                 "pass": "pin338314"}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            self.assertTrue(res.data == ":-)", res.data)
-
-        # test authentication fails with the same OTP
-        with self.app.test_request_context('/validate/simplecheck',
-                                           method='POST',
-                                           data={"user": "cornelius",
-                                                 "pass": "pin338314"}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            self.assertTrue(res.data == ":-(", res.data)
-
     def test_06_fail_counter(self):
         # test if a user has several tokens that the fail counter is increased
         # reset the failcounter
@@ -365,5 +344,15 @@ class ValidateAPITestCase(MyTestCase):
                                            method='POST',
                                            data={"user": "cornelius",
                                                  "pass": "pin338314"}):
-            self.assertRaises(NotImplementedError,
-                              self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            value = result.get("value")
+            self.assertEqual(value.get("auth"), True)
+            self.assertEqual(value.get("email"), "user@localhost.localdomain")
+            self.assertEqual(value.get("givenname"), "Cornelius")
+            self.assertEqual(value.get("mobile"), "+491111111")
+            self.assertEqual(value.get("phone"),  "+491234566")
+            self.assertEqual(value.get("realm"),  "realm1")
+            self.assertEqual(value.get("username"),  "cornelius")

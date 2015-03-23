@@ -144,18 +144,18 @@ def check():
     return send_result(result, details=details)
 
 
-@validate_blueprint.route('/simplecheck', methods=['POST', 'GET'])
+@validate_blueprint.route('/samlcheck', methods=['POST', 'GET'])
+@postpolicy(no_detail_on_fail, request=request)
+@postpolicy(no_detail_on_success, request=request)
+@postpolicy(check_tokentype, request=request)
+@postpolicy(check_serial, request=request)
+@postpolicy(autoassign, request=request)
+@prepolicy(set_realm, request=request)
 @check_user_or_serial_in_request
-def simplecheck():
+def samlcheck():
     """
-    check the authentication for a user or a serial number.
-    Either a ``serial`` or a ``user`` is required to authenticate.
-    The PIN and OTP value is sent in the parameter ``pass``.
+    Authenticate the user and return the SAML user information.
 
-    TODO: This API call does not honour the policies AUTHZ:tokentype and
-    AUTHZ:serial!
-
-    :param serial: The serial number of the token, that tries to authenticate.
     :param user: The loginname/username of the user, who tries to authenticate.
     :param realm: The realm of the user, who tries to authenticate. If the
         realm is omitted, the user is looked up in the default realm.
@@ -163,41 +163,55 @@ def simplecheck():
 
     :return: a json result with a boolean "result": true
 
-    **Example response** for a succesful authentication:
+    **Example response** for a successful authentication:
 
        .. sourcecode:: http
 
            HTTP/1.1 200 OK
-           Content-Type: application/text
+           Content-Type: application/json
 
-           :-)
+            {
+              "detail": {
+                "message": "matching 1 tokens",
+                "serial": "PISP0000AB00",
+                "type": "spass"
+              },
+              "id": 1,
+              "jsonrpc": "2.0",
+              "result": {
+                "status": true,
+                "value": {"auth": true,
+                          "username: <loginname>,
+                          "realm": ....,
+                          "surname": ....,
+                          "givenname": .....,
+                          "mobile": ....,
+                          "phone": ....,
+                          "email": ....
+                }
+              },
+              "version": "privacyIDEA unknown"
+            }
     """
     user = get_user_from_param(request.all_data)
-    serial = getParam(request.all_data, "serial")
     password = getParam(request.all_data, "pass", required)
-    log.warning("Deprecation Warning: simplecheck will be removed in version "
-                "2.2! Do not use it anymore")
-    if serial:
-        result, details = check_serial_pass(serial, password)
-    else:
-        result, details = check_user_pass(user, password)
-
-    if result is True:
-        ret = ":-)"
-    else:
-        ret = ":-("
+    options = {"g": g,
+               "clientip": request.remote_addr}
+    auth, details = check_user_pass(user, password, options=options)
+    ui = user.get_user_info()
+    result_obj = {"auth": auth,
+                  "username": user.login,
+                  "realm": user.realm,
+                  "email": ui.get("email"),
+                  "surname": ui.get("surname"),
+                  "givenname": ui.get("givenname"),
+                  "mobile": ui.get("mobile"),
+                  "phone": ui.get("phone")}
 
     g.audit_object.log({"info": details.get("message"),
-                        "success": result,
-                        "serial": serial or details.get("serial"),
+                        "success": auth,
+                        "serial": details.get("serial"),
                         "tokentype": details.get("type"),
                         "user": user.login,
                         "realm": user.realm})
-    return ret
-
-
-@validate_blueprint.route('/samlcheck', methods=['POST', 'GET'])
-@postpolicy(check_tokentype, request=request)
-@postpolicy(check_serial, request=request)
-def samlcheck():
-    raise NotImplementedError("samlcheck is not implemented, yet")
+    return send_result(result_obj, details=details)
