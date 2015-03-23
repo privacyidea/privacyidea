@@ -166,6 +166,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
     :param options: Dict containing values for "g" and "clientip"
     :return: Tuple of True/False and reply-dictionary
     """
+    from privacyidea.lib.token import get_tokens
     options = options or {}
     g = options.get("g")
     if g:
@@ -177,12 +178,14 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                                                user=user_object.login,
                                                client=clientip)
         if len(pass_thru) > 0:
-            # Now we need to check the userstore password
-            if user_object.check_password(passw):
-                return True, {"message": "The user authenticated against his "
-                                         "userstore according to "
-                                         "policy '%s'." %
-                                         pass_thru[0].get("name")}
+            # If the user has NO Token, authenticate against the user store
+            if get_tokens(user=user_object, count=True) == 0:
+                # Now we need to check the userstore password
+                if user_object.check_password(passw):
+                    return True, {"message": "The user authenticated against his "
+                                             "userstore according to "
+                                             "policy '%s'." %
+                                             pass_thru[0].get("name")}
 
     # If nothing else returned, we return the wrapped function
     return wrapped_function(user_object, passw, options)

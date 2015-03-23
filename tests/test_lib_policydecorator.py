@@ -18,7 +18,8 @@ from privacyidea.lib.policydecorators import (auth_otppin,
 from privacyidea.lib.user import User
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
-from privacyidea.lib.token import init_token, remove_token, check_user_pass
+from privacyidea.lib.token import (init_token, remove_token, check_user_pass,
+                                   get_tokens)
 from privacyidea.lib.error import UserError
 
 
@@ -204,6 +205,7 @@ class LibPolicyTestCase(MyTestCase):
         passw = "test"
         options = {}
         # A user with no tokens will fail to authenticate
+        self.assertEqual(get_tokens(user=user, count=True), 0)
         rv = auth_user_passthru(check_user_pass, user, passw, options)
         self.assertFalse(rv[0])
         self.assertEqual(rv[1].get("message"),
@@ -217,12 +219,25 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
         options = {"g": g}
-        rv = auth_user_has_no_token(check_user_pass, user, passw,
-                                    options=options)
+        rv = auth_user_passthru(check_user_pass, user, passw,
+                                options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"),
                          u"The user authenticated against his userstore "
                          u"according to policy 'pol1'.")
+
+        # Now assign a token to the user. If the user has a token and the
+        # passthru policy is set, the user must not be able to authenticate
+        # with his userstore password.
+        init_token({"serial": "PTHRU",
+                    "type": "spass", "pin": "Hallo"},
+                   user=user)
+        rv = auth_user_passthru(check_user_pass, user, passw,
+                                options=options)
+        self.assertFalse(rv[0])
+        self.assertEqual(rv[1].get("message"), "wrong otp pin")
+
+        remove_token("PTHRU")
         delete_policy("pol1")
 
     def test_07_login_mode(self):
