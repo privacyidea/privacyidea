@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+# 2015-03-27 Cornelius Kölbel, cornelius@privacyidea.org
+#            Add sub command for policies
 # 2014-12-15 Cornelius Kölbel, info@privacyidea.org
 #            Initial creation
 #
@@ -33,6 +35,7 @@ from getpass import getpass
 from privacyidea.lib.security.default import DefaultSecurityModule
 from privacyidea.lib.auth import (create_db_admin, list_db_admin,
                                   delete_db_admin)
+from privacyidea.lib.policy import (delete_policy, enable_policy, PolicyClass)
 from privacyidea.app import create_app
 from flask.ext.script import Manager
 from privacyidea.app import db
@@ -48,11 +51,13 @@ admin_manager = Manager(usage='Create new administrators or modify existing '
 backup_manager = Manager(usage='Create database backup and restore')
 realm_manager = Manager(usage='Create new realms')
 resolver_manager = Manager(usage='Create new resolver')
+policy_manager = Manager(usage='Manage policies')
 manager.add_command('db', MigrateCommand)
 manager.add_command('admin', admin_manager)
 manager.add_command('backup', backup_manager)
 manager.add_command('realm', realm_manager)
 manager.add_command('resolver', resolver_manager)
+manager.add_command('policy', policy_manager)
 
 
 @admin_manager.command
@@ -280,6 +285,7 @@ def createdb():
     db.create_all()
     db.session.commit()
 
+
 @resolver_manager.command
 def create(name, rtype, filename):
     """
@@ -338,6 +344,49 @@ def create(name, resolver):
     """
     from privacyidea.lib.realm import set_realm
     set_realm(name, [resolver])
+
+
+# Policy interface
+
+@policy_manager.command
+def list():
+    """
+    list the policies
+    """
+    P = PolicyClass()
+    policies = P.get_policies()
+    print "Active \t Name \t Scope"
+    print 40*"="
+    for policy in policies:
+        print("%s \t %s \t %s" % (policy.get("active"), policy.get("name"),
+                                  policy.get("scope")))
+
+
+@policy_manager.command
+def enable(name):
+    """
+    enable a policy by name
+    """
+    r = enable_policy(name)
+    print r
+
+
+@policy_manager.command
+def disable(name):
+    """
+    disable a policy by name
+    """
+    r = enable_policy(name, False)
+    print r
+
+
+@policy_manager.command
+def delete(name):
+    """
+    delete a policy by name
+    """
+    r = delete_policy(name)
+    print r
 
 
 if __name__ == '__main__':
