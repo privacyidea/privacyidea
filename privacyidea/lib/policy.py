@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-03-27 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add PIN policies in USER scope
 #  2015-02-06 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Rewrite for flask migration.
 #             Policies are not handled by decorators as
@@ -89,8 +91,7 @@ from gettext import gettext as _
 
 import logging
 from ..models import (Policy, db)
-from privacyidea.lib.error import ParameterError
-
+from privacyidea.lib.error import ParameterError, PolicyError
 log = logging.getLogger(__name__)
 
 optional = True
@@ -140,6 +141,9 @@ class ACTION():
     NODETAILFAIL = "no_detail_on_fail"
     OTPPIN = "otppin"
     OTPPINRANDOM = "otp_pin_random"
+    OTPPINMAXLEN = 'otp_pin_maxlength'
+    OTPPINMINLEN = 'otp_pin_minlength'
+    OTPPINCONTENTS = 'otp_pin_contents'
     PASSNOTOKEN = "passOnNoToken"
     PASSNOUSER = "passOnNoUser"
     PASSTHRU = "passthru"
@@ -291,7 +295,7 @@ class PolicyClass(object):
         return reduced_policies
 
     def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
-                          resolver=None, user=None, client=None):
+                          resolver=None, user=None, client=None, unique=False):
         """
         Get the defined action values for a certain action like
             scope: authorization
@@ -302,6 +306,8 @@ class PolicyClass(object):
             action: serial
         would return a list of allowed serials
 
+        :param unique: if set, the function will raise an exception if more
+        than one value is returned
         :return: A list of the allowed tokentypes
         :rtype: list
         """
@@ -325,6 +331,11 @@ class PolicyClass(object):
             else:
                 action_values.extend(action_dict.get(action, "").split())
 
+        if unique:
+            action_values = list(set(action_values))
+            if len(action_values) > 1:
+                raise PolicyError("There are conflicting %s"
+                                  " definitions!" % action)
         return action_values
 
 # --------------------------------------------------------------------------
@@ -609,27 +620,34 @@ def get_static_policy_definitions(scope=None):
             ACTION.DELETE: {'type': 'bool',
                        "desc": _("The user is allowed to delete his own tokens.")},
             ACTION.UNASSIGN: {'type': 'bool',
-                         "desc": _("The user is allowed to unassign his own tokens.")},
+                              "desc": _("The user is allowed to unassign his "
+                                        "own tokens.")},
             ACTION.RESYNC: {'type': 'bool',
-                       "desc": _("The user is allowed to resyncronize his tokens.")},
-            ACTION.RESET: {
-                        'type': 'bool',
-                        'desc': _('The user is allowed to reset the failcounter of his tokens.')},
+                            "desc": _("The user is allowed to resyncronize his "
+                                      "tokens.")},
+            ACTION.RESET: {'type': 'bool',
+                           'desc': _('The user is allowed to reset the '
+                                     'failcounter of his tokens.')},
             ACTION.SETPIN: {'type': 'bool',
                             "desc": _("The user is allowed to set the OTP PIN "
-                                     "of his tokens.")},
+                                      "of his tokens.")},
+            ACTION.OTPPINMAXLEN: {'type': 'int',
+                                  'value': range(0, 32),
+                                  "desc": _("Set the maximum allowed length "
+                                            "of the OTP PIN.")},
+            ACTION.OTPPINMINLEN: {'type': 'int',
+                                  'value': range(0, 32),
+                                  "desc": _("Set the minimum required length "
+                                            "of the OTP PIN.")},
+            ACTION.OTPPINCONTENTS: {'type': 'str',
+                                    "desc": _("Specifiy the required "
+                                              "contents of the OTP PIN. "
+                                              "(c)haracters, (n)umeric, "
+                                              "(s)pecial, (o)thers. [+/-]!")},
             # 'setMOTPPIN': {'type': 'bool',
             #                "desc": _("The user is allowed to set the mOTP PIN of his mOTP tokens.")},
             # 'getotp': {'type': 'bool',
             #            "desc": _("The user is allowed to retrieve OTP values for his own tokens.")},
-            # 'otp_pin_maxlength': {'type': 'int',
-            #                       'value': range(0, 32),
-            #                       "desc": _("Set the maximum allowed length of the OTP PIN.")},
-            # 'otp_pin_minlength': {'type': 'int',
-            #                       'value': range(0, 32),
-            #                       "desc" : _("Set the minimum required lenght of the OTP PIN.")},
-            # 'otp_pin_contents': {'type': 'str',
-            #                      "desc" : _("Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, (s)pecial, (o)thers. [+/-]!")},
             # 'activateQR': {'type': 'bool',
             #                "desc": _("The user is allowed to enroll a QR token.")},
             # 'max_count_dpw': {'type': 'int',
