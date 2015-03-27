@@ -125,11 +125,9 @@ The user is allowed to retrieve OTP values from a token.
 otp_pin_maxlength
 ~~~~~~~~~~~~~~~~~
 
-**(TODO)**: not yet migrated.
-
 type: integer
 
-range: 0 - 100
+range: 0 - 31
 
 This is the maximum allowed PIN length the user is allowed to
 use when setting the OTP PIN.
@@ -137,11 +135,9 @@ use when setting the OTP PIN.
 otp_pin_minlength
 ~~~~~~~~~~~~~~~~~
 
-**(TODO)**: not yet migrated.
-
 type: integer
 
-range: o - 100
+range: 0 - 31
 
 This is the minimum required PIN the user must use when setting the
 OTP PIN.
@@ -149,30 +145,27 @@ OTP PIN.
 otp_pin_contents
 ~~~~~~~~~~~~~~~~
 
-**(TODO)**: not yet migrated.
-
 type: string
 
-contents: cnso+-
+contents: cns
 
 This defines what characters an OTP PIN should contain when the user
 sets it.
 
 **c** are letters matching [a-zA-Z].
 
-**n** are digits mathcing [0-].
+**n** are digits matching [0-9].
 
-**s** are special characters matching [.:,;-_<>+*!/()=?$§%&#~\^]
-
-**o** are other characters.
-
-.. note:: You can change these character definitions in the privacyidea.ini
-   file using ``privacyideaPolicy.pin_c``, ``privacyideaPolicy.pin_n``
-   and ``privacyideaPolicy.pin_s``.
+**s** are special characters matching [.:,;-_<>+*!/()=?$§%&#~\^].
 
 **Example:** The policy action ``otp_pin_contents=cn, otp_pin_minlength=8`` would
 require the user to choose OTP PINs that consist of letters and digits
 which have a minimum length of 8.
+
+``cn``
+
+   *test1234* and *test12$$* would be valid OTP PINs. *testABCD* would 
+   not be a valid OTP PIN.
 
 The logic of the ``otp_pin_contents`` can be enhanced and reversed using the
 characters ``+`` and ``-``.
@@ -180,21 +173,25 @@ characters ``+`` and ``-``.
 ``-cn`` would still mean, that the OTP PIN needs to contain letters and digits
 and it must not contain any other characters.
 
-``cn``
-
-   *test1234* and *test12$$* would be valid OTP PINs. *testABCD* would 
-   not be a valid OTP PIN.
-
-``-cn``
+``-cn`` (substraction)
 
    *test1234* would be a valid OTP PIN, but *test12$$* and *testABCS* would
    not be valid OTP PINs. The later since it does not contain digits, the first 
    (*test12$$*) since it does contain a special character ($), which it should not.
 
-``+cn`` combines the two required groups. I.e. the OTP PIN should contain 
-characters from the sum of the two groups.
+``+cn`` (grouping)
 
-*test1234*, *test12$$*, *test* and *1234* would all be valid OTP PINs.
+   combines the two required groups. I.e. the OTP PIN should contain
+   characters from the sum of the two groups.
+   *test1234*, *test12$$*, *test*
+   and *1234* would all be valid OTP PINs.
+
+(**TODO**) grouping and substraction are not implemented, yet.
+
+.. note:: You can change these character definitions in the privacyidea.ini
+   file using ``privacyideaPolicy.pin_c``, ``privacyideaPolicy.pin_n``
+   and ``privacyideaPolicy.pin_s``.
+   (**Not migrated, yet**)
 
 activateQR
 ~~~~~~~~~~

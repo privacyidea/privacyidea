@@ -13,7 +13,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_max_token_user,
                                            check_max_token_realm, set_realm,
                                            init_tokenlabel, init_random_pin,
-                                           encrypt_pin)
+                                           encrypt_pin, check_otp_pin)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             no_detail_on_success,
                                             no_detail_on_fail, autoassign)
@@ -366,6 +366,56 @@ class PrePolicyDecoratorTestCase(MyTestCase):
 
         # Check, if the tokenlabel was added
         self.assertEqual(req.all_data.get("encryptpin"), "True")
+        # finally delete policy
+        delete_policy("pol1")
+
+    def test_09_pin_policies(self):
+        g.logged_in_user = {"username": "user1",
+                            "role": "user"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+
+        # Set a policy that defines PIN policy
+        set_policy(name="pol1",
+                   scope=SCOPE.USER,
+                   action="%s=%s,%s=%s,%s=%s" % (ACTION.OTPPINMAXLEN, "10",
+                                                 ACTION.OTPPINMINLEN, "4",
+                                                 ACTION.OTPPINCONTENTS, "cn"))
+        g.policy_object = PolicyClass()
+
+        req.all_data = {"realm": "somerealm",
+                        "user": "cornelius",
+                        "realm": "home"}
+        # The minimum OTP length is 4
+        self.assertRaises(PolicyError, check_otp_pin, req)
+
+        req.all_data = {"realm": "somerealm",
+                        "user": "cornelius",
+                        "realm": "home",
+                        "pin": "12345566890012"}
+        # Fail maximum OTP length
+        self.assertRaises(PolicyError, check_otp_pin, req)
+
+        req.all_data = {"realm": "somerealm",
+                        "user": "cornelius",
+                        "realm": "home",
+                        "pin": "123456"}
+        # Good OTP length, but missing character A-Z
+        self.assertRaises(PolicyError, check_otp_pin, req)
+
+        req.all_data = {"realm": "somerealm",
+                        "user": "cornelius",
+                        "realm": "home",
+                        "pin": "abc123"}
+        # Good length and goot contents
+        self.assertTrue(check_otp_pin(req))
+
+
         # finally delete policy
         delete_policy("pol1")
 

@@ -63,7 +63,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            check_max_token_user,
                                            check_max_token_realm,
                                            init_tokenlabel, init_random_pin,
-                                           encrypt_pin)
+                                           encrypt_pin, check_otp_pin)
 from privacyidea.api.auth import (user_required, admin_required)
 from privacyidea.api.audit import audit_blueprint
 
@@ -137,6 +137,7 @@ def before_request():
 @prepolicy(init_tokenlabel, request)
 @prepolicy(init_random_pin, request)
 @prepolicy(encrypt_pin, request)
+@prepolicy(check_otp_pin, request)
 @log_with(log, log_entry=False)
 def init():
     """
@@ -543,6 +544,7 @@ def resync_api(serial=None):
 @token_blueprint.route('/setpin/<serial>', methods=['POST'])
 @prepolicy(check_base_action, request, action=ACTION.SETPIN)
 @prepolicy(encrypt_pin, request)
+@prepolicy(check_otp_pin, request)
 @log_with(log)
 def setpin_api(serial=None):
     """

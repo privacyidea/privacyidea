@@ -103,14 +103,87 @@ def init_random_pin(request=None, action=None):
                                                scope=SCOPE.ENROLL,
                                                user=user_object.login,
                                                realm=user_object.realm,
-                                               client=request.remote_addr)
+                                               client=request.remote_addr,
+                                               unique=True)
 
-    pin_pols = list(set(pin_pols))
-    if len(pin_pols) > 1:
-        raise PolicyError("There are conflicting random_pin definitions!")
-    elif len(pin_pols) == 1:
+    if len(pin_pols) == 1:
         log.debug("Creating random OTP PIN with length %s" % pin_pols[0])
         request.all_data["pin"] = generate_password(size=int(pin_pols[0]))
+
+    return True
+
+
+def check_otp_pin(request=None, action=None):
+    """
+    This policy function checks if the OTP PIN that is about to be set
+    follows the OTP PIN policies ACTION.OTPPINMAXLEN, ACTION.OTPPINMINLEN and
+    ACTION.OTPPINCONTENTS in the SCOPE.USER. It is used to decorate the API
+    functions.
+
+    The pin is investigated in the params as pin = params.get("pin")
+
+    In case the given OTP PIN does not match the requirements an exception is
+    raised.
+    """
+    # This policy is only used for USER roles at the moment:
+    if g.logged_in_user.get("role") == "user":
+        params = request.all_data
+        pin = params.get("otppin", "") or params.get("pin", "")
+        policy_object = g.policy_object
+        user_object = get_user_from_param(params)
+        # get the policies for minimum length, maximum length and PIN contents
+        pol_minlen = policy_object.get_action_values(action=ACTION.OTPPINMINLEN,
+                                                     scope=SCOPE.USER,
+                                                     user=user_object.login,
+                                                     realm=user_object.realm,
+                                                     client=request.remote_addr,
+                                                     unique=True)
+        pol_maxlen = policy_object.get_action_values(action=ACTION.OTPPINMAXLEN,
+                                                     scope=SCOPE.USER,
+                                                     user=user_object.login,
+                                                     realm=user_object.realm,
+                                                     client=request.remote_addr,
+                                                     unique=True)
+        pol_contents = policy_object.get_action_values(action=ACTION.OTPPINCONTENTS,
+                                                       scope=SCOPE.USER,
+                                                       user=user_object.login,
+                                                       realm=user_object.realm,
+                                                       client=request.remote_addr,
+                                                       unique=True)
+
+        if len(pol_minlen) == 1:
+            # check the minimum length requirement
+            if len(pin) < int(pol_minlen[0]):
+                raise PolicyError("The minimum OTP PIN length is %s" %
+                                  pol_minlen[0])
+
+        if len(pol_maxlen) == 1:
+            # check the maximum length requirement
+            if len(pin) > int(pol_maxlen[0]):
+                raise PolicyError("The maximum OTP PIN length is %s" %
+                                  pol_minlen[0])
+
+        if len(pol_contents) == 1:
+            # check the contents requirement
+            chars = "[a-zA-Z]"  # c
+            digits = "[0-9]"    # n
+            special = "[.:,;-_<>+*!/()=?$§%&#~\^]"  # s
+            no_others = False
+            grouping = False
+
+            if pol_contents[0] == "-":
+                no_others = True
+                pol_contents = pol_contents[1:]
+            elif pol_contents[0] == "+":
+                grouping = True
+                pol_contents = pol_contents[1:]
+            #  TODO implement grouping and substraction
+            if "c" in pol_contents[0] and not re.search(chars, pin):
+                raise PolicyError("Missing character in PIN: %s" % chars)
+            if "n" in pol_contents[0] and not re.search(digits, pin):
+                raise PolicyError("Missing character in PIN: %s" % digits)
+            if "s" in pol_contents[0] and not re.search(special, pin):
+                raise PolicyError("Missing character in PIN: %s" % special)
 
     return True
 
@@ -162,12 +235,10 @@ def init_tokenlabel(request=None, action=None):
                                                  scope=SCOPE.ENROLL,
                                                  user=user_object.login,
                                                  realm=user_object.realm,
-                                                 client=request.remote_addr)
+                                                 client=request.remote_addr,
+                                                 unique=True)
 
-    label_pols = list(set(label_pols))
-    if len(label_pols) > 1:
-        raise PolicyError("There are conflicting tokenlabel definitions!")
-    elif len(label_pols) == 1:
+    if len(label_pols) == 1:
         # The policy was set, so we need to set the tokenlabel in the request.
         request.all_data["tokenlabel"] = label_pols[0]
 
