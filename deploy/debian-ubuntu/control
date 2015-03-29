@@ -63,6 +63,12 @@ Description: OTRS module for privacyIDEA, OTP authentication
  privacyIDEA is not only open as far as its modular architecture is concerned.
  But privacyIDEA is completely licensed under the AGPLv3.
 
+Package: privacyidea-pam
+Architecture: all
+Depends: ${misc:Depends}, libpam-python, python-requests
+Description: PAM module for privacyIDEA, OTP authentication.
+  privacyIDEA: identity, multifactor authentication, authorization.
+  This package is used to add two factor authenticatio to the PAM stack.
 
 Package: privacyidea-all
 Architecture: all
