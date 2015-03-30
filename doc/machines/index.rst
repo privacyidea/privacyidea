@@ -54,10 +54,14 @@ The command expects a configuration file
    url=https://localhost
    admin=admin
    password=test
+   nosslcheck=False
 
 .. note:: To disable a SSH key for all servers, you simple can disable the
 SSH token in privacyIDEA.
 
+.. warning:: In a productive environment you should not set **nosslcheck** to
+true,
+otherwise you are vulnarable to man in the middle attacks.
 
 LUKS
 ----
