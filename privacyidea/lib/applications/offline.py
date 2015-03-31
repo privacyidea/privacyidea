@@ -58,26 +58,31 @@ class MachineApplication(MachineApplicationBase):
                            Supporting "yubikey" token (AES) would be
                            possible, too.
         :param serial:     the serial number of the token.
-        :param challenge:  n/a
-        :type challenge:   hex string
+        :param challenge:  This can contain the password (otp pin + otp
+        value) so that we can put the OTP PIN into the hashed response.
+        :type challenge: basestring
         :return auth_item: A list of hashed OTP values
         """
         ret = {}
         options = options or {}
+        password = challenge
+        otppin = ""
         if token_type.lower() == "hotp":
             count = int(options.get("count", 100))
             # get the token
             toks = get_tokens(serial=serial)
             if len(toks) == 1:
                 token_obj = toks[0]
+                if password:
+                    _r, otppin, _otpval = token_obj.split_pin_pass(password)
                 (res, err, otp_dict) = token_obj.get_multi_otp(count=count)
                 otps = otp_dict.get("otp")
                 for key in otps.keys():
-                    # TODO: We could not only hash the OTP value but also the
-                    #  salted_hash_256(OTP PIN + OTP value)
-                    otps[key] = salted_hash_256(otps.get(key))
-                # Disable the token, that is used for offline authentication
-                token_obj.enable(False)
+                    # Return the hash of OTP PIN and OTP values
+                    otps[key] = salted_hash_256(otppin + otps.get(key))
+                # We do not disable the token, so if all offline OTP values
+                # are used, the token can be used the authenticate online again.
+                # token_obj.enable(False)
                 # increase the counter by the consumed values and
                 # also store it in tokeninfo.
                 token_obj.inc_otp_counter(counter=count)

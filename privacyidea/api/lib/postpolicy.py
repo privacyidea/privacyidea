@@ -220,7 +220,8 @@ def offline_info(request, response):
             serial = detail.get("serial")
             hostname = get_hostname(ip=client_ip)
             auth_items = get_auth_items(hostname=hostname, ip=client_ip,
-                                        serial=serial, application="offline")
+                                        serial=serial, application="offline",
+                                        challenge=request.all_data.get("pass"))
             if len(auth_items) > 0:
                 content["auth_items"] = auth_items
                 response.data = json.dumps(content)

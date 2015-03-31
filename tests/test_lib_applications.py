@@ -124,9 +124,9 @@ class OfflineApplicationTestCase(MyTestCase):
         self.assertTrue(verify_salted_hash_256("254676",
                                                auth_item.get("response").get(
                                                    5)))
-        # After calling auth_item the token should be deactivated
-        toks = get_tokens(serial=serial)
-        self.assertFalse(toks[0].token.active)
+        # After calling auth_item the token counter should be increased
+        tok = get_tokens(serial=serial)[0]
+        self.assertEqual(tok.token.count, 101)
 
     def test_03_get_auth_item_unsupported(self):
         # unsupported token type
