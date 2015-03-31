@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-03-31 Cornelius Kölbel <cornelius.koelbel@netknighs.it>
+#             Add postpolicy for offline information
 #  2015-02-06 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Create this module for enabling decorators for API calls
 #
@@ -36,10 +38,12 @@ from flask import g
 from privacyidea.lib.policy import SCOPE, ACTION
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.token import get_tokens, assign_token
+from privacyidea.lib.machine import get_hostname, get_auth_items
 from .prepolicy import check_max_token_user, check_max_token_realm
 import functools
 import json
 import re
+import netaddr
 
 optional = True
 required = False
@@ -193,6 +197,33 @@ def no_detail_on_fail(request, response):
             del content["detail"]
             response.data = json.dumps(content)
 
+    return response
+
+
+def offline_info(request, response):
+    """
+    This decorator is used with the function /validate/check.
+    It is not triggered by an ordinary policy but by a MachineToken definition.
+    If for the given Client and Token an offline application is defined,
+    the response is enhanced with the offline information - the hashes of the
+    OTP.
+
+    """
+    content = json.loads(response.data)
+    # check if the authentication was successful
+    if content.get("result").get("value") is True:
+        # If there is no remote address, we can not determine offline information
+        if request.remote_addr:
+            client_ip = netaddr.IPAddress(request.remote_addr)
+            # check if there is a MachineToken definition
+            detail = content.get("detail", {})
+            serial = detail.get("serial")
+            hostname = get_hostname(ip=client_ip)
+            auth_items = get_auth_items(hostname=hostname, ip=client_ip,
+                                        serial=serial, application="offline")
+            if len(auth_items) > 0:
+                content["auth_items"] = auth_items
+                response.data = json.dumps(content)
     return response
 
 

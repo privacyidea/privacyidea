@@ -73,6 +73,8 @@ class MachineApplication(MachineApplicationBase):
                 (res, err, otp_dict) = token_obj.get_multi_otp(count=count)
                 otps = otp_dict.get("otp")
                 for key in otps.keys():
+                    # TODO: We could not only hash the OTP value but also the
+                    #  salted_hash_256(OTP PIN + OTP value)
                     otps[key] = salted_hash_256(otps.get(key))
                 # Disable the token, that is used for offline authentication
                 token_obj.enable(False)

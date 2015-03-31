@@ -36,7 +36,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm)
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
                                             no_detail_on_fail,
-                                            no_detail_on_success, autoassign)
+                                            no_detail_on_success, autoassign,
+                                            offline_info)
 from privacyidea.lib.policy import PolicyClass
 import logging
 log = logging.getLogger(__name__)
@@ -84,6 +85,7 @@ def after_request(response):
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
 @postpolicy(no_detail_on_fail, request=request)
 @postpolicy(no_detail_on_success, request=request)
+@postpolicy(offline_info, request=request)
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)

@@ -85,5 +85,30 @@ write to LUKS) on the client machine::
 For more information please see the man page of this tool.
 
 
+Offline
+-------
+
+Currently working token types: HOTP.
+
+Parameters:
+
+``user`` The local user, who should authenticate. (Only needed when calling
+machine/get_auth_items)
+
+``count`` The number of OTP values passed to the client.
+
+The offline application also triggers when the client calls a /validate/check.
+If the user authenticates successfully with the correct token (serial number)
+and this very token is attached to the machine with an offline application
+the response to validate/check is enriched with a "auth_items" tree
+containing the salted SHA256 hashes of the next OTP values.
+
+The client can caches these values to enable offline authentication.
+
+The server increases the counter to the last offline cached OTP value, so
+that it will not be possible to authenticate with those OTP values available
+offline on the client side.
+
+
 
 .. [#saltstack] http://www.saltstack.com/

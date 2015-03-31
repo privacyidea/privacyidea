@@ -16,7 +16,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            encrypt_pin, check_otp_pin)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             no_detail_on_success,
-                                            no_detail_on_fail, autoassign)
+                                            no_detail_on_fail, autoassign,
+                                            offline_info)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass)
 from privacyidea.lib.user import User
@@ -24,6 +25,10 @@ from privacyidea.lib.user import User
 from flask import Response, Request, g
 from werkzeug.test import EnvironBuilder
 from privacyidea.lib.error import PolicyError
+from privacyidea.lib.machineresolver import save_resolver
+from privacyidea.lib.machine import attach_token
+
+HOSTSFILE = "tests/testdata/hosts"
 
 
 class PrePolicyDecoratorTestCase(MyTestCase):
@@ -636,4 +641,57 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                                "test359152")
         self.assertTrue(res)
 
+        delete_policy("pol2")
+
+    def test_06_offline_auth(self):
+        # Test that a machine definition will return offline hashes
+        self.setUp_user_realms()
+        serial = "offline01"
+        tokenobject = init_token({"serial": serial, "type": "hotp",
+                                  "otpkey": "3132333435363738393031"
+                                            "323334353637383930",
+                                  "pin": "offline",
+                                  "user": "cornelius"})
+
+        # Set the Machine and MachineToken
+        resolver1 = save_resolver({"name": "reso1",
+                                   "type": "hosts",
+                                   "filename": HOSTSFILE})
+
+        mt = attach_token(serial, "offline", hostname="gandalf")
+        self.assertEqual(mt.token.serial, serial)
+        self.assertEqual(mt.token.machine_list[0].machine_id, "192.168.0.1")
+
+        # The request with an OTP value and a PIN of a user, who has not
+        # token assigned
+        builder = EnvironBuilder(method='POST',
+                                 data={},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "192.168.0.1"
+        req = Request(env)
+        req.all_data = {"user": "cornelius",
+                        "pass": "offline287082"}
+
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": True},
+               "version": "privacyIDEA test",
+               "detail": {"serial": serial},
+               "id": 1}
+        resp = Response(json.dumps(res))
+
+        new_response = offline_info(req, resp)
+        jresult = json.loads(new_response.data)
+        self.assertTrue(jresult.get("result").get("value"), jresult)
+        self.assertEqual(jresult.get("detail").get("serial"), serial)
+
+        # Check the hashvalues in the offline tree
+        auth_items = jresult.get("auth_items")
+        self.assertEqual(len(auth_items), 1)
+        response = auth_items.get("offline")[0].get("response")
+        self.assertEqual(len(response), 100)
+        # check if the counter of the token was increased to 100
+        tokenobject = get_tokens(serial=serial)[0]
+        self.assertEqual(tokenobject.token.count, 101)
         delete_policy("pol2")

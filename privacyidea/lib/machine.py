@@ -82,6 +82,27 @@ def get_machines(hostname=None, ip=None, id=None, resolver=None, any=None):
     return all_machines
 
 
+def get_hostname(ip):
+    """
+    Return a hostname for a given IP address
+    :param ip: IP address
+    :type ip: IPAddress
+    :return: hostname
+    """
+    machines = get_machines(ip=ip)
+    if len(machines) > 1:
+        raise Exception("Can not get unique ID for IP=%r. "
+                        "More than one machine found." % ip)
+    if len(machines) == 1:
+        # There is only one machine in the list and we get its ID
+        hostname = machines[0].hostname
+        # return the first hostname
+        if type(hostname) == list:
+            hostname = hostname[0]
+    else:
+        raise Exception("There is no machine with IP=%r" % ip)
+    return hostname
+
 
 def get_machine_id(hostname, ip=None):
     """
@@ -345,7 +366,8 @@ def _get_host_identifier(hostname, machine_id, resolver_name):
     return machine_id, resolver_name
 
 
-def get_auth_items(hostname, ip=None, application=None, challenge=None):
+def get_auth_items(hostname, ip=None, application=None,
+                   serial=None, challenge=None):
     """
     Return the authentication items for a given hostname and the application.
     The hostname is used to identify the machine object. Then all attached
@@ -377,6 +399,7 @@ def get_auth_items(hostname, ip=None, application=None, challenge=None):
     #
     auth_items = {}
     machinetokens = list_machine_tokens(hostname=hostname,
+                                        serial=serial,
                                         application=application)
 
     for mtoken in machinetokens:
