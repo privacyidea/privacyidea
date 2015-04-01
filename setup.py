@@ -40,7 +40,8 @@ setup(
              'tools/privacyidea-pip-update',
              'tools/privacyidea-create-certificate',
              'tools/privacyidea-fix-access-rights',
-             'tools/privacyidea-create-ad-users'
+             'tools/privacyidea-create-ad-users',
+             'tools/privacyidea-fetchssh.sh'
              ],
     extras_require={
         'dev': ["Sphinx==1.2.3",
