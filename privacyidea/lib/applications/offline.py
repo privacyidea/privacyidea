@@ -79,7 +79,8 @@ class MachineApplication(MachineApplicationBase):
                 otps = otp_dict.get("otp")
                 for key in otps.keys():
                     # Return the hash of OTP PIN and OTP values
-                    otps[key] = salted_hash_256(otppin + otps.get(key))
+                    otps[key] = salted_hash_256("%s%s" % (otppin,
+                                                          otps.get(key)))
                 # We do not disable the token, so if all offline OTP values
                 # are used, the token can be used the authenticate online again.
                 # token_obj.enable(False)

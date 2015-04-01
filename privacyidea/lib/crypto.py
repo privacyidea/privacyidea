@@ -253,7 +253,8 @@ def hash(val, seed, algo=None):
 def salted_hash_256(data, salt_length=16, salt=None):
     if not salt:
         salt = geturandom(salt_length)
-    h = '{SSHA256}' + base64.b64encode(sha256(data + salt).digest() + salt)
+    h = '{SSHA256}' + base64.b64encode(sha256(data.encode(
+        'raw_unicode_escape') + salt).digest() + salt)
     return h
 
 

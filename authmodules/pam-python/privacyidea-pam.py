@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+# 2015-04-01 Cornelius Kölbel  <cornelius.koelbel@netknights.it>
+#            Add storing of OTP hashes
 # 2015-03-29 Cornelius Kölbel, <cornelius.koelbel@netknights.it>
 #            Initial creation
 #
@@ -26,6 +28,10 @@ privacyIDEA authentication system.
 
 import requests
 import syslog
+import sqlite3
+# TODO: We might want to avoid having to install the privacyidea server libs
+# as dependency!
+from privacyidea.lib.crypto import verify_salted_hash_256
 
 
 def _get_config(argv):
@@ -52,6 +58,7 @@ def pam_sm_authenticate(pamh, flags, argv):
     sslverify = not config.get("nosslverify", False)
     realm = config.get("realm")
     debug = config.get("debug")
+    sqlfile = config.get("sqlfile", "/etc/privacyidea/pam.sqlite")
     prompt = config.get("prompt", "Your OTP")
     rval = pamh.PAM_AUTH_ERR
     syslog.openlog(facility=syslog.LOG_AUTH)
@@ -62,36 +69,46 @@ def pam_sm_authenticate(pamh, flags, argv):
             response = pamh.conversation(message)
             pamh.authtok = response.resp
 
-        # Now we have the password in pamh.authtok
-        data={"user": user,
-              "pass": pamh.authtok}
-        if realm:
-            data["realm"] = realm
-
         if debug:
             syslog.syslog(syslog.LOG_DEBUG,
-                          "%s: user %s in realm %s" % (user,
-                                                       realm,
-                                                       __name__))
-        response = requests.post(URL + "/validate/check", data=data,
-                                 verify=sslverify)
-
-        json_response = response.json()
-        result = json_response.get("result")
-        if debug:
-            syslog.syslog(syslog.LOG_DEBUG, "%s: result: %s" % (__name__,
-                                                                result))
-
-        if result.get("status"):
-            if result.get("value"):
-                rval = pamh.PAM_SUCCESS
-            else:
-                rval = pamh.PAM_AUTH_ERR
+                          "%s: user %s in realm %s" % (__name__, user,
+                                                       realm))
+        # First we try to authenticate against the sqlitedb
+        if check_otp(user, pamh.authtok, sqlfile, window=10):
+            syslog.syslog(syslog.LOG_DEBUG,
+                          "%s: successfully authenticated against offline "
+                          "database %s" % (__name__, sqlfile))
+            rval = pamh.PAM_SUCCESS
         else:
-            syslog.syslog(syslog.LOG_ERR,
-                          "%s: %s" % (__name__,
-                                      result.get("error").get("message")))
-            rval = pamh.PAM_SYSTEM_ERR
+            # If we do not successfully authenticate against the offline
+            # database, we do an online request.
+            # Now we have the password in pamh.authtok
+            data = {"user": user,
+                    "pass": pamh.authtok}
+            if realm:
+                data["realm"] = realm
+
+            response = requests.post(URL + "/validate/check", data=data,
+                                     verify=sslverify)
+
+            json_response = response.json()
+            result = json_response.get("result")
+            auth_item = json_response.get("auth_items")
+            if debug:
+                syslog.syslog(syslog.LOG_DEBUG, "%s: result: %s" % (__name__,
+                                                                    result))
+
+            if result.get("status"):
+                if result.get("value"):
+                    rval = pamh.PAM_SUCCESS
+                    save_auth_item(sqlfile, user, auth_item)
+                else:
+                    rval = pamh.PAM_AUTH_ERR
+            else:
+                syslog.syslog(syslog.LOG_ERR,
+                              "%s: %s" % (__name__,
+                                          result.get("error").get("message")))
+                rval = pamh.PAM_SYSTEM_ERR
 
     except pamh.exception as exx:
         rval = exx.pam_result
@@ -121,3 +138,81 @@ def pam_sm_close_session(pamh, flags, argv):
 
 def pam_sm_chauthtok(pamh, flags, argv):
   return pamh.PAM_SUCCESS
+
+
+def check_otp(user, otp, sqlfile, window=10):
+    """
+    compare the given otp values with the next hashes of the user.
+
+    DB entries older than the matching counter will be deleted from the
+    database.
+
+    :param user: The local user in the sql file
+    :param otp: The otp value
+    :param sqlfile: The sqlite file
+    :return: True or False
+    """
+    res = False
+    conn = sqlite3.connect(sqlfile)
+    c = conn.cursor()
+    c.execute("SELECT counter, user, otp FROM authitems WHERE user='%s' "
+              "ORDER by counter" % user)
+    for x in range(0, window):
+        r = c.fetchone()
+        hash_value = r[2]
+        if verify_salted_hash_256(otp, hash_value):
+            res = True
+            counter = r[0]
+            break
+    # We found a matching password, so we remove the old entries
+    if res:
+        c.execute("DELETE from authitems WHERE counter <= %i" % counter)
+        conn.commit()
+    conn.close()
+    return res
+
+
+def save_auth_item(sqlfile, user, authitem):
+    """
+    Save the given authitem to the sqlite file to be used later for offline
+    authentication.
+
+    There is only one table in it with the columns:
+
+        username, counter, otp
+
+    :param sqlfile: An SQLite file. If it does not exist, it will be generated.
+    :type sqlfile: basestring
+    :param user: The PAM user
+    :param authitem: A dictionary with all authitem information being:
+    username, count, and a response dict with counter and otphash.
+
+    :return:
+    """
+    # TODO: At the moment two OTP tokens per user will cause a conflict!
+    conn = sqlite3.connect(sqlfile)
+    c = conn.cursor()
+    # Create the table if necessary
+    try:
+        c.execute("CREATE TABLE authitems "
+                  "(counter int, user text, tokenowner text, otp text)")
+    except:
+        pass
+
+    syslog.syslog(syslog.LOG_DEBUG, "%s: offline save authitem: %s" % (
+        __name__, authitem))
+    if authitem:
+        offline = authitem.get("offline", [{}])[0]
+        tokenowner = offline.get("username")
+        for counter, otphash in offline.get("response").iteritems():
+            # Insert the OTP hash
+            c.execute("INSERT INTO authitems (counter, user, tokenowner, otp) "
+                      "VALUES ('%s','%s','%s','%s')"
+                      % (counter, user, tokenowner, otphash))
+
+    # Save (commit) the changes
+    conn.commit()
+
+    # We can also close the connection if we are done with it.
+    # Just be sure any changes have been committed or they will be lost.
+    conn.close()

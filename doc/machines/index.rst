@@ -103,7 +103,8 @@ and this very token is attached to the machine with an offline application
 the response to validate/check is enriched with a "auth_items" tree
 containing the salted SHA256 hashes of the next OTP values.
 
-The client can caches these values to enable offline authentication.
+The client can cache these values to enable offline authentication.
+The caching is implemented in the privacyIDEA PAM module.
 
 The server increases the counter to the last offline cached OTP value, so
 that it will not be possible to authenticate with those OTP values available
