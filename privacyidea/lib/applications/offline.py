@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #
-#  privacyIDEA
+#  2015-04-03 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Use pbkdf2 for OTP hashing
 #  2015-03-13 Cornelius Kölbel, <cornelius@privacyidea.org>
 #             initial writeup
 #
@@ -22,9 +23,11 @@
 #
 from privacyidea.lib.applications import MachineApplicationBase
 import logging
-from privacyidea.lib.crypto import salted_hash_256
+import passlib.hash
 from privacyidea.lib.token import get_tokens
 log = logging.getLogger(__name__)
+ROUNDS = 31023
+
 
 class MachineApplication(MachineApplicationBase):
     """
@@ -79,8 +82,10 @@ class MachineApplication(MachineApplicationBase):
                 otps = otp_dict.get("otp")
                 for key in otps.keys():
                     # Return the hash of OTP PIN and OTP values
-                    otps[key] = salted_hash_256("%s%s" % (otppin,
-                                                          otps.get(key)))
+                    otps[key] = passlib.hash.\
+                        pbkdf2_sha512.encrypt(otppin + otps.get(key),
+                                                rounds=ROUNDS,
+                                                salt_size=10)
                 # We do not disable the token, so if all offline OTP values
                 # are used, the token can be used the authenticate online again.
                 # token_obj.enable(False)

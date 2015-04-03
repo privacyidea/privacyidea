@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+# 2015-04-03 Cornelius Kölbel  <cornelius.koelbel@netknights.it>
+#            Use pbkdf2 to hash OTPs.
 # 2015-04-01 Cornelius Kölbel  <cornelius.koelbel@netknights.it>
 #            Add storing of OTP hashes
 # 2015-03-29 Cornelius Kölbel, <cornelius.koelbel@netknights.it>
@@ -21,7 +23,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""This is the PAM module to be used with python-pam with the
+__doc__ = """This is the PAM module to be used with python-pam with the
 privacyIDEA authentication system.
 
 """
@@ -29,9 +31,7 @@ privacyIDEA authentication system.
 import requests
 import syslog
 import sqlite3
-# TODO: We might want to avoid having to install the privacyidea server libs
-# as dependency!
-from privacyidea.lib.crypto import verify_salted_hash_256
+import passlib.hash
 
 
 def _get_config(argv):
@@ -160,7 +160,7 @@ def check_otp(user, otp, sqlfile, window=10):
     for x in range(0, window):
         r = c.fetchone()
         hash_value = r[2]
-        if verify_salted_hash_256(otp, hash_value):
+        if passlib.hash.pbkdf2_sha512.verify(otp, hash_value):
             res = True
             counter = r[0]
             break

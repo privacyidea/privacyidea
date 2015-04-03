@@ -65,7 +65,7 @@ Description: OTRS module for privacyIDEA, OTP authentication
 
 Package: privacyidea-pam
 Architecture: all
-Depends: ${misc:Depends}, libpam-python, python-requests
+Depends: ${misc:Depends}, libpam-python, python-requests, python-passlib
 Description: PAM module for privacyIDEA, OTP authentication.
   privacyIDEA: identity, multifactor authentication, authorization.
   This package is used to add two factor authenticatio to the PAM stack.

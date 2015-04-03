@@ -16,7 +16,8 @@ from privacyidea.lib.applications import (get_auth_item,
                                           get_application_types)
 from privacyidea.lib.token import init_token, get_tokens
 from privacyidea.lib.user import User
-from privacyidea.lib.crypto import verify_salted_hash_256, salted_hash_256
+import passlib.hash
+
 
 SSHKEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDO1rx377" \
          "cmSSs/89j/0u5aEiXa7bYArHn7zFNCBaVnDUiK9JDNkpWB" \
@@ -97,11 +98,6 @@ class LUKSApplicationTestCase(MyTestCase):
 
 class OfflineApplicationTestCase(MyTestCase):
 
-    def test_00_salted_hash(self):
-        h = salted_hash_256("test", salt="saltsaltsaltsalt")
-        r = verify_salted_hash_256("test", h)
-        self.assertTrue(r)
-
     def test_01_get_options(self):
         # Can run as class
         options = OfflineApplication.get_options()
@@ -118,12 +114,12 @@ class OfflineApplicationTestCase(MyTestCase):
                    user=user)
 
         auth_item = OfflineApplication.get_authentication_item("hotp", serial)
-        self.assertTrue(verify_salted_hash_256("755224",
-                                               auth_item.get("response").get(
-                                                   0)))
-        self.assertTrue(verify_salted_hash_256("254676",
-                                               auth_item.get("response").get(
-                                                   5)))
+        self.assertTrue(passlib.hash.\
+                        pbkdf2_sha512.verify("755224",
+                                             auth_item.get("response").get(0)))
+        self.assertTrue(passlib.hash.\
+                        pbkdf2_sha512.verify("254676",
+                                             auth_item.get("response").get(5)))
         # After calling auth_item the token counter should be increased
         tok = get_tokens(serial=serial)[0]
         self.assertEqual(tok.token.count, 101)

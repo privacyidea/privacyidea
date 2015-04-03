@@ -7,3 +7,9 @@ dist/
 venv/
 .coverage
 cover/
+*~
+DEBUILD/
+doc/_build/
+.idea/
+*.log
+*.log.?
