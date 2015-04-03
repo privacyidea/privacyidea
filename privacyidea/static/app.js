@@ -19,9 +19,9 @@
  *
  */
 myApp = angular.module("privacyideaApp",
-    ['privacyideaAuth',
-        'ui.router', 'ui.bootstrap', 'TokenModule',
+    ['ui.router', 'ui.bootstrap', 'TokenModule',
         'ngAnimate', 'ngIdle',
+        'privacyideaAuth',
         'privacyideaApp.auditStates',
         'privacyideaApp.configStates',
         'privacyideaApp.tokenStates',

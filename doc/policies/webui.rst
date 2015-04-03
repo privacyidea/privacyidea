@@ -10,6 +10,8 @@ WebUI Policies
 login_mode
 ~~~~~~~~~~
 
+.. index:: login mode
+
 type: string
 
 allowed values: "userstore", "privacyIDEA"
@@ -31,3 +33,14 @@ but need to authenticate with one of their tokens.
    login to the Web UI remotely from the internet with
    OTP but still login from within the LAN with the domain password.
 
+logout_time
+~~~~~~~~~~~
+
+.. index:: logout time
+
+type: int
+
+Set the timeout, after which a user in th WebUI will be logged out.
+The dafault timeout is 30 seconds.
+
+Being a policy this time can be set based on clients, realms and users.

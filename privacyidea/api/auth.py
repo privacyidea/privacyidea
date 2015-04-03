@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+# 2015-04-03 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add logout time to response
 # 2014-12-15 Cornelius Kölbel, info@privacyidea.org
 #            Initial creation
 #
@@ -19,7 +21,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""This REST API is used to authenticate the users.
+__doc__ = """This REST API is used to authenticate the users.
 
 Authentication of users and admins is tested in tests/test_api_roles.py
 """
@@ -43,9 +45,9 @@ from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import check_webui_user, ROLE
 from privacyidea.lib.user import User
 from privacyidea.lib.user import split_user
-from privacyidea.lib.token import check_user_pass
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.realm import get_default_realm
+from privacyidea.api.lib.postpolicy import postpolicy, get_logout_time
 
 
 jwtauth = Blueprint('jwtauth', __name__)
@@ -69,6 +71,7 @@ def before_request():
 
 
 @jwtauth.route('', methods=['POST'])
+@postpolicy(get_logout_time)
 def get_auth_token():
     """
     This call verifies the credentials of the user and issues an
@@ -136,7 +139,10 @@ def get_auth_token():
             },
             "status": false
           },
-          "version": "privacyIDEA unknown"
+          "version": "privacyIDEA unknown",
+          "config": {
+            "logout_time": 30
+          }
        }
 
     """

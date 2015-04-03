@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-04-03 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add WebUI logout time.
 #  2015-03-27 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add PIN policies in USER scope
 #  2015-02-06 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -127,6 +129,7 @@ class ACTION():
     GETSERIAL = "getserial"
     IMPORT = "importtokens"
     LOGINMODE = "login_mode"
+    LOGOUTTIME = "logout_time"
     LOSTTOKEN = 'losttoken'
     LOSTTOKENPWLEN = "losttoken_PW_length"
     LOSTTOKENPWCONTENTS = "losttoken_PW_contents"
@@ -774,6 +777,11 @@ def get_static_policy_definitions(scope=None):
                     'authenticate against privacyIDEA when they log in '
                     'to the Web UI. Defaults to "userstore"'),
                 'value': [LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA],
+            },
+            ACTION.LOGOUTTIME: {
+                'type': 'int',
+                'desc': _("Set the time in seconds after which the user will "
+                          "be logged out from the WebUI. Default: 30")
             }
         }
 

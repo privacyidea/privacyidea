@@ -19,9 +19,11 @@
  *
  */
 angular.module("privacyideaApp")
-    .controller("mainController", function ($scope, $http, $location,
-                                            authUrl, AuthFactory, $rootScope,
-                                            Idle, $state, ConfigFactory) {
+    .controller("mainController",
+                            function (Idle,
+                                      $scope, $http, $location,
+                                      authUrl, AuthFactory, $rootScope,
+                                      $state, ConfigFactory) {
     $scope.myCountdown = "";
     // We save the previous State in the $rootScope, so that we
     // can return there
@@ -35,7 +37,6 @@ angular.module("privacyideaApp")
                 params: fromParams
             };
         });
-
     $scope.$on('IdleStart', function () {
         console.log("start idle");
     });
@@ -61,9 +62,11 @@ angular.module("privacyideaApp")
         console.log("Logout!");
         $scope.logout();
     });
+    /*
      $rootScope.$on('Keepalive', function() {
         $scope.logoutWarning = false;
     });
+    */
 
     // This holds the user object, the username, the password and the token.
     $scope.login = {username: "", password: ""};
@@ -82,6 +85,9 @@ angular.module("privacyideaApp")
                 data.result.value.role);
             $scope.privacyideaVersionNumber = data.versionnumber;
             $scope.loggedInUser = AuthFactory.getUser();
+            timeout = data.result.value.logout_time;
+            console.log(timeout);
+            Idle.setIdle(timeout-10);
             Idle.watch();
             console.log("successfully authenticated");
             console.log($scope.loggedInUser);

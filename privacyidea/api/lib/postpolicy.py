@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #
-#  2015-03-31 Cornelius Kölbel <cornelius.koelbel@netknighs.it>
+#  2015-04-03 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add logout time config
+#  2015-03-31 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add postpolicy for offline information
 #  2015-02-06 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Create this module for enabling decorators for API calls
@@ -47,6 +49,7 @@ import netaddr
 
 optional = True
 required = False
+DEFAULT_LOGOUT_TIME = 30
 
 
 class postpolicy(object):
@@ -225,6 +228,38 @@ def offline_info(request, response):
             if len(auth_items) > 0:
                 content["auth_items"] = auth_items
                 response.data = json.dumps(content)
+    return response
+
+
+def get_logout_time(request, response):
+    """
+    This decorator is used in the /auth API to add configuration information
+    like the logout time to the response.
+    :param request: flask request object
+    :param response: flask response object
+    :return: the response
+    """
+    content = json.loads(response.data)
+    # check, if the authentication was successful, then we need to do nothing
+    if content.get("result").get("status") is True:
+        # TODO: get the authenticated user
+        policy_object = g.policy_object
+        try:
+            client = request.remote_addr
+        except Exception:
+            client = None
+        logout_time_pol = policy_object.get_action_values(
+            action=ACTION.LOGOUTTIME,
+            scope=SCOPE.WEBUI,
+            client=client,
+            unique=True)
+
+        logout_time = DEFAULT_LOGOUT_TIME
+        if len(logout_time_pol) == 1:
+            logout_time = int(logout_time_pol[0])
+
+        content["result"]["value"]["logout_time"] = logout_time
+        response.data = json.dumps(content)
     return response
 
 
