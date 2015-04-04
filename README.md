@@ -16,7 +16,8 @@ privacyIDEA
 
 privacyIDEA is an open solution for strong two-factor authentication like 
 OTP tokens, SMS, Smartphones or SSH keys.
-Using privacyIDEA you can enhance your existing applications like local login, 
+Using privacyIDEA you can enhance your existing applications like local login 
+(PAM, Windows Credential Provider), 
 VPN, remote access, SSH connections, access to web sites or web portals with 
 a second factor during authentication. Thus boosting the security of your 
 existing applications.
@@ -38,6 +39,10 @@ The new version 2.x is based on flask and sqlalchemy as the python backend. The
 web UI is based
 on angularJS and bootstrap.
 
+A new MachineToken design lets you assign tokens to machnies. Thus you can use
+your Yubikey to unlock LUKS. Starting with version 2.2 you can also use
+offline OTP with PAM. 
+
 With version 2 the code was cleaned up and it was emphasized to keep a good
 code coverage. The design separates the database layer from the library layer
 and from the REST API layer. Thus allowing easy unit testing in each layer.
@@ -57,6 +62,7 @@ You can setup the system in a virtual environment:
     source venv/bin/activate
     pip install -r requirements.txt
 
+Read the install instructions at http://privacyidea.readthedocs.org.
 
 Running it
 ==========
