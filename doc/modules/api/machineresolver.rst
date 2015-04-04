@@ -1,5 +1,8 @@
 .. _rest_machineresolver:
 
+.. use the docstring from the module file
+.. automodule:: privacyidea.api.machineresolver
+
 Machine Resolver endpoints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -1,5 +1,6 @@
 .. _rest_token:
 
+.. automodule:: privacyidea.api.token
 
 Token endpoint
 ..............

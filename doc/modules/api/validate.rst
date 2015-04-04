@@ -1,5 +1,6 @@
 .. _rest_validate:
 
+.. automodule:: privacyidea.api.validate
 
 Validate endpoints
 ~~~~~~~~~~~~~~~~~~

@@ -1,5 +1,7 @@
 .. _rest_policy:
 
+.. automodule:: privacyidea.api.policy
+
 Policy endpoints
 ~~~~~~~~~~~~~~~~
 

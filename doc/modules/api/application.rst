@@ -1,14 +1,14 @@
 .. _rest_audit:
 
 .. use the docstring from the module file
-.. automodule:: privacyidea.api.auth
+.. automodule:: privacyidea.api.application
 
-Audit endpoint
-..............
+Application endpoints
+.....................
 
 .. autoflask:: privacyidea.app:create_app()
    :endpoints:
-   :blueprints: audit_blueprint
+   :blueprints: application_blueprint
 
    :include-empty-docstring:
 

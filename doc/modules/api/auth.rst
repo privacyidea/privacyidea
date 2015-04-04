@@ -1,16 +1,10 @@
 .. _rest_auth:
 
+.. use the docstring from the module file
+.. automodule:: privacyidea.api.auth
 
 Authentication endpoints
 ~~~~~~~~~~~~~~~~~~~~~~~~
-
-You need to authenticate for all administrative tasks. If you are not
-authenticated, the API returns a 401 response.
-
-To authenticate you need to send a POST request to /auth containing username
-and password.
-
-
 
 .. autoflask:: privacyidea.app:create_app()
    :endpoints:

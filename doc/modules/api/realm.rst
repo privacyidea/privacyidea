@@ -1,9 +1,10 @@
 .. _rest_realm:
 
+.. use the socstring from the module file
+.. automodule:: privacyidea.api.realm
+
 Realm endpoints
 ~~~~~~~~~~~~~~~
-.. use the docstring from the module file
-.. automodule:: privacyidea.api.realm
 
 .. autoflask:: privacyidea.app:create_app()
    :endpoints:

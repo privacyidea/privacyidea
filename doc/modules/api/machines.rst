@@ -1,5 +1,7 @@
 .. _rest_machine:
 
+.. automodule:: privacyidea.api.machine
+
 Machine  endpoints
 ~~~~~~~~~~~~~~~~~~
 

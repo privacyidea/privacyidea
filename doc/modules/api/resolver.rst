@@ -1,5 +1,8 @@
 .. _rest_resolver:
 
+.. use the docstring from the module file
+.. automodule:: privacyidea.api.resolver
+
 Resolver endpoints
 ~~~~~~~~~~~~~~~~~~
 

@@ -23,6 +23,29 @@
 
 __doc__ = """This module contains the REST API for doing authentication.
 The methods are tested in the file tests/test_api_validate.py
+
+Authentication is either done by providing a username and a password or a
+serial number and a password.
+
+**Authentication workflow**
+
+Authentication workflow is like this:
+
+In case of authenticating a user:
+
+ * lib/token/check_user_pass (user, passw, options)
+ * lib/token/check_token_list(list, passw, user, options)
+ * lib/tokenclass/authenticate(pass, user, options)
+ * lib/tokenclass/check_pin(pin, user, options)
+ * lib/tokenclass/check_otp(otpval, options)
+
+IN case if authenitcating a serial number:
+
+ * lib/token/check_serial_pass(serial, passw, options)
+ * lib/token/check_token_list(list, passw, user, options)
+ * lib/tokenclass/authenticate(pass, user, options)
+ * lib/tokenclass/check_pin(pin, user, options)
+ * lib/tokenclass/check_otp(otpval, options)
 """
 from flask import (Blueprint, request, g, current_app)
 from privacyidea.lib.user import get_user_from_param

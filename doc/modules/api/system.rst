@@ -1,5 +1,6 @@
 .. _rest_system:
 
+.. automodule:: privacyidea.api.system
 
 System endpoints
 ................

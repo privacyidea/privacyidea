@@ -25,4 +25,5 @@ Now you can take a look at the several REST endpoints.
    api/policy
    api/machineresolver
    api/machines
+   api/application
 

@@ -24,6 +24,12 @@
 __doc__ = """This REST API is used to authenticate the users.
 
 Authentication of users and admins is tested in tests/test_api_roles.py
+
+You need to authenticate for all administrative tasks. If you are not
+authenticated, the API returns a 401 response.
+
+To authenticate you need to send a POST request to /auth containing username
+and password.
 """
 from flask import (Blueprint,
                    request,
