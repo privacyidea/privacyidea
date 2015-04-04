@@ -26,8 +26,8 @@ just use the source code file. It is a python module, that requires pam-python.
 
 The configuration could look like this::
 
- ... pam_python.so /home/cornelius/src/privacyidea/authmodules/pam-python
- /privacyidea-pam.py url=https://localhost prompt=privacyIDEA_Authentication
+ ... pam_python.so /path/to/privacyidea_pam.py
+ url=https://localhost prompt=privacyIDEA_Authentication
 
 The URL parameter defaults to ``https://localhost``. You can also add the
 parameters ``realm=`` and ``debug``.

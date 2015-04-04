@@ -1,3 +1,3 @@
-authmodules/pam-python/privacyidea-pam.py /lib/security
-authmodules/pam-python/common-auth-pi /etc/pam.h
-authmodules/pam-python/README.md /usr/share/doc/privacyidea-pam/
+authmodules/pam_python/privacyidea_pam.py /lib/security
+authmodules/pam_python/common-auth-pi /etc/pam.h
+authmodules/pam_python/README.md /usr/share/doc/privacyidea-pam/

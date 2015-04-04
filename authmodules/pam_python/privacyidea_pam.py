@@ -26,6 +26,7 @@
 __doc__ = """This is the PAM module to be used with python-pam with the
 privacyIDEA authentication system.
 
+The code is tested in test_pam_module.py
 """
 
 import requests
