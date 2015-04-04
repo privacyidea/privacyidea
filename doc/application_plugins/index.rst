@@ -3,11 +3,42 @@
 Application Plugins
 ===================
 
-.. index:: Application Plugins, OTRS, FreeRADIUS, SAML
+.. index:: Application Plugins, OTRS, FreeRADIUS, SAML, PAM
 
 privacyIDEA comes with application plugins. These are plugins for
-applications like OTRS, FreeRADIUS or simpleSAMLphp which enable these
+applications like PAM, OTRS, FreeRADIUS or simpleSAMLphp which enable these
 application to authenticate users against privacyIDEA.
+
+.. _pam_plugin:
+
+Pluggable Authentication Module
+-------------------------------
+
+.. index:: offline, PAM
+
+The PAM module of privacyIDEA directly communicates with the privacyIDEA
+server via the API. The PAM module also supports offline authentication. In
+this case you need to configure an offline machine application. (See
+:ref:`application_offline`)
+
+You can install the PAM module with a ready made debian package for Ubuntu or
+just use the source code file. It is a python module, that requires pam-python.
+
+The configuration could look like this::
+
+ ... pam_python.so /home/cornelius/src/privacyidea/authmodules/pam-python
+ /privacyidea-pam.py url=https://localhost prompt=privacyIDEA_Authentication
+
+The URL parameter defaults to ``https://localhost``. You can also add the
+parameters ``realm=`` and ``debug``.
+
+The default behaviour is to trigger an online authentication request.
+If the request was successful, the user is logged in.
+If the request was done with a token defined for offline authentication, than
+in addition all offline information is passed to the client and cached on the
+client so that the token can be used to authenticate without the privacyIDEA
+server available.
+
 
 .. _freeradius_plugin:
 

@@ -18,9 +18,9 @@ to. Different application require different authentication items.
 
 Therefore privacyIDEA can define application types.
 At the moment privacyIDEA knows the application
-``luks` and ``ssh``. You can write your own application class,
+``luks``, ``offline`` and ``ssh``. You can write your own application class,
 which is defined in
-:ref:``code_application_class``.
+:ref:`code_application_class`.
 
 You need to assign an application and a token to a client machine. Each application type 
 can work with certain token types and each application type can use additional parameters.
@@ -85,6 +85,8 @@ write to LUKS) on the client machine::
 For more information please see the man page of this tool.
 
 
+.. _application_offline:
+
 Offline
 -------
 
@@ -101,7 +103,7 @@ The offline application also triggers when the client calls a /validate/check.
 If the user authenticates successfully with the correct token (serial number)
 and this very token is attached to the machine with an offline application
 the response to validate/check is enriched with a "auth_items" tree
-containing the salted SHA256 hashes of the next OTP values.
+containing the salted SHA512 hashes of the next OTP values.
 
 The client can cache these values to enable offline authentication.
 The caching is implemented in the privacyIDEA PAM module.
@@ -109,7 +111,3 @@ The caching is implemented in the privacyIDEA PAM module.
 The server increases the counter to the last offline cached OTP value, so
 that it will not be possible to authenticate with those OTP values available
 offline on the client side.
-
-
-
-.. [#saltstack] http://www.saltstack.com/
