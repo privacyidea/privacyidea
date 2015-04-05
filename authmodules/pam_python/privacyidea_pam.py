@@ -75,7 +75,7 @@ def pam_sm_authenticate(pamh, flags, argv):
                           "%s: user %s in realm %s" % (__name__, user,
                                                        realm))
         # First we try to authenticate against the sqlitedb
-        if check_otp(user, pamh.authtok, sqlfile, window=10):
+        if check_offline_otp(user, pamh.authtok, sqlfile, window=10):
             syslog.syslog(syslog.LOG_DEBUG,
                           "%s: successfully authenticated against offline "
                           "database %s" % (__name__, sqlfile))
@@ -111,8 +111,9 @@ def pam_sm_authenticate(pamh, flags, argv):
                                           result.get("error").get("message")))
                 rval = pamh.PAM_SYSTEM_ERR
 
-    except pamh.exception as exx:
-        rval = exx.pam_result
+    except Exception as exx:
+        syslog.syslog(syslog.LOG_ERR, "%s: %s" % (__name__, exx))
+        rval = pamh.PAM_AUTH_ERR
     except requests.exceptions.SSLError:
         syslog.syslog(syslog.LOG_CRIT, "%s: SSL Validation error. Get a valid "
                                        "SSL "
@@ -141,7 +142,7 @@ def pam_sm_chauthtok(pamh, flags, argv):
   return pamh.PAM_SUCCESS
 
 
-def check_otp(user, otp, sqlfile, window=10):
+def check_offline_otp(user, otp, sqlfile, window=10):
     """
     compare the given otp values with the next hashes of the user.
 
@@ -156,14 +157,18 @@ def check_otp(user, otp, sqlfile, window=10):
     res = False
     conn = sqlite3.connect(sqlfile)
     c = conn.cursor()
+    _create_table(c)
     c.execute("SELECT counter, user, otp FROM authitems WHERE user='%s' "
               "ORDER by counter" % user)
     for x in range(0, window):
         r = c.fetchone()
-        hash_value = r[2]
-        if passlib.hash.pbkdf2_sha512.verify(otp, hash_value):
-            res = True
-            counter = r[0]
+        if r:
+            hash_value = r[2]
+            if passlib.hash.pbkdf2_sha512.verify(otp, hash_value):
+                res = True
+                counter = r[0]
+                break
+        else:
             break
     # We found a matching password, so we remove the old entries
     if res:
@@ -194,11 +199,7 @@ def save_auth_item(sqlfile, user, authitem):
     conn = sqlite3.connect(sqlfile)
     c = conn.cursor()
     # Create the table if necessary
-    try:
-        c.execute("CREATE TABLE authitems "
-                  "(counter int, user text, tokenowner text, otp text)")
-    except:
-        pass
+    _create_table(c)
 
     syslog.syslog(syslog.LOG_DEBUG, "%s: offline save authitem: %s" % (
         __name__, authitem))
@@ -217,3 +218,15 @@ def save_auth_item(sqlfile, user, authitem):
     # We can also close the connection if we are done with it.
     # Just be sure any changes have been committed or they will be lost.
     conn.close()
+
+
+def _create_table(c):
+    """
+    Create table if necessary
+    :param c: The connection cursor
+    """
+    try:
+        c.execute("CREATE TABLE authitems "
+                  "(counter int, user text, tokenowner text, otp text)")
+    except:
+        pass
