@@ -252,7 +252,7 @@ class APIConfigTestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             detail = json.loads(res.data).get("detail")
             self.assertFalse(result.get("value"), result)
-            self.assertTrue("unable to open socket" in detail.get("description"),
+            self.assertTrue("Connection refused" in detail.get("description"),
                             detail.get("description"))
 
     def test_08_resolvers(self):
