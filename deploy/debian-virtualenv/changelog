@@ -1,8 +1,18 @@
-privacyidea-venv (2.2~dev0) wheezy; urgency=low
+privacyidea-venv (2.2~dev2) wheezy; urgency=low
 
-  * Initial dev package
-
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 11 Mar 2015 17:30:00 +0200
+  * pi-manage.py: create resolvers and realms
+  * pi-manage.py: maange policies
+  * Add LostToken UI
+  * Add Offline Application
+  * Add PAM authentication module with offline support
+  * Add getSerialByOTP. You can determine the Token by providing an OTP value.
+  * Add auth_count_max and auth_success_max for each token.
+  * Add PIN encryption policy
+  * Add API for SAML
+  * Add bash script for ssh key fetching
+  * Make WebUI logout time configurable via webui policy.
+  
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 06 Apr 2015 01:10:00 +0200
 
 privacyidea-venv (2.1-1) wheezy; urgency=low
 

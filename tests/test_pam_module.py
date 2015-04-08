@@ -23,6 +23,22 @@ RESP = {1: '$pbkdf2-sha512$19000$Scl5TwmhtPae856zFgJgLA$ZQAqtqmGTf6IY0t9jg2MCg'
            'lwTOEKXMzJ5BTblZsu3bV4KAP1rEW6nUPfqLf6/f2yoNhpX1mCS3dt77EBKtJM.A'
 }
 
+# TEST100000
+# TEST100001
+# TEST100002
+RESP2 = {1: '$pbkdf2-sha512$19000$DgGA0FrL2ZsTIuS8txYCoA$HAAMTr34j5pMwMA9XZ'
+            'euNtNbvHklY0axMKlceqdaCfYzdml9MBH05tgZqvrQToYqCHPDQoBD.GH5/UGvs'
+            '7HF4g',
+         2: '$pbkdf2-sha512$19000$wfifc07p3dvb.1.LcU6ptQ$NmnYnWMMc9KuCSDG5I'
+            'f94qGTmLekRF7Fn9rE4nDxCGuaXBasvEuIyEdp.h2RNqvjbsFd6A/U1T5/9eMC/'
+            '7v9GQ',
+         3: '$pbkdf2-sha512$19000$53zvvddai/He'
+            '.x9DyJnTGg$aUapWKcp21B2eSQzVVKtv9e.9Xs3aoNxg30dgU6TjyzaaHZcUNpvz'
+            '7Cqj6yeTFYi1nzQ151I2z8sZWjln1fyag'
+}
+
+
+
 SUCCESS_BODY = {"detail": {"message": "matching 1 tokens",
                            "serial": "PISP0000AB00",
                            "type": "spass"},
@@ -85,6 +101,7 @@ class PAMTestCase(MyTestCase):
         # Save some values to the database
         r = save_auth_item(SQLFILE,
                            "cornelius",
+                           "TOK001",
                            {"offline": [{"username": "corny",
                                          "response": RESP}
                            ]
@@ -134,7 +151,7 @@ class PAMTestCase(MyTestCase):
         self.assertTrue(r)
         # Now the offlne values are stored
 
-    def test_04_autheticate_offline(self):
+    def test_04_authenticate_offline(self):
         # and authenticate offline again.
         pamh = PAMH("cornelius", "test100000")
         flags = None
@@ -143,4 +160,42 @@ class PAMTestCase(MyTestCase):
         r = pam_sm_authenticate(pamh, flags, argv)
         self.assertTrue(r)
 
+    def test_05_two_tokens(self):
+        # Save some values to the database
+        r = save_auth_item(SQLFILE,
+                           "cornelius",
+                           "TOK001",
+                           {"offline": [{"username": "corny",
+                                         "response": RESP}
+                           ]
+                           })
+        r = save_auth_item(SQLFILE,
+                           "cornelius",
+                           "TOK002",
+                           {"offline": [{"username": "corny",
+                                         "response": RESP2}
+                           ]
+                           })
 
+        pamh = PAMH("cornelius", "test100001")
+        flags = None
+        argv = ["url=http://my.privacyidea.server",
+                "sqlfile=%s" % SQLFILE]
+        r = pam_sm_authenticate(pamh, flags, argv)
+        self.assertEqual(r, PAMH.PAM_SUCCESS)
+
+        # An older OTP value of the first token is deleted
+        pamh = PAMH("cornelius", "test100000")
+        flags = None
+        argv = ["url=http://my.privacyidea.server",
+                "sqlfile=%s" % SQLFILE]
+        r = pam_sm_authenticate(pamh, flags, argv)
+        self.assertNotEqual(r, PAMH.PAM_SUCCESS)
+
+        # An older value with another token can authenticate!
+        pamh = PAMH("cornelius", "TEST100000")
+        flags = None
+        argv = ["url=http://my.privacyidea.server",
+                "sqlfile=%s" % SQLFILE]
+        r = pam_sm_authenticate(pamh, flags, argv)
+        self.assertEqual(r, PAMH.PAM_SUCCESS)

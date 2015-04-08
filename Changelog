@@ -1,3 +1,18 @@
+Version 2.2, 2015-03-XX
+
+  * pi-manage.py: create resolvers and realms
+  * pi-manage.py: manage policies
+  * Add LostToken UI
+  * Add Offline Application
+  * Add PAM authentication module with offline support
+  * Add getSerialByOTP. You can determine the Token by providing an OTP value.
+  * Add auth_count_max and auth_success_max for each token.
+  * Add PIN encryption policy
+  * Add API for SAML
+  * Add bash script for ssh key fetching
+  * Make WebUI logout time configurable via webui policy.
+
+
 Version 2.1, 2015-03-10
 
   * Add Machine-Application framework to support LUKS and SSH

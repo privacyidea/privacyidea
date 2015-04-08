@@ -33,6 +33,7 @@ import requests
 import syslog
 import sqlite3
 import passlib.hash
+import time
 
 
 def _get_config(argv):
@@ -95,6 +96,8 @@ def pam_sm_authenticate(pamh, flags, argv):
             json_response = response.json()
             result = json_response.get("result")
             auth_item = json_response.get("auth_items")
+            serial = json_response.get("detail", {}).get("serial",
+                                                         "T%s" % time.time())
             if debug:
                 syslog.syslog(syslog.LOG_DEBUG, "%s: result: %s" % (__name__,
                                                                     result))
@@ -102,7 +105,7 @@ def pam_sm_authenticate(pamh, flags, argv):
             if result.get("status"):
                 if result.get("value"):
                     rval = pamh.PAM_SUCCESS
-                    save_auth_item(sqlfile, user, auth_item)
+                    save_auth_item(sqlfile, user, serial, auth_item)
                 else:
                     rval = pamh.PAM_AUTH_ERR
             else:
@@ -158,27 +161,35 @@ def check_offline_otp(user, otp, sqlfile, window=10):
     conn = sqlite3.connect(sqlfile)
     c = conn.cursor()
     _create_table(c)
-    c.execute("SELECT counter, user, otp FROM authitems WHERE user='%s' "
-              "ORDER by counter" % user)
-    for x in range(0, window):
-        r = c.fetchone()
-        if r:
-            hash_value = r[2]
+    # get all possible serial/tokens for a user
+    serials = []
+    for row in c.execute("SELECT serial, user FROM authitems WHERE user='%s'"
+                         "GROUP by serial" % user):
+        serials.append(row[0])
+
+    for serial in serials:
+        for row in c.execute("SELECT counter, user, otp, serial FROM authitems "
+                             "WHERE user='%s' "
+                             "and serial='%s' "
+                             "ORDER by counter LIMIT %s"
+                             % (user, serial, window)):
+            hash_value = row[2]
             if passlib.hash.pbkdf2_sha512.verify(otp, hash_value):
                 res = True
-                counter = r[0]
+                matching_counter = row[0]
+                matching_serial = serial
                 break
-        else:
-            break
+
     # We found a matching password, so we remove the old entries
     if res:
-        c.execute("DELETE from authitems WHERE counter <= %i" % counter)
+        c.execute("DELETE from authitems WHERE counter <= %i and serial = "
+                  "'%s'" % (matching_counter, matching_serial))
         conn.commit()
     conn.close()
     return res
 
 
-def save_auth_item(sqlfile, user, authitem):
+def save_auth_item(sqlfile, user, serial, authitem):
     """
     Save the given authitem to the sqlite file to be used later for offline
     authentication.
@@ -190,12 +201,12 @@ def save_auth_item(sqlfile, user, authitem):
     :param sqlfile: An SQLite file. If it does not exist, it will be generated.
     :type sqlfile: basestring
     :param user: The PAM user
+    :param serial: The serial number of the token
     :param authitem: A dictionary with all authitem information being:
     username, count, and a response dict with counter and otphash.
 
     :return:
     """
-    # TODO: At the moment two OTP tokens per user will cause a conflict!
     conn = sqlite3.connect(sqlfile)
     c = conn.cursor()
     # Create the table if necessary
@@ -208,9 +219,11 @@ def save_auth_item(sqlfile, user, authitem):
         tokenowner = offline.get("username")
         for counter, otphash in offline.get("response").iteritems():
             # Insert the OTP hash
-            c.execute("INSERT INTO authitems (counter, user, tokenowner, otp) "
-                      "VALUES ('%s','%s','%s','%s')"
-                      % (counter, user, tokenowner, otphash))
+            c.execute("INSERT INTO authitems "
+                      "(counter, user, serial, tokenowner, otp) "
+                      "VALUES "
+                      "('%s','%s','%s', '%s', '%s')"
+                      % (counter, user, serial, tokenowner, otphash))
 
     # Save (commit) the changes
     conn.commit()
@@ -227,6 +240,7 @@ def _create_table(c):
     """
     try:
         c.execute("CREATE TABLE authitems "
-                  "(counter int, user text, tokenowner text, otp text)")
+                  "(counter int, user text, serial text, tokenowner text,"
+                  "otp text)")
     except:
         pass

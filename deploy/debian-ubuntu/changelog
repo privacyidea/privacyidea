@@ -1,9 +1,18 @@
-python-privacyidea (2.2~dev1) trusty; urgency=low
+python-privacyidea (2.2~dev2) trusty; urgency=low
 
-  * Initial dev package
-  * Working beta offline application
+  * pi-manage.py: create resolvers and realms
+  * pi-manage.py: manage policies
+  * Add LostToken UI
+  * Add Offline Application
+  * Add PAM authentication module with offline support
+  * Add getSerialByOTP. You can determine the Token by providing an OTP value.
+  * Add auth_count_max and auth_success_max for each token.
+  * Add PIN encryption policy
+  * Add API for SAML
+  * Add bash script for ssh key fetching
+  * Make WebUI logout time configurable via webui policy.
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 03 Apr 2015 22:10:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 06 Apr 2015 01:10:00 +0200
 
 python-privacyidea (2.1-1trusty) trusty; urgency=low
 
