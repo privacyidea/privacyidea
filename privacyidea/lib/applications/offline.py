@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-04-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add options ROUNDS to avoid timeouts during OTP hash calculation
 #  2015-04-03 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Use pbkdf2 for OTP hashing
 #  2015-03-13 Cornelius Kölbel, <cornelius@privacyidea.org>
@@ -26,7 +28,7 @@ import logging
 import passlib.hash
 from privacyidea.lib.token import get_tokens
 log = logging.getLogger(__name__)
-ROUNDS = 31023
+ROUNDS = 6549
 
 
 class MachineApplication(MachineApplicationBase):
@@ -72,6 +74,7 @@ class MachineApplication(MachineApplicationBase):
         otppin = ""
         if token_type.lower() == "hotp":
             count = int(options.get("count", 100))
+            rounds = int(options.get("rounds", ROUNDS))
             # get the token
             toks = get_tokens(serial=serial)
             if len(toks) == 1:
@@ -84,7 +87,7 @@ class MachineApplication(MachineApplicationBase):
                     # Return the hash of OTP PIN and OTP values
                     otps[key] = passlib.hash.\
                         pbkdf2_sha512.encrypt(otppin + otps.get(key),
-                                                rounds=ROUNDS,
+                                                rounds=rounds,
                                                 salt_size=10)
                 # We do not disable the token, so if all offline OTP values
                 # are used, the token can be used the authenticate online again.
@@ -113,4 +116,4 @@ class MachineApplication(MachineApplicationBase):
         returns a dictionary with a list of required and optional options
         """
         return {'required': [],
-                'optional': ['user', 'count']}
+                'optional': ['user', 'count', 'rounds']}
