@@ -11,6 +11,7 @@ Version 2.2, 2015-03-XX
   * Add API for SAML
   * Add bash script for ssh key fetching
   * Make WebUI logout time configurable via webui policy.
+  * Add NTLM authentication to the LDAP resolver.
 
 
 Version 2.1, 2015-03-10

@@ -64,7 +64,8 @@ Create a flat file like this::
 LDAP resolver
 .............
 
-.. index:: LDAP resolver, OpenLDAP, Active Directory, FreeIPA, Penrose, Novell eDirectory
+.. index:: LDAP resolver, OpenLDAP, Active Directory, FreeIPA, Penrose,
+   Novell eDirectory
 
 The LDAP resolver can be used to access any kind of LDAP service like
 OpenLDAP, Active Directory,
@@ -79,6 +80,9 @@ In case of Active Directory connections you might need to check the box
 ``No anonymous referral chasing``. The underlying LDAP library is only
 able to do anonymous referral chasing. Active Directory will produce an
 error in this case [#adreferrals]_.
+
+The ``Bind Type`` with Active Directory can either be chosen as "Simple" or
+as "NTLM".
 
 The ``LoginName`` attribute is the attribute that holds the loginname. It
 can be changed to your needs.

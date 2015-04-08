@@ -45,6 +45,7 @@ TODO:
 class AUTHTYPE():
     SIMPLE = "Simple"
     SASL_DIGEST_MD5 = "SASL Digest-MD5"
+    NTLM = "NTLM"
 
 
 class IdResolver (UserIdResolver):
@@ -506,6 +507,15 @@ class IdResolver (UserIdResolver):
                                  auto_bind=auto_bind,
                                  client_strategy=client_strategy,
                                  authentication=ldap3.SIMPLE,
+                                 check_names=check_names,
+                                 auto_referrals=auto_referrals)
+        elif authtype == AUTHTYPE.NTLM:
+            l = ldap3.Connection(server,
+                                 user=user,
+                                 password=password,
+                                 auto_bind=auto_bind,
+                                 client_strategy=client_strategy,
+                                 authentication=ldap3.NTLM,
                                  check_names=check_names,
                                  auto_referrals=auto_referrals)
         elif authtype == AUTHTYPE.SASL_DIGEST_MD5:
