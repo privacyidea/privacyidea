@@ -1,4 +1,4 @@
-privacyidea-venv (2.2~dev2) wheezy; urgency=low
+privacyidea-venv (2.2-1) wheezy; urgency=low
 
   * pi-manage.py: create resolvers and realms
   * pi-manage.py: maange policies
@@ -12,7 +12,7 @@ privacyidea-venv (2.2~dev2) wheezy; urgency=low
   * Add bash script for ssh key fetching
   * Make WebUI logout time configurable via webui policy.
   
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 06 Apr 2015 01:10:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 09 Apr 2015 12:10:00 +0200
 
 privacyidea-venv (2.1-1) wheezy; urgency=low
 
