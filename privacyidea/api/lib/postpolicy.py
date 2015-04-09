@@ -221,13 +221,18 @@ def offline_info(request, response):
             # check if there is a MachineToken definition
             detail = content.get("detail", {})
             serial = detail.get("serial")
-            hostname = get_hostname(ip=client_ip)
-            auth_items = get_auth_items(hostname=hostname, ip=client_ip,
-                                        serial=serial, application="offline",
-                                        challenge=request.all_data.get("pass"))
-            if len(auth_items) > 0:
-                content["auth_items"] = auth_items
-                response.data = json.dumps(content)
+            try:
+                # if the hostname can not be identified, there might be no
+                # offline definition!
+                hostname = get_hostname(ip=client_ip)
+                auth_items = get_auth_items(hostname=hostname, ip=client_ip,
+                                            serial=serial, application="offline",
+                                            challenge=request.all_data.get("pass"))
+                if len(auth_items) > 0:
+                    content["auth_items"] = auth_items
+                    response.data = json.dumps(content)
+            except Exception as exx:
+                log.info(exx)
     return response
 
 
