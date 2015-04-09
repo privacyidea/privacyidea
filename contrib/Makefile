@@ -7,8 +7,8 @@ URL2=https://pypi.python.org/packages/source/P/PyJWT/PyJWT-0.4.3.tar.gz
 VERSION2=0.4.3
 
 CONTRIB3=python-ldap3
-URL3=https://pypi.python.org/packages/source/l/ldap3/ldap3-0.9.7.4.tar.gz
-VERSION3=0.9.7.4
+URL3=https://pypi.python.org/packages/source/l/ldap3/ldap3-0.9.8.2.tar.gz
+VERSION3=0.9.8.2
 
 CONTRIB4=python-flask-migrate
 VERSION4=1.3.0
@@ -187,7 +187,7 @@ ldap3:
 	mkdir -p DEBUILD
 	(cd $(CONTRIB3); curl $(URL3) -o temp.tgz; tar -zxf temp.tgz)
 	(cd $(CONTRIB3); cd ldap3-$(VERSION3); touch setup.cfg)
-	(cd $(CONTRIB3); cd ldap3-$(VERSION3); patch < ../../patches/remove-generated-timestamp)
+#	(cd $(CONTRIB3); cd ldap3-$(VERSION3); patch < ../../patches/remove-generated-timestamp)
 	(cd $(CONTRIB3); cd ldap3-$(VERSION3); python setup.py sdist; cp dist/* ..)
 	(cd $(CONTRIB3); py2dsc -m '$(ME)' ldap3-$(VERSION3).tar.gz)
 	(cd $(CONTRIB3)/deb_dist/ldap3-$(VERSION3); dch -i --distribution trusty -M "built for privacyidea")
