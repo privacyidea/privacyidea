@@ -102,6 +102,7 @@ class PAMTestCase(MyTestCase):
         r = save_auth_item(SQLFILE,
                            "cornelius",
                            "TOK001",
+                           "HOTP",
                            {"offline": [{"username": "corny",
                                          "response": RESP}
                            ]
@@ -165,6 +166,7 @@ class PAMTestCase(MyTestCase):
         r = save_auth_item(SQLFILE,
                            "cornelius",
                            "TOK001",
+                           "HOTP",
                            {"offline": [{"username": "corny",
                                          "response": RESP}
                            ]
@@ -172,6 +174,7 @@ class PAMTestCase(MyTestCase):
         r = save_auth_item(SQLFILE,
                            "cornelius",
                            "TOK002",
+                           "HOTP",
                            {"offline": [{"username": "corny",
                                          "response": RESP2}
                            ]

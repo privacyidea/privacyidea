@@ -98,6 +98,8 @@ def pam_sm_authenticate(pamh, flags, argv):
             auth_item = json_response.get("auth_items")
             serial = json_response.get("detail", {}).get("serial",
                                                          "T%s" % time.time())
+            tokentype = json_response.get("detail", {}).get("type",
+                                                            "unknown")
             if debug:
                 syslog.syslog(syslog.LOG_DEBUG, "%s: result: %s" % (__name__,
                                                                     result))
@@ -105,7 +107,7 @@ def pam_sm_authenticate(pamh, flags, argv):
             if result.get("status"):
                 if result.get("value"):
                     rval = pamh.PAM_SUCCESS
-                    save_auth_item(sqlfile, user, serial, auth_item)
+                    save_auth_item(sqlfile, user, serial, tokentype, auth_item)
                 else:
                     rval = pamh.PAM_AUTH_ERR
             else:
@@ -189,7 +191,7 @@ def check_offline_otp(user, otp, sqlfile, window=10):
     return res
 
 
-def save_auth_item(sqlfile, user, serial, authitem):
+def save_auth_item(sqlfile, user, serial, tokentype, authitem):
     """
     Save the given authitem to the sqlite file to be used later for offline
     authentication.
@@ -202,6 +204,7 @@ def save_auth_item(sqlfile, user, serial, authitem):
     :type sqlfile: basestring
     :param user: The PAM user
     :param serial: The serial number of the token
+    :param tokentype: The type of the token
     :param authitem: A dictionary with all authitem information being:
     username, count, and a response dict with counter and otphash.
 
@@ -241,6 +244,7 @@ def _create_table(c):
     try:
         c.execute("CREATE TABLE authitems "
                   "(counter int, user text, serial text, tokenowner text,"
-                  "otp text)")
+                  "otp text, tokentype text)")
     except:
         pass
+
