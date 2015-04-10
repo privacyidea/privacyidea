@@ -1,6 +1,8 @@
 #
 #    privacyIDEA, fork of LinOTP (radius_linotp.pm)
 #
+#    2015-04-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#               fix typo in log
 #    2015-02-25 cornelius kölbel <cornelius@privacyidea.org>
 #               remove the usage of simplecheck and use /validate/check
 #    2014-06-25 Cornelius Kölbel
@@ -340,7 +342,7 @@ sub authenticate {
     } else {
         my $status = $response->status_line;
         &radiusd::radlog( Info, "privacyIDEA request failed: $status" );
-        $RAD_REPLY{'Reply-Message'} = "privacyIDEA access granted";
+        $RAD_REPLY{'Reply-Message'} = "privacyIDEA request failed: $status";
         $g_return = RLM_MODULE_FAIL;
     }
     &radiusd::radlog( Info, "return $ret_hash->{$g_return}" );
