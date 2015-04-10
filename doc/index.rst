@@ -36,6 +36,7 @@ Thanks a lot!
    tools/index
    import/index
    modules/index
+   faq/index
 
 ##################
 Indices and tables
