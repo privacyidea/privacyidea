@@ -2,6 +2,8 @@
 
 /**
  * privacyidea authentication module.
+ * 2015-04-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+ *            minor changes by code climate
  * 2014-09-29 Cornelius Kölbel, cornelius@privacyidea.org
  * 
  * This is forked from simplesamlphp-linotp,
@@ -80,10 +82,10 @@ class sspmod_privacyidea_Auth_Source_privacyidea extends sspmod_core_Auth_UserPa
 		assert('is_string($username)');
 		assert('is_string($password)');
 
-        $ch = curl_init();
+        	$curl_instance = curl_init();
         
-        $escPassword = urlencode($password);
-        $escUsername = urlencode($username);
+	        $escPassword = urlencode($password);
+	        $escUsername = urlencode($username);
 
 		$url = $this->privacyideaserver . '/validate/samlcheck?user='.$escUsername
 			.'&pass=' . $escPassword . '&realm=' . $this->realm;
@@ -91,26 +93,26 @@ class sspmod_privacyidea_Auth_Source_privacyidea extends sspmod_core_Auth_UserPa
 		//throw new Exception("url: ". $url);
 		SimpleSAML_Logger::debug("privacyidea URL:" . $url);
 	
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_HEADER, TRUE);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-        if ($this->sslverifyhost) {
-			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 1);
+        	curl_setopt($curl_instance, CURLOPT_URL, $url);
+	        curl_setopt($curl_instance, CURLOPT_HEADER, TRUE);
+	        curl_setopt($curl_instance, CURLOPT_RETURNTRANSFER, TRUE);
+	        if ($this->sslverifyhost) {
+			curl_setopt($curl_instance, CURLOPT_SSL_VERIFYHOST, 1);
 		} else {
-			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-	    }
-	    if ($this->sslverifypeer) {
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 1);
+			curl_setopt($curl_instance, CURLOPT_SSL_VERIFYHOST, 0);
+		}
+		if ($this->sslverifypeer) {
+			curl_setopt($curl_instance, CURLOPT_SSL_VERIFYPEER, 1);
 		} else {
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+			curl_setopt($curl_instance, CURLOPT_SSL_VERIFYPEER, 0);
 		}
 	    
-	    $response = curl_exec($ch);     
-        $header_size = curl_getinfo($ch,CURLINFO_HEADER_SIZE);
-        $body = json_decode(substr( $response, $header_size ));
-       
-        $status=True;
-        $value=True;
+	    	$response = curl_exec($curl_instance);
+		$header_size = curl_getinfo($curl_instance,CURLINFO_HEADER_SIZE);
+		$body = json_decode(substr( $response, $header_size ));
+	       
+		$status=True;
+		$value=True;
     
 		try {
 			$status = $body->result->status;
@@ -119,13 +121,13 @@ class sspmod_privacyidea_Auth_Source_privacyidea extends sspmod_core_Auth_UserPa
 			throw new SimpleSAML_Error_BadRequest("We were not able to read the response from the privacyidea server:" . $e);
 		}
 		
-    	if ( False==$status ) {
+	    	if ( False===$status ) {
 			/* We got a valid JSON respnse, but the STATUS is false */
 			throw new SimpleSAML_Error_BadRequest("Valid JSON response, but some internal error occured in privacyidea server.");
 				
 		} else {
 			/* The STATUS is true, so we need to check the value */
-			if ( False==$value ) {
+			if ( False===$value ) {
 				throw new SimpleSAML_Error_Error("WRONGUSERPASS");
 			}
 		}
@@ -148,6 +150,3 @@ class sspmod_privacyidea_Auth_Source_privacyidea extends sspmod_core_Auth_UserPa
 	}
 
 }
-
-
-?>
