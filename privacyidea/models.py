@@ -596,6 +596,14 @@ class Admin(db.Model):
     To manage the administrators use the command pi-manage.py.
 
     In addition certain realms can be defined to be administrative realms.
+
+    :param username: The username of the admin
+    :type username: basestring
+    :param password: The password of the admin (stored using PBKDF2,
+       salt and pepper)
+    :type password: basestring
+    :param email: The email address of the admin (not used at the momemt)
+    :type email: basestring
     """
     __tablename__ = "admin"
     username = db.Column(db.Unicode(120),
