@@ -3,7 +3,7 @@
 The Config File 
 ===============
 
-.. index:: config file
+.. index:: config file, external hook, hook
 
 privacyIDEA reads its configuration from different locations:
 
@@ -34,6 +34,7 @@ The file should contain the following contents::
    PI_AUDIT_KEY_PUBLIC = '/home/cornelius/src/privacyidea/public.pem'
    # PI_LOGFILE = '....'
    # PI_LOGLEVEL = 20
+   # PI_INIT_CHECK_HOOK = 'your.module.function'
 
 
 .. note:: The config file is parsed as python code, so you can use variables to
@@ -46,3 +47,9 @@ you need to set the environment variable::
 
 The ``SUPERUSER_REALM`` is a list of realms, in which the users get the role
 of an administrator.
+
+``PI_INIT_CHECK_HOOK`` is a function in an external module, that will be
+called as decorator to ``token/init`` and ``token/assign``. This function
+takes the ``request`` and ``action`` (either "init" or "assing") as an
+arguments and can modify the request or raise an exception to avoid the
+request being handled.

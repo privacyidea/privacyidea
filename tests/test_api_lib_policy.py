@@ -13,7 +13,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_max_token_user,
                                            check_max_token_realm, set_realm,
                                            init_tokenlabel, init_random_pin,
-                                           encrypt_pin, check_otp_pin)
+                                           encrypt_pin, check_otp_pin,
+                                           check_external)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             no_detail_on_success,
                                             no_detail_on_fail, autoassign,
@@ -22,7 +23,7 @@ from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass)
 from privacyidea.lib.user import User
 
-from flask import Response, Request, g
+from flask import Response, Request, g, current_app
 from werkzeug.test import EnvironBuilder
 from privacyidea.lib.error import PolicyError
 from privacyidea.lib.machineresolver import save_resolver
@@ -420,9 +421,36 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # Good length and goot contents
         self.assertTrue(check_otp_pin(req))
 
-
         # finally delete policy
         delete_policy("pol1")
+
+    def test_10_check_external(self):
+        g.logged_in_user = {"username": "user1",
+                            "role": "user"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        g.policy_object = PolicyClass()
+        req.all_data = {"realm": "somerealm",
+                        "user": "cornelius",
+                        "realm": "home"}
+
+        # Check succes on no definition
+        r = check_external(req)
+        self.assertTrue(r)
+
+        # Check success with external function
+        current_app.config["PI_INIT_CHECK_HOOK"] = \
+            "prepolicy.mock_success"
+        r = check_external(req)
+        self.assertTrue(r)
+
+        # Check exception with external function
+        current_app.config["PI_INIT_CHECK_HOOK"] = \
+            "prepolicy.mock_fail"
+        self.assertRaises(Exception, check_external, req)
 
 
 class PostPolicyDecoratorTestCase(MyTestCase):
@@ -695,3 +723,4 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         tokenobject = get_tokens(serial=serial)[0]
         self.assertEqual(tokenobject.token.count, 101)
         delete_policy("pol2")
+

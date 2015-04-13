@@ -63,7 +63,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            check_max_token_user,
                                            check_max_token_realm,
                                            init_tokenlabel, init_random_pin,
-                                           encrypt_pin, check_otp_pin)
+                                           encrypt_pin, check_otp_pin,
+                                           check_external)
 from privacyidea.api.auth import (user_required, admin_required)
 from privacyidea.api.audit import audit_blueprint
 
@@ -138,6 +139,7 @@ def before_request():
 @prepolicy(init_random_pin, request)
 @prepolicy(encrypt_pin, request)
 @prepolicy(check_otp_pin, request)
+@prepolicy(check_external, request, action="init")
 @log_with(log, log_entry=False)
 def init():
     """
@@ -353,6 +355,7 @@ def list_api():
 @prepolicy(check_max_token_user, request)
 @prepolicy(check_base_action, request, action=ACTION.ASSIGN)
 @prepolicy(encrypt_pin, request)
+@prepolicy(check_external, request, action="assign")
 @log_with(log)
 def assign_api():
     """

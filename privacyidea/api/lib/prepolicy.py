@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-04-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add hook for external decorator for init and assign
 #  2015-02-06 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Create this module for enabling decorators for API calls
 #
@@ -32,7 +34,7 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.error import PolicyError
-from flask import g
+from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.token import get_tokens
@@ -447,3 +449,48 @@ def check_token_init(request=None, action=None):
     if len(action_at_all) and len(action) == 0:
         raise PolicyError(ERROR.get(role))
     return True
+
+
+def check_external(request=None, action="init"):
+    """
+    This decorator is a hook to an external check function, that is called
+    before the token/init or token/assign API.
+
+    :param request: The REST request
+    :type request: flask Request object
+    :param action: This is either "init" or "assign"
+    :type action: basestring
+    :return: either True or an Exception is raised
+    """
+    function_name = None
+    try:
+        module_func = current_app.config.get("PI_INIT_CHECK_HOOK")
+        if module_func:
+            module_name = ".".join(module_func.split(".")[:-1])
+            exec("import %s" % module_name)
+            function_name = module_func.split(".")[-1]
+    except Exception as exx:
+        log.error("Error importing external check function: %s" % exx)
+
+    # Import of function was successful
+    if function_name:
+        external_func = getattr(eval(module_name), function_name)
+        external_func(request, action)
+    return True
+
+
+def mock_success(req, action):
+    """
+    This is a mock function as an example for check_external. This function
+    returns success and the API call will go on unmodified.
+    """
+    return True
+
+
+def mock_fail(req, action):
+    """
+    This is a mock function as an example for check_external. This function
+    creates a problem situation and the token/init or token/assign will show
+    this exception accordingly.
+    """
+    raise Exception("This is an Exception in an external check function")
