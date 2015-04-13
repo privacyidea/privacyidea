@@ -96,7 +96,13 @@ builddeb:
 	cp -r deploy/debian-ubuntu/* DEBUILD/privacyidea.org/debian/
 	sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
 	################# Build
-	(cd DEBUILD/privacyidea.org; debuild --no-lintian)
+	(cd DEBUILD/privacyidea.org; debuild)
+
+builddeb-nosign:
+	make debianize
+	cp -r deploy/debian-ubuntu/* DEBUILD/privacyidea.org/debian/
+	sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
+	(cd DEBUILD/privacyidea.org; debuild -b -i -us -uc)
 
 venvdeb:
 	make debianize

@@ -10,6 +10,6 @@ dependencies:
 
 test:
   override:
-    - make builddeb
+    - make builddeb-nosign
 #    - sudo dpkg -i DEBUILD/privacyidea-apache*.deb
 #    - sudo apt-get -f install
