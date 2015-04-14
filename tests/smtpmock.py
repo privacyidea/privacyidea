@@ -34,7 +34,7 @@ except ImportError:
 import inspect
 from collections import namedtuple, Sequence, Sized
 from functools import update_wrapper
-import smtplib
+from smtplib import SMTPException
 
 
 Call = namedtuple('Call', ['request', 'response'])
@@ -100,8 +100,9 @@ class SmtpMock(object):
         self._calls.reset()
 
     def setdata(self, response={}, authenticated=True,
-                config=None):
+                config=None, exception=False):
         config = config or {}
+        self.exception = exception
         self._request_data = {
             'response': response,
             'authenticated': authenticated,
@@ -152,6 +153,11 @@ class SmtpMock(object):
     def _on_quit(self, SMTP_instance):
         return None
 
+    def _on_starttls(self, SMTP_instance):
+        if self.exception:
+            raise SMTPException("MOCK TLS ERROR")
+        return None
+
     def start(self):
         import mock
 
@@ -185,9 +191,26 @@ class SmtpMock(object):
         def unbound_on_quit(SMTP, *a, **kwargs):
             return self._on_quit(SMTP, *a, **kwargs)
 
+        def unbound_on_starttls(SMTP, *a, **kwargs):
+            return self._on_starttls(SMTP, *a, **kwargs)
+
         self._patcher5 = mock.patch('smtplib.SMTP.quit',
                                     unbound_on_quit)
         self._patcher5.start()
+
+        def unbound_on_empty(SMTP, *a, **kwargs):
+            return None
+
+        self._patcher6 = mock.patch('smtplib.SMTP.ehlo',
+                                    unbound_on_empty)
+        self._patcher6.start()
+        self._patcher7 = mock.patch('smtplib.SMTP.close',
+                                    unbound_on_empty)
+        self._patcher7.start()
+        self._patcher8 = mock.patch('smtplib.SMTP.starttls',
+                                    unbound_on_starttls)
+        self._patcher8.start()
+
 
     def stop(self):
         self._patcher.stop()
@@ -195,6 +218,9 @@ class SmtpMock(object):
         self._patcher3.stop()
         self._patcher4.stop()
         self._patcher5.stop()
+        self._patcher6.stop()
+        self._patcher7.stop()
+        self._patcher8.stop()
 
 
 # expose default mock namespace

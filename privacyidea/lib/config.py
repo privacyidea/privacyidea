@@ -406,7 +406,7 @@ def get_token_list():
     module_list.add("tokens.yubikeytoken")
     module_list.add("tokens.radiustoken")
     module_list.add("tokens.smstoken")
-    #module_list.add(".tokens.emailtoken.")
+    module_list.add("tokens.emailtoken.")
     #module_list.add(".tokens.ocra2token")
 
     #module_list.add(".tokens.tagespassworttoken")
