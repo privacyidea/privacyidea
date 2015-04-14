@@ -35,7 +35,8 @@ from getpass import getpass
 from privacyidea.lib.security.default import DefaultSecurityModule
 from privacyidea.lib.auth import (create_db_admin, list_db_admin,
                                   delete_db_admin)
-from privacyidea.lib.policy import (delete_policy, enable_policy, PolicyClass)
+from privacyidea.lib.policy import (delete_policy, enable_policy,
+                                    PolicyClass, set_policy)
 from privacyidea.app import create_app
 from flask.ext.script import Manager
 from privacyidea.app import db
@@ -388,6 +389,13 @@ def delete(name):
     r = delete_policy(name)
     print r
 
+@policy_manager.command
+def create(name, scope, action):
+    """
+    create a new policy
+    """
+    r = set_policy(name, scope, action)
+    return r
 
 if __name__ == '__main__':
     manager.run()
