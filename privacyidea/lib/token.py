@@ -1776,16 +1776,15 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
 
     elif len(challenge_response_token_list) > 0:
         # A challenge token was found.
-        tokenobject = challenge_response_token_list[0]
-        if tokenobject.check_otp(passw) >= 0:
-            # OTP matches
-            res = True
-            tokenobject.inc_count_auth()
-            tokenobject.inc_count_auth_success()
-            reply_dict["message"] = "Found matching challenge"
-            tokenobject.challenge_janitor()
-        else:
-            tokenobject.inc_count_auth()
+        for tokenobject in challenge_response_token_list:
+            if tokenobject.check_challenge_response(passw=passw,
+                                                    options=options) >= 0:
+                # OTP matches
+                res = True
+                tokenobject.inc_count_auth()
+                tokenobject.inc_count_auth_success()
+                reply_dict["message"] = "Found matching challenge"
+                tokenobject.challenge_janitor()
 
     elif len(challenge_request_token_list) > 0:
         # A challenge token was found.
@@ -1793,12 +1792,12 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
             # One token that can create challenge
             tokenobject = challenge_request_token_list[0]
             r_chal, message, transaction_id, \
-            attributes = tokenobject.create_challenge()
+            attributes = tokenobject.create_challenge(options=options)
             # Add the reply to the response
+            reply_dict = {"message": message}
             if r_chal:
-                reply_dict = {"message": message,
-                              "transaction_id": transaction_id,
-                              "attributes": attributes}
+                reply_dict["transaction_id"] = transaction_id
+                reply_dict["attributes"] = attributes
         else:
             reply_dict["message"] = "Multiple tokens to create a challenge " \
                                     "found!"

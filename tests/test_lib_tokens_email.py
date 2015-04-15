@@ -355,14 +355,14 @@ class EmailTokenTestCase(MyTestCase):
         g.policy_object = P
         options = {"g": g}
         smtpmock.setdata(response={"recp@example.com": (200, "OK")})
-        transactionid = "123456098712"
+        transactionid = "123456098713"
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = EmailTokenClass(db_token)
         c = token.create_challenge(transactionid, options=options)
         self.assertTrue(c[0], c)
-        otp_message = c[1]
+        display_message = c[1]
         self.assertTrue(c[3].get("state"), transactionid)
-        self.assertEqual(otp_message, "Your 287922")
+        self.assertEqual(display_message, "Enter the OTP from the Email:")
 
         # Test AUTOEMAIL
         p = set_policy(name="autoemail",

@@ -30,12 +30,26 @@
 __doc__ = """This is the implementation of an Email-Token, that sends OTP
 values via SMTP.
 
+The following config entries are used:
+
+ * email.validtime
+ * email.mailserver
+ * email.port
+ * email.username
+ * email.password
+ * email.mailfrom
+ * email.subject
+ * email.tls
+
+policy: action: emailtext
+
 The code is tested in tests/test_lib_tokens_email
 """
 
 import logging
 import datetime
 import smtplib
+import traceback
 from email.mime.text import MIMEText
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.config import get_from_config
@@ -43,12 +57,14 @@ from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.log import log_with
 from gettext import gettext as _
+from privacyidea.models import Challenge
 
 log = logging.getLogger(__name__)
 
 
 class EMAILACTION():
     EMAILTEXT = "emailtext"
+    EMAILSUBJECT = "emailsubject"
     EMAILAUTO = "emailautosend"
 
 
@@ -110,6 +126,11 @@ class EmailTokenClass(HotpTokenClass):
                        'desc': _('The text that will be send via EMail for'
                                  ' an EMail token. Use <otp> and <serial> '
                                  'as parameters.')},
+                   EMAILACTION.EMAILSUBJECT: {
+                       'type': 'str',
+                       'desc': _('The subject of the EMail for'
+                                 ' an EMail token. Use <otp> and <serial> '
+                                 'as parameters.')},
                    EMAILACTION.EMAILAUTO: {
                        'type': 'bool',
                        'desc': _('If set, a new EMail OTP will be sent '
@@ -153,7 +174,7 @@ class EmailTokenClass(HotpTokenClass):
         return
 
     @log_with(log)
-    def create_challenge(self, transactionid, options=None):
+    def create_challenge(self, transactionid=None, options=None):
         """
         create a challenge, which is submitted to the user
 
@@ -168,7 +189,7 @@ class EmailTokenClass(HotpTokenClass):
         """
         success = False
         options = options or {}
-        return_message = ""
+        return_message = "Enter the OTP from the Email:"
         attributes = {'state': transactionid}
 
         if self.is_active() is True:
@@ -179,20 +200,32 @@ class EmailTokenClass(HotpTokenClass):
             # Gateway error, since checkPIN is successful. A bail
             # out would cancel the checking of the other tokens
             try:
-                message = self._get_email_text(options)
-                success, return_message = self._send_email(message=message)
+                message_template = self._get_email_text_or_subject(options)
+                subject_template = self._get_email_text_or_subject(options,
+                                                                   EMAILACTION.EMAILSUBJECT,
+                                                                   "Your OTP")
+                success, sent_message = self._send_email(
+                    message=message_template,
+                    subject=subject_template)
+                validity = int(get_from_config("email.validtime", 120))
+
+                # Create the challenge in the database
+                db_challenge = Challenge(self.token.serial,
+                                         transaction_id=transactionid,
+                                         challenge=options.get("challenge"),
+                                         session=options.get("session"),
+                                         validitytime=validity)
+                db_challenge.save()
+                transactionid = transactionid or db_challenge.transaction_id
+
             except Exception as e:
                 info = ("The PIN was correct, but the "
                         "EMail could not be sent: %r" % e)
                 log.warning(info)
+                log.warning(traceback.format_exc(e))
                 return_message = info
 
-        timeout = int(get_from_config("email.validtime", 120))
-        expiry_date = datetime.datetime.now() + \
-                                    datetime.timedelta(seconds=timeout)
-        data = {'valid_until': "%s" % expiry_date}
-
-        return success, return_message, data, attributes
+        return success, return_message, transactionid, attributes
 
     @log_with(log)
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
@@ -210,23 +243,32 @@ class EmailTokenClass(HotpTokenClass):
         ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
         if ret >= 0:
             if self._get_auto_email(options):
-                message = self._get_email_text(options)
+                message = self._get_email_text_or_subject(options)
+                subject = self._get_email_text_or_subject(options,
+                                                          action=EMAILACTION.EMAILSUBJECT,
+                                                          default="Your OTP")
                 self.inc_otp_counter(ret, reset=False)
-                success, message = self._send_email(message=message)
+                success, message = self._send_email(message=message,
+                                                    subject=subject)
                 log.debug("AutoEmail: send new SMS: %s" % success)
                 log.debug("AutoEmail: %s" % message)
         return ret
 
-    def _get_email_text(self, options):
+    def _get_email_text_or_subject(self, options,
+                                   action=EMAILACTION.EMAILTEXT,
+                                   default="<otp>"):
         """
-        This returns the EMAILTEXT from the policy "emailtext"
+        This returns the EMAILTEXT or EMAILSUBJECT from the policy
+        "emailtext" or "emailsubject
 
         :param options: contains user and g object.
-        :optins type: dict
+        :type options: dict
+        :param action: The action - either emailtext or emailsubject
+        :param default: If no policy can be found, this is the default text
         :return: Message template
         :rtype: basestring
         """
-        message = "<otp>"
+        message = default
         g = options.get("g")
         username = None
         realm = None
@@ -238,12 +280,13 @@ class EmailTokenClass(HotpTokenClass):
             clientip = options.get("clientip")
             policy_object = g.policy_object
             messages = policy_object.\
-                get_action_values(action=EMAILACTION.EMAILTEXT,
+                get_action_values(action=action,
                                   scope=SCOPE.AUTH,
                                   realm=realm,
                                   user=username,
                                   client=clientip,
-                                  unique=True)
+                                  unique=True,
+                                  allow_white_space_in_action=True)
 
             if len(messages) == 1:
                 message = messages[0]
@@ -281,7 +324,7 @@ class EmailTokenClass(HotpTokenClass):
         return autosms
 
     @log_with(log)
-    def _send_email(self, message="<otp>"):
+    def _send_email(self, message="<otp>", subject="Your OTP"):
         """
         send email
 
@@ -301,15 +344,20 @@ class EmailTokenClass(HotpTokenClass):
         message = message.replace("<otp>", otp)
         message = message.replace("<serial>", serial)
 
+        subject = subject.replace("<otp>", otp)
+        subject = subject.replace("<serial>", serial)
+
         log.debug("sending Email to %s " % recipient)
 
-        mailserver = get_from_config("email.mailsever", "localhost")
+        mailserver = get_from_config("email.mailserver", "localhost")
         port = int(get_from_config("email.port", 25))
         username = get_from_config("email.username")
         password = get_from_config("email.password")
         mail_from = get_from_config("email.mailfrom", "privacyidea@localhost")
-        subject = get_from_config("email.subject", "Your OTP value")
-        body = MIMEText("subject: %s\n\n%s" % (subject, message))
+        body = """From: %s
+subject: %s
+
+%s""" % (mail_from, subject, message)
 
         # Upper layer will catch exceptions
         mail = smtplib.SMTP(mailserver, port)
@@ -320,8 +368,8 @@ class EmailTokenClass(HotpTokenClass):
         # Authenticate, if a username is given.
         if username:
             mail.login(username, password)
-        mail.sendmail(mail_from, recipient, body)
-        mail.close()
+        r = mail.sendmail(mail_from, recipient, body)
+        mail.quit()
         ret = True
 
         return ret, message

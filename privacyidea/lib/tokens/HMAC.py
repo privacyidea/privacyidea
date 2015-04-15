@@ -130,7 +130,7 @@ class HmacOtp():
             log.debug("calculating counter %r: %r %r"
                       % (c, anOtpVal, otpval))
 
-            if (unicode(otpval) == unicode(anOtpVal)):
+            if unicode(otpval) == unicode(anOtpVal):
                 res = c
                 break
         # return -1 or the counter

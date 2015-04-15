@@ -1,0 +1,66 @@
+<h2>EMail Token settings</h2>
+<p class="help-block">
+    The EMail token is a challenge response token that sends the OTP value to
+    the given email address, when the correct OTP PIN was presented by the user.
+</p>
+
+<div class="form-group">
+    <label for="mailServer">Mail Server</label>
+    <input type="text"
+           required
+           class="form-control"
+           placeholder="your.mailserver.net"
+           ng-model="form['email.mailserver']" name="mailserver">
+</div>
+
+<div class="form-group">
+    <label for="mailport">Port</label>
+    <input type="text"
+           class="form-control"
+           ng-model="form['email.port']" name="mailport">
+</div>
+
+<div class="form-group">
+    <label for="mailuser">Mail User</label>
+    <input type="text"
+           class="form-control"
+           placeholder="Username if required"
+           ng-model="form['email.username']" name="mailuser">
+</div>
+
+<div class="form-group">
+    <label for="mailpassword">Mail User Password</label>
+    <input type="password"
+           class="form-control"
+           placeholder="topSecret"
+           ng-model="form['email.password']" name="mailpassword">
+</div>
+
+<div class="form-group">
+    <label for="mailfrom">Mail Sender Address</label>
+    <input type="email"
+           required
+           class="form-control"
+           placeholder="privacyidea@localhost"
+           ng-model="form['email.mailfrom']" name="mailfrom">
+</div>
+
+<div class="form-group">
+    <label for="mailvalid">OTP validity time</label>
+    <p class="help-block">
+        The time in seconds for which the sent OTP value is valid for
+        authentication.
+    </p>
+    <input type="text"
+           class="form-control"
+           ng-model="form['email.validtime']" name="mailvalid">
+</div>
+
+<div class="form-group">
+    <input type="checkbox"
+           ng-model="form['email.tls']"
+           ng-checked="form['email.tls'] == '1'"
+           name="mailtls"
+           id="mailtls">
+    <label for="mailtls">Use TLS</label>
+</div>

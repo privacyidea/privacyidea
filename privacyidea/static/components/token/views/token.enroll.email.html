@@ -1,0 +1,20 @@
+<p class="help-block">
+    The Email Token sends the OTP value to the users email address.
+</p>
+
+<h4>Token data</h4>
+
+<div class="form-group">
+    <label for="phone">Email Address</label>
+    <!-- TODO: preset the users email address, if a user is selected. -->
+    <input type="email"
+           autofocus
+           class="form-control"
+           placeholder="Users email address..."
+           ng-model="form.email" name="email" />
+    <label for="description">Description</label>
+    <input type="text" class="form-control"
+            placeholder="Some nice words..."
+            ng-model="form.description" />
+</div>
+

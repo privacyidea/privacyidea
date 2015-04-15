@@ -4,17 +4,30 @@
 SMS OTP Token
 .............
 
-.. index:: SMS token
+.. index:: SMS Token
 
 The SMS OTP token creates a OTP value and sends this OTP value to the mobile
-phone of the user. The SMS can be triggered by an API call or by authenticating
+phone of the user. The SMS can be triggered by authenticating
 with only the OTP PIN:
 
-In the first step the user will enter his OTP PIN an the sending of the SMS is
+First step
+~~~~~~~~~~
+
+In the first step the user will enter his OTP PIN and the sending of the SMS is
 triggered. The user is denied the access.
+
+Second step
+~~~~~~~~~~~
 
 In the second step the user authenticates with the OTP PIN and the OTP value
 he received via SMS. The user is granted access.
+
+.. _index: transaction_id
+
+Alternatively the user can authenticate with the *transaction_id* that was
+sent to him in the response during the first step and only the OTP value. The
+*transaction_id* assures that the user already presented the first factor (OTP
+PIN) successfully.
 
 .. index:: Sipgate, Clickatel, SMS Gateway
 

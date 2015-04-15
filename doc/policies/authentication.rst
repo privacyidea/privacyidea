@@ -111,10 +111,7 @@ This is the text that is sent via SMS to the user trying to
 authenticate with an SMS token.
 You can use the tags *<otp>* and *<serial>*.
 
-.. note:: You need to put the text into quotes, otherwise it will be split
-and interpreted as list of words.
-
-.. example:: 'This is your OTP value <otp>.'
+Default: *<otp>*
 
 smsautosend
 ~~~~~~~~~~~
@@ -127,6 +124,41 @@ A new OTP value will be sent via SMS if the user authenticated
 successfully with his SMS token. Thus the user does not
 have to trigger a new SMS when he wants to login again.
 
+
+emailtext
+~~~~~~~~~
+
+.. index:: EMail policy, Email text
+
+type: string
+
+This is the text that is sent via Email to be used with Email Token. This
+text should contain the OTP value.
+You can use the tags *<otp>* and *<serial>*.
+
+Default: *<otp>*
+
+emailsubject
+~~~~~~~~~~~~
+
+.. index:: Email policy, Email subject
+
+type: string
+
+This is the subject of the Email sent by the Email Token.
+You can use the tags *<otp>* and *<serial>*.
+
+Default: Your OTP
+
+emailautosend
+~~~~~~~~~~~~~
+
+.. index:: Email policy
+
+type: bool
+
+If set, a new OTP Email will be sent, when successfully authenticated with an
+Email Token.
 
 qrtanurl
 ~~~~~~~~

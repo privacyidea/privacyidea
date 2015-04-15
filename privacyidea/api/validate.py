@@ -125,6 +125,9 @@ def check():
     :param realm: The realm of the user, who tries to authenticate. If the
         realm is omitted, the user is looked up in the default realm.
     :param pass: The password, that consists of the OTP PIN and the OTP value.
+    :param transaction_id: The transaction ID for a response to a challenge
+        request
+    :param state: The state ID for a response to a challenge request
 
     :return: a json result with a boolean "result": true
 
@@ -155,6 +158,13 @@ def check():
     password = getParam(request.all_data, "pass", required)
     options = {"g": g,
                "clientip": request.remote_addr}
+    transaction_id = getParam(request.all_data, "transaction_id")
+    state = getParam(request.all_data, "state")
+    if transaction_id:
+        options["transaction_id"] = transaction_id
+    if state:
+        options["state"] = state
+
     if serial:
         result, details = check_serial_pass(serial, password, options=options)
     else:

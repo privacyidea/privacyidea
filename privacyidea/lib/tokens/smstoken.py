@@ -191,7 +191,7 @@ class SmsTokenClass(HotpTokenClass):
         success = False
         sms = ""
         options = options or {}
-        return_message = ""
+        return_message = "Enter the OTP from the SMS:"
         attributes = {'state': transactionid}
 
         if self.is_active() is True:
@@ -202,8 +202,9 @@ class SmsTokenClass(HotpTokenClass):
             # Gateway error, since checkPIN is successful. A bail
             # out would cancel the checking of the other tokens
             try:
-                message = self._get_sms_text(options)
-                success, return_message = self._send_sms(message=message)
+                message_template = self._get_sms_text(options)
+                success, sent_message = self._send_sms(
+                    message=message_template)
             except Exception as e:
                 info = ("The PIN was correct, but the "
                         "SMS could not be sent: %r" % e)
@@ -355,12 +356,9 @@ class SmsTokenClass(HotpTokenClass):
                                   scope=SCOPE.AUTH,
                                   realm=realm,
                                   user=username,
-                                  client=clientip)
-            messages = list(set(messages))
-            if len(messages) > 1:  # pragma: no-cover
-                # Conflicting texts
-                raise Exception("There are conflicting messages in the "
-                                "smstext!")
+                                  client=clientip,
+                                  unique=True,
+                                  allow_white_space_in_action=True)
 
             if len(messages) == 1:
                 message = messages[0]

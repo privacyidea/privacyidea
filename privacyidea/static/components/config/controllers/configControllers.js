@@ -309,6 +309,8 @@ myApp.controller("tokenConfigController", function ($scope, $location,
             $scope.form['radius.dictfile'] = "/etc/privacyidea/dictionary"
             // SMS
             $scope.form['sms.Provider'] = $scope.form['sms.Provider'] || $scope.defaultSMSProvider;
+            // Email
+            $scope.form['email.password.type'] = "password";
         });
     };
 
@@ -320,7 +322,9 @@ myApp.controller("tokenConfigController", function ($scope, $location,
                 save_params[key] = value;
         });
         ConfigFactory.saveSystemConfig(save_params, function (data) {
-            // TODO: what should we do?
+            if (data.result.status === true) {
+                addInfo("System config saved.")
+            }
         });
     };
 

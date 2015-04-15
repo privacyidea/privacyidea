@@ -444,9 +444,9 @@ class SMSTokenTestCase(MyTestCase):
         token = SmsTokenClass(db_token)
         c = token.create_challenge(transactionid, options=options)
         self.assertTrue(c[0], c)
-        otp_message = c[1]
+        display_message = c[1]
         self.assertTrue(c[3].get("state"), transactionid)
-        self.assertEqual(otp_message, "Your 287922")
+        self.assertEqual(display_message, "Enter the OTP from the SMS:")
 
         # check for the challenges response
         # r = token.check_challenge_response(passw="287922")

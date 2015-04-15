@@ -298,7 +298,8 @@ class PolicyClass(object):
         return reduced_policies
 
     def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
-                          resolver=None, user=None, client=None, unique=False):
+                          resolver=None, user=None, client=None, unique=False,
+                          allow_white_space_in_action=False):
         """
         Get the defined action values for a certain action like
             scope: authorization
@@ -310,7 +311,11 @@ class PolicyClass(object):
         would return a list of allowed serials
 
         :param unique: if set, the function will raise an exception if more
-        than one value is returned
+            than one value is returned
+        :param allow_white_space_in_action: Some policies like emailtext
+            would allow entering text with whitespaces. These whitespaces
+            must not be used to seperate action values!
+        :type allow_white_space_in_action: bool
         :return: A list of the allowed tokentypes
         :rtype: list
         """
@@ -331,6 +336,8 @@ class PolicyClass(object):
             """
             if action_value.startswith("'") and action_value.endswith("'"):
                 action_values.append(action_dict.get(action)[1:-1])
+            elif allow_white_space_in_action:
+                action_values.append(action_dict.get(action))
             else:
                 action_values.extend(action_dict.get(action, "").split())
 

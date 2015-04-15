@@ -33,6 +33,10 @@
                     <a ui-sref="config.tokens({tokentype: 'sms'})">SMS</a>
                 </li>
                 <li role="presentation"
+                    ng-class="{ active: tokentype == 'email'}">
+                    <a ui-sref="config.tokens({tokentype: 'email'})">EMail</a>
+                </li>
+                <li role="presentation"
                     ng-class="{ active: tokentype == 'yubico'}">
                     <a ui-sref="config.tokens({tokentype: 'yubico'})">Yubico</a>
                 </li>

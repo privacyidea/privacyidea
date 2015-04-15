@@ -57,7 +57,6 @@ class ValidateAPITestCase(MyTestCase):
     def test_00_create_realms(self):
         self.setUp_user_realms()
 
-
         # create a  token and assign it to the user
         db_token = Token(self.serials[0], tokentype="hotp")
         db_token.update_otpkey(self.otpkey)
@@ -356,3 +355,121 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(value.get("phone"),  "+491234566")
             self.assertEqual(value.get("realm"),  "realm1")
             self.assertEqual(value.get("username"),  "cornelius")
+
+    def test_11_challenge_response_hotp(self):
+        serial = "CHALRESP1"
+        pin = "chalresp1"
+        # create a token and assign to the user
+        db_token = Token(serial, tokentype="hotp")
+        db_token.update_otpkey(self.otpkey)
+        db_token.save()
+        token = HotpTokenClass(db_token)
+        token.set_user(User("cornelius", self.realm1))
+        token.set_pin(pin)
+        # create the challenge by authenticating with the OTP PIN
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertFalse(result.get("value"))
+            self.assertEqual(detail.get("message"), "please enter otp: ")
+            transaction_id = detail.get("transaction_id")
+
+        # send the OTP value
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "transaction_id":
+                                                     transaction_id,
+                                                 "pass": "359152"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertTrue(result.get("value"))
+
+        # delete the token
+        remove_token(serial=serial)
+
+    def test_12_challenge_response_sms(self):
+        serial = "CHALRESP2"
+        pin = "chalresp2"
+        # create a token and assign to the user
+        db_token = Token(serial, tokentype="sms")
+        db_token.update_otpkey(self.otpkey)
+        db_token.save()
+        token = HotpTokenClass(db_token)
+        token.set_user(User("cornelius", self.realm1))
+        token.set_pin(pin)
+        # create the challenge by authenticating with the OTP PIN
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertFalse(result.get("value"))
+            self.assertEqual(detail.get("message"), "please enter otp: ")
+            transaction_id = detail.get("transaction_id")
+
+        # send the OTP value
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "transaction_id":
+                                                     transaction_id,
+                                                 "pass": "359152"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertTrue(result.get("value"))
+
+        # delete the token
+        remove_token(serial=serial)
+
+
+    def test_13_challenge_response_email(self):
+        serial = "CHALRESP3"
+        pin = "chalresp3"
+        # create a token and assign to the user
+        db_token = Token(serial, tokentype="email")
+        db_token.update_otpkey(self.otpkey)
+        db_token.save()
+        token = HotpTokenClass(db_token)
+        token.set_user(User("cornelius", self.realm1))
+        token.set_pin(pin)
+        # create the challenge by authenticating with the OTP PIN
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertFalse(result.get("value"))
+            self.assertEqual(detail.get("message"), "please enter otp: ")
+            transaction_id = detail.get("transaction_id")
+
+        # send the OTP value
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "transaction_id":
+                                                     transaction_id,
+                                                 "pass": "359152"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertTrue(result.get("value"))
+
+        # delete the token
+        remove_token(serial=serial)

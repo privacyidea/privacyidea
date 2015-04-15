@@ -14,3 +14,4 @@ Each token type can provide its own configuration dialog.
 
 .. toctree::
    tokenconfig/sms
+   tokenconfig/email
