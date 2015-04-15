@@ -8,7 +8,8 @@ from .base import MyTestCase
 from privacyidea.lib.policy import (set_policy, delete_policy,
                                     import_policies, export_policies,
                                     get_static_policy_definitions,
-                                    PolicyClass, SCOPE, enable_policy)
+                                    PolicyClass, SCOPE, enable_policy,
+                                    PolicyError)
 
 
 def _check_policy_name(polname, policies):
@@ -324,5 +325,18 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue("OATH" in ttypes)
         self.assertTrue("mOTP" in ttypes)
         self.assertFalse("TOTP" in ttypes)
+
+    def test_14_fail_unique_policies(self):
+        # create policies with two different texts
+        set_policy(name="email1", scope=SCOPE.AUTH, action="emailtext=text 1")
+        set_policy(name="email2", scope=SCOPE.AUTH, action="emailtext=text 2")
+
+        # As there are two policies with different action values,
+        # a PolicyError is raised.
+        P = PolicyClass()
+        self.assertRaises(PolicyError, P.get_action_values,
+                          action="emailtext", scope=SCOPE.AUTH,
+                          unique=True,
+                          allow_white_space_in_action=True)
 
 
