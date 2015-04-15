@@ -59,6 +59,14 @@ angular.module('privacyideaApp.configStates', ['ui.router']).config(
                     url: "/ldap/{resolvername:.*}",
                     templateUrl: configpath + "config.resolvers.ldap.html"
                 })
+                .state('config.resolvers.addscimresolver', {
+                    url: "/scim",
+                    templateUrl: configpath + "config.resolvers.scim.html"
+                })
+                .state('config.resolvers.editscimresolver', {
+                    url: "/scim/{resolvername:.*}",
+                    templateUrl: configpath + "config.resolvers.scim.html"
+                })
                 .state('config.resolvers.addsqlresolver', {
                     url: "/ldap",
                     templateUrl: configpath + "config.resolvers.sql.html"

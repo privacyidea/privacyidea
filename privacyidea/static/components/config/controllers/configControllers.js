@@ -346,7 +346,7 @@ myApp.controller("configController", function ($scope, $location,
     }
 
     // TODO: This information needs to be fetched from the server
-    $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver'];
+    $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver', 'scimresolver'];
     // TODO: This information needs to be fetched from the server
     $scope.availableMachineResolverTypes = ['hosts', 'ldap'];
 
@@ -621,6 +621,45 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
     };
 
     $scope.setLDAPResolver = function () {
+        ConfigFactory.setResolver($scope.resolvername, $scope.params, function (data) {
+            $scope.set_result = data.result.value;
+            $scope.getResolvers();
+            $state.go("config.resolvers.list");
+        });
+    };
+
+    $scope.testResolver = function () {
+        ConfigFactory.testResolver($scope.params, function (data) {
+            $scope.result = {
+                result: data.result.value,
+                description: data.detail.description
+            };
+            $scope.showResult = true;
+        });
+    }
+
+});
+
+myApp.controller("ScimResolverController", function ($scope, ConfigFactory, $state, $stateParams) {
+    /*
+     Authserver, Resourceserver, Client, Secret
+     */
+    $scope.params = {type: "scimresolver"};
+    $scope.result = {};
+    $scope.resolvername = $stateParams.resolvername;
+
+    if ($scope.resolvername) {
+        /* If we have a resolvername, we do an Edit
+         and we need to fill all the $scope.params */
+        ConfigFactory.getResolver($scope.resolvername, function (data) {
+            var resolver = data.result.value[$scope.resolvername];
+            console.log(resolver);
+            $scope.params = resolver.data;
+            $scope.params.type = 'scimresolver';
+        });
+    }
+
+    $scope.setSCIMResolver = function () {
         ConfigFactory.setResolver($scope.resolvername, $scope.params, function (data) {
             $scope.set_result = data.result.value;
             $scope.getResolvers();
