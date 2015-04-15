@@ -459,10 +459,11 @@ class ValidateAPITestCase(MyTestCase):
             transaction_id = detail.get("transaction_id")
 
         # send the OTP value
+        # Test with parameter state.
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
-                                                 "transaction_id":
+                                                 "state":
                                                      transaction_id,
                                                  "pass": "359152"}):
             res = self.app.full_dispatch_request()
