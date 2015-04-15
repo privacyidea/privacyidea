@@ -341,22 +341,20 @@ class IdResolver (UserIdResolver):
         :param config: The configuration from the Config Table
         :type config: dict
 
-        The information which config entries we need to load is taken from
-            manage.js: function save_ldap_config
-            
-                    '#ldap_uri': 'LDAPURI',
-                    '#ldap_basedn': 'LDAPBASE',
-                    '#ldap_binddn': 'BINDDN',
-                    '#ldap_password': 'BINDPW',
-                    '#ldap_timeout': 'TIMEOUT',
-                    '#ldap_sizelimit': 'SIZELIMIT',
-                    '#ldap_loginattr': 'LOGINNAMEATTRIBUTE',
-                    '#ldap_searchfilter': 'LDAPSEARCHFILTER',
-                    '#ldap_userfilter': 'LDAPFILTER',
-                    '#ldap_mapping': 'USERINFO',
-                    '#ldap_uidtype': 'UIDTYPE',
-                    '#ldap_noreferrals' : 'NOREFERRALS',
-                    '#ldap_certificate': 'CACERTIFICATE',
+
+        '#ldap_uri': 'LDAPURI',
+        '#ldap_basedn': 'LDAPBASE',
+        '#ldap_binddn': 'BINDDN',
+        '#ldap_password': 'BINDPW',
+        '#ldap_timeout': 'TIMEOUT',
+        '#ldap_sizelimit': 'SIZELIMIT',
+        '#ldap_loginattr': 'LOGINNAMEATTRIBUTE',
+        '#ldap_searchfilter': 'LDAPSEARCHFILTER',
+        '#ldap_userfilter': 'LDAPFILTER',
+        '#ldap_mapping': 'USERINFO',
+        '#ldap_uidtype': 'UIDTYPE',
+        '#ldap_noreferrals' : 'NOREFERRALS',
+        '#ldap_certificate': 'CACERTIFICATE',
                     
         """
         self.uri = config.get("LDAPURI")

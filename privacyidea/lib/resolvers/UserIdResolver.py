@@ -161,7 +161,7 @@ class UserIdResolver(object):
         """
         return {}
 
-    def getUserList(self, searchDict={}):
+    def getUserList(self, searchDict=None):
         """
         This function finds the user objects,
         that have the term 'value' in the user object field 'key'
@@ -175,6 +175,7 @@ class UserIdResolver(object):
                  user object) or an empty string if no object is found.
         :rtype: list of dicts
         """
+        searchDict = searchDict or {}
         return [{}]
 
     def getResolverId(self):

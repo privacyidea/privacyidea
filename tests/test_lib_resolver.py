@@ -10,8 +10,10 @@ The lib.resolver.py only depends on the database model.
 PWFILE = "tests/testdata/passwords"
 from .base import MyTestCase
 import ldap3mock
+import responses
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
+from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
 from privacyidea.lib.resolvers.SQLIdResolver import PasswordHash
 
 from privacyidea.lib.resolver import (save_resolver,
@@ -171,6 +173,210 @@ class SQLResolverTestCase(MyTestCase):
         result = y.testconnection(self.parameters)
         self.assertTrue(result[0] == -1, result)
         self.assertTrue("failed to retrieve" in result[1], result)
+
+
+class SCIMResolverTestCase(MyTestCase):
+    """
+    Test the SCIM Resolver
+    """
+    CLIENT = "puckel"
+    SECRET = "d81c31e4-9f65-4805-b5ba-6edf0761f954"
+    AUTHSERVER = "http://localhost:8080/osiam-auth-server"
+    RESOURCESERVER = "http://localhost:8080/osiam-resource-server"
+    TOKEN_URL = 'http://localhost:8080/osiam-auth-server/oauth/token'
+    USER_URL = 'http://localhost:8080/osiam-resource-server/Users'
+
+    BODY_ACCESSTOKEN = """{"access_token": "MOCKTOKEN"}"""
+    # taken from
+    # http://www.simplecloud.info/specs/draft-scim-api-01.html#get-resource
+    BODY_USERS = """{
+  "totalResults":2,
+  "schemas":["urn:scim:schemas:core:1.0"],
+  "Resources":[
+    {
+      "userName":"bjensen"
+    },
+    {
+      "userName":"jsmith"
+    }
+  ]
+}"""
+
+    BODY_SINGLE_USER = """{"schemas":["urn:scim:schemas:core:1.0"],
+"id":"2819c223-7f76-453a-919d-413861904646",
+"externalId":"bjensen",
+"meta":{
+    "created":"2011-08-01T18:29:49.793Z",
+    "lastModified":"2011-08-01T18:29:49.793Z",
+    "location":"https://example.com/v1/Users/2819c223-7f76-453a-919d-413861904646",
+    "version":"Wf250dd84f0671c3"
+},
+"name":{
+    "formatted":"Ms. Barbara J Jensen III",
+    "familyName":"Jensen",
+    "givenName":"Barbara"
+},
+"userName":"bjensen",
+"phoneNumbers":[
+    {
+      "value":"555-555-8377",
+      "type":"work"
+    }
+  ],
+"emails":[
+    {
+      "value":"bjensen@example.com",
+      "type":"work"
+    }
+  ]
+}"""
+
+    @responses.activate
+    def test_00_testconnection(self):
+        # add get access token
+        responses.add(responses.GET, self.TOKEN_URL,
+                      status=200, content_type='application/json',
+                      body=self.BODY_ACCESSTOKEN)
+
+        # Failed to retrieve users
+        success, desc, = pretestresolver("scimresolver",
+                                         {"Authserver": self.AUTHSERVER,
+                                          "Resourceserver": self.RESOURCESERVER,
+                                          "Client": self.CLIENT,
+                                          "Secret": self.SECRET})
+        self.assertFalse(success)
+        self.assertTrue("failed to retrieve users" in desc)
+
+        # Successful user retrieve
+        responses.add(responses.GET, self.USER_URL,
+                      status=200, content_type='application/json',
+                      body=self.BODY_USERS)
+        success, desc, = pretestresolver("scimresolver",
+                                         {"Authserver": self.AUTHSERVER,
+                                          "Resourceserver": self.RESOURCESERVER,
+                                          "Client": self.CLIENT,
+                                          "Secret": self.SECRET})
+        self.assertTrue(success)
+        self.assertEqual(desc, "Found 2 users")
+
+    @responses.activate
+    def test_01_failed_to_get_accesstoken(self):
+        responses.add(responses.GET, self.TOKEN_URL,
+                      status=402, content_type='application/json',
+                      body=self.BODY_ACCESSTOKEN)
+        # Failed to retrieve access token
+        self.assertRaises(Exception, SCIMResolver.get_access_token,
+                          server=self.AUTHSERVER, client=self.CLIENT,
+                          secret=self.SECRET)
+
+    @responses.activate
+    def test_02_load_config(self):
+        responses.add(responses.GET, self.TOKEN_URL, status=200,
+                      content_type='application/json',
+                      body=self.BODY_ACCESSTOKEN)
+        y = SCIMResolver()
+        y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver':
+            self.RESOURCESERVER, 'Client': self.CLIENT, 'Secret':
+            self.SECRET, 'Mapping': "{}"})
+
+        rid = y.getResolverId()
+        self.assertEqual(rid, self.AUTHSERVER)
+
+        r = y.getResolverClassDescriptor()
+        self.assertTrue("scimresolver" in r)
+        r = y.getResolverDescriptor()
+        self.assertTrue("scimresolver" in r)
+        r = y.getResolverType()
+        self.assertEqual("scimresolver", r)
+
+    @responses.activate
+    def test_03_checkpass(self):
+        responses.add(responses.GET, self.TOKEN_URL, status=200,
+                      content_type='application/json',
+                      body=self.BODY_ACCESSTOKEN)
+        y = SCIMResolver()
+        y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver':
+            self.RESOURCESERVER, 'Client': self.CLIENT, 'Secret':
+            self.SECRET, 'Mapping': "{}"})
+
+        r = y.checkPass("uid", "password")
+        self.assertFalse(r)
+
+    @responses.activate
+    def test_04_single_user(self):
+        responses.add(responses.GET, self.TOKEN_URL, status=200,
+                      content_type='application/json',
+                      body=self.BODY_ACCESSTOKEN)
+        responses.add(responses.GET, self.USER_URL+"/bjensen",
+                      status=200, content_type='application/json',
+                      body=self.BODY_SINGLE_USER)
+
+        y = SCIMResolver()
+        y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver':
+            self.RESOURCESERVER, 'Client': self.CLIENT, 'Secret':
+            self.SECRET, 'Mapping': "{username: 'userName'}"})
+
+        r = y.getUserInfo("bjensen")
+        self.assertEqual(r.get("username"), "bjensen")
+        self.assertEqual(r.get("phone"), "555-555-8377")
+        self.assertEqual(r.get("givenname"), "Barbara")
+        self.assertEqual(r.get("surname"), "Jensen")
+        self.assertEqual(r.get("email"), "bjensen@example.com")
+
+        r = y.getUsername("bjensen")
+        self.assertEqual(r, "bjensen")
+
+        r = y.getUserId("bjensen")
+        self.assertEqual(r, "bjensen")
+
+    @responses.activate
+    def test_05_users(self):
+        responses.add(responses.GET, self.TOKEN_URL, status=200,
+                      content_type='application/json',
+                      body=self.BODY_ACCESSTOKEN)
+        responses.add(responses.GET, self.USER_URL,
+                      status=200, content_type='application/json',
+                      body=self.BODY_USERS)
+
+        y = SCIMResolver()
+        y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver':
+            self.RESOURCESERVER, 'Client': self.CLIENT, 'Secret':
+            self.SECRET, 'Mapping': "{}"})
+
+        r = y.getUserList()
+        self.assertEqual(len(r), 2)
+        self.assertEqual(r[0].get("username"), "bjensen")
+        self.assertEqual(r[1].get("username"), "jsmith")
+
+    @responses.activate
+    def test_06_failed_get_user(self):
+        responses.add(responses.GET, self.TOKEN_URL,
+                      status=200, content_type='application/json',
+                      body=self.BODY_ACCESSTOKEN)
+        responses.add(responses.GET, self.USER_URL+"/jbensen",
+                      status=402, content_type='application/json',
+                      body=self.BODY_SINGLE_USER)
+        # Failed to retrieve access token
+        #SCIMResolver._get_user(resource_server=self.RESOURCESERVER,
+        #                       access_token="", userid="jbensen")
+        self.assertRaises(Exception, SCIMResolver._get_user,
+                          resource_server=self.RESOURCESERVER,
+                          access_token="", userid="jbensen")
+
+    @responses.activate
+    def test_07_failed_search_user(self):
+        responses.add(responses.GET, self.TOKEN_URL,
+                      status=200, content_type='application/json',
+                      body=self.BODY_ACCESSTOKEN)
+        responses.add(responses.GET, self.USER_URL,
+                      status=402, content_type='application/json',
+                      body=self.BODY_SINGLE_USER)
+        # Failed to retrieve access token
+        #SCIMResolver._search_users(resource_server=self.RESOURCESERVER,
+        #                           access_token="")
+        self.assertRaises(Exception, SCIMResolver._search_users,
+                          resource_server=self.RESOURCESERVER,
+                          access_token="")
 
 
 class LDAPResolverTestCase(MyTestCase):

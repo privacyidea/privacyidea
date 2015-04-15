@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 #
-#  product:  privacyIDEA is a fork of LinOTP
-#  module:   resolver library
+#  privacyIDEA is a fork of LinOTP
+#
+#  2015-04-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Migrate SCIM Resolver to work with privacyidea 2 (Flask)
 #
 #  May 08, 2014 Cornelius Kölbel
 #  contact:  http://www.privacyidea.org
@@ -9,7 +11,7 @@
 #  product:  LinOTP2
 #  module:   useridresolver
 #  tool:     SCIMIdResolver
-#  edition:  Comunity Edition
+#  edition:  Community Edition
 #
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  AGPLv3
@@ -30,73 +32,32 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''
-  Description:  This file is part of the privacyidea service
-                This module implements the communication interface
-                for resolving user information from a SCIM service
+__doc__ = """This is the resolver to find users in a SCIM service.
 
-  Dependencies: -
-'''
+The file is tested in tests/test_lib_resolver.py
+"""
 
 import logging
+import traceback
 log = logging.getLogger(__name__)
 
 from UserIdResolver import UserIdResolver
-from UserIdResolver import getResolverClass
-import json
+import yaml
+import requests
 import base64
-import httplib2
 from urllib import urlencode
 
-# logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
 class IdResolver (UserIdResolver):
 
-    @classmethod
-    def setup(cls, config=None, cache_dir=None):
-        '''
-        this setup hook is triggered, when the server
-        starts to serve the first request
-
-        :param config: the privacyidea config
-        :type  config: the privacyidea config dict
-        '''
-        log.info("Setting up the SCIMResolver")
-        return
-
-    def close(self):
-        return
-    
     def __init__(self):
-        self.name = "scim-default"
         self.auth_server = ''
         self.resource_server = ''
         self.auth_client = 'localhost'
         self.auth_secret = ''
         self.access_token = None
-
-    @classmethod
-    def get_access_token(self, server=None, client=None, secret=None):
-        h = httplib2.Http()
-        auth = base64.encodestring(client + ':' + secret)
-
-        resp, content = h.request("%s/oauth/token?"
-                                  "grant_type=client_credentials" % server,
-                                  'GET',
-                                  headers={'Authorization': 'Basic ' + auth}
-                                  )
-        if resp.get("status") != "200":
-            raise Exception("Could not get access token: %s" %
-                            resp.get("status"))
-        access_token = json.loads(content).get('access_token')
-        return access_token
-
-    def create_scim_object(self):
-        self.access_token = self.get_access_token(self.auth_server,
-                                                  self.auth_client,
-                                                  self.auth_secret)
 
     def checkPass(self, uid, password):
         """
@@ -104,110 +65,122 @@ class IdResolver (UserIdResolver):
         - returns true in case of success
         -         false if password does not match
 
-        TODO
         """
+        # TODO: Implement password checking with SCIM
         return False
 
-    def getUserInfo(self, userId):
-        '''
+    def getUserInfo(self, userid):
+        """
         returns the user information for a given uid.
-        '''
+        """
         ret = {}
         # The SCIM ID is always /Users/ID
         # Alas, we can not map the ID to any other attribute
         res = self._get_user(self.resource_server,
                              self.access_token,
-                             userId)
+                             userid)
         user = res
-
-        ret['username'] = user.get(self.mapping.get("username"))
-        ret['givenname'] = user.get(self.mapping.get("givenname"), "")
-        ret['surname'] = user.get(self.mapping.get("surname"), "")
-        ret['phone'] = user.get(self.mapping.get("phone"), "")
-        ret['mobile'] = user.get(self.mapping.get("mobile"), "")
-        ret['email'] = user.get(self.mapping.get("email"), "")
+        ret = self._fill_user_schema_1_0(user)
 
         return ret
 
-    def getUsername(self, userId):
-        '''
+    def _fill_user_schema_1_0(self, user):
+        # We assume the schema:
+        # "schemas": ["urn:scim:schemas:core:1.0"]
+
+        #ret['username'] = user.get(self.mapping.get("username"))
+        #ret['givenname'] = user.get(self.mapping.get("givenname"), "")
+        #ret['surname'] = user.get(self.mapping.get("surname"), "")
+        #ret['phone'] = user.get(self.mapping.get("phone"), "")
+        #ret['mobile'] = user.get(self.mapping.get("mobile"), "")
+        #ret['email'] = user.get(self.mapping.get("email"), "")
+
+        ret = {"phone": "",
+               "email": "",
+               "mobile": ""}
+        ret['username'] = user.get("userName", {})
+        ret['givenname'] = user.get("name", {}).get("givenName", "")
+        ret['surname'] = user.get("name", {}).get("familyName", "")
+        if len(user.get("phoneNumbers", {})) > 0:
+            ret['phone'] = user.get("phoneNumbers")[0].get("value")
+        if len(user.get("emails", {})) > 0:
+            ret['email'] = user.get("emails")[0].get("value")
+        return ret
+
+    def getUsername(self, userid):
+        """
         Returns the username/loginname for a given userid
         :param userid: The userid in this resolver
         :type userid: string
         :return: username
         :rtype: string
-        '''
-        user = self.getUserInfo(userId)
-        return user.get("username", "")
+        """
+        #user = self.getUserInfo(userid)
+        #return user.get("username", "")
+        # It seems that the userName is the UserId
+        return userid
 
-    def getUserId(self, LoginName):
+    def getUserId(self, loginName):
         """
         returns the uid for a given loginname/username
         """
-        res = {}
-        if self.access_token:
-            res = self._search_with_get_on_users(self.resource_server,
-                                                 self.access_token,
-                                                 {'filter': '%s eq "%s"' %
-                                                  (self.mapping.get("username"),
-                                                   LoginName)})
-        return res.get("Resources", [{}])[0].get(self.mapping.get("userid"))
+        #res = {}
+        #if self.access_token:
+        #    res = self._search_users(self.resource_server,
+        #                                         self.access_token,
+        #                                         {'filter': '%s eq "%s"' %
+        #                                          ("userName", loginName)})
+        #return res.get("Resources", [{}])[0].get("externalId")
+        # It seems that the userName is the userId
+        return loginName
 
-    def getUserList(self, searchDict):
-        '''
+    def getUserList(self, searchDict=None):
+        """
         Return the list of users
-        '''
+        """
         ret = []
 
-        '''
-        TODO: search dict
-        '''
+        # TODO: search dict is not used at the moment
         res = {}
         if self.access_token:
-            res = self._search_with_get_on_users(self.resource_server,
+            res = self._search_users(self.resource_server,
                                                  self.access_token,
                                                  "")
 
         for user in res.get("Resources"):
-            ret_user = {}
-            ret_user['username'] = user.get(self.mapping.get("username"))
-            ret_user['userid'] = user.get(self.mapping.get("userid"))
-            ret_user['surname'] = user.get(self.mapping.get("surname"), "")
-            ret_user['givenname'] = user.get(self.mapping.get("givenname"), "")
-            ret_user['email'] = user.get(self.mapping.get("email"), "")
-            ret_user['phone'] = user.get(self.mapping.get("phone"), "")
-            ret_user['mobile'] = user.get(self.mapping.get("mobile"), "")
+            ret_user = self._fill_user_schema_1_0(user)
 
             ret.append(ret_user)
 
         return ret
 
-# server inf methods
-
     def getResolverId(self):
-        """ getResolverId(LoginName)
-            - returns the resolver identifier string
-            - empty string if not exist
         """
-        return self.name
-
-    def getResolverType(self):
-        return IdResolver.getResolverClassType()
+        :return: the resolver identifier string, empty string if not exist
+        """
+        return self.auth_server
 
     @classmethod
     def getResolverClassType(cls):
         return 'scimresolver'
 
+    def getResolverDescriptor(self):
+        return IdResolver.getResolverClassDescriptor()
+
+    @classmethod
+    def getResolverType(cls):
+        return IdResolver.getResolverClassType()
+
     @classmethod
     def getResolverClassDescriptor(cls):
-        '''
+        """
         return the descriptor of the resolver, which is
         - the class name and
         - the config description
 
         :return: resolver description dict
         :rtype:  dict
-        '''
+        """
         descriptor = {}
         typ = cls.getResolverClassType()
         descriptor['clazz'] = "useridresolver.SCIMIdResolver.IdResolver"
@@ -218,56 +191,31 @@ class IdResolver (UserIdResolver):
                                 'mapping': 'string'}
         return {typ: descriptor}
 
-    def getResolverDescriptor(self):
-        return IdResolver.getResolverClassDescriptor()
+    def loadConfig(self, config):
+        """load the configuration to the Resolver instance
 
-    def getConfigEntry(self, config, key, conf, required=True):
-        ckey = key
-        cval = ""
-        if conf != "" or None:
-            ckey = ckey + "." + conf
-            if ckey in config:
-                cval = config[ckey]
-        if cval == "":
-            if key in config:
-                cval = config[key]
-        if cval == "" and required is True:
-            raise Exception("missing config entry: " + key)
-        return cval
+        Keys in the dict are
+         * Authserver
+         * Resouceserver
+         * Client
+         * Secret
+         * Mapping
 
-    def loadConfig(self, config, conf):
-        """ loadConfig(configDict)
-            The UserIdResolver could be configured
-            from the pylon app config
+        :param config: the configuration dictionary
+        :type config: dict
+        :return: the resolver instance
         """
-        self.name = conf
-        self.auth_server = self.getConfigEntry(config,
-                                               'privacyidea.scimresolver.'
-                                               'authserver',
-                                               conf)
-        self.resource_server = self.getConfigEntry(config,
-                                                   'privacyidea.scimresolver.'
-                                                   'resourceserver',
-                                                   conf)
-        self.auth_client = self.getConfigEntry(config,
-                                               'privacyidea.scimresolver.'
-                                               'client',
-                                               conf)
-        self.auth_secret = self.getConfigEntry(config,
-                                               'privacyidea.scimresolver.'
-                                               'secret',
-                                               conf)
-        self.mapping = json.loads(self.getConfigEntry(config,
-                                                      'privacyidea.'
-                                                      'scimresolver.mapping',
-                                                      conf))
+        self.auth_server = config.get('Authserver')
+        self.resource_server = config.get('Resourceserver')
+        self.auth_client = config.get('Client')
+        self.auth_secret = config.get('Secret')
+        self.mapping = yaml.load(config.get('Mapping'))
         self.create_scim_object()
-
-        return
+        return self
 
     @classmethod
-    def testconnection(self, param):
-        '''
+    def testconnection(cls, param):
+        """
         This function lets you test the to be saved SCIM connection.
               
         :param param: A dictionary with all necessary parameter to test the
@@ -277,110 +225,90 @@ class IdResolver (UserIdResolver):
         :return: Tuple of success and a description
         :rtype: (bool, string)
         
-        Parameters are: Authserver, Resourceserver, Client, Secret, Map
-            
-        '''
+        Parameters are: Authserver, Resourceserver, Client, Secret, Mapping
+        """
         desc = None
-        num = -1
+        success = False
                
         try:
-            access_token = self.get_access_token(str(param.get("Authserver")),
-                                                 param.get("Client"),
-                                                 param.get("Secret"))
-            content = self._search_with_get_on_users(param.get("Resourceserver"),
-                                                     access_token,
-                                                     "")
+            access_token = cls.get_access_token(str(param.get("Authserver")),
+                                                param.get("Client"),
+                                                param.get("Secret"))
+            content = cls._search_users(param.get("Resourceserver"),
+                                                    access_token, "")
             num = content.get("totalResults", -1)
+            desc = "Found %s users" % num
+            success = True
         except Exception as exx:
+            log.error("Failed to retrieve users: %s" % exx)
+            log.error(traceback.format_exc(exx))
             desc = "failed to retrieve users: %s" % exx
             
-        return (num, desc)
+        return success, desc
 
     @classmethod
-    def _search_with_get_on_users(self, resource_server, access_token,
-                                  params=None):
-        '''
+    def _search_users(cls, resource_server, access_token, params=None):
+        """
         :param params: Additional http parameters added to the URL
         :type params: dictionary
-        '''
-        if params is None:
-            params = {}
+        """
+        params = params or {}
         headers = {'Authorization': "Bearer {0}".format(access_token),
                    'content-type': 'application/json'}
-        h = httplib2.Http()
         url = '{0}/Users?{1}'.format(resource_server, urlencode(params))
-        resp, content = h.request(url,
-                                  'GET',
-                                  headers=headers)
-        if resp.get("status") != "200":
-            print "We were calling the URL ", url
-            raise Exception("Could not get user list token: %s" %
-                            resp.get("status"))
-        j_content = json.loads(content)
+        resp = requests.get(url, headers=headers)
+        if resp.status_code != 200:
+            info = "Could not get user list: %s" % resp.status_code
+            log.error(info)
+            raise Exception(info)
+        j_content = yaml.load(resp.content)
+
         return j_content
     
     @classmethod
-    def _get_user(self, resource_server, access_token, userid):
-        '''
-        '''
+    def _get_user(cls, resource_server, access_token, userid):
+        """
+        Get a User from the SCIM service
+
+        :param resource_server: The Resource Server
+        :type resource_server: basestring / URI
+        :param access_token: Access Token
+        :type access_token: basestring
+        :param userid: The userid to fetch
+        :type userid: basestring
+        :return: Dictionary of User object.
+        """
         headers = {'Authorization': "Bearer {0}".format(access_token),
                    'content-type': 'application/json'}
-        h = httplib2.Http()
         url = '{0}/Users/{1}'.format(resource_server, userid)
-        resp, content = h.request(url,
-                                  'GET',
-                                  headers=headers)
-        if resp.get("status") != "200":
-            print "We were calling the URL ", url
-            raise Exception("Could not get user list token: %s" %
-                            resp.get("status"))
-        j_content = json.loads(content)
+        resp = requests.get(url, headers=headers)
+
+        if resp.status_code != 200:
+            info = "Could not get user: %s" % resp.status_code
+            log.error(info)
+            raise Exception(info)
+        j_content = yaml.load(resp.content)
+
         return j_content
 
+    @classmethod
+    def get_access_token(cls, server=None, client=None, secret=None):
 
-if __name__ == "__main__":
+        auth = base64.encodestring(client + ':' + secret)
 
-    CLIENT = "schnuck"
-    SECRET = "d81c31e4-9f65-4805-b5ba-6edf0761f954"
-    AUTHSERVER = "http://localhost:8080/osiam-auth-server"
-    RESOURCESERVER = "http://localhost:8080/osiam-resource-server"
-    print " SCIMIdResolver - IdResolver class test "
+        url = "%s/oauth/token?grant_type=client_credentials" % server
+        resp = requests.get(url,
+                            headers={'Authorization': 'Basic ' + auth})
 
-    y = getResolverClass("SCIMIdResolver", "IdResolver")()
-    
-    print "======== testconnection ==========="
-    print "getting token for %s, %s" % (CLIENT, SECRET)
-    ret = y.testconnection({"Authserver": AUTHSERVER,
-                            "Resourceserver": RESOURCESERVER,
-                            "Client": CLIENT,
-                            "Secret": SECRET})
-    print ret
+        if resp.status_code != 200:
+            info = "Could not get access token: %s" % resp.status_code
+            log.error(info)
+            raise Exception(info)
 
-    y.loadConfig({'privacyidea.scimresolver.authserver': AUTHSERVER,
-                  'privacyidea.scimresolver.resourceserver': RESOURCESERVER,
-                  'privacyidea.scimresolver.secret': SECRET,
-                  'privacyidea.scimresolver.client': CLIENT,
-                  'privacyidea.scimresolver.mapping': '{ "username" : '
-                  '"userName" , "userid" : "id"}'},
-                 "")
+        access_token = yaml.load(resp.content).get('access_token')
+        return access_token
 
-    print "==== the complete userlist ======="
-    print y.getUserList({})
-    print "=================================="
-
-    user = "marissa"
-    loginId = y.getUserId(user)
-
-    print " %s -  %s" % (user, loginId)
-    print " reId - " + y.getResolverId()
-
-    ret = y.getUserInfo(loginId)
-    print ret
-    
-    print "======== testconnection ==========="
-    print "getting token for %s, %s" % (CLIENT, SECRET)
-    ret = y.testconnection({"Authserver": AUTHSERVER,
-                            "Resourceserver": RESOURCESERVER,
-                            "Client": CLIENT,
-                            "Secret": SECRET})
-    print ret
+    def create_scim_object(self):
+        self.access_token = self.get_access_token(self.auth_server,
+                                                  self.auth_client,
+                                                  self.auth_secret)
