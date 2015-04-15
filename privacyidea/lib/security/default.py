@@ -6,7 +6,7 @@
 #
 #  2014-12-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             remove remnant code and code cleanup during
-#             flask migration. Encure code coverage.
+#             flask migration. Ensure code coverage.
 #  2014-10-19 Remove class SecurityModule from __init__.py
 #             and add it here.
 #             Cornelius Kölbel <cornelius@privacyidea.org>
