@@ -2,6 +2,8 @@
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
+#  2015-04-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Increase test coverage
 #  2014-12-25 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Rewrite for flask migration
 #
@@ -50,18 +52,6 @@ class AUTHTYPE():
 
 class IdResolver (UserIdResolver):
 
-    @classmethod
-    def setup(cls, config=None, cache_dir=None):
-        """
-        this setup hook is triggered, when the server
-        starts to serve the first request
-
-        :param config: the privacyidea config
-        :type  config: the privacyidea config dict
-        """
-        log.info("Setting up the LDAPResolver")
-        return
-    
     def __init__(self):
         self.i_am_bound = False
         self.uri = ""
@@ -392,6 +382,17 @@ class IdResolver (UserIdResolver):
 
     @classmethod
     def split_uri(cls, uri):
+        """
+        Splits LDAP URIs like:
+        * ldap://server
+        * ldaps://server
+        * ldap[s]://server:1234
+        * server
+        :param uri: The LDAP URI
+        :return: Returns a tuple of Servername, Port and SSL(bool)
+        """
+        port = None
+        ssl = False
         ldap_elems = uri.split(":")
         if len(ldap_elems) == 3:
             server = ldap_elems[1].strip("/")
@@ -400,13 +401,16 @@ class IdResolver (UserIdResolver):
                 ssl = True
             else:
                 ssl = False
-        if len(ldap_elems) == 2:
+        elif len(ldap_elems) == 2:
             server = ldap_elems[1].strip("/")
             port = None
             if ldap_elems[0].lower() == "ldaps":
                 ssl = True
             else:
                 ssl = False
+        else:
+            server = uri
+
         return server, port, ssl
 
     @classmethod

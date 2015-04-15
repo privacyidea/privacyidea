@@ -93,6 +93,7 @@ class Connection(object):
     def __init__(self, directory=[]):
         import copy
         self.directory = copy.deepcopy(directory)
+        self.bound = False
 
     def set_directory(self, directory):
         self.directory = directory
@@ -101,8 +102,7 @@ class Connection(object):
         return
 
     def bind(self):
-        # TODO: we could check passwords here.
-        return True
+        return self.bound
 
     def search(self, search_base=None, search_scope=None,
                search_filter=None, attributes=None, paged_size=5):
@@ -202,9 +202,8 @@ class Ldap3Mock(object):
                 pw = entry.get("attributes").get("userPassword")
                 if pw == password:
                     correct_password = True
-        if not correct_password:
-            raise Exception("Wrong password in LDAP mock module")
         self.con_obj = Connection(self.directory)
+        self.con_obj.bound = correct_password
         return self.con_obj
 
     def start(self):

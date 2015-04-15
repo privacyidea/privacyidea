@@ -363,7 +363,62 @@ class LDAPResolverTestCase(MyTestCase):
         })
 
         self.assertFalse(res[0], res)
-        self.assertTrue("Wrong password in LDAP mock module" in res[1], res)
+        self.assertTrue("Wrong credentials" in res[1], res)
+
+    @ldap3mock.activate
+    def test_05_authtype_not_supported(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        res = y.testconnection({'LDAPURI': 'ldap://localhost',
+                                'LDAPBASE': 'o=test',
+                                'BINDDN': 'cn=manager,ou=example,o=test',
+                                'BINDPW': 'ldaptest',
+                                'AUTHTYPE': 'unknown',
+                                'LOGINNAMEATTRIBUTE': 'cn',
+                                'LDAPSEARCHFILTER': '(cn=*)',
+                                'LDAPFILTER': '(&(cn=%s))',
+                                'USERINFO': '{ "username": "cn",'
+                                            '"phone" : "telephoneNumber", '
+                                            '"mobile" : "mobile"'
+                                            ', "email" : "mail", '
+                                            '"surname" : "sn", '
+                                            '"givenname" : "givenName" }',
+                                'UIDTYPE': 'oid',
+        })
+
+        self.assertFalse(res[0], res)
+        self.assertTrue("Authtype unknown not supported" in res[1], res)
+
+    def test_06_slit_uri(self):
+        uri = "ldap://server"
+        server, port, ssl = LDAPResolver.split_uri(uri)
+        self.assertEqual(ssl, False)
+        self.assertEqual(server, "server")
+        self.assertEqual(port, None)
+
+        uri = "ldap://server:389"
+        server, port, ssl = LDAPResolver.split_uri(uri)
+        self.assertEqual(ssl, False)
+        self.assertEqual(server, "server")
+        self.assertEqual(port, 389)
+
+        uri = "ldaps://server:389"
+        server, port, ssl = LDAPResolver.split_uri(uri)
+        self.assertEqual(ssl, True)
+        self.assertEqual(server, "server")
+        self.assertEqual(port, 389)
+
+        uri = "ldaps://server"
+        server, port, ssl = LDAPResolver.split_uri(uri)
+        self.assertEqual(ssl, True)
+        self.assertEqual(server, "server")
+        self.assertEqual(port, None)
+
+        uri = "server"
+        server, port, ssl = LDAPResolver.split_uri(uri)
+        self.assertEqual(ssl, False)
+        self.assertEqual(server, "server")
+        self.assertEqual(port, None)
 
 class ResolverTestCase(MyTestCase):
     """
