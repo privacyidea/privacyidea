@@ -626,6 +626,28 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(server, "server")
         self.assertEqual(port, None)
 
+    def test_07_get_serverpool(self):
+        timeout = 5
+        urilist = "ldap://themis"
+        server_pool = LDAPResolver.get_serverpool(urilist, timeout)
+        self.assertEqual(len(server_pool), 1)
+        self.assertEqual(server_pool.active, True)
+        self.assertEqual(server_pool.exhaust, True)
+        self.assertEqual(server_pool.strategy, "ROUND_ROBIN")
+
+        urilist = "ldap://themis, ldap://server2"
+        server_pool = LDAPResolver.get_serverpool(urilist, timeout)
+        self.assertEqual(len(server_pool), 2)
+        self.assertEqual(server_pool.servers[0].name, "ldap://themis:389")
+        self.assertEqual(server_pool.servers[1].name, "ldap://server2:389")
+
+        urilist = "ldap://themis, ldaps://server2"
+        server_pool = LDAPResolver.get_serverpool(urilist, timeout)
+        self.assertEqual(len(server_pool), 2)
+        self.assertEqual(server_pool.servers[0].name, "ldap://themis:389")
+        self.assertEqual(server_pool.servers[1].name, "ldaps://server2:636")
+
+
 class ResolverTestCase(MyTestCase):
     """
     Test the Passwdresolver

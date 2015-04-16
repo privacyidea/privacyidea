@@ -2,6 +2,8 @@
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
+#  2015-04-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add redundancy with LDAP3 Server pools. Round Robin Strategy
 #  2015-04-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Increase test coverage
 #  2014-12-25 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -40,7 +42,6 @@ ENCODING = "utf-8"
 '''
 TODO:
   * Encoding
-  * redundancy  -> pool (http://ldap3.readthedocs.org/)
 '''
 
 
@@ -79,16 +80,15 @@ class IdResolver (UserIdResolver):
         """
         DN = self._getDN(uid)
 
-        server = ldap3.Server(self.server, port=self.port,
-                              use_ssl=self.ssl,
-                              connect_timeout=self.timeout)
+        server_pool = self.get_serverpool(self.uri, self.timeout)
         try:
             l = self.create_connection(authtype=self.authtype,
-                                       server=server,
+                                       server=server_pool,
                                        user=DN,
                                        password=password,
                                        auto_referrals=not self.noreferrals)
             l.open()
+            #log.error("LDAP Server Pool States: %s" % server_pool.pool_states)
             if not l.bind():
                 raise Exception("Wrong credentials")
             l.unbind()
@@ -164,15 +164,14 @@ class IdResolver (UserIdResolver):
         
     def _bind(self):
         if not self.i_am_bound:
-            server = ldap3.Server(self.server, port=self.port,
-                                  use_ssl=self.ssl,
-                                  connect_timeout=self.timeout)
+            server_pool = self.get_serverpool(self.uri, self.timeout)
             self.l = self.create_connection(authtype=self.authtype,
-                                            server=server,
+                                            server=server_pool,
                                             user=self.binddn,
                                             password=self.bindpw,
                                             auto_referrals=not self.noreferrals)
             self.l.open()
+            #log.error("LDAP Server Pool States: %s" % server_pool.pool_states)
             if not self.l.bind():
                 raise Exception("Wrong credentials")
             self.i_am_bound = True
@@ -358,7 +357,6 @@ class IdResolver (UserIdResolver):
                     
         """
         self.uri = config.get("LDAPURI")
-        (self.server, self.port, self.ssl) = self.split_uri(self.uri)
         self.basedn = config.get("LDAPBASE")
         self.binddn = config.get("BINDDN")
         self.bindpw = config.get("BINDPW")
@@ -412,6 +410,36 @@ class IdResolver (UserIdResolver):
         return server, port, ssl
 
     @classmethod
+    def get_serverpool(cls, urilist, timeout):
+        """
+        This create the serverpool for the ldap3 connection.
+        The URI from the LDAP resolver can contain a comma seperated list of
+        LDAP servers. These are split and then added to the pool.
+
+        See
+        https://github.com/cannatag/ldap3/blob/master/docs/manual/source/servers.rst#server-pool
+
+        :param urilist: The list of LDAP URIs, comma seperated
+        :type urilist: basestring
+        :param timeout: The connection timeout
+        :type timeout: float
+        :return: Server Pool
+        :rtype: LDAP3 Server Pool Instance
+        """
+        strategy = ldap3.POOLING_STRATEGY_ROUND_ROBIN
+        server_pool = ldap3.ServerPool(None, strategy, active=True,
+                                       exhaust=True)
+        for uri in urilist.split(","):
+            uri = uri.strip()
+            host, port, ssl = cls.split_uri(uri)
+            server = ldap3.Server(host, port=port,
+                                  use_ssl=ssl,
+                                  connect_timeout=float(timeout))
+            server_pool.add(server)
+            log.debug("Added %s, %s, %s to server pool." % (host, port, ssl))
+        return server_pool
+
+    @classmethod
     def getResolverClassDescriptor(cls):
         """
         return the descriptor of the resolver, which is
@@ -463,19 +491,17 @@ class IdResolver (UserIdResolver):
         """
         success = False
         try:
-            (host, port, ssl) = self.split_uri(param.get("LDAPURI"))
-            server = ldap3.Server(host, port=port,
-                                  use_ssl=ssl,
-                                  connect_timeout=float(param.get("TIMEOUT",
-                                                                  5)))
+            server_pool = self.get_serverpool(param.get("LDAPURI"),
+                                              float(param.get("TIMEOUT", 5)))
             l = self.create_connection(authtype=param.get("AUTHTYPE",
                                                           AUTHTYPE.SIMPLE),
-                                       server=server,
+                                       server=server_pool,
                                        user=param.get("BINDDN"),
                                        password=param.get("BINDPW"),
                                        auto_referrals=not param.get(
                                            "NOREFERRALS"))
             l.open()
+            #log.error("LDAP Server Pool States: %s" % server_pool.pool_states)
             if not l.bind():
                 raise Exception("Wrong credentials")
             # search for users...

@@ -25,7 +25,7 @@ user stores:
  * Flatfile resolver,
  * LDAP resolver,
  * SQL resolver,
- * SCIM resolver. **(TODO)**: Not yet migrated.
+ * SCIM resolver.
 
 .. note:: New resolver types (python modules) can be added easily. See the
    module section for this
@@ -80,6 +80,21 @@ In case of Active Directory connections you might need to check the box
 ``No anonymous referral chasing``. The underlying LDAP library is only
 able to do anonymous referral chasing. Active Directory will produce an
 error in this case [#adreferrals]_.
+
+The ``Server URI`` can contain a comma seperated list of servers.
+The servers are used to create a server pool and are used with a round robin
+strategy [#serverpool]_.
+
+**Example**::
+
+   ldap://server1, ldaps://server2:1636, server3, ldaps://server4
+
+This will create LDAP requests to
+
+ * server1 on port 389
+ * server2 on port 1636 using SSL
+ * server3 on port 389
+ * server4 on port 636 using SSL.
 
 The ``Bind Type`` with Active Directory can either be chosen as "Simple" or
 as "NTLM".
@@ -192,3 +207,4 @@ The available attributes for the ``Attribute mapping`` are:
 
 .. [#adreferrals] http://blogs.technet.com/b/ad/archive/2009/07/06/referral-chasing.aspx
 .. [#osiam] http://www.osiam.org
+.. [#serverpool] https://github.com/cannatag/ldap3/blob/master/docs/manual/source/servers.rst#server-pool
