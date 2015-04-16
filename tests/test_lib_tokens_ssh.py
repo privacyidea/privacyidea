@@ -26,6 +26,10 @@ class SSHTokenTestCase(MyTestCase):
              "afLE9AtAL4nnMPuubC87L0wJ88un9teza/N02KJMHy01Yz3iJKt3Ou9eV6kqO" \
              "ei3kvLs5dXmriTHp6g9whtnN6/Liv9SzZPJTs8YfThi34Wccrw== " \
              "NetKnights GmbH"
+    wrong_sshkey = """---- BEGIN SSH2 PUBLIC KEY ----
+AAAAB3NzaC1kc3MAAACBAKrFC6uDvuxl9vnYL/Fu/Vq+12KJF4
+RyMSQe4mn8oHJma2VzepBRBpLt7Q==
+---- END SSH2 PUBLIC KEY ----"""
 
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="sshkey")
@@ -34,6 +38,9 @@ class SSHTokenTestCase(MyTestCase):
 
         # An invalid key, raises an exception
         self.assertRaises(Exception, token.update, {"sshkey": "InvalidKey"})
+
+        # An invalid key, raises an exception
+        self.assertRaises(Exception, token.update, {"sshkey": self.wrong_sshkey})
 
         # Set valid key
         token.update({"sshkey": self.sshkey})
