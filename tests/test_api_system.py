@@ -228,6 +228,7 @@ class APIConfigTestCase(MyTestCase):
 
     # Resolvers
     def test_08_pretestresolver(self):
+        # This test fails, as there is no server at localhost.
         param = {'LDAPURI': 'ldap://localhost',
                  'LDAPBASE': 'o=test',
                  'BINDDN': 'cn=manager,ou=example,o=test',
@@ -252,7 +253,8 @@ class APIConfigTestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             detail = json.loads(res.data).get("detail")
             self.assertFalse(result.get("value"), result)
-            self.assertTrue("Connection refused" in detail.get("description"),
+            self.assertTrue("no active server available in server pool" in
+                            detail.get("description"),
                             detail.get("description"))
 
     def test_08_resolvers(self):
