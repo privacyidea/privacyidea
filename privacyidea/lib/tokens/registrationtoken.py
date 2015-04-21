@@ -24,49 +24,6 @@
 """
 This file contains the definition of the RegisterToken class.
 
-It can be used to create a registration code or a "TAN" which can be used
-once by a user to authenticate somewhere. After this registration code is
-used, the token is automatically deleted.
-
-The idea is to provide a workflow, where the user can get a registration code
-by e.g. postal mail and then use this code as the initial first factor to
-authenticate to the UI to enroll real tokens.
-
-A registration code can be created by an administrative task with the
-token/init api like this::
-
-  **Example Authentication Request**:
-
-    .. sourcecode:: http
-
-       POST /auth HTTP/1.1
-       Host: example.com
-       Accept: application/json
-
-       type=register
-       user=cornelius
-       realm=realm1
-
-  **Example response**:
-
-       .. sourcecode:: http
-
-           HTTP/1.1 200 OK
-           Content-Type: application/json
-
-           {
-              "detail": {
-                "registrationcode": "12345808124095097608"
-              },
-              "id": 1,
-              "jsonrpc": "2.0",
-              "result": {
-                "status": true,
-                "value": true
-              },
-              "version": "privacyIDEA unknown"
-            }
-
 The code is tested in test_lib_tokens_registration.py.
 """
 
@@ -84,6 +41,49 @@ log = logging.getLogger(__name__)
 class RegistrationTokenClass(PasswordTokenClass):
     """
     Token to implement a registration code.
+    It can be used to create a registration code or a "TAN" which can be used
+    once by a user to authenticate somewhere. After this registration code is
+    used, the token is automatically deleted.
+
+    The idea is to provide a workflow, where the user can get a registration code
+    by e.g. postal mail and then use this code as the initial first factor to
+    authenticate to the UI to enroll real tokens.
+
+    A registration code can be created by an administrative task with the
+    token/init api like this:
+
+      **Example Authentication Request**:
+
+        .. sourcecode:: http
+
+           POST /auth HTTP/1.1
+           Host: example.com
+           Accept: application/json
+
+           type=register
+           user=cornelius
+           realm=realm1
+
+      **Example response**:
+
+           .. sourcecode:: http
+
+               HTTP/1.1 200 OK
+               Content-Type: application/json
+
+               {
+                  "detail": {
+                    "registrationcode": "12345808124095097608"
+                  },
+                  "id": 1,
+                  "jsonrpc": "2.0",
+                  "result": {
+                    "status": true,
+                    "value": true
+                  },
+                  "version": "privacyIDEA unknown"
+                }
+
     """
 
     def __init__(self, aToken):

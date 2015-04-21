@@ -217,22 +217,22 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     :param realm: get tokens of a realm. If None, all tokens are returned.
     :type realm: basestring
     :param assigned: Get either assigned (True) or unassigned (False) tokens.
-    If None get all tokens.
+        If None get all tokens.
     :type assigned: bool
     :param user: Filter for the Owner of the token
     :type user: User Object
     :param serial: The serial number of the token
     :type serial: basestring
     :param active: Whether only active (True) or inactive (False) tokens
-    should be returned
+        should be returned
     :type active: bool
     :param resolver: filter for the given resolver name
     :type resolver: basestring
     :param rollout_state: returns a list of the tokens in the certain rollout
-    state. Some tokens are not enrolled in a single step but in multiple steps.
-    These tokens are then identified by the DB-column rollout_state.
+        state. Some tokens are not enrolled in a single step but in multiple
+        steps. These tokens are then identified by the DB-column rollout_state.
     :param count: If set to True, only the number of the result and not the
-    list is returned.
+        list is returned.
     :type count: bool
 
     :return: A list of tokenclasses (lib.tokenclass)
@@ -286,8 +286,8 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     :param resolver:
     :param rollout_state:
     :param sortby: Sort by a certain Token DB field. The default is
-    Token.serial. If a string like "serial" is provided, we try to convert it
-    to the DB column.
+        Token.serial. If a string like "serial" is provided, we try to convert
+        it to the DB column.
     :type sortby: A Token column or a string.
     :param sortdir: Can be "asc" (default) or "desc"
     :type sortdir: basestring
@@ -596,7 +596,7 @@ def get_multi_otp(serial, count=0, epoch_start=0, epoch_end=0,
     :param serial: the serial number of the token
     :type serial: basestring
     :param count: number of the next otp values (to be used with event or
-    time based tokens)
+        time based tokens)
     :param epoch_start: unix time start date (used with time based tokens)
     :param epoch_end: unix time end date (used with time based tokens)
     :param curTime: Simulate the servertime
@@ -769,7 +769,7 @@ def init_token(param, user=None, tokenrealms=None):
                   serial (optional)
                   type (optionl, default=hotp)
                   otpkey
-    type param: dict
+    :type param: dict
     :param user: the token owner
     :type user: User Object
     :param tokenrealms: the realms, to which the token should belong
