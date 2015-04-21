@@ -929,7 +929,7 @@ def get_serial_by_otp_api(otp=None):
     he can type in the OTP value and gets the serial number of the token, that
     generates this very OTP value.
 
-    :param otp: The gicen OTP value
+    :param otp: The given OTP value
     :param type: Limit the search to this token type
     :param unassigned: If set=1, only search in unassigned tokens
     :param assigned: If set=1, only search in assigned tokens

@@ -695,3 +695,40 @@ class APITokenTestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             value = result.get("value")
             self.assertEqual(value.get("serial"), "GETSERIAL2")
+
+    def test_15_registration_code(self):
+        # Test the registration code token
+        # create the registration code token
+        with self.app.test_request_context('/token/init',
+                                           data={"type": "registration",
+                                                 "serial": "reg1",
+                                                 "user": "cornelius"},
+                                           method="POST",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value"))
+            detail = json.loads(res.data).get("detail")
+            registrationcode = detail.get("registrationcode")
+
+        # check password
+        with self.app.test_request_context('/validate/check',
+                                           data={"user": "cornelius",
+                                                 "pass": registrationcode},
+                                           method="POST"):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value"))
+
+        # check password again. THe second time it will fail, since the token
+        # does not exist anymore.
+        with self.app.test_request_context('/validate/check',
+                                           data={"user": "cornelius",
+                                                 "pass": registrationcode},
+                                           method="POST"):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertFalse(result.get("value"))

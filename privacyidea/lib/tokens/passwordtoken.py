@@ -103,7 +103,6 @@ class PasswordTokenClass(TokenClass):
         return ret
 
 
-
     def update(self, param):
         """
         This method is called during the initialization process.
