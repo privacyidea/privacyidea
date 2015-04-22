@@ -236,6 +236,8 @@ class YubikeyTokenClass(TokenClass):
         log.debug('compare counter to database counter: %r' % self.token.count)
         if count_int >= self.token.count:
             res = count_int
+            # on success we save the used counter
+            self.inc_otp_counter(res)
 
         return res
 

@@ -505,6 +505,12 @@ class TOTPTokenTestCase(MyTestCase):
         res = token.authenticate("test589836")
         # This is the OTP value of the counter=47251650
         self.assertTrue(res == (True, 47251650, None), res)
+
+        # try the same OTP value again will fail!
+        res = token.authenticate("test589836")
+        # This is the OTP value of the counter=47251650
+        self.assertTrue(res == (True, -1, None), res)
+
         res = token.get_multi_otp()
         self.assertTrue(res[0] is False, res)
         token.update({"otpkey": self.otpkey,
