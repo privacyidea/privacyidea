@@ -705,7 +705,101 @@ class Realm(MethodsMixin, db.Model):
         db.session.delete(self)
         db.session.commit()
         return ret
-        
+
+
+class CAConnector(MethodsMixin, db.Model):
+    """
+    The table "caconnector" contains the names and types of the defined
+    CA connectors. Each connector has a different configuration, that is
+    stored in the table "caconnectorconfig".
+    """
+    __tablename__ = 'caconnector'
+    id = db.Column(db.Integer, primary_key=True, nullable=False)
+    name = db.Column(db.Unicode(255), default=u"",
+                     unique=True, nullable=False)
+    catype = db.Column(db.Unicode(255), default=u"",
+                      nullable=False)
+    caconfig = db.relationship('CAConnectorConfig',
+                               lazy='dynamic',
+                               backref='caconnector')
+
+    def __init__(self, name, catype):
+        self.name = name
+        self.catype = catype
+
+    def delete(self):
+        ret = self.id
+        db.session.delete(self)
+        # delete all CAConnectorConfig
+        # FIXME: Sometimes not all entries are deleted.
+        db.session.query(CAConnectorConfig)\
+                  .filter(CAConnectorConfig.caconnector_id == ret)\
+                  .delete()
+        db.session.commit()
+        return ret
+
+
+class CAConnectorConfig(db.Model):
+    """
+    Each CAConnector can have multiple configuration entries.
+    Each CA Connector type can have different required config values. Therefor
+    the configuration is stored in simple key/value pairs. If the type of a
+    config entry is set to "password" the value of this config entry is stored
+    encrypted.
+
+    The config entries are referenced by the id of the resolver.
+    """
+    __tablename__ = 'caconnectorconfig'
+    id = db.Column(db.Integer, primary_key=True)
+    caconnector_id = db.Column(db.Integer,
+                            db.ForeignKey('caconnector.id'))
+    Key = db.Column(db.Unicode(255), nullable=False)
+    Value = db.Column(db.Unicode(2000), default=u'')
+    Type = db.Column(db.Unicode(2000), default=u'')
+    Description = db.Column(db.Unicode(2000), default=u'')
+    cacon = db.relationship('CAConnector',
+                            lazy='joined',
+                            backref='config_list')
+    __table_args__ = (db.UniqueConstraint('caconnector_id',
+                                          'Key',
+                                          name='ccix_2'), {})
+
+    def __init__(self, caconnector_id=None,
+                 Key=None, Value=None,
+                 caconnector=None,
+                 Type="", Description=""):
+        if caconnector_id:
+            self.caconnector_id = caconnector_id
+        elif caconnector:
+            self.caconnector_id = CAConnector.query\
+                                       .filter_by(name=caconnector)\
+                                       .first()\
+                                       .id
+        self.Key = Key
+        self.Value = Value
+        self.Type = Type
+        self.Description = Description
+
+    def save(self):
+        c = CAConnectorConfig.query.filter_by(caconnector_id=self.caconnector_id,
+                                           Key=self.Key).first()
+        if c is None:
+            # create a new one
+            db.session.add(self)
+            db.session.commit()
+            ret = self.id
+        else:
+            # update
+            CAConnectorConfig.query.filter_by(caconnector_id=self.caconnector_id,
+                                           Key=self.Key
+                                           ).update({'Value': self.Value,
+                                                     'Type': self.Type,
+                                                     'Descrip'
+                                                     'tion': self.Description})
+            ret = c.id
+        db.session.commit()
+        return ret
+
 
 class Resolver(MethodsMixin, db.Model):
     """
@@ -742,7 +836,7 @@ class ResolverConfig(db.Model):
     """
     Each Resolver can have multiple configuration entries.
     Each Resolver type can have different required config values. Therefor
-    the configuratinon is stored in simple key/value pairs. If the type of a
+    the configuration is stored in simple key/value pairs. If the type of a
     config entry is set to "password" the value of this config entry is stored
     encrypted.
 

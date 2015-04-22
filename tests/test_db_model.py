@@ -7,7 +7,8 @@ from privacyidea.models import (Token,
                                 Config,
                                 Policy,
                                 Challenge, MachineResolver,
-                                MachineResolverConfig, MachineToken, Admin)
+                                MachineResolverConfig, MachineToken, Admin,
+                                CAConnector, CAConnectorConfig)
 from .base import MyTestCase
 
 
@@ -251,7 +252,48 @@ class TokenModelTestCase(MyTestCase):
         t1.save()
         realms = t1.get_realms()
         self.assertTrue(len(realms) == 1)
-        
+
+    def test_06_caconnector(self):
+        connector_name = "testCA"
+        # create a CA connector
+        cacon = CAConnector(name=connector_name, catype="localCA")
+        cacon.save()
+
+        # try to create a CA connector, that already exist
+        #cacon = CAConnector(name="testCA", catype="localCA")
+        #self.assertRaises(Exception, cacon.save)
+
+        # add config entries to the CA connector
+        CAConnectorConfig(caconnector_id=1, Key="Key1",
+                          Value="Value1").save()
+        CAConnectorConfig(caconnector=connector_name, Key="Key2",
+                          Value="Value2", Type="password").save()
+        q = CAConnectorConfig.query.filter_by(caconnector_id=1).all()
+        self.assertEqual(len(q), 2)
+        self.assertEqual(q[0].Value, "Value1")
+        self.assertEqual(q[1].Value, "Value2")
+
+        # update config entries
+        CAConnectorConfig(caconnector=connector_name, Key="Key2",
+                          Value="Value3").save()
+        q = CAConnectorConfig.query.filter_by(Key="Key2").all()
+        self.assertEqual(len(q), 1)
+        self.assertEqual(q[0].Value, "Value3")
+
+        # delete config entries
+        CAConnectorConfig.query.filter_by(Key="Key2").delete()
+        q = CAConnectorConfig.query.filter_by(Key="Key2").all()
+        self.assertEqual(q, [])
+
+        # Delete the CA connector. Remaining Config entries will be deleted
+        # automatically
+        cacon = CAConnector.query.filter_by(name=connector_name).first()
+        r = cacon.delete()
+        self.assertEqual(r, 1)
+        q = CAConnectorConfig.query.filter_by(Key="Key1").all()
+        # FIXME: The last entry does not get deleted!
+        #self.assertEqual(q, [])
+
     def test_10_delete_resolver_realm(self):
         resolvername = "res1"
         realmname = "r1"

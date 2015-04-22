@@ -114,6 +114,10 @@ class ConfigAdminError(privacyIDEAError):
     def __init__(self, description="config admin error!", id=10):
         privacyIDEAError.__init__(self, description=description, id=id)
 
+class CAError(privacyIDEAError):
+    def __init__(self, description="CA error!", id=503):
+        privacyIDEAError.__init__(self, description=description, id=id)
+
 
 class UserError(privacyIDEAError):
     def __init__(self, description="user error!", id=905):

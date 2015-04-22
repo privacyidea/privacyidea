@@ -96,6 +96,11 @@ class YubikeyTokenTestCase(MyTestCase):
         self.assertTrue(r)
         self.assertTrue(opt.get("message") == "matching 1 tokens", opt)
 
+        # the same otp value must not be usable again
+        r, opt = check_yubikey_pass(self.further_otps[1])
+        self.assertFalse(r)
+        self.assertTrue(opt.get("message") == "matching 1 tokens", opt)
+
         # check an otp value, that does not match a token
         r, opt = check_yubikey_pass("fcebeeejedecebegfcniufvgv"
                                     "jturjgvinhebbbertjnihit")
