@@ -20,7 +20,9 @@ bcrypt==1.1.0
 cffi==0.8.6
 configobj==5.0.6
 coverage==3.7.1
+cryptography==0.8.2
 docutils==0.12
+enum34==1.0.4
 funcparserlib==0.3.6
 itsdangerous==0.24
 ldap3==0.9.8.1
@@ -28,6 +30,7 @@ mock==1.0.1
 netaddr==0.7.12
 nose==1.3.4
 passlib==1.6.2
+pyOpenSSL==0.15.1
 pyasn1==0.1.7
 pycparser==2.10
 pycrypto==2.6.1
