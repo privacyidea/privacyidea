@@ -496,6 +496,11 @@ class HOTPTokenTestCase(MyTestCase):
         # This is the OTP value of the counter=8
         self.assertTrue(res == (True, 8, None), res)
 
+        # try the same otp value again, will fail!
+        res = token.authenticate("test399871")
+        # This is the OTP value of the counter=8
+        self.assertTrue(res == (True, -1, None), res)
+
         token.set_otp_count(0)
         # get the OTP value for counter 0
         res = token.get_otp()
