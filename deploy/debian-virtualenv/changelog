@@ -1,3 +1,10 @@
+python-privacyidea (2.2.1-1) wheezy; urgency=low
+
+  * Fix bug, that would not increase the counter of
+    yubikey token.
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 22 Apr 2015 23:15:00 +0200
+
 privacyidea-venv (2.2-1) wheezy; urgency=low
 
   * pi-manage.py: create resolvers and realms
