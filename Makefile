@@ -90,6 +90,12 @@ debianize:
 	(cd DEBUILD; tar -zcf python-privacyidea_${VERSION}.orig.tar.gz --exclude=privacyidea.org/debian privacyidea.org)
 	(cd DEBUILD; tar -zcf privacyidea-venv_${VERSION}.orig.tar.gz --exclude=privacyidea.org/debian privacyidea.org)
 
+builddeb-nosign:
+	make debianize
+	cp -r deploy/debian-ubuntu/* DEBUILD/privacyidea.org/debian/
+	sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
+	(cd DEBUILD/privacyidea.org; debuild -b -i -us -uc)
+
 builddeb:
 	make debianize
 	################## Renew the changelog
