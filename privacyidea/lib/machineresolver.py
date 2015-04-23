@@ -32,7 +32,6 @@ webservice!
 """
 
 import logging
-import re
 from log import log_with
 from ..models import (MachineResolver,
                       MachineResolverConfig)
@@ -41,6 +40,8 @@ from ..api.lib.utils import getParam
 from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
 from privacyidea.lib.config import get_machine_resolver_class_dict
+from privacyidea.lib.utils import (sanity_name_check, get_data_from_params)
+
 
 log = logging.getLogger(__name__)
 
@@ -71,11 +72,7 @@ def save_resolver(params):
     resolvertype = getParam(params, 'type', required)
     update_resolver = False
     # check the name
-    nameExp = "^[A-Za-z0-9_\-]+$"
-    if re.match(nameExp, resolvername) is None:
-        raise Exception("non conformant characters in machine resolver "
-                        "name: %r (not in %s)" % (resolvername,
-                                                  nameExp))
+    sanity_name_check(resolvername)
     # check the type
     (class_dict, type_dict) = get_machine_resolver_class_dict()
     if resolvertype not in type_dict.values():
@@ -98,40 +95,11 @@ def save_resolver(params):
     config_description = resolver_config.get(resolvertype,
                                              {}).get('config',
                                                      {})
-
-    types = {}
-    desc = {}
-    data = {}
-    for k in params:
-        if k != 'name' and k != 'type':
-            if k.startswith('type.') is True:
-                key = k[len('type.'):]
-                types[key] = params.get(k)
-            elif k.startswith('desc.') is True:
-                key = k[len('desc.'):]
-                desc[key] = params.get(k)
-            else:
-                data[k] = params.get(k)
-                if k in config_description:
-                    types[k] = config_description.get(k)
-                else:
-                    log.warn("the passed key %r is not a "
-                             "parameter for the resolver %r" % (k,
-                                                                resolvertype))
-                        
-    # Check that there is no type or desc without the data itself.
-    # i.e. if there is a type.BindPW=password, then there must be a
-    # BindPW=....
-    _missing = False
-    for t in types:
-        if t not in data:
-            _missing = True
-    for t in desc:
-        if t not in data:
-            _missing = True
-    if _missing:
-        raise Exception("type or description without necessary data! %s" %
-                        unicode(params))
+    data, types, desc = get_data_from_params(params,
+                                             ["name", "type"],
+                                             config_description,
+                                             "machine resolver",
+                                             resolvertype)
 
     # Everything passed. So lets actually create the resolver in the DB
     if update_resolver:

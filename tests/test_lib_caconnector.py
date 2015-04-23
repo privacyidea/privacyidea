@@ -1,14 +1,24 @@
 """
-This test file tests the lib.caconnector.py
+This test file tests the lib.caconnector.py and
+lib.caconnectors.localca.py
 """
 from .base import MyTestCase
 import os
 from privacyidea.lib.caconnectors.localca import LocalCAConnector
 from privacyidea.lib.error import CAError
+from privacyidea.lib.caconnector import (get_caconnector_list,
+                                         get_caconnector_class,
+                                         get_caconnector_config,
+                                         get_caconnector_config_description,
+                                         get_caconnector_object,
+                                         get_caconnector_type,
+                                         get_caconnector_types,
+                                         save_caconnector, delete_caconnector)
 
-CAKEY = "tests/testdata/ca/cakey.pem"
-CACERT = "tests/testdata/ca/cacert.pem"
-OPENSSLCNF = "tests/testdata/ca/openssl.cnf"
+CAKEY = "cakey.pem"
+CACERT = "cacert.pem"
+OPENSSLCNF = "openssl.cnf"
+WORKINGDIR = "tests/testdata/ca"
 REQUEST = """-----BEGIN CERTIFICATE REQUEST-----
 MIICmTCCAYECAQAwVDELMAkGA1UEBhMCREUxDzANBgNVBAgMBkhlc3NlbjEUMBIG
 A1UECgwLcHJpdmFjeWlkZWExHjAcBgNVBAMMFXJlcXVlc3Rlci5sb2NhbGRvbWFp
@@ -26,6 +36,89 @@ oysLynYXZkm0wFudTV04K0aKlMJTp/G96sJOtw1yqrkZSe0rNVcDs9vo+HAoMWO/
 XZp8nprZvJuk6/QIRpadjRkv4NElZ2oNu6a8mtaO38xxnfQm4FEMbm5p+4tM
 -----END CERTIFICATE REQUEST-----"""
 
+REQUEST_USER = """-----BEGIN CERTIFICATE REQUEST-----
+MIICjDCCAXQCAQAwRzELMAkGA1UEBhMCREUxDzANBgNVBAgMBkhlc3NlbjEUMBIG
+A1UECgwLcHJpdmFjeWlkZWExETAPBgNVBAMMCHVzZXJjZXJ0MIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3C/RXymX1HzDU8gwvUtncCwka7he6yF6SBJW
+fIFcSHW2aOv28phOUFHRf2xz8wqnrr5IXuXW4dkqfDJuTv0I9lpUSSNzw7kHGNHv
+s6z4ityUlqSQOo503+YNNxu9W7clGlY52m+Rql4cdPP5fBQBgxJldse7/jZblely
+ZYPtPpgwcfqH3aM2WjADLibgYdG/Aj+2Bh9KiSgcXKL/Tr6U5ozg2oLxnSkySDBz
+tAT2Qh6+9+IyMic8nYkvcD6Fmm9cxQnAjDIvciLJ0pUftqxyYHK3gk1rzlvjANDS
+L1jG4BDlUcpNOy7mfquE1lbxkzWgk2QmgXUvkbUWBjgL28wtBwIDAQABoAAwDQYJ
+KoZIhvcNAQELBQADggEBADPFLT1HVbYtVFsthnBj/UX3qs3NoLE9W5llV9Z5JEsE
+yQgANX3hiL6m3uVyPBOZVBqCKO8ZC5VzO99zpQ+3BaWQUCuxXbmjJrA8kzIwmRL6
+yJz7YpmbQzOPSlbmFguiVs8Mhhfo6NB2oMx0uV6mCMnoX1thfkIOz6+AKTIoWexV
+6/X2VXR1zEPxMCF3eqAClleF+RbKcTXfLSoxaRAdDtuUOERqu9EUpIFEsGFwu/zS
+y/hmHFGvyDotqmmdxUeXpw2qW882mWZdLtb3TQorvknrOjhtcRZ4/c5X5f4Fv73K
+PwFuUcQ1S7UsaJqyysFSx/SA36F0zEjSwbqJwQAKlzA=
+-----END CERTIFICATE REQUEST-----"""
+
+
+class CAConnectorTestCase(MyTestCase):
+    """
+    Test the CA connector lib functions
+    """
+    def test_01_base_functions(self):
+        types = get_caconnector_types()
+        self.assertEqual(types, ["local"])
+
+        calist = get_caconnector_list()
+        self.assertEqual(calist, [])
+
+        connector_class = get_caconnector_class("local")
+        self.assertEqual(connector_class, LocalCAConnector)
+
+        description = get_caconnector_config_description("local")
+        self.assertEqual(description.get("local").get("cakey"), "string")
+        self.assertEqual(description.get("local").get("cacert"), "string")
+
+    def test_02_db_caconnector(self):
+        pass
+        # save a CA connector
+        ca_id = save_caconnector({"caconnector": "myCA",
+                                  "type": "local",
+                                  "cakey": "/opt/ca/key.pem",
+                                  "cacert": "/opt/ca/cert.pem"})
+        self.assertTrue(ca_id > 0, ca_id)
+        # Update the CA connector
+        save_caconnector({"caconnector": "myCA",
+                          "type": "local",
+                          "WorkingDir": "/opt/ca",
+                          "Password": "secret",
+                          "type.Password": "password"})
+        # check if connector is in DB
+        calist = get_caconnector_list()
+        self.assertEqual(len(calist), 1)
+        calist = get_caconnector_list(filter_caconnector_type="local")
+        self.assertEqual(len(calist), 1)
+        # check the config values of "myCA"
+        self.assertEqual(calist[0].get("data").get("WorkingDir"), "/opt/ca")
+        self.assertEqual(calist[0].get("data").get("cakey"), "/opt/ca/key.pem")
+
+        # test the CA connector:
+        config = get_caconnector_config("myCA")
+        self.assertEqual(config.get("WorkingDir"), "/opt/ca")
+        self.assertEqual(config.get("cakey"), "/opt/ca/key.pem")
+        # get_caconnector_object()
+        ca_obj = get_caconnector_object("myCA")
+        self.assertTrue(ca_obj.connector_type, "local")
+        catype = get_caconnector_type("myCA")
+        self.assertTrue(catype, "local")
+
+        # delete the CA connector
+        delete_caconnector("myCA")
+
+        # check if connector is deleted from DB
+        self.assertEqual(len(calist), 1)
+
+    def test_03_errors(self):
+        # unknown type
+        self.assertRaises(Exception, save_caconnector,
+                          {"caconnector": "unknown", "type": "unknown"})
+
+        caobj = get_caconnector_object("not-existing")
+        self.assertEqual(caobj, None)
+
 
 class LocalCATestCase(MyTestCase):
     """
@@ -33,7 +126,6 @@ class LocalCATestCase(MyTestCase):
     """
 
     def test_01_create_ca_connector(self):
-
         # cakey missing
         self.assertRaises(CAError, LocalCAConnector, "localCA",
                           {"cacert": "..."})
@@ -46,12 +138,39 @@ class LocalCATestCase(MyTestCase):
 
         self.assertEqual(cacon.name, "localCA")
 
+    def test_02_sign_cert(self):
+        cacon = LocalCAConnector("localCA", {"cacert": "...",
+                                             "cakey": "..."})
         # set the parameters:
         cacon.set_config({"cakey": CAKEY, "cacert": CACERT,
                           "openssl.cnf": OPENSSLCNF})
 
         cwd = os.getcwd()
-#        r = cacon.sign_request(REQUEST, {"CSRDir": cwd + "/tests/testdata/ca",
-#                                         "CertificateDir": cwd +
-#
-# "/tests/testdata/ca"})
+        cert = cacon.sign_request(REQUEST,
+                                  {"CSRDir": "",
+                                   "CertificateDir": "",
+                                   "WorkingDir": cwd + "/" + WORKINGDIR})
+        self.assertEqual("%r" % cert.get_issuer(),
+                         "<X509Name object "
+                         "'/C=DE/ST=Hessen/O=privacyidea/CN=CA001'>")
+        self.assertEqual("%r" % cert.get_subject(),
+                         "<X509Name object "
+                         "'/C=DE/ST=Hessen/O=privacyidea/CN=requester"
+                         ".localdomain'>")
+
+
+    def test_02_sign_user_cert(self):
+        cwd = os.getcwd()
+        cacon = LocalCAConnector("localCA",
+                                 {"cakey": CAKEY,
+                                  "cacert": CACERT,
+                                  "openssl.cnf": OPENSSLCNF,
+                                  "WorkingDir": cwd + "/" + WORKINGDIR})
+
+        cert = cacon.sign_request(REQUEST_USER)
+        self.assertEqual("%r" % cert.get_issuer(),
+                         "<X509Name object "
+                         "'/C=DE/ST=Hessen/O=privacyidea/CN=CA001'>")
+        self.assertEqual("%r" % cert.get_subject(),
+                         "<X509Name object "
+                         "'/C=DE/ST=Hessen/O=privacyidea/CN=usercert'>")

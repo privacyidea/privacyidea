@@ -8,7 +8,7 @@ import StringIO
 import urllib
 from privacyidea.lib.crypto import urandom
 import string
-
+import re
 
 def generate_otpkey(key_size=20):
     """
@@ -111,3 +111,76 @@ def checksum(msg):
             if n != 0:
                 crc = crc ^ 0x8408
     return crc
+
+
+def sanity_name_check(name, name_exp="^[A-Za-z0-9_\-]+$"):
+    """
+    This function can be used to check the sanity of a name like a resolver,
+    ca connector or realm.
+
+    :param name: THe name of the resolver or ca connector
+    :return: True, otherwise raises an exception
+    """
+    if re.match(name_exp, name) is None:
+        raise Exception("non conformant characters in the name"
+                        ": %r (not in %s)" % (name, name_exp))
+    return True
+
+
+def get_data_from_params(params, exclude_params, config_description, module,
+                         type):
+    """
+    This is a helper function that parses the parameters when creating
+    resolvers or CA connectors.
+    It takes the parameters and checks, if the parameters correspond to the
+    Class definition.
+
+    :param params: The inpurt parameters like passed from the REST API
+    :type params: dict
+    :param exclude_params: The parameters to be excluded like "resolver",
+        "type" or "caconnector"
+    :type exclude_params: list of strings
+    :param config_description: The description of the allowed configuration
+    :type config_description: dict
+    :param module: An identifier like "resolver", "CA connector". This is
+        only used for error output.
+    :type module: basestring
+    :param type: The type of the resolver or ca connector. Only used for
+        error output.
+    :type type: basestring
+    :return: tuple of (data, types, description)
+    """
+    types = {}
+    desc = {}
+    data = {}
+    for k in params:
+        if k not in exclude_params:
+            if k.startswith('type.') is True:
+                key = k[len('type.'):]
+                types[key] = params.get(k)
+            elif k.startswith('desc.') is True:
+                key = k[len('desc.'):]
+                desc[key] = params.get(k)
+            else:
+                data[k] = params.get(k)
+                if k in config_description:
+                    types[k] = config_description.get(k)
+                else:
+                    log.warn("the passed key %r is not a "
+                             "parameter for the %s %r" % (k, module, type))
+
+    # Check that there is no type or desc without the data itself.
+    # i.e. if there is a type.BindPW=password, then there must be a
+    # BindPW=....
+    _missing = False
+    for t in types:
+        if t not in data:
+            _missing = True
+    for t in desc:
+        if t not in data:
+            _missing = True
+    if _missing:
+        raise Exception("type or description without necessary data! %s" %
+                        unicode(params))
+
+    return data, types, desc

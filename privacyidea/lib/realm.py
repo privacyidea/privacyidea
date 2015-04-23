@@ -36,13 +36,13 @@ database. It depends on the lib.resolver.
 It is independent of any user or token libraries and can be tested standalone
 in tests/test_lib_realm.py
 '''
-import re
 from ..models import (Realm,
                       ResolverRealm,
                       Resolver,
                       db)
 from log import log_with
 import logging
+from privacyidea.lib.utils import sanity_name_check
 log = logging.getLogger(__name__)
 
 
@@ -200,10 +200,7 @@ def set_realm(realm, resolvers=[]):
     realm = realm.lower().strip()
     realm = realm.replace(" ", "-")
     nameExp = "^[A-Za-z0-9_\-\.]*$"
-    res = re.match(nameExp, realm)
-    if res is None:
-        raise Exception("non conformant characters in realm name:"
-                        " %s (not in %s)" % (realm, nameExp))
+    sanity_name_check(realm, nameExp)
 
     # get / create realm
     R = Realm.query.filter_by(name=realm).first()

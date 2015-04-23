@@ -36,8 +36,11 @@ CA_SIGN = "openssl ca -keyfile {cakey} -cert {cacert} -config {config} " \
           "certificate} -batch"
 
 
+class BaseCAConnector(object):
+    pass
 
-class LocalCAConnector(object):
+
+class LocalCAConnector(BaseCAConnector):
     """
     This connector connects to a local CA represented by a CA certificate and
     key in the local file system.
@@ -61,7 +64,27 @@ class LocalCAConnector(object):
         :return:
         """
         self.name = name
-        self.set_config(config)
+        if config:
+            self.set_config(config)
+
+    @classmethod
+    def get_caconnector_description(cls):
+        """
+        Return the description of this CA connectors.
+        This contains the name as a key and the possible parameters.
+
+        :return: resolver description dict
+        :rtype:  dict
+        """
+        descriptor = {}
+        typ = cls.connector_type
+        config = {'cakey': 'string',
+                  'cacert': 'string',
+                  'openssl.cnf': 'string',
+                  'WorkingDir': 'string',
+                  'CSRDir': 'sting',
+                  'CertificateDir': 'string'}
+        return {typ: config}
 
     def _check_attributes(self):
         if "cakey" not in self.config:
@@ -96,6 +119,14 @@ class LocalCAConnector(object):
         """
         Signs a certificate request with the key of the CA.
 
+        options can be
+        WorkingDir: The directory where the configuration like openssl.cnf
+        can be found.
+        CSRDir: The directory, where to save the certificate signing
+        requests. This is relative to the WorkingDir.
+        CertificateDir: The directory where to save the certificates. This is
+        relative to the WorkingDir.
+
         :param csr: Certificate signing request
         :type csr: PEM string
         :param options: Additional options like the validity time or the
@@ -111,10 +142,18 @@ class LocalCAConnector(object):
                              self.config.get(
                                  "openssl.cnf", "/etc/ssl/openssl.cnf"))
         extension = options.get("extension", "server")
+        workingdir = options.get("WorkingDir",
+                                 self.config.get("WorkingDir"))
         csrdir = options.get("CSRDir",
-                             self.config.get("CSRDir", "/tmp"))
+                             self.config.get("CSRDir", ""))
         certificatedir = options.get("CertificateDir",
-                                     self.config.get("CertificateDir", "/tmp"))
+                                     self.config.get("CertificateDir", ""))
+        if workingdir:
+            if not csrdir.startswith("/"):
+                # No absolut path
+                csrdir = workingdir + "/" + csrdir
+            if not certificatedir.startswith("/"):
+                certificatedir = workingdir + "/" + certificatedir
 
         csr_obj = crypto.load_certificate_request(crypto.FILETYPE_PEM, csr)
         csr_filename = self._filename_from_x509(csr_obj.get_subject(),
@@ -126,9 +165,6 @@ class LocalCAConnector(object):
         certificate_filename = self._filename_from_x509(csr_obj.get_subject(),
                                                         file_extension="pem")
         csr_extensions = csr_obj.get_extensions()
-        #csr_filecontent = crypto.dump_certificate_request(crypto.FILETYPE_PEM,
-        #                                                  csr_obj)
-
         cmd = CA_SIGN.format(cakey=self.cakey, cacert=self.cacert,
                              days=days, config=config, extension=extension,
                              csrfile=csrdir + "/" + csr_filename,
@@ -137,12 +173,20 @@ class LocalCAConnector(object):
 
         # run the command
         args = shlex.split(cmd)
-        p = Popen(args, cwd=None, stdout=PIPE, stderr=PIPE,)
+        p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir)
         result, error = p.communicate()
-        if p.returncode != 0:
+        if p.returncode != 0:  # pragma: no cover
             # Some error occurred
             raise CAError(error)
-        return certificatedir + "/" + certificate_filename
+
+        f = open(certificatedir + "/" + certificate_filename, "r")
+        certificate = f.read()
+        f.close()
+
+        # We return the cert_obj.
+        cert_obj = crypto.load_certificate(crypto.FILETYPE_PEM,
+                                           certificate)
+        return cert_obj
 
 
     def view_pending_certs(self):

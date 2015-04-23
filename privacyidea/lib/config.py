@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-04-23 Cornelius Kölbel <cornelius.koelbel@netknigts.it>
+#             Add CA Connector functions
+#
 #  privacyIDEA is a fork of LinOTP
 #  Nov 11, 2014 Cornelius Kölbel
 #  License:  AGPLv3
@@ -39,6 +42,7 @@ from .crypto import encryptPassword
 from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver
 from .machines.base import BaseMachineResolver
+from .caconnectors.localca import BaseCAConnector
 from datetime import datetime
 
 log = logging.getLogger(__name__)
@@ -99,6 +103,14 @@ def get_resolver_types():
         current_app.config["pi_resolver_types"] = resolver_types
     
     return resolver_types
+
+
+def get_caconnector_types():
+    """
+    Returns a list of valid CA connector types
+    :return:
+    """
+    return ["local"]
 
 
 #@cache.memoize(1)
@@ -278,6 +290,41 @@ def get_machine_resolver_class_dict():
                               "class_list: %r" % e)
 
     return resolverclass_dict, resolvertype_dict
+
+
+def get_caconnector_class_dict():
+    """
+    get a dictionary of the CA connector classes and a dictionary of the
+    machines resolver types like this:
+
+    ({'privacyidea.lib.caconnectors.localca.LocalCAConnector':
+      <class 'privacyidea.lib.caconnectors.localca.LocalCAConnector'>},
+     {'privacyidea.lib.caconnectors.localca.LocalCAConnector':
+      'local'})
+
+    :return: tuple of two dicts
+    """
+    class_dict = {}
+    type_dict = {}
+
+    modules = get_caconnector_module_list()
+    for module in modules:
+        log.debug("module: %s" % module)
+        for name in dir(module):
+            obj = getattr(module, name)
+            if inspect.isclass(obj) and \
+                    (issubclass(obj, BaseCAConnector)) and \
+                    (obj != BaseCAConnector):
+                try:
+                    class_name = "%s.%s" % (module.__name__, obj.__name__)
+                    class_dict[class_name] = obj
+                    type_dict[class_name] = obj.connector_type
+
+                except Exception as e:  # pragma: no cover
+                    log.error("error constructing CA connector "
+                              "class_list: %r" % e)
+
+    return class_dict, type_dict
 
 
 #@cache.memoize(1)
@@ -494,6 +541,36 @@ def get_resolver_module_list():
         except Exception as exx:  # pragma: no cover
             module = None
             log.warning('unable to load resolver module : %r (%r)'
+                        % (mod_name, exx))
+
+        if module is not None:
+            modules.append(module)
+
+    return modules
+
+
+#@cache.memoize(1)
+def get_caconnector_module_list():
+    """
+    return the list of modules of the available CA connector classes
+
+    :return: list of CA connector modules
+    """
+    module_list = set()
+    module_list.add("caconnectors.localca.LocalCAConnector")
+
+    modules = []
+    for mod_name in module_list:
+        mod_name = ".".join(mod_name.split(".")[:-1])
+        class_name = mod_name.split(".")[-1:]
+        try:
+            log.debug("import module: %s" % mod_name)
+            exec("import %s" % mod_name)
+            module = eval(mod_name)
+
+        except Exception as exx:  # pragma: no cover
+            module = None
+            log.warning('unable to load ca connector module : %r (%r)'
                         % (mod_name, exx))
 
         if module is not None:

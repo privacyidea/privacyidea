@@ -40,7 +40,6 @@ webservice!
 """
 
 import logging
-import re
 from log import log_with
 from config import (get_resolver_types,
                      get_resolver_class_dict)
@@ -51,6 +50,7 @@ from ..api.lib.utils import getParam
 from .error import ConfigAdminError
 from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
+from privacyidea.lib.utils import sanity_name_check
 #from privacyidea.lib.cache import cache
 
 log = logging.getLogger(__name__)
@@ -81,11 +81,7 @@ def save_resolver(params):
     resolvertype = getParam(params, 'type', required)
     update_resolver = False
     # check the name
-    nameExp = "^[A-Za-z0-9_\-]+$"
-    if re.match(nameExp, resolvername) is None:
-        raise Exception("non conformant characters in resolver "
-                        "name: %r (not in %s)" % (resolvername,
-                                                  nameExp))
+    sanity_name_check(resolvername)
     # check the type
     resolvertypes = get_resolver_types()
     if resolvertype not in resolvertypes:
