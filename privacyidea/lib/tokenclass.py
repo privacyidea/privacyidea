@@ -777,6 +777,14 @@ class TokenClass(object):
         self.set_count_auth(count)
         return count
 
+    def check_failcount(self):
+        """
+        Checks if the failcounter is exceeded. It returns True, if the
+        failcounter is less than maxfail
+        :return: True or False
+        """
+        return self.token.failcount < self.token.maxfail
+
     def check_auth_counter(self):
         """
         This function checks the count_auth and the count_auth_success.

@@ -1763,6 +1763,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
             # Check if the token is disabled
             elif not token_obj.is_active():
                 message_list.append("Token is disabled")
+            elif not token_obj.check_failcount():
+                message_list.append("Failcounter exceeded")
             # TODO: Add validity period check
             else:
                 # The token is active and the auth counters are ok.

@@ -336,6 +336,23 @@ class ValidateAPITestCase(MyTestCase):
             self.assertTrue("Authentication counter exceeded"
                             in detail.get("message"))
 
+    def test_08_failcounter_counter_exceeded(self):
+        token_obj = init_token({"serial": "pass2", "pin": "123456",
+                                "type": "spass"})
+        token_obj.set_maxfail(5)
+        token_obj.set_failcount(5)
+        # a valid authentication will fail
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": "pass2",
+                                                 "pass": "123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("value"), False)
+            self.assertEqual(detail.get("message"), "matching 1 tokens, "
+                                                    "Failcounter exceeded")
 
     def test_10_saml_check(self):
         # test successful authentication
