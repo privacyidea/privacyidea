@@ -14,7 +14,7 @@ RANDFILE		= $ENV::HOME/.rnd
 #oid_file		= $ENV::HOME/.oid
 oid_section		= new_oids
 
-openssl_conf            = openssl_init
+# openssl_conf            = openssl_init
 
 # To use this configuration file with the "-extfile" option of the
 # "openssl x509" utility, name here the section containing the
@@ -31,17 +31,17 @@ openssl_conf            = openssl_init
 # Or use config file substitution like this:
 # testoid2=${testoid1}.5.6
 
-[ openssl_init ]
-engines = engine_list
+#[ openssl_init ]
+#engines = engine_list
 
-[ engine_list ]
-pkcs11 = engine_pkcs11
-
-[ engine_pkcs11 ]
-engine_id    = pkcs11
-dynamic_path = /usr/lib/engines/engine_pkcs11.so
-MODULE_PATH  = /usr/lib/libeTPkcs11.so
-init         = 0
+#[ engine_list ]
+#pkcs11 = engine_pkcs11
+#
+#[ engine_pkcs11 ]
+#engine_id    = pkcs11
+#dynamic_path = /usr/lib/engines/engine_pkcs11.so
+#MODULE_PATH  = /usr/lib/libeTPkcs11.so
+#init         = 0
 
 
 ####################################################################

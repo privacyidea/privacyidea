@@ -51,6 +51,7 @@ class LocalCATestCase(MyTestCase):
                           "openssl.cnf": OPENSSLCNF})
 
         cwd = os.getcwd()
-        r = cacon.sign_request(REQUEST, {"CSRDir": cwd + "/tests/testdata/ca",
-                                         "CertificateDir": cwd +
-                                                           "/tests/testdata/ca"})
+#        r = cacon.sign_request(REQUEST, {"CSRDir": cwd + "/tests/testdata/ca",
+#                                         "CertificateDir": cwd +
+#
+# "/tests/testdata/ca"})
