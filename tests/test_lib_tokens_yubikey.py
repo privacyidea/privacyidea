@@ -96,10 +96,16 @@ class YubikeyTokenTestCase(MyTestCase):
         self.assertTrue(r)
         self.assertTrue(opt.get("message") == "matching 1 tokens", opt)
 
+        # check failcounter
+        self.assertEqual(db_token.failcount, 0)
+
         # the same otp value must not be usable again
         r, opt = check_yubikey_pass(self.further_otps[1])
         self.assertFalse(r)
         self.assertTrue(opt.get("message") == "wrong otp value", opt)
+
+        # check failcounter
+        self.assertEqual(db_token.failcount, 1)
 
         # check an otp value, that does not match a token
         r, opt = check_yubikey_pass("fcebeeejedecebegfcniufvgv"
@@ -113,6 +119,26 @@ class YubikeyTokenTestCase(MyTestCase):
         self.assertFalse(r)
         self.assertTrue(opt.get("message") == "wrong otp value", opt)
 
+        # check failcounter
+        self.assertEqual(db_token.failcount, 2)
+
+    def test_05_check_maxfail(self):
+        # Check_yubikey_pass only works without pin!
+        db_token = Token.query.filter(Token.serial == self.serial1).first()
+        token = YubikeyTokenClass(db_token)
+        token.set_pin("")
+        token.save()
+        token.set_maxfail(5)
+        old_failcounter = token.get_failcount()
+        token.set_failcount(5)
+        # Failcount equals maxfail, so an authentication with a valid OTP
+        # will fail
+        r, opt = check_yubikey_pass(self.further_otps[2])
+        self.assertFalse(r)
+        self.assertTrue(opt.get("message") == "wrong otp value", opt)
+        # check failcounter
+        self.assertEqual(db_token.failcount, 5)
+        token.set_failcount(old_failcounter)
 
     def test_98_wrong_tokenid(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
