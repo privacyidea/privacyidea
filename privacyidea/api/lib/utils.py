@@ -238,32 +238,17 @@ def remove_session_from_param(param, body):
     return return_param
 
 
-def get_client():
-    '''
-    This function returns the client.
+def get_priority_from_param(param):
+    """
+    Return a dictionary of priorities as int from params like
+    priority.key1=value1
 
-    It first tries to get the client as it is passed as the HTTP Client via REMOTE_ADDR.
-
-    If this client Address is in a list, that is allowed to overwrite its client address (like e.g.
-    a FreeRADIUS server, which will always pass the FreeRADIUS address but not the address of the
-    RADIUS client) it checks for the existance of the client parameter.
-    '''
-    may_overwrite = []
-    over_client = getFromConfig("mayOverwriteClient", "")
-    log.debug("config entry mayOverwriteClient: %s" % over_client)
-    try:
-        may_overwrite = [ c.strip() for c in over_client.split(',') ]
-    except Exception as e:
-        log.warning("evaluating config entry 'mayOverwriteClient': %r" % e)
-
-    client = get_client_from_request(request)
-    log.debug("got the original client %s" % client)
-
-    if client in may_overwrite or client == None:
-        log.debug("client %s may overwrite!" % client)
-        if get_client_from_param(request.params):
-            client = get_client_from_param(request.params)
-            log.debug("client overwritten to %s" % client)
-
-    log.debug("returning %s" % client)
-    return client
+    :param param: The params dictionary
+    :type param: dict
+    :return: dict
+    """
+    priority = {}
+    for k, v in param.iteritems():
+        if k.startswith("priority."):
+            priority[k[len("priority."):]] = int(v)
+    return priority

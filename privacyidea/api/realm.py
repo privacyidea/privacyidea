@@ -45,7 +45,7 @@ from flask import (Blueprint,
                    request)
 from lib.utils import (getParam,
                        required,
-                       send_result,)
+                       send_result, get_priority_from_param)
 from ..lib.log import log_with
 from ..lib.realm import get_realms
 
@@ -83,6 +83,8 @@ def set_realm_api(realm=None):
     :param resolvers: A comma separated list of unique resolver names or a
     list object
     :type resolvers: string or list
+    :param priority: Additional parameters priority.<resolvername> define the
+        priority of the resolvers within this realm.
     :return: a json result with a list of Realms
 
     In the result it returns a list of added resolvers and a list of
@@ -101,7 +103,9 @@ def set_realm_api(realm=None):
        Content-Length: 26
        Content-Type: application/x-www-form-urlencoded
 
-       resolvers=resol_with_realm, reso2_with_realm
+       resolvers=reso1_with_realm, reso2_with_realm
+       priority.reso1_with_realm=1
+       priority.reso2_with_realm=2
 
 
     **Example response**:
@@ -127,12 +131,13 @@ def set_realm_api(realm=None):
     """
     param = request.all_data
     resolvers = getParam(param, "resolvers", required)
+    priority = get_priority_from_param(param)
 
     if type(resolvers) == "list":
         Resolvers = resolvers
     else:
         Resolvers = resolvers.split(',')
-    (added, failed) = set_realm(realm, Resolvers)
+    (added, failed) = set_realm(realm, Resolvers, priority=priority)
     g.audit_object.log({'success': len(added) == len(Resolvers),
                         'info':  "realm: %r, resolvers: %r" % (realm,
                                                                resolvers)})

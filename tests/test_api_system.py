@@ -438,7 +438,8 @@ class APIConfigTestCase(MyTestCase):
         # create a realm
         with self.app.test_request_context('/realm/%s' % realmname,
                                            method='POST',
-                                           data={"resolvers": resolvername},
+                                           data={"resolvers": resolvername,
+                                                 "priority.defresolver": 10},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
