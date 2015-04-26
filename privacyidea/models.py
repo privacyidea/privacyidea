@@ -903,6 +903,9 @@ class ResolverRealm(MethodsMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     resolver_id = db.Column(db.Integer, db.ForeignKey("resolver.id"))
     realm_id = db.Column(db.Integer, db.ForeignKey("realm.id"))
+    # If there are several resolvers in a realm, the priority is used the
+    # find a user first in a resolver with a higher priority (i.e. lower number)
+    priority = db.Column(db.Integer)
     # this will create a "realm_list" in the resolver object
     resolver = db.relationship(Resolver,
                                lazy="joined",
@@ -919,9 +922,12 @@ class ResolverRealm(MethodsMixin, db.Model):
     
     def __init__(self, resolver_id=None, realm_id=None,
                  resolver_name=None,
-                 realm_name=None):
+                 realm_name=None,
+                 priority=None):
         self.resolver_id = None
         self.realm_id = None
+        if priority:
+            self.priority = priority
         if resolver_id:
             self.resolver_id = resolver_id
         elif resolver_name:

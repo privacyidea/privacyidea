@@ -168,10 +168,10 @@ class UserTestCase(MyTestCase):
         self.assertTrue(len(added) == 2)
         
         # get user cornelius, who is in two resolvers!
-        # this problem raises an exception
         param = {"user": "cornelius",
                  "realm": self.realm2}
-        self.assertRaises(Exception, get_user_from_param, param)
+        user = get_user_from_param(param)
+        self.assertEqual("%s" % user, "<cornelius.resolver1@realm2>")
         
     def test_10_check_user_password(self):
         (added, failed) = set_realm("passwordrealm",
@@ -188,9 +188,8 @@ class UserTestCase(MyTestCase):
         
         # test cornelius@realm2, since he is located in more than one
         # resolver.
-        # TODO: We need to decide, what to do in this case.
-        self.assertRaises(User(login="cornelius",
-                               realm="realm2").check_password("test"))
+        self.assertEqual(User(login="cornelius",
+                              realm="realm2").check_password("test"), None)
         
     def test_11_get_search_fields(self):
         user = User(login="cornelius", realm=self.realm1)
@@ -201,12 +200,41 @@ class UserTestCase(MyTestCase):
         self.assertTrue("userid" in resolver_sF, resolver_sF)
         
         
-        
-        
-        
-        
-        
-        
+    def test_12_resolver_priority(self):
+        # Test the priority of resolvers.
+        # we create resolvers with the same user in it. Depending on the
+        # priority we either get the one or the other user.
+        save_resolver({"resolver": "double1",
+                       "type": "passwdresolver",
+                       "fileName": PWFILE})
+        save_resolver({"resolver": "double2",
+                       "type": "passwdresolver",
+                       "fileName": PWFILE})
+        save_resolver({"resolver": "double3",
+                       "type": "passwdresolver",
+                       "fileName": PWFILE})
+
+        (added, failed) = set_realm("double",
+                                    ["double1", "double2", "double3"],
+                                    priority={"double1": 2,
+                                              "double2": 1,
+                                              "double3": 3})
+        self.assertEqual(len(failed), 0)
+        self.assertEqual(len(added), 3)
+
+        user = get_user_from_param({"user": "cornelius", "realm": "double"})
+        self.assertEqual(user.resolver, "double2")
+
+        (added, failed) = set_realm("double",
+                                    ["double1", "double2", "double3"],
+                                    priority={"double1": 3,
+                                              "double2": 2,
+                                              "double3": 1})
+        self.assertEqual(len(failed), 0)
+        self.assertEqual(len(added), 3)
+
+        user = get_user_from_param({"user": "cornelius", "realm": "double"})
+        self.assertEqual(user.resolver, "double3")
         
         
         

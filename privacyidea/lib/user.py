@@ -133,20 +133,21 @@ class User(object):
     @log_with(log)
     def get_realm_resolvers(self):
         """
-        This returns the list of the resolvernames in the realm.
+        This returns a dictionary of the resolvernames in the realm.
         It does not take into account, the self.login (username)!
+        The key is the resolvername.
     
-        :return: list of resolvers in self.realm
-        :rtype: list
+        :return: dict of resolvers in self.realm
+        :rtype: dict
         """
-        resolvers = []
+        resolvers = {}
         realm_config = get_realms(self.realm)
         resolvers_in_realm = realm_config.get(self.realm, {})\
                                          .get("resolver", {})
         for resolver in resolvers_in_realm:
             resolvername = resolver.get("name")
-            # resolvertype = resolver.get("type")
-            resolvers.append(resolvername)
+            resolvers[resolvername] = {"priority": resolver.get("priority"),
+                                       "type": resolver.get("type")}
         return resolvers
     
     def get_resolvers(self):
@@ -154,7 +155,8 @@ class User(object):
         This returns the list of the resolvernames of the user.
         If no resolver attribute exists at the moment, the user is searched
         in the realm and according to this the resolver attribute is set.
-        (aka getResolversOfUser)
+
+        It will only return one resolver in the list for backward compatibilty
 
         .. note:: If the user does not exist in the realm, then an empty
            list is returned!
@@ -166,26 +168,32 @@ class User(object):
             return [self.resolver]
         
         resolvers = []
+        resolver_with_highest_priority = None
         resolvers_in_realm = self.get_realm_resolvers()
-        for resolvername in resolvers_in_realm:
+        highest_priority = 1000
+        for resolvername in resolvers_in_realm.keys():
             # test, if the user is contained in this resolver
             y = get_resolver_object(resolvername)
             if y is None:  # pragma: no cover
-                log.error("Resolver %r not found!" % resolvername)
+                log.info("Resolver %r not found!" % resolvername)
             else:
                 uid = y.getUserId(self.login)
                 if uid not in ["", None]:
                     log.info("user %r found in resolver %r" % (self.login,
                                                                resolvername))
                     log.info("userid resolved to %r " % uid)
-                    resolvers.append(resolvername)
+                    priority = resolvers_in_realm.get(resolvername).get(
+                        "priority", 999)
+                    if priority < highest_priority:
+                        highest_priority = priority
+                        resolver_with_highest_priority = resolvername
                 else:
                     log.debug("user %r not found"
                               " in resolver %r" % (self.login,
                                                    resolvername))
-        if len(resolvers) == 1:
-            # set the resolver that was found
-            self.resolver = resolvers[0]
+        if resolver_with_highest_priority:
+            self.resolver = resolver_with_highest_priority
+            resolvers = [self.resolver]
         return resolvers
     
     def get_user_identifiers(self):
@@ -308,12 +316,7 @@ class User(object):
                     log.info("user %r failed to authenticate." % self)
 
             elif len(res) == 0:
-                log.error("The user %r exists in NO resolver." %
-                          (self))
-            else:
-                log.error("The user %r exists in more than one resolver" %
-                          (self))
-                log.error(res)
+                log.error("The user %r exists in NO resolver." % self)
         except UserError as e:  # pragma: no cover
             log.error("Error while trying to verify the username: %r"
                       % e.description)
@@ -413,12 +416,7 @@ def get_user_from_param(param, optionalOrRequired=optional):
     if "resolver" in param:
         user_object.resolver = param["resolver"]
     else:
-        res = user_object.get_resolvers()
-        if len(res) > 1:
-            log.error("user %r is in more than one resolver: %r" %
-                      (user_object, res))
-            raise Exception("The user %r is in more than one resolver:" %
-                            (user_object))
+        user_object.get_resolvers()
     return user_object
 
 

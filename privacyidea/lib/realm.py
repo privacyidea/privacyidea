@@ -69,7 +69,8 @@ def get_realms(realmname=""):
         useridresolvers = []
         for res in realm.resolver_list:
             useridresolvers.append({"name": res.resolver.name,
-                                    "type": res.resolver.rtype})
+                                    "type": res.resolver.rtype,
+                                    "priority": res.priority})
         result[realm.name] = {"resolver": useridresolvers,
                               "default": realm.default}
     return result
@@ -180,7 +181,7 @@ def delete_realm(realmname):
 
 
 @log_with(log)
-def set_realm(realm, resolvers=[]):
+def set_realm(realm, resolvers=[], priority=None):
     """
     It takes a list of resolvers and adds these to the realm.
     If the realm does not exist, it is created.
@@ -190,12 +191,15 @@ def set_realm(realm, resolvers=[]):
     :param realm: an existing or a new realm
     :param resolvers: names of resolvers
     :type resolvers: list
+    :param priority: The priority of the resolvers in the realm
+    :type priority: dict, with resolver names as keys
     
     :return: tuple of lists of added resolvers and resolvers, that could
              not be added
     """
     added = []
     failed = []
+    priority = priority or {}
     realm_created = False
     realm = realm.lower().strip()
     realm = realm.replace(" ", "-")
@@ -220,7 +224,8 @@ def set_realm(realm, resolvers=[]):
         reso_name = reso_name.strip()
         Reso = Resolver.query.filter_by(name=reso_name).first()
         if Reso:
-            ResRealm = ResolverRealm(Reso.id, R.id)
+            ResRealm = ResolverRealm(Reso.id, R.id,
+                                     priority=priority.get(reso_name))
             db.session.add(ResRealm)
             added.append(reso_name)
         else:
