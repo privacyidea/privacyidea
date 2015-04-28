@@ -58,7 +58,9 @@ Resolver Priority
 .. index:: resolver priority
 
 Within a realm you can give each resolver a priority. The priority is used to
-find a user that is located in several resolvers.
+find a user that is located in several resolvers. If a user is located in
+more than one resolver, the user will be taken from the resolver with the
+lowest number in the priority.
 
 Priorities are numbers between 1 and 999. The lower the number the higher the
 priority.
