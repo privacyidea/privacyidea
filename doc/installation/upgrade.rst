@@ -1,7 +1,10 @@
 .. _upgrade:
 
+Upgrading
+---------
+
 Upgrade From privacyIDEA 2.x to 2.3
-===================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In 2.2 the priority of resolvers in realms was added.
 
@@ -11,25 +14,25 @@ You need to update the database models::
    pi-manage.py db upgrade
 
 Upgrade From privacyIDEA 1.5
-============================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. warning:: privacyIDEA 2.0 introduces many changes in
    database schema, so at least perform a database backup!
 
 Stopping Your Server
---------------------
+....................
 
 Be sure to stop your privacyIDEA server.
 
 Upgrade Software
-----------------
+................
 
 To upgrade the code enter your python virtualenv and run::
 
    pip install --upgrade privacyidea
 
 Configuration
--------------
+.............
 
 Read about the configuration in the :ref:`cfgfile`.
 
@@ -63,7 +66,7 @@ To verify the new configuration run::
 It should say, that the enckey already exists!
 
 Migrate The Database
---------------------
+....................
 
 You need to upgrade the database to the new database schema::
 
@@ -73,7 +76,7 @@ You need to upgrade the database to the new database schema::
    ``/usr/lib/privacyidea/migrations/``.
 
 Create An Administrator
------------------------
+.......................
 
 With privacyIDEA 2.0 the administrators are stored in the database.
 The password of the administrator is salted and also peppered, to avoid
@@ -84,7 +87,7 @@ You need to create new administrator accounts::
    pi-manage.py addadmin <email-address> <admin-name>
 
 Start The Server
-----------------
+................
 
 Run the server::
 
