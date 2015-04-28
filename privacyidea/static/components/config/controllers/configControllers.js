@@ -345,6 +345,19 @@ myApp.controller("configController", function ($scope, $location,
         $location.path("/config/realms/list");
     }
 
+    $scope.items = ["item1", "item2", "item3"];
+    $scope.dragControlListeners = {
+      accept: function (sourceItemHandleScope, destSortableScope) {return boolean},
+      //override to determine drag is allowed or not. default is true.
+        itemMoved: function (event) {
+        //Do what you want},
+        },
+    orderChanged: function(event) {
+    //Do what you want},
+    },
+    containment: '#board'//optional param.
+    };
+
     // TODO: This information needs to be fetched from the server
     $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver', 'scimresolver'];
     // TODO: This information needs to be fetched from the server
@@ -389,13 +402,15 @@ myApp.controller("configController", function ($scope, $location,
 
     $scope.setRealm = function (name) {
         var resolvers = [];
-        angular.forEach($scope.selectedResolvers, function (value, resolver) {
-            if (value === true) {
-                resolvers.push(resolver)
+        var pObject = {};
+        angular.forEach($scope.selectedResolvers, function (value, resolvername) {
+            if (value.selected === true) {
+                resolvers.push(resolvername);
+                pObject["priority."+resolvername] = value.priority;
             }
         });
 
-        var pObject = {resolvers: resolvers.join(',')};
+        pObject.resolvers = resolvers.join(',');
 
         ConfigFactory.setRealm(name, pObject, function (data) {
             $scope.set_result = data.result.value;
@@ -430,7 +445,8 @@ myApp.controller("configController", function ($scope, $location,
         // fill the selectedResolvers with the resolver of the realm
         $scope.selectedResolvers = {};
         angular.forEach(realm.resolver, function (resolver, _keyreso) {
-            $scope.selectedResolvers[resolver.name] = true;
+            $scope.selectedResolvers[resolver.name] = {selected: true,
+                priority: resolver.priority};
         })
     };
 

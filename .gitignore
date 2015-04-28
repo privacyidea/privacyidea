@@ -12,4 +12,6 @@ DEBUILD/
 doc/_build/
 .idea/
 *.log
+*.old
+*.orig
 *.log.?

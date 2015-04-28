@@ -1,5 +1,15 @@
 .. _upgrade:
 
+Upgrade From privacyIDEA 2.x to 2.3
+===================================
+
+In 2.2 the priority of resolvers in realms was added.
+
+You need to update the database models::
+
+   pi-manage.py db stamp 4f32a4e1bf33
+   pi-manage.py db upgrade
+
 Upgrade From privacyIDEA 1.5
 ============================
 

@@ -20,7 +20,7 @@ Therefor the users need to authenticate with their username and the realm like t
 
 .. _list_of_realms:
 
-List of realms
+List of Realms
 ..............
 
 The realms dialog gives you a list of the already defined realms.
@@ -32,7 +32,7 @@ You can delete or edit an existing realm or create a new realm.
 
 .. _edit_realm:
 
-Edit realm
+Edit Realm
 ..........
 
 .. index:: realm edit
@@ -48,6 +48,37 @@ contained in this realm. A realm can contain several resolvers.
    :width: 500
 
    *Edit a realm*
+
+
+.. _resolver_priority:
+
+Resolver Priority
+.................
+
+.. index:: resolver priority
+
+Within a realm you can give each resolver a priority. The priority is used to
+find a user that is located in several resolvers.
+
+Priorities are numbers between 1 and 999. The lower the number the higher the
+priority.
+
+**Example**:
+
+A user "administrator" is located in a resolver "users" which contains all
+Active Directory users. And the "administrator" is located in a resolver
+"admins", which contains all users in the Security Group "Domain
+Admins" from the very same domain. Both resolvers are in the realm
+"AD", "admins" with priority 1 and "users" with priority 2.
+
+Thus the user "administrator@AD" will always resolve to the user located in
+resolver "admins".
+
+This is useful to create policies for the security group "Domain
+Admins".
+
+.. note:: A resolver has a priority per realm. I.e. a resolver can have a
+   different priority in each realm.
 
 .. _autocreate_realm:
 
