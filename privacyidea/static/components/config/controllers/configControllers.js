@@ -737,6 +737,11 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory, $stat
         $scope.params.Map = '{ "userid" : "uid", "username": "uid", "givenname" : "displayname", "password" : "password" }';
     };
 
+    $scope.presetTypo3 = function () {
+        $scope.params.Table = "be_users";
+        $scope.params.Map = '{ "userid" : "uid", "username": "username", "givenname" : "realName", "password" : "password", "email": "email" }';
+    };
+
     $scope.setSQLResolver = function () {
         ConfigFactory.setResolver($scope.resolvername, $scope.params, function (data) {
             $scope.set_result = data.result.value;
