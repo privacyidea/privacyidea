@@ -1,0 +1,20 @@
+# cat=Server/Enable; type=boolean; label=Enable privacyIDEA authentication for TYPO3 backend users
+privacyIDEABackend = 1
+
+# cat=Server/Enable; type=boolean; label=Enable privacyIDEA authentication for TYPO3 frontend users
+privacyIDEAFrontend = 0
+
+# cat=Server; type=string; label=privacyIDEA Server URL: This is the base URL part of the privacyIDEA server. You do not need to add the trailing "validate/check" part.
+privacyIDEAURL = https://localhost
+
+# cat=Server; type=boolean; label=Check certificate: We recommend that you always check the certificate in productive environments. Otherwise the authentication could suffer from a MitM attack.
+privacyIDEACertCheck = 0
+
+# cat=Server/Optional; type=string; label=privacyIDEA realm
+privacyIDEARealm = ""
+
+# cat=Debug; type=boolean; label=Devlog: Write Debug Information to devlog
+devlog = 0
+
+# cat=Authentication; type=boolean; label=Pass to other authentication module:In case that privacyIDEA fails to authenticate the user the authentication request is passed to the next authentication module. 
+privacyIDEApassthru = 0

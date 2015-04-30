@@ -1,0 +1,96 @@
+#
+# Extension Builder settings for extension privacyidea
+# generated 2015-04-30T17:13:00Z
+#
+# See http://www.yaml.org/spec/1.2/spec.html
+#
+
+---
+
+###########    Overwrite settings  ###########
+#
+# These settings only apply, if the roundtrip feature of the extension builder
+# is enabled in the extension manager
+#
+# Usage:
+# nesting reflects the file structure
+# a setting applies to a file or recursive to all files and subfolders
+#
+# merge:
+#   means for classes: All properties ,methods and method bodies
+#   of the existing class will be modified according to the new settings
+#   but not overwritten
+#
+#   for locallang xlf files: Existing keys and labels are always
+#   preserved (renaming a property or DomainObject will result in new keys and new labels)
+#
+#   for other files: You will find a Split token at the end of the file
+#   After this token you can write whatever you want and it will be appended
+#   everytime the code is generated
+#
+# keep:
+#   files are never overwritten
+#   These settings may break the functionality of the extension builder!
+#   Handle with care!
+#
+#
+
+############  extension settings  ##############
+
+overwriteSettings:
+  Classes:
+    Controller: merge
+    Domain:
+      Model: merge
+      Repository: merge
+
+  Configuration:
+    #TCA: merge
+    #TypoScript: keep
+
+  Resources:
+    Private:
+      #Language: merge
+      #Templates: keep
+
+  ext_icon.gif: keep
+
+#  ext_localconf.php: merge
+
+#  ext_tables.php: merge
+
+#  ext_tables.sql: merge
+
+## use static date attribute in xliff files ##
+#staticDateInXliffFiles: 2015-04-30T17:13:00Z
+
+## list of error codes for warnings that should be ignored ##
+#ignoreWarnings:
+  #503
+
+######### settings for classBuilder #############################
+#
+# here you may define default parent classes for your classes
+# these settings only apply for new generated classes
+# you may also just change the parent class in the generated class file.
+# It will be kept on next code generation, if the overwrite settings
+# are configured to merge it
+#
+#################################################################
+
+classBuilder:
+
+  Controller:
+    parentClass: \TYPO3\CMS\Extbase\Mvc\Controller\ActionController
+
+  Model:
+    AbstractEntity:
+      parentClass: \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
+
+    AbstractValueObject:
+      parentClass: \TYPO3\CMS\Extbase\DomainObject\AbstractValueObject
+
+  Repository:
+    parentClass: \TYPO3\CMS\Extbase\Persistence\Repository
+
+  setDefaultValuesForClassProperties: true

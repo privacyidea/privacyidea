@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<xliff version="1.0">
+	<file source-language="en" datatype="plaintext" original="messages" date="2015-04-30T17:27:32Z" product-name="privacyidea">
+		<header/>
+		<body>
+			<trans-unit id="tx_privacyidea_domain_model_privacyideaauth">
+				<source>Privacy I D E A Auth</source>
+			</trans-unit>
+		</body>
+	</file>
+</xliff>

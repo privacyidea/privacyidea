@@ -1,0 +1,44 @@
+{
+    "modules": [
+    ],
+    "properties": {
+        "backendModules": [
+
+        ],
+        "description": "Two factor authentication for TYPO3 frontend and backend authenticating against your own privacyIDEA server.\nprivacyIDEA supports many different type of authentication devices like OTP token, display cards, Yubikey, SMS, Email...",
+        "emConf": {
+            "category": "services",
+            "custom_category": "",
+            "dependsOn": "typo3 => 6.2\n",
+            "disableLocalization": false,
+            "disableVersioning": false,
+            "sourceLanguage": "en",
+            "state": "alpha",
+            "targetVersion": "6.2",
+            "version": "0.1"
+        },
+        "extensionKey": "privacyidea",
+        "name": "privacyidea",
+        "originalExtensionKey": "privacyidea",
+        "persons": [
+            {
+                "company": "NetKnights GmbH",
+                "email": "cornelius.koelbel@netknights.it",
+                "name": "Cornelius K\u00f6lbel",
+                "role": "Developer"
+            }
+        ],
+        "plugins": [
+
+        ],
+        "vendorName": "NetKnightsGmbH"
+    },
+    "wires": [
+
+    ],
+    "log": {
+        "last_modified": "2015-04-30 05:27",
+        "extension_builder_version": "6.2.0",
+        "be_user": " (1)"
+    }
+}

@@ -1,0 +1,29 @@
+# This is the project specific Settings.yml file.
+# Place Sphinx specific build information here.
+# Settings given here will replace the settings of 'conf.py'.
+
+# Below is an example of intersphinx mapping declaration
+# Add more mappings depending on what manual you want to link to
+# Remove entirely if you don't need cross-linking
+
+---
+conf.py:
+  copyright: 2012-2013
+  project: Extension Name (Français)
+  version: x.y
+  release: x.y.z
+  intersphinx_mapping:
+    t3tsref:
+    - http://docs.typo3.org/typo3cms/TyposcriptReference/
+    - null
+  latex_documents:
+  - - Index
+    - <extension_key>.tex
+    - Extension Name (Français)
+    - Your Name
+    - manual
+  latex_elements:
+    papersize: a4paper
+    pointsize: 10pt
+    preamble: \usepackage{typo3}
+...
