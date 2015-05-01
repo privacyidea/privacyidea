@@ -78,23 +78,33 @@ class IdResolver (UserIdResolver):
         -         false if password does not match
         
         """
-        DN = self._getDN(uid)
+        if self.authtype == AUTHTYPE.NTLM:  # pragma: no cover
+            # fetch the PreWindows 2000 Domain from the self.binddn
+            # which would be of the format DOMAIN\username and compose the
+            # bind_user to DOMAIN\sAMAcountName
+            domain_name = self.binddn.split('\\')[0]
+            uinfo = self.getUserInfo(uid)
+            # In fact we need the sAMAccountName. If the username mapping is
+            # another attribute than the sAMAccountName the authentication
+            # will fail!
+            bind_user = "%s\%s" % (domain_name, uinfo.get("username"))
+        else:
+            bind_user = self._getDN(uid)
 
         server_pool = self.get_serverpool(self.uri, self.timeout)
         try:
             l = self.create_connection(authtype=self.authtype,
                                        server=server_pool,
-                                       user=DN,
+                                       user=bind_user,
                                        password=password,
                                        auto_referrals=not self.noreferrals)
             l.open()
-            #log.error("LDAP Server Pool States: %s" % server_pool.pool_states)
             if not l.bind():
                 raise Exception("Wrong credentials")
             l.unbind()
         except Exception, e:
             log.warning("failed to check password for %r/%r: %r"
-                        % (uid, DN, e))
+                        % (uid, bind_user, e))
             return False
         
         return True
