@@ -104,6 +104,13 @@ enable_apache() {
         ln -s /etc/ssl/private/privacyideaserver.key /etc/ssl/private/privacyidea.key || true
 }
 
+update_db() {
+	# Set the version to the first PI 2.0 version
+	pi-manage.py db stamp 4f32a4e1bf33 -d /usr/lib/privacyidea/migrations
+	# Upgrade the database
+	pi-manage.py db upgrade -d /usr/lib/privacyidea/migrations
+}
+
 case "$1" in
 
   configure)
@@ -115,6 +122,7 @@ case "$1" in
 	create_certificate
 	update-rc.d apache2 defaults
 	service apache2 restart
+	update_db
   ;;
 
   abort-upgrade|abort-remove|abort-deconfigure)

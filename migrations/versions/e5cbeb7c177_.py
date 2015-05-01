@@ -18,8 +18,9 @@ def upgrade():
     try:
         op.add_column('resolverrealm', sa.Column('priority', sa.Integer(),
                                                  nullable=True))
-    except Exception:
-        pass
+    except Exception as exx:
+        print "Could not add column 'priority' to table 'resolverrealm'"
+        print (exx)
 
 
 def downgrade():

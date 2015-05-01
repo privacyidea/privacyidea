@@ -1,4 +1,4 @@
-"""Update from versoin 1.5 to version 2.0
+"""Update from version 1.5 to version 2.0
 
 Revision ID: 4f32a4e1bf33
 Revises:
