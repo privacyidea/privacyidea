@@ -188,7 +188,6 @@ class LocalCAConnector(BaseCAConnector):
                                            certificate)
         return cert_obj
 
-
     def view_pending_certs(self):
         """
         CA Manager approval

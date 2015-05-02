@@ -6,7 +6,7 @@ Upgrading
 Upgrade From privacyIDEA 2.x to 2.3
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In 2.2 the priority of resolvers in realms was added.
+In 2.3 the priority of resolvers in realms was added.
 
 You need to update the database models::
 

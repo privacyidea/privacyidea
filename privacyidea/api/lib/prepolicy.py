@@ -37,7 +37,7 @@ from privacyidea.lib.error import PolicyError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION
 from privacyidea.lib.user import get_user_from_param
-from privacyidea.lib.token import get_tokens
+from privacyidea.lib.token import (get_tokens, get_realms_of_token)
 from privacyidea.lib.utils import generate_password
 import functools
 import json
@@ -384,9 +384,17 @@ def check_base_action(request=None, action=None):
     scope = SCOPE.ADMIN
     if role == "user":
         scope = SCOPE.USER
+    # get the realm by the serial:
+    realm = params.get("realm")
+    if params.get("serial") and not realm:
+        realms = get_realms_of_token(params.get("serial"))
+        if len(realms) > 0:
+            realm = realms[0]
+        else:
+            realm = None
     action = policy_object.get_policies(action=action,
                                         user=username,
-                                        realm=params.get("realm"),
+                                        realm=realm,
                                         scope=scope,
                                         client=request.remote_addr)
     action_at_all = policy_object.get_policies(scope=scope)

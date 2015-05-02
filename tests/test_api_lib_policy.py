@@ -4,7 +4,7 @@ This test file tests the api.lib.policy.py
 The api.lib.policy.py depends on lib.policy and on flask!
 """
 import json
-from .base import MyTestCase
+from .base import (MyTestCase, PWFILE)
 
 from privacyidea.lib.policy import (set_policy, delete_policy,
                                     PolicyClass, SCOPE, ACTION)
@@ -61,12 +61,51 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         self.assertRaises(PolicyError,
                           check_base_action, req, "disable")
 
+        # Action delete is not allowed
+        self.assertRaises(PolicyError,
+                          check_base_action, req, "delete")
+
+        # check action with a token realm
+        set_policy(name="pol1",
+                   scope=SCOPE.ADMIN,
+                   action="enable", client="10.0.0.0/8",
+                   realm="realm1")
+        set_policy(name="pol2",
+                   scope=SCOPE.ADMIN,
+                   action="*", client="10.0.0.0/8",
+                   realm="realm2")
+        g.policy_object = PolicyClass()
+        # set a polrealm1 and a polrealm2
+        # setup realm1
+        self.setUp_user_realms()
+        # setup realm2
+        self.setUp_user_realm2()
+        tokenobject = init_token({"serial": "POL001", "type": "hotp",
+                                  "otpkey": "1234567890123456"})
+        r = set_realms("POL001", [self.realm1])
+
+        tokenobject = init_token({"serial": "POL002", "type": "hotp",
+                                  "otpkey": "1234567890123456"})
+        r = set_realms("POL002", [self.realm2])
+
+        # Token in realm1 can not be deleted
+        req.all_data = {"serial": "POL001"}
+        self.assertRaises(PolicyError,
+                          check_base_action, req, "delete")
+        # while token in realm2 can be deleted
+        req.all_data = {"serial": "POL002"}
+        r = check_base_action(req, action="delete")
+        self.assertTrue(r)
+
         # A normal user can "disable", since no user policies are defined.
         g.logged_in_user = {"username": "user1",
                             "role": "user"}
         r = check_base_action(req, "disable")
         self.assertTrue(r)
         delete_policy("pol1")
+        delete_policy("pol2")
+        remove_token("POL001")
+        remove_token("POL002")
 
     def test_02_check_token_init(self):
         g.logged_in_user = {"username": "admin1",

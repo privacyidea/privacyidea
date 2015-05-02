@@ -55,7 +55,33 @@ class MyTestCase(unittest.TestCase):
         self.assertTrue(User().is_empty())
 
         user_repr = "%r" % user
-        expected = ("User(login='root', realm='realm1', resolver='resolver1')")
+        expected = "User(login='root', realm='realm1', resolver='resolver1')"
+        self.assertTrue(user_repr == expected, user_repr)
+
+    def setUp_user_realm2(self):
+        # create user realm
+        rid = save_resolver({"resolver": self.resolvername1,
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
+        self.assertTrue(rid > 0, rid)
+
+        (added, failed) = set_realm(self.realm2,
+                                    [self.resolvername1])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+
+        user = User(login="root",
+                    realm=self.realm2,
+                    resolver=self.resolvername1)
+
+        user_str = "%s" % user
+        self.assertTrue(user_str == "<root.resolver1@realm2>", user_str)
+
+        self.assertFalse(user.is_empty())
+        self.assertTrue(User().is_empty())
+
+        user_repr = "%r" % user
+        expected = "User(login='root', realm='realm2', resolver='resolver1')"
         self.assertTrue(user_repr == expected, user_repr)
 
     @classmethod
