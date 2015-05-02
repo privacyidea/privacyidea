@@ -34,6 +34,7 @@ import syslog
 import sqlite3
 import passlib.hash
 import time
+import traceback
 
 
 def _get_config(argv):
@@ -93,7 +94,14 @@ def pam_sm_authenticate(pamh, flags, argv):
             response = requests.post(URL + "/validate/check", data=data,
                                      verify=sslverify)
 
-            json_response = response.json()
+            try:
+                json_response = response.json()
+                syslog.syslog(syslog.LOG_DEBUG, "requests > 1.0")
+            except:
+                # requests < 1.0
+                json_response = response.json
+                syslog.syslog(syslog.LOG_DEBUG, "requests < 1.0")
+
             result = json_response.get("result")
             auth_item = json_response.get("auth_items")
             serial = json_response.get("detail", {}).get("serial",
@@ -117,6 +125,7 @@ def pam_sm_authenticate(pamh, flags, argv):
                 rval = pamh.PAM_SYSTEM_ERR
 
     except Exception as exx:
+        syslog.syslog(syslog.LOG_ERR, traceback.format_exc())
         syslog.syslog(syslog.LOG_ERR, "%s: %s" % (__name__, exx))
         rval = pamh.PAM_AUTH_ERR
     except requests.exceptions.SSLError:
