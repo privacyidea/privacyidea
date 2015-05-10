@@ -163,7 +163,7 @@ class ACTION():
     SYSTEMDELETE = "configdelete"
     SYSTEMWRITE = "configwrite"
     TOKENLABEL = "tokenlabel"
-    TOKENREALMS = "tokentealms"
+    TOKENREALMS = "tokenrealms"
     TOKENTYPE = "tokentype"
     UNASSIGN = "unassign"
     USERLIST = "userlist"
