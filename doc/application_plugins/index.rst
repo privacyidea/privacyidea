@@ -81,6 +81,13 @@ While you define the default authenticate type to be ``Perl`` in the
 .. note:: The perl module is not thread safe, so you need to start FreeRADIUS
    with the -t switch.
 
+You can test the RADIUS setup using a command like this::
+
+   echo "User-Name=user, Password=password" | radclient -sx yourRadiusServer \
+      auth topsecret
+
+.. note:: Do not forget to configure the ``clients.conf`` accordingly.
+
 .. _simplesaml_plugin:
 
 simpleSAMLphp Plugin
