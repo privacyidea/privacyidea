@@ -26,7 +26,8 @@ Description: two-factor authentication system e.g. for OTP devices
 
 Package: privacyidea-radius
 Architecture: all
-Depends: ${misc:Depends}, libwww-perl, libconfig-inifiles-perl, libdata-dump-perl, libtry-tiny-perl, freeradius
+Depends: ${misc:Depends}, libwww-perl, libconfig-inifiles-perl, libdata-dump-perl, libtry-tiny-perl, freeradius,
+ libjson-perl
 Description: FreeRADIUS module for privacyIDEA, OTP authentication
  privacyIDEA: identity, multifactor authentication, authorization.
  privacyIDEA is an open solution for strong two-factor authentication.
