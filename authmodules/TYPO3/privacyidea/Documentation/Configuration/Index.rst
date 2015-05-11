@@ -45,13 +45,13 @@ authenticate against privacyIDEA.
 
 **Pass to other authentication module**
 
- If the authentication at privacyIDEA fails, the credential the user entered
- will be verified against the next authentication module.
+If the authentication at privacyIDEA fails, the credential the user entered
+will be verified against the next authentication module.
 
- This can come in handy, if you are setting up the system and if you want to
- avoid locking yourself out.
+This can come in handy, if you are setting up the system and if you want to
+avoid locking yourself out.
 
- Anyway, in a productive environment you probably want to uncheck this feature.
+Anyway, in a productive environment you probably want to uncheck this feature.
 
 
 
