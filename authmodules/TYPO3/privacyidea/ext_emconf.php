@@ -12,7 +12,7 @@ privacyIDEA supports many different type of authentication devices like OTP toke
 	'uploadfolder' => '0',
 	'createDirs' => '',
 	'clearCacheOnLoad' => 0,
-	'version' => '0.1.0',
+	'version' => '0.1.1',
 	'constraints' => array(
 		'depends' => array(
 			'typo3' => '6.2.0-6.2.99',

@@ -1,4 +1,4 @@
-VERSION="0.1.0"
+VERSION="0.1.1"
 
 create_extension:
 	(cd privacyidea; zip -r ../privacyidea_$(VERSION).zip *)
