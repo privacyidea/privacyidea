@@ -11,29 +11,36 @@
 Introduction
 ============
 
+privacyIDEA is an Extension the changes the authentication in the backend and
+in the frontend.
 
 .. _what-it-does:
 
 What does it do?
 ----------------
 
-This chapter should give a brief overview of the extension. What does it do? What problems does it solve?
-Who is interested in this? Basically, this section includes everything people need to know to decide whether they
-should go on with this extension or not.
+This is an Authentication Extension, which allows you to authenticate
+with a second factor (possession) against privacyIDEA.
 
+`privacyIDEA`_ is a system to manage authentication devices like OTP-Tokens,
+Yubikeys, Google Authenticator, FreeOTP, One Time Passwords via Email and via
+SMS and many more.
 
-.. _screenshots:
+The great thing about privacyIDEA is, that you do not need to trust a service
+provider,
+since you can run *your own privacyIDEA* installation in your network or
+data center. *Your* server, *your* keys, *your* data and *your* control.
 
-Screenshots
------------
+You can setup one privacyIDEA system to manage all authentication devices of
+all your users and customers. Several TYPO3 installations can authenticate
+against this centrally managed privacyIDEA installation under your control.
 
-This chapter should help people figure how the extension works. Remove it
-if not relevant.
+For more information about installing a privacyIDEA system, please refer to
+the `external documentation`_ or take a look at this `video
+<https://www.youtube.com/watch?v=YzQPA3fQuYQ>`_.
 
-.. figure:: ../Images/IntroductionPackage.png
-   :width: 500px
-   :alt: Introduction Package
+For more information about configuring the privacyIDEA extension for TYPO3,
+please refer to :ref:`configuration`.
 
-   Introduction Package just after installation (caption of the image)
-
-   How the Frontend of the Introduction Package looks like just after installation (legend of the image)
+.. _privacyIDEA: https://privacyidea.org
+.. _external documentation: .. _install documentation: https://privacyidea.readthedocs.org/en/latest/installation/index.html

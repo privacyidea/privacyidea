@@ -11,6 +11,12 @@
 ChangeLog
 =========
 
-Providing a change log chapter is optional. You can also refer
-users to the ChangeLog file inside the extension or to some repository's
-commit listing.
+2015-05-11 0.1.0
+-----------------
+
+Initial upload of the extension.
+
+2015-05-11 0.1.4
+----------------
+
+Improving the documentation.

@@ -7,12 +7,13 @@ privacyIDEA supports many different type of authentication devices like OTP toke
 	'category' => 'services',
 	'author' => 'Cornelius Kölbel',
 	'author_email' => 'cornelius.koelbel@netknights.it',
+	'author_company' => 'NetKnights GmbH',
 	'state' => 'beta',
 	'internal' => '',
 	'uploadfolder' => '0',
 	'createDirs' => '',
 	'clearCacheOnLoad' => 0,
-	'version' => '0.1.1',
+	'version' => '0.1.4',
 	'constraints' => array(
 		'depends' => array(
 			'typo3' => '6.2.0-6.2.99',

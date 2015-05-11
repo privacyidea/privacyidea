@@ -11,12 +11,16 @@
 Configuration Reference
 =======================
 
+
+.. figure:: ../Images/configuration.png
+   :alt: Simple configuration
+
 The privacyIDEA extension is easily configured.
 
 **privacyIDEA Server URL**
 
 This is the URL of your privacyIDEA installation. For easy ways to install
-privacyIDEA take a look at `install documentaion`_.
+privacyIDEA take a look at `install documentation`_.
 
 **Check certificate**
 
@@ -39,7 +43,7 @@ and
 If checked, a user trying to authenticate at the frontend, will need to
 authenticate against privacyIDEA.
 
- **Pass to other authentication module**
+**Pass to other authentication module**
 
  If the authentication at privacyIDEA fails, the credential the user entered
  will be verified against the next authentication module.
@@ -51,4 +55,4 @@ authenticate against privacyIDEA.
 
 
 
-.. _install documentaion: https://privacyidea.readthedocs.org/en/latest/installation/index.html
+.. _install documentation: https://privacyidea.readthedocs.org/en/latest/installation/index.html

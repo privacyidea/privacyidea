@@ -23,11 +23,14 @@ privacyidea
 		en
 
 	:Description:
-		Two factor authentication for TYPO3 frontend and backend authenticating against your own privacyIDEA server.
-privacyIDEA supports many different type of authentication devices like OTP token, display cards, Yubikey, SMS, Email...
+		Two factor authentication for TYPO3 frontend and backend authenticating
+		against your own privacyIDEA server.
+		privacyIDEA supports many different type of authentication devices
+		like OTP token, display cards, Yubikey, SMS, Email...
 
 	:Keywords:
-		comma,separated,list,of,keywords
+		OTP, One Time Password, Two Factor Authentication, Authentication,
+		Secure Login, Security
 
 	:Copyright:
 		2015
@@ -56,11 +59,7 @@ privacyIDEA supports many different type of authentication devices like OTP toke
 	:glob:
 
 	Introduction/Index
-	User/Index
-	Administrator/Index
 	Configuration/Index
-	Developer/Index
 	KnownProblems/Index
 	ToDoList/Index
 	ChangeLog/Index
-	Targets

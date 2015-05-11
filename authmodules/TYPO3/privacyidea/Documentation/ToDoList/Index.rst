@@ -11,6 +11,13 @@
 To-Do list
 ==========
 
-Give a link pointing to a `roadmap <http://forge.typo3.org/projects/typo3cms-doc-official-extension-template/roadmap>`_.
-Alternatively, you can dress up a list of things you want to add or fix in this chapter
-or give a vision about where the extension is heading.
+You can see a roadmap of privacyIDEA itself at `github`_.
+
+Other things to do in the extension:
+
+  * Remove the debug thing.
+  * Add the possibility to test authentication.
+
+Feel free to add any issue and feature request at `github`_.
+
+.. _github: https://github.com/privacyidea/privacyidea
