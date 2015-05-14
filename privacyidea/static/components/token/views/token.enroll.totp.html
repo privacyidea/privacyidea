@@ -38,7 +38,7 @@ The TOTP token is a time based token. You can paste a secret key or
 <div class="form-group">
     <label for="timestep">Timestep</label>
     <select class="form-control"
-            ng-model="form.timestep"
+            ng-model="form.timeStep"
             name="timestep"
             ng-options="timestep for timestep in formInit.timesteps"></select>
     seconds.
@@ -48,7 +48,7 @@ The TOTP token is a time based token. You can paste a secret key or
     <label for="hashlib">Hash algorithm</label>
     <select class="form-control"
             id="hashlib"
-            ng-model="form.hashlib"
+            ng-model="form['totp.hashlib']"
             ng-options="hashlib for hashlib in formInit.hashlibs">
     </select>
 </div>

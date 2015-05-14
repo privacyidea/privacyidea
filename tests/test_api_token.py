@@ -732,3 +732,25 @@ class APITokenTestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
             self.assertFalse(result.get("value"))
+
+    def test_16_totp_timestep(self):
+        # Test the timestep of the token
+        for timestep in ["30", "60"]:
+            with self.app.test_request_context('/token/init',
+                                               data={"type": "totp",
+                                                     "serial": "totp%s" %
+                                                             timestep,
+                                                     "timeStep": timestep,
+                                                     "genkey": "1"},
+                                               method="POST",
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                result = json.loads(res.data).get("result")
+                self.assertTrue(result.get("value"))
+                detail = json.loads(res.data).get("detail")
+
+            token = get_tokens(serial="totp%s" % timestep)[0]
+            self.assertEqual(token.timestep, int(timestep))
+
+

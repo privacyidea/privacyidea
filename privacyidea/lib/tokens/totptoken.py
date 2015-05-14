@@ -179,7 +179,9 @@ class TotpTokenClass(HotpTokenClass):
                               get_from_config("totp.timeShift") or 0)
         # we support various hashlib methods, but only on create
         # which is effectively set in the update
-        hashlibStr = get_from_config("totp.hashlib", u'sha1')
+        hashlibStr = param.get("totp.hashlib",
+                               get_from_config("totp.hashlib",
+                                               u'sha1'))
 
         self.add_tokeninfo("timeWindow", timeWindow)
         self.add_tokeninfo("timeShift", timeShift)

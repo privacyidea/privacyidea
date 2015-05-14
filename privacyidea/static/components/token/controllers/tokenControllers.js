@@ -131,7 +131,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
 
     // These are values that are also sent to the backend!
     $scope.form = {
-        timestep: 30,
+        timeStep: 30,
         otplen: 6,
         genkey: true,
         type: "hotp",

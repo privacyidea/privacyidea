@@ -126,3 +126,5 @@ V	160422130819Z		10000081	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=requester.loc
 V	160422130819Z		10000082	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=usercert
 V	160422131733Z		10000083	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=requester.localdomain
 V	160422131733Z		10000084	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=usercert
+V	160513110135Z		10000085	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=requester.localdomain
+V	160513110135Z		10000086	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=usercert
