@@ -34,7 +34,7 @@ privacyIDEA provides a clean :ref:`rest_api`.
 
 Administrators can use a Web UI or a command line client to
 manage authentication devices. Users can log in to the Web UI to manage their
- own tokens.
+own tokens.
 
 Authentication is performed via the API or certain plugins for
 FreeRADIUS, simpleSAMLphp, Wordpress, Contao, Dokuwiki... to
