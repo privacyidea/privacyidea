@@ -140,9 +140,55 @@ A usual configuration will look like this::
                                  ),
     ),
 
+TYPO3
+-----
+You can install the privacyIDEA extension from the TYPO3 Extension Repository.
+The privacyIDEA extension is easily configured.
+
+**privacyIDEA Server URL**
+
+This is the URL of your privacyIDEA installation. You do not need to add the
+path *validate/check*. Thus the URL for a common installation would be
+*https://yourServer/*.
+
+**Check certificate**
+
+Whether the validity of the SSL certificate should be checked or not.
+
+.. warning:: If the SSL certificate is not checked,  the authentication
+request could be modified and the answer to the request can be modified,
+easily granting access to an attacker.
+
+**Enable privacyIDEA for backend users**
+
+If checked, a user trying to authenticate at the backend, will need to
+authenticate against privacyIDEA.
+
+
+**Enable privacyIDEA for frontend users**
+
+If checked, a user trying to authenticate at the frontend, will need to
+authenticate against privacyIDEA.
+
+**Pass to other authentication module**
+
+If the authentication at privacyIDEA fails, the credential the user entered
+will be verified against the next authentication module.
+
+This can come in handy, if you are setting up the system and if you want to
+avoid locking yourself out.
+
+Anyway, in a productive environment you probably want to uncheck this feature.
+
+OTRS
+----
+
+
+
+
 Further plugins
 ---------------
-You can find further plugins for TYPO3, OTRS at [#privacyideaGithub]_ and for
+You can find further plugins for
 Dokuwiki, Wordpress, Contao and Django at [#cornelinuxGithub]_.
 
 
