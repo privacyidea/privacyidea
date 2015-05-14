@@ -183,8 +183,30 @@ Anyway, in a productive environment you probably want to uncheck this feature.
 OTRS
 ----
 
+There are two plugins for OTRS. For OTRS version 4.0 and higher user
+*privacyIDEA-4_0.pm*.
 
+This perl module needs to be installed to the directory ``Kernel/System/Auth``.
 
+On Ubuntu 14.04 LTS you can also install the module using the PPA repository
+and installing::
+
+   apt-get install privacyidea-otrs
+
+To activate the OTP authentication you need to add the following to
+``Kernel/Config.pm``::
+
+   $Self->{'AuthModule'} = 'Kernel::System::Auth::privacyIDEA';
+   $Self->{'AuthModule::privacyIDEA::URL'} = \
+           "https://localhost/validate/check";
+   $Self->{'AuthModule::privacyIDEA::disableSSLCheck'} = "yes";
+
+.. note:: As mentioned earlier you should only disable the checking of the
+   SSL certificate if you are in a test environment. For productive use
+   you should never disable the SSL certificate checking.
+
+.. note:: This plugin requires, that you also add the path *validate/check*
+   to the URL.
 
 Further plugins
 ---------------
