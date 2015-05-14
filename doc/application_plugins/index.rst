@@ -140,7 +140,13 @@ A usual configuration will look like this::
                                  ),
     ),
 
+Further plugins
+---------------
+You can find further plugins for TYPO3, OTRS at [#privacyideaGithub]_ and for
+Dokuwiki, Wordpress, Contao and Django at [#cornelinuxGithub]_.
 
 
 .. [#rlmPerl] https://github.com/privacyidea/privacyidea/tree/master/authmodules/FreeRADIUS
-.. [#simpleSAML]  https://github.com/privacyidea/privacyidea/tree/master/authmodules/simpleSAMLphp
+.. [#simpleSAML] https://github.com/privacyidea/privacyidea/tree/master/authmodules/simpleSAMLphp
+.. [#privacyideaGithub] https://github.com/privacyidea/privacyidea/tree/master/authmodules
+.. [#cornelinuxGithub] https://github.com/cornelinux?tab=repositories
