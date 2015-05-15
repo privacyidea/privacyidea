@@ -13,3 +13,10 @@ Registration Code Token
 .. autoclass:: privacyidea.lib.tokens.registrationtoken.RegistrationTokenClass
    :members:
    :undoc-members:
+
+Certificate Token
+~~~~~~~~~~~~~~~~~
+
+.. autoclass:: privacyidea.lib.tokens.certificatetoken.CertificateTokenClass
+   :members:
+   :undoc-members:
