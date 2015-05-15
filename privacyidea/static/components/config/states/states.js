@@ -75,6 +75,22 @@ angular.module('privacyideaApp.configStates', ['ui.router']).config(
                     url: "/ldap/{resolvername:.*}",
                     templateUrl: configpath + "config.resolvers.sql.html"
                 })
+                .state('config.caconnectors', {
+                    url: "/caconnectors",
+                    templateUrl: configpath + "config.caconnectors.html"
+                })
+                .state('config.caconnectors.list', {
+                    url: "/list",
+                    templateUrl: configpath + "config.caconnectors.list.html"
+                })
+                .state('config.caconnectors.addlocal', {
+                    url: "/local",
+                    templateUrl: configpath + "config.caconnectors.local.html"
+                })
+                .state('config.caconnectors.editlocal', {
+                    url: "/local/{connectorname:.*}",
+                    templateUrl: configpath + "config.caconnectors.local.html"
+                })
                 .state('config.mresolvers', {
                     url: "/machineresolvers",
                     templateUrl: configpath + "config.machineresolvers.html"

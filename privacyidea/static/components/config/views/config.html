@@ -32,21 +32,28 @@
                     <a ui-sref="config.mresolvers">
                     <span class="glyphicon glyphicon-tasks"
                           aria-hidden="true"></span>
-                        Machine Resolvers
+                        Machines
                     </a>
                 </li>
                 <li ng-class="{active: $state.includes('config.resolvers')}">
                     <a ui-sref="config.resolvers">
                         <span class="glyphicon glyphicon-user"
                           aria-hidden="true"></span>
-                        User Resolvers
+                        Users
                     </a>
                 </li>
                 <li ng-class="{active: $state.includes('config.realms')}">
                     <a ui-sref="config.realms">
                         <span class="glyphicon glyphicon-globe"
                           aria-hidden="true"></span>
-                        User Realms
+                        Realms
+                    </a>
+                </li>
+                <li ng-class="{active: $state.includes('config.caconnectors')}">
+                    <a ui-sref="config.caconnectors">
+                        <span class="glyphicon glyphicon-bookmark"
+                          aria-hidden="true"></span>
+                        CAs
                     </a>
                 </li>
             </ul>

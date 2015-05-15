@@ -60,6 +60,7 @@ myApp.constant("validateUrl", backendUrl + instance + "/validate");
 myApp.constant("systemUrl", backendUrl + instance + "/system");
 myApp.constant("auditUrl", backendUrl + instance + "/audit");
 myApp.constant("policyUrl", backendUrl + instance + "/policy");
+myApp.constant("CAConnectorUrl", backendUrl + instance + "/caconnector");
 myApp.run(['$rootScope', '$state', '$stateParams',
         function ($rootScope, $state, $stateParams) {
 

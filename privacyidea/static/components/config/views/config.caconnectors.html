@@ -1,0 +1,35 @@
+<div class="row" ng-controller="CAConnectorController">
+    <div class="col-lg-3">
+        <div class="pa-sidebar panel">
+            <ul class="nav nav-pills nav-stacked">
+                <li role="presentation"
+                    ng-class="{ active:
+                    $state.includes('config.caconnectors.list')}">
+                    <a ui-sref="config.caconnectors.list">All
+                        CA Connectors</a></li>
+                <li role="presentation"
+                    ng-class="{ active:
+                    $state.includes('config.caconnectors.edit')}"
+                        ng-show="$state.includes('config.caconnectors.edit')">
+                    <a ui-sref="config.caconnector.edit">Edit CA Connector
+                        {{ connectorname }}</a></li>
+
+                <li class="nav nav-pills nav-header">New Connectors</li>
+                <!-- Here we can get all connectors and iterated over
+                     the resolver types.
+                -->
+                <li ng-repeat="connectortype in availableCAConnectorTypes"
+                        role="presentation"
+                    ng-class="{active:
+                    $state.includes('config.caconnectors.add'+connectortype) }">
+                    <a ui-sref="config.caconnectors.add{{ connectortype }}">
+                        New {{ connectortype | uppercase }} CA Connector</a>
+                </li>
+            </ul>
+        </div>
+
+    </div>
+    <div ui-view class="col-lg-9 slide panel">
+    </div>
+</div>
+

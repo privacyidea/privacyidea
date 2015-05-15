@@ -72,6 +72,7 @@ from .audit import audit_blueprint
 from .machineresolver import machineresolver_blueprint
 from .machine import machine_blueprint
 from .application import application_blueprint
+from .caconnector import caconnector_blueprint
 
 
 @system_blueprint.before_request
@@ -83,6 +84,7 @@ from .application import application_blueprint
 @policy_blueprint.before_request
 @user_blueprint.before_request
 @application_blueprint.before_request
+@caconnector_blueprint.before_request
 @admin_required
 def before_request():
     """
@@ -124,6 +126,7 @@ def before_request():
 @application_blueprint.after_request
 @machine_blueprint.after_request
 @machineresolver_blueprint.after_request
+@caconnector_blueprint.after_request
 def after_request(response):
     """
     This function is called after a request

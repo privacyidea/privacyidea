@@ -1,0 +1,29 @@
+<div>
+    <table class="table table-bordered table-responsive table-striped">
+        <thead>
+        <tr>
+            <th>CA Connector name</th>
+            <th>type</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="caconnector in CAConnectors">
+            <td>
+                {{ caconnector.connectorname}}
+            </td>
+            <td>
+                {{ caconnector.type }}
+            </td>
+            <td>
+                <button class="btn btn-sm btn-primary"
+                        ng-click="editCAConnector(caconnector.connectorname,
+                        caconnector.type)"
+                        >Edit</button>
+                <button class="btn btn-sm btn-danger"
+                        ng-click="delCAConnector(caconnector.connectorname)">
+                    <div class="glyphicon glyphicon-trash">
+                    Delete</div></button>
+            </td>
+        </tr>
+        </tbody>
+</div>

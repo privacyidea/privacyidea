@@ -362,6 +362,8 @@ myApp.controller("configController", function ($scope, $location,
     $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver', 'scimresolver'];
     // TODO: This information needs to be fetched from the server
     $scope.availableMachineResolverTypes = ['hosts', 'ldap'];
+    // TODO: This information needs to be fetched from the server
+    $scope.availableCAConnectorTypes = ['local'];
 
     $scope.isChecked = function (val) {
         // check if val is set
@@ -556,6 +558,64 @@ myApp.controller("hostsResolverController", function ($scope,
     };
 
 });
+
+myApp.controller("CAConnectorController", function($scope, ConfigFactory,
+                                                   $state, $rootScope,
+                                                   $location){
+    if ($location.path() == "/config/caconnectors") {
+        $location.path("/config/caconnectors/list");
+    }
+
+    $scope.getCAConnectors = function () {
+        ConfigFactory.getCAConnectors(function (data) {
+            $scope.CAConnectors = data.result.value;
+        });
+    };
+    $scope.getCAConnectors();
+
+    $scope.delCAConnector = function(connectorname) {
+        ConfigFactory.delCAConnector(connectorname, function(data){
+            $scope.getCAConnectors();
+        });
+    };
+
+    $scope.editCAConnector = function(connectorname, c_type) {
+        console.log(connectorname);
+        $state.go("config.caconnectors.edit" + c_type,
+                {'connectorname': connectorname});
+        $rootScope.returnTo = "config.caconnectors.list";
+    };
+});
+
+myApp.controller("LocalCAConnectorController", function($scope, $stateParams,
+                                                        ConfigFactory, $state) {
+    $scope.params = {
+        type: 'local'
+    };
+
+    $scope.connectorname = $stateParams.connectorname;
+    if ($scope.connectorname) {
+        /* If we have a connectorname, we do an Edit
+         and we need to fill all the $scope.params */
+        ConfigFactory.getCAConnector($scope.connectorname, function (data) {
+            console.log(data.result.value);
+            var caconnector = data.result.value[0];
+            $scope.params = caconnector.data;
+            $scope.params.type = 'local';
+        });
+    }
+
+    $scope.setCAConnector = function () {
+        ConfigFactory.setCAConnector($scope.connectorname,
+                                     $scope.params, function (data) {
+            $scope.set_result = data.result.value;
+            $scope.getCAConnectors();
+            $state.go("config.caconnectors.list");
+        });
+    };
+
+});
+
 
 myApp.controller("machineResolverController", function ($scope,
                                                         ConfigFactory,

@@ -1,0 +1,108 @@
+<div ng-controller="LocalCAConnectorController">
+
+    <h2 class="form-signin-heading"
+        ng-show="connectorname">Edit Local CA Connector
+        {{ connectorname }}</h2>
+
+    <h2 class="form-signin-heading"
+        ng-hide="connectorname">Create a new Local CA Connector</h2>
+
+    <form name="formAddLocal" role="form" validate
+          class="form-horizontal">
+
+        <div class="form-group">
+            <label for="connectorname" class="col-sm-3
+            control-label">Connector name</label>
+
+            <div class="col-sm-9">
+                <input name="connectorname" id="connectorname"
+                       class="form-control"
+                       ng-model="connectorname" required
+                       placeholder="MyConnector1"
+                       autofocus/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="openssl.cnf"
+                   class="col-sm-3 control-label">OpenSSL config file</label>
+
+            <div class="col-sm-9">
+                <input name="openssl.cnf" id="openssl.cnf"
+                       class="form-control"
+                       ng-model="params['openssl.cnf']" required
+                       placeholder="/etc/openssl.cnf"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="cacert"
+                   class="col-sm-3 control-label">CA Certificate</label>
+
+            <div class="col-sm-9">
+                <input name="cacert" id="cacert"
+                       class="form-control"
+                       ng-model="params.cacert" required
+                       placeholder="/etc/cacert.pem"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="cakey"
+                   class="col-sm-3 control-label">CA Key</label>
+
+            <div class="col-sm-9">
+                <input name="cakey" id="cakey"
+                       class="form-control"
+                       ng-model="params.cakey" required
+                       placeholder="/etc/cakey.pem"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="workingdir"
+                   class="col-sm-3 control-label">Working Directory</label>
+
+            <div class="col-sm-9">
+                <input name="workingdir" id="workingdir"
+                       class="form-control"
+                       ng-model="params.WorkingDir"
+                       placeholder="/opt/myCA"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="csrdir"
+                   class="col-sm-3 control-label">Certificate Signing
+                Request Directory</label>
+
+            <div class="col-sm-9">
+                <input name="csrdir" id="csrdir"
+                       class="form-control"
+                       ng-model="params.CSRDir"
+                       placeholder="/opt/myCA/csrs"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="certdir"
+                   class="col-sm-3 control-label">Certificate Directory</label>
+
+            <div class="col-sm-9">
+                <input name="certdir" id="certdir"
+                       class="form-control"
+                       ng-model="params.CertificateDir"
+                       placeholder="/opt/myCA/certs"/>
+            </div>
+        </div>
+
+        <div class="text-center">
+            <button ng-click="setCAConnector()"
+                    ng-disabled="forAddLocal.$invalid"
+                    class="btn btn-primary">Save resolver
+            </button>
+        </div>
+
+    </form>
+
+</div>

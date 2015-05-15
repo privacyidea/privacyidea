@@ -22,7 +22,8 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
                                          resolverUrl, realmUrl,
                                          machineResolverUrl,
                                          policyUrl,
-                                         defaultRealmUrl, systemUrl) {
+                                         defaultRealmUrl, systemUrl,
+                                         CAConnectorUrl) {
     /**
      Each service - just like this service factory - is a singleton.
      */
@@ -103,6 +104,18 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
             }).success(callback
             ).error(error_func);
         },
+        getCAConnectors: function (callback) {
+            $http.get(CAConnectorUrl, {
+                headers: {'Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
+        getCAConnector: function (connectorname, callback) {
+            $http.get(CAConnectorUrl + "/" + connectorname, {
+                headers: {'Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
         getRealms: function (callback) {
             $http.get(realmUrl, {
                 headers: {'Authorization': AuthFactory.getAuthToken()}
@@ -117,6 +130,12 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
         },
         setMachineResolver: function (name, params, callback) {
             $http.post(machineResolverUrl + "/" + name, params,
+                {headers: {'Authorization': AuthFactory.getAuthToken(),
+                           'Content-Type': 'application/json'}}).success(
+                callback).error(error_func);
+        },
+        setCAConnector: function(name, params, callback) {
+            $http.post(CAConnectorUrl + "/" + name, params,
                 {headers: {'Authorization': AuthFactory.getAuthToken(),
                            'Content-Type': 'application/json'}}).success(
                 callback).error(error_func);
@@ -144,6 +163,11 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
                 headers: {'Authorization': AuthFactory.getAuthToken() }
             }).success(callback).error(error_func);
 
+        },
+        delCAConnector: function(name, callback) {
+            $http.delete(CAConnectorUrl + "/" + name, {
+                headers: {'Authorization': AuthFactory.getAuthToken() }
+            }).success(callback).error(error_func);
         },
         setRealm: function(name, params, callback) {
             $http.post(realmUrl + "/" + name, params, {
