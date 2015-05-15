@@ -1,0 +1,13 @@
+<p>
+    The certificate was enrolled successfully.
+</p>
+<p>
+    <a download="{{ enrolledToken.serial }}.pem"
+       ng-href="{{ certificateBlob }}">
+        <span class="glyphicon glyphicon-bookmark"
+                          aria-hidden="true"></span>
+        Download</a> the certificate.
+</p>
+<pre>
+{{ enrolledToken.certificate }}
+</pre>

@@ -123,7 +123,8 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             "yubico": "Yubikey Cloud mode: Forward authentication request to YubiCloud",
             "radius": "RADIUS: Forward authentication request to a RADIUS server",
             "email": "EMail: Send a One Time Passwort to the users email address",
-            "sms": "SMS: Send a One Time Password to the users mobile phone"},
+            "sms": "SMS: Send a One Time Password to the users mobile phone",
+            "certificate": "Certificate: Enroll an x509 Certificate Token."},
         timesteps: [30, 60],
         otplens: [6, 8],
         hashlibs: ["sha1", "sha256", "sha512"]
@@ -137,9 +138,15 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         type: "hotp",
         hashlib: "sha1"
     };
+    $scope.CAConnectors = [];
 
     $scope.callback = function (data) {
         $scope.enrolledToken = data.detail;
+        if ($scope.enrolledToken.certificate) {
+            var blob = new Blob([ $scope.enrolledToken.certificate ],
+                { type : 'text/plain' });
+            $scope.certificateBlob = (window.URL || window.webkitURL).createObjectURL( blob );
+        }
     };
 
     $scope.enrollToken = function () {
@@ -165,6 +172,19 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             }
         }
     };
+
+    // get the list of configured CA connectors
+    $scope.getCAConnectors = function () {
+        ConfigFactory.getCAConnectors(function (data){
+            var CAConnectors = data.result.value;
+            angular.forEach(CAConnectors, function(value, key){
+                $scope.CAConnectors.push(value.connectorname);
+                $scope.form.ca = value.connectorname;
+            });
+            console.log($scope.CAConnectors);
+        });
+    };
+    $scope.getCAConnectors();
 
     // If the user is admin, he can read the config.
     if ($scope.loggedInUser.role == "admin") {

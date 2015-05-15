@@ -1,0 +1,25 @@
+<p class="help-block">
+    The Certificate Token lets you enroll an x509 ceritificate
+    by the given CA.
+</p>
+
+<h4>Token data</h4>
+
+<div class="form-group">
+    <label for="ca">CA Connector</label>
+    <select class="form-control"
+            ng-model="form.ca"
+            name="ca"
+            ng-options="connectorname for connectorname in CAConnectors"></select>
+</div>
+
+<div class="form-group">
+    <label for="request">Certificate Signing Request</label>
+    <textarea type="text"
+           rows="5"
+           class="form-control"
+           placeholder="Paste the Certificate Signing Request"
+           ng-model="form.request" name="request">
+    </textarea>
+</div>
+

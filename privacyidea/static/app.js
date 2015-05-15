@@ -89,6 +89,11 @@ myApp.config(['$httpProvider', function ($httpProvider) {
 
 }]);
 
+myApp.config(['$compileProvider',
+    function ($compileProvider) {
+        $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|tel|file|blob):/);
+}]);
+
 
 function addError(message, wait) {
     if (!wait) {
