@@ -370,7 +370,7 @@ class Audit(AuditBase):
             audit_dict = self.audit_entry_to_dict(le)
             audit_list = audit_dict.values()
             string_list = ["'%s'" % x for x in audit_list]
-            yield ",".join(string_list)
+            yield ",".join(string_list)+"\n"
 
     def search(self, search_dict, page_size=15, page=1, sortorder="asc"):
         """

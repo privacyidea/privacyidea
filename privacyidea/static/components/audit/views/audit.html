@@ -1,12 +1,12 @@
 <div class="well">
-    <button class="btn btn-default"
-            ng-click="download()">Download Audit log</button>
-    <a href="/audit/audit.csv">Download file</a>
+    <csv-download url="/audit/audit.csv" filename="audit.csv"></csv-download>
+
     <pagination ng-show="auditdata.count > 10"
                 total-items="auditdata.count" ng-model="params.page"
                 items-per-page="10"
                 max-size="10"
                 boundary-links="true" ng-change="pageChanged()"></pagination>
+
     {{ auditdata.count }} entries found.
 
     <div class="table-responsive">

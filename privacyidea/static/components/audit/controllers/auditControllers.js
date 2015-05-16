@@ -61,7 +61,9 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         console.log("download audit log");
         $http.get("/audit/" + filename, {
                     headers: {'Authorization': AuthFactory.getAuthToken()},
-                })
+                }).done(
+            alert("Data received.")
+        );
     };
 
     $scope.getAuditList();

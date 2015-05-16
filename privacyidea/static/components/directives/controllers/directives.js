@@ -252,3 +252,50 @@ myApp.directive('statusClass', function() {
         }
     };
 });
+
+// See http://blog.techdev.de/an-angularjs-directive-to-download-pdf-files/
+myApp.directive('csvDownload', function(AuthFactory, $http, instanceUrl) {
+    return {
+        restrict: 'E',
+        templateUrl: instanceUrl + "/static/components/directives/views/directive.csvdownload.html",
+        scope: true,
+        link: function (scope, element, attr) {
+            var anchor = element.children()[0];
+
+            // When the download starts, disable the link
+            scope.$on('download-start', function () {
+                $(anchor).attr('disabled', 'disabled')
+                    .text('Please Wait! Crunching data...');
+                scope.downloadProgress = true;
+            });
+
+            // When the download finishes, attach the data to the link. Enable the link and change its appearance.
+            scope.$on('downloaded', function (event, data) {
+                $(anchor).attr({
+                    href: 'data:text/csv;utf-8,' + encodeURI(data),
+                    download: attr.filename
+                })
+                    .removeAttr('disabled')
+                    .text('Save')
+                    .removeClass('btn-primary')
+                    .addClass('btn-success');
+
+                // Also overwrite the download pdf function to do nothing.
+                scope.downloadCSV = function () {
+                };
+            });
+        },
+        controller: ['$scope', '$attrs', '$http', function ($scope, $attrs, $http) {
+            $scope.downloadCSV = function () {
+                $scope.$emit('download-start');
+                console.log("Download start.");
+                $http.get($attrs.url, {
+                    headers: {'Authorization': AuthFactory.getAuthToken()}
+                }).then(function (response) {
+                    console.log("Downloaded.");
+                    $scope.$emit('downloaded', response.data);
+                });
+            }
+        }]
+    }
+});
