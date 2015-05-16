@@ -8,7 +8,7 @@ myApp.filter('capitalize', function () {
 });
 
 /*
- This is a tokeninfo filter, that truncates long entires like
+ This is a tokeninfo filter, that truncates long entries like
  "sshkey" and "certificate".
  */
 myApp.filter('truncate', function () {

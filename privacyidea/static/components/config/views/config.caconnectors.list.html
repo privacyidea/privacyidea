@@ -8,8 +8,9 @@
         </thead>
         <tbody>
         <tr ng-repeat="caconnector in CAConnectors">
-            <td>
-                {{ caconnector.connectorname}}
+            <td><a ui-sref="config.caconnectors.edit{{ caconnector.type }}
+                ({connectorname:caconnector.connectorname})">
+                    {{ caconnector.connectorname}}</a>
             </td>
             <td>
                 {{ caconnector.type }}

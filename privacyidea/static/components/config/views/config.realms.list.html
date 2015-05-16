@@ -25,7 +25,9 @@
             <td>
                 <span ng-hide="editRealm == realmname">
                     <span ng-repeat="reso in realm.resolver">
-                        <a ui-sref="config.resolvers.list">{{ reso.name }}</a>
+                        <a ui-sref="config.resolvers.edit{{ reso.type }}
+                            ({resolvername:reso.name})">
+                            {{ reso.name }}</a>
                         [{{ reso.priority }}]
                          ({{ reso.type }})<br>
                     </span>

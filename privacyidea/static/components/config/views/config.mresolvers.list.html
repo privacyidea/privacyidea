@@ -8,8 +8,9 @@
         </thead>
         <tbody>
         <tr ng-repeat="resolver in machineResolvers">
-            <td>
-                {{ resolver.resolvername }}
+            <td><a ui-sref="config.mresolvers.edit{{ resolver.type }}
+                ({resolvername:resolver.resolvername})">
+                    {{ resolver.resolvername }}</a>
             </td>
             <td>
                 {{ resolver.type }}
