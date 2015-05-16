@@ -32,6 +32,9 @@ The configuration could look like this::
 The URL parameter defaults to ``https://localhost``. You can also add the
 parameters ``realm=`` and ``debug``.
 
+If you want to disable certificate validation, which you should not do in a
+productive environment, you can use the parameter ``nosslverify``.
+
 The default behaviour is to trigger an online authentication request.
 If the request was successful, the user is logged in.
 If the request was done with a token defined for offline authentication, than
