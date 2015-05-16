@@ -98,7 +98,9 @@
             logged-in-user="loggedInUser"></tr>
         <tr>
             <td>Info</td>
-            <td>{{ token.info | json }}
+            <td><li ng-repeat="(k,v) in token.info">
+                    {{ k }}: {{ v | truncate:30 }}
+                </li>
                 <div ng-show="editTokenInfo">
                     <div class="form-group">
                         <label for="max_auth_count">

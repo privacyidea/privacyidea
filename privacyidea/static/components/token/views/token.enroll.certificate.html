@@ -5,21 +5,86 @@
 
 <h4>Token data</h4>
 
-<div class="form-group">
-    <label for="ca">CA Connector</label>
-    <select class="form-control"
-            ng-model="form.ca"
-            name="ca"
-            ng-options="connectorname for connectorname in CAConnectors"></select>
-</div>
+<ul class="nav nav-pills">
+    <li role="presentation"
+        ng-click="radioCSR='csrgenerate'"
+        ng-class="{active: radioCSR == 'csrgenerate'}">
+        <a>Generate Request</a>
+    </li>
+    <li role="presentation"
+        ng-click="radioCSR='csrupload'"
+        ng-class="{active: radioCSR == 'csrupload'}">
+        <a>Upload Request</a>
+    </li>
+    <li role="presentation"
+        ng-click="radioCSR='certupload'"
+        ng-class="{active: radioCSR == 'certupload'}">
+        <a>Upload Certificate</a>
+    </li>
+</ul>
 
-<div class="form-group">
-    <label for="request">Certificate Signing Request</label>
+<div class="well well-lg">
+    <div class="form-group">
+        <label for="ca">CA Connector</label>
+        <select class="form-control"
+                ng-model="form.ca"
+                name="ca"
+                ng-options="connectorname for connectorname in CAConnectors"></select>
+    </div>
+
+
+    <!--------------- Upload Certificate ---------------->
+    <div class="form-group" ng-show="radioCSR == 'certupload'">
+        <label for="certificate">Certificate (PEM)</label>
     <textarea type="text"
-           rows="5"
-           class="form-control"
-           placeholder="Paste the Certificate Signing Request"
-           ng-model="form.request" name="request">
+              rows="5"
+              class="form-control"
+              placeholder="Paste the Certificate"
+              ng-model="form.certificate" name="certificate">
     </textarea>
-</div>
+    </div>
 
+    <!--------------- Upload Request ---------------->
+    <div class="form-group" ng-show="radioCSR == 'csrupload'">
+        <label for="request">Certificate Signing Request (PEM)</label>
+    <textarea type="text"
+              rows="5"
+              class="form-control"
+              placeholder="Paste the Certificate Signing Request"
+              ng-model="form.request" name="request">
+    </textarea>
+    </div>
+
+    <!------------ Generate Request --------------------->
+    <div ng-show="radioCSR == 'csrgenerate'">
+        <span class="label label-warning">
+            Not yet implemented!
+        </span>
+
+        <div class="form-group">
+            <input type="checkbox" ng-model="form.genkey"
+                   name="generate" id="generate">
+            <label for="generate">Generate the Key Pair on the Server</label>
+
+            <div ng-show="form.genkey">
+                <p class="help-block">
+                    The server will create the private RSA key and store it in
+                    the
+                    database. If want to create the key pair client side,
+                    uncheck
+                    this option.
+                </p>
+            </div>
+        </div>
+
+        <div ng-show="!form.genkey">
+            <p class="help-block">
+                The RSA keys will be generated in the browser.
+            </p>
+            <keygen name="RSApublicKey" challenge="123456789"
+                    KEYTYPE="RSA"
+                    />
+        </div>
+    </div>
+
+</div>

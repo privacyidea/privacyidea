@@ -139,6 +139,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         hashlib: "sha1"
     };
     $scope.CAConnectors = [];
+    $scope.radioCSR = 'csrgenerate';
 
     $scope.callback = function (data) {
         $scope.enrolledToken = data.detail;
