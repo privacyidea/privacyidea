@@ -1,10 +1,11 @@
-python-privacyidea (2.3~dev0) trusty; urgency=low
+python-privacyidea (2.3~dev1) trusty; urgency=low
 
   * start 2.3 devel
   * Fix bug, that would not increase the failcounter of yubikeys
   * Fix bug for failcounter handling
+  * Enroll Certificates
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 10 Apr 2015 07:00:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Sun, 17 May 2015 13:30:00 +0200
 
 python-privacyidea (2.2-1trusty) trusty; urgency=low
 
