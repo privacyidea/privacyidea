@@ -18,35 +18,11 @@ from privacyidea.models import (Token)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
                                     get_inc_fail_count_on_false_pin)
 import datetime
-from privacyidea.lib.token import (create_tokenclass_object,
-                                    get_tokens,
-                                    get_token_type, check_serial,
-                                    get_num_tokens_in_realm,
-                                    get_realms_of_token,
-                                    token_exist, token_has_owner,
-                                    get_token_owner, is_token_owner,
-                                    get_tokenclass_info,
-                                    get_tokens_in_resolver,
-                                    get_all_token_users, get_otp,
-                                    get_token_by_otp, get_serial_by_otp,
-                                    get_tokenserial_of_transaction,
-                                    gen_serial, init_token, remove_token,
-                                    set_realms, set_defaults, assign_token,
-                                    unassign_token, resync_token,
-                                    reset_token, set_pin, set_pin_user,
-                                    set_pin_so, enable_token,
-                                    is_token_active, set_hashlib, set_otplen,
-                                    set_count_auth, add_tokeninfo,
-                                    set_sync_window, set_count_window,
-                                    set_description, get_multi_otp,
-                                    set_max_failcount, copy_token_pin,
-                                    copy_token_user, lost_token,
-                                    check_token_list, check_serial_pass,
-                                    check_user_pass, auto_assign_token,
-                                    get_dynamic_policy_definitions,
-                                    get_tokens_paginate)
+from privacyidea.lib.token import (get_tokens, init_token, remove_token,
+                                   reset_token, set_validity_period_start,
+                                   set_validity_period_end)
 
-from privacyidea.lib.error import (TokenAdminError, ParameterError)
+from privacyidea.lib.error import (ParameterError)
 
 
 class ValidateAPITestCase(MyTestCase):
@@ -491,3 +467,50 @@ class ValidateAPITestCase(MyTestCase):
 
         # delete the token
         remove_token(serial=serial)
+
+    def test_14_check_validity_period(self):
+        serial = "VP001"
+        password = serial
+        init_token({"serial": serial,
+                    "type": "spass",
+                    "pin": password}, user=User("cornelius", self.realm1))
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": password}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value"))
+
+        # Set validity period
+        token_obj = get_tokens(serial=serial)[0]
+        token_obj.set_validity_period_end("01/01/15 10:00")
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": password}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertFalse(result.get("value"))
+            details = json.loads(res.data).get("detail")
+            self.assertTrue("Outside validity period" in details.get("message"))
+
+        token_obj.set_validity_period_end("01/01/99 10:00")
+        token_obj.set_validity_period_start("01/01/98 10:00")
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": password}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertFalse(result.get("value"))
+            details = json.loads(res.data).get("detail")
+            self.assertTrue("Outside validity period" in details.get("message"))
+
+        # delete the token
+        remove_token(serial="VP001")

@@ -3,6 +3,9 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2015-05-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add setting validity period
+#
 # 2015-03-14 Cornelius Kölbel, <cornelius@privacyidea.org>
 #            Add get_serial_by_otp
 # 2014-12-08 Cornelius Kölbel, <cornelius@privacyidea.org>
@@ -44,15 +47,14 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          set_sync_window, set_count_auth,
                          set_hashlib, set_max_failcount, set_realms,
                          copy_token_user, copy_token_pin, lost_token,
-                         get_serial_by_otp, get_tokens)
+                         get_serial_by_otp, get_tokens,
+                         set_validity_period_end, set_validity_period_start)
 from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
 from privacyidea.lib.error import (ParameterError, TokenAdminError)
 from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
                                        parseYubicoCSV)
-
 import logging
-log = logging.getLogger(__name__)
 from lib.utils import getParam
 from flask import request, g
 from privacyidea.lib.audit import getAudit
@@ -69,7 +71,7 @@ from privacyidea.api.auth import (user_required, admin_required)
 from privacyidea.api.audit import audit_blueprint
 
 token_blueprint = Blueprint('token_blueprint', __name__)
-
+log = logging.getLogger(__name__)
 
 __doc__ = """
 The token API can be accessed via /token.
@@ -643,6 +645,8 @@ def set_api(serial=None):
     max_failcount = getParam(request.all_data, "max_failcount")
     count_auth_max = getParam(request.all_data, "count_auth_max")
     count_auth_success_max = getParam(request.all_data, "count_auth_success_max")
+    validity_period_start = getParam(request.all_data, "validity_period_start")
+    validity_period_end = getParam(request.all_data, "validity_period_end")
 
     res = 0
 
@@ -682,6 +686,20 @@ def set_api(serial=None):
                                        count_auth_success_max})
         res += set_count_auth(serial, count_auth_success_max, user=user,
                               max=True, success=True)
+
+    if validity_period_end:
+        g.audit_object.add_to_log({'action_detail':
+                                       "validity_period_end=%r, " %
+                                       validity_period_end})
+        res += set_validity_period_end(serial, user, validity_period_end)
+
+    if validity_period_start:
+        g.audit_object.add_to_log({'action_detail':
+                                       "validity_period_start=%r, " %
+                                       validity_period_start})
+        res += set_validity_period_start(serial, user, validity_period_start)
+
+
 
     g.audit_object.log({"success": True})
     return send_result(res)

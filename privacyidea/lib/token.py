@@ -1338,6 +1338,42 @@ def add_tokeninfo(serial, info, value=None,
 
 @log_with(log)
 @check_user_or_serial
+def set_validity_period_start(serial, user, start):
+    """
+    Set the validity period for the given token.
+
+    :param serial:
+    :param user:
+    :param start: Timestamp in the format DD/MM/YY HH:MM
+    :type start: basestring
+    """
+    tokenobject_list = get_tokens(serial=serial, user=user)
+    for tokenobject in tokenobject_list:
+        tokenobject.set_validity_period_start(start)
+        tokenobject.save()
+    return len(tokenobject_list)
+
+
+@log_with(log)
+@check_user_or_serial
+def set_validity_period_end(serial, user, end):
+    """
+    Set the validity period for the given token.
+
+    :param serial:
+    :param user:
+    :param end: Timestamp in the format DD/MM/YY HH:MM
+    :type end: basestring
+    """
+    tokenobject_list = get_tokens(serial=serial, user=user)
+    for tokenobject in tokenobject_list:
+        tokenobject.set_validity_period_end(end)
+        tokenobject.save()
+    return len(tokenobject_list)
+
+
+@log_with(log)
+@check_user_or_serial
 def set_sync_window(serial, syncwindow=1000, user=None):
     """
     The sync window is the window that is used during resync of a token.
@@ -1765,7 +1801,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 message_list.append("Token is disabled")
             elif not token_obj.check_failcount():
                 message_list.append("Failcounter exceeded")
-            # TODO: Add validity period check
+            elif not token_obj.check_validity_period():
+                message_list.append("Outside validity period")
             else:
                 # The token is active and the auth counters are ok.
                 res = True

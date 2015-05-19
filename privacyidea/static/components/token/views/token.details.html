@@ -98,27 +98,73 @@
             logged-in-user="loggedInUser"></tr>
         <tr>
             <td>Info</td>
-            <td><li ng-repeat="(k,v) in token.info">
+            <td>
+                <li ng-repeat="(k,v) in token.info">
                     {{ k }}: {{ v | truncate:30 }}
                 </li>
                 <div ng-show="editTokenInfo">
                     <div class="form-group">
-                        <label for="max_auth_count">
+                        <label for="max_auth_count" class="col-sm-6">
                             Maximum Authentication Count
                         </label>
                         <input ng-model="max_auth_count"
+                               class="col-sm-6"
                                id="max_auth_count"
                                type="number"
-                                placeholder="Max allowed auths">
+                               placeholder="Max allowed auths">
                     </div>
                     <div class="form-group">
-                        <label for="max_success_auth_count">
-                            Maximum Success Authentication Count
+                        <label for="max_success_auth_count"
+                                class="col-sm-6">
+                            Maximum Success Auth Count
                         </label>
                         <input ng-model="max_success_auth_count"
+                               class="col-sm-6"
                                type="number"
                                placeholder="Max allowed successful auths"
                                id="max_success_auth_count">
+                    </div>
+                    <!-- =========== EDIT Validity period ============ -->
+                    <div class="form-group">
+                        <label for="validity_start" class="col-sm-6">
+                            Validity Start
+                        </label>
+                        <p class="input-group col-sm-6">
+                            <input type="text" class="form-control"
+                                   id="validity_start"
+                                   datepicker-popup="dd/MM/yy"
+                                   ng-model="validity_period_start"
+                                   is-open="startOpened"
+                                   min-date="today"
+                                   ng-required="true" close-text="Close"/>
+                          <span class="input-group-btn">
+                            <button type="button" class="btn btn-default"
+                                    ng-click="openStart($event)"><i
+                                    class="glyphicon glyphicon-calendar"></i>
+                            </button>
+                          </span>
+                        </p>
+                    </div>
+                    <div class="form-group">
+                        <label for="validity_end" class="col-sm-6">
+                            Validity End
+                        </label>
+                        <p class="input-group col-sm-6">
+                            <input type="text" class="form-control"
+                                   id="validity_end"
+                                   datepicker-popup="dd/MM/yy"
+                                   ng-model="validity_period_end"
+                                   is-open="endOpened"
+                                   min-date="validity_period_start"
+                                   datepicker-options="dateOptions"
+                                   ng-required="true" close-text="Close"/>
+                          <span class="input-group-btn">
+                            <button type="button" class="btn btn-default"
+                                    ng-click="openEnd($event)"><i
+                                    class="glyphicon glyphicon-calendar"></i>
+                            </button>
+                          </span>
+                        </p>
                     </div>
                 </div>
             </td>
@@ -422,7 +468,7 @@
             <input name="option_{{ option }}"
                    ng-model="form.options[option]"
                    class="form-control" ng-required="1"
-                    placeholder="required">
+                   placeholder="required">
         </div>
         <div class="form-group"
              ng-repeat="option in Applications[form.application].options.optional">

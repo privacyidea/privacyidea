@@ -732,8 +732,15 @@ class TokenClass(object):
                          throw an exception
         :type end_date: string
         """
-        # upper layer will catch. we just try to verify the date format
-        datetime.datetime.strptime(end_date, DATE_FORMAT)
+        try:
+            # try the first date format
+            dt = datetime.datetime.strptime(end_date,
+                                            "%Y-%m-%dT%H:%M:%S.000Z")
+            end_date = dt.strftime(DATE_FORMAT)
+        except ValueError:
+            # upper layer will catch. we just try to verify the date format
+            datetime.datetime.strptime(end_date, DATE_FORMAT)
+
         self.add_tokeninfo("validity_period_end", end_date)
 
     def get_validity_period_start(self):
@@ -754,8 +761,15 @@ class TokenClass(object):
                            throw an exception
         :type start_date: string
         """
-        #  upper layer will catch. we just try to verify the date format
-        datetime.datetime.strptime(start_date, DATE_FORMAT)
+        try:
+            # try the first date format
+            dt = datetime.datetime.strptime(start_date,
+                                            "%Y-%m-%dT%H:%M:%S.000Z")
+            start_date = dt.strftime(DATE_FORMAT)
+        except ValueError:
+            #  upper layer will catch. we just try to verify the date format
+            datetime.datetime.strptime(start_date, DATE_FORMAT)
+
         self.add_tokeninfo("validity_period_start", start_date)
 
     def inc_count_auth_success(self):
@@ -815,14 +829,16 @@ class TokenClass(object):
         """
         start = self.get_validity_period_start()
         end = self.get_validity_period_end()
-        
-        dt_start = datetime.datetime.strptime(start, DATE_FORMAT)
-        dt_end = datetime.datetime.strptime(end, DATE_FORMAT)
-        if dt_end < datetime.datetime.now():
-            return False
 
-        if dt_start > datetime.datetime.now():
-            return False
+        if start:
+            dt_start = datetime.datetime.strptime(start, DATE_FORMAT)
+            if dt_start > datetime.datetime.now():
+                return False
+
+        if end:
+            dt_end = datetime.datetime.strptime(end, DATE_FORMAT)
+            if dt_end < datetime.datetime.now():
+                return False
 
         return True
 

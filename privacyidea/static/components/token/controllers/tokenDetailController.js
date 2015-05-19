@@ -83,7 +83,9 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.saveTokenInfo = function () {
         TokenFactory.set_dict($scope.tokenSerial,
             {count_auth_max: $scope.max_auth_count,
-             count_auth_success_max: $scope.max_success_auth_count},
+             count_auth_success_max: $scope.max_success_auth_count,
+             validity_period_end: $scope.validity_period_end,
+             validity_period_start: $scope.validity_period_start},
             $scope.get);
     };
 
@@ -219,5 +221,27 @@ myApp.controller("tokenDetailController", function ($scope,
         $scope.getMachines();
     }  // End of admin functions
 
+
+    // ===========================================================
+    // =============== Tokeninfo Date stuff ======================
+    // ===========================================================
+    $scope.today = new Date();
+
+    $scope.openStart = function($event) {
+        $event.preventDefault();
+        $event.stopPropagation();
+        $scope.startOpened = true;
+    };
+
+    $scope.openEnd = function($event) {
+        $event.preventDefault();
+        $event.stopPropagation();
+        $scope.endOpened = true;
+    };
+
+    $scope.dateOptions = {
+        formatYear: 'yy',
+        startingDay: 1
+    };
 
 });

@@ -54,6 +54,11 @@ The default behaviour is to use the serial number.
 
 .. note:: This is useful to identify the token in the Authenticator App.
 
+.. warning:: If you are only using <u> as tokenlabel and you enroll the token
+   without a user, this will result in an invalid QR code, since it will have
+   an empty label. You should rather use a label like "user: <u>", which would
+   result in "user: ".
+
 
 .. _autoassignment:
 

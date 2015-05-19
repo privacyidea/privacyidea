@@ -496,12 +496,16 @@ class APITokenTestCase(MyTestCase):
                                                   "count_window": 11,
                                                   "sync_window": 999,
                                                   "max_failcount": 15,
-                                                  "description": "Some Token"},
+                                                  "description": "Some Token",
+                                                  "validity_period_start":
+                                                      "22/05/14 22:00",
+                                                  "validity_period_end":
+                                                      "23/10/14 23:00"},
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
-            self.assertTrue(result.get("value") == 7, result)
+            self.assertTrue(result.get("value") == 9, result)
 
         # check the values
         with self.app.test_request_context('/token/',
@@ -526,6 +530,10 @@ class APITokenTestCase(MyTestCase):
                             tokeninfo)
             self.assertTrue(tokeninfo.get("count_auth_success_max") == "8",
                             tokeninfo)
+            self.assertEqual(tokeninfo.get("validity_period_start"),
+                             "22/05/14 22:00")
+            self.assertEqual(tokeninfo.get("validity_period_end"),
+                             "23/10/14 23:00")
 
     def test_10_set_token_realms(self):
         self._create_temp_token("REALM001")

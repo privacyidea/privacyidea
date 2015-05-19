@@ -293,7 +293,14 @@ class TokenBaseTestCase(MyTestCase):
         token.set_validity_period_end("30/12/21 16:00")
         self.assertTrue(token.check_validity_period())
 
-        
+        token.set_validity_period_end("2015-05-22T22:00:00.000Z")
+        end = token.get_validity_period_end()
+        self.assertEqual(end, "22/05/15 22:00")
+
+        token.set_validity_period_start("2015-05-22T22:00:00.000Z")
+        start = token.get_validity_period_start()
+        self.assertEqual(start, "22/05/15 22:00")
+
         # check validity period
         # +5 days
         end_date = datetime.datetime.now() + datetime.timedelta(5)
