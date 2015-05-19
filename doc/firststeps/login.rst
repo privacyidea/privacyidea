@@ -16,6 +16,25 @@ You should enter your username and choose the right realm.
 If the dropdown box is not displayed, then you need to 
 append the realm to the username like ``username@realm``.
 
+Login for administrators
+------------------------
+
+Administrators can authenticate at this login form to access
+the management UI.
+
+Administrators are stored in the database table ``Admin`` and can be managed
+with the tool::
+
+   pi-manage.py admin ...
+
+The administrator just logs in with his username.
+
+.. note:: You can configure privacyIDEA to authenticate administrators
+   against privacyIDEA itself, so that administrators
+   need to login with a second factor. See SUPERUSER_REALM in
+   :ref:`inifile_superusers` how to do this.
+
+
 Login for normal users
 ----------------------
 
@@ -35,22 +54,4 @@ the user needs to authenticate with his LDAP/AD password.
    I.e. this way the user needs to authenticate with
    a second factor/token to access the self service
    portal. (see the policy section :ref:`policy_login_mode`)
-
-Login for administrators
-------------------------
-
-Administrators can authenticate at this login form to access
-the management UI.
-
-Administrators are stored in the database table ``Admin`` and can be managed
-with the tool::
-
-   pi-manage.py admin ...
-
-The administrator just logs in with his username.
-
-.. note:: You can configure privacyIDEA to authenticate administrators
-   against privacyIDEA itself, so that administrators
-   need to login with a second factor. See SUPERUSER_REALM in
-   :ref:`inifile_superusers` how to do this.
 

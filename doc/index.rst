@@ -34,13 +34,12 @@ Table of Contents
 
 .. toctree::
    :maxdepth: 1
+   :glob:
+   :numbered:
 
    overview/index
    installation/index
-   installation/upgrade
-   system/inifile
-   system/wsgiscript
-   webui/login
+   firststeps/index
    configuration/index
    tokenview/index
    userview/index
