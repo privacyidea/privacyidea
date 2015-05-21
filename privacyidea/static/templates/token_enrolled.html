@@ -1,15 +1,41 @@
 {% include 'header.html' %}
 
-<!-- Include menu -->
+<div class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="#">privacyIDEA Certificate</a>
 
-<ng-include src="'{{ instance }}/static/templates/menu.html'">
-</ng-include>
-
-<div class="container">
-    <div ui-view class="slide"></div>
+        <ul class="nav navbar-nav navbar-right">
+            <li>
+                <button onclick="window.close()"
+                        class="btn btn-sm btn-warning">
+                    Close Window
+                </button>
+            </li>
+        </ul>
+    </div>
 </div>
 
-{% raw %}
+<!----------------- main -------------------------->
+
+<div class="container">
+
+<p>
+The certificate with token serial {{ serial }} for user {{ username }}
+    ({{ role }}) was    enrolled    successfully.
+</p>
+
+<a href="data:application/x-x509-user-cert;base64,{{ cert_pem }}">Install
+    Certificate to Browser</a>
+
+<div class="well">
+    <pre>{{ certificate }}
+    </pre>
+</div>
+
+</div>
+
+<!------------------ footer ------------------------------->
+
 <div class="navbar navbar-inverse navbar-fixed-bottom">
     <div class="container">
         <a ng-click="about()"
@@ -34,6 +60,5 @@
         </a>
     </div>
 </div>
-{% endraw %}
 
 {% include 'footer.html' %}

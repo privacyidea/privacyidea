@@ -35,6 +35,7 @@ from privacyidea.api.application import application_blueprint
 from privacyidea.api.caconnector import caconnector_blueprint
 from privacyidea.api.auth import jwtauth
 from privacyidea.webui.login import login_blueprint
+from privacyidea.webui.certificate import cert_blueprint
 from privacyidea.api.machineresolver import machineresolver_blueprint
 from privacyidea.api.machine import machine_blueprint
 from privacyidea.lib.log import SecureFormatter
@@ -105,7 +106,7 @@ def create_app(config_name="development",
     app.register_blueprint(machine_blueprint, url_prefix='/machine')
     app.register_blueprint(application_blueprint, url_prefix='/application')
     app.register_blueprint(caconnector_blueprint, url_prefix='/caconnector')
-    
+    app.register_blueprint(cert_blueprint, url_prefix='/certificate')
     db.init_app(app)
     migrate = Migrate(app, db)
 

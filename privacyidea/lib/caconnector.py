@@ -126,6 +126,7 @@ def get_caconnector_list(filter_caconnector_type=None,
         returned
     :type filter_caconnector_type: string
     :rtype: list of the connectors and their configuration
+
     """
     Connectors = []
     if filter_caconnector_name:
