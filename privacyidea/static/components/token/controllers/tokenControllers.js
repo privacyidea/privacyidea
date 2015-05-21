@@ -76,7 +76,8 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
 
 myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                                                     $stateParams, AuthFactory,
-                                                    ConfigFactory, instanceUrl) {
+                                                    ConfigFactory, instanceUrl,
+                                                    $http) {
     $scope.loggedInUser = AuthFactory.getUser();
     $scope.newUser = {};
     $scope.tempData = {};
@@ -205,6 +206,19 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             });
         });
     }
+
+    // open the window to generate the key pair
+    $scope.openCertificateWindow = function () {
+        var params = {authtoken: AuthFactory.getAuthToken(),
+                      ca: $scope.form.ca};
+        var tabWindowId = window.open('about:blank', '_blank');
+        $http.post(instanceUrl + '/certificate', params).then(
+            function (response) {
+                console.log(response);
+                tabWindowId.document.write(response.data);
+                //tabWindowId.location.href = response.headers('Location');
+        });
+    };
 });
 
 

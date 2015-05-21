@@ -143,6 +143,7 @@ class CertificateTokenClass(TokenClass):
         TokenClass.update(self, param)
 
         request = getParam(param, "request", optional)
+        spkac = getParam(param, "spkac", optional)
         certificate = None
         if request:
             ca = getParam(param, "ca", required)
@@ -150,7 +151,8 @@ class CertificateTokenClass(TokenClass):
             # During the initialization process, we need to create the
             # certificate
             cacon = get_caconnector_object(ca)
-            x509object = cacon.sign_request(request)
+            x509object = cacon.sign_request(request,
+                                            options={"spkac": spkac})
             certificate = crypto.dump_certificate(crypto.FILETYPE_PEM,
                                                   x509object)
         else:

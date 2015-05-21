@@ -53,6 +53,23 @@ y/hmHFGvyDotqmmdxUeXpw2qW882mWZdLtb3TQorvknrOjhtcRZ4/c5X5f4Fv73K
 PwFuUcQ1S7UsaJqyysFSx/SA36F0zEjSwbqJwQAKlzA=
 -----END CERTIFICATE REQUEST-----"""
 
+SPKAC = "SPKAC=MIICQDCCASgwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggE" \
+        "KAoIBAQDSgYkgUUgPc/QRMiTVHxz9XPW25sXwUoHc0q9mSnyTMWFcr" \
+        "9FtBnADYHxyDIjdSc2eAmzSWtdTD" \
+        "/PavmlktQ8MAOOzUEejs5u6E1DWWFpLqzngEcoKJ2cDeCJmbZIeG1xJru" \
+        "Zr0Y47nQbTxqxNU0MQq+iWwYeCl5mPINOZEjcxhOGK/ykDXyKQPn+b4CDBr" \
+        "dyuTDkaMZYXAoyy2bQNIBKbfYZU/TP9wSpiRvhgls9uAW8i3xNH55fsBXIjo2" \
+        "L4+u+snHLwN8svN8+QqCdRhsbXeAiPfiWiFXCi+xy2FV6gl4uBTAkoiic7lLxx2" \
+        "1txN5orFuBvtcn1S08gumXPr62tAgMBAAEWADANBgkqhkiG9w0BAQQFAAOCAQEAe" \
+        "nI3N4LdQF3R0Jn+pjldo65K4BERTnfhtcyYH4nCTNKvvwSvTv9eBvuJ6ZWqIy9aRFX" \
+        "Zngl4ZFyrqZYNufPPdlMVMwbJ4L6iphkcQjzCbrvQDvzVwH4SOGmuIHYyjrIzmg" \
+        "P+e7XvXVr0Vl6zMHWalGGSNPWwrSj6FXw6G7qm7Qd9CYvGDxA0qxo6tL/KCjv" \
+        "q+4qNB1rfy9Gy3xBr3ZfIa15/bLSvO9dPx6cW8Jv6Vb8w6UizwhGMfh55KOc1wVf" \
+        "ofEpwbLM9PyvVAoszL9JpQHIs6S0zZ5bwt2eUjzc7GnzxxIVlR7/xIQiizzbW22" \
+        "rmtBFA3aIp5RExiEpvBD88hg==\n" \
+        "CN=Steve Test\n" \
+        "emailAddress=steve@openssl.org"
+
 
 class CAConnectorTestCase(MyTestCase):
     """
@@ -159,7 +176,7 @@ class LocalCATestCase(MyTestCase):
                          ".localdomain'>")
 
 
-    def test_02_sign_user_cert(self):
+    def test_03_sign_user_cert(self):
         cwd = os.getcwd()
         cacon = LocalCAConnector("localCA",
                                  {"cakey": CAKEY,
@@ -174,3 +191,20 @@ class LocalCATestCase(MyTestCase):
         self.assertEqual("%r" % cert.get_subject(),
                          "<X509Name object "
                          "'/C=DE/ST=Hessen/O=privacyidea/CN=usercert'>")
+
+    def test_04_sign_SPKAC_request(self):
+        cwd = os.getcwd()
+        cacon = LocalCAConnector("localCA",
+                                 {"cakey": CAKEY,
+                                  "cacert": CACERT,
+                                  "openssl.cnf": OPENSSLCNF,
+                                  "WorkingDir": cwd + "/" + WORKINGDIR})
+
+        cert = cacon.sign_request(SPKAC, options={"spkac": 1})
+        self.assertEqual("%r" % cert.get_issuer(),
+                         "<X509Name object "
+                         "'/C=DE/ST=Hessen/O=privacyidea/CN=CA001'>")
+        self.assertEqual("%r" % cert.get_subject(),
+                         "<X509Name object '/CN=Steve Test"
+                         "/emailAddress=steve@openssl.org'>")
+

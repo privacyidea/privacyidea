@@ -30,11 +30,14 @@ from privacyidea.lib.error import CAError
 from OpenSSL import crypto
 from subprocess import Popen, PIPE
 import shlex
+import re
 
 CA_SIGN = "openssl ca -keyfile {cakey} -cert {cacert} -config {config} " \
           "-extensions {extension} -days {days} -in {csrfile} -out {" \
           "certificate} -batch"
-
+CA_SIGN_SPKAC = "openssl ca -keyfile {cakey} -cert {cacert} -config {config} "\
+                "-extensions {extension} -days {days} -spkac {spkacfile} -out " \
+                "{certificate} -batch"
 
 class BaseCAConnector(object):
     pass
@@ -128,9 +131,9 @@ class LocalCAConnector(BaseCAConnector):
         relative to the WorkingDir.
 
         :param csr: Certificate signing request
-        :type csr: PEM string
+        :type csr: PEM string or SPKAC
         :param options: Additional options like the validity time or the
-            template
+            template or spkac=1
         :type options: dict
         :return: Returns the certificate
         :rtype: basestring
@@ -138,6 +141,7 @@ class LocalCAConnector(BaseCAConnector):
         # Sign the certificate for one year
         options = options or {}
         days = options.get("days", 365)
+        spkac = options.get("spkac")
         config = options.get("openssl.cnf",
                              self.config.get(
                                  "openssl.cnf", "/etc/ssl/openssl.cnf"))
@@ -155,22 +159,38 @@ class LocalCAConnector(BaseCAConnector):
             if not certificatedir.startswith("/"):
                 certificatedir = workingdir + "/" + certificatedir
 
-        csr_obj = crypto.load_certificate_request(crypto.FILETYPE_PEM, csr)
-        csr_filename = self._filename_from_x509(csr_obj.get_subject(),
-                                                file_extension="req")
+        # Determine filename from the CN of the request
+        if spkac:
+            common_name = re.search("CN=(.*)", csr).group(0).split('=')[1]
+            csr_filename = common_name + ".txt"
+            certificate_filename = common_name + ".der"
+        else:
+            csr_obj = crypto.load_certificate_request(crypto.FILETYPE_PEM, csr)
+            csr_filename = self._filename_from_x509(csr_obj.get_subject(),
+                                                    file_extension="req")
+            certificate_filename = self._filename_from_x509(
+                csr_obj.get_subject(), file_extension="pem")
+            csr_extensions = csr_obj.get_extensions()
+        csr_filename = csr_filename.replace(" ", "_")
+        certificate_filename = certificate_filename.replace(" ", "_")
         # dump the file
         f = open(csrdir + "/" + csr_filename, "w")
         f.write(csr)
         f.close()
-        certificate_filename = self._filename_from_x509(csr_obj.get_subject(),
-                                                        file_extension="pem")
-        csr_extensions = csr_obj.get_extensions()
-        cmd = CA_SIGN.format(cakey=self.cakey, cacert=self.cacert,
-                             days=days, config=config, extension=extension,
-                             csrfile=csrdir + "/" + csr_filename,
-                             certificate=certificatedir + "/" +
-                                         certificate_filename)
 
+        if spkac:
+            cmd = CA_SIGN_SPKAC.format(cakey=self.cakey, cacert=self.cacert,
+                                       days=days, config=config,
+                                       extension=extension,
+                                       spkacfile=csrdir + "/" + csr_filename,
+                                       certificate=certificatedir + "/" +
+                                                   certificate_filename)
+        else:
+            cmd = CA_SIGN.format(cakey=self.cakey, cacert=self.cacert,
+                                 days=days, config=config, extension=extension,
+                                 csrfile=csrdir + "/" + csr_filename,
+                                 certificate=certificatedir + "/" +
+                                             certificate_filename)
         # run the command
         args = shlex.split(cmd)
         p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir)
@@ -184,8 +204,11 @@ class LocalCAConnector(BaseCAConnector):
         f.close()
 
         # We return the cert_obj.
-        cert_obj = crypto.load_certificate(crypto.FILETYPE_PEM,
-                                           certificate)
+        if spkac:
+            filetype = crypto.FILETYPE_ASN1
+        else:
+            filetype = crypto.FILETYPE_PEM
+        cert_obj = crypto.load_certificate(filetype, certificate)
         return cert_obj
 
     def view_pending_certs(self):

@@ -38,7 +38,8 @@ from flask import (Blueprint,
                    jsonify,
                    abort,
                    g)
-from lib.utils import (send_result, remove_session_from_param)
+from lib.utils import (send_result, remove_session_from_param,
+                       verify_auth_token)
 from ..lib.crypto import geturandom
 from ..lib.error import AuthError
 from ..lib.auth import verify_db_admin
@@ -251,27 +252,7 @@ def check_auth_token(required_role=None):
         http -j POST http://localhost:5000/system/getConfig Authorization:ewrt
     """
     auth_token = request.headers.get('Authorization', None)
-    if auth_token is None:
-        raise AuthError("Authentication failure",
-                        "missing Authorization header",
-                        status=401)
-    try:
-        r = jwt.decode(auth_token, current_app.secret_key)
-    except jwt.DecodeError as err:
-        raise AuthError("Authentication failure",
-                        "error during decoding your token: %s" % err,
-                        status=401)
-    except jwt.ExpiredSignature as err:
-        raise AuthError("Authentication failure",
-                        "Your token has expired: %s" % err,
-                        status=401)
-    if required_role and r.get("role") not in required_role:
-        # If we require a certain role like "admin", but the users role does
-        # not match
-        raise AuthError("Authentication failure",
-                        "You do not have the necessary role (%s) to access "
-                        "this resouce!" % (required_role),
-                        status=401)
+    r = verify_auth_token(auth_token, required_role)
     g.logged_in_user = {"username": r.get("username"),
                         "realm": r.get("realm"),
                         "role": r.get("role")}

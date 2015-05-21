@@ -1,15 +1,32 @@
 {% include 'header.html' %}
 
-<!-- Include menu -->
-
-<ng-include src="'{{ instance }}/static/templates/menu.html'">
-</ng-include>
-
-<div class="container">
-    <div ui-view class="slide"></div>
+<div class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="#">privacyIDEA Certificate Request</a>
+    </div>
 </div>
 
-{% raw %}
+<div class="container">
+
+<form action="{{ instance }}/certificate/enroll" method="post">
+
+    <div class="form-group">
+        <label>CA Connector: {{ ca }}</label>
+    </div>
+
+    <input type="hidden" name="authtoken" value="{{ authtoken }}">
+
+    <div class="form-group">
+        <label for="key">
+            Key strength
+        </label>
+        <keygen name="requestkey" id="key" />
+    </div>
+  <input type="submit">
+</form>
+</div>
+
+
 <div class="navbar navbar-inverse navbar-fixed-bottom">
     <div class="container">
         <a ng-click="about()"
@@ -34,6 +51,5 @@
         </a>
     </div>
 </div>
-{% endraw %}
 
 {% include 'footer.html' %}

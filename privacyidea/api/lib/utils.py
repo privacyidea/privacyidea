@@ -24,7 +24,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from ...lib.error import (ParameterError,
-                          privacyIDEAError)
+                          AuthError)
 from ...lib.log import log_with
 import binascii
 import string
@@ -33,6 +33,7 @@ from ...lib.crypto import geturandom
 import pkg_resources
 import logging
 import json
+import jwt
 from flask import (jsonify,
                    request,
                    current_app,
@@ -252,3 +253,36 @@ def get_priority_from_param(param):
         if k.startswith("priority."):
             priority[k[len("priority."):]] = int(v)
     return priority
+
+def verify_auth_token(auth_token, required_role=["admin", "user"]):
+    """
+    Check if a given auth token is valid.
+
+    Return a dictionary describing the authenticated user.
+
+    :param auth_token: The Auth Token
+    :param required_role: list of "user" and "admin"
+    :return: dict with authtype, realm, rights, role, username, exp, nonce
+    """
+    if auth_token is None:
+        raise AuthError("Authentication failure",
+                        "missing Authorization header",
+                        status=401)
+    try:
+        r = jwt.decode(auth_token, current_app.secret_key)
+    except jwt.DecodeError as err:
+        raise AuthError("Authentication failure",
+                        "error during decoding your token: %s" % err,
+                        status=401)
+    except jwt.ExpiredSignature as err:
+        raise AuthError("Authentication failure",
+                        "Your token has expired: %s" % err,
+                        status=401)
+    if required_role and r.get("role") not in required_role:
+        # If we require a certain role like "admin", but the users role does
+        # not match
+        raise AuthError("Authentication failure",
+                        "You do not have the necessary role (%s) to access "
+                        "this resouce!" % (required_role),
+                        status=401)
+    return r
