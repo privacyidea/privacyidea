@@ -759,7 +759,8 @@ def loadtokens_api(filename=None):
     """
     if not filename:
         filename = getParam(request.all_data, "filename", required)
-    known_types = ['aladdin-xml', 'oathcsv', "OATH CSV", 'yubikeycsv']
+    known_types = ['aladdin-xml', 'oathcsv', "OATH CSV", 'yubikeycsv',
+                   'Yubikey CSV']
     file_type = getParam(request.all_data, "type", required)
     hashlib = getParam(request.all_data, "aladdin_hashlib")
 
@@ -797,7 +798,7 @@ def loadtokens_api(filename=None):
         TOKENS = parseSafeNetXML(file_contents)
     elif file_type in ["oathcsv", "OATH CSV"]:
         TOKENS = parseOATHcsv(file_contents)
-    elif file_type == "yubikeycsv":
+    elif file_type in ["yubikeycsv", "Yubikey CSV"]:
         TOKENS = parseYubicoCSV(file_contents)
 
     # Now import the Tokens from the dictionary
