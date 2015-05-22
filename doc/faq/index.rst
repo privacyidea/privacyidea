@@ -81,10 +81,12 @@ Autoenrollment
 Using the :ref:`autoassignment` policy you can distribute physical tokens to
 the users. The users just start using the tokens.
 
+.. _faq_registration_code:
+
 Registration Code
 ~~~~~~~~~~~~~~~~~
 
-If your users are pyhsically not available and spread around the world, you can
+If your users are physically not available and spread around the world, you can
 send a registration code to the users by postal mail. The registration code
 is a special token type which can be used by the user to authenticate with 2FA.
 If used once, the registration token get deleted and can not be used anymore.

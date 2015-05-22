@@ -187,6 +187,8 @@ If the ``getserial`` action is defined, the administrator is
 allowed to calculate the token serial number for a given OTP
 value.
 
+.. _lost_token:
+
 losttoken
 ~~~~~~~~~
 
