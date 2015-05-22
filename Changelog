@@ -1,3 +1,21 @@
+Version 2.3, 2015-05-22
+
+  * Add connector to remote Certificate Authority
+  * Add Tokentype "certificate" to manage certificates for users
+    Certificates or Certificate Requests can be uploaded.
+    Certificate Requests (Keypair) can be generated in the browser.
+  * Add Tokentype "registration" for easier enrollment scenarios.
+  * Add TokenType "Email" to send OTP via Email.
+  * Add "First Steps" to online documentation
+  * Add handling of validity period of token
+  * Enable download of Audit log as CSV
+  * Add Resolver Priority, to handle a duplicate user in a realm
+  * Add TYPO3 Plugin to enable OTP with TYPO3
+  * Add SCIM Resolver to fetch users from SCIM services
+  * Fix Failcounter issue
+  * Fix NTLM password check
+  * Fix timestep during enrollment
+
 Version 2.2, 2015-04-09
 
   * pi-manage.py: create resolvers and realms

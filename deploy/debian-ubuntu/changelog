@@ -1,11 +1,22 @@
-python-privacyidea (2.3~dev1) trusty; urgency=low
+python-privacyidea (2.3~dev2) trusty; urgency=low
 
-  * start 2.3 devel
-  * Fix bug, that would not increase the failcounter of yubikeys
-  * Fix bug for failcounter handling
-  * Enroll Certificates
+  * Add connector to remote Certificate Authority
+  * Add Tokentype "certificate" to manage certificates for users
+    Certificates or Certificate Requests can be uploaded.
+    Certificate Requests (Keypair) can be generated in the browser.
+  * Add Tokentype "registration" for easier enrollment scenarios.
+  * Add TokenType "Email" to send OTP via Email.
+  * Add "First Steps" to online documentation
+  * Add handling of validity period of token
+  * Enable download of Audit log as CSV
+  * Add Resolver Priority, to handle a duplicate user in a realm
+  * Add TYPO3 Plugin to enable OTP with TYPO3
+  * Add SCIM Resolver to fetch users from SCIM services
+  * Fix Failcounter issue
+  * Fix NTLM password check
+  * Fix timestep during enrollment
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Sun, 17 May 2015 13:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 22 May 2015 11:00:00 +0200
 
 python-privacyidea (2.2-1trusty) trusty; urgency=low
 
