@@ -133,14 +133,10 @@ You can change the following token settings.
 
 **Tokeninfo - Valid start**
 
-   **(TODO)**
-
    A timestamp can be set. The token will only be usable for authentication
    after this start time.
 
 **Tokeninfo - Valid end**
-
-   **(TODO)**
 
    A timestamp can be set. The token can only be used before this end time.
   
@@ -183,13 +179,21 @@ enroll
 
 .. index:: enroll token
 
-For this function you do not need to select any token. But you can
-select a user on the userview, then the token to be enrolled will be
-directly assigend to this user.
+You can enroll a token either from the Token View or from the
+:ref:`user_details`. When enrolling a token from the User Details the token
+is directly assigned to the user.
 
-When enrolling the token, you can choose, which token type you want
-to enroll. After enrolling the token, you can set a OTP PIN for this 
-token.
+If you enroll the token from the token view, you can select a user, to whom
+the token will be assigned.
+
+When enrolling a token, you can select the token type and according to the
+token type other necessary information.
+
+.. figure:: token-enroll.png
+   :width: 500
+
+   *Token enrollment dialog*
+
 
 assign
 ......
@@ -234,7 +238,7 @@ The tokens can be used for authentication again.
 delete
 ......
 
-Selecting tokens and clicking the button ``delete`` will remove the
-tokens from the database.
+Deleting a token will remove the
+token from the database.
 The token information can not be recovered. But all events that
 occurred with this token still remain in the audit log.
