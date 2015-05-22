@@ -332,7 +332,8 @@ myApp.controller("tokenConfigController", function ($scope, $location,
 });
 myApp.controller("configController", function ($scope, $location,
                                                $rootScope, $state,
-                                               ConfigFactory) {
+                                               ConfigFactory, instanceUrl) {
+    $scope.instanceUrl = instanceUrl;
     $scope.params = {};
     // go to the system view by default
     if ($location.path() == "/config") {
