@@ -1,28 +1,18 @@
-from .base import MyTestCase
-import json
-from privacyidea.lib.error import (TokenAdminError, ParameterError)
-from privacyidea.lib.token import get_tokens
-from privacyidea.lib.user import User
 from urllib import urlencode
-
-PWFILE = "tests/testdata/passwords"
-
 import json
 from .base import MyTestCase
-from privacyidea.lib.resolver import (save_resolver)
-from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
-from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.models import (Token)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
-                                    get_inc_fail_count_on_false_pin)
-import datetime
+                                    get_inc_fail_count_on_false_pin,
+                                    delete_privacyidea_config)
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
-                                   reset_token, set_validity_period_start,
-                                   set_validity_period_end)
+                                   reset_token)
 
-from privacyidea.lib.error import (ParameterError)
+from privacyidea.lib.error import (ParameterError, UserError)
+
+PWFILE = "tests/testdata/passwords"
 
 
 class ValidateAPITestCase(MyTestCase):
@@ -514,3 +504,56 @@ class ValidateAPITestCase(MyTestCase):
 
         # delete the token
         remove_token(serial="VP001")
+
+    def test_15_validate_at_sign(self):
+        self.setUp_user_realm2()
+        serial1 = "Split001"
+        serial2 = "Split002"
+        init_token({"serial": serial1,
+                    "type": "spass",
+                    "pin": serial1}, user=User("cornelius", self.realm1))
+
+        init_token({"serial": serial2,
+                    "type": "spass",
+                    "pin": serial2}, user=User("cornelius", self.realm2))
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": serial1}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value"))
+
+        set_privacyidea_config("splitAtSign", "0")
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user":
+                                                    "cornelius@"+self.realm2,
+                                                 "pass": serial2}):
+            self.assertRaises(UserError, self.app.full_dispatch_request)
+
+        set_privacyidea_config("splitAtSign", "1")
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user":
+                                                    "cornelius@"+self.realm2,
+                                                 "pass": serial2}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value"))
+
+        # The default behaviour - if the config entry does not exist,
+        # is to split the @Sign
+        delete_privacyidea_config("splitAtSign")
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user":
+                                                    "cornelius@"+self.realm2,
+                                                 "pass": serial2}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value"))

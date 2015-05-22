@@ -401,7 +401,7 @@ def get_user_from_param(param, optionalOrRequired=optional):
         username = ""
     else:
         splitAtSign = get_from_config("splitAtSign", "true")
-        if splitAtSign.lower() == "true":
+        if splitAtSign.lower() in ["true", "1"]:
             (username, realm) = split_user(username)
 
     if "realm" in param:
