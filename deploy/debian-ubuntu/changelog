@@ -1,4 +1,4 @@
-python-privacyidea (2.3~dev2) trusty; urgency=low
+python-privacyidea (2.3~dev3) trusty; urgency=low
 
   * Add connector to remote Certificate Authority
   * Add Tokentype "certificate" to manage certificates for users
@@ -16,7 +16,7 @@ python-privacyidea (2.3~dev2) trusty; urgency=low
   * Fix NTLM password check
   * Fix timestep during enrollment
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 22 May 2015 11:00:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 22 May 2015 11:05:00 +0200
 
 python-privacyidea (2.2-1trusty) trusty; urgency=low
 
