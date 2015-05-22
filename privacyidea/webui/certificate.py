@@ -20,6 +20,8 @@
 #
 __doc__ = """This is the Web Form for creating the certificate request with
 the web form in the browser.
+
+This code is tested in test_ui_certificate.py
 """
 __author__ = "Cornelius Kölbel, <cornelius@privacyidea.org>"
 
