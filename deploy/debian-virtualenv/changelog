@@ -1,4 +1,4 @@
-privacyidea-venv (2.3~dev2) wheezy; urgency=low
+privacyidea-venv (2.3-1) wheezy; urgency=low
 
   * Add connector to remote Certificate Authority
   * Add Tokentype "certificate" to manage certificates for users
@@ -16,7 +16,7 @@ privacyidea-venv (2.3~dev2) wheezy; urgency=low
   * Fix NTLM password check
   * Fix timestep during enrollment
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 22 May 2015 11:00:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 22 May 2015 15:30:00 +0200
 
 privacyidea-venv (2.2-1) wheezy; urgency=low
 
