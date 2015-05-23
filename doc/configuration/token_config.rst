@@ -28,8 +28,8 @@ At the moment the following tokentypes are supported:
   with the :ref:`machines` concept.
 * :ref:`remote` - A virtual token that forwards the authentication request to
   another privacyIDEA server.
-* RADIUS - A virtual token that forwards the authentication request to RADIUS
-  server.
+* :ref:`radius` - A virtual token that forwards the authentication request to
+  a RADIUS server.
 * SMS - A token that sends the OTP value to the mobile phone of the user.
 * EMail - A token that sends the OTP value to the EMail address of the user.
 * Yubico Cloud mode - A Yubikey hardware that authenticates against the Yubico
@@ -41,6 +41,7 @@ The Tokentypes:
 
 .. toctree::
    tokens/certificate
+   tokens/radius
    tokens/remote
    tokens/sshkey
 
