@@ -32,9 +32,9 @@ At the moment the following tokentypes are supported:
   a RADIUS server.
 * SMS - A token that sends the OTP value to the mobile phone of the user.
 * EMail - A token that sends the OTP value to the EMail address of the user.
-* Yubico Cloud mode - A Yubikey hardware that authenticates against the Yubico
+* :ref:`yubico` - A Yubikey hardware that authenticates against the Yubico
   Cloud service.
-* Yubikey AES mode - A Yubikey hardware initialized in the AES mode, that
+* :ref:`yubikey` - A Yubikey hardware initialized in the AES mode, that
   authenticates against privacyIDEA.
 
 The Tokentypes:
@@ -44,8 +44,8 @@ The Tokentypes:
    tokens/radius
    tokens/remote
    tokens/sshkey
-
-
+   tokens/yubico
+   tokens/yubikey
 
 .. _token_config:
 
