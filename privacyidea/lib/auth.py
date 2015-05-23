@@ -52,13 +52,12 @@ def verify_db_admin(username, password):
 
 
 def create_db_admin(app, username, email=None, password=None):
+    pw_dig = None
     if password:
         key = app.config.get("PI_PEPPER", "missing")
         pw_dig = passlib.hash.pbkdf2_sha512.encrypt(key + password,
                                                     rounds=10023,
                                                     salt_size=10)
-    else:
-        pw_dig = None
     user = Admin(email=email, username=username, password=pw_dig)
     user.save()
 
