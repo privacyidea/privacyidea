@@ -26,8 +26,8 @@ At the moment the following tokentypes are supported:
   certificate.
 * :ref:`sshkey` - An SSH public key that can be managed and used in conjunction
   with the :ref:`machines` concept.
-* Remote - A virtual token that forwards the authentication request to another
-  privacyIDEA server.
+* :ref:`remote` - A virtual token that forwards the authentication request to
+  another privacyIDEA server.
 * RADIUS - A virtual token that forwards the authentication request to RADIUS
   server.
 * SMS - A token that sends the OTP value to the mobile phone of the user.
@@ -41,7 +41,9 @@ The Tokentypes:
 
 .. toctree::
    tokens/certificate
+   tokens/remote
    tokens/sshkey
+
 
 
 .. _token_config:

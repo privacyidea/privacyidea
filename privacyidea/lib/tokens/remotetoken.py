@@ -269,7 +269,7 @@ class RemoteTokenClass(TokenClass):
 
         else:
             log.warning("The remote token does neither contain a "
-                        "remote.serial nor a remote.userr.")
+                        "remote.serial nor a remote.user.")
             return otp_count
 
         params['pass'] = otpval
