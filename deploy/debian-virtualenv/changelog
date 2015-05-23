@@ -1,3 +1,9 @@
+privacyidea-venv (2.4~dev0) wheezy; urgency=low
+
+  * Start 2.4
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 22 May 2015 22:30:00 +0200
+
 privacyidea-venv (2.3-1) wheezy; urgency=low
 
   * Add connector to remote Certificate Authority

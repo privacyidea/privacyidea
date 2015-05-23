@@ -24,8 +24,8 @@ At the moment the following tokentypes are supported:
 * Simple Pass - A token that only consists of the Token PIN.
 * :ref:`certificates` - A token that represents a client
   certificate.
-* SSH Key - An SSH public key that can be managed and used in conjunction with
-  the :ref:`machines` concept.
+* :ref:`sshkey` - An SSH public key that can be managed and used in conjunction
+  with the :ref:`machines` concept.
 * Remote - A virtual token that forwards the authentication request to another
   privacyIDEA server.
 * RADIUS - A virtual token that forwards the authentication request to RADIUS
@@ -41,6 +41,7 @@ The Tokentypes:
 
 .. toctree::
    tokens/certificate
+   tokens/sshkey
 
 
 .. _token_config:

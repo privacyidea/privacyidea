@@ -1,3 +1,9 @@
+python-privacyidea (2.4~dev0) trusty; urgency=low
+
+  * Start dev 2.4
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 22 May 2015 22:30:00 +0200
+
 python-privacyidea (2.3-1trusty) trusty; urgency=low
 
   * Add connector to remote Certificate Authority

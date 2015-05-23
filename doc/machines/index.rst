@@ -27,6 +27,8 @@ can work with certain token types and each application type can use additional p
 
 .. note:: Not all tokens work well with all applications!
 
+.. _application_ssh:
+
 SSH
 ---
 
@@ -62,6 +64,8 @@ SSH token in privacyIDEA.
 .. warning:: In a productive environment you should not set **nosslcheck** to
 true,
 otherwise you are vulnarable to man in the middle attacks.
+
+.. _application_luks:
 
 LUKS
 ----
