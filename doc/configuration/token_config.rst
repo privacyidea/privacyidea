@@ -65,5 +65,7 @@ types.
    *Token Configuration: SMS*
 
 .. toctree::
-   tokenconfig/sms
    tokenconfig/email
+   tokenconfig/sms
+   tokenconfig/yubico
+
