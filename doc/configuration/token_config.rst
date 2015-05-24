@@ -37,6 +37,7 @@ At the moment the following tokentypes are supported:
   Cloud service.
 * :ref:`yubikey` - A Yubikey hardware initialized in the AES mode, that
   authenticates against privacyIDEA.
+* Daplug - A hardware OTP token similar to the Yubikey.
 
 The Tokentypes:
 
