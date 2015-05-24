@@ -5,6 +5,8 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2015-05-24   Add more detailed description
+#               Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #  2015-01-30   Adapt for migration to flask
 #               Cornelius Kölbel <cornelius@privacyidea.org>
 #
@@ -44,8 +46,6 @@ from privacyidea.api.lib.utils import getParam
 from privacyidea.api.lib.utils import required
 
 from privacyidea.lib.config import get_from_config
-#from privacyidea.lib.policy import PolicyClass
-#from pylons import request, config, tmpl_context as c
 from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.log import log_with
 from privacyidea.lib.smsprovider.SMSProvider import get_sms_provider_class
@@ -70,7 +70,81 @@ class SMSACTION():
 
 class SmsTokenClass(HotpTokenClass):
     """
-    implementation of the sms token class
+    The SMS token sends an SMS containing an OTP via some kind of
+    gateway. The gateways can be an SMTP or HTTP gateway or the special sipgate
+    protocol. The Gateways are defined in the SMSProvider Modules.
+
+    The SMS token is a challenge response token. I.e. the first request needs
+    to contain the correct OTP PIN. If the OTP PIN is correct, the sending of
+    the SMS is triggered. The second authentication must either contain the
+    OTP PIN and the OTP value or the transaction_id and the OTP value.
+
+      **Example 1st Authentication Request**:
+
+        .. sourcecode:: http
+
+           POST /validate/check HTTP/1.1
+           Host: example.com
+           Accept: application/json
+
+           user=cornelius
+           pass=otppin
+
+      **Example 1st response**:
+
+           .. sourcecode:: http
+
+               HTTP/1.1 200 OK
+               Content-Type: application/json
+
+               {
+                  "detail": {
+                    "transaction_id": "xyz"
+                  },
+                  "id": 1,
+                  "jsonrpc": "2.0",
+                  "result": {
+                    "status": true,
+                    "value": false
+                  },
+                  "version": "privacyIDEA unknown"
+                }
+
+    After this, the SMS is triggered. When the SMS is received the second part
+    of authentication looks like this:
+
+      **Example 2nd Authentication Request**:
+
+        .. sourcecode:: http
+
+           POST /validate/check HTTP/1.1
+           Host: example.com
+           Accept: application/json
+
+           user=cornelius
+           transaction_id=xyz
+           pass=otppin
+
+      **Example 1st response**:
+
+           .. sourcecode:: http
+
+               HTTP/1.1 200 OK
+               Content-Type: application/json
+
+               {
+                  "detail": {
+                  },
+                  "id": 1,
+                  "jsonrpc": "2.0",
+                  "result": {
+                    "status": true,
+                    "value": true
+                  },
+                  "version": "privacyIDEA unknown"
+                }
+
+
     """
     def __init__(self, db_token):
         HotpTokenClass.__init__(self, db_token)

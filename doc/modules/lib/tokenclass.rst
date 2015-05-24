@@ -7,16 +7,10 @@ Token Class
    :undoc-members:
 
 
-Registration Code Token
-~~~~~~~~~~~~~~~~~~~~~~~
+.. toctree::
 
-.. autoclass:: privacyidea.lib.tokens.registrationtoken.RegistrationTokenClass
-   :members:
-   :undoc-members:
+   tokentypes/certificate
+   tokentypes/registration
+   tokentypes/sms
 
-Certificate Token
-~~~~~~~~~~~~~~~~~
 
-.. autoclass:: privacyidea.lib.tokens.certificatetoken.CertificateTokenClass
-   :members:
-   :undoc-members:

@@ -42,7 +42,7 @@ myApp.config(['KeepaliveProvider', 'IdleProvider',
 }]);
 
 var instance = window.location.pathname;
-if (instance == "/") {
+if (instance === "/") {
     instance = "";
 }
 var backendUrl = "";
@@ -74,10 +74,10 @@ myApp.run(['$rootScope', '$state', '$stateParams',
     ]
 );
 myApp.config(['$httpProvider', function ($httpProvider) {
-    $httpProvider.interceptors.push(function ($q, $rootScope) {
+    $httpProvider.interceptors.push(function ($q) {
         return {
             responseError: function (rejection) {
-                if(rejection.status == 0) {
+                if(rejection.status === 0) {
                     // The API is offline, not reachable
                     addError("The privacyIDEA system seems to be offline. The API is not reachable!");
                     return;

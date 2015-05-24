@@ -1,7 +1,7 @@
 .. _code_docu:
 
-The Code Documentation
-======================
+Code Documentation
+==================
 
 The code roughly has three levels.
 

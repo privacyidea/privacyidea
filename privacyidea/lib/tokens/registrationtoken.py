@@ -56,7 +56,7 @@ class RegistrationTokenClass(PasswordTokenClass):
 
         .. sourcecode:: http
 
-           POST /auth HTTP/1.1
+           POST /token/init HTTP/1.1
            Host: example.com
            Accept: application/json
 

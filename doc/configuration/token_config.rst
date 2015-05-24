@@ -19,7 +19,7 @@ At the moment the following tokentypes are supported:
 * mOTP - time based One Time Password tokens for mobile phones based on an
   a `public Algorithm <http://motp.sourceforge.net>`_.
 * password - A password token used for :ref:`lost_token` scenario.
-* registration - A special token type used for enrollment scenarios (see
+* :ref:`registration` - A special token type used for enrollment scenarios (see
   :ref:`faq_registration_code`).
 * Simple Pass - A token that only consists of the Token PIN.
 * :ref:`certificates` - A token that represents a client
@@ -30,7 +30,8 @@ At the moment the following tokentypes are supported:
   another privacyIDEA server.
 * :ref:`radius` - A virtual token that forwards the authentication request to
   a RADIUS server.
-* SMS - A token that sends the OTP value to the mobile phone of the user.
+* :ref:`sms` - A token that sends the OTP value to the mobile phone of the
+    user.
 * EMail - A token that sends the OTP value to the EMail address of the user.
 * :ref:`yubico` - A Yubikey hardware that authenticates against the Yubico
   Cloud service.
@@ -42,7 +43,9 @@ The Tokentypes:
 .. toctree::
    tokens/certificate
    tokens/radius
+   tokens/registration
    tokens/remote
+   tokens/sms
    tokens/sshkey
    tokens/yubico
    tokens/yubikey
