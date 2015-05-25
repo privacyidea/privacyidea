@@ -13,7 +13,7 @@ info:
 	
 #VERSION=1.3~dev5
 VERSION=2.4~dev0
-SERIES="trusty precise"
+SERIES="trusty precise vivid"
 LOCAL_SERIES=`lsb_release -a | grep Codename | cut -f2`
 SRCDIRS=deploy authmodules migrations doc tests tools privacyidea 
 SRCFILES=setup.py MANIFEST.in Makefile Changelog LICENSE pi-manage.py requirements.txt
