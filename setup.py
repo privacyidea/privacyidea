@@ -75,7 +75,7 @@ setup(
                       "docutils==0.12",
                       "funcparserlib==0.3.6",
                       "itsdangerous==0.24",
-                      "ldap3==0.9.8.1",
+                      "ldap3==0.9.8.4",
                       "netaddr==0.7.12",
                       "passlib==1.6.2",
                       "pyasn1==0.1.7",
