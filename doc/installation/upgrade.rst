@@ -10,8 +10,14 @@ In 2.3 the priority of resolvers in realms was added.
 
 You need to update the database models::
 
-   pi-manage.py db stamp 4f32a4e1bf33
-   pi-manage.py db upgrade
+   pi-manage.py db stamp 4f32a4e1bf33 -d path/to/migrations 
+   pi-manage.py db upgrade -d path/to/migrations
+
+.. note:: You need to specify the path to the migrations scripts.
+   This could be /usr/lib/privacyidea/migrations.
+
+.. note:: When upgrading with the Ubuntu LTS packages, the database
+   update is performed automatically.
 
 Upgrade From privacyIDEA 1.5
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
