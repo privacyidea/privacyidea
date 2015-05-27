@@ -152,6 +152,9 @@ def after_request(response):
 @audit_blueprint.app_errorhandler(AuthError)
 @application_blueprint.app_errorhandler(AuthError)
 def auth_error(error):
+    if "audit_object" in g:
+        g.audit_object.log({"info": error.description})
+        g.audit_object.finalize_log()
     return send_error(error.description, error_code=-401), error.status_code
 
 
@@ -165,6 +168,9 @@ def auth_error(error):
 @audit_blueprint.app_errorhandler(PolicyError)
 @application_blueprint.app_errorhandler(PolicyError)
 def policy_error(error):
+    if "audit_object" in g:
+        g.audit_object.log({"info": error.message})
+        g.audit_object.finalize_log()
     return send_error(error.message), error.id
 
 
@@ -182,6 +188,9 @@ def internal_error(error):
     This function is called when an internal error (500) occurs.
     This is each time an exception is thrown.
     """
+    if "audit_object" in g:
+        g.audit_object.log({"info": unicode(error)})
+        g.audit_object.finalize_log()
     return send_error(unicode(error), error_code=-500), 500
 
 

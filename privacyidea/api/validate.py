@@ -165,6 +165,9 @@ def check():
     if state:
         options["state"] = state
 
+    g.audit_object.log({"user": user.login,
+                        "realm": user.realm})
+
     if serial:
         result, details = check_serial_pass(serial, password, options=options)
     else:
@@ -173,9 +176,7 @@ def check():
     g.audit_object.log({"info": details.get("message"),
                         "success": result,
                         "serial": serial or details.get("serial"),
-                        "tokentype": details.get("type"),
-                        "user": user.login,
-                        "realm": user.realm})
+                        "tokentype": details.get("type")})
     return send_result(result, details=details)
 
 
