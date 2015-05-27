@@ -279,7 +279,7 @@ myApp.directive('csvDownload', function(AuthFactory, $http, instanceUrl) {
                     .text('Save')
                     .removeClass('btn-primary')
                     .addClass('btn-success');
-
+                scope.downloadProgress = false;
                 // Also overwrite the download pdf function to do nothing.
                 scope.downloadCSV = function () {
                 };

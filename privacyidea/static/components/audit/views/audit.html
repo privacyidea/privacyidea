@@ -1,5 +1,6 @@
 <div class="well">
-    <csv-download url="/audit/audit.csv" filename="audit.csv"></csv-download>
+    <csv-download url="{{ instanceUrl }}/audit/audit.csv"
+                  filename="audit.csv"></csv-download>
 
     <pagination ng-show="auditdata.count > 10"
                 total-items="auditdata.count" ng-model="params.page"

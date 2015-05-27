@@ -20,10 +20,11 @@
  */
 myApp.controller("auditController", function (AuditFactory, $scope,
                                               $stateParams, $http,
-                                              AuthFactory) {
+                                              AuthFactory, instanceUrl) {
     $scope.params = {sortorder: "desc",
-                      page_size: 10,
-                       page: 1};
+                     page_size: 10,
+                     page: 1};
+    $scope.instanceUrl = instanceUrl;
 
     // If the state is called with some filter values
     if ($stateParams.serial) {
