@@ -2,12 +2,20 @@ privacyIDEA
 ===========
 
 [![Build Status](https://travis-ci.org/privacyidea/privacyidea.svg?branch=master)](https://travis-ci.org/privacyidea/privacyidea)
+
 [![Coverage Status](https://coveralls.io/repos/privacyidea/privacyidea/badge.png?branch=master)](https://coveralls.io/r/privacyidea/privacyidea)
+
 [![Downloads](https://pypip.in/download/privacyidea/badge.svg)](https://pypi.python.org/pypi/privacyidea/)
+
 [![Latest Version](https://pypip.in/version/privacyidea/badge.svg)](https://pypi.python.org/pypi/privacyidea/)
+
 [![License](https://pypip.in/license/privacyidea/badge.svg)](https://pypi.python.org/pypi/privacyidea/)
+
 [![Documentation Status](https://readthedocs.org/projects/privacyidea/badge/?version=latest)](http://privacyidea.readthedocs.org/en/latest/)
+
 [![Code Climate](https://codeclimate.com/github/privacyidea/privacyidea/badges/gpa.svg)](https://codeclimate.com/github/privacyidea/privacyidea)
+
+
 
 privacyIDEA is an open solution for strong two-factor authentication like 
 OTP tokens, SMS, Smartphones or SSH keys.
@@ -25,18 +33,12 @@ concerned. But privacyIDEA is completely licensed under the AGPLv3.
 
 It supports a wide variety of authentication devices like OTP tokens 
 (HMAC, HOTP, TOTP, OCRA, mOTP), Yubikey (HOTP, TOTP, AES), Smartphone
-Apps like Google Authenticator, SMS, Email, SSH keys.
+Apps like Google Authenticator, SMS, Email, SSH keys, x509 certificates.
 
-Version 2
-=========
-
-The new version 2.x is based on flask and sqlalchemy as the python backend. The
-web UI is based
-on angularJS and bootstrap.
-
-A new MachineToken design lets you assign tokens to machnies. Thus you can use
-your Yubikey to unlock LUKS. Starting with version 2.2 you can also use
-offline OTP with PAM. 
+Since version 2 privacyIDEA is based on flask and sqlalchemy as the python backend. The
+web UI is based on angularJS and bootstrap.
+A MachineToken design lets you assign tokens to machnies. Thus you can use
+your Yubikey to unlock LUKS, assign SSH keys to SSH servers or use Offline OTP with PAM.
 
 With version 2 the code was cleaned up and it was emphasized to keep a good
 code coverage. The design separates the database layer from the library layer
@@ -50,7 +52,7 @@ Setup
 =====
 
 You can setup the system in a virtual environment:
-
+    
     git checkout https://github.com/privacyidea/privacyidea.git
     cd privacyidea
     virtualenv venv
@@ -106,12 +108,6 @@ the user sources like SQL, LDAP, SCIM or flat files.
 
 Upgrading
 =========
-
-The database model has changed, so that you need to upgrade the database.
-
-!! Before upgrading be sure to make a backup !!
-
-To upgrade your database from 1.5 to the new 2.0 schema run:
-
-   ./manage db upgrade
-
+In certain cases the database structure has changed (1.5->2.0).
+Read http://privacyidea.readthedocs.org/en/latest/installation/upgrade.html 
+for upgrade instructions.
