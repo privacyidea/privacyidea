@@ -6,6 +6,11 @@ Email OTP Token
 
 .. index:: Email Token
 
+.. figure:: images/email.png
+   :width: 500
+
+   *Email Token configuration*
+
 The Email OTP token creates a OTP value and sends this OTP value to the email
 address of the uses. The Email can be triggered by authenticating with only
 the OTP PIN:

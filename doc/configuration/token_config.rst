@@ -12,9 +12,9 @@ Supported Tokentypes
 
 At the moment the following tokentypes are supported:
 
-* HOTP - event base One Time Password tokens based on
+* :ref:`hotp_token` - event base One Time Password tokens based on
   `RFC4225 <https://tools.ietf.org/html/rfc4226>`_.
-* TOTP - time based One Time Password tokens based on
+* :ref:`totp_token` - time based One Time Password tokens based on
   `RFC6238 <https://tools.ietf.org/html/rfc6238>`_.
 * mOTP - time based One Time Password tokens for mobile phones based on an
   a `public Algorithm <http://motp.sourceforge.net>`_.
@@ -31,8 +31,9 @@ At the moment the following tokentypes are supported:
 * :ref:`radius` - A virtual token that forwards the authentication request to
   a RADIUS server.
 * :ref:`sms` - A token that sends the OTP value to the mobile phone of the
-    user.
-* EMail - A token that sends the OTP value to the EMail address of the user.
+  user.
+* :ref:`email_token` - A token that sends the OTP value to the EMail address of
+  the user.
 * :ref:`yubico` - A Yubikey hardware that authenticates against the Yubico
   Cloud service.
 * :ref:`yubikey` - A Yubikey hardware initialized in the AES mode, that
