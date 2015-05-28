@@ -118,13 +118,16 @@ def save_caconnector(params):
 @log_with(log)
 #@cache.memoize(10)
 def get_caconnector_list(filter_caconnector_type=None,
-                         filter_caconnector_name=None):
+                         filter_caconnector_name=None,
+                         return_config=True):
     """
     Gets the list of configured CA Connectors from the database
 
     :param filter_caconnector_type: Only CA connectors of the given type are
         returned
     :type filter_caconnector_type: string
+    :param return_config: Whether the configuration should be returned. If False
+        only the list of the CAconncetor names is returned
     :rtype: list of the connectors and their configuration
 
     """
@@ -145,11 +148,12 @@ def get_caconnector_list(filter_caconnector_type=None,
              "type": conn.catype}
         # Add the connector configuration
         data = {}
-        for conf in conn.caconfig:
-            value = conf.Value
-            if conf.Type == "password":
-                value = decryptPassword(value)
-            data[conf.Key] = value
+        if return_config:
+            for conf in conn.caconfig:
+                value = conf.Value
+                if conf.Type == "password":
+                    value = decryptPassword(value)
+                data[conf.Key] = value
         c["data"] = data
         Connectors.append(c)
 

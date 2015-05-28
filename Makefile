@@ -116,7 +116,7 @@ ppa-dev:
 	echo $(SERIES) | grep $(series)
 	################## Renew the changelog
 	cp deploy/debian-ubuntu/changelog DEBUILD/privacyidea.org/debian/
-	sed -e s/") trusty; urgency"/") $(series); urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
+	sed -e s/"trusty) trusty; urgency"/"$(series)) $(series); urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
 	################# Build
 	(cd DEBUILD/privacyidea.org; debuild -sa -S)
 	################ Upload to launchpad:

@@ -112,6 +112,12 @@ class CAConnectorTestCase(MyTestCase):
         self.assertEqual(calist[0].get("data").get("WorkingDir"), "/opt/ca")
         self.assertEqual(calist[0].get("data").get("cakey"), "/opt/ca/key.pem")
 
+        # get the CA connector list without a config
+        calist = get_caconnector_list(return_config=False)
+        self.assertEqual(len(calist), 1)
+        # check that there are no values
+        self.assertEqual(calist[0].get("data"), {})
+
         # test the CA connector:
         config = get_caconnector_config("myCA")
         self.assertEqual(config.get("WorkingDir"), "/opt/ca")

@@ -1,6 +1,7 @@
 privacyidea-venv (2.4~dev0) wheezy; urgency=low
 
   * Start 2.4
+  * Fix missing access right of user to GET /caconnector
 
  -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 22 May 2015 22:30:00 +0200
 
