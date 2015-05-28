@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
+#
+#  2015-05-28 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add PSKC import
 #  2014-12-11 Cornelius Kölbel <cornelius@privacyidea.org>
 #             code cleanup during flask migration
 #  2014-10-27 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -35,10 +38,12 @@ XML files, that hold the OTP secrets for eToken PASS.
 import xml.etree.ElementTree as etree
 import re
 import binascii
+import base64
 from privacyidea.lib.utils import modhex_decode
 from privacyidea.lib.utils import modhex_encode
 from privacyidea.lib.log import log_with
 from Crypto.Cipher import AES
+from BeautifulSoup import BeautifulSoup
 
 import logging
 log = logging.getLogger(__name__)
@@ -305,13 +310,13 @@ def parseYubicoCSV(csv):
 
 @log_with(log)
 def parseSafeNetXML(xml):
-    '''
+    """
     This function parses XML data of a Aladdin/SafeNet XML
     file for eToken PASS
 
     It returns a dictionary of
         serial : { otpkey , counter, type }
-    '''
+    """
 
     TOKENS = {}
     elem_tokencontainer = etree.fromstring(xml)
@@ -368,7 +373,7 @@ def parsePSKCdata(xml_data,
                   password=None,
                   do_checkserial=True,
                   do_feitian=False):
-    '''
+    """
     This function parses XML data of a PSKC file, (RFC6030)
     It can read
     * AES-128-CBC encrypted (preshared_key_bin) data
@@ -377,5 +382,28 @@ def parsePSKCdata(xml_data,
 
     It returns a dictionary of
         serial : { otpkey , counter, .... }
-    '''
-    pass
+    """
+    tokens = {}
+    xml = BeautifulSoup(xml_data)
+    key_packages = xml.keycontainer.findAll("keypackage")
+    for key_package in key_packages:
+        token = {}
+        key = key_package.key
+        try:
+            token["description"] = key_package.deviceinfo.manufacturer.string
+        except:
+            pass
+        serial = key["id"]
+        algo = key["algorithm"]
+        token["type"] = algo[-4:].lower()
+        parameters = key.algorithmparameters
+        token["otplen"] = parameters.responseformat["length"] or 6
+        secret = key.data.secret.plainvalue.string
+        token["otpkey"] = binascii.hexlify(base64.b64decode(secret))
+        if token["type"] == "hotp":
+            token["counter"] = key.data.counter.plainvalue.string
+        elif token["type"] == "totp":
+            token["timeStep"] = key.data.timeinterval.plainvalue.string
+
+        tokens[serial] = token
+    return tokens

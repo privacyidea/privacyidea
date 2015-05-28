@@ -53,7 +53,7 @@ from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
 from privacyidea.lib.error import (ParameterError, TokenAdminError)
 from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
-                                       parseYubicoCSV)
+                                       parseYubicoCSV, parsePSKCdata)
 import logging
 from lib.utils import getParam
 from flask import request, g
@@ -763,7 +763,7 @@ def loadtokens_api(filename=None):
     if not filename:
         filename = getParam(request.all_data, "filename", required)
     known_types = ['aladdin-xml', 'oathcsv', "OATH CSV", 'yubikeycsv',
-                   'Yubikey CSV']
+                   'Yubikey CSV', 'pskc']
     file_type = getParam(request.all_data, "type", required)
     hashlib = getParam(request.all_data, "aladdin_hashlib")
 
@@ -803,6 +803,10 @@ def loadtokens_api(filename=None):
         TOKENS = parseOATHcsv(file_contents)
     elif file_type in ["yubikeycsv", "Yubikey CSV"]:
         TOKENS = parseYubicoCSV(file_contents)
+    elif file_type in ["pskc"]:
+        # At the moment we only process unencrypted data
+        # TODO: We need to also parse encryption!
+        TOKENS = parsePSKCdata(file_contents)
 
     # Now import the Tokens from the dictionary
     ret = ""

@@ -1,3 +1,4 @@
+BeautifulSoup==3.2.1
 Flask==0.10.1
 Flask-Cache==0.13.1
 Flask-Migrate==1.2.0

@@ -225,7 +225,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
 myApp.controller("tokenImportController", function ($scope, $upload,
                                                     AuthFactory) {
     $scope.formInit = {
-        fileTypes: ["OATH CSV", "Yubikey CSV"]
+        fileTypes: ["OATH CSV", "Yubikey CSV", "pskc"]
     };
     // These are values that are also sent to the backend!
     $scope.form = {

@@ -39,7 +39,15 @@
     <div ng-show="form.type==='Yubikey CSV'">
         <p class="help-block">
             Here you can upload a csv file for your Yubikey token.
-            The file is supposed to contain one token per line:
+            The file is supposed to contain one token per line.
+        </p>
+    </div>
+
+    <div ng-show="form.type==='pskc'">
+        <p class="help-block">
+            This is an RFC6030 OATH compliant PSKC file.
+            At the moment only unencrypted PSKC files are supported.
+            Please ask for an update to import encrypted PSKC files.
         </p>
     </div>
 

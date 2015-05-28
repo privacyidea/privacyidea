@@ -6,10 +6,10 @@ This test file tests the lib.importotp
 
 from .base import MyTestCase
 from privacyidea.lib.importotp import (parseOATHcsv, parseYubicoCSV,
-                                       parseSafeNetXML, ImportException)
+                                       parseSafeNetXML, ImportException,
+                                       parsePSKCdata)
 
 XML_PSKC = '''<?xml version="1.0" encoding="UTF-8"?>
-
 <KeyContainer Version="1.0" xmlns ="urn:ietf:params:xml:ns:keyprov:pskc">
   <KeyPackage>
     <DeviceInfo>
@@ -341,3 +341,10 @@ class ImportOTPTestCase(MyTestCase):
         tokens = parseYubicoCSV(YUBIKEYCSV)
         self.assertTrue(len(tokens) == 7, len(tokens))
         self.assertTrue("UBAM00508326_1" in tokens, tokens)
+
+    def test_03_import_pskc(self):
+        tokens = parsePSKCdata(XML_PSKC)
+        self.assertEqual(len(tokens), 6)
+        self.assertEqual(tokens["1000133508267"].get("type"), "hotp")
+        self.assertEqual(tokens["2600135004013"].get("type"), "totp")
+        self.assertEqual(tokens["2600135004013"].get("timeStep"), "60")
