@@ -1,3 +1,9 @@
+python-privacyidea (2.3.1~dev0) trusty; urgency=low
+
+  * Fix missing access right of user to GET /caconnector
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 28 May 2015 10:30:00 +0200
+
 python-privacyidea (2.3-1trusty) trusty; urgency=low
 
   * Add connector to remote Certificate Authority

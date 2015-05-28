@@ -595,10 +595,10 @@ def get_static_policy_definitions(scope=None):
                                  "desc": _("Admin is allowed to delete "
                                            "resolvers and realms."),
                                  "group": "system"},
-            ACTION.CACONNECTORREAD: {'type': 'bool',
-                                     "desc": _("Admin is allowed to read the "
-                                               "CA Connector definitions."),
-                                     "group": "system"},
+            #ACTION.CACONNECTORREAD: {'type': 'bool',
+            #                         "desc": _("Admin is allowed to read the "
+            #                                   "CA Connector definitions."),
+            #                         "group": "system"},
             ACTION.CACONNECTORWRITE: {'type': 'bool',
                                       "desc": _("Admin is allowed to create new"
                                                 " CA Connector definitions "

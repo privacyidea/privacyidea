@@ -69,6 +69,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            check_external)
 from privacyidea.api.auth import (user_required, admin_required)
 from privacyidea.api.audit import audit_blueprint
+from .caconnector import caconnector_blueprint
+
 
 token_blueprint = Blueprint('token_blueprint', __name__)
 log = logging.getLogger(__name__)
@@ -85,6 +87,7 @@ Some API calls are only allowed to be accessed by adminitrators.
 
 @token_blueprint.before_request
 @audit_blueprint.before_request
+@caconnector_blueprint.before_request
 @user_required
 def before_request():
     """

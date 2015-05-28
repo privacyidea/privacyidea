@@ -34,6 +34,7 @@ from privacyidea.lib.caconnector import (save_caconnector,
                                          get_caconnector_list)
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.lib.policy import ACTION
+from .auth import admin_required
 
 log = logging.getLogger(__name__)
 
@@ -44,13 +45,15 @@ caconnector_blueprint = Blueprint('caconnector_blueprint', __name__)
 @log_with(log)
 @caconnector_blueprint.route('/<name>', methods=['GET'])
 @caconnector_blueprint.route('/', methods=['GET'])
-@prepolicy(check_base_action, request, ACTION.CACONNECTORREAD)
+#@prepolicy(check_base_action, request, ACTION.CACONNECTORREAD)
 def get_caconnector_api(name=None):
     """
     returns a json list of the available applications
     """
     g.audit_object.log({"detail": "%s" % name})
-    res = get_caconnector_list(filter_caconnector_name=name)
+    role = g.logged_in_user.get("role")
+    res = get_caconnector_list(filter_caconnector_name=name,
+                               return_config=(role == "admin"))
     g.audit_object.log({"success": True})
     return send_result(res)
 
@@ -58,6 +61,7 @@ def get_caconnector_api(name=None):
 @log_with(log)
 @caconnector_blueprint.route('/<name>', methods=['POST'])
 @prepolicy(check_base_action, request, ACTION.CACONNECTORWRITE)
+@admin_required
 def save_caconnector_api(name=None):
     """
     returns a json list of the available applications
@@ -73,6 +77,7 @@ def save_caconnector_api(name=None):
 @log_with(log)
 @caconnector_blueprint.route('/<name>', methods=['DELETE'])
 @prepolicy(check_base_action, request, ACTION.CACONNECTORDELETE)
+@admin_required
 def delete_caconnector_api(name=None):
     """
     returns a json list of the available applications
