@@ -59,8 +59,10 @@ class ProductionConfig(Config):
 
 class HerokuConfig(Config):
     config_path = basedir
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(config_path, 'data.sqlite')
+    SQLALCHEMY_DATABASE_URI = "postgres://mvfkmtkwzuwojj:" \
+                              "wqy_btZE3CPPNWsmkfdmeorxy6@" \
+                              "ec2-54-83-0-61.compute-1." \
+                              "amazonaws.com:5432/d6fjidokoeilp6"
     #SQLALCHEMY_DATABASE_URI = "mysql://pi2:pi2@localhost/pi2"
     # This is used to encrypt the auth_token
     SECRET_KEY = os.environ.get('SECRET_KEY') or 't0p s3cr3t'
