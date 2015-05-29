@@ -57,9 +57,28 @@ class ProductionConfig(Config):
     SUPERUSER_REALM = ['superuser']
 
 
+class HerokuConfig(Config):
+    config_path = basedir
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///' + os.path.join(config_path, 'data.sqlite')
+    #SQLALCHEMY_DATABASE_URI = "mysql://pi2:pi2@localhost/pi2"
+    # This is used to encrypt the auth_token
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 't0p s3cr3t'
+    # This is used to encrypt the admin passwords
+    PI_PEPPER = "Never know..."
+    # This is used to encrypt the token data and token passwords
+    PI_ENCFILE = os.path.join(config_path, "enckey")
+    # This is used to sign the audit log
+    PI_AUDIT_KEY_PRIVATE = os.path.join(config_path, "private.pem")
+    PI_AUDIT_KEY_PUBLIC = os.path.join(config_path, "public.pem")
+    PI_LOGLEVEL = logging.WARNING
+    SUPERUSER_REALM = ['superuser']
+
+
 config = {
     'development': DevelopmentConfig,
     'testing': TestingConfig,
     'production': ProductionConfig,
-    'default': DevelopmentConfig
+    'default': DevelopmentConfig,
+    'heroku': HerokuConfig
 }

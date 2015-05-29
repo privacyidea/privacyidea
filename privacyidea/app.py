@@ -129,4 +129,4 @@ def create_app(config_name="development",
     return app
 
 # This is used for heroku
-app = create_app()
+heroku_app = create_app(config_name="heroku")
