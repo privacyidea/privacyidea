@@ -127,3 +127,6 @@ def create_app(config_name="development",
     logging.getLogger("privacyidea").addHandler(fhandler)
 
     return app
+
+# This is used for heroku
+app = create_app()

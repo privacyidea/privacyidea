@@ -1,0 +1,1 @@
+web: gunicorn --log-file - --pythonpath .  privacyidea.app:app
