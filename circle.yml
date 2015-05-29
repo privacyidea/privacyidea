@@ -13,3 +13,9 @@ test:
     - make builddeb-nosign
 #    - sudo dpkg -i DEBUILD/privacyidea-apache*.deb
 #    - sudo apt-get -f install
+
+deployment:
+  staging:
+    branch: master
+    heroku:
+      appname: privacyidea-test
