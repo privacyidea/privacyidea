@@ -67,11 +67,12 @@ class HerokuConfig(Config):
     # This is used to encrypt the admin passwords
     PI_PEPPER = "Never know..."
     # This is used to encrypt the token data and token passwords
-    PI_ENCFILE = os.path.join(config_path, "enckey")
+    PI_ENCFILE = os.path.join(config_path, "deploy/heroku/enckey")
     # This is used to sign the audit log
-    PI_AUDIT_KEY_PRIVATE = os.path.join(config_path, "private.pem")
-    PI_AUDIT_KEY_PUBLIC = os.path.join(config_path, "public.pem")
-    PI_LOGLEVEL = logging.WARNING
+    PI_AUDIT_KEY_PRIVATE = os.path.join(config_path,
+                                        "deploy/heroku/private.pem")
+    PI_AUDIT_KEY_PUBLIC = os.path.join(config_path, "deploy/heroku/public.pem")
+    PI_LOGLEVEL = logging.INFO
     SUPERUSER_REALM = ['superuser']
 
 
