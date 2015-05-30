@@ -35,6 +35,9 @@ parameters ``realm=`` and ``debug``.
 If you want to disable certificate validation, which you should not do in a
 productive environment, you can use the parameter ``nosslverify``.
 
+A new parameter ``cacerts=`` lets you define a CA Cert-Bundle file, that
+contains the trusted certificate authorities in PEM format.
+
 The default behaviour is to trigger an online authentication request.
 If the request was successful, the user is logged in.
 If the request was done with a token defined for offline authentication, than

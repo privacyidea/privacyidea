@@ -59,6 +59,11 @@ def pam_sm_authenticate(pamh, flags, argv):
     config = _get_config(argv)
     URL = config.get("url", "https://localhost")
     sslverify = not config.get("nosslverify", False)
+    cacerts = config.get("cacerts")
+    # If we do verify SSL certificates and if a CA Cert Bundle file is
+    # provided, we set this.
+    if sslverify and cacerts:
+        sslverify = cacerts
     realm = config.get("realm")
     debug = config.get("debug")
     sqlfile = config.get("sqlfile", "/etc/privacyidea/pam.sqlite")
