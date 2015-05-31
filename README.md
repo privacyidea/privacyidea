@@ -3,7 +3,7 @@ privacyIDEA
 
 [![Build Status](https://travis-ci.org/privacyidea/privacyidea.svg?branch=master)](https://travis-ci.org/privacyidea/privacyidea)
 [![CircleCI](https://circleci.com/gh/privacyidea/privacyidea/tree/master.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/privacyidea/privacyidea)
-[![Coverage Status](https://coveralls.io/repos/privacyidea/privacyidea/badge.png?branch=master)](https://coveralls.io/r/privacyidea/privacyidea)
+[![Coverage Status](https://img.shields.io/coveralls/privacyidea/privacyidea.svg)](https://coveralls.io/r/privacyidea/privacyidea)
 [![Downloads](https://img.shields.io/pypi/dm/privacyidea.svg)](https://pypi.python.org/pypi/privacyidea/)
 [![Latest Version](https://img.shields.io/pypi/v/privacyidea.svg)](https://pypi.python.org/pypi/privacyidea/)
 [![License](https://img.shields.io/github/license/privacyidea/privacyidea.svg)](https://pypi.python.org/pypi/privacyidea/)

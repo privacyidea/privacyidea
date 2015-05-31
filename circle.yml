@@ -28,4 +28,7 @@ deployment:
       - heroku pg:reset DATABASE_URL --confirm privacyidea-test
       - heroku run python ./pi-manage.py createdb --app privacyidea-test
       - heroku run --app privacyidea-test --  python ./pi-manage.py admin add -p 'Test1234!' admin admin@localhost
-      - curl https://api.ghostinspector.com/v1/tests/55695cd202ab10dc4b068802/execute/?apiKey=7e4c446eb2fb14cb8db9d96bb9a3ad09245994c0
+      # Create default realm
+      - curl https://api.ghostinspector.com/v1/tests/556aacfb8607b44136a074e8/execute/?apiKey=7e4c446eb2fb14cb8db9d96bb9a3ad09245994c0
+      # Create local realm
+      - curl https://api.ghostinspector.com/v1/tests/556aadbe8607b44136a074eb/execute/?apiKey=7e4c446eb2fb14cb8db9d96bb9a3ad09245994c0
