@@ -34,3 +34,6 @@ deployment:
       - heroku run --app privacyidea-test -- python ./pi-manage.py realm create default resolver1
       # Create local realm
       - curl https://api.ghostinspector.com/v1/tests/556aadbe8607b44136a074eb/execute/?apiKey=7e4c446eb2fb14cb8db9d96bb9a3ad09245994c0
+      # User Token enroll
+      - curl https://api.ghostinspector.com/v1/tests/556abe5c02ab10dc4b06882f/execute/?apiKey=7e4c446eb2fb14cb8db9d96bb9a3ad09245994c0
+
