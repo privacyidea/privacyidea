@@ -176,6 +176,7 @@ class LOGINMODE():
     __doc__ = """This is the list of possible values for the login mode."""
     USERSTORE = "userstore"
     PRIVACYIDEA = "privacyIDEA"
+    DISABLE = "disable"
 
 
 class ACTIONVALUE():
@@ -183,6 +184,7 @@ class ACTIONVALUE():
     action-values like otppin."""
     TOKENPIN = "tokenpin"
     USERSTORE = "userstore"
+    DISABLE = "disable"
     NONE = "none"
 
 
@@ -799,7 +801,8 @@ def get_static_policy_definitions(scope=None):
                     'If set to "privacyIDEA" the users and admins need to '
                     'authenticate against privacyIDEA when they log in '
                     'to the Web UI. Defaults to "userstore"'),
-                'value': [LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA],
+                'value': [LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA,
+                          LOGINMODE.DISABLE],
             },
             ACTION.LOGOUTTIME: {
                 'type': 'int',

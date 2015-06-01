@@ -20,7 +20,7 @@ from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.token import (init_token, remove_token, check_user_pass,
                                    get_tokens)
-from privacyidea.lib.error import UserError
+from privacyidea.lib.error import UserError, PolicyError
 
 
 def _check_policy_name(polname, policies):
@@ -275,6 +275,22 @@ class LibPolicyTestCase(MyTestCase):
         # Policy is set, the function is called with check_otp=True
         login_mode(check_webui_user_privacyidea, user_obj, "",
                    options=options, superuser_realms="", check_otp=False)
+
+        # Set policy, so that the user is not allowed to login at all
+        set_policy(name="pol2",
+                   scope=SCOPE.WEBUI,
+                   action="%s=%s" % (ACTION.LOGINMODE, LOGINMODE.DISABLE))
+        g = FakeFlaskG()
+        P = PolicyClass()
+        g.policy_object = P
+        options = {"g": g}
+
+        # Policy is set. Trying to login raises a policy error
+        self.assertRaises(PolicyError, login_mode,
+                          check_webui_user_privacyidea, user_obj, "",
+                          options=options, superuser_realms="",
+                          check_otp=False)
+        delete_policy("pol2")
 
     def test_08_config_lost_token_policy(self):
 

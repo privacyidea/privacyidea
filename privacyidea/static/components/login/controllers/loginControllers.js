@@ -93,11 +93,12 @@ angular.module("privacyideaApp")
             console.log($scope.loggedInUser);
             $location.path("/token");
         }).error(function (error) {
-            addError("Wrong credentials.", 3000);
+            addError("Authentication failed. " + error.result.error.message,
+                    3000);
         }).then(function () {
-                // We delete the login object, so that the password is not
-                // contained in the scope
-                $scope.login = {username: "", password: ""};
+            // We delete the login object, so that the password is not
+            // contained in the scope
+            $scope.login = {username: "", password: ""};
             }
         );
     };

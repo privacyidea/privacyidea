@@ -118,7 +118,6 @@ def create_app(config_name="development",
                                             backupCount=4,
                                             maxBytes=10000000)
 
-
     formatter = SecureFormatter(MY_LOG_FORMAT)
     # Set the formatter
     fhandler.setFormatter(formatter)
