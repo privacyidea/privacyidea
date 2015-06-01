@@ -93,10 +93,14 @@ class MachineApplication(object):
     def get_authentication_item(cls,
                                 token_type,
                                 serial,
-                                challenge=None, options=None):
+                                challenge=None, options=None,
+                                filter_param=None):
         """
         returns a dictionary of authentication items
         like public keys, challenges, responses...
+
+        :param filter_param: Additional URL request parameters
+        :type filter_param: dict
         """
         return "nothing"
 
@@ -110,10 +114,8 @@ class MachineApplication(object):
 
 
 @log_with(log)
-def get_auth_item(application,
-                  token_type,
-                  serial,
-                  challenge=None, options=None):
+def get_auth_item(application, token_type,serial,
+                  challenge=None, options=None, filter_param=None):
 
     options = options or {}
     # application_module from application
@@ -123,7 +125,8 @@ def get_auth_item(application,
     auth_item = auth_class.get_authentication_item(token_type,
                                                    serial,
                                                    challenge=challenge,
-                                                   options=options)
+                                                   options=options,
+                                                   filter_param=filter_param)
     return auth_item
 
 

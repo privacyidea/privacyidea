@@ -352,9 +352,15 @@ def get_auth_items_api(application=None):
     """
     challenge = getParam(request.all_data, "challenge")
     hostname = getParam(request.all_data, "hostname", optional=False)
+    # Get optional additional filter parameters
+    filter_param = request.all_data
+    for key in ["challenge", "hostname"]:
+        if key in filter_param:
+            del(filter_param[key])
 
     ret = get_auth_items(hostname, ip=request.remote_addr,
-                         application=application, challenge=challenge)
+                         application=application, challenge=challenge,
+                         filter_param=filter_param)
     g.audit_object.log({'success': True,
                         'info': "host: %s, application: %s" % (hostname,
                                                                application)})

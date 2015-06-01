@@ -18,11 +18,13 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+"""
+This file is tested in tests/test_lib_machinetokens.py
+"""
 from privacyidea.lib.applications import MachineApplicationBase
 import logging
-log = logging.getLogger(__name__)
-# from privacyidea.lib.log import log_with
 from privacyidea.lib.token import get_tokens
+log = logging.getLogger(__name__)
 
 
 class MachineApplication(MachineApplicationBase):
@@ -37,7 +39,7 @@ class MachineApplication(MachineApplicationBase):
     '''as the authentication item is no sensitive information,
     we can set bulk_call to True. Thus the admin can call
     all public keys to distribute them via salt.
-    FIXME: THis is only true for SSH pub keys.
+    FIXME: This is only true for SSH pub keys.
     If we would support OTP with SSH, this might be sensitive information!
     '''
     allow_bulk_call = True
@@ -46,34 +48,43 @@ class MachineApplication(MachineApplicationBase):
     def get_authentication_item(cls,
                                 token_type,
                                 serial,
-                                challenge=None, options=None):
+                                challenge=None, options=None,
+                                filter_param=None):
         """
         :param token_type: the type of the token. At the moment
                            we support the tokenype "sshkey"
         :param serial:     the serial number of the token.
-        :return auth_item: For Yubikey token type it
-                           returns a dictionary with a "challenge" and
-                           a "response".
+        :return auth_item: Return the SSH pub keys.
         """
         options = options or {}
         ret = {}
+        filter_param = filter_param or {}
+        user_filter = filter_param.get("user")
         if token_type.lower() == "sshkey":
             toks = get_tokens(serial=serial, active=True)
             if len(toks) == 1:
-                # tokenclass is a SSHkeyTokenClass
-                tokclass = toks[0]
-                # We just return the ssh public key, so that
-                # it can be included into authorized keys.
-                ret["sshkey"] = tokclass.get_sshkey()
-                # We return the username if the token is assigned to a
-                # user, so that this username could be used to save
-                # the ssh key accordingly
-                user_object = toks[0].get_user()
-                if user_object:
-                    uInfo = user_object.get_user_info()
-                    if "username" in uInfo:
-                        ret["username"] = uInfo.get("username")
-                # ret["info"] = uInfo
+                # We return this entry, either if no user_filter is requested
+                #  or if the user_filter matches the user
+                if (user_filter and user_filter == options.get("user")) or \
+                        not user_filter:
+                    # tokenclass is a SSHkeyTokenClass
+                    tokclass = toks[0]
+                    # We just return the ssh public key, so that
+                    # it can be included into authorized keys.
+                    ret["sshkey"] = tokclass.get_sshkey()
+                    # We return the username if the token is assigned to a
+                    # user, so that this username could be used to save
+                    # the ssh key accordingly
+                    user_object = toks[0].get_user()
+                    if user_object:
+                        uInfo = user_object.get_user_info()
+                        if "username" in uInfo:
+                            ret["username"] = uInfo.get("username")
+                    # ret["info"] = uInfo
+                else:
+                    log.info("The requested user %s does not match the user "
+                             "option (%s) of the SSH application." % (
+                        user_filter, options.get("user")))
         else:
             log.info("Token %r, type %r is not supported by"
                      "SSH application module" % (serial, token_type))

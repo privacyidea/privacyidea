@@ -125,3 +125,18 @@ class MachineTokenTestCase(MyTestCase):
         self.assertEquals(len(sshkey_auth_items), 1)
         self.assertTrue(sshkey_auth_items[0].get("sshkey").startswith(
             "ssh-rsa"))
+
+        # fetch the auth_items with user restriction for SSH
+        ai = get_auth_items("gandalf", ip="192.168.0.1", application="ssh",
+                            filter_param={"user": "testuser"})
+        sshkey_auth_items = ai.get("ssh")
+        self.assertEquals(len(sshkey_auth_items), 1)
+        self.assertTrue(sshkey_auth_items[0].get("sshkey").startswith(
+            "ssh-rsa"))
+
+        # try to fetch SSH keys for user, who has no ssh keys
+        ai = get_auth_items("gandalf", ip="192.168.0.1", application="ssh",
+                            filter_param={"user": "nonExist"})
+        sshkey_auth_items = ai.get("ssh")
+        # None or an empty list
+        self.assertFalse(sshkey_auth_items)

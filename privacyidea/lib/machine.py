@@ -367,7 +367,7 @@ def _get_host_identifier(hostname, machine_id, resolver_name):
 
 
 def get_auth_items(hostname, ip=None, application=None,
-                   serial=None, challenge=None):
+                   serial=None, challenge=None, filter_param=None):
     """
     Return the authentication items for a given hostname and the application.
     The hostname is used to identify the machine object. Then all attached
@@ -376,7 +376,11 @@ def get_auth_items(hostname, ip=None, application=None,
     :param hostname:
     :param ip:
     :param application:
-    :param challenge:
+    :param challenge: A challenge for the authitme
+    :type challenge: basestring
+    :param filter_param: Additional application specific parameter to filter
+        the return value
+    :type filter_param: dict
     :return: dictionary of lists of the application auth items
 
     **Example response**:
@@ -407,7 +411,8 @@ def get_auth_items(hostname, ip=None, application=None,
                                   mtoken.get("type"),
                                   mtoken.get("serial"),
                                   challenge,
-                                  options=mtoken.get("options"))
+                                  options=mtoken.get("options"),
+                                  filter_param=filter_param)
         if auth_item:
             if mtoken.get("application") not in auth_items:
                 # we create a new empty list for the new application type

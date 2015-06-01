@@ -63,7 +63,7 @@ SSH token in privacyIDEA.
 
 .. warning:: In a productive environment you should not set **nosslcheck** to
 true,
-otherwise you are vulnarable to man in the middle attacks.
+otherwise you are vulnerable to man in the middle attacks.
 
 .. _application_luks:
 
@@ -84,7 +84,7 @@ the privacyIDEA server.
 Thus, the following script need to be executed with root rights (able to
 write to LUKS) on the client machine::
 
-   privacyidea-luks-assign @secrets.txt --cleanslot --name salt-minion
+   privacyidea-luks-assign @secrets.txt --clearslot --name salt-minion
 
 For more information please see the man page of this tool.
 
