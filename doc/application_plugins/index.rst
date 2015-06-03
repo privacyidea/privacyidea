@@ -9,6 +9,10 @@ privacyIDEA comes with application plugins. These are plugins for
 applications like PAM, OTRS, FreeRADIUS or simpleSAMLphp which enable these
 application to authenticate users against privacyIDEA.
 
+You may also write your own application plugin or connect your own application
+to privacyIDEA. This is quite simple using a REST API 
+:ref:`rest_validate`.
+
 .. _pam_plugin:
 
 Pluggable Authentication Module

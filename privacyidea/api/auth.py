@@ -21,7 +21,12 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__ = """This REST API is used to authenticate the users.
+__doc__ = """This REST API is used to authenticate the users. A user needs to
+authenticate when he wants to use the API for administrative tasks like
+enrolling a token.
+
+This API must not be confused with the validate API, which is used to check,
+if a OTP value is valid. See :ref:`rest_validate`.
 
 Authentication of users and admins is tested in tests/test_api_roles.py
 

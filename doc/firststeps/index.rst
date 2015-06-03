@@ -19,6 +19,13 @@ management web UI, attaching your first users and enrolling the first token.
 
 After these first steps you will be able to start attaching applications to
 privacyIDEA in order to add two factor authentication to those applications.
+You can 
+
+ * use a PAM module to authenticate with OTP at SSH or local 
+   login 
+ * or the RADIUS plugin to configure your firewall or VPN to use OTP.
+ * You can also setup different web applications to use OTP.
+
 To attach applications read the chapter :ref:`application_plugins`.
 
 You may also go on reading the chapter :ref:`configuration` to get a deeper

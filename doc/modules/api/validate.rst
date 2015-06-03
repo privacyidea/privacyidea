@@ -1,9 +1,12 @@
 .. _rest_validate:
 
-.. automodule:: privacyidea.api.validate
-
 Validate endpoints
 ~~~~~~~~~~~~~~~~~~
+
+.. automodule:: privacyidea.api.validate
+
+Endpoints
+.........
 
 .. autoflask:: privacyidea.app:create_app()
    :endpoints:

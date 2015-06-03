@@ -5,15 +5,13 @@ Login to the Web UI
 
 .. _index: Web UI, Login
 
-privacyIDEA has one login form for users to login and for
-administrators to login.
+privacyIDEA has only one login form that is used by administrators and
+normal users to login. Administrators will be able to configure the
+system and to manage all tokens, while normal users will only be able
+to manage their own tokens.
 
-The login screen can contain a dropdown box with the list of
-existing realms. The dropdown box can be configured 
-in the :ref:`system_config` dialog on the :ref:`gui_settings` tab.
-
-You should enter your username and choose the right realm.
-If the dropdown box is not displayed, then you need to 
+You should enter your username with the right realm.
+You need to 
 append the realm to the username like ``username@realm``.
 
 Login for administrators
@@ -44,6 +42,9 @@ with the password from their user source.
 
 E.g. if the users are located in an LDAP or Active Directory
 the user needs to authenticate with his LDAP/AD password.
+
+But before a user can login, the administrator needs to configure 
+realms, which is described in the next step :ref:`first_steps_realm`. 
 
 .. note:: The user my either login with his password from the userstore
    or with any of his tokens.

@@ -1,10 +1,14 @@
 .. _rest_auth:
 
+Authentication endpoints
+~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. use the docstring from the module file
 .. automodule:: privacyidea.api.auth
 
-Authentication endpoints
-~~~~~~~~~~~~~~~~~~~~~~~~
+
+Endpoints
+.........
 
 .. autoflask:: privacyidea.app:create_app()
    :endpoints:

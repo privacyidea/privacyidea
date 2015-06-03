@@ -3,10 +3,15 @@
 Creating your first realm
 =========================
 
+.. note:: When the administrator logs in and no useridresolver and no
+   realm is defined, a popup appears, which asks you to create a default
+   realm. During these first steps you may say "No", to get a better
+   understanding.
+
 Users in privacyIDEA are read from existing sources. See :ref:`realms` for
 more information.
 
-In these first steps we will simple read the users from your `/etc/passwd` file.
+In these first steps we will simply read the users from your `/etc/passwd` file.
 
 Create a UserIdResolver
 -----------------------
