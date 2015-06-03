@@ -37,25 +37,6 @@ class APISelfserviceTestCase(MyTestCase):
         remove_token(self.my_serial)
         remove_token(self.foreign_serial)
 
-    def authenticate_selfserive_user(self):
-        with self.app.test_request_context('/auth',
-                                           method='POST',
-                                           data={"username":
-                                                     "selfservice@realm1",
-                                                 "password": "test"}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            self.assertTrue(result.get("status"), res.data)
-            # In self.at_user we store the user token
-            self.at_user = result.get("value").get("token")
-            # check that this is a user
-            role = result.get("value").get("role")
-            self.assertTrue(role == "user", result)
-            self.assertEqual(result.get("value").get("realm"), "realm1")
-            # Test logout time
-            self.assertEqual(result.get("value").get("logout_time"), 30)
-
     def test_00_authenticate_admin_fail(self):
         with self.app.test_request_context('/auth',
                                            method='POST',
@@ -462,5 +443,17 @@ class APISelfserviceTestCase(MyTestCase):
                                             method="POST",
                                             headers={'Authorization':
                                                          self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+
+
+class APIAuthRightsTestCase(MyTestCase):
+
+    def test_01_ui_rights(self):
+        self.authenticate_selfserive_user()
+        with self.app.test_request_context('/auth/rights',
+                                           method="GET",
+                                           headers={'Authorization':
+                                                        self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 401, res)

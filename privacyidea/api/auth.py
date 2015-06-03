@@ -52,7 +52,7 @@ from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import check_webui_user, ROLE
 from privacyidea.lib.user import User
 from privacyidea.lib.user import split_user
-from privacyidea.lib.policy import PolicyClass
+from privacyidea.lib.policy import PolicyClass, SCOPE
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.api.lib.postpolicy import postpolicy, get_logout_time
 
@@ -257,3 +257,23 @@ def check_auth_token(required_role=None):
                         "realm": r.get("realm"),
                         "role": r.get("role")}
 
+
+@jwtauth.route('/rights', methods=['GET'])
+@user_required
+def get_rights():
+    """
+    This returns the rights of the logged in user.
+    :return:
+    """
+    g.logged_in_user.get("username")
+    g.logged_in_user.get("role")
+    g.logged_in_user.get("realm")
+
+    #g.policy_object.get_policies(scope="user",
+    #                             user=g.logged_in_user.get("username"),
+    #                             user=g.logged_in_user.get("realm"))
+    r = g.policy_object.get_action_values("enrollHOTP", scope=SCOPE.USER,
+                                          realm=g.logged_in_user.get("realm"),
+                                          user=g.logged_in_user.get("username"))
+
+    return send_result({})

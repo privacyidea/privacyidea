@@ -353,6 +353,19 @@ class PolicyClass(object):
                                   " definitions!" % action)
         return action_values
 
+    def ui_get_enroll_tokentypes(self, client, logged_in_user):
+        """
+        Return a list of the allowed tokentypes for the logged in user.
+
+        :param client: Client IP address
+        :type client: basestring
+        :param logged_in_user: The Dict of the logged in user
+        :type logged_in_user: dict
+        :return: list of token types, the user may enroll
+        """
+        tokentypes = []
+        return tokentypes
+
 # --------------------------------------------------------------------------
 #
 #  NEW STUFF
