@@ -3,26 +3,15 @@
 Import
 ======
 
-.. index:: import
+.. index:: import, OATH CSV, Yubikey CSV, PSKC, RFC6030
 
 Seed files that contain the secret keys of hardware tokens can be 
 imported to the system via the menu *Import*.
 
 The default import options are to import *SafeNet XML* file,
-*OATH CSV* files or *Yubikey CSV* files.
+*OATH CSV* files, *Yubikey CSV* files or
+*PSKC* files.
 
-SafeNet XML
------------
-
-SafeNet XML (former Aladdin) files are usually shipped with
-SafeNet eToken PASS.
-
-Each token is contained in a <Token> tag and the seed is
-containted in a <seed> tag.
-These files were originally used to import HOTP-SHA1 tokens.
-
-.. note:: Today usually SafeNet tokens are shipped with a .dat file.
-   If you get such a file, please contact the mailing list.
 
 OATH CSV
 --------
@@ -72,8 +61,16 @@ privacyIDEA can import all Yubikey modes, either Yubico mode or HOTP mode.
    initializing 
    several HOTP yubikeys it will not write the serial number to the file.
 
+PSKC
+----
 
+The *Portable Symmetric Key Container* is specified in [#RFC6030]_.
+OATH compliant token vendors provide the token seeds in a PSKC file.
+privacyIDEA lets you import PSKC files.
+All necessary information (OTP lenght, Hash algorithm, token type) are read
+from the file.
 
 
 .. [#ocra] http://tools.ietf.org/html/rfc6287#section-6
 .. [#yubipers] http://www.yubico.com/products/services-software/personalization-tools/use/
+.. [#RFC6030] https://tools.ietf.org/html/rfc6030
