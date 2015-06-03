@@ -285,6 +285,29 @@ class IdResolver (UserIdResolver):
     def getSearchFields(self):
         return self.searchFields
 
+    @classmethod
+    def _append_where_filter(cls, conditions, table, where):
+        """
+        Append contents of WHERE statement to the list of filter conditions
+        :param conditions: filter conditions
+        :type conditions: list
+        :return: list of filter conditions
+        """
+        if where:
+            # this might result in errors if the
+            # administrator enters nonsense
+            (w_column, w_cond, w_value) = where.split()
+            if w_cond.lower() == "like":
+                conditions.append(getattr(table, w_column).like(w_value))
+            elif w_cond == "==":
+                conditions.append(getattr(table, w_column) == w_value)
+            elif w_cond == ">":
+                conditions.append(getattr(table, w_column) > w_value)
+            elif w_cond == "<":
+                conditions.append(getattr(table, w_column) < w_value)
+
+        return conditions
+
     def checkPass(self, uid, password):
         """
         This function checks the password for a given uid.
@@ -350,6 +373,8 @@ class IdResolver (UserIdResolver):
             conditions = []
             column = self.map.get("userid")
             conditions.append(getattr(self.TABLE, column).like(userId))
+            conditions = self._append_where_filter(conditions, self.TABLE,
+                                                   self.where)
             filter_condition = and_(*conditions)
             result = self.session.query(self.TABLE).filter(filter_condition)
                                                       
@@ -388,6 +413,8 @@ class IdResolver (UserIdResolver):
             conditions = []
             column = self.map.get("username")
             conditions.append(getattr(self.TABLE, column).like(LoginName))
+            conditions = self._append_where_filter(conditions, self.TABLE,
+                                                   self.where)
             filter_condition = and_(*conditions)
             result = self.session.query(self.TABLE).filter(filter_condition)
                                                       
@@ -456,19 +483,9 @@ class IdResolver (UserIdResolver):
             value = searchDict.get(key)
             value = value.replace("*", "%")
             conditions.append(getattr(self.TABLE, column).like(value))
-            
-        if self.where:
-            # this might result in errors if the
-            # administrator enters nonsense
-            (w_column, w_cond, w_value) = self.where.split()
-            if w_cond.lower() == "like":
-                conditions.append(getattr(self.TABLE, w_column).like(w_value))
-            elif w_cond == "==":
-                conditions.append(getattr(self.TABLE, w_column) == w_value)
-            elif w_cond == ">":
-                conditions.append(getattr(self.TABLE, w_column) > w_value)
-            elif w_cond == "<":
-                conditions.append(getattr(self.TABLE, w_column) < w_value)
+
+        conditions = self._append_where_filter(conditions, self.TABLE,
+                                               self.where)
         filter_condition = and_(*conditions)
 
         result = self.session.query(self.TABLE).\
@@ -601,7 +618,7 @@ class IdResolver (UserIdResolver):
         return connect_string
             
     @classmethod
-    def testconnection(self, param):
+    def testconnection(cls, param):
         """
         This function lets you test the to be saved SQL connection.
               
@@ -620,7 +637,7 @@ class IdResolver (UserIdResolver):
         num = -1
         desc = None
         
-        connect_string = self._create_connect_string(param)
+        connect_string = cls._create_connect_string(param)
         log.info("using the connect string %s" % connect_string)
         engine = create_engine(connect_string)
         # create a configured "Session" class
@@ -628,7 +645,11 @@ class IdResolver (UserIdResolver):
         db = SQLSoup(engine)
         try:
             TABLE = db.entity(param.get("Table"))
-            result = session.query(TABLE).count()
+            conditions = cls._append_where_filter([], TABLE,
+                                                  param.get("Where"))
+            filter_condition = and_(*conditions)
+            result = session.query(TABLE).filter(filter_condition).count()
+
             num = result
             desc = "Found %i users." % num
         except Exception as exx:
