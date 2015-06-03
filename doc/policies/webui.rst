@@ -52,6 +52,6 @@ logout_time
 type: int
 
 Set the timeout, after which a user in th WebUI will be logged out.
-The dafault timeout is 30 seconds.
+The default timeout is 120 seconds.
 
 Being a policy this time can be set based on clients, realms and users.

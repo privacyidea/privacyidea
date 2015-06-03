@@ -49,7 +49,7 @@ import netaddr
 
 optional = True
 required = False
-DEFAULT_LOGOUT_TIME = 30
+DEFAULT_LOGOUT_TIME = 120
 
 
 class postpolicy(object):

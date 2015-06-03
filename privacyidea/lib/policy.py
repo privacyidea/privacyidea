@@ -807,7 +807,7 @@ def get_static_policy_definitions(scope=None):
             ACTION.LOGOUTTIME: {
                 'type': 'int',
                 'desc': _("Set the time in seconds after which the user will "
-                          "be logged out from the WebUI. Default: 30")
+                          "be logged out from the WebUI. Default: 120")
             }
         }
 
