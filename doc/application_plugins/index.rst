@@ -190,6 +190,8 @@ avoid locking yourself out.
 
 Anyway, in a productive environment you probably want to uncheck this feature.
 
+.. _otrs_plugin:
+
 OTRS
 ----
 

@@ -63,8 +63,39 @@ To install it on a Ubuntu 14.04 system please run::
 
 For further details see :ref:`simplesaml_plugin`.
 
+PAM
+....
+
+.. index:: PAM
+
+privacyIDEA also comes with a PAM library to add two factor authentication to
+any Linux system. You can run one central privacyIDEA server and configure
+all other systems using the PAM library to authenticate against this
+privacyIDEA.
+
+To install it on a Ubuntu 14.04 system please run::
+
+   apt-get install privacyidea-pam
+
+For further details see :ref:`pam_plugin`.
+
+OTRS
+....
+
+.. index:: OTRS
+
+OTRS is an important Open Source Ticket Request System. It is written in Perl
+and privacyIDEA provides an authentication plugin to authenticate at OTRS
+with two factors.
+
+To install it on Ubuntu 14.04 please run::
+
+   apt-get install privacyidea-otrs
+
+For further details and configuration see :ref:`otrs_plugin`.
 
 .. rubric:: Footnotes
 
 .. [#ppa] https://launchpad.net/~privacyidea
-.. [#simpleSAML]  https://github.com/privacyidea/privacyidea/tree/master/authmodules/simpleSAMLphp
+.. [#simpleSAML] https://github.com/privacyidea/privacyidea/tree/master/authmodules/simpleSAMLphp
+.. [#otrs] http://www.otrs.com/
