@@ -6,7 +6,8 @@ Application Plugins
 .. index:: Application Plugins, OTRS, FreeRADIUS, SAML, PAM
 
 privacyIDEA comes with application plugins. These are plugins for
-applications like PAM, OTRS, FreeRADIUS or simpleSAMLphp which enable these
+applications like PAM, OTRS, Apache2, FreeRADIUS or simpleSAMLphp which enable
+these
 application to authenticate users against privacyIDEA.
 
 You may also write your own application plugin or connect your own application
@@ -195,7 +196,7 @@ Anyway, in a productive environment you probably want to uncheck this feature.
 OTRS
 ----
 
-There are two plugins for OTRS. For OTRS version 4.0 and higher user
+There are two plugins for OTRS. For OTRS version 4.0 and higher use
 *privacyIDEA-4_0.pm*.
 
 This perl module needs to be installed to the directory ``Kernel/System/Auth``.
@@ -219,6 +220,42 @@ To activate the OTP authentication you need to add the following to
 
 .. note:: This plugin requires, that you also add the path *validate/check*
    to the URL.
+
+.. _apache_plugin:
+
+Apache2
+-------
+
+The Apache plugin uses ``mod_wsgi`` and ``redis`` to provide a basic
+authentication on Apache2 side and validating the credentials against
+privacyIDEA.
+
+On Ubuntu 14.04 LTS you can easily install the module from the PPA repository
+by issuing::
+
+   apt-get install privacyidea-apache-client
+
+To activate the OTP authentication on a "Location" or "Directory" you need to
+configure Apache2 like this::
+
+   <Directory /var/www/html/secretdir>
+        AuthType Basic
+        AuthName "Protected Area"
+        AuthBasicProvider wsgi
+        WSGIAuthUserScript /usr/share/pyshared/privacyidea_apache.py
+        Require valid-user
+   </Directory>
+
+.. note:: Basic Authentication sends the base64 encoded password on each
+   request. So the browser will send the same one time password with each
+   reqeust. Thus the authentication module needs to cache the password as the
+   successful authentication. Redis is used for caching the password.
+
+.. warning:: As redis per default is accessible by every user on the machine,
+   you need to use this plugin with caution! Every user on the machine can
+   access the redis database to read the passwords of the users. This way the
+   fix password component of the user will get exposed!
+
 
 Further plugins
 ---------------

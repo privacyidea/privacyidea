@@ -71,6 +71,14 @@ Description: PAM module for privacyIDEA, OTP authentication.
   privacyIDEA: identity, multifactor authentication, authorization.
   This package is used to add two factor authenticatio to the PAM stack.
 
+Package: privacyidea-apache-client
+Architecture: all
+Depends: ${misc:Depends}, python-requests, redis-server, libapache2-mod-wsgi, python-redis
+Description: Auth Module for Apache Server to authenticate with OTP
+  This Apache2 auth module performs the authentication against
+  a privacyIDEA server.
+  Basic Authentication based on Apache2 Locations and Directories.
+
 Package: privacyidea-all
 Architecture: all
 Depends: ${misc:Depends}, python-privacyidea, privacyidea-radius, privacyidea-otrs, privacyideaadm

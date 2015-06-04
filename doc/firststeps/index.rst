@@ -23,7 +23,8 @@ You can
 
  * use a PAM module to authenticate with OTP at SSH or local 
    login 
- * or the RADIUS plugin to configure your firewall or VPN to use OTP.
+ * or the RADIUS plugin to configure your firewall or VPN to use OTP,
+ * or use an Apache2 plugin to do Basic Authentication with OTP.
  * You can also setup different web applications to use OTP.
 
 To attach applications read the chapter :ref:`application_plugins`.

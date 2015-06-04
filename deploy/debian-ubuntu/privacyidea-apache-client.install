@@ -1,0 +1,2 @@
+authmodules/apache2/privacyidea_apache.py	/usr/share/pyshared/
+authmodules/apache2/apache.conf     /etc/privacyidea/
