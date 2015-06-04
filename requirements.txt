@@ -40,6 +40,7 @@ pycrypto==2.6.1
 pyrad==2.0
 pyusb==1.0.0b2
 qrcode==5.1
+redis==2.10.3
 requests==2.5.0
 responses==0.3.0
 six==1.8.0

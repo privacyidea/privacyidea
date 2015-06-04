@@ -54,7 +54,7 @@ class APISelfserviceTestCase(MyTestCase):
             self.assertTrue(role == "user", result)
             self.assertEqual(result.get("value").get("realm"), "realm1")
             # Test logout time
-            self.assertEqual(result.get("value").get("logout_time"), 30)
+            self.assertEqual(result.get("value").get("logout_time"), 120)
 
     def test_00_authenticate_admin_fail(self):
         with self.app.test_request_context('/auth',
