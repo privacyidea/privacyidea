@@ -60,6 +60,7 @@ class UserIdResolver(object):
               }
     name = ""
     id = "baseid"
+    updateable = False
 
     def __init(self):
         """

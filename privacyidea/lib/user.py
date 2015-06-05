@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2015-06-06   Cornelius Kölbel <cornelius@privacyidea.org>
+#               Add the possibility to update the user data.
 #  Nov 27, 2014 Cornelius Kölbel <cornelius@privacyidea.org>
 #               Migration to flask
 #               Rewrite of methods
@@ -32,12 +34,13 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''
-There are the library functions for user functions.
+__doc__ = '''There are the library functions for user functions.
 It depends on the lib.resolver and lib.realm.
 
 There are and must be no dependencies to the token functions (lib.token)
 or to webservices!
+
+This code is tested in tests/test_lib_user.py
 '''
 
 import logging
@@ -349,6 +352,51 @@ class User(object):
     
         return searchFields
 
+    @log_with(log)
+    def update_user_info(self, attributes):
+        """
+        This updates the given attributes of a user.
+        The attributes can be "username", "surname", "givenname", "email",
+        "mobile", "phone", "password"
+
+        :param attributes: A dictionary of the attributes to be updated
+        :type attributes: dict
+        :return: True in case of success
+        """
+        success = False
+        try:
+            log.info("User info for user %s@%s about to be updated." %
+                     (self.login, self.realm))
+            if type(self.login) != unicode:
+                self.login = self.login.decode(ENCODING)
+            res = self.get_resolvers()
+            # Now we know, the resolvers of this user and we can update the
+            # user
+            if len(res) == 1:
+                y = get_resolver_object(self.resolver)
+                if not y.updateable:
+                    log.warning("The resolver %s is not updateable." % y)
+                else:
+                    uid, _rtype, _rname = self.get_user_identifiers()
+                    if y.update_user(uid, attributes):
+                        success = True
+                        # If necessary, update the username
+                        if attributes.get("username"):
+                            self.login = attributes.get("username")
+                        log.debug("Successfully updated user %r." % self)
+                    else:
+                        log.info("user %r failed to update." % self)
+
+            elif len(res) == 0:
+                log.error("The user %r exists in NO resolver." % self)
+        except UserError as exx:  # pragma: no cover
+            log.error("Error while trying to verify the username: %r"
+                      % exx.description)
+        except Exception as exx:  # pragma: no cover
+            log.error("Error checking password within module %r" % (exx))
+            log.error("%s" % traceback.format_exc())
+
+        return success
 
 ####################################################################
 

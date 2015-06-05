@@ -59,7 +59,7 @@ import os
 import time
 import hashlib
 import crypt
-from privacyidea.lib.crypto import geturandom
+from privacyidea.lib.crypto import urandom, geturandom
 
 try:
     import bcrypt
@@ -250,6 +250,8 @@ class IdResolver (UserIdResolver):
                     "givenname": "text",
                     "email": "text"
                     }
+
+    updateable = True
 
     @classmethod
     def setup(cls, config=None, cache_dir=None):

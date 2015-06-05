@@ -26,11 +26,26 @@ class UserTestCase(MyTestCase):
     resolvername3 = "reso3"
     realm1 = "realm1"
     realm2 = "realm2"
+
+    parameters = {'Driver': 'sqlite',
+                  'Server': '/tests/testdata/',
+                  'Database': "testuser.sqlite",
+                  'Table': 'users',
+                  'Encoding': 'utf8',
+                  'Map': '{ "username": "username", \
+                    "userid" : "id", \
+                    "email" : "email", \
+                    "surname" : "name", \
+                    "givenname" : "givenname", \
+                    "password" : "password", \
+                    "phone": "phone", \
+                    "mobile": "mobile"}'
+    }
     
     def test_00_create_user(self):
         rid = save_resolver({"resolver": self.resolvername1,
-                               "type": "passwdresolver",
-                               "fileName": PWFILE})
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
         self.assertTrue(rid > 0, rid)
                
         (added, failed) = set_realm(self.realm1,
@@ -49,7 +64,7 @@ class UserTestCase(MyTestCase):
         self.assertTrue(User().is_empty())
         
         user_repr = "%r" % user
-        expected = ("User(login='root', realm='realm1', resolver='resolver1')")
+        expected = "User(login='root', realm='realm1', resolver='resolver1')"
         self.assertTrue(user_repr == expected, user_repr)
         
     def test_01_resolvers_of_user(self):
@@ -235,27 +250,32 @@ class UserTestCase(MyTestCase):
 
         user = get_user_from_param({"user": "cornelius", "realm": "double"})
         self.assertEqual(user.resolver, "double3")
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+
+    def test_13_update_user(self):
+        realm = "sqlrealm"
+        resolver = "SQL1"
+        parameters = self.parameters
+        parameters["resolver"] = resolver
+        parameters["type"] = "sqlresolver"
+
+        rid = save_resolver(parameters)
+        self.assertTrue(rid > 0, rid)
+
+        (added, failed) = set_realm(realm, [resolver])
+        self.assertEqual(len(failed), 0)
+        self.assertEqual(len(added), 1)
+
+        user = User(login="wordpressuser", realm=realm)
+        uinfo = user.get_user_info()
+        self.assertEqual(uinfo.get("givenname", ""), "")
+
+        user.update_user_info({"givenname": "wordy",
+                               "username": "WordpressUser"})
+        uinfo = user.get_user_info()
+        self.assertEqual(uinfo.get("givenname"), "wordy")
+
+        self.assertEqual(user.login, "WordpressUser")
+
+        user.update_user_info({"givenname": "",
+                               "username": "wordpressuser"})
+
