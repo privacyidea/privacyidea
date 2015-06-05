@@ -119,7 +119,11 @@ class EmailTokenClass(HotpTokenClass):
         res = {'type': 'email',
                'title': _('EMail Token'),
                'description':
-                   _('EMail challenge-response token - hmac event based'),
+                   _('EMail: Send a One Time Password to the users email '
+                     'address.'),
+               'user': ['enroll'],
+               # This tokentype is enrollable in the UI for...
+               'ui_enroll': ["admin", "user"],
                'policy': {SCOPE.AUTH: {
                    EMAILACTION.EMAILTEXT: {
                        'type': 'str',

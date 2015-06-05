@@ -93,6 +93,7 @@ from gettext import gettext as _
 
 import logging
 from ..models import (Policy, db)
+from privacyidea.lib.config import get_token_classes
 from privacyidea.lib.error import ParameterError, PolicyError
 log = logging.getLogger(__name__)
 
@@ -353,6 +354,60 @@ class PolicyClass(object):
                                   " definitions!" % action)
         return action_values
 
+    def ui_get_enroll_tokentypes(self, client, logged_in_user):
+        """
+        Return a dictioary of the allowed tokentypes for the logged in user.
+        This used for the token enrollment UI.
+
+        It looks like this:
+
+           {"hotp": "HOTP: event based One Time Passwords",
+            "totp": "TOTP: time based One Time Passwords",
+            "spass": "SPass: Simple Pass token. Static passwords",
+            "motp": "mOTP: classical mobile One Time Passwords",
+            "sshkey": "SSH Public Key: The public SSH key",
+            "yubikey": "Yubikey AES mode: One Time Passwords with Yubikey",
+            "remote": "Remote Token: Forward authentication request to another server",
+            "yubico": "Yubikey Cloud mode: Forward authentication request to YubiCloud",
+            "radius": "RADIUS: Forward authentication request to a RADIUS server",
+            "email": "EMail: Send a One Time Passwort to the users email address",
+            "sms": "SMS: Send a One Time Password to the users mobile phone",
+            "certificate": "Certificate: Enroll an x509 Certificate Token."}
+
+        :param client: Client IP address
+        :type client: basestring
+        :param logged_in_user: The Dict of the logged in user
+        :type logged_in_user: dict
+        :return: list of token types, the user may enroll
+        """
+        enroll_types = {}
+        role = logged_in_user.get("role")
+        # check, if we have a policy definition at all.
+        pols = self.get_policies(scope=role)
+        tokenclasses = get_token_classes()
+        for tokenclass in tokenclasses:
+            # Check if the tokenclass is ui enrollable for "user" or "admin"
+            if role in tokenclass.get_class_info("ui_enroll"):
+                enroll_types[tokenclass.get_class_type()] = \
+                    tokenclass.get_class_info("description")
+
+        if len(pols) > 0:
+            # admin policies or user policies are set, so we need to
+            # test, which tokens are allowed to be enrolled for this user
+            for tokentype in enroll_types.keys():
+                # determine, if there is a enrollment policy for this very type
+                typepols = self.get_policies(scope=role, client=client,
+                                             user=logged_in_user.get("username"),
+                                             realm=logged_in_user.get("realm"),
+                                             active=True,
+                                             action="enroll"+tokentype.upper())
+                if len(typepols) == 0:
+                    # If there is no policy allowing the enrollment of this
+                    # tokentype, it is deleted.
+                    del(enroll_types[tokentype])
+
+        return enroll_types
+
 # --------------------------------------------------------------------------
 #
 #  NEW STUFF
@@ -497,7 +552,7 @@ def get_static_policy_definitions(scope=None):
     """
     These are the static hard coded policy definitions.
     They can be enhanced by token based policy definitions, that can be found
-    int lib.token.get_dynamic_policy_definitions.
+    in lib.token.get_dynamic_policy_definitions.
 
     :param scope: Optional the scope of the policies
     :type scope: basestring

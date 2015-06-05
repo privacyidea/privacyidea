@@ -73,7 +73,8 @@ function fixMachine(machinestr) {
 }
 
 angular.module("TokenModule", ["privacyideaAuth"])
-    .factory("TokenFactory", function (AuthFactory, $http, $state, $rootScope, tokenUrl) {
+    .factory("TokenFactory", function (AuthFactory, $http, $state, $rootScope,
+                                       tokenUrl, authUrl) {
         /**
          Each service - just like this service factory - is a singleton.
          */
@@ -220,6 +221,11 @@ angular.module("TokenModule", ["privacyideaAuth"])
                         headers: {'Authorization': AuthFactory.getAuthToken()}
                     }).success(callback
                 ).error(error_func)
+            },
+            getEnrollTokens: function(callback) {
+                $http.get(authUrl + "/rights",  {
+                    headers: {'Authorization': AuthFactory.getAuthToken()},
+                }).success(callback).error(error_func)
             }
         }
     });

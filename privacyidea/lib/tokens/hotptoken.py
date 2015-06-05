@@ -101,8 +101,7 @@ class HotpTokenClass(TokenClass):
         desc_self2 = _('Specify the otplen to be used. Can be 6 or 8 digits.')
         res = {'type': 'hotp',
                'title': 'HOTP Event Token',
-               'description': ('event based otp token using the HOTP '
-                               'algorithm'),
+               'description': ('HOTP: Event based One Time Passwords.'),
                'init': {'page': {'html': 'hotptoken.mako',
                                  'scope': 'enroll', },
                         'title': {'html': 'hotptoken.mako',
@@ -113,14 +112,9 @@ class HotpTokenClass(TokenClass):
                           'title': {'html': 'hotptoken.mako',
                                     'scope': 'config.title', },
                           },
-               'user': {'enroll': {'page': {'html': 'hotptoken.mako',
-                                                   'scope': 'selfservice.'
-                                                   'enroll', },
-                                          'title': {'html': 'hotptoken.mako',
-                                                    'scope': 'selfservice.'
-                                                    'title.enroll', },
-                                          },
-                               },
+               'user': ['enroll'],
+               # This tokentype is enrollable in the UI for...
+               'ui_enroll': ["admin", "user"],
                'policy': {'user': {'hotp_hashlib': {'type': 'int',
                                                            'value': ["sha1",
                                                                      "sha256",

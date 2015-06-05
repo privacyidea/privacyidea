@@ -107,8 +107,7 @@ class TotpTokenClass(HotpTokenClass):
         """
         res = {'type': 'totp',
                'title': 'HMAC Time Token',
-               'description': ('time based otp token using '
-                               'the TOTP algorithm'),
+               'description': ('TOTP: Time based One Time Passwords.'),
                'init': {'page': {'html': 'totptoken.mako',
                                  'scope': 'enroll', },
                         'title': {'html': 'totptoken.mako',
@@ -119,14 +118,9 @@ class TotpTokenClass(HotpTokenClass):
                           'title': {'html': 'totptoken.mako',
                                     'scope': 'config.title'},
                           },
-               'user': {'enroll': {'page': {'html': 'totptoken.mako',
-                                                   'scope': 'selfservice.'
-                                                   'enroll'},
-                                          'title': {'html': 'totptoken.mako',
-                                                    'scope': 'selfservice.'
-                                                    'title.enroll'},
-                                          },
-                               },
+               'user': ['enroll'],
+               # This tokentype is enrollable in the UI for...
+               'ui_enroll': ["admin", "user"],
                'policy': {'user': {'totp_timestep': {'type': 'int',
                                                             'value': [30, 60],
                                                             'desc': 'Specify '

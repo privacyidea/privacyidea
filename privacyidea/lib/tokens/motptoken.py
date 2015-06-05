@@ -80,7 +80,7 @@ class MotpTokenClass(TokenClass):
 
         res = {'type': 'motp',
                'title': 'mOTP Token',
-               'description': 'mobile otp token',
+               'description': 'mOTP: Classical mobile One Time Passwords.',
                'init': {'page': {'html': 'motptoken.mako',
                                  'scope': 'enroll', },
                         'title': {'html': 'motptoken.mako',
@@ -91,22 +91,9 @@ class MotpTokenClass(TokenClass):
                           'title': {'html': 'motptoken.mako',
                                     'scope': 'config.title', },
                           },
-               'user': {'enroll': {'page':
-                                          {'html': 'motptoken.mako',
-                                           'scope': 'selfservice.enroll'},
-                                          'title':
-                                          {'html': 'motptoken.mako',
-                                           'scope': 'selfservice.title.enroll'
-                                           },
-                                          },
-                               'motp_webprovision': {'page':
-                                                     {'html': 'motptoken.mako',
-                                                      'scope': 'selfservice.provision'},
-                                                     'title':
-                                                     {'html': 'motptoken.mako',
-                                                      'scope': 'selfservice.title.provision'}
-                                                     }
-                               },
+               'user': ['enroll'],
+               # This tokentype is enrollable in the UI for...
+               'ui_enroll': ["admin", "user"],
                'policy': {'user': {'motp_webprovision': {'type': 'bool',
                                                                 'desc': 'Enroll mOTP token via QR-Code.'}
                                           }}

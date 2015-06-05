@@ -119,10 +119,13 @@ class CertificateTokenClass(TokenClass):
         """
         res = {'type': 'certificate',
                'title': 'Certificate Token',
-               'description': ('A token that creates a x509 certificate.'),
+               'description': ('Certificate: Enroll an x509 Certificate '
+                               'Token.'),
                'init': {},
                'config': {},
-               'user':  {},
+               'user':  ['enroll'],
+               # This tokentype is enrollable in the UI for...
+               'ui_enroll': ["admin", "user"],
                'policy': {},
                }
 

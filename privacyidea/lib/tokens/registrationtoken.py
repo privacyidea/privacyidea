@@ -119,7 +119,9 @@ class RegistrationTokenClass(PasswordTokenClass):
                                'can be used as a second factor once.'),
                'init': {},
                'config': {},
-               'user':  {},
+               'user':  [],
+               # This tokentype is enrollable in the UI for...
+               'ui_enroll': [],
                'policy': {},
                }
 

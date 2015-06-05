@@ -103,3 +103,22 @@ class MyTestCase(unittest.TestCase):
             result = json.loads(res.data).get("result")
             self.assertTrue(result.get("status"), res.data)
             self.at = result.get("value").get("token")
+
+    def authenticate_selfserive_user(self):
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username":
+                                                     "selfservice@realm1",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("status"), res.data)
+            # In self.at_user we store the user token
+            self.at_user = result.get("value").get("token")
+            # check that this is a user
+            role = result.get("value").get("role")
+            self.assertTrue(role == "user", result)
+            self.assertEqual(result.get("value").get("realm"), "realm1")
+            # Test logout time
+            self.assertEqual(result.get("value").get("logout_time"), 30)
