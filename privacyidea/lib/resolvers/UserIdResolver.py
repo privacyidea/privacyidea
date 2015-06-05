@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 #
-#  product:  privacyIDEA is a fork of LinOTP
-#  module:   resolver library
-#
+# 2015-06-05   Cornelius Kölbel <cornelius@privacyidea.org>
+#              Add interface to edit and add users
 # Dec 01, 2014 Cornelius Kölbel <cornelius@privacyidea.org>
 #               Migration to flask
 #               Adapt methods for tests
@@ -211,6 +210,51 @@ class UserIdResolver(object):
         :rtype: bool
         """
         return False
+
+    def add_user(self, username, attributes=None):
+        """
+        Add a new user in the useridresolver.
+        This is only possible, if the UserIdResolver supports this and if
+        we have write access to the user store.
+
+        :param username: The login name of the user
+        :type username: basestring
+        :param attributes: Attributes according to the attribute mapping
+        :return: The new UID of the user. The UserIdResolver needs to
+        determine the way howto create the UID.
+        """
+        attributes = attributes or {}
+        return None
+
+    def delete_user(self, uid):
+        """
+        Delete a user from the useridresolver.
+        The user is referenced by the user id.
+        :param uid: The uid of the user object, that should be deleted.
+        :type uid: basestring
+        :return: Returns True in case of success
+        :rtype: bool
+        """
+        return None
+
+    def update_user(self, uid, attributes=None):
+        """
+        Update an existing user.
+        This function is also used to update the password. Since the
+        attribute mapping know, which field contains the password,
+        this function can also take care for password changing.
+
+        Attributes that are not contained in the dict attributes are not
+        modified.
+
+        :param uid: The uid of the user object in the resolver.
+        :type uid: basestring
+        :param attributes: Attributes to be updated.
+        :type attributes: dict
+        :return: True in case of success
+        """
+        attributes = attributes or {}
+        return None
 
     @classmethod
     def testconnection(self, param):
