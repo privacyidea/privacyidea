@@ -68,6 +68,17 @@ class SQLResolverTestCase(MyTestCase):
                     "mobile": "mobile"}'
     }
 
+    def test_00_delete_achmeds(self):
+        # If the test failed and some achmeds are still in the database (from
+        #  add_user) we delete them here.
+        y = SQLResolver()
+        y.loadConfig(self.parameters)
+        for username in ["achmed", "achmed2"]:
+            uid = True
+            while uid:
+                uid = y.getUserId(username)
+                y.delete_user(uid)
+
     def test_01_sqlite_resolver(self):
         y = SQLResolver()
         y.loadConfig(self.parameters)
@@ -160,14 +171,38 @@ class SQLResolverTestCase(MyTestCase):
         result = y.checkPass(6, "testpassword")
         self.assertTrue(result)
 
-
     def test_03_testconnection(self):
         y = SQLResolver()
         result = y.testconnection(self.parameters)
         self.assertTrue(result[0] == 6, result)
         self.assertTrue('Found 6 users.' in result[1])
 
-    def test_04_testconnection_fail(self):
+    def test_05_add_user_update_delete(self):
+        y = SQLResolver()
+        y.loadConfig(self.parameters)
+        uid = y.add_user({"username":"achmed",
+                         "email": "achmed@world.net",
+                         "mobile": "12345"})
+        self.assertTrue(uid > 6)
+
+        uid = y.getUserId("achmed")
+        self.assertTrue(uid > 6)
+
+        r = y.update_user(uid, {"username": "achmed2",
+                                "password": "test"})
+        uname = y.getUsername(uid)
+        self.assertEqual(uname, "achmed2")
+        r = y.checkPass(uid, "test")
+        self.assertTrue(r)
+        # Now we delete the user
+        y.delete_user(uid)
+        # Now there should be no achmed anymore
+        uid = y.getUserId("achmed2")
+        self.assertFalse(uid)
+        uid = y.getUserId("achmed")
+        self.assertFalse(uid)
+
+    def test_99_testconnection_fail(self):
         y = SQLResolver()
         self.parameters['Database'] = "does_not_exist"
         result = y.testconnection(self.parameters)

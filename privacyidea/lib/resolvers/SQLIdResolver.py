@@ -59,7 +59,7 @@ import os
 import time
 import hashlib
 import crypt
-
+from privacyidea.lib.crypto import geturandom
 
 try:
     import bcrypt
@@ -72,7 +72,6 @@ if hasattr(os, 'getpid'):
     _pid = os.getpid()
 else:  # pragma: no cover
     # Fake PID
-    from privacyidea.lib.crypto import urandom
     _pid = urandom.randint(0, 100000)
 
 
@@ -656,3 +655,87 @@ class IdResolver (UserIdResolver):
             desc = "failed to retrieve users: %s" % exx
             
         return num, desc
+
+    def add_user(self, attributes=None):
+        """
+        Add a new user to the SQL database.
+
+        attributes are these
+        "username", "surname", "givenname", "email",
+        "mobile", "phone", "password"
+
+        :param attributes: Attributes according to the attribute mapping
+        :return: The new UID of the user. The UserIdResolver needs to
+        determine the way how to create the UID.
+        """
+        attributes = attributes or {}
+        kwargs = {}
+        for fieldname in attributes.keys():
+            kwargs[self.map.get(fieldname)] = attributes.get(fieldname)
+        r = self.TABLE.insert(**kwargs)
+        self.db.commit()
+        # Return the UID of the new object
+        return getattr(r,self.map.get("userid"))
+
+    def delete_user(self, uid):
+        """
+        Delete a user from the SQL database.
+
+        The user is referenced by the user id.
+        :param uid: The uid of the user object, that should be deleted.
+        :type uid: basestring
+        :return: Returns True in case of success
+        :rtype: bool
+        """
+        res = True
+        try:
+            conditions = []
+            column = self.map.get("userid")
+            conditions.append(getattr(self.TABLE, column).like(uid))
+            conditions = self._append_where_filter(conditions, self.TABLE,
+                                                   self.where)
+            filter_condition = and_(*conditions)
+            user_obj = self.session.query(self.TABLE).filter(
+                filter_condition).first()
+            self.session.delete(user_obj)
+            self.session.commit()
+        except Exception as exx:
+            log.error("Error deleting user: %s" % exx)
+            res = False
+        return res
+
+    def update_user(self, uid, attributes=None):
+        """
+        Update an existing user.
+        This function is also used to update the password. Since the
+        attribute mapping know, which field contains the password,
+        this function can also take care for password changing.
+
+        Attributes that are not contained in the dict attributes are not
+        modified.
+
+        :param uid: The uid of the user object in the resolver.
+        :type uid: basestring
+        :param attributes: Attributes to be updated.
+        :type attributes: dict
+        :return: True in case of success
+        """
+        attributes = attributes or {}
+        params = {}
+        for fieldname in attributes.keys():
+            if fieldname == "password":
+                password = attributes.get(fieldname)
+                # Create a {SSHA256} password
+                salt = geturandom(16)
+                hr = hashlib.sha256(password)
+                hr.update(salt)
+                hash_bin = hr.digest()
+                hash_b64 = b64encode(hash_bin + salt)
+                params[self.map.get(fieldname)] = "{SSHA256}" + hash_b64
+            else:
+                params[self.map.get(fieldname)] = attributes.get(fieldname)
+        kwargs = {self.map.get("userid"): uid}
+        r = self.TABLE.filter_by(**kwargs).update(params)
+        self.db.commit()
+        return r
+

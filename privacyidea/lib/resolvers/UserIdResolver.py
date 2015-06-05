@@ -37,12 +37,8 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-  Description:  This module implements the communication interface
-                for resolvin user info to the user base
-
-  Dependencies: -
-
-UserIdResolver Interface class.
+This module implements the communication interface
+for resolving user info to the user base
 
 Defines the rough interface for a UserId Resolver
 == a UserId Resolver is required to resolve the
@@ -221,7 +217,7 @@ class UserIdResolver(object):
         :type username: basestring
         :param attributes: Attributes according to the attribute mapping
         :return: The new UID of the user. The UserIdResolver needs to
-        determine the way howto create the UID.
+        determine the way how to create the UID.
         """
         attributes = attributes or {}
         return None
@@ -261,7 +257,7 @@ class UserIdResolver(object):
         """
         This function lets you test if the parameters can be used to create a
         working resolver.
-        The implemenation should try to connect to the user store and verify
+        The implementation should try to connect to the user store and verify
         if users can be retrieved.
         In case of success it should return a text like
         "Resolver config seems OK. 123 Users found."
