@@ -180,7 +180,11 @@ class SmsTokenClass(HotpTokenClass):
         res = {'type': 'sms',
                'title': _('SMS Token'),
                'description':
-                    _('sms challenge-response token - hmac event based'),
+                    _('SMS: Send a One Time Password to the users mobile '
+                      'phone.'),
+               'user': ['enroll'],
+               # This tokentype is enrollable in the UI for...
+               'ui_enroll': ["admin", "user"],
                'policy': {
                    SCOPE.AUTH: {
                         SMSACTION.SMSTEXT: {

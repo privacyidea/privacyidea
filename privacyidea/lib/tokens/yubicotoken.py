@@ -90,8 +90,8 @@ class YubicoTokenClass(TokenClass):
         """
         res = {'type': 'yubico',
                'title': 'Yubico Token',
-               'description': 'Yubico token to forward the authentication '
-                              'request to the Yubico Cloud authentication',
+               'description': 'Yubikey Cloud mode: Forward authentication '
+                              'request to YubiCloud.',
                'init': {'page': {'html': 'yubicotoken.mako',
                                  'scope': 'enroll', },
                         'title': {'html': 'yubicotoken.mako',
@@ -102,13 +102,9 @@ class YubicoTokenClass(TokenClass):
                           'title': {'html': 'yubicotoken.mako',
                                     'scope': 'config.title'}
                },
-               'user':  {'enroll': {'page': {
-                   'html': 'yubicotoken.mako',
-                   'scope': 'selfservice.enroll'},
-                                           'title': {'html': 'yubicotoken.mako',
-                                                     'scope': 'selfservice.title.enroll', },
-                                    },
-                                   },
+               'user':  ['enroll'],
+               # This tokentype is enrollable in the UI for...
+               'ui_enroll': ["admin", "user"],
                'policy' : {},
                }
 

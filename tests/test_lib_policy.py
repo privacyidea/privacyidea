@@ -340,3 +340,48 @@ class PolicyTestCase(MyTestCase):
                           allow_white_space_in_action=True)
 
 
+    def test_15_ui_tokentypes(self):
+        P = PolicyClass()
+        logged_in_user = {"username": "admin",
+                          "role": "admin",
+                          "realm": "realm1"}
+        # Without policies, the admin gets all
+        tt = P.ui_get_enroll_tokentypes("127.0.0.1", logged_in_user)
+        self.assertTrue("hotp" in tt)
+        self.assertTrue("totp" in tt)
+        self.assertTrue("motp" in tt)
+        self.assertTrue("sms" in tt)
+        self.assertTrue("spass" in tt)
+        self.assertTrue("sshkey" in tt)
+        self.assertTrue("email" in tt)
+        self.assertTrue("certificate" in tt)
+        self.assertTrue("yubico" in tt)
+        self.assertTrue("yubikey" in tt)
+        self.assertTrue("radius" in tt)
+
+        # An admin may only enroll Yubikeys
+        set_policy(name="tokenEnroll", scope=SCOPE.ADMIN,
+                   action="enrollYUBIKEY")
+        P = PolicyClass()
+
+        tt = P.ui_get_enroll_tokentypes("127.0.0.1", logged_in_user)
+        self.assertFalse("hotp" in tt)
+        self.assertFalse("totp" in tt)
+        self.assertFalse("motp" in tt)
+        self.assertFalse("sms" in tt)
+        self.assertFalse("spass" in tt)
+        self.assertFalse("sshkey" in tt)
+        self.assertFalse("email" in tt)
+        self.assertFalse("certificate" in tt)
+        self.assertFalse("yubico" in tt)
+        self.assertTrue("yubikey" in tt)
+        self.assertFalse("radius" in tt)
+
+        # A user may enroll nothing
+        set_policy(name="someUserAction", scope=SCOPE.USER,
+                   action="disable")
+        P = PolicyClass()
+        tt = P.ui_get_enroll_tokentypes("127.0.0.1", {"username": "kurt",
+                                                      "realm": "realm",
+                                                      "role": "user"})
+        self.assertEqual(len(tt), 0)

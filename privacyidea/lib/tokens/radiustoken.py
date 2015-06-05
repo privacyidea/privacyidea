@@ -86,8 +86,8 @@ class RadiusTokenClass(RemoteTokenClass):
         """
         res = {'type': 'radius',
                'title': 'RADIUS Token',
-               'description': 'RADIUS token to forward the authentication '
-                              'request to another RADIUS server',
+               'description': 'RADIUS: Forward authentication request to a '
+                              'RADIUS server.',
                'init': {'page': {'html': 'radiustoken.mako',
                                  'scope': 'enroll'},
                         'title': {'html': 'radiustoken.mako',
@@ -96,7 +96,9 @@ class RadiusTokenClass(RemoteTokenClass):
                                    'scope': 'config'},
                           'title': {'html': 'radiustoken.mako',
                                     'scope': 'config.title'}},
-               'user':  {},
+               'user':  ['enroll'],
+               # This tokentype is enrollable in the UI for...
+               'ui_enroll': ["admin", "user"],
                'policy': {},
                }
 

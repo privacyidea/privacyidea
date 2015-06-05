@@ -111,8 +111,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     if ($stateParams.realmname) {
         $scope.newUser.realm = $stateParams.realmname;
     }
-    // TODO: Read this from an object "serverConfig", that is returned
-    // after authentication
+
     $scope.formInit = {
         tokenTypes: {"hotp": "HOTP: event based One Time Passwords",
             "totp": "TOTP: time based One Time Passwords",
@@ -123,7 +122,8 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             "remote": "Remote Token: Forward authentication request to another server",
             "yubico": "Yubikey Cloud mode: Forward authentication request to YubiCloud",
             "radius": "RADIUS: Forward authentication request to a RADIUS server",
-            "email": "EMail: Send a One Time Passwort to the users email address",
+            "email": "EMail: Send a One Time Password to the users email" +
+            " address",
             "sms": "SMS: Send a One Time Password to the users mobile phone",
             "certificate": "Certificate: Enroll an x509 Certificate Token."},
         timesteps: [30, 60],
@@ -139,6 +139,22 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         type: "hotp",
         hashlib: "sha1"
     };
+
+    // Read the the tokentypes from the server
+    TokenFactory.getEnrollTokens(function(data){
+        console.log(data);
+        $scope.formInit["tokenTypes"] = data.result.value;
+        // set the default tokentype
+        if (!$scope.formInit.tokenTypes.hasOwnProperty("hotp")) {
+            // if HOTP does not exist, we set another default type
+            for (var tkey in $scope.formInit.tokenTypes) {
+                // set the first key to be the default tokentype
+                $scope.form.type = tkey;
+                break;
+            }
+        }
+    });
+
     $scope.CAConnectors = [];
     $scope.radioCSR = 'csrgenerate';
 

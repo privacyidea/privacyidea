@@ -483,6 +483,7 @@ myApp.controller("configController", function ($scope, $location,
         ConfigFactory.saveSystemConfig($scope.params, function (data) {
             console.log($scope.params);
             console.log(data);
+            addInfo("System Config saved.", 2000);
         })
     };
     $scope.getSystemConfig = function () {

@@ -265,15 +265,6 @@ def get_rights():
     This returns the rights of the logged in user.
     :return:
     """
-    g.logged_in_user.get("username")
-    g.logged_in_user.get("role")
-    g.logged_in_user.get("realm")
-
-    #g.policy_object.get_policies(scope="user",
-    #                             user=g.logged_in_user.get("username"),
-    #                             user=g.logged_in_user.get("realm"))
-    r = g.policy_object.get_action_values("enrollHOTP", scope=SCOPE.USER,
-                                          realm=g.logged_in_user.get("realm"),
-                                          user=g.logged_in_user.get("username"))
-
-    return send_result({})
+    enroll_types = g.policy_object.ui_get_enroll_tokentypes(request.remote_addr,
+                                                            g.logged_in_user)
+    return send_result(enroll_types)

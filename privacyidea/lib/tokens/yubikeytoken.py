@@ -87,10 +87,13 @@ class YubikeyTokenClass(TokenClass):
         """
         res = {'type': 'yubikey',
                'title': 'Yubikey in AES mode',
-               'description': 'Yubico token to run the AES OTP mode.',
+               'description': 'Yubikey AES mode: One Time Passwords with '
+                              'Yubikey.',
                'init': {},
                'config': {},
-               'user': {},
+               'user': ['enroll'],
+               # This tokentype is enrollable in the UI for...
+               'ui_enroll': ["admin", "user"],
                'policy': {}
         }
 

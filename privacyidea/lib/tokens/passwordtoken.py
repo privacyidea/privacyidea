@@ -90,7 +90,9 @@ class PasswordTokenClass(TokenClass):
                                'lost token scenario.'),
                'init': {},
                'config': {},
-               'user':  {},
+               'user':  [],
+               # This tokentype is enrollable in the UI for...
+               'ui_enroll': [],
                'policy': {},
                }
         # I don't think we need to define the lost token policies here...

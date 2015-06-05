@@ -82,15 +82,16 @@ class SpassTokenClass(TokenClass):
         """
         res = {'type' :'spass',
                'title' :'Simple Pass Token',
-               'description': ('A token that allows the user to simply pass. '
-                               'Can be combined with the OTP PIN.'),
+               'description': ('SPass: Simple Pass token. Static passwords.'),
                'init': {'page': {'html': 'spasstoken.mako',
                                  'scope': 'enroll'},
                         'title': {'html': 'spasstoken.mako',
                                   'scope': 'enroll.title'}
                },
                'config': {},
-               'user': {},
+               'user': ['enroll'],
+               # This tokentype is enrollable in the UI for...
+               'ui_enroll': ["admin", "user"],
                'policy': {},
                }
 

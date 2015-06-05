@@ -106,8 +106,8 @@ class RemoteTokenClass(TokenClass):
         """
         res = {'type': 'remote',
                'title': 'Remote Token',
-               'description': ('REMOTE token to forward the authentication'
-                               ' request to another privacyIDEA server'),
+               'description': ('Remote Token: Forward authentication request '
+                               'to another server.'),
 
                'init': {'page': {'html': 'remotetoken.mako',
                                  'scope': 'enroll', },
@@ -121,7 +121,9 @@ class RemoteTokenClass(TokenClass):
                                     'scope': 'config.title', },
                           },
 
-               'user': {},
+               'user': [],
+               # This tokentype is enrollable in the UI for...
+               'ui_enroll': ["admin"],
                'policy': {},
                }
 

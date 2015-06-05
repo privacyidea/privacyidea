@@ -450,10 +450,48 @@ class APISelfserviceTestCase(MyTestCase):
 class APIAuthRightsTestCase(MyTestCase):
 
     def test_01_ui_rights(self):
+        self.setUp_user_realms()
         self.authenticate_selfserive_user()
+
+        # Check the admin
+        with self.app.test_request_context('/auth/rights',
+                                           method="GET",
+                                           headers={'Authorization':
+                                                        self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            response = json.loads(res.data)
+            tt = response.get("result").get("value")
+            self.assertTrue("hotp" in tt)
+            self.assertTrue("totp" in tt)
+            self.assertTrue("motp" in tt)
+            self.assertTrue("sms" in tt)
+            self.assertTrue("spass" in tt)
+            self.assertTrue("sshkey" in tt)
+            self.assertTrue("email" in tt)
+            self.assertTrue("certificate" in tt)
+            self.assertTrue("yubico" in tt)
+            self.assertTrue("yubikey" in tt)
+            self.assertTrue("radius" in tt)
+            self.assertTrue("remote" in tt)
+
+        # Check the user
         with self.app.test_request_context('/auth/rights',
                                            method="GET",
                                            headers={'Authorization':
                                                         self.at_user}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 401, res)
+            self.assertTrue(res.status_code == 200, res)
+            response = json.loads(res.data)
+            tt = response.get("result").get("value")
+            self.assertTrue("hotp" in tt)
+            self.assertTrue("totp" in tt)
+            self.assertTrue("motp" in tt)
+            self.assertTrue("sms" in tt)
+            self.assertTrue("spass" in tt)
+            self.assertTrue("sshkey" in tt)
+            self.assertTrue("email" in tt)
+            self.assertTrue("certificate" in tt)
+            self.assertTrue("yubico" in tt)
+            self.assertTrue("yubikey" in tt)
+            self.assertTrue("radius" in tt)

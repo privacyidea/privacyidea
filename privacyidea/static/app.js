@@ -35,8 +35,9 @@ myApp.config(function ($urlRouterProvider) {
 });
 myApp.config(['KeepaliveProvider', 'IdleProvider',
     function (KeepaliveProvider, IdleProvider) {
-    // Logout configuration
-    IdleProvider.idle(20);
+    // Logout configuration.
+    // Default to 120 seconds
+    IdleProvider.idle(110);
     IdleProvider.timeout(10);
     KeepaliveProvider.interval(3);
 }]);

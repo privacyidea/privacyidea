@@ -79,16 +79,16 @@ class SSHkeyTokenClass(TokenClass):
         """
         res = {'type': 'sshkey',
                'title': 'SSHkey Token',
-               'description': _('SSH public key to be provided for use'
-                                'in authorized_keys.'),
+               'description': _('SSH Public Key: The public SSH key.'),
                'init': {'page': {'html': 'sshkeytoken.mako',
                                  'scope': 'enroll'},
                         'title': {'html': 'sshkeytoken.mako',
                                   'scope': 'enroll.title'},
                         },
                'config': {},
-               # TODO we need to add selfservice!
-               'user': {},
+               'user': ['enroll'],
+               # This tokentype is enrollable in the UI for...
+               'ui_enroll': ["admin", "user"],
                'policy': {},
                }
         if key is not None and key in res:
