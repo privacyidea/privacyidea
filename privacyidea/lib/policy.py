@@ -171,6 +171,9 @@ class ACTION():
     TOKENTYPE = "tokentype"
     UNASSIGN = "unassign"
     USERLIST = "userlist"
+    ADDUSER = "adduser"
+    DELETEUSER = "deleteuser"
+    UPDATEUSER = "updateuser"
 
 
 class LOGINMODE():
@@ -652,10 +655,6 @@ def get_static_policy_definitions(scope=None):
                                  "desc": _("Admin is allowed to delete "
                                            "resolvers and realms."),
                                  "group": "system"},
-            #ACTION.CACONNECTORREAD: {'type': 'bool',
-            #                         "desc": _("Admin is allowed to read the "
-            #                                   "CA Connector definitions."),
-            #                         "group": "system"},
             ACTION.CACONNECTORWRITE: {'type': 'bool',
                                       "desc": _("Admin is allowed to create new"
                                                 " CA Connector definitions "
@@ -677,7 +676,18 @@ def get_static_policy_definitions(scope=None):
                                            'group': "system"},
             ACTION.AUDIT: {'type': 'bool',
                            "desc": _("Admin is allowed to view the Audit log."),
-                           "group": "system"}
+                           "group": "system"},
+            ACTION.ADDUSER: {'type': 'bool',
+                             "desc": _("Admin is allowed to add users in a "
+                                       "userstore/UserIdResolver."),
+                             "group": "system"},
+            ACTION.UPDATEUSER: {'type': 'bool',
+                                "desc": _("Admin is allowed to update the "
+                                          "users data in a userstore."),
+                                "group": "system"},
+            ACTION.DELETEUSER: {'type': 'bool',
+                                "desc": _("Admin is allowed to delete a user "
+                                          "object in a userstore.")}
         },
         # 'gettoken': {
         #     'max_count_dpw': {'type': 'int',
@@ -742,6 +752,10 @@ def get_static_policy_definitions(scope=None):
             ACTION.AUDIT: {
                 'type': 'bool',
                 'desc': _('Allow the user to view his own token history.')},
+            ACTION.UPDATEUSER: {'type': 'bool',
+                                'desc': _("The user is allowed to update his "
+                                          "own user information, like changing "
+                                          "his password.")}
             # 'getserial': {
             #     'type': 'bool',
             #     'desc': _('Allow the user to search an unassigned token by OTP value.')},
