@@ -82,7 +82,6 @@ from .caconnector import caconnector_blueprint
 @realm_blueprint.before_request
 @defaultrealm_blueprint.before_request
 @policy_blueprint.before_request
-@user_blueprint.before_request
 @application_blueprint.before_request
 @admin_required
 def before_request():

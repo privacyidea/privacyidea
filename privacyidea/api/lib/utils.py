@@ -283,6 +283,6 @@ def verify_auth_token(auth_token, required_role=["admin", "user"]):
         # not match
         raise AuthError("Authentication failure",
                         "You do not have the necessary role (%s) to access "
-                        "this resouce!" % (required_role),
+                        "this resource!" % required_role,
                         status=401)
     return r

@@ -27,6 +27,8 @@ from lib.utils import (getParam,
                        send_result)
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policy import ACTION
+from privacyidea.api.auth import admin_required
+from privacyidea.lib.user import create_user, get_user_from_param, User
 
 from flask import (g)
 from ..lib.user import get_user_list
@@ -41,6 +43,7 @@ user_blueprint = Blueprint('user_blueprint', __name__)
 
 @user_blueprint.route('/', methods=['GET'])
 @prepolicy(check_base_action, request, ACTION.USERLIST)
+@admin_required
 def get_users():
     """
     list the users in a realm
@@ -95,3 +98,133 @@ def get_users():
                         'info': "realm: %s" % realm})
     
     return send_result(users)
+
+
+@user_blueprint.route('/<resolvername>/<username>', methods=['DELETE'])
+@prepolicy(check_base_action, request, ACTION.DELETEUSER)
+@admin_required
+def delete_user(resolvername=None, username=None):
+    """
+    Delete a User in the user store.
+    The resolver must have the flag editable, so that the user can be deleted.
+    Only administrators are allowed to delete users.
+
+    Delete a user object in a user store by calling
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+       DELETE /user/<resolvername>/<username>
+       Host: example.com
+       Accept: application/json
+
+    """
+    user_obj = User(login=username, resolver=resolvername)
+    res = user_obj.delete()
+    g.audit_object.log({"success": res,
+                        "info": "%s" % user_obj})
+    return send_result(res)
+
+
+@user_blueprint.route('/', methods=['POST'])
+@prepolicy(check_base_action, request, ACTION.ADDUSER)
+@admin_required
+def create_user_api():
+    """
+    Create a new user in the given resolver.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+       POST /user
+       user=new_user
+       resolver=<resolvername>
+       surname=...
+       givenname=...
+       email=...
+       mobile=...
+       phone=...
+       password=...
+
+       Host: example.com
+       Accept: application/json
+
+    """
+    # We can not use "get_user_from_param", since this checks the existence
+    # of the user.
+    attributes = _get_attributes_from_param(request.all_data)
+    username = getParam(request.all_data, "user", optional=False)
+    resolvername = getParam(request.all_data, "resolver", optional=False)
+    r = create_user(resolvername, attributes)
+    g.audit_object.log({"success": True,
+                        "info": "%s: %s/%s" % (r, username, resolvername)})
+    return send_result(r)
+
+
+@user_blueprint.route('/', methods=['PUT'])
+@prepolicy(check_base_action, request, ACTION.UPDATEUSER)
+def update_user():
+    """
+    Delete a User in the user store.
+    The resolver must have the flag editable, so that the user can be deleted.
+    Only administrators are allowed to delete users.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+       PUT /user
+       user=existing_user
+       resolver=<resolvername>
+       surname=...
+       givenname=...
+       email=...
+       mobile=...
+       phone=...
+       password=...
+
+       Host: example.com
+       Accept: application/json
+
+    .. note:: Also a user can call this function to e.g. change his password.
+       But in this case the parameter "user" and "resolver" get overwritten
+       by the values of the authenticated user, even if he specifies another
+       username.
+    """
+    attributes = _get_attributes_from_param(request.all_data)
+    username = getParam(request.all_data, "user", optional=False)
+    resolvername = getParam(request.all_data, "resolver", optional=False)
+    user_obj = User(login=username, resolver=resolvername)
+    r = user_obj.update_user_info(attributes)
+    g.audit_object.log({"success": True,
+                        "info": "%s: %s/%s" % (r, username, resolvername)})
+    return send_result(r)
+
+
+def _get_attributes_from_param(param):
+    username = getParam(param, "user", optional=False)
+    surname = getParam(param, "surname")
+    givenname = getParam(param, "givenname")
+    email = getParam(param, "email")
+    phone = getParam(param, "phone")
+    mobile = getParam(param, "mobile")
+    password = getParam(param, "password")
+
+    # Add attributes
+    attributes = {"username": username}
+    if surname:
+        attributes["surname"] = surname
+    if givenname:
+        attributes["givenname"] = givenname
+    if email:
+        attributes["email"] = email
+    if phone:
+        attributes["phone"] = phone
+    if mobile:
+        attributes["mobile"] = mobile
+    if password:
+        attributes["password"] = password
+
+    return attributes

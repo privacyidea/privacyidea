@@ -69,6 +69,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            check_external)
 from privacyidea.api.auth import (user_required, admin_required)
 from privacyidea.api.audit import audit_blueprint
+from privacyidea.api.user import user_blueprint
 from .caconnector import caconnector_blueprint
 
 
@@ -87,6 +88,7 @@ Some API calls are only allowed to be accessed by adminitrators.
 
 @token_blueprint.before_request
 @audit_blueprint.before_request
+@user_blueprint.before_request
 @caconnector_blueprint.before_request
 @user_required
 def before_request():
@@ -113,6 +115,7 @@ def before_request():
                                            "realm": g.logged_in_user.get(
                                                "realm")})
         request.all_data["user"] = CurrentUser.login
+        request.all_data["resolver"] = CurrentUser.resolver
         request.all_data["realm"] = CurrentUser.realm
         g.audit_object.log({"user": CurrentUser.login,
                             "realm": CurrentUser.realm})
@@ -469,11 +472,8 @@ def disable_api(serial=None):
 def delete_api(serial=None):
     """
     Delete a token by its serial number.
-    There are three different ways to delete a token. You can call one of
-    these URLs:
-        POST /token/delete?serial=<serial>
+    There are three different ways to delete a token.
         DELETE /token/<serial>
-        POST /token/delete/<serial>
 
     :return: In case of success it return the number of deleted tokens in
     "value"
