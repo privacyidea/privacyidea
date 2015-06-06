@@ -9,7 +9,7 @@ PWFILE2 = "tests/testdata/passwords"
 from .base import MyTestCase
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
-from privacyidea.lib.user import (User,
+from privacyidea.lib.user import (User, create_user,
                                   get_username,
                                   get_user_info,
                                   get_user_list,
@@ -278,4 +278,32 @@ class UserTestCase(MyTestCase):
 
         user.update_user_info({"givenname": "",
                                "username": "wordpressuser"})
+
+
+    def test_14_create_delete_user(self):
+        realm = "sqlrealm"
+        resolver = "SQL1"
+        parameters = self.parameters
+        parameters["resolver"] = resolver
+        parameters["type"] = "sqlresolver"
+
+        rid = save_resolver(parameters)
+        self.assertTrue(rid > 0, rid)
+
+        (added, failed) = set_realm(realm, [resolver])
+        self.assertEqual(len(failed), 0)
+        self.assertEqual(len(added), 1)
+
+        # Create the user
+        uid = create_user(resolver, {"username": "achmed3",
+                                     "givenname": "achmed",
+                                     "password": "secret"})
+        self.assertTrue(uid > 6)
+
+        user = User("achmed3", realm=realm)
+        r = user.check_password("secret")
+
+        # delete user
+        r = user.delete()
+        self.assertTrue(r)
 

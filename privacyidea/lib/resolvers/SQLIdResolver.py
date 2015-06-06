@@ -677,7 +677,7 @@ class IdResolver (UserIdResolver):
         r = self.TABLE.insert(**kwargs)
         self.db.commit()
         # Return the UID of the new object
-        return getattr(r,self.map.get("userid"))
+        return getattr(r, self.map.get("userid"))
 
     def delete_user(self, uid):
         """

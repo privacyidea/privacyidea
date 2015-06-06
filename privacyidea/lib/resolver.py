@@ -299,7 +299,7 @@ def get_resolver_type(resolvername):
 def get_resolver_object(resolvername):
     """
     TODO: We can cache this
-    create a resolver from a resolvername
+    create a resolver object from a resolvername
 
     :param resolvername: the resolver string as from the token including
                          the config as last part

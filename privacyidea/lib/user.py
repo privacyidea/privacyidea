@@ -321,10 +321,9 @@ class User(object):
             elif len(res) == 0:
                 log.error("The user %r exists in NO resolver." % self)
         except UserError as e:  # pragma: no cover
-            log.error("Error while trying to verify the username: %r"
-                      % e.description)
+            log.error("Error while trying to verify the username: %r" % e)
         except Exception as e:  # pragma: no cover
-            log.error("Error checking password within module %r" % (e))
+            log.error("Error checking password within module %r" % e)
             log.error("%s" % traceback.format_exc())
     
         return success
@@ -374,7 +373,7 @@ class User(object):
             # user
             if len(res) == 1:
                 y = get_resolver_object(self.resolver)
-                if not y.updateable:
+                if not y.updateable:  # pragma: no cover
                     log.warning("The resolver %s is not updateable." % y)
                 else:
                     uid, _rtype, _rname = self.get_user_identifiers()
@@ -383,22 +382,84 @@ class User(object):
                         # If necessary, update the username
                         if attributes.get("username"):
                             self.login = attributes.get("username")
-                        log.debug("Successfully updated user %r." % self)
-                    else:
+                        log.info("Successfully updated user %r." % self)
+                    else:  # pragma: no cover
                         log.info("user %r failed to update." % self)
 
-            elif len(res) == 0:
+            elif len(res) == 0:  # pragma: no cover
                 log.error("The user %r exists in NO resolver." % self)
         except UserError as exx:  # pragma: no cover
-            log.error("Error while trying to verify the username: %r"
-                      % exx.description)
+            log.error("Error while trying to verify the username: %s" % exx)
         except Exception as exx:  # pragma: no cover
-            log.error("Error checking password within module %r" % (exx))
+            log.error("Error checking password within module %s" % exx)
+            log.error("%s" % traceback.format_exc())
+
+        return success
+
+    @log_with(log)
+    def delete(self):
+        """
+        This deletes the user in the user store. I.e. the user in the SQL
+        database or the LDAP gets deleted.
+
+        Returns True in case of success
+        """
+        success = False
+        try:
+            log.info("User %s@%s about to be deleted." %
+                     (self.login, self.realm))
+            if type(self.login) != unicode:
+                self.login = self.login.decode(ENCODING)
+            res = self.get_resolvers()
+            # Now we know, the resolvers of this user and we can delete it
+            if len(res) == 1:
+                y = get_resolver_object(self.resolver)
+                if not y.updateable:  # pragma: no cover
+                    log.warning("The resolver %s is not updateable." % y)
+                else:
+                    uid, _rtype, _rname = self.get_user_identifiers()
+                    if y.delete_user(uid):
+                        success = True
+                        log.info("Successfully deleted user %r." % self)
+                    else:  # pragma: no cover
+                        log.info("user %r failed to update." % self)
+
+            elif len(res) == 0:  # pragma: no cover
+                log.error("The user %r exists in NO resolver." % self)
+        except UserError as exx:  # pragma: no cover
+            log.error("Error while trying to verify the username: %r" % exx)
+        except Exception as exx:  # pragma: no cover
+            log.error("Error checking password within module %r" % exx)
             log.error("%s" % traceback.format_exc())
 
         return success
 
 ####################################################################
+
+@log_with(log)
+def create_user(resolvername, attributes):
+    """
+    This creates a new user in the given resolver. The resolver must be
+    editable to do so.
+
+    The attributes is a dictionary containing the keys "username", "email",
+    "phone",
+    "mobile", "surname", "givenname", "password".
+
+    We return the UID and not the user object, since the user could be located
+    in several realms!
+
+    :param resolvername: The name of the resolver, in which the user should
+        be created
+    :type resolvername: basestring
+    :param attributes: Attributes of the user
+    :type attributes: dict
+    :return: The uid of the user object
+    """
+    y = get_resolver_object(resolvername)
+    uid = y.add_user(attributes)
+    return uid
+
 
 @log_with(log)
 def split_user(username):
@@ -469,10 +530,11 @@ def get_user_from_param(param, optionalOrRequired=optional):
 
 
 @log_with(log)
-def get_user_list(param={}, user=None):
+def get_user_list(param=None, user=None):
     users = []
     resolvers = []
     searchDict = {"username": "*"}
+    param = param or {}
 
     # we have to recreate a new searchdict without the realm key
     # as delete does not work

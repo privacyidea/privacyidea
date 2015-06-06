@@ -208,7 +208,7 @@ class UserIdResolver(object):
         """
         return False
 
-    def add_user(self, username, attributes=None):
+    def add_user(self, attributes=None):
         """
         Add a new user in the useridresolver.
         This is only possible, if the UserIdResolver supports this and if
