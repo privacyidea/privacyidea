@@ -583,6 +583,9 @@ def get_user_list(param=None, user=None):
             y = get_resolver_object(resolver_name)
             log.debug("with this search dictionary: %r " % searchDict)
             ulist = y.getUserList(searchDict)
+            # Add resolvername to the list
+            for ue in ulist:
+                ue["resolver"] = resolver_name
             log.debug("Found this userlist: %r" % ulist)
             users.extend(ulist)
 

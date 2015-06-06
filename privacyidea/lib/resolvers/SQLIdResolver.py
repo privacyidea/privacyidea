@@ -578,6 +578,7 @@ class IdResolver (UserIdResolver):
                                 'Table': 'string',
                                 'Map': 'string',
                                 'Where': 'string',
+                                'Editable': 'int',
                                 'Encoding': 'string',
                                 'conParams': 'string'}
         return {typ: descriptor}

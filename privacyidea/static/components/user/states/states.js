@@ -40,10 +40,12 @@ angular.module('privacyideaApp.userStates', ['ui.router']).config(
                 .state('user.details', {
                     url: "/details/{realmname:.*}/{username:.*}",
                     templateUrl: userpath + "user.details.html",
+                    params: {resolvername: null},
                     controller: ['$scope', '$stateParams',
                         function ($scope, $stateParams) {
                             $scope.username = $stateParams.username;
                             $scope.realmname = $stateParams.realmname;
+                            $scope.resolvername = $stateParams.resolvername;
                         }]
                 });
 

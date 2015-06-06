@@ -776,6 +776,7 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory, $stat
             console.log(resolver);
             $scope.params = resolver.data;
             $scope.params.type = 'sqlresolver';
+            $scope.params.Editable = ($scope.params.Editable == "1");
         });
     }
 

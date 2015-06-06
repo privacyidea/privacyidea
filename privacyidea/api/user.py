@@ -84,7 +84,8 @@ def get_users():
                 "phone": "+49 561 3166797",
                 "surname": "K\u00f6lbel",
                 "userid": "1009",
-                "username": "cornelius"
+                "username": "cornelius",
+                "resolver": "name-of-resolver"
               }
             ]
           },

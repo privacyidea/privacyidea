@@ -120,6 +120,7 @@ angular.module("privacyideaApp")
                     var start = ($scope.params.page - 1) * $scope.usersPerPage;
                     var stop = start + $scope.usersPerPage;
                     $scope.userlist = userlist.slice(start, stop);
+                    console.log($scope.userlist);
                 });
         };
 
