@@ -34,7 +34,8 @@
         <tr ng-repeat="user in userlist">
             <td><a ui-sref="user.details({username:user.username,
                     realmname:selectedRealm,
-                    resolvername:user.resolver})">
+                    resolvername:user.resolver,
+                    editable:user.editable})">
                 {{ user.username }}</a></td>
             <td>{{ user.surname }}</td>
             <td>{{ user.givenname }}</td>

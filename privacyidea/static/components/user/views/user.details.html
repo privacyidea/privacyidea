@@ -16,46 +16,83 @@
         View user in Audit log</a>
     </h2>
 
-    TODO: This is the Resolvername of the userobject. We can use it to edit
-    or delete this user: {{ resolvername }}
-
     <div class="panel-body">
         <div class="col-xs-6">
             <div class="form-group">
                 <label for="username">Username</label>
 
-                <div name="username">{{ User.username }}</div>
+                <div name="username" >{{ User.username }}</div>
             </div>
             <div class="form-group">
                 <label for="givenname">Given name</label>
-
-                <div name="givenname">{{ User.givenname }}</div>
+                <div name="givenname" ng-hide="editUser">{{ User.givenname }}</div>
+                <input name="givenname" class="form-control"
+                       ng-model="User.givenname"
+                       ng-show="editUser">
             </div>
             <div class="form-group">
                 <label for="surname">Surname</label>
-
-                <div name="surname">{{ User.surname }}</div>
+                <div name="surname" ng-hide="editUser">{{ User.surname }}</div>
+                <input name="surname" class="form-control"
+                       ng-model="User.surname"
+                       ng-show="editUser">
             </div>
         </div>
         <div class="col-xs-6">
             <div class="form-group">
                 <label for="email">Email</label>
 
-                <div name="email"><a href="mailto:{{ User.email }}">
+                <div name="email" ng-hide="editUser">
+                    <a href="mailto:{{ User.email }}">
                     {{ User.email }}</a></div>
+                <input name="email" class="form-control"
+                       ng-model="User.email"
+                       ng-show="editUser">
             </div>
             <div class="form-group">
                 <label for="phone">Phone</label>
-
-                <div name="phone">{{ User.phone }}</div>
+                <div name="phone" ng-hide="editUser">{{ User.phone }}</div>
+                <input name="phone" class="form-control"
+                       ng-model="User.phone"
+                       ng-show="editUser">
             </div>
             <div class="form-group">
                 <label for="mobile">Mobile</label>
-
-                <div name="mobile">{{ User.mobile }}</div>
+                <div name="mobile" ng-hide="editUser">{{ User.mobile }}</div>
+                <input name="mobile" class="form-control"
+                       ng-model="User.mobile"
+                       ng-show="editUser">
             </div>
         </div>
     </div>
+
+    <div class="text-center" ng-show="editable">
+        <button ng-click="editUser=true" class="btn btn-primary"
+                ng-show="!editUser">
+            <div class="glyphicon glyphicon-edit">
+                Edit user
+            </div>
+        </button>
+        <button ng-click="editUser=false; updateUser()" class="btn btn-primary"
+                ng-show="editUser">
+            <div class="glyphicon glyphicon-save">
+                Save user
+            </div>
+        </button>
+        <button ng-click="editUser=false; getUserDetails()"
+                class="btn btn-danger"
+                ng-show="editUser">
+            Cancel
+        </button>
+        <button ng-click="deleteUserAsk()"
+                class="btn btn-danger"
+                ng-show="!editUser">
+            <div class="glyphicon glyphicon-trash">
+                Delete user
+            </div>
+        </button>
+    </div>
+
     <h3>Tokens for user {{ username }}</h3>
     <!-- Tokens for user -->
     <pagination ng-show="tokendata.count > 5"
@@ -126,4 +163,7 @@
             </button>
         </div>
     </form>
+
+    <ng-include src="instanceUrl + '/static/components/user/views/dialog.ask_user_delete.html'">
+    </ng-include>
 </div>

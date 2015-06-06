@@ -35,6 +35,18 @@ myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope, u
                     params: params
                 }).success(callback
                 ).error(error_func)
+            },
+            updateUser: function(resolver, params, callback) {
+                params["resolver"] = resolver;
+                params["user"] = params.username;
+                $http.put(userUrl, params,
+                    {headers: {'Authorization': AuthFactory.getAuthToken()}
+                    }).success(callback).error(error_func)
+            },
+            deleteUser: function(resolver, username, callback) {
+                $http.delete(userUrl + "/" + resolver + "/" + username,
+                    {headers: {'Authorization': AuthFactory.getAuthToken()}
+                    }).success(callback).error(error_func)
             }
         }
 

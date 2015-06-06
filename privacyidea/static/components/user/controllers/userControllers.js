@@ -22,10 +22,12 @@ angular.module("privacyideaApp")
     .controller("userDetailsController", function ($scope, userUrl,
                                                    realmUrl, tokenUrl,
                                                    $rootScope, TokenFactory,
-                                                   UserFactory, $state) {
+                                                   UserFactory, $state,
+                                                   instanceUrl,  $location) {
         $scope.tokensPerPage = 5;
         $scope.newToken = {"serial": "", pin: ""};
         $scope.params = {page: 1};
+        $scope.instanceUrl = instanceUrl;
         // scroll to the top of the page
         document.body.scrollTop = document.documentElement.scrollTop = 0;
 
@@ -55,6 +57,31 @@ angular.module("privacyideaApp")
             }, function (data) {
                 $scope.User = data.result.value[0];
             });
+        };
+
+        $scope.updateUser = function () {
+            UserFactory.updateUser($scope.resolvername, $scope.User,
+            function (data) {
+                if (data.result.value==true) {
+                    addInfo("User updated successfully.", 2000);
+                    // we also need to update the user list
+                    $scope._getUsers();
+                }
+            })
+        };
+
+        $scope.deleteUserAsk = function() {
+            $('#dialogUserDelete').modal();
+        };
+        $scope.deleteUser = function () {
+            UserFactory.deleteUser($scope.resolvername, $scope.User.username,
+            function (data) {
+                if (data.result.value==true) {
+                    addInfo("User deleted successfully.", 2000);
+                    $scope._getUsers();
+                    $location.path("/user/list");
+                }
+            })
         };
 
         $scope.assignToken = function () {

@@ -586,6 +586,7 @@ def get_user_list(param=None, user=None):
             # Add resolvername to the list
             for ue in ulist:
                 ue["resolver"] = resolver_name
+                ue["editable"] = y.updateable
             log.debug("Found this userlist: %r" % ulist)
             users.extend(ulist)
 
