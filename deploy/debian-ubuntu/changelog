@@ -1,11 +1,11 @@
-python-privacyidea (2.4~dev2) trusty; urgency=low
+python-privacyidea (2.4~dev3) trusty; urgency=low
 
   * Start dev 2.4
   * Fix missing access right of user to GET /caconnector
   * Use WHERE filter in all cases in SQL Resolver
   * Add apache auth module
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 04 Jun 2015 21:00:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 08 Jun 2015 21:00:00 +0200
 
 python-privacyidea (2.3-1trusty) trusty; urgency=low
 

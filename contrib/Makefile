@@ -10,6 +10,10 @@ CONTRIB3=python-ldap3
 URL3=https://pypi.python.org/packages/source/l/ldap3/ldap3-0.9.8.4.tar.gz
 VERSION3=0.9.8.4
 
+CONTRIB4=python-flask-sqlalchemy
+URL4=https://pypi.python.org/packages/source/F/Flask-SQLAlchemy/Flask-SQLAlchemy-2.0.tar.gz
+VERSION4=2.0
+
 ME=Cornelius Kölbel <cornelius@privacyidea.org>
 
 info:
@@ -23,6 +27,7 @@ ubuntu:
 	make pyjwt
 	make flask-cache
 	make ldap3
+	make flask-sqlalchemy
 
 ldap3:
 	mkdir -p $(CONTRIB3)
@@ -56,15 +61,28 @@ flask-cache:
 	(cd $(CONTRIB1)/deb_dist/flask-cache-$(VERSION1); debuild -b)
 	(cp $(CONTRIB1)/deb_dist/* DEBUILD || true)
 
+flask-sqlalchemy:
+	mkdir -p $(CONTRIB4)
+	mkdir -p DEBUILD
+	(cd $(CONTRIB4); curl $(URL4) -o flask-sqlalchemy-$(VERSION4).tar.gz) 
+	(cd $(CONTRIB4); py2dsc -m '$(ME)' flask-sqlalchemy-$(VERSION4).tar.gz)
+	(cd $(CONTRIB4)/deb_dist/flask-sqlalchemy-$(VERSION4); dch -v $(VERSION4)-1$(series)1 --distribution $(series) -M "built for privacyidea")
+	(cd $(CONTRIB4)/deb_dist/flask-sqlalchemy-$(VERSION4); debuild -sa -S)
+	(cd $(CONTRIB4)/deb_dist/flask-sqlalchemy-$(VERSION4); debuild -b)
+	(cp $(CONTRIB4)/deb_dist/* DEBUILD || true)
+
+
 ppa-dev:
 	dput -f ppa:privacyidea/privacyidea-dev DEBUILD/flask-cache_${VERSION1}-*_source.changes || true
 	dput -f ppa:privacyidea/privacyidea-dev DEBUILD/pyjwt_${VERSION2}-*_source.changes || true
 	dput -f ppa:privacyidea/privacyidea-dev DEBUILD/ldap3_${VERSION3}-*_source.changes || true
+	dput -f ppa:privacyidea/privacyidea-dev DEBUILD/flask-sqlalchemy_${VERSION4}-*_source.changes || true
 
 ppa:
 	dput -f ppa:privacyidea/privacyidea DEBUILD/flask-cache_${VERSION1}-*_source.changes || true
 	dput -f ppa:privacyidea/privacyidea DEBUILD/pyjwt_${VERSION2}-*_source.changes || true
 	dput -f ppa:privacyidea/privacyidea DEBUILD/ldap3_${VERSION3}-*_source.changes || true
+	dput -f ppa:privacyidea/privacyidea DEBUILD/flask-sqlalchemy_${VERSION4}-*_source.changes || true
 
 	
 
@@ -72,4 +90,5 @@ clean:
 	rm -fr $(CONTRIB1)
 	rm -fr $(CONTRIB2)
 	rm -fr $(CONTRIB3)
+	rm -fr $(CONTRIB4)
 	rm -fr DEBUILD

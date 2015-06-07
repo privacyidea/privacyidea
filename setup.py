@@ -5,7 +5,7 @@ import glob
 import sys
 
 #VERSION="2.1dev4"
-VERSION="2.4dev2"
+VERSION="2.4dev3"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -41,7 +41,8 @@ setup(
              'tools/privacyidea-create-certificate',
              'tools/privacyidea-fix-access-rights',
              'tools/privacyidea-create-ad-users',
-             'tools/privacyidea-fetchssh.sh'
+             'tools/privacyidea-fetchssh.sh',
+	     'tools/privacyidea-create-userdb.sh'
              ],
     extras_require={
         'dev': ["Sphinx==1.2.3",
