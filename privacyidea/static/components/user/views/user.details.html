@@ -71,6 +71,11 @@
                        ng-model="User.mobile"
                        ng-show="editUser">
             </div>
+            <div class="form-group" ng-show="editUser">
+                <label for="password">Password</label>
+                <input type="password" name="password" class="form-control"
+                       ng-model="User.password">
+            </div>
         </div>
     </div>
 

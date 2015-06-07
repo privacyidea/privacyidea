@@ -674,15 +674,34 @@ class IdResolver (UserIdResolver):
         determine the way how to create the UID.
         """
         attributes = attributes or {}
-        kwargs = {}
-        for fieldname in attributes.keys():
-            if self.map.get(fieldname):
-                kwargs[self.map.get(fieldname)] = attributes.get(fieldname)
+        kwargs = self._attributes_to_db_columns(attributes)
         log.debug("Insert new user with attributes %s" % kwargs)
         r = self.TABLE.insert(**kwargs)
         self.db.commit()
         # Return the UID of the new object
         return getattr(r, self.map.get("userid"))
+
+    def _attributes_to_db_columns(self, attributes):
+        """
+        takes the attributes and maps them to the DB columns
+        :param attributes:
+        :return: dict with column name as keys and values
+        """
+        columns = {}
+        for fieldname in attributes.keys():
+            if self.map.get(fieldname):
+                if fieldname == "password":
+                    password = attributes.get(fieldname)
+                    # Create a {SSHA256} password
+                    salt = geturandom(16)
+                    hr = hashlib.sha256(password)
+                    hr.update(salt)
+                    hash_bin = hr.digest()
+                    hash_b64 = b64encode(hash_bin + salt)
+                    columns[self.map.get(fieldname)] = "{SSHA256}" + hash_b64
+                else:
+                    columns[self.map.get(fieldname)] = attributes.get(fieldname)
+        return columns
 
     def delete_user(self, uid):
         """
@@ -728,19 +747,7 @@ class IdResolver (UserIdResolver):
         :return: True in case of success
         """
         attributes = attributes or {}
-        params = {}
-        for fieldname in attributes.keys():
-            if fieldname == "password":
-                password = attributes.get(fieldname)
-                # Create a {SSHA256} password
-                salt = geturandom(16)
-                hr = hashlib.sha256(password)
-                hr.update(salt)
-                hash_bin = hr.digest()
-                hash_b64 = b64encode(hash_bin + salt)
-                params[self.map.get(fieldname)] = "{SSHA256}" + hash_b64
-            else:
-                params[self.map.get(fieldname)] = attributes.get(fieldname)
+        params = self._attributes_to_db_columns(attributes)
         kwargs = {self.map.get("userid"): uid}
         r = self.TABLE.filter_by(**kwargs).update(params)
         self.db.commit()

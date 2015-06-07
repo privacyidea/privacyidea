@@ -86,6 +86,7 @@ angular.module("privacyideaApp")
                 realm: $scope.realmname
             }, function (data) {
                 $scope.User = data.result.value[0];
+                $scope.User.password = "";
             });
         };
 
