@@ -290,9 +290,34 @@ class APIConfigTestCase(MyTestCase):
             # The value is empty
             self.assertTrue(result["value"] == {}, result)
 
+        # Get only editable resolvers
+        with self.app.test_request_context('/resolver/',
+                                           method='GET',
+                                           query_string=urlencode({
+                                               "editable": "1"}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result["status"] is True, result)
+            # The value is empty
+            self.assertTrue(result["value"] == {}, result)
+
         # this will fetch all resolvers
         with self.app.test_request_context('/resolver/',
                                            method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            self.assertTrue("resolver1" in value, value)
+
+        # get non-editable resolvers
+        with self.app.test_request_context('/resolver/',
+                                           method='GET',
+                                           query_string=urlencode({
+                                               "editable": "0"}),
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)

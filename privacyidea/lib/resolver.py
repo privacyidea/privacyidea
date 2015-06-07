@@ -160,12 +160,17 @@ def save_resolver(params):
 @log_with(log)
 #@cache.memoize(10)
 def get_resolver_list(filter_resolver_type=None,
-                      filter_resolver_name=None):
+                      filter_resolver_name=None,
+                      editable=None):
     """
     Gets the list of configured resolvers from the database
 
     :param filter_resolver_type: Only resolvers of the given type are returned
-    :type filter_resolver_type: string
+    :type filter_resolver_type: basestring
+    :param filter_resolver_name: Get the distinct resolver
+    :type filter_resolver_name: basestring
+    :param editable: Whether only return editable resolvers
+    :type editable: bool
     :rtype: Dictionary of the resolvers and their configuration
     """
     Resolvers = {}
@@ -190,7 +195,14 @@ def get_resolver_list(filter_resolver_type=None,
                 value = decryptPassword(value)
             data[conf.Key] = value
         r["data"] = data
-        Resolvers[reso.name] = r
+        if editable is None:
+            Resolvers[reso.name] = r
+        else:
+            if editable is True and r["data"].get("Editable") == "1":
+                Resolvers[reso.name] = r
+            elif editable is False and r["data"].get("Editable") != "1":
+                Resolvers[reso.name] = r
+
 
     return Resolvers
 

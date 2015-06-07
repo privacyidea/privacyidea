@@ -65,9 +65,17 @@ def get_resolvers():
     returns a json list of all resolver.
 
     :param type: Only return resolvers of type (like passwdresolver..)
+    :type type: basestring
+    :param editable: If only editable resolvers should be returned
+    :type type: basestring ("1")
     """
     typ = getParam(request.all_data, "type", optional)
-    res = get_resolver_list(filter_resolver_type=typ)
+    editable = getParam(request.all_data, "editable", optional)
+    if editable == "1":
+        editable = True
+    elif editable == "0":
+        editable = False
+    res = get_resolver_list(filter_resolver_type=typ, editable=editable)
     g.audit_object.log({"success": True})
     return send_result(res)
 

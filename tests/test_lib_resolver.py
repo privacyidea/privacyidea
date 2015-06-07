@@ -765,6 +765,9 @@ class ResolverTestCase(MyTestCase):
         self.assertTrue(self.resolvername1 in reso_list, reso_list)
         self.assertTrue(self.resolvername2 not in reso_list, reso_list)
 
+        reso_list = get_resolver_list(editable=True)
+        self.assertTrue(len(reso_list) == 0)
+
     def test_03_get_resolver_config(self):
         reso_config = get_resolver_config(self.resolvername2)
         self.assertTrue("UnknownKey" in reso_config, reso_config)

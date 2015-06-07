@@ -86,6 +86,12 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
             }).success(callback
             ).error(error_func);
         },
+        getEditableResolvers: function (callback) {
+            $http.get(resolverUrl + "/?editable=1", {
+                headers: {'Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
         getResolver: function(resolvername, callback) {
             $http.get(resolverUrl + "/" + resolvername, {
                 headers: {'Authorization': AuthFactory.getAuthToken()}

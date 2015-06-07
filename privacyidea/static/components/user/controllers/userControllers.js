@@ -19,6 +19,36 @@
  *
  */
 angular.module("privacyideaApp")
+    .controller("userAddController", function ($scope, userUrl, $state,
+                                               $location, ConfigFactory,
+                                               UserFactory){
+
+        $scope.formInit = {};
+        ConfigFactory.getEditableResolvers(function (data){
+            var resolvers = data.result.value;
+            var resolvernames = [];
+            for (rname in resolvers) {
+                resolvernames.push(rname);
+            }
+            $scope.formInit.resolvernames = resolvernames;
+            if (resolvernames.length > 0) {
+                $scope.resolvername = resolvernames[0]
+            }
+        });
+
+        $scope.createUser = function () {
+            UserFactory.createUser($scope.resolvername, $scope.User,
+                function (data) {
+                    console.log(data.result);
+                    addInfo("User created.", 2000)
+                    // reload the users
+                    $scope._getUsers();
+                    $location.path("/user/list");
+            });
+        };
+    });
+
+angular.module("privacyideaApp")
     .controller("userDetailsController", function ($scope, userUrl,
                                                    realmUrl, tokenUrl,
                                                    $rootScope, TokenFactory,

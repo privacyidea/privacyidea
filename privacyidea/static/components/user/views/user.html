@@ -23,6 +23,12 @@
                         ng-class="{active: $state.includes('user.details')}"
                         ng-show="$state.includes('user.details')"><a>User
                     {{ $stateParams.username }}</a></li>
+                    <li role="presentation"
+                        ng-class="{active:$state.includes('user.add')}">
+                        <a ui-sref="user.add">
+                            Add user
+                        </a>
+                    </li>
                     <li>Quick links</li>
                     <li>
                         <a ui-sref="config.realms.list">Edit realms</a>

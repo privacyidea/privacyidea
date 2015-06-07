@@ -49,6 +49,9 @@ angular.module('privacyideaApp.userStates', ['ui.router']).config(
                             $scope.resolvername = $stateParams.resolvername;
                             $scope.editable = $stateParams.editable;
                         }]
+                })
+                .state('user.add', {
+                    url: "/add",
+                    templateUrl: userpath + "user.add.html"
                 });
-
         }]);
