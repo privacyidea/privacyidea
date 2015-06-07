@@ -129,7 +129,7 @@
         </div>
     </div>
     <div class="form-group">
-        <label for="realm" class="col-sm-3 control-label">Realm</label>
+        <label for="realm" class="col-sm-3 control-label">User-Realm</label>
 
         <div class="col-sm-9">
             <div multi-select
@@ -143,7 +143,8 @@
         </div>
     </div>
     <div class="form-group">
-        <label for="resolver" class="col-sm-3 control-label">Resolver</label>
+        <label for="resolver" class="col-sm-3
+        control-label">User-Resolver</label>
 
         <div class="col-sm-9">
             <div multi-select
@@ -157,7 +158,11 @@
         </div>
     </div>
         <div class="form-group">
-        <label for="user" class="col-sm-3 control-label">User</label>
+        <label for="user" class="col-sm-3 control-label">
+            <span ng-show="selectedScope[0].name=='admin'">Admin</span>
+            <span ng-hide="selectedScope[0].name=='admin'">User</span>
+        </label>
+
 
         <div class="col-sm-9">
             <input name="user" class="form-control"
