@@ -248,7 +248,8 @@ class IdResolver (UserIdResolver):
                     "mobile": "text",
                     "surname": "text",
                     "givenname": "text",
-                    "email": "text"
+                    "email": "text",
+                    "description": "text",
                     }
 
     updateable = True
@@ -451,6 +452,7 @@ class IdResolver (UserIdResolver):
                     "givenname",
                     "email",
                     "mobile",
+                    "description",
                     "phone",
                     "password"]:
             try:
@@ -674,7 +676,9 @@ class IdResolver (UserIdResolver):
         attributes = attributes or {}
         kwargs = {}
         for fieldname in attributes.keys():
-            kwargs[self.map.get(fieldname)] = attributes.get(fieldname)
+            if self.map.get(fieldname):
+                kwargs[self.map.get(fieldname)] = attributes.get(fieldname)
+        log.debug("Insert new user with attributes %s" % kwargs)
         r = self.TABLE.insert(**kwargs)
         self.db.commit()
         # Return the UID of the new object

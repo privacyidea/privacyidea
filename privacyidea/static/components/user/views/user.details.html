@@ -37,6 +37,14 @@
                        ng-model="User.surname"
                        ng-show="editUser">
             </div>
+            <div class="form-group">
+                <label for="description">Description</label>
+                <div name="description" ng-hide="editUser">{{ User.description
+                        }}</div>
+                <input name="description" class="form-control"
+                       ng-model="User.description"
+                       ng-show="editUser">
+            </div>
         </div>
         <div class="col-xs-6">
             <div class="form-group">

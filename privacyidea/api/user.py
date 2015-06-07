@@ -148,6 +148,7 @@ def create_user_api():
        mobile=...
        phone=...
        password=...
+       description=...
 
        Host: example.com
        Accept: application/json
@@ -185,6 +186,7 @@ def update_user():
        mobile=...
        phone=...
        password=...
+       description=...
 
        Host: example.com
        Accept: application/json
@@ -212,6 +214,7 @@ def _get_attributes_from_param(param):
     phone = getParam(param, "phone")
     mobile = getParam(param, "mobile")
     password = getParam(param, "password")
+    description = getParam(param, "description")
 
     # Add attributes
     attributes = {"username": username}
@@ -227,5 +230,7 @@ def _get_attributes_from_param(param):
         attributes["mobile"] = mobile
     if password:
         attributes["password"] = password
+    if description:
+        attributes["description"] = description
 
     return attributes
