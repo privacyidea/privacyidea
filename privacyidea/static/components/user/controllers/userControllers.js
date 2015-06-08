@@ -21,7 +21,7 @@
 angular.module("privacyideaApp")
     .controller("userAddController", function ($scope, userUrl, $state,
                                                $location, ConfigFactory,
-                                               UserFactory){
+                                               UserFactory, inform){
 
         $scope.formInit = {};
         ConfigFactory.getEditableResolvers(function (data){
@@ -40,7 +40,9 @@ angular.module("privacyideaApp")
             UserFactory.createUser($scope.resolvername, $scope.User,
                 function (data) {
                     console.log(data.result);
-                    addInfo("User created.", 2000)
+                    inform.add("User created.",
+                                {type: "info"});
+
                     // reload the users
                     $scope._getUsers();
                     $location.path("/user/list");
@@ -53,7 +55,8 @@ angular.module("privacyideaApp")
                                                    realmUrl, tokenUrl,
                                                    $rootScope, TokenFactory,
                                                    UserFactory, $state,
-                                                   instanceUrl,  $location) {
+                                                   instanceUrl,  $location,
+                                                   inform) {
         $scope.tokensPerPage = 5;
         $scope.newToken = {"serial": "", pin: ""};
         $scope.params = {page: 1};
@@ -94,7 +97,8 @@ angular.module("privacyideaApp")
             UserFactory.updateUser($scope.resolvername, $scope.User,
             function (data) {
                 if (data.result.value==true) {
-                    addInfo("User updated successfully.", 2000);
+                    inform.add("User updated successfully.",
+                                {type: "info"});
                     // we also need to update the user list
                     $scope._getUsers();
                 }
@@ -108,7 +112,8 @@ angular.module("privacyideaApp")
             UserFactory.deleteUser($scope.resolvername, $scope.User.username,
             function (data) {
                 if (data.result.value==true) {
-                    addInfo("User deleted successfully.", 2000);
+                    inform.add("User deleted successfully.",
+                                {type: "info"});
                     $scope._getUsers();
                     $location.path("/user/list");
                 }

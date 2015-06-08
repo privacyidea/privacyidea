@@ -74,7 +74,7 @@ function fixMachine(machinestr) {
 
 angular.module("TokenModule", ["privacyideaAuth"])
     .factory("TokenFactory", function (AuthFactory, $http, $state, $rootScope,
-                                       tokenUrl, authUrl) {
+                                       tokenUrl, authUrl, inform) {
         /**
          Each service - just like this service factory - is a singleton.
          */
@@ -82,7 +82,8 @@ angular.module("TokenModule", ["privacyideaAuth"])
             if (error.result.error.code == -401) {
                 $state.go('login');
             } else {
-                addError(error.result.error.message);
+                inform.add(error.result.error.message,
+                                {type: "danger", ttl: 10000});
             }
         };
 

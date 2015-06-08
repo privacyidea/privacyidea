@@ -19,7 +19,9 @@
  *
  */
 
-myApp.factory("AuditFactory", function (AuthFactory, $http, $state, $rootScope, auditUrl) {
+myApp.factory("AuditFactory", function (AuthFactory,
+                                        $http, $state, $rootScope, auditUrl,
+                                        inform) {
         /**
          Each service - just like this service factory - is a singleton.
          */
@@ -27,7 +29,7 @@ myApp.factory("AuditFactory", function (AuthFactory, $http, $state, $rootScope, 
             if (error.result.error.code == -401) {
                 $state.go('login');
             } else {
-                addError(error.result.error.message);
+                inform.add(error.result.error.message, {type: "danger", ttl: 10000});
             }
         };
 

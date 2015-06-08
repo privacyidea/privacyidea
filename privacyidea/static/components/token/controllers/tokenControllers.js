@@ -239,7 +239,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
 
 
 myApp.controller("tokenImportController", function ($scope, $upload,
-                                                    AuthFactory) {
+                                                    AuthFactory, inform) {
     $scope.formInit = {
         fileTypes: ["OATH CSV", "Yubikey CSV", "pskc"]
     };
@@ -266,7 +266,8 @@ myApp.controller("tokenImportController", function ($scope, $upload,
                     if (error.result.error.code == -401) {
                         $state.go('login');
                     } else {
-                        addError(error.result.error.message);
+                        inform.add(error.result.error.message,
+                                {type: "danger", ttl: 10000});
                     }
                 });
             }

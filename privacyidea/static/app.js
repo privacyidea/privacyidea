@@ -28,7 +28,8 @@ myApp = angular.module("privacyideaApp",
         'privacyideaApp.userStates',
         'privacyideaApp.machineStates',
         'privacyideaApp.loginStates',
-    'multi-select', 'angularFileUpload']);
+    'multi-select', 'angularFileUpload',
+    'inform']);
 myApp.config(function ($urlRouterProvider) {
     // For any unmatched url, redirect to /token
     $urlRouterProvider.otherwise("/token/list");
@@ -74,13 +75,14 @@ myApp.run(['$rootScope', '$state', '$stateParams',
         }
     ]
 );
-myApp.config(['$httpProvider', function ($httpProvider) {
-    $httpProvider.interceptors.push(function ($q) {
+myApp.config(['$httpProvider', function ($httpProvider, inform) {
+    $httpProvider.interceptors.push(function ($q, inform) {
         return {
             responseError: function (rejection) {
                 if(rejection.status === 0) {
                     // The API is offline, not reachable
-                    addError("The privacyIDEA system seems to be offline. The API is not reachable!");
+                    inform.add("The privacyIDEA system seems to be offline." +
+                        " The API is not reachable!", {type: "danger", ttl: 10000});
                     return;
                 }
                 return $q.reject(rejection);
@@ -94,30 +96,3 @@ myApp.config(['$compileProvider',
     function ($compileProvider) {
         $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|tel|file|blob):/);
 }]);
-
-
-function addError(message, wait) {
-    if (!wait) {
-        wait = 15000;
-    }
-    $('#alerts').append(
-        '<div class="alert alert-danger">' +
-            '<button type="button" class="close" data-dismiss="alert">' +
-            '&times;</button>' + message + '</div>');
-    setTimeout(function(){
-        $('#alerts').children('.alert:first-child').remove();
-    }, wait);
-}
-
-function addInfo(message, wait) {
-    if (!wait) {
-        wait = 5000;
-    }
-    $('#alerts').append(
-        '<div class="alert alert-info">' +
-            '<button type="button" class="close" data-dismiss="alert">' +
-            '&times;</button>' + message + '</div>');
-    setTimeout(function(){
-        $('#alerts').children('.alert:first-child').remove();
-    }, wait);
-}

@@ -1,0 +1,184 @@
+/*!
+   angular-inform v0.0.18
+   (c) 2014 (null) McNull https://github.com/McNull/angular-inform
+   License: MIT
+*/
+
+
+
+.inform-fixed {
+  position: fixed;
+  top: 40px;
+  left: 20px;
+  right: 20px;
+  z-index: 11002;
+}
+
+.inform-fixed .inform-message {
+  width: auto;
+}
+
+@media screen and (min-width: 480px) {
+  .inform-fixed {
+    left: auto;
+    width: 440px;
+  }
+
+  .inform-fixed.inform-center {
+    right: 0;
+    left: 0;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+.inform-message {
+  overflow: hidden;
+}
+
+.inform-message > button.close {
+  margin-left: 15px;
+}
+
+.inform-shadow .inform-message {
+  box-shadow: 0px 5px 20px 0px rgba(0, 0, 0, 0.25);
+}
+
+.inform-message.alert-primary {
+  color: #FFF;
+  background-color: #428BCA;
+}
+
+.inform-message.alert-default {
+  background-color: #F5F5F5;
+  border: 1px solid #CCC;
+  color: #333;
+}
+
+
+.inform-message-wrap {
+  /*overflow: hidden;*/
+}
+.inform-animate .inform-message-wrap.ng-enter {
+  -webkit-animation: 1.0s inform-message-slide-in;
+          animation: 1.0s inform-message-slide-in;
+}
+
+.inform-animate .inform-message-wrap.ng-leave {
+  -webkit-animation: 1.0s inform-message-fade-out;
+          animation: 1.0s inform-message-fade-out;
+}
+
+.inform-animate .inform-badge.ng-enter {
+  -webkit-animation: inform-badge-scale 0.5s;
+          animation: inform-badge-scale 0.5s;
+}
+
+@-webkit-keyframes inform-badge-scale {
+  0% {
+    opacity: 0;
+    -webkit-transform: scale(0);
+            transform: scale(0);
+  }
+  25% {
+    opacity: 1;
+    -webkit-transform: scale(1.5);
+            transform: scale(1.5);
+  }
+  100% {
+    opacity: 1;
+    -webkit-transform: scale(1);
+            transform: scale(1);
+  }
+}
+
+@keyframes inform-badge-scale {
+  0% {
+    opacity: 0;
+    -webkit-transform: scale(0);
+            transform: scale(0);
+  }
+  25% {
+    opacity: 1;
+    -webkit-transform: scale(1.5);
+            transform: scale(1.5);
+  }
+  100% {
+    opacity: 1;
+    -webkit-transform: scale(1);
+            transform: scale(1);
+  }
+}
+
+@-webkit-keyframes inform-message-slide-in {
+  0% {
+    opacity: 0;
+    -webkit-transform: translateX(100%);
+            transform: translateX(100%);
+    max-height: 0px;
+  }
+  50% {
+    opacity: 0;
+    -webkit-transform: translateX(100%);
+            transform: translateX(100%);
+    max-height: 1000px;
+  }
+  100% {
+    opacity: 1;
+    -webkit-transform: translateX(0%);
+            transform: translateX(0%);
+    max-height: 1000px;
+  }
+}
+
+@keyframes inform-message-slide-in {
+  0% {
+    opacity: 0;
+    -webkit-transform: translateX(100%);
+            transform: translateX(100%);
+    max-height: 0px;
+  }
+  50% {
+    opacity: 0;
+    -webkit-transform: translateX(100%);
+            transform: translateX(100%);
+    max-height: 1000px;
+  }
+  100% {
+    opacity: 1;
+    -webkit-transform: translateX(0%);
+            transform: translateX(0%);
+    max-height: 1000px;
+  }
+}
+
+@-webkit-keyframes inform-message-fade-out {
+  0% {
+    opacity: 1;
+    max-height: 1000px;
+  }
+  50% {
+    opacity: 0;
+    max-height: 1000px;
+  }
+  100% {
+    opacity: 0;
+    max-height: 0px;
+  }
+}
+
+@keyframes inform-message-fade-out {
+  0% {
+    opacity: 1;
+    max-height: 1000px;
+  }
+  50% {
+    opacity: 0;
+    max-height: 1000px;
+  }
+  100% {
+    opacity: 0;
+    max-height: 0px;
+  }
+}
+/*# sourceMappingURL=angular-inform.css.map */

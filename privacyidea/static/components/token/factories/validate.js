@@ -18,7 +18,8 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.factory("ValidateFactory", function ($http, $state, $rootScope, validateUrl) {
+myApp.factory("ValidateFactory", function ($http, $state, $rootScope,
+                                           validateUrl, inform) {
         /**
          Each service - just like this service factory - is a singleton.
          */
@@ -26,7 +27,8 @@ myApp.factory("ValidateFactory", function ($http, $state, $rootScope, validateUr
             if (error.result.error.code == -401) {
                 $state.go('login');
             } else {
-                addError(error.result.error.message);
+                inform.add(error.result.error.message,
+                                {type: "danger"});
             }
         };
 

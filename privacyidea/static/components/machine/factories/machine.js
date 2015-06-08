@@ -20,12 +20,14 @@
  */
 
 myApp.factory("MachineFactory", function (AuthFactory, $http, $state,
-                                          $rootScope, machineUrl, applicationUrl) {
+                                          $rootScope, machineUrl,
+                                          applicationUrl, inform) {
         var error_func = function (error) {
                         if (error.result.error.code == -401) {
                             $state.go('login');
                         } else {
-                            addError(error.result.error.message);
+                            inform.add(error.result.error.message,
+                                {type: "danger", ttl: 10000});
                         }
                     };
 
