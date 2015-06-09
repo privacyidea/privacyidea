@@ -194,11 +194,45 @@ losttoken
 
 type: bool
 
-If the ``losttoken`` action is defined, the adminstrator is
+If the ``losttoken`` action is defined, the administrator is
 allowed to perform the lost token process.
 
 To only perform the lost token process the actions ``copytokenuser``
 and ``copytokenpin`` are not necessary!
+
+
+adduser
+~~~~~~~
+
+type: bool
+
+.. index:: Add User, Users
+
+If the ``adduser`` action is defined, the administrator is allowed to add
+users to a user store.
+
+.. note:: The user store still must be defined as editable, otherwise no
+   users can be added, edited or deleted.
+
+updateuser
+~~~~~~~~~~
+
+.. index:: Edit User
+
+type: bool
+
+If the ``updateuser`` action is defined, the administrator is allowed to edit
+users in the user store.
+
+deleteuser
+~~~~~~~~~~
+
+.. index:: Delete User
+
+type: bool
+
+If the ``deleteuser`` action is defined, the administrator is allowed to
+delete an existing user from the user store.
 
 
 copytokenuser

@@ -36,6 +36,9 @@ When you have added all configuration data, most UIs of the UserIdResolvers have
 button "Test resolver", so that you can test your configuration before saving
 it.
 
+Starting with privacyIDEA 2.4 resolvers can be editable, i.e. you can edit
+the users in the user store. Read more about this at :ref:`manage_users`.
+
 .. note:: Using the policy ``authentication:otppin=userstore`` users can
    authenticate with the password
    from their user store, being the LDAP password, SQL password or password

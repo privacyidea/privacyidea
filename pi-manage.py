@@ -310,6 +310,78 @@ def create(name, rtype, filename):
     params["type"] = rtype
     save_resolver(params)
 
+@resolver_manager.command
+def create_internal(name):
+    """
+    This creates a new internal, editable sqlresolver. The users will be
+    stored in the token database in a table called 'users_<name>'. You can then
+    add this resolver to a new real using the command 'pi-manage.py realm'.
+    """
+    from privacyidea.lib.resolver import save_resolver
+    sqluri = app.config.get("SQLALCHEMY_DATABASE_URI")
+    sqlelements = sqluri.split("/")
+    # mysql://user:password@localhost/pi
+    # sqlite:////home/cornelius/src/privacyidea/data.sqlite
+    sql_driver = sqlelements[0][:-1]
+    user_pw_host = sqlelements[2]
+    database = "/".join(sqlelements[3:])
+    username = ""
+    password = ""
+    # determine host and user
+    hostparts = user_pw_host.split("@")
+    if len(hostparts) > 2:
+        print "Invalid database URI: %s" % sqluri
+        sys.exit(2)
+    elif len(hostparts) == 1:
+        host = hostparts[0] or "/"
+    elif len(hostparts) == 2:
+        host = hostparts[1] or "/"
+        # split hostname and password
+        userparts = hostparts[0].split(":")
+        if len(userparts) == 2:
+            username = userparts[0]
+            password = userparts[1]
+        elif len(userparts) == 1:
+            username = userparts[0]
+        else:
+            print "Invalid username and password in database URI: %s" % sqluri
+            sys.exit(3)
+    # now we can create the resolver
+    params = {'resolver': name,
+              'type': "sqlresolver",
+              'Server': host,
+              'Driver': sql_driver,
+              'User': username,
+              'Password': password,
+              'Database': database,
+              'Table': 'users_' + name,
+              'Limit': '500',
+              'Editable': '1',
+              'Map': '{"userid": "id", "username": "username", '
+                     '"email":"email", "password": "password", '
+                     '"phone":"phone", "mobile":"mobile", "surname":"surname", '
+                     '"givenname":"givenname", "description": "description"}'}
+    save_resolver(params)
+
+    # Now we create the database table
+    from sqlalchemy import create_engine
+    from sqlalchemy import Table, MetaData, Column
+    from sqlalchemy import Integer, String
+    engine = create_engine(sqluri)
+    metadata = MetaData()
+    Table('users_%s' % name,
+          metadata,
+          Column('id', Integer, primary_key=True),
+          Column('username', String(40), unique=True),
+          Column('email', String(80)),
+          Column('password', String(255)),
+          Column('phone', String(40)),
+          Column('mobile', String(40)),
+          Column('surname', String(40)),
+          Column('givenname', String(40)),
+          Column('description', String(255)))
+    metadata.create_all(engine)
+
 
 @resolver_manager.command
 def list():

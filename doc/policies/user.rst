@@ -249,4 +249,17 @@ type: bool
 This action allows the user to search for the serial number
 of an unassigned token by entering an OTP value.
 
+updateuser
+~~~~~~~~~~
 
+.. index:: Edit User
+
+type: bool
+
+If the ``updateuser`` action is defined, the user is allowed to change his
+attributes in the user store.
+
+.. note:: This is not implemented in the Web UI at the moment.
+
+.. note:: To be able to edit the attributes, the resolver must be defined as
+   editable.
