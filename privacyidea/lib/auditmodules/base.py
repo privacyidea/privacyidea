@@ -69,9 +69,9 @@ class Paginate(object):
         self.current = 1
         # the total entry numbers
         self.total = 0
+    
 
-
-class AuditBase(object):  # pragma: no cover
+class Audit(object):  # pragma: no cover
 
     def __init__(self, config=None):
         """

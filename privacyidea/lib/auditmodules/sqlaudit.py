@@ -35,7 +35,7 @@ token database.
 
 import logging
 log = logging.getLogger(__name__)
-from privacyidea.lib.auditmodules.base import (AuditBase, Paginate)
+from privacyidea.lib.auditmodules.base import (Audit as AuditBase, Paginate)
 
 from sqlalchemy import Table, MetaData, Column
 from sqlalchemy import Integer, String, DateTime, asc, desc, and_
