@@ -1,6 +1,9 @@
 #
 #    privacyIDEA, fork of LinOTP (radius_linotp.pm)
 #
+#    2015-06-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#               Add using of Stripped-User-Name and Realm from the 
+#               RAD_REQUEST
 #    2015-04-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #               fix typo in log
 #    2015-02-25 cornelius kölbel <cornelius@privacyidea.org>
@@ -266,6 +269,9 @@ sub authenticate {
     if ( exists( $RAD_REQUEST{'User-Name'} ) ) {
         $params{"user"} = $RAD_REQUEST{'User-Name'};
     }
+    if ( exists( $RAD_REQUEST{'Stripped-User-Name'} )) {
+        $params{"user"} = $RAD_REQUEST{'Stripped-User-Name'};
+    }
     if ( exists( $RAD_REQUEST{'User-Password'} ) ) {
         $params{"pass"} = $RAD_REQUEST{'User-Password'};
     }
@@ -274,14 +280,20 @@ sub authenticate {
     }
     if ( length($REALM) > 0 ) {
         $params{"realm"} = $REALM;
+    } elsif ( length($RAD_REQUEST{'Realm'}) > 0 ) {
+        $params{"realm"} = $RAD_REQUEST{'Realm'};
     }
     if ( length($RESCONF) > 0 ) {
         $params{"resConf"} = $RESCONF;
     }
 
     &radiusd::radlog( Info, "Auth-Type: $auth_type" );
-    &radiusd::radlog( Info, "Url: $URL" );
-    &radiusd::radlog( Info, "User: $RAD_REQUEST{'User-Name'}" );
+    &radiusd::radlog( Info, "url: $URL" );
+    &radiusd::radlog( Info, "user sent to privacyidea: $params{'user'}" );
+    &radiusd::radlog( Info, "realm sent to privacyidea: $params{'realm'}" );
+    &radiusd::radlog( Info, "resolver sent to privacyidea: $params{'resConf'}" );
+    &radiusd::radlog( Info, "client sent to privacyidea: $params{'client'}" );
+    &radiusd::radlog( Info, "state sent to privacyidea: $params{'state'}" );
     if ( $debug == true ) {
         &radiusd::radlog( Debug, "urlparam $_ = $params{$_}\n" )
           for ( keys %params );

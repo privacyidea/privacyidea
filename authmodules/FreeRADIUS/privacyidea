@@ -2,6 +2,7 @@ authorize {
 	preprocess
 	digest
 	suffix
+	ntdomain
 	files
 	expiration
 	logintime

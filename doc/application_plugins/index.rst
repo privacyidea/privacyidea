@@ -99,6 +99,8 @@ You can test the RADIUS setup using a command like this::
 
 .. note:: Do not forget to configure the ``clients.conf`` accordingly.
 
+Read more about :ref:`radius_and_realms` or :ref:`rlm_perl_ini`.
+
 .. _simplesaml_plugin:
 
 simpleSAMLphp Plugin

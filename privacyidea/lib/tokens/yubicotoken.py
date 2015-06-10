@@ -68,7 +68,6 @@ class YubicoTokenClass(TokenClass):
         self.set_type(u"yubico")
         self.tokenid = ""
 
-
     @classmethod
     def get_class_type(cls):
         return "yubico"
@@ -107,7 +106,6 @@ class YubicoTokenClass(TokenClass):
                'ui_enroll': ["admin", "user"],
                'policy' : {},
                }
-
 
         if key is not None and res.has_key(key):
             ret = res.get(key)
@@ -151,13 +149,13 @@ class YubicoTokenClass(TokenClass):
         if len(anOtpVal) < 12:
             log.warning("The otpval is too short: %r" % anOtpVal)
         elif anOtpVal[:12] != tokenid:
-            log.warning("the tokenid in the OTP value does not match "
+            log.warning("The tokenid in the OTP value does not match "
                         "the assigned token!")
         else:
             nonce = binascii.hexlify(os.urandom(20))
             p = {'nonce': nonce,
                  'otp': anOtpVal,
-                 'id' :apiId}
+                 'id': apiId}
 
             try:
                 r = requests.post(YUBICO_URL,
