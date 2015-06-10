@@ -39,6 +39,7 @@ import redis
 import requests
 import syslog
 import ConfigParser
+import traceback
 
 OK = True
 UNAUTHORIZED = False
@@ -70,17 +71,23 @@ def check_password(environ, username, password):
         response = requests.post(PRIVACYIDEA + "/validate/check", data=data,
                                  verify=SSLVERIFY)
 
-        try:
-            json_response = response.json()
-            syslog.syslog(syslog.LOG_DEBUG, "requests > 1.0")
-        except:
-            # requests < 1.0
-            json_response = response.json
-            syslog.syslog(syslog.LOG_DEBUG, "requests < 1.0")
+        if response.status_code == 200:
+            try:
+                json_response = response.json()
+                syslog.syslog(syslog.LOG_DEBUG, "requests > 1.0")
+            except Exception as exx:
+                # requests < 1.0
+                json_response = response.json
+                syslog.syslog(syslog.LOG_DEBUG, "requests < 1.0")
+                syslog.syslog(syslog.LOG_DEBUG, "%s" % traceback.format_exc())
 
-        if json_response.get("result", {}).get("value"):
-            rd.setex(username, password, seconds)
-            r_value = OK
+            if json_response.get("result", {}).get("value"):
+                rd.setex(username, password, seconds)
+                r_value = OK
+        else:
+            syslog.syslog(syslog.LOG_ERR, "Error connecting to privacyIDEA: "
+                                          "%s: %s" % (response.status_code,
+                                                      response.text))
 
     return r_value
 
