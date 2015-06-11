@@ -1,8 +1,18 @@
 
-    <img width="250" src="{{ enrolledToken.motpurl.img }}"/>
-
-    <p>
-        Click <a href="{{ enrolledToken.motpurl.value }}">here</a> or scan
-        the QR Code, if you
-        want to add the Token to your mOTP App like Token2.
-    </p>
+<div class="row">
+    <div class="col-sm-6">
+        <img width="250" src="{{ enrolledToken.motpurl.img }}"/>
+    </div>
+    <div class="col-sm-6">
+        <accordion close-others="oneAtATime">
+            <accordion-group heading="The OTP key">
+                {{ enrolledToken.otpkey.value }}
+            </accordion-group>
+        </accordion>
+        <p>
+            Click <a href="{{ enrolledToken.motpurl.value }}">here</a> or scan
+            the QR Code, if you
+            want to add the Token to your mOTP App like Token2.
+        </p>
+    </div>
+</div>
