@@ -1,12 +1,14 @@
-python-privacyidea (2.4~dev5) trusty; urgency=low
+python-privacyidea (2.4~dev6) trusty; urgency=low
 
   * Fix missing access right of user to GET /caconnector
   * Use WHERE filter in all cases in SQL Resolver
   * Add apache auth module
   * Add User Management
   * Improve RADIUS module
+  * Add enrollment of Registration token to webUI
+  * Add seed in the enrolled token dialog
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 10 Jun 2015 10:00:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 11 Jun 2015 20:00:00 +0200
 
 python-privacyidea (2.3-1trusty) trusty; urgency=low
 
