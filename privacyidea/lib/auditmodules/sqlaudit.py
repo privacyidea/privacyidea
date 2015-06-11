@@ -214,7 +214,7 @@ class Audit(AuditBase):
         """
         try:
             le = LogEntry(action=self.audit_data.get("action"),
-                          success=self.audit_data.get("success"),
+                          success=int(self.audit_data.get("success")),
                           serial=self.audit_data.get("serial"),
                           token_type=self.audit_data.get("token_type"),
                           user=self.audit_data.get("user"),

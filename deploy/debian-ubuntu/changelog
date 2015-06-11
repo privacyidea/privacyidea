@@ -1,3 +1,9 @@
+python-privacyidea (2.3.2-1trusty) trusty; urgency=low
+
+  * Fix type conversion in sqlaudit
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 11 Jun 2015 09:00:00 +0200
+
 python-privacyidea (2.3.1-1trusty) trusty; urgency=low
 
   * Fix missing access right of user to GET /caconnector
