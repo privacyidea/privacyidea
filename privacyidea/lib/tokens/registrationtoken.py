@@ -115,13 +115,14 @@ class RegistrationTokenClass(PasswordTokenClass):
         """
         res = {'type': 'registration',
                'title': 'Registration Code Token',
-               'description': ('A token that create a registration code that '
+               'description': ('Registration: A token that create a '
+                               'registration code that '
                                'can be used as a second factor once.'),
                'init': {},
                'config': {},
                'user':  [],
                # This tokentype is enrollable in the UI for...
-               'ui_enroll': [],
+               'ui_enroll': ["admin"],
                'policy': {},
                }
 
@@ -139,6 +140,11 @@ class RegistrationTokenClass(PasswordTokenClass):
         :type param: dict
         :return: None
         """
+        if "genkey" in param:
+            # We do not need the genkey! We generate anyway.
+            # Otherwise genkey and otpkey will raise an exception in
+            # PasswordTokenClass
+            del param["genkey"]
         param["otpkey"] = generate_password(size=self.otp_len)
         PasswordTokenClass.update(self, param)
 
