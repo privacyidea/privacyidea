@@ -1,4 +1,4 @@
-python-privacyidea (2.4~dev6) trusty; urgency=low
+python-privacyidea (2.4~dev7) trusty; urgency=low
 
   * Fix missing access right of user to GET /caconnector
   * Use WHERE filter in all cases in SQL Resolver
