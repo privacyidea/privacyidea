@@ -15,9 +15,13 @@ import sqlalchemy as sa
 
 
 def upgrade():
-    op.add_column('policy', sa.Column('adminrealm',
-                                      sa.Unicode(length=256),
-                                      nullable=True))
+    try:
+        op.add_column('policy', sa.Column('adminrealm',
+                                          sa.Unicode(length=256),
+                                          nullable=True))
+    except Exception as exx:
+        print "Could not add the column 'adminrealm' to table policy"
+        print (exx)
 
 
 def downgrade():

@@ -5,7 +5,7 @@ import glob
 import sys
 
 #VERSION="2.1dev4"
-VERSION="2.4dev7"
+VERSION="2.4dev8"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -118,7 +118,8 @@ setup(
                  ["migrations/versions/2551ee982544_.py",
                   "migrations/versions/4f32a4e1bf33_.py",
                   "migrations/versions/2181294eed0b_.py",
-                  "migrations/versions/e5cbeb7c177_.py"])
+                  "migrations/versions/e5cbeb7c177_.py",
+                  "migrations/versions/4d9178fa8336_.py"])
                 ],
     classifiers=["Framework :: Flask",
                  "License :: OSI Approved :: "
