@@ -3,10 +3,12 @@ This test tests the authmodules/Apache2/privacyidea_apache.py
 """
 from .base import MyTestCase
 from authmodules.apache2.privacyidea_apache import (OK, UNAUTHORIZED,
-                                                    check_password)
+                                                    check_password,
+                                                    ROUNDS, SALT_SIZE)
 import responses
 import json
 import redismock
+import passlib.hash
 
 
 SUCCESS_BODY = {"detail": {"message": "matching 1 tokens",
@@ -32,6 +34,10 @@ FAIL_BODY = {"detail": {"message": "wrong otp value"},
 
 class ApacheTestCase(MyTestCase):
 
+    pw_dig = passlib.hash.pbkdf2_sha512.encrypt("test100001",
+                                                rounds=ROUNDS,
+                                                salt_size=SALT_SIZE)
+
     @redismock.activate
     @responses.activate
     def test_01_success(self):
@@ -47,7 +53,7 @@ class ApacheTestCase(MyTestCase):
     def test_02_success_cache(self):
         # In this case, the password is successfully checked against the
         # redis database
-        redismock.set_data({"cornelius": "test100001"})
+        redismock.set_data({"cornelius": self.pw_dig})
         # The password is contained in the database and thus the privacyIDEA
         # server does not have to be asked. Therefor we can omit the response
         #  mock

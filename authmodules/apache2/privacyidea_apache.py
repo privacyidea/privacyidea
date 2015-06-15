@@ -40,6 +40,8 @@ import requests
 import syslog
 import ConfigParser
 import traceback
+import passlib.hash
+
 
 OK = True
 UNAUTHORIZED = False
@@ -47,7 +49,8 @@ CONFIG_FILE = "/etc/privacyidea/apache.conf"
 DEFAULT_PRIVACYIDEA = "https://localhost"
 DEFAULT_SSLVERIFY = False
 DEFAULT_REDIS = "localhost"
-
+ROUNDS = 2342
+SALT_SIZE = 10
 
 def check_password(environ, username, password):
     PRIVACYIDEA, REDIS, SSLVERIFY = _get_config()
@@ -59,9 +62,12 @@ def check_password(environ, username, password):
 
     # check, if the user already exists in the database.
     value = rd.get(username)
-    if password == value:
+    if value and passlib.hash.pbkdf2_sha512.verify(password, value):
         # update the timeout
-        rd.setex(username, password, seconds)
+        pw_dig = passlib.hash.pbkdf2_sha512.encrypt(password,
+                                                    rounds=ROUNDS,
+                                                    salt_size=SALT_SIZE)
+        rd.setex(username, pw_dig, seconds)
         r_value = OK
 
     else:
@@ -82,7 +88,10 @@ def check_password(environ, username, password):
                 syslog.syslog(syslog.LOG_DEBUG, "%s" % traceback.format_exc())
 
             if json_response.get("result", {}).get("value"):
-                rd.setex(username, password, seconds)
+                pw_dig = passlib.hash.pbkdf2_sha512.encrypt(password,
+                                                            rounds=ROUNDS,
+                                                            salt_size=SALT_SIZE)
+                rd.setex(username, pw_dig, seconds)
                 r_value = OK
         else:
             syslog.syslog(syslog.LOG_ERR, "Error connecting to privacyIDEA: "
