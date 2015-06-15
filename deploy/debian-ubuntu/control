@@ -73,7 +73,7 @@ Description: PAM module for privacyIDEA, OTP authentication.
 
 Package: privacyidea-apache-client
 Architecture: all
-Depends: ${misc:Depends}, python-requests, redis-server, libapache2-mod-wsgi, python-redis
+Depends: ${misc:Depends}, python-requests, redis-server, libapache2-mod-wsgi, python-redis, python-passlib
 Description: Auth Module for Apache Server to authenticate with OTP
   This Apache2 auth module performs the authentication against
   a privacyIDEA server.

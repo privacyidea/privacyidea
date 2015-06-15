@@ -52,6 +52,7 @@ DEFAULT_REDIS = "localhost"
 ROUNDS = 2342
 SALT_SIZE = 10
 
+
 def check_password(environ, username, password):
     PRIVACYIDEA, REDIS, SSLVERIFY = _get_config()
     syslog.syslog(syslog.LOG_DEBUG, "Authentication with %s, %s, %s" % (
@@ -61,13 +62,11 @@ def check_password(environ, username, password):
     seconds = 300  # 5 minutes timeout
 
     # check, if the user already exists in the database.
-    value = rd.get(username)
+    key = _generate_key(username, environ)
+    value = rd.get(key)
     if value and passlib.hash.pbkdf2_sha512.verify(password, value):
         # update the timeout
-        pw_dig = passlib.hash.pbkdf2_sha512.encrypt(password,
-                                                    rounds=ROUNDS,
-                                                    salt_size=SALT_SIZE)
-        rd.setex(username, pw_dig, seconds)
+        rd.setex(key, _generate_digest(password), seconds)
         r_value = OK
 
     else:
@@ -88,10 +87,7 @@ def check_password(environ, username, password):
                 syslog.syslog(syslog.LOG_DEBUG, "%s" % traceback.format_exc())
 
             if json_response.get("result", {}).get("value"):
-                pw_dig = passlib.hash.pbkdf2_sha512.encrypt(password,
-                                                            rounds=ROUNDS,
-                                                            salt_size=SALT_SIZE)
-                rd.setex(username, pw_dig, seconds)
+                rd.setex(key, _generate_digest(password), seconds)
                 r_value = OK
         else:
             syslog.syslog(syslog.LOG_ERR, "Error connecting to privacyIDEA: "
@@ -99,6 +95,21 @@ def check_password(environ, username, password):
                                                       response.text))
 
     return r_value
+
+
+def _generate_digest(password):
+    pw_dig = passlib.hash.pbkdf2_sha512.encrypt(password,
+                                                rounds=ROUNDS,
+                                                salt_size=SALT_SIZE)
+    return pw_dig
+
+
+def _generate_key(username, environ):
+    key = "%s+%s+%s+%s" % (environ.get("SERVER_NAME", ""),
+                           environ.get("SERVER_PORT", ""),
+                           environ.get("DOCUMENT_ROOT", ""),
+                           username)
+    return key
 
 
 def _get_config():

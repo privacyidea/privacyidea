@@ -46,18 +46,18 @@ class ApacheTestCase(MyTestCase):
                       body=json.dumps(SUCCESS_BODY),
                       content_type="application/json")
 
-        r = check_password(None, "cornelius", "test100001")
+        r = check_password({}, "cornelius", "test100001")
         self.assertEqual(r, OK)
 
     @redismock.activate
     def test_02_success_cache(self):
         # In this case, the password is successfully checked against the
         # redis database
-        redismock.set_data({"cornelius": self.pw_dig})
+        redismock.set_data({"+++cornelius": self.pw_dig})
         # The password is contained in the database and thus the privacyIDEA
         # server does not have to be asked. Therefor we can omit the response
         #  mock
-        r = check_password(None, "cornelius", "test100001")
+        r = check_password({}, "cornelius", "test100001")
         self.assertEqual(r, OK)
 
     @redismock.activate
@@ -68,6 +68,6 @@ class ApacheTestCase(MyTestCase):
                       body=json.dumps(FAIL_BODY),
                       content_type="application/json")
 
-        r = check_password(None, "cornelius", "test100002")
+        r = check_password({}, "cornelius", "test100002")
         self.assertEqual(r, UNAUTHORIZED)
 
