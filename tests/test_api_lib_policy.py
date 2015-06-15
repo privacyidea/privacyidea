@@ -107,6 +107,38 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         remove_token("POL001")
         remove_token("POL002")
 
+    def test_01a_admin_realms(self):
+        admin1 = {"username": "admin1",
+                  "role": "admin",
+                  "realm": "realm1"}
+
+        admin2 = {"username": "admin1",
+                  "role": "admin",
+                  "realm": "realm2"}
+
+        set_policy(name="pol",
+                   scope=SCOPE.ADMIN,
+                   action="*", adminrealm="realm1")
+        g.policy_object = PolicyClass()
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+        req.all_data = {}
+
+        # admin1 is allowed to do everything
+        g.logged_in_user = admin1
+        r = check_base_action(req, action="delete")
+        self.assertTrue(r)
+
+        # admin2 is not allowed.
+        g.logged_in_user = admin2
+        self.assertRaises(PolicyError, check_base_action, req, action="delete")
+        delete_policy("pol")
+
     def test_02_check_token_init(self):
         g.logged_in_user = {"username": "admin1",
                             "role": "admin"}

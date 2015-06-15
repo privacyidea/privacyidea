@@ -42,7 +42,7 @@ You will only be able to see and use user object, that are contained in a realm.
 The code of this module is tested in tests/test_api_system.py
 """
 from flask import (Blueprint,
-                   request)
+                   request, current_app)
 from lib.utils import (getParam,
                        required,
                        send_result, get_priority_from_param)
@@ -204,6 +204,48 @@ def get_realms_api():
         res = polPost['realms']
     '''
     return send_result(realms)
+
+
+@log_with(log)
+@realm_blueprint.route('/superuser', methods=['GET'])
+def get_super_user_realms():
+    """
+    This call returns the list of all superuser realms
+    as they are defined in pi.cfg
+
+    :return: a json result with a list of realms
+
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+       GET /superuser HTTP/1.1
+       Host: example.com
+       Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        {
+          "id": 1,
+          "jsonrpc": "2.0",
+          "result": {
+            "status": true,
+            "value": ["superuser",
+                      "realm2"]
+            }
+          },
+          "version": "privacyIDEA unknown"
+        }
+    """
+    superuser_realms = current_app.config.get("SUPERUSER_REALM", [])
+    g.audit_object.log({"success": True})
+    return send_result(superuser_realms)
 
 
 @log_with(log)

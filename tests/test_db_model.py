@@ -342,6 +342,11 @@ class TokenModelTestCase(MyTestCase):
         p.time = "anytime"
         p.save()
         self.assertTrue(p.user == "cornelius", p.user)
+
+        # save admin policy
+        p3 = Policy("pol3", active="false", scope="admin",
+                    adminrealm='superuser', action="*")
+        self.assertEqual(p3.adminrealm, "superuser")
         
     def test_12_challenge(self):
         c = Challenge("S123456")

@@ -128,6 +128,11 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
             }).success(callback)
                 .error(error_func);
         },
+        getAdminRealms: function(callback) {
+            $http.get(realmUrl + "/superuser", {
+                headers: {'Authorization': AuthFactory.getAuthToken()}
+            }).success(callback).error(error_func)
+        },
         setResolver: function (name, params, callback) {
             $http.post(resolverUrl + "/" + name, params,
                 {headers: {'Authorization': AuthFactory.getAuthToken(),

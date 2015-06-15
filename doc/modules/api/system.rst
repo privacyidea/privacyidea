@@ -1,9 +1,9 @@
 .. _rest_system:
 
-.. automodule:: privacyidea.api.system
-
 System endpoints
 ................
+
+.. automodule:: privacyidea.api.system
 
 .. autoflask:: privacyidea.app:create_app()
    :endpoints:

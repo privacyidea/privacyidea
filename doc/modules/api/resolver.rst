@@ -1,12 +1,11 @@
 .. _rest_resolver:
 
-.. use the docstring from the module file
-.. automodule:: privacyidea.api.resolver
-
 Resolver endpoints
 ~~~~~~~~~~~~~~~~~~
 
-The resolver endpoints is a subset of the system endpoint.
+.. use the docstring from the module file
+.. automodule:: privacyidea.api.resolver
+
 
 .. autoflask:: privacyidea.app:create_app()
    :endpoints:

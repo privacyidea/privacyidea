@@ -110,6 +110,7 @@ def set_policy_api(name=None):
     :type name: basestring
     :jsonparam scope: the scope of the policy like "admin", "system",
         "authentication" or "selfservice"
+    :jsonparam adminrealm: Realm of the administrator. (only for admin scope)
     :jsonparam action: which action may be executed
     :jsonparam realm: For which realm this policy is valid
     :jsonparam resolver: This policy is valid for this resolver
@@ -175,11 +176,12 @@ def set_policy_api(name=None):
     time = getParam(param, "time", optional)
     client = getParam(param, "client", optional)
     active = getParam(param, "active", optional)
+    admin_realm = getParam(param, "adminrealm", optional)
 
     g.audit_object.log({'action_detail': unicode(param)})
     ret = set_policy(name=name, scope=scope, action=action, realm=realm,
                      resolver=resolver, user=user, client=client,
-                     active=active or True)
+                     active=active or True, adminrealm=admin_realm)
     log.debug("policy %s successfully saved." % name)
     string = "setPolicy " + name
     res[string] = ret

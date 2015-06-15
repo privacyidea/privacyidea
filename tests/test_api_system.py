@@ -414,6 +414,16 @@ class APIConfigTestCase(MyTestCase):
             self.assertTrue(realm_contents.get("resolver")[0].get("name") ==
                             resolvername, result)
 
+        # get the superuser realms
+        with self.app.test_request_context('/realm/superuser',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result["status"] is True, result)
+            self.assertTrue("adminrealm" in result["value"], result)
+
         # try to delete the resolver in the realm
         with self.app.test_request_context('/resolver/%s' % resolvername,
                                             method='DELETE',

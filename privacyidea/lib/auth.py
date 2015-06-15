@@ -95,7 +95,7 @@ def check_webui_user(user_obj,
     :param superuser_realms: list of realms, that contain admins
     :type superuser_realms: list
     :param check_otp: If set, the user is not authenticated against the
-    userstore but against privacyidea
+         userstore but against privacyidea
     :return: tuple of bool and string
     """
     options = options or {}

@@ -1155,6 +1155,7 @@ class Policy(db.Model):
     scope = db.Column(db.Unicode(32), nullable=False)
     action = db.Column(db.Unicode(2000), default=u"")
     realm = db.Column(db.Unicode(256), default=u"")
+    adminrealm = db.Column(db.Unicode(256), default=u"")
     resolver = db.Column(db.Unicode(256), default=u"")
     user = db.Column(db.Unicode(256), default=u"")
     client = db.Column(db.Unicode(256), default=u"")
@@ -1162,7 +1163,7 @@ class Policy(db.Model):
     condition = db.Column(db.Integer, default=0, nullable=False)
     
     def __init__(self, name,
-                 active=True, scope="", action="", realm="",
+                 active=True, scope="", action="", realm="", adminrealm="",
                  resolver="", user="", client="", time="", condition=0):
         if type(active) in [str, unicode]:
             if active.lower() in ["true", "1"]:
@@ -1174,12 +1175,12 @@ class Policy(db.Model):
         self.scope = scope
         self.active = active
         self.realm = realm
+        self.adminrealm = adminrealm
         self.resolver = resolver
         self.user = user
         self.client = client
         self.time = time
         self.condition = condition
-
 
     def _split_string(self, value):
         """
@@ -1208,6 +1209,7 @@ class Policy(db.Model):
              "active": self.active,
              "scope": self.scope,
              "realm": self._split_string(self.realm),
+             "adminrealm": self._split_string(self.adminrealm),
              "resolver": self._split_string(self.resolver),
              "user": self._split_string(self.user),
              "client": self._split_string(self.client),
@@ -1243,6 +1245,8 @@ class Policy(db.Model):
                 update_param["scope"] = self.scope
             if self.realm is not None:
                 update_param["realm"] = self.realm
+            if self.adminrealm is not None:
+                update_param["adminrealm"] = self.adminrealm
             if self.resolver is not None:
                 update_param["resolver"] = self.resolver
             if self.user is not None:

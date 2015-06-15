@@ -382,8 +382,12 @@ def check_base_action(request=None, action=None):
     username = g.logged_in_user.get("username")
     role = g.logged_in_user.get("role")
     scope = SCOPE.ADMIN
+    admin_realm = g.logged_in_user.get("realm")
     if role == "user":
         scope = SCOPE.USER
+        # Reset the admin realm
+        admin_realm = None
+
     # get the realm by the serial:
     realm = params.get("realm")
     if params.get("serial") and not realm:
@@ -396,7 +400,8 @@ def check_base_action(request=None, action=None):
                                         user=username,
                                         realm=realm,
                                         scope=scope,
-                                        client=request.remote_addr)
+                                        client=request.remote_addr,
+                                        adminrealm=admin_realm)
     action_at_all = policy_object.get_policies(scope=scope)
     if len(action_at_all) and len(action) == 0:
         raise PolicyError(ERROR.get(role))
@@ -414,11 +419,13 @@ def check_token_upload(request=None, action=None):
     params = request.all_data
     policy_object = g.policy_object
     username = g.logged_in_user.get("username")
+    admin_realm = g.logged_in_user.get("realm")
     action = policy_object.get_policies(action="import",
                                         user=username,
                                         realm=params.get("realm"),
                                         scope=SCOPE.ADMIN,
-                                        client=request.remote_addr)
+                                        client=request.remote_addr,
+                                        adminrealm=admin_realm)
     action_at_all = policy_object.get_policies(scope=SCOPE.ADMIN)
     if len(action_at_all) and len(action) == 0:
         raise PolicyError("Admin actions are defined, but you are not allowed"
@@ -443,16 +450,19 @@ def check_token_init(request=None, action=None):
     policy_object = g.policy_object
     username = g.logged_in_user.get("username")
     role = g.logged_in_user.get("role")
+    admin_realm = g.logged_in_user.get("realm")
     scope = SCOPE.ADMIN
     if role == "user":
         scope = SCOPE.USER
+        admin_realm = None
     tokentype = params.get("type", "HOTP")
     action = "enroll%s" % tokentype.upper()
     action = policy_object.get_policies(action=action,
                                         user=username,
                                         realm=params.get("realm"),
                                         scope=scope,
-                                        client=request.remote_addr)
+                                        client=request.remote_addr,
+                                        adminrealm=admin_realm)
     action_at_all = policy_object.get_policies(scope=scope)
     if len(action_at_all) and len(action) == 0:
         raise PolicyError(ERROR.get(role))

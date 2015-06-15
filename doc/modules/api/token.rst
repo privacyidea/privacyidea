@@ -1,9 +1,9 @@
 .. _rest_token:
 
-.. automodule:: privacyidea.api.token
+Token endpoints
+...............
 
-Token endpoint
-..............
+.. automodule:: privacyidea.api.token
 
 .. autoflask:: privacyidea.app:create_app()
    :endpoints:

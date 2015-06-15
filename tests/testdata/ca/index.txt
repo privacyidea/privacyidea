@@ -138,3 +138,9 @@ V	160604085708Z		1000008D	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=usercert
 V	160604085708Z		1000008E	unknown	/CN=Steve Test/emailAddress=steve@openssl.org
 V	160604090129Z		1000008F	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=requester.localdomain
 V	160604090512Z		10000090	unknown	/CN=selfservice,CN=user,O=realm1/emailAddress=meine
+V	160614130243Z		10000091	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=requester.localdomain
+V	160614130337Z		10000092	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=requester.localdomain
+V	160614130337Z		10000093	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=usercert
+V	160614130337Z		10000094	unknown	/CN=Steve Test/emailAddress=steve@openssl.org
+V	160614130746Z		10000095	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=requester.localdomain
+V	160614131118Z		10000096	unknown	/CN=selfservice,CN=user,O=realm1/emailAddress=meine

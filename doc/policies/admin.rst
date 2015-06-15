@@ -3,7 +3,7 @@
 Admin policies
 --------------
 
-.. index:: admin policies
+.. index:: admin policies, superuser realm, admin realm, help desk
 
 Admin policies are used to regulate the actions that administrators are
 allowed to do.
@@ -14,15 +14,27 @@ API :ref:`rest_token`, :ref:`rest_system`, :ref:`rest_realm` and
 Admin policies are implemented as decorators in :ref:`code_policy` and
 :ref:`policy_decorators`.
 
-The ``user`` in the admin policies refers to the administrator.
+The ``user`` in the admin policies refers to the name of the administrator.
 
-All administrative actions also refer to the defined realm. Meaning
-an administrator may have many rights in one realm and only a few
+Starting with privacyIDEA 2.4 admin policies can also store a field "admin
+realm". This is used, if you define realms to be superuser realms. See
+:ref:`cfgfile` for information how to do this.
+
+This way it is easy to define administrative rights for big groups of
+administrative users like help desk users in the IT department.
+
+.. figure:: admin_policies.png
+   :width: 500
+
+   *Admin scope provides and additional field 'admin realm'.*
+
+All administrative actions also refer to the defined user realm. Meaning
+an administrator may have many rights in one user realm and only a few
 rights in another realm.
 
 Creating a policy with ``scope:admin``, ``user:frank``, ``action:enable``
 and ``realm:sales``
-means that the administrator *Frank* is allowed to enable tokens in the
+means that the administrator *frank* is allowed to enable tokens in the
 realm *sales*. 
 
 .. note:: As long as no admin policy is defined all administrators

@@ -24,6 +24,10 @@ The client gets a JSON Web Token to authenticate every request.
 API functions are decorated with the decorators ``admin_required`` and
 ``user_required`` to define access rules.
 
+.. toctree::
+
+   api
+
 LIB level
 ---------
 
@@ -36,6 +40,14 @@ functions as parameters, if they are needed.
 
 If possible, policies are checked with policy decorators.
 
+.. toctree::
+
+   lib
+   useridresolvers
+   audit
+   machineresolvers
+
+
 DB level
 --------
 
@@ -45,8 +57,3 @@ On the DB level you can simply modify all objects.
 .. toctree::
 
    db
-   lib
-   useridresolvers
-   api
-   audit
-   machineresolvers

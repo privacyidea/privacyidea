@@ -46,9 +46,11 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
                                                      ConfigFactory, $state) {
     // init
     $scope.realms = [];
+    $scope.adminRealms = [];
     $scope.resolvers = [];
     $scope.realmsLoaded = false;
     $scope.resolversLoaded = false;
+    $scope.adminRealmsLoaded = false;
     $scope.scopes = [];
 
     // get init values from the server
@@ -59,7 +61,17 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
         });
         // after realms and resolvers have loaded, we can preset the policy values
         $scope.realmsLoaded = true;
-        if ($scope.resolversLoaded) {
+        if ($scope.resolversLoaded && $scope.adminRealmsLoaded) {
+            $scope.presetEditValues();
+        }
+    });
+    ConfigFactory.getAdminRealms(function(data){
+        var adminRealms = data.result.value;
+        angular.forEach(adminRealms, function (value, key){
+            $scope.adminRealms.push({name: value, ticked: false})
+        });
+        $scope.adminRealmsLoaded = true;
+        if ($scope.resolversLoaded && $scope.realmsLoaded) {
             $scope.presetEditValues();
         }
     });
@@ -70,7 +82,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
         });
         // after realms and resolvers have loaded, we can preset the policy values
         $scope.resolversLoaded = true;
-        if ($scope.realmsLoaded) {
+        if ($scope.realmsLoaded && $scope.adminRealmsLoaded) {
             $scope.presetEditValues();
         }
     });
@@ -172,6 +184,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
         var scope = $scope.selectedScope[0].name;
         var realms = [];
         var resolvers = [];
+        var adminRealms = [];
         var actions = [];
         $scope.params.scope = scope;
         $scope.params.action = [];
@@ -218,6 +231,12 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             resolvers.push(value.name);
             $scope.params.resolver = resolvers;
         });
+        // get admin realms
+        angular.forEach($scope.selectedAdminRealms, function(value, key) {
+            console.log(value);
+            adminRealms.push(value.name);
+            $scope.params.adminrealm = adminRealms;
+        });
         ConfigFactory.setPolicy($scope.policyname, $scope.params,
             function(data) {
                 console.log(data);
@@ -246,6 +265,11 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             angular.forEach($scope.resolvers, function (value, key) {
                 if (policy.resolver.indexOf(value.name) > -1) {
                     $scope.resolvers[key].ticked = true;
+                }
+            });
+            angular.forEach($scope.adminRealms, function(value, key){
+                if (policy.adminrealm.indexOf(value.name) > -1) {
+                    $scope.adminRealms[key].ticked = true;
                 }
             });
             angular.forEach($scope.scopes, function (value, key){

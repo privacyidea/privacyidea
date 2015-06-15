@@ -214,7 +214,8 @@ class PolicyClass(object):
             self.policies.append(pol.get())
 
     def get_policies(self, name=None, scope=None, realm=None, active=None,
-                     resolver=None, user=None, client=None, action=None):
+                     resolver=None, user=None, client=None, action=None,
+                     adminrealm=None):
         """
         Return the policies of the given filter values
 
@@ -226,6 +227,8 @@ class PolicyClass(object):
         :param user:
         :param client:
         :param action:
+        :param adminrealm: This is the realm of the admin. This is only
+            evaluated in the scope admin.
         :return: list of policies
         :rtype: list of dicts
         """
@@ -244,6 +247,9 @@ class PolicyClass(object):
 
         p = [("action", action), ("user", user), ("resolver", resolver),
              ("realm", realm)]
+        # If this is an admin-policy, we also do check the adminrealm
+        if scope == "admin":
+            p.append(("adminrealm", adminrealm))
         for searchkey, searchvalue in p:
             if searchvalue is not None:
                 new_policies = []
@@ -385,6 +391,7 @@ class PolicyClass(object):
         """
         enroll_types = {}
         role = logged_in_user.get("role")
+        admin_realm = logged_in_user.get("realm")
         # check, if we have a policy definition at all.
         pols = self.get_policies(scope=role)
         tokenclasses = get_token_classes()
@@ -403,7 +410,8 @@ class PolicyClass(object):
                                              user=logged_in_user.get("username"),
                                              realm=logged_in_user.get("realm"),
                                              active=True,
-                                             action="enroll"+tokentype.upper())
+                                             action="enroll"+tokentype.upper(),
+                                             adminrealm=admin_realm)
                 if len(typepols) == 0:
                     # If there is no policy allowing the enrollment of this
                     # tokentype, it is deleted.
@@ -420,7 +428,7 @@ class PolicyClass(object):
 
 @log_with(log)
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
-               user=None, time=None, client=None, active=True):
+               user=None, time=None, client=None, active=True, adminrealm=None):
     """
     Function to set a policy.
     If the policy with this name already exists, it updates the policy.
@@ -454,6 +462,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         action = ", ".join(action)
     if type(realm) == list:
         realm = ", ".join(realm)
+    if type(adminrealm) == list:
+        adminrealm = ", ".join(adminrealm)
     if type(user) == list:
         user = ", ".join(user)
     if type(resolver) == list:
@@ -462,7 +472,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         client = ", ".join(client)
     p = Policy(name, action=action, scope=scope, realm=realm,
                user=user, time=time, client=client, active=active,
-               resolver=resolver).save()
+               resolver=resolver, adminrealm=adminrealm).save()
     return p
 
 

@@ -51,6 +51,23 @@
             </div>
         </div>
     </div>
+
+    <div class="form-group" ng-show="selectedScope[0].name=='admin'">
+        <label for="adminrealm" class="col-sm-3
+        control-label">Admin-Realm</label>
+
+        <div class="col-sm-9">
+            <div multi-select
+                 input-model="adminRealms"
+                 output-model="selectedAdminRealms"
+                 button-label="icon name"
+                 item-label="icon name maker"
+                 tick-property="ticked"
+                    >
+            </div>
+        </div>
+    </div>
+
     <div class="form-group">
         <label for="action" class="col-sm-3 control-label">Action</label>
 
@@ -157,7 +174,7 @@
             </div>
         </div>
     </div>
-        <div class="form-group">
+    <div class="form-group">
         <label for="user" class="col-sm-3 control-label">
             <span ng-show="selectedScope[0].name=='admin'">Admin</span>
             <span ng-hide="selectedScope[0].name=='admin'">User</span>

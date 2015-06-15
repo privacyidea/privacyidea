@@ -7,9 +7,6 @@ Authentication endpoints
 .. automodule:: privacyidea.api.auth
 
 
-Endpoints
-.........
-
 .. autoflask:: privacyidea.app:create_app()
    :endpoints:
    :blueprints: jwtauth
