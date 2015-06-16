@@ -468,7 +468,7 @@ class SmsTokenClass(HotpTokenClass):
                              scope=SCOPE.AUTH,
                              realm=realm,
                              user=username,
-                             client=clientip)
+                             client=clientip, active=True)
             autosms = len(autosmspol) >= 1
 
         return autosms

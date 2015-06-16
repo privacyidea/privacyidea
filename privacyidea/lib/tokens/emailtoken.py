@@ -322,7 +322,7 @@ class EmailTokenClass(HotpTokenClass):
                              scope=SCOPE.AUTH,
                              realm=realm,
                              user=username,
-                             client=clientip)
+                             client=clientip, active=True)
             autosms = len(autoemailpol) >= 1
 
         return autosms

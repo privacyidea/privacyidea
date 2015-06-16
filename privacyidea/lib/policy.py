@@ -393,7 +393,7 @@ class PolicyClass(object):
         role = logged_in_user.get("role")
         admin_realm = logged_in_user.get("realm")
         # check, if we have a policy definition at all.
-        pols = self.get_policies(scope=role)
+        pols = self.get_policies(scope=role, active=True)
         tokenclasses = get_token_classes()
         for tokenclass in tokenclasses:
             # Check if the tokenclass is ui enrollable for "user" or "admin"

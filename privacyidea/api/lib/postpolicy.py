@@ -162,7 +162,8 @@ def no_detail_on_success(request, response):
     # get the serials from a policy definition
     detailPol = policy_object.get_policies(action=ACTION.NODETAILSUCCESS,
                                            scope=SCOPE.AUTHZ,
-                                           client=request.remote_addr)
+                                           client=request.remote_addr,
+                                           active=True)
 
     if len(detailPol):
         # The policy was set, we need to strip the details, if the
@@ -191,7 +192,8 @@ def no_detail_on_fail(request, response):
     # get the serials from a policy definition
     detailPol = policy_object.get_policies(action=ACTION.NODETAILFAIL,
                                            scope=SCOPE.AUTHZ,
-                                           client=request.remote_addr)
+                                           client=request.remote_addr,
+                                           active=True)
 
     if len(detailPol):
         # The policy was set, we need to strip the details, if the
@@ -295,7 +297,8 @@ def autoassign(request, response):
                              scope=SCOPE.ENROLL,
                              user=user_obj.login,
                              realm=user_obj.realm,
-                             client=request.remote_addr)
+                             client=request.remote_addr,
+                             active=True)
 
             if len(autoassign_bool) >= 1:
                 # check if the user has no token

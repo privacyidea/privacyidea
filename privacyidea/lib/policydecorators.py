@@ -104,7 +104,7 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
                                                    scope=SCOPE.AUTH,
                                                    realm=user_object.realm,
                                                    user=user_object.login,
-                                                   client=clientip)
+                                                   client=clientip, active=True)
         if len(pass_no_token) > 0:
             # Now we need to check, if the user really has no token.
             tokencount = get_tokens(user=user_object, count=True)
@@ -141,7 +141,8 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw,
                                                   scope=SCOPE.AUTH,
                                                   realm=user_object.realm,
                                                   user=user_object.login,
-                                                  client=clientip)
+                                                  client=clientip,
+                                                  active=True)
         if len(pass_no_user) > 0:
             return True, {"message": "The user does not exist, but is "
                                      "accepted due to policy '%s'." %
@@ -176,7 +177,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                                                scope=SCOPE.AUTH,
                                                realm=user_object.realm,
                                                user=user_object.login,
-                                               client=clientip)
+                                               client=clientip, active=True)
         if len(pass_thru) > 0:
             # If the user has NO Token, authenticate against the user store
             if get_tokens(user=user_object, count=True) == 0:

@@ -208,7 +208,8 @@ def encrypt_pin(request=None, action=None):
                                           scope=SCOPE.ENROLL,
                                           user=user_object.login,
                                           realm=user_object.realm,
-                                          client=request.remote_addr)
+                                          client=request.remote_addr,
+                                          active=True)
 
     if len(pin_pols) > 0:
         request.all_data["encryptpin"] = "True"
@@ -401,8 +402,10 @@ def check_base_action(request=None, action=None):
                                         realm=realm,
                                         scope=scope,
                                         client=request.remote_addr,
-                                        adminrealm=admin_realm)
-    action_at_all = policy_object.get_policies(scope=scope)
+                                        adminrealm=admin_realm,
+                                        active=True)
+    action_at_all = policy_object.get_policies(scope=scope,
+                                               active=True)
     if len(action_at_all) and len(action) == 0:
         raise PolicyError(ERROR.get(role))
     return True
@@ -425,8 +428,9 @@ def check_token_upload(request=None, action=None):
                                         realm=params.get("realm"),
                                         scope=SCOPE.ADMIN,
                                         client=request.remote_addr,
-                                        adminrealm=admin_realm)
-    action_at_all = policy_object.get_policies(scope=SCOPE.ADMIN)
+                                        adminrealm=admin_realm,
+                                        active=True)
+    action_at_all = policy_object.get_policies(scope=SCOPE.ADMIN, active=True)
     if len(action_at_all) and len(action) == 0:
         raise PolicyError("Admin actions are defined, but you are not allowed"
                           " to upload token files.")
@@ -462,8 +466,9 @@ def check_token_init(request=None, action=None):
                                         realm=params.get("realm"),
                                         scope=scope,
                                         client=request.remote_addr,
-                                        adminrealm=admin_realm)
-    action_at_all = policy_object.get_policies(scope=scope)
+                                        adminrealm=admin_realm,
+                                        active=True)
+    action_at_all = policy_object.get_policies(scope=scope, active=True)
     if len(action_at_all) and len(action) == 0:
         raise PolicyError(ERROR.get(role))
     return True
