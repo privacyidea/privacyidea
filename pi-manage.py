@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+# 2015-06-16 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Add creation of JWT token
 # 2015-03-27 Cornelius Kölbel, cornelius@privacyidea.org
 #            Add sub command for policies
 # 2014-12-15 Cornelius Kölbel, info@privacyidea.org
@@ -29,21 +31,27 @@
 import os
 import sys
 import datetime
+from datetime import timedelta
 import re
 from subprocess import call, Popen
 from getpass import getpass
 from privacyidea.lib.security.default import DefaultSecurityModule
+from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.auth import (create_db_admin, list_db_admin,
                                   delete_db_admin)
 from privacyidea.lib.policy import (delete_policy, enable_policy,
                                     PolicyClass, set_policy)
 from privacyidea.app import create_app
+from privacyidea.lib.auth import ROLE
 from flask.ext.script import Manager
 from privacyidea.app import db
 from flask.ext.migrate import MigrateCommand
 # Wee need to import something, so that the models will be created.
 from privacyidea.models import Admin
 from Crypto.PublicKey import RSA
+import jwt
+
+
 
 app = create_app(config_name='production')
 manager = Manager(app)
@@ -53,12 +61,14 @@ backup_manager = Manager(usage='Create database backup and restore')
 realm_manager = Manager(usage='Create new realms')
 resolver_manager = Manager(usage='Create new resolver')
 policy_manager = Manager(usage='Manage policies')
+key_manager = Manager(usage="Manage API keys")
 manager.add_command('db', MigrateCommand)
 manager.add_command('admin', admin_manager)
 manager.add_command('backup', backup_manager)
 manager.add_command('realm', realm_manager)
 manager.add_command('resolver', resolver_manager)
 manager.add_command('policy', policy_manager)
+manager.add_command('key', key_manager)
 
 
 @admin_manager.command
@@ -468,6 +478,26 @@ def create(name, scope, action):
     """
     r = set_policy(name, scope, action)
     return r
+
+
+@key_manager.command
+def createkey():
+    """
+    Create an API key for administrative use.
+    """
+    secret = app.config.get("SECRET_KEY")
+    authtype = "API"
+    validity = timedelta(days=365)
+    token = jwt.encode({"username": "someone",
+                        "realm": "API",
+                        "nonce": geturandom(hex=True),
+                        "role": ROLE.ADMIN,
+                        "authtype": authtype,
+                        "exp": datetime.datetime.utcnow() + validity,
+                        "rights": "TODO"},
+                       secret)
+    print token
+
 
 if __name__ == '__main__':
     manager.run()
