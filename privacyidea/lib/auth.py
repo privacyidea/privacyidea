@@ -29,6 +29,7 @@ from privacyidea.lib.policydecorators import libpolicy, login_mode
 class ROLE():
     ADMIN = "admin"
     USER = "user"
+    VALIDATE = "validate"
 
 
 def verify_db_admin(username, password):

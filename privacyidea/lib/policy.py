@@ -174,6 +174,7 @@ class ACTION():
     ADDUSER = "adduser"
     DELETEUSER = "deleteuser"
     UPDATEUSER = "updateuser"
+    APIKEY = "api_key_required"
 
 
 class LOGINMODE():
@@ -838,7 +839,7 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('If the user user does not exist, '
                           'the authentication request for this '
                           'non-existing user will always be true.')
-                },
+                }
             # 'qrtanurl': {
             #     'type': 'str',
             #     'desc': _('The URL for the half automatic mode that should be '
@@ -862,17 +863,24 @@ def get_static_policy_definitions(scope=None):
             ACTION.SETREALM: {
                 'type': 'str',
                 'desc': _('The Realm of the user is set to this very realm. '
-                        'This is important if the user is not contained in '
-                        'the default realm and can not pass his realm.')},
+                          'This is important if the user is not contained in '
+                          'the default realm and can not pass his realm.')},
             ACTION.NODETAILSUCCESS: {
                 'type': 'bool',
                 'desc': _('In case of successful authentication additional '
-                        'no detail information will be returned.')},
+                          'no detail information will be returned.')},
             ACTION.NODETAILFAIL: {
                 'type': 'bool',
                 'desc': _('In case of failed authentication additional '
-                        'no detail information will be returned.')}
+                          'no detail information will be returned.')},
+            ACTION.APIKEY: {
+                'type': 'bool',
+                'desc': _('The sending of an API Auth Key is required during'
+                          'authentication. This avoids rogue authenticate '
+                          'requests against the /validate/check interface.')
+                }
             },
+
         SCOPE.WEBUI: {
             ACTION.LOGINMODE: {
                 'type': 'str',

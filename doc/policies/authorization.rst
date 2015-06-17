@@ -97,3 +97,28 @@ the authentication request failed.
 If this action is set and the user fails to authenticate
 this additional information will not be returned.
 
+api_key_required
+~~~~~~~~~~~~~~~~
+
+type: bool
+
+This policy is checked *before* the user is validated.
+
+You can create an API key, that needs to be passed to use the validate API.
+If an API key is required, but no key is passed, the authentication request
+will not be processed. This is used to avoid denial of service attacks by a
+rogue user sending arbitrary requests, which could result in the token of a
+user being locked.
+
+You can also define a policy with certain IP addresses without issuing API
+keys. This would result in "blocking" those IP addresses from using the
+*validate* endpoint.
+
+You can issue API keys like this::
+
+   pi-manage.py api createtoken -r validate
+
+The API key (Authorization token) which is generated is valid for 365 days.
+
+The authorization token has to be used as described in :ref:`rest_auth`.
+

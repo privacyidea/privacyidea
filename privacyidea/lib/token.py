@@ -2,7 +2,7 @@
 #  privacyIDEA is a fork of LinOTP
 #
 #  2015-03-20 Cornelius Kölbel, <cornelius@privacyidea.org>
-#             Add policy decorator for encryptpin
+#             Add policy decorator for encryption
 #  2015-03-15 Cornelius Kölbel, <cornelius@privacyidea.org>
 #             Add policy decorator for lost_token password
 #  2014-12-08 Cornelius Kölbel, <cornelius@privacyidea.org>

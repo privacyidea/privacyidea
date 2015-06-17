@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2015-06-17 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Add policy decorator for API key requirement
 # 2014-12-08 Cornelius Kölbel, <cornelius@privacyidea.org>
 #            Complete rewrite during flask migration
 #            Try to provide REST API
@@ -55,7 +57,8 @@ from lib.utils import required
 from privacyidea.lib.token import (check_user_pass, check_serial_pass)
 from privacyidea.api.lib.utils import remove_session_from_param
 from privacyidea.lib.audit import getAudit
-from privacyidea.api.lib.prepolicy import (prepolicy, set_realm)
+from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
+                                           api_key_required)
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
                                             no_detail_on_fail,
@@ -114,6 +117,7 @@ def after_request(response):
 @postpolicy(autoassign, request=request)
 @prepolicy(set_realm, request=request)
 @check_user_or_serial_in_request
+@prepolicy(api_key_required, request=request)
 def check():
     """
     check the authentication for a user or a serial number.
@@ -188,6 +192,7 @@ def check():
 @postpolicy(autoassign, request=request)
 @prepolicy(set_realm, request=request)
 @check_user_or_serial_in_request
+@prepolicy(api_key_required, request=request)
 def samlcheck():
     """
     Authenticate the user and return the SAML user information.

@@ -14,7 +14,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_max_token_realm, set_realm,
                                            init_tokenlabel, init_random_pin,
                                            encrypt_pin, check_otp_pin,
-                                           check_external)
+                                           check_external, api_key_required)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             no_detail_on_success,
                                             no_detail_on_fail, autoassign,
@@ -28,6 +28,10 @@ from werkzeug.test import EnvironBuilder
 from privacyidea.lib.error import PolicyError
 from privacyidea.lib.machineresolver import save_resolver
 from privacyidea.lib.machine import attach_token
+from privacyidea.lib.auth import ROLE
+import jwt
+from datetime import datetime, timedelta
+
 
 HOSTSFILE = "tests/testdata/hosts"
 
@@ -522,6 +526,51 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         current_app.config["PI_INIT_CHECK_HOOK"] = \
             "prepolicy.mock_fail"
         self.assertRaises(Exception, check_external, req)
+
+    def test_11_api_key_required(self):
+        g.logged_in_user = {}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+        g.policy_object = PolicyClass()
+
+        # No policy and no Auth token
+        req.all_data = {}
+        r = api_key_required(req)
+        # The request was not modified
+        self.assertTrue(r)
+
+        # Set a policy, that allows two tokens per realm
+        set_policy(name="pol_api",
+                   scope=SCOPE.AUTHZ,
+                   action=ACTION.APIKEY)
+        g.policy_object = PolicyClass()
+
+        # A request with no API Key fails
+        self.assertRaises(PolicyError, api_key_required, req)
+
+        # A request with an API key succeeds
+        secret = current_app.config.get("SECRET_KEY")
+        token = jwt.encode({"role": ROLE.VALIDATE,
+                            "exp": datetime.utcnow() + timedelta(hours=1)},
+                            secret)
+        req.headers = {"Authorization": token}
+        r = api_key_required(req)
+        self.assertTrue(r)
+
+        # A request with a valid Admin Token does not succeed
+        token = jwt.encode({"role": ROLE.ADMIN,
+                            "username": "admin",
+                            "exp": datetime.utcnow() + timedelta(hours=1)},
+                            secret)
+        req.headers = {"Authorization": token}
+        self.assertRaises(PolicyError, api_key_required, req)
+
+        delete_policy("pol_api")
 
 
 class PostPolicyDecoratorTestCase(MyTestCase):

@@ -39,8 +39,9 @@ from privacyidea.lib.policy import SCOPE, ACTION
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.token import (get_tokens, get_realms_of_token)
 from privacyidea.lib.utils import generate_password
+from privacyidea.lib.auth import ROLE
 import functools
-import json
+import jwt
 import re
 
 optional = True
@@ -499,6 +500,48 @@ def check_external(request=None, action="init"):
     if function_name:
         external_func = getattr(eval(module_name), function_name)
         external_func(request, action)
+    return True
+
+
+def api_key_required(request=None, action=None):
+    """
+    This is a decorator for check_user_pass and check_serial_pass.
+    It checks, if a policy scope=auth, action=apikeyrequired is set.
+    If so, the validate request will only performed, if a JWT token is passed
+    with role=validate.
+    """
+    ERROR = "The policy requires an API key to authenticate, " \
+            "but no key was passed."
+    params = request.all_data
+    policy_object = g.policy_object
+    user_object = get_user_from_param(params)
+
+    # Get the policies
+    action = policy_object.get_policies(action=ACTION.APIKEY,
+                                        user=user_object.login,
+                                        realm=user_object.realm,
+                                        scope=SCOPE.AUTHZ,
+                                        client=request.remote_addr,
+                                        active=True)
+    # Do we have a policy?
+    if len(action) > 0:
+        # check if we were passed a correct JWT
+        # Get the Authorization token from the header
+        auth_token = request.headers.get('Authorization', None)
+        try:
+            r = jwt.decode(auth_token, current_app.secret_key)
+            g.logged_in_user = {"username": r.get("username", ""),
+                                "realm": r.get("realm", ""),
+                                "role": r.get("role", "")}
+        except AttributeError:
+            raise PolicyError("No valid API key was passed.")
+
+        role = g.logged_in_user.get("role")
+        if role != ROLE.VALIDATE:
+            raise PolicyError("A correct JWT was passed, but it was no API "
+                              "key.")
+
+    # If everything went fine, we call the original function
     return True
 
 

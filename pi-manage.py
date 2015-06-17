@@ -61,14 +61,14 @@ backup_manager = Manager(usage='Create database backup and restore')
 realm_manager = Manager(usage='Create new realms')
 resolver_manager = Manager(usage='Create new resolver')
 policy_manager = Manager(usage='Manage policies')
-key_manager = Manager(usage="Manage API keys")
+api_manager = Manager(usage="Manage API keys")
 manager.add_command('db', MigrateCommand)
 manager.add_command('admin', admin_manager)
 manager.add_command('backup', backup_manager)
 manager.add_command('realm', realm_manager)
 manager.add_command('resolver', resolver_manager)
 manager.add_command('policy', policy_manager)
-manager.add_command('key', key_manager)
+manager.add_command('api', api_manager)
 
 
 @admin_manager.command
@@ -480,23 +480,28 @@ def create(name, scope, action):
     return r
 
 
-@key_manager.command
-def createkey():
+@api_manager.command
+def createtoken(role=ROLE.ADMIN):
     """
-    Create an API key for administrative use.
+    Create an API authentication token
+    for administrative or validate use.
+    Possible roles are "admin" or "validate".
     """
+    username = geturandom(hex=True)
     secret = app.config.get("SECRET_KEY")
     authtype = "API"
     validity = timedelta(days=365)
-    token = jwt.encode({"username": "someone",
+    token = jwt.encode({"username": username,
                         "realm": "API",
                         "nonce": geturandom(hex=True),
-                        "role": ROLE.ADMIN,
+                        "role": role,
                         "authtype": authtype,
                         "exp": datetime.datetime.utcnow() + validity,
                         "rights": "TODO"},
                        secret)
-    print token
+    print "Username:   %s" % username
+    print "Role:       %s" % role
+    print "Auth-Token: %s" % token
 
 
 if __name__ == '__main__':

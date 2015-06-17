@@ -330,5 +330,3 @@ class LibPolicyTestCase(MyTestCase):
 
         # Policy is set, the function is called with check_otp=True
         config_lost_token(func2, "LOST001", options=options)
-
-
