@@ -33,7 +33,7 @@ install:
 #  - TESTSCRIPT=tests/test_resolver_realm.py
 matrix:
     allow_failures:
-        python: 2.6
+       - python: 2.6
 # command to run tests
 #script: "nosetests -v --with-coverage --cover-package=privacyidea $TESTSCRIPT"
 script: "nosetests -v --with-coverage --cover-package=privacyidea"

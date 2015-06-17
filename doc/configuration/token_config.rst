@@ -3,6 +3,9 @@
 Tokens
 ------
 
+.. toctree::
+   tokens/supported.rst
+
 .. _tokentypes:
 
 Supported Tokentypes
