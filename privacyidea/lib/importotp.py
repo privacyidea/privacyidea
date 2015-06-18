@@ -43,7 +43,7 @@ from privacyidea.lib.utils import modhex_decode
 from privacyidea.lib.utils import modhex_encode
 from privacyidea.lib.log import log_with
 from Crypto.Cipher import AES
-from BeautifulSoup import BeautifulSoup
+from bs4 import BeautifulSoup
 
 import logging
 log = logging.getLogger(__name__)
