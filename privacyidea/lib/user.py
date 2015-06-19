@@ -187,6 +187,8 @@ class User(object):
                     log.info("userid resolved to %r " % uid)
                     priority = resolvers_in_realm.get(resolvername).get(
                         "priority", 999)
+                    log.debug("priority of the resolver is %s" % priority)
+                    log.debug("The highest priority is %s" % highest_priority)
                     if priority < highest_priority:
                         highest_priority = priority
                         resolver_with_highest_priority = resolvername
