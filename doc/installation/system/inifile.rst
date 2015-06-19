@@ -3,7 +3,7 @@
 The Config File 
 ===============
 
-.. index:: config file, external hook, hook
+.. index:: config file, external hook, hook, debug, loglevel
 
 privacyIDEA reads its configuration from different locations:
 
@@ -53,3 +53,14 @@ called as decorator to ``token/init`` and ``token/assign``. This function
 takes the ``request`` and ``action`` (either "init" or "assing") as an
 arguments and can modify the request or raise an exception to avoid the
 request being handled.
+
+Debugging
+~~~~~~~~~
+
+.. index:: Debugging
+
+You can set ``PI_LOGLEVEL`` to a value 10 (Debug), 20 (Info), 30 (Warngin),
+40 (Error) or 50 (Critical).
+If you experience problems, set ``PI_LOGLEVEL = 10`` restart the web service
+and resume the operation. The log file ``privacyidea.log`` should contain
+some clues.
