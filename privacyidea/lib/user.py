@@ -573,7 +573,7 @@ def get_user_list(param=None, user=None):
         # if no realm or resolver was specified, we search the resolvers
         # in all realms
         all_realms = get_realms()
-        for _name, res_list in all_realms.iteritems():
+        for _name, res_list in all_realms.items():
             for resolver_entry in res_list.get("resolver"):
                 resolvers.append(resolver_entry.get("name"))
 

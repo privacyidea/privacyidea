@@ -213,7 +213,7 @@ class HotpTokenClass(TokenClass):
         """
         # In case am Immutable MultiDict:
         upd_param = {}
-        for k, v in param.iteritems():
+        for k, v in param.items():
             upd_param[k] = v
 
         val = getParam(upd_param, "hashlib", optional)

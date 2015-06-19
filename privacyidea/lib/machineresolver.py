@@ -81,7 +81,7 @@ def save_resolver(params):
 
     # check the name
     resolvers = get_resolver_list(filter_resolver_name=resolvername)
-    for r_name, resolver in resolvers.iteritems():
+    for r_name, resolver in resolvers.items():
         if resolver.get("type") == resolvertype:
             # We found the resolver with the same name and the same type,
             # So we will update this resolver
@@ -109,7 +109,7 @@ def save_resolver(params):
         resolver = MachineResolver(params.get("name"), params.get("type"))
         resolver_id = resolver.save()
     # create the config
-    for key, value in data.iteritems():
+    for key, value in data.items():
         if types.get(key) == "password":
             value = encryptPassword(value)
         MachineResolverConfig(resolver_id=resolver_id,
@@ -218,7 +218,7 @@ def get_resolver_class(resolver_type):
     (resolver_clazzes, resolver_types) = get_machine_resolver_class_dict()
 
     if resolver_type in resolver_types.values():
-        for k, v in resolver_types.iteritems():
+        for k, v in resolver_types.items():
             if v == resolver_type:
                 ret = resolver_clazzes.get(k, None)
                 break

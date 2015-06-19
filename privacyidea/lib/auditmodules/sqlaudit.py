@@ -195,7 +195,7 @@ class Audit(AuditBase):
         :type param: dict
         :return: None
         """
-        for k, v in param.iteritems():
+        for k, v in param.items():
             self.audit_data[k] = v
 
     def add_to_log(self, param):
@@ -204,7 +204,7 @@ class Audit(AuditBase):
         :param param:
         :return:
         """
-        for k, v in param.iteritems():
+        for k, v in param.items():
             self.audit_data[k] += v
 
     def finalize_log(self):
@@ -525,9 +525,9 @@ def cleanup_db(filename,
     except ConfigParser.NoOptionError:
         sql_url = config.get("app:main", "sqlalchemy.url")
         
-    print "Cleaning up with high: %s, low: %s. %s" % (highwatermark,
+    print("Cleaning up with high: %s, low: %s. %s" % (highwatermark,
                                                       lowwatermark,
-                                                      sql_url)
+                                                      sql_url))
     
     engine = create_engine(sql_url)
     # create a configured "Session" class
@@ -537,14 +537,14 @@ def cleanup_db(filename,
     count = session.query(LogEntry.id).count()
     for l in session.query(LogEntry.id).order_by(desc(LogEntry.id)).limit(1):
         last_id = l[0]
-    print "The log audit log has %i entries, the last one is %i" % (count,
-                                                                    last_id)
+    print("The log audit log has %i entries, the last one is %i" % (count,
+                                                                    last_id))
     # deleting old entries
     if count > highwatermark:
-        print "More than %i entries, deleting..." % highwatermark
+        print("More than %i entries, deleting..." % highwatermark)
         cut_id = last_id - lowwatermark
         # delete all entries less than cut_id
-        print "Deleting entries smaller than %i" % cut_id
+        print("Deleting entries smaller than %i" % cut_id)
         session.query(LogEntry.id).filter(LogEntry.id < cut_id).delete()
         session.commit()
     

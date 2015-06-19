@@ -65,8 +65,8 @@ def create_app(config_name="development",
     :return: The flask application
     :rtype: App object
     """
-    print "The configuration name is: %s" % config_name
-    print "Additional configuration can be read from the file %s" % config_file
+    print("The configuration name is: %s" % config_name)
+    print("Additional configuration can be read from the file %s" % config_file)
     if os.environ.get(ENV_KEY):
         print("Additional configuration can be read from "
               "the file %s" % os.environ[ENV_KEY])
@@ -80,10 +80,10 @@ def create_app(config_name="development",
         # If it does not exist, just ignore it.
         app.config.from_pyfile(config_file, silent=True)
     except IOError:
-        print 50*"!"
-        print "  WARNING: privacyidea create_app has no access"
-        print "  to %s!" % config_file
-        print 50*"!"
+        print(50*"!")
+        print("  WARNING: privacyidea create_app has no access")
+        print( "  to %s!" % config_file)
+        print(50*"!")
 
     # Try to load the file, that was specified in the environment variable
     # PRIVACYIDEA_CONFIG_FILE

@@ -451,7 +451,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     """
     if type(action) == dict:
         action_list = []
-        for k, v in action.iteritems():
+        for k, v in action.items():
             if v is not True:
                 # value key
                 action_list.append("%s=%s" % (k, v))
@@ -521,7 +521,7 @@ def export_policies(policies):
     if len(policies) > 0:
         for policy in policies:
             file_contents += "[%s]\n" % policy.get("name")
-            for key, value in policy.iteritems():
+            for key, value in policy.items():
                 file_contents += "%s = %s\n" % (key, value)
             file_contents += "\n"
 

@@ -188,7 +188,7 @@ def send_csv_result(obj, data_key="tokens",
     headers = {'Content-disposition': 'attachment; filename=%s' % filename}
     output = u""
     # Do the header
-    for k, _v in obj.get(data_key, {})[0].iteritems():
+    for k, _v in obj.get(data_key, {})[0].items():
         output += "%s%s%s, " % (delim, k, delim)
     output += "\n"
 
@@ -249,7 +249,7 @@ def get_priority_from_param(param):
     :return: dict
     """
     priority = {}
-    for k, v in param.iteritems():
+    for k, v in param.items():
         if k.startswith("priority."):
             priority[k[len("priority."):]] = int(v)
     return priority

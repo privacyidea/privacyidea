@@ -419,7 +419,7 @@ def get_auth_items(hostname, ip=None, application=None,
                 auth_items[mtoken.get("application")] = []
 
             # Add the options the the auth_item
-            for k, v in mtoken.get("options", {}).iteritems():
+            for k, v in mtoken.get("options", {}).items():
                 auth_item[k] = v
 
             # append the auth_item to the list

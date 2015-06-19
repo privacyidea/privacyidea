@@ -104,7 +104,7 @@ def save_caconnector(params):
                                    params.get("type"))
         connector_id = db_connector.save()
     # create the config
-    for key, value in data.iteritems():
+    for key, value in data.items():
         if types.get(key) == "password":
             value = encryptPassword(value)
         CAConnectorConfig(caconnector_id=connector_id,
@@ -231,7 +231,7 @@ def get_caconnector_class(connector_type):
     (connector_classes, connector_types) = get_caconnector_class_dict()
 
     if connector_type in connector_types.values():
-        for k, v in connector_types.iteritems():
+        for k, v in connector_types.items():
             if v == connector_type:
                 ret = connector_classes.get(k, None)
                 break

@@ -462,10 +462,10 @@ class Token(MethodsMixin, db.Model):
             # token
             self.save()
         types = {}
-        for k, v in info.iteritems():
+        for k, v in info.items():
             if k.endswith(".type"):
                 types[".".join(k.split(".")[:-1])] = v
-        for k, v in info.iteritems():
+        for k, v in info.items():
             if not k.endswith(".type"):
                 TokenInfo(self.id, k, v,
                           Type=types.get(k)).save()

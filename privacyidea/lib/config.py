@@ -185,7 +185,7 @@ def get_token_class(tokentype):
     class_dict, type_dict = get_token_class_dict()
     tokenmodule = ""
     tokenclass = None
-    for module, ttype in type_dict.iteritems():
+    for module, ttype in type_dict.items():
         if ttype.lower() == tokentype.lower():
             tokenmodule = module
             break

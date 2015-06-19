@@ -65,14 +65,14 @@ def create_db_admin(app, username, email=None, password=None):
 
 def list_db_admin():
     admins = Admin.query.all()
-    print "Name \t email"
-    print 30*"="
+    print("Name \t email")
+    print(30*"=")
     for admin in admins:
-        print "%s \t %s" % (admin.username, admin.email)
+        print("%s \t %s" % (admin.username, admin.email))
 
 
 def delete_db_admin(username):
-    print "Deleting admin %s" % username
+    print("Deleting admin %s" % username)
     Admin.query.filter(Admin.username == username).first().delete()
 
 

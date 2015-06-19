@@ -212,7 +212,7 @@ class TokenClass(object):
         :return:
         """
         self.token.del_info()
-        for k, v in info.iteritems():
+        for k, v in info.items():
             if k.endswith(".type"):
                 # we have a type
                 if v == "password":

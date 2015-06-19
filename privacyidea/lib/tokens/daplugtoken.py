@@ -74,7 +74,7 @@ def _digi2daplug(normal_otp):
     """
     daplug_otp = ""
     hex_otp = binascii.hexlify(normal_otp)
-    REVERSE_MAP = {v: k for k,v in MAPPING.iteritems()}
+    REVERSE_MAP = {v: k for k,v in MAPPING.items()}
     for i in hex_otp:
         daplug_otp += REVERSE_MAP.get(i)
     return daplug_otp
@@ -195,7 +195,7 @@ class DaplugTokenClass(HotpTokenClass):
         rdict = {'type': self.get_class_type(),
                  'otp': {}}
         otp_dict = {}
-        for k, v in res[2].get('otp').iteritems():
+        for k, v in res[2].get('otp').items():
             rdict['otp'][k] = _digi2daplug(v)
 
         return res[0], res[1], rdict
