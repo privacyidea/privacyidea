@@ -5,7 +5,7 @@ import glob
 import sys
 
 #VERSION="2.1dev4"
-VERSION="2.4dev10"
+VERSION="2.4dev11"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -74,8 +74,6 @@ setup(
                       "beautifulsoup4==4.3.2",
                       "cffi==0.8.6",
                       "configobj==5.0.6",
-                      "cookies==2.2.1",
-                      "cryptography==0.8.2",
                       "docutils==0.12",
                       "funcparserlib==0.3.6",
                       "itsdangerous==0.24",
