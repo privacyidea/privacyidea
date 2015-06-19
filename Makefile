@@ -12,7 +12,7 @@ info:
 	@echo "make ppa-dev      - upload to launchpad development repo"
 	
 #VERSION=1.3~dev5
-VERSION=2.4~dev9
+VERSION=2.4~dev10
 SERIES="trusty precise vivid"
 LOCAL_SERIES=`lsb_release -a | grep Codename | cut -f2`
 SRCDIRS=deploy authmodules migrations doc tests tools privacyidea 

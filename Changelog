@@ -1,3 +1,23 @@
+Version 2.4, 2015-06-25
+
+  * Add User Management
+  * Add Admin Realms to policies, to allow better policies in bigger setups
+  * Add API key, that can be used for accessing /validate/check
+  * Load PSKC Token seed files.
+  * WebUI: Registrtion token can be enrolled in WebUI
+  * WebUI: The token seed can be displayed in WebUI after generation
+  * WebUI: Only the token types that are allowed to be enrolled are displayed
+  * WebUI: Login_Mode Policy: Disable access to WebUI for certain users
+  * WebUI: Add reload button in Audit view
+  * SQLResolver: The Where statement is used in all cases
+  * SSH-Token Application: Only fetch keys of the requested user
+  * Apache client can work with several hosts on one machine
+  * Documentation: Tokentypes and Supported Hardware Tokens
+  * Improve RADIUS module
+  * WebUI: Fix download of audit log
+  * Fix missing access right of user to GET /caconnector
+
+
 Version 2.3, 2015-05-22
 
   * Add connector to remote Certificate Authority

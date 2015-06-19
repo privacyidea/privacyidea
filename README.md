@@ -26,7 +26,8 @@ concerned. But privacyIDEA is completely licensed under the AGPLv3.
 
 It supports a wide variety of authentication devices like OTP tokens 
 (HMAC, HOTP, TOTP, OCRA, mOTP), Yubikey (HOTP, TOTP, AES), Smartphone
-Apps like Google Authenticator, SMS, Email, SSH keys, x509 certificates.
+Apps like Google Authenticator, SMS, Email, SSH keys, x509 certificates 
+and Registration Codes for easy deployment.
 
 Since version 2 privacyIDEA is based on flask and sqlalchemy as the python backend. The
 web UI is based on angularJS and bootstrap.
@@ -57,9 +58,10 @@ Read the install instructions at http://privacyidea.readthedocs.org.
 Running it
 ==========
 
-Create the database:
+Create the database and encryption key:
 
     ./pi-manage.py createdb
+    ./pi-manage.py create_enckey
 
 Create the first administrator:
 
@@ -104,3 +106,7 @@ Upgrading
 In certain cases the database structure has changed (1.5->2.0).
 Read http://privacyidea.readthedocs.org/en/latest/installation/upgrade.html 
 for upgrade instructions.
+
+Versioning
+==========
+privacyIDEA adheres to [Semantic Versioning](http://semver.org/).

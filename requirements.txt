@@ -9,7 +9,7 @@ Mako==1.0.0
 MarkupSafe==0.23
 MySQL-python==1.2.5
 Pillow==2.6.1
-PyJWT==0.3.0
+PyJWT==0.4.3
 PyYAML==3.11
 Pygments==2.0.2
 SQLAlchemy==1.0.5

@@ -1,15 +1,23 @@
-python-privacyidea (2.4~dev9) trusty; urgency=low
+python-privacyidea (2.4~dev10) trusty; urgency=low
 
-  * Fix missing access right of user to GET /caconnector
-  * Use WHERE filter in all cases in SQL Resolver
-  * Add apache auth module
   * Add User Management
+  * Add Admin Realms to policies, to allow better policies in bigger setups
+  * Add API key, that can be used for accessing /validate/check
+  * Load PSKC Token seed files.
+  * WebUI: Registrtion token can be enrolled in WebUI
+  * WebUI: The token seed can be displayed in WebUI after generation
+  * WebUI: Only the token types that are allowed to be enrolled are displayed
+  * WebUI: Login_Mode Policy: Disable access to WebUI for certain users
+  * WebUI: Add reload button in Audit view
+  * SQLResolver: The Where statement is used in all cases
+  * SSH-Token Application: Only fetch keys of the requested user
+  * Apache client can work with several hosts on one machine
+  * Documentation: Tokentypes and Supported Hardware Tokens
   * Improve RADIUS module
-  * Add enrollment of Registration token to webUI
-  * Add seed in the enrolled token dialog
-  * Add API key to /validate/check
+  * WebUI: Fix download of audit log
+  * Fix missing access right of user to GET /caconnector
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 17 Jun 2015 17:00:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 19 Jun 2015 11:30:00 +0200
 
 python-privacyidea (2.3-1trusty) trusty; urgency=low
 
