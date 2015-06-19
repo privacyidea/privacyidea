@@ -2,6 +2,7 @@ language: python
 python:
   - 2.7
   - 2.6
+  - 3.4
 # command to install dependencies
 install:
   - "pip install ."
@@ -34,6 +35,7 @@ install:
 matrix:
     allow_failures:
        - python: 2.6
+       - python: 3.4
 # command to run tests
 #script: "nosetests -v --with-coverage --cover-package=privacyidea $TESTSCRIPT"
 script: "nosetests -v --with-coverage --cover-package=privacyidea"
