@@ -323,7 +323,7 @@ def get_resolver_object(resolvername):
     r_obj_class = get_resolver_class(r_type)
 
     if r_obj_class is None:
-        log.error("unknown resolver class %s " % resolvername)
+        log.error("Can not find resolver with name %s " % resolvername)
     else:
         # create the resolver instance and load the config
         r_obj = r_obj_class()
