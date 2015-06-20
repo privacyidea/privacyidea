@@ -1,9 +1,10 @@
-python-privacyidea (2.4~dev11) trusty; urgency=low
+python-privacyidea (2.4~dev12) trusty; urgency=low
 
   * Add User Management
   * Add Admin Realms to policies, to allow better policies in bigger setups
   * Add API key, that can be used for accessing /validate/check
   * Load PSKC Token seed files.
+  * Add more sophisticated logging.
   * WebUI: Registrtion token can be enrolled in WebUI
   * WebUI: The token seed can be displayed in WebUI after generation
   * WebUI: Only the token types that are allowed to be enrolled are displayed
@@ -17,7 +18,7 @@ python-privacyidea (2.4~dev11) trusty; urgency=low
   * WebUI: Fix download of audit log
   * Fix missing access right of user to GET /caconnector
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 19 Jun 2015 11:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Sat, 20 Jun 2015 18:30:00 +0200
 
 python-privacyidea (2.3-1trusty) trusty; urgency=low
 
