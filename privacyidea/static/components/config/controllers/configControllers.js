@@ -51,19 +51,38 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
     $scope.realmsLoaded = false;
     $scope.resolversLoaded = false;
     $scope.adminRealmsLoaded = false;
+    $scope.policyDefsLoaded = false;
     $scope.scopes = [];
 
+    check_all_loaded = function() {
+        if ($scope.resolversLoaded &&
+            $scope.adminRealmsLoaded &&
+            $scope.realmsLoaded &&
+            $scope.policyDefsLoaded) {
+            $scope.presetEditValues();
+        }
+    };
+
     // get init values from the server
+    ConfigFactory.getPolicyDefs(function (data) {
+        $scope.policyDefs = data.result.value;
+        console.log($scope.policyDefs);
+        // fill the scope:
+        angular.forEach($scope.policyDefs, function (value, key) {
+            $scope.scopes.push({name: key, ticked: false})
+        });
+        $scope.policyDefsLoaded = true;
+        check_all_loaded();
+    });
+
     ConfigFactory.getRealms(function(data){
         var realms = data.result.value;
         angular.forEach(realms, function (value, key) {
             $scope.realms.push({name: key, ticked: false});
         });
-        // after realms and resolvers have loaded, we can preset the policy values
+        // after everything is loaded, we can preset the values
         $scope.realmsLoaded = true;
-        if ($scope.resolversLoaded && $scope.adminRealmsLoaded) {
-            $scope.presetEditValues();
-        }
+        check_all_loaded();
     });
     ConfigFactory.getAdminRealms(function(data){
         var adminRealms = data.result.value;
@@ -71,9 +90,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             $scope.adminRealms.push({name: value, ticked: false})
         });
         $scope.adminRealmsLoaded = true;
-        if ($scope.resolversLoaded && $scope.realmsLoaded) {
-            $scope.presetEditValues();
-        }
+        check_all_loaded();
     });
     ConfigFactory.getResolvers(function(data) {
         var resolvers = data.result.value;
@@ -82,9 +99,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
         });
         // after realms and resolvers have loaded, we can preset the policy values
         $scope.resolversLoaded = true;
-        if ($scope.realmsLoaded && $scope.adminRealmsLoaded) {
-            $scope.presetEditValues();
-        }
+        check_all_loaded();
     });
     $scope.params = {
             action: "",
@@ -99,14 +114,6 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
     if ($scope.existingPolicyname) {
         $scope.policyname = $scope.existingPolicyname;
     }
-
-    ConfigFactory.getPolicyDefs(function (data) {
-        $scope.policyDefs = data.result.value;
-        // fill the scope:
-        angular.forEach($scope.policyDefs, function (value, key) {
-            $scope.scopes.push({name: key, ticked: false})
-        });
-    });
 
     // define functions
     $scope.enablePolicy = function (name) {
@@ -130,6 +137,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
         // checkboxes and input fields.
         // we can do this with include files like at token.enroll
         console.log(scope);
+        console.log($scope.policyDefs);
         var actions = $scope.policyDefs[scope];
         console.log(actions);
         $scope.actions = [];
@@ -249,6 +257,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
     $scope.presetEditValues = function () {
         console.log("presetEditValues");
         console.log($scope.policies);
+        console.log($scope.policyDefs);
 
         presetEditValues2 = function(policy) {
             console.log(policy);
