@@ -102,7 +102,7 @@ def before_request():
     g.audit_object = getAudit(current_app.config)
     g.audit_object.log({"success": False,
                         "serial": serial,
-                        "realm": realm,
+                        "realm": "%s" % realm,
                         "client": request.remote_addr,
                         "client_user_agent": request.user_agent.browser,
                         "privacyidea_server": request.host,

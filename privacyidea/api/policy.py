@@ -178,7 +178,8 @@ def set_policy_api(name=None):
     active = getParam(param, "active", optional)
     admin_realm = getParam(param, "adminrealm", optional)
 
-    g.audit_object.log({'action_detail': unicode(param)})
+    g.audit_object.log({'action_detail': name,
+                        'info': "%s" % param})
     ret = set_policy(name=name, scope=scope, action=action, realm=realm,
                      resolver=resolver, user=user, client=client,
                      active=active or True, adminrealm=admin_realm)
