@@ -4,6 +4,7 @@ Version 2.4, 2015-06-25
   * Add Admin Realms to policies, to allow better policies in bigger setups
   * Add API key, that can be used for accessing /validate/check
   * Load PSKC Token seed files.
+  * Add more sophisticated logging.
   * WebUI: Registrtion token can be enrolled in WebUI
   * WebUI: The token seed can be displayed in WebUI after generation
   * WebUI: Only the token types that are allowed to be enrolled are displayed

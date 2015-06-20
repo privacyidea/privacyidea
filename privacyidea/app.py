@@ -21,6 +21,7 @@
 #
 import os
 import logging
+import logging.config
 from flask import Flask
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.api.token import token_blueprint
@@ -38,7 +39,7 @@ from privacyidea.webui.login import login_blueprint
 from privacyidea.webui.certificate import cert_blueprint
 from privacyidea.api.machineresolver import machineresolver_blueprint
 from privacyidea.api.machine import machine_blueprint
-from privacyidea.lib.log import SecureFormatter
+from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
 from privacyidea.config import config
 from privacyidea.models import db
 from flask.ext.migrate import Migrate
@@ -110,20 +111,36 @@ def create_app(config_name="development",
     db.init_app(app)
     migrate = Migrate(app, db)
 
-    # Create the logger
-    # Read log file from config
-    from logging import handlers
-    fhandler = handlers.RotatingFileHandler(app.config.get("PI_LOGFILE",
-                                                           "privacyidea.log"),
-                                            backupCount=4,
-                                            maxBytes=10000000)
+    try:
+        # Try to read logging config from file
+        log_config_file = app.config.get("PI_LOGCONFIG",
+                                         "/etc/privacyidea/logging.cfg")
+        logging.config.fileConfig(log_config_file)
+    except Exception as exx:
+        print("No log config file defined in PI_LOGCONFIG. Using default "
+              "logging settings")
+        logging.config.dictConfig(DEFAULT_LOGGING_CONFIG)
 
-    formatter = SecureFormatter(MY_LOG_FORMAT)
-    # Set the formatter
-    fhandler.setFormatter(formatter)
-    # read level from config
-    fhandler.setLevel(app.config.get("PI_LOGLEVEL", logging.INFO))
-    logging.getLogger("privacyidea").addHandler(fhandler)
+    # If there is another level in pi.cfg we use this.
+    level = app.config.get("PI_LOGLEVEL")
+    if level:
+        print("PI_LOGLEVEL found. Setting to %s" % level)
+        logging.getLogger("privacyidea").setLevel(level)
+    # If there is another logfile in pi.cfg we use this.
+    logfile = app.config.get("PI_LOGFILE")
+    if logfile:
+        logger = logging.getLogger("privacyidea")
+        handlers = logger.handlers
+        for handler in handlers:
+            if type(handler) == logging.handlers.RotatingFileHandler:
+                # Set a new filename for the RotatingFileHandler
+                print("PI_LOGFILE found. Setting to %s" % logfile)
+                if handler.baseFilename != logfile:
+                    # We need to reopen the file, if it has changed
+                    logger.removeHandler(handler)
+                    handler.baseFilename = logfile
+                    handler.doRollover()
+                    logger.addHandler(handler)
 
     return app
 

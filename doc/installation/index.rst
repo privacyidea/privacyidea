@@ -20,6 +20,7 @@ If you want to upgrade from a privacyIDEA 1.5 installation please read :ref:`upg
    debian
    upgrade
    system/inifile
+   system/logging
    system/wsgiscript
 
 After installtion you might want to take a look at :ref:`first_steps`.
@@ -28,4 +29,4 @@ After installtion you might want to take a look at :ref:`first_steps`.
 .. rubric:: Footnotes
 
 .. [#ppa] https://launchpad.net/~privacyidea
-.. [#simpleSAML]  https://github.com/privacyidea/privacyidea/tree/master/authmodules/simpleSAMLphp
+.. [#simpleSAML] https://github.com/privacyidea/privacyidea/tree/master/authmodules/simpleSAMLphp
