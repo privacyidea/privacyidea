@@ -26,39 +26,50 @@ file like this::
 
 Such a configuration could look like this::
 
-   [loggers]
-   keys=privacyidea
-
    [formatters]
    keys=detail
 
+   [handlers]
+   keys=file,mail
+
    [formatter_detail]
    class=privacyidea.lib.log.SecureFormatter
-   format=[%(asctime)s][%(process)d][%(thread)d][%(levelname)s]\
-      [%(name)s:%(lineno)d] %(message)s
+   format=[%(asctime)s][%(process)d][%(thread)d][%(levelname)s][%(name)s:%(lineno)d] %(message)s
 
-   [logger_privacyidea]
-   handler=file
-   qualname=privacyidea
-   level=DEBUG
-
-   [handlers]
-   keys=file
+   [handler_mail]
+   class=logging.handlers.SMTPHandler
+   level=ERROR
+   formatter=detail
+   args=('mail.example.com', 'privacyidea@example.com', ['admin1@example.com',\
+      'admin2@example.com'], 'PI Error')
 
    [handler_file]
    # Rollover the logfile at midnight
-   class=handlers.TimeRotatingFileHandler
+   class=logging.handlers.RotatingFileHandler
    backupCount=14
-   interval=midnight
+   maxBytes=10000000
    formatter=detail
    level=DEBUG
    args=('/var/log/privacyidea/privacyidea.log',)
 
+   [loggers]
+   keys=root,privacyidea
+
+   [logger_privacyidea]
+   handlers=file,mail
+   qualname=privacyidea
+   level=DEBUG
+
+   [logger_root]
+   level=NOTSET
+   handlers=file
+
+
 The file structure follows [#fileconfig]_ and can be used to define additional
 handlers like logging errors to email addresses.
 
-.. note:: Thus administrators can get email notification if some severe error
-   occurs.
+.. note:: In this example a mail handler is defined, that will send emails
+   to certain email Adresses, if an ERROR occurs.
 
 .. rubric:: Footnotes
 

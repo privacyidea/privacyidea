@@ -22,6 +22,7 @@
 import os
 import logging
 import logging.config
+import traceback
 from flask import Flask
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.api.token import token_blueprint
@@ -116,7 +117,10 @@ def create_app(config_name="development",
         log_config_file = app.config.get("PI_LOGCONFIG",
                                          "/etc/privacyidea/logging.cfg")
         logging.config.fileConfig(log_config_file)
+        print("Reading Logging settings from %s" % log_config_file)
     except Exception as exx:
+        #print("%s" % traceback.format_exc())
+        print("%s" % exx)
         print("No log config file defined in PI_LOGCONFIG. Using default "
               "logging settings")
         logging.config.dictConfig(DEFAULT_LOGGING_CONFIG)
