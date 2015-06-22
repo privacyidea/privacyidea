@@ -392,9 +392,6 @@ class User(object):
                 log.error("The user %r exists in NO resolver." % self)
         except UserError as exx:  # pragma: no cover
             log.error("Error while trying to verify the username: %s" % exx)
-        except Exception as exx:  # pragma: no cover
-            log.error("Error checking password within module %s" % exx)
-            log.error("%s" % traceback.format_exc())
 
         return success
 
