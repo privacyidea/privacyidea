@@ -88,9 +88,11 @@ While you define the default authenticate type to be ``Perl`` in the
 
    DEFAULT Auth-Type := Perl
 
-
-.. note:: The perl module is not thread safe, so you need to start FreeRADIUS
-   with the -t switch.
+.. note:: The privacyIDEA module uses other perl modules that were not thread
+   safe in the
+   past. So in case you are using old perl dependencies and are experiencing
+   thread problems, please start FreeRADIUS with the -t switch.
+   (Everything works fine with Ubuntu 14.04 and Debian 7.)
 
 You can test the RADIUS setup using a command like this::
 
