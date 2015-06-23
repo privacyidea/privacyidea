@@ -1,4 +1,4 @@
-privacyidea-venv (2.4~dev10) wheezy; urgency=low
+privacyidea-venv (2.4-1) wheezy; urgency=low
 
   * Add User Management
   * Add Admin Realms to policies, to allow better policies in bigger setups
@@ -17,7 +17,7 @@ privacyidea-venv (2.4~dev10) wheezy; urgency=low
   * WebUI: Fix download of audit log
   * Fix missing access right of user to GET /caconnector
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 19 Jun 2015 11:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 24 Jun 2015 09:30:00 +0200
 
 privacyidea-venv (2.3-1) wheezy; urgency=low
 

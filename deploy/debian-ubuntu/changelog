@@ -1,4 +1,4 @@
-python-privacyidea (2.4~dev12) trusty; urgency=low
+python-privacyidea (2.4-1trusty) trusty; urgency=low
 
   * Add User Management
   * Add Admin Realms to policies, to allow better policies in bigger setups
@@ -18,7 +18,7 @@ python-privacyidea (2.4~dev12) trusty; urgency=low
   * WebUI: Fix download of audit log
   * Fix missing access right of user to GET /caconnector
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Sat, 20 Jun 2015 18:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 24 Jun 2015 09:30:00 +0200
 
 python-privacyidea (2.3-1trusty) trusty; urgency=low
 
