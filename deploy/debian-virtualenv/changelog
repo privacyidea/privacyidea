@@ -16,6 +16,7 @@ privacyidea-venv (2.4-1) wheezy; urgency=low
   * Improve RADIUS module
   * WebUI: Fix download of audit log
   * Fix missing access right of user to GET /caconnector
+  * Fix SMS token
 
  -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 24 Jun 2015 09:30:00 +0200
 

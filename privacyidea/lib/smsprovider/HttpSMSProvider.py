@@ -86,7 +86,11 @@ class HttpSMSProvider(ISMSProvider):
         if method == "POST":
             requestor = requests.post
 
-        r = requestor(url, data=parameter,
+        log.debug("issuing request with parameters %s and method %s and "
+                  "authentication %s to url %s." % (parameter, method,
+                                                    basic_auth, url))
+        r = requestor(url, params=parameter,
+                      data=parameter,
                       verify=ssl_verify,
                       auth=basic_auth,
                       proxies=proxies)

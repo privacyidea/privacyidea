@@ -30,7 +30,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""The SMS token sends an SMS containing an OTP via some kind of
+__doc__ = """The SMS token sends an SMS containing an OTP via some kind of
 gateway. The gateways can be an SMTP or HTTP gateway or the special sipgate
 protocol.
 The Gateways are defined in the SMSProvider Modules.
@@ -38,7 +38,6 @@ The Gateways are defined in the SMSProvider Modules.
 This code is tested in tests/test_lib_tokens_sms
 """
 
-import time
 import datetime
 import traceback
 
@@ -52,8 +51,9 @@ from privacyidea.lib.smsprovider.SMSProvider import get_sms_provider_class
 from json import loads
 from gettext import gettext as _
 
-from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
+from privacyidea.models import Challenge
+
 
 import logging
 log = logging.getLogger(__name__)
@@ -253,7 +253,7 @@ class SmsTokenClass(HotpTokenClass):
         return is_challenge
 
     @log_with(log)
-    def create_challenge(self, transactionid, options=None):
+    def create_challenge(self, transactionid=None, options=None):
         """
         create a challenge, which is submitted to the user
 
@@ -271,6 +271,7 @@ class SmsTokenClass(HotpTokenClass):
         options = options or {}
         return_message = "Enter the OTP from the SMS:"
         attributes = {'state': transactionid}
+        validity = self._get_sms_timeout()
 
         if self.is_active() is True:
             counter = self.get_otp_count()
@@ -283,18 +284,27 @@ class SmsTokenClass(HotpTokenClass):
                 message_template = self._get_sms_text(options)
                 success, sent_message = self._send_sms(
                     message=message_template)
+
+                # Create the challenge in the database
+                db_challenge = Challenge(self.token.serial,
+                                         transaction_id=transactionid,
+                                         challenge=options.get("challenge"),
+                                         session=options.get("session"),
+                                         validitytime=validity)
+                db_challenge.save()
+                transactionid = transactionid or db_challenge.transaction_id
             except Exception as e:
                 info = ("The PIN was correct, but the "
                         "SMS could not be sent: %r" % e)
                 log.warning(info)
                 return_message = info
 
-        timeout = self._get_sms_timeout()
+        validity = self._get_sms_timeout()
         expiry_date = datetime.datetime.now() + \
-                                    datetime.timedelta(seconds=timeout)
-        data = {'valid_until': "%s" % expiry_date}
+                                    datetime.timedelta(seconds=validity)
+        attributes['valid_until'] = "%s" % expiry_date
 
-        return success, return_message, data, attributes
+        return success, return_message, transactionid, attributes
 
     @log_with(log)
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):

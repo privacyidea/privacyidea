@@ -438,15 +438,14 @@ class SMSTokenTestCase(MyTestCase):
         responses.add(responses.POST,
                       self.SMSHttpUrl,
                       body=self.success_body)
-        transactionid = "123456098712"
         set_privacyidea_config("sms.providerConfig", self.SMSProviderConfig)
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = SmsTokenClass(db_token)
-        c = token.create_challenge(transactionid, options=options)
+        c = token.create_challenge(options=options)
         self.assertTrue(c[0], c)
         display_message = c[1]
-        self.assertTrue(c[3].get("state"), transactionid)
         self.assertEqual(display_message, "Enter the OTP from the SMS:")
+        self.assertEqual(c[3].get("state"), None)
 
         # check for the challenges response
         # r = token.check_challenge_response(passw="287922")
