@@ -39,4 +39,12 @@ class Helper
         return ($result === 'yes') ? true : false;
     }
 
+    public static function is_api_allowed()
+    {
+        $appConfig = \OC::$server->getAppConfig();
+        $result = $appConfig->getValue('privacyIDEA',
+            'allow_api', 'no');
+        return ($result === 'yes') ? true : false;
+    }
+
 }

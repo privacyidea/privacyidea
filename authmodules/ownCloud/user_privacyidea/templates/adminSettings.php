@@ -28,6 +28,15 @@
     </label><br/>
 
     <input type="checkbox"
+           name="allow_api" id="allow_api"
+           value="1" <?php
+    if ($_['allow_api']) print_unescaped('checked="checked"');
+    ?> />
+    <label for="allow_api">
+        <?php p($l->t('Allow API access to remote.php with static password.')); ?>
+    </label><br/>
+
+    <input type="checkbox"
            name="verify_ssl" id="verify_ssl"
            value="1" <?php
     if ($_['verify_ssl']) print_unescaped('checked="checked"');

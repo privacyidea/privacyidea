@@ -38,6 +38,7 @@ $tmpl = new OCP\Template('user_privacyidea', 'adminSettings');
 $tmpl->assign('enable_privacyidea', $helper->is_privacyidea_enabled());
 $tmpl->assign('verify_ssl', $helper->is_ssl_check());
 $tmpl->assign('allow_normal_login', $helper->is_normal_login_allowed());
+$tmpl->assign('allow_api', $helper->is_api_allowed());
 $url = $helper->get_url();
 $tmpl->assign('privacyidea_url', $url);
 \OCP\Util::writeLog('user_privacyidea', "Setting URL: $url", OCP\Util::DEBUG);

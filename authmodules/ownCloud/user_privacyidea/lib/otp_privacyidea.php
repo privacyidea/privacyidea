@@ -6,6 +6,7 @@
  *
  * 2015-06-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
  *            initial writeup
+ *            inspired by user_ldap and user_otp
  *
  *    This program is free software: you can redistribute it and/or
  *    modify it under the terms of the GNU Affero General Public
@@ -43,7 +44,7 @@ class OC_User_PRIVACYIDEA extends OC_User_Backend
         self::SET_PASSWORD => 'setPassword',
         self::CHECK_PASSWORD => 'checkPassword',
         //self::GET_HOME => 'getHome',
-        //self::GET_DISPLAYNAME => 'getDisplayName',
+        self::GET_DISPLAYNAME => 'getDisplayName',
         //self::SET_DISPLAYNAME => 'setDisplayName',
         //self::PROVIDE_AVATAR => 'canChangeAvatar',
         self::COUNT_USERS => 'countUsers',
@@ -108,8 +109,30 @@ class OC_User_PRIVACYIDEA extends OC_User_Backend
         return $user_created;
     }
 
+    public function getDisplayName($uid) {
+        $displayname = "";
+        foreach (self::$_backends as $backendObj) {
+            $r = $backendObj->getDisplayName($uid);
+            if ($r) {
+                $displayname = $r;
+            }
+        }
+        return $displayname;
+    }
 
-    /**
+
+    /*
+     * Set the password in the underlying user backend
+     */
+    public function setPassword($uid, $password) {
+        $result = false;
+        foreach (self::$_backends as $backendObj) {
+            $result = $backendObj->setPassword($uid, $password);
+        }
+        return $result;
+    }
+
+    /*
      * Check if any of the old user backends supports userlisting
      */
     public function hasUserListings()
@@ -132,7 +155,7 @@ class OC_User_PRIVACYIDEA extends OC_User_Backend
         if (self::$_backends === null) {
             foreach ($usedBackends as $backend) {
                 OC_Log::write('user_privacyidea', 'registering backend  '
-                    . $backend, OC_Log::ERROR);
+                    . $backend, OC_Log::DEBUG);
                 self::$_backends[$backend] = new $backend();
             }
         }
@@ -144,27 +167,45 @@ class OC_User_PRIVACYIDEA extends OC_User_Backend
     public function checkPassword($uid, $password)
     {
         $authenticated_user = "";
-        OCP\Util::writeLog('user_privacyidea', 'privacyIDEA checkPassword',
-            OCP\Util::DEBUG);
+        // check if we are called by a desktop client
+        $allow_api = (\OCP\Config::getAppValue('privacyIDEA', 'allow_api') === "yes");
+        $client_call = (basename($_SERVER['SCRIPT_NAME']) === 'remote.php');
 
-        $sslcheck = \OCP\Config::getAppValue('privacyIDEA',
-            'verify_ssl');
-        $allow_normal_login = \OCP\Config::getAppValue('privacyIDEA', 'allow_normal_login');
-        $url = \OCP\Config::getAppValue('privacyIDEA', 'privacyidea_url');
-        OCP\Util::writeLog('user_privacyidea', "calling " . $url . " for user " .
-            $uid . " (" . $sslcheck . ")",
-            OCP\Util::DEBUG);
-        $result = $this->checkOtp($url, $uid, $password, $sslcheck);
-        OCP\Util::writeLog('user_privacyidea', 'privacyidea returned ' . $result,
-            OCP\Util::INFO);
-        if ($result) {
-            $authenticated_user = $uid;
+        OC_Log::write('user_privacyidea', 'API: '. $allow_api, OC_Log::DEBUG);
+        OC_Log::write('user_privacyidea', 'Client Call: '. $client_call, OC_Log::DEBUG);
+
+        if (($client_call === true) && ($allow_api === true)) {
+            OC_Log::write('user_privacyidea', 'Authenticating with normal password', OC_Log::DEBUG);
+            foreach (self::$_backends as $backendObj) {
+                $r = $backendObj->checkPassword($uid, $password);
+                if ($r) {
+                    $authenticated_user = $r;
+                }
+            }
         } else {
-            if ($allow_normal_login === "yes") {
-                foreach (self::$_backends as $backendObj) {
-                    $r = $backendObj->checkPassword($uid, $password);
-                    if ($r) {
-                        $authenticated_user = $r;
+            // We are called from within a browser.
+            OCP\Util::writeLog('user_privacyidea', 'privacyIDEA checkPassword',
+                OCP\Util::DEBUG);
+
+            $sslcheck = \OCP\Config::getAppValue('privacyIDEA',
+                'verify_ssl');
+            $allow_normal_login = \OCP\Config::getAppValue('privacyIDEA', 'allow_normal_login');
+            $url = \OCP\Config::getAppValue('privacyIDEA', 'privacyidea_url');
+            OCP\Util::writeLog('user_privacyidea', "calling " . $url . " for user " .
+                $uid . " (" . $sslcheck . ")",
+                OCP\Util::DEBUG);
+            $result = $this->checkOtp($url, $uid, $password, $sslcheck);
+            OCP\Util::writeLog('user_privacyidea', 'privacyidea returned ' . $result,
+                OCP\Util::INFO);
+            if ($result) {
+                $authenticated_user = $uid;
+            } else {
+                if ($allow_normal_login === "yes") {
+                    foreach (self::$_backends as $backendObj) {
+                        $r = $backendObj->checkPassword($uid, $password);
+                        if ($r) {
+                            $authenticated_user = $r;
+                        }
                     }
                 }
             }
