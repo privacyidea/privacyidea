@@ -3,11 +3,11 @@
 Application Plugins
 ===================
 
-.. index:: Application Plugins, OTRS, FreeRADIUS, SAML, PAM
+.. index:: Application Plugins, OTRS, FreeRADIUS, SAML, PAM, ownCloud
 
 privacyIDEA comes with application plugins. These are plugins for
-applications like PAM, OTRS, Apache2, FreeRADIUS or simpleSAMLphp which enable
-these
+applications like PAM, OTRS, Apache2, FreeRADIUS, ownCloud or simpleSAMLphp
+which enable these
 application to authenticate users against privacyIDEA.
 
 You may also write your own application plugin or connect your own application
@@ -259,6 +259,31 @@ configure Apache2 like this::
    you need to use this plugin with caution! Every user on the machine can
    access the redis database to read the passwords of the users. This way the
    fix password component of the user will get exposed!
+
+
+ownCloud
+--------
+
+The ownCloud plugin is a ownCloud user backend. The directory
+``user_privacyidea`` needs to be copied to your owncloud ``apps`` directory.
+
+.. figure:: owncloud.png
+   :width: 500
+
+   *Activating the ownCloud plugin*
+
+You can then activate the privacyIDEA ownCloud plugin by checking *Use
+privacyIDEA to authenticate the users.*
+All users now need to be known to privacyIDEA and need to authenticate using
+the second factor enrolled in privacyIDEA - be it an OTP token, Google
+Authenticator or SMS/Smartphone.
+
+Checking *Also allow users to authenticate with their normal passwords.* lets
+the user choose if he wants to authenticate with the OTP token or with his
+original password from the original user backend.
+
+.. note:: At the moment using a desktop client with a static password is not
+   supported.
 
 
 Further plugins

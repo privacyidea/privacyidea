@@ -1,3 +1,10 @@
+python-privacyidea (2.5~dev1) wheezy; urgency=low
+
+  * Add ownCloud plugin
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 25 Jun 2015 11:45:00 +0200
+
+
 privacyidea-venv (2.4-1) wheezy; urgency=low
 
   * Add User Management

@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<info>
+	<id>user_privacyidea</id>
+	<name>privacyIDEA User Authentication</name>
+	<description>Authenticate users with OTP against privacyIDEA.</description>
+	<licence>AGPL</licence>
+	<author>Cornelius Kölbel</author>
+	<requiremin>0.1</requiremin>
+	<shipped>false</shipped>
+	<types>
+		<authentication/>
+		<prelogin/>
+	</types>
+</info>
