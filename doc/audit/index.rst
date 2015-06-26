@@ -19,6 +19,8 @@ privacyIDEA comes with an SQL audit module. (see :ref:`code_audit`)
 Cleaning up entries
 -------------------
 
+.. index:: Audit Log Rotate
+
 The ``sqlaudit`` module writes audit entries to an SQL database.
 For performance reasons the audit module does no log rotation during
 the logging process.
@@ -26,13 +28,28 @@ the logging process.
 But you can set up a cron job to clean up old audit entries.
 
 You can specify a *highwatermark* and a *lowwatermark*. To clean
-up the audit log table, you can call the sqlaudit module at the
-command line::
+up the audit log table, you can call pi-manage.py at command line::
    
-   python privacyidea/lib/auditmodules/sqlaudit.py \
-       -f config/privacyidea.ini.example \
-       --low=5000
-       --high=10000
+   pi-manage.py rotate_audit --highwatermark 20000 --lowwatermark 18000
 
-This will, if there are more than 10.000 log entries, clean all old
-log entries, so that only 5000 log entries remain.
+This will, if there are more than 20.000 log entries, clean all old
+log entries, so that only 18000 log entries remain.
+
+Access rights
+~~~~~~~~~~~~~
+
+You may also want to run the cron job with reduced rights. I.e. a user who
+has no read access to the original pi.cfg file, since this job does not need
+read access to the SECRET or PEPPER in the pi.cfg file.
+
+So you can simply specify a confgi file with only the content::
+
+   PI_AUDIT_SQL_URI = <your database uri>
+
+Then you can call pi-manage.py like this::
+
+   PRIVACYIDEA_CONFIGFILE=/home/cornelius/src/privacyidea/audit.cfg \
+   pi-manage.py rotate_audit
+
+This will read the configuration (only the database uri) from the config file
+``audit.cfg``.

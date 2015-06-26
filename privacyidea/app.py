@@ -68,10 +68,9 @@ def create_app(config_name="development",
     :rtype: App object
     """
     print("The configuration name is: %s" % config_name)
-    print("Additional configuration can be read from the file %s" % config_file)
     if os.environ.get(ENV_KEY):
-        print("Additional configuration can be read from "
-              "the file %s" % os.environ[ENV_KEY])
+        config_file = os.environ[ENV_KEY]
+    print("Additional configuration can be read from the file %s" % config_file)
     app = Flask(__name__, static_folder="static",
                 template_folder="static/templates")
     if config_name:

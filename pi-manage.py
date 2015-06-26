@@ -48,9 +48,11 @@ from privacyidea.app import db
 from flask.ext.migrate import MigrateCommand
 # Wee need to import something, so that the models will be created.
 from privacyidea.models import Admin
+from sqlalchemy import create_engine, desc, MetaData
+from sqlalchemy.orm import sessionmaker
+from privacyidea.lib.auditmodules.sqlaudit import LogEntry
 from Crypto.PublicKey import RSA
 import jwt
-
 
 
 app = create_app(config_name='production')
@@ -295,6 +297,50 @@ def createdb():
     print db
     db.create_all()
     db.session.commit()
+
+
+@manager.option('--highwatermark', help="If entries exceed this value, "
+                                        "old entries are deleted.")
+@manager.option('--lowwatermark', help="Keep this number of entries.")
+def rotate_audit(highwatermark=10000, lowwatermark=5000):
+    """
+    Rotate the SQL audit log.
+    If more than 'highwatermark' entries are in the audit log old entries
+    will be deleted, so that 'lowwatermark' entries remain.
+    """
+    metadata = MetaData()
+    highwatermark = int(highwatermark or 10000)
+    lowwatermark = int(lowwatermark or 5000)
+
+    default_module = "privacyidea.lib.auditmodules.sqlaudit"
+    token_db_uri = app.config.get("SQLALCHEMY_DATABASE_URI")
+    audit_db_uri = app.config.get("PI_AUDIT_SQL_URI", token_db_uri)
+    audit_module = app.config.get("PI_AUDIT_MODULE", default_module)
+    if audit_module != default_module:
+        raise Exception("We only rotate SQL audit module. You are using %s" %
+                        audit_module)
+    print("Cleaning up with high: %s, low: %s. %s" % (highwatermark,
+                                                      lowwatermark,
+                                                      audit_db_uri))
+
+    engine = create_engine(audit_db_uri)
+    # create a configured "Session" class
+    session = sessionmaker(bind=engine)()
+    # create a Session
+    metadata.create_all(engine)
+    count = session.query(LogEntry.id).count()
+    for l in session.query(LogEntry.id).order_by(desc(LogEntry.id)).limit(1):
+        last_id = l[0]
+    print("The log audit log has %i entries, the last one is %i" % (count,
+                                                                    last_id))
+    # deleting old entries
+    if count > highwatermark:
+        print("More than %i entries, deleting..." % highwatermark)
+        cut_id = last_id - lowwatermark
+        # delete all entries less than cut_id
+        print("Deleting entries smaller than %i" % cut_id)
+        session.query(LogEntry.id).filter(LogEntry.id < cut_id).delete()
+        session.commit()
 
 
 @resolver_manager.command
