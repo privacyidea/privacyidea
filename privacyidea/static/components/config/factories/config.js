@@ -204,6 +204,12 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
                           'Content-Type': 'application/json'}
             }).success(callback).error(error_func);
         },
+        getDocumentation: function(callback) {
+            $http.get(systemUrl + "/documentation", {
+                headers: {'Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
         saveSystemConfig: function(params, callback) {
             $http.post(systemUrl + "/setConfig", params, {
                 headers: {'Authorization': AuthFactory.getAuthToken(),

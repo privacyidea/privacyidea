@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2015-06-26 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add system config documentation API
 # 2014-12-08 Cornelius Kölbel, <cornelius@privacyidea.org>
 #            Complete rewrite during flask migration
 #            Try to provide REST API
@@ -28,18 +30,21 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-"""
+__doc__ = """
+This is the REST API for system calls to create and read system configuration.
+
 The code of this module is tested in tests/test_api_system.py
 """
+
 from flask import (Blueprint,
                    request)
-from lib.utils import (getParam,
-                       getLowerParams,
-                       optional,
-                       required,
-                       send_result,
-                       send_error,
-                       remove_session_from_param)
+from .lib.utils import (getParam,
+                        getLowerParams,
+                        optional,
+                        required,
+                        send_result,
+                        send_error,
+                        remove_session_from_param)
 from ..lib.log import log_with
 from ..lib.config import (get_privacyidea_config,
                           set_privacyidea_config,
@@ -53,9 +58,10 @@ from ..lib.error import (ParameterError,
 from ..lib.audit import getAudit
 
 from .auth import admin_required
-from flask import (g, current_app)
+from flask import (g, current_app, render_template)
 import logging
 import json
+import datetime
 
 
 log = logging.getLogger(__name__)
@@ -190,6 +196,38 @@ def internal_error(error):
         g.audit_object.log({"info": unicode(error)})
         g.audit_object.finalize_log()
     return send_error(unicode(error), error_code=-500), 500
+
+
+@system_blueprint.route('/documentation', methods=['GET'])
+@prepolicy(check_base_action, request, ACTION.CONFIGDOCUMENTATION)
+def get_config_documentation():
+    """
+    returns an restructured text document, that describes the complete
+    configuration.
+    """
+    import socket
+    from privacyidea.lib.resolver import get_resolver_list
+    from privacyidea.lib.realm import get_realms
+    from privacyidea.lib.policy import PolicyClass
+    from privacyidea.lib.auth import get_db_admins
+    P = PolicyClass()
+
+    config = get_from_config()
+    resolvers = get_resolver_list()
+    realms = get_realms()
+    policies = P.get_policies()
+    admins = get_db_admins()
+    context = {"system": socket.getfqdn(socket.gethostname()),
+               "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+               "systemconfig": config,
+               "appconfig": current_app.config,
+               "resolverconfig": resolvers,
+               "realmconfig": realms,
+               "policyconfig": policies,
+               "admins": admins}
+
+    return render_template("documentation.rst", context=context).replace(
+        "\n\n", "\n")
 
 
 @system_blueprint.route('/<key>', methods=['GET'])

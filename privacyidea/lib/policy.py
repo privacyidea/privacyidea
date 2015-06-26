@@ -166,6 +166,7 @@ class ACTION():
     SERIAL = "serial"
     SYSTEMDELETE = "configdelete"
     SYSTEMWRITE = "configwrite"
+    CONFIGDOCUMENTATION = "system_documentation"
     TOKENLABEL = "tokenlabel"
     TOKENREALMS = "tokenrealms"
     TOKENTYPE = "tokentype"
@@ -578,31 +579,45 @@ def get_static_policy_definitions(scope=None):
     pol = {
         SCOPE.ADMIN: {
             ACTION.ENABLE: {'type': 'bool',
-                       'desc' : _('Admin is allowed to enable tokens.')},
+                            'desc': _('Admin is allowed to enable tokens.')},
             ACTION.DISABLE: {'type': 'bool',
-                        'desc' : _('Admin is allowed to disable tokens.')},
+                             'desc': _('Admin is allowed to disable tokens.')},
             ACTION.SET: {'type': 'bool',
-                    'desc' : _('Admin is allowed to set token properties.')},
+                         'desc': _(
+                             'Admin is allowed to set token properties.')},
             ACTION.SETPIN: {'type': 'bool',
-                          'desc' : _('Admin is allowed to set the OTP PIN of tokens.')},
+                            'desc': _(
+                                'Admin is allowed to set the OTP PIN of '
+                                'tokens.')},
             ACTION.RESYNC: {'type': 'bool',
-                       'desc' : _('Admin is allowed to resync tokens.')},
+                            'desc': _('Admin is allowed to resync tokens.')},
             ACTION.RESET: {'type': 'bool',
-                      'desc' : _('Admin is allowed to reset the Failcounter of a token.')},
+                           'desc': _(
+                               'Admin is allowed to reset the Failcounter of '
+                               'a token.')},
             ACTION.ASSIGN: {'type': 'bool',
-                       'desc' : _('Admin is allowed to assign a token to a user.')},
+                            'desc': _(
+                                'Admin is allowed to assign a token to a '
+                                'user.')},
             ACTION.UNASSIGN: {'type': 'bool',
-                         'desc' : _('Admin is allowed to remove the token from a user, '
-                         'i.e. unassign a token.')},
+                              'desc': _(
+                                  'Admin is allowed to remove the token from '
+                                  'a user, '
+                                  'i.e. unassign a token.')},
             ACTION.IMPORT: {'type': 'bool',
-                       'desc' : _('Admin is allowed to import token files.')},
+                            'desc': _(
+                                'Admin is allowed to import token files.')},
             ACTION.DELETE: {'type': 'bool',
-                       'desc' : _('Admin is allowed to remove tokens from the database.')},
+                            'desc': _(
+                                'Admin is allowed to remove tokens from the '
+                                'database.')},
             ACTION.USERLIST: {'type': 'bool',
-                         'desc' : _('Admin is allowed to view the list of the users.')},
+                              'desc': _(
+                                  'Admin is allowed to view the list of the '
+                                  'users.')},
             ACTION.MACHINELIST: {'type': 'bool',
                                  'desc': _('The Admin is allowed to list '
-                                            'the machines.')},
+                                           'the machines.')},
             ACTION.MACHINETOKENS: {'type': 'bool',
                                    'desc': _('The Admin is allowed to attach '
                                              'and detach tokens to machines.')},
@@ -611,12 +626,13 @@ def get_static_policy_definitions(scope=None):
                                          'authentication items of tokens '
                                          'assigned to machines.')},
             # 'checkstatus': {'type': 'bool',
-            #                 'desc' : _('Admin is allowed to check the status of a challenge'
+            #                 'desc' : _('Admin is allowed to check the
+            # status of a challenge'
             #                            ' resonse token.'),
             #                 "group": "tools"},
             ACTION.TOKENREALMS: {'type': 'bool',
-                                 'desc' : _('Admin is allowed to manage the '
-                                            'realms of a token.')},
+                                 'desc': _('Admin is allowed to manage the '
+                                           'realms of a token.')},
             ACTION.GETSERIAL: {'type': 'bool',
                                'desc': _('Admin is allowed to retrieve a serial'
                                          ' for a given OTP value.'),
@@ -626,46 +642,61 @@ def get_static_policy_definitions(scope=None):
             #                           'is unique'),
             #                 "group": "tools"},
             ACTION.COPYTOKENPIN: {'type': 'bool',
-                             'desc' : _('Admin is allowed to copy the PIN of one token '
-                                        'to another token.'),
-                             "group": "tools"},
+                                  'desc': _(
+                                      'Admin is allowed to copy the PIN of '
+                                      'one token '
+                                      'to another token.'),
+                                  "group": "tools"},
             ACTION.COPYTOKENUSER: {'type': 'bool',
-                              'desc' : _('Admin is allowed to copy the assigned user to another'
-                                         ' token, i.e. assign a user ot '
-                                         'another token.'),
-                              "group": "tools"},
+                                   'desc': _(
+                                       'Admin is allowed to copy the assigned '
+                                       'user to another'
+                                       ' token, i.e. assign a user ot '
+                                       'another token.'),
+                                   "group": "tools"},
             ACTION.LOSTTOKEN: {'type': 'bool',
                                'desc': _('Admin is allowed to trigger the '
-                                          'lost token workflow.'),
+                                         'lost token workflow.'),
                                "group": "tools"},
             # 'getotp': {
             #     'type': 'bool',
-            #     'desc': _('Allow the administrator to retrieve OTP values for tokens.'),
+            #     'desc': _('Allow the administrator to retrieve OTP values
+            # for tokens.'),
             #     "group": "tools"},
             ACTION.SYSTEMWRITE: {'type': 'bool',
-                                "desc" : _("Admin is allowed to write and modify the "
-                                 "system configuration."),
-                                "group": "system"},
+                                 "desc": _("Admin is allowed to write and "
+                                           "modify the system configuration."),
+                                 "group": "system"},
             ACTION.SYSTEMDELETE: {'type': 'bool',
-                                 "desc" : _("Admin is allowed to delete "
-                                            "keys in the system configuration."),
-                                 "group": "system"},
+                                  "desc": _("Admin is allowed to delete "
+                                            "keys in the system "
+                                            "configuration."),
+                                  "group": "system"},
+            ACTION.CONFIGDOCUMENTATION: {'type': 'bool',
+                                         'desc': _('Admin is allowed to '
+                                                   'export a documentation '
+                                                   'of the complete '
+                                                   'configuration including '
+                                                   'resolvers and realm.'),
+                                         'group': 'system'},
             ACTION.POLICYWRITE: {'type': 'bool',
-                                "desc" : _("Admin is allowed to write and modify the "
-                                 "policies."),
-                                "group": "system"},
+                                 "desc": _("Admin is allowed to write and "
+                                           "modify the policies."),
+                                 "group": "system"},
             ACTION.POLICYDELETE: {'type': 'bool',
-                                 "desc" : _("Admin is allowed to delete "
+                                  "desc": _("Admin is allowed to delete "
                                             "policies."),
-                                 "group": "system"},
+                                  "group": "system"},
             ACTION.RESOLVERWRITE: {'type': 'bool',
-                                "desc" : _("Admin is allowed to write and modify the "
-                                 "resolver and realm configuration."),
-                                "group": "system"},
+                                   "desc": _("Admin is allowed to write and "
+                                             "modify the "
+                                             "resolver and realm "
+                                             "configuration."),
+                                   "group": "system"},
             ACTION.RESOLVERDELETE: {'type': 'bool',
-                                 "desc": _("Admin is allowed to delete "
-                                           "resolvers and realms."),
-                                 "group": "system"},
+                                    "desc": _("Admin is allowed to delete "
+                                              "resolvers and realms."),
+                                    "group": "system"},
             ACTION.CACONNECTORWRITE: {'type': 'bool',
                                       "desc": _("Admin is allowed to create new"
                                                 " CA Connector definitions "
@@ -702,14 +733,20 @@ def get_static_policy_definitions(scope=None):
         },
         # 'gettoken': {
         #     'max_count_dpw': {'type': 'int',
-        #                       'desc' : _('When OTP values are retrieved for a DPW token, '
-        #                                  'this is the maximum number of retrievable OTP values.')},
+        #                       'desc' : _('When OTP values are retrieved for
+        #  a DPW token, '
+        #                                  'this is the maximum number of
+        # retrievable OTP values.')},
         #     'max_count_hotp': {'type': 'int',
-        #                        'desc' : _('When OTP values are retrieved for a HOTP token, '
-        #                                   'this is the maximum number of retrievable OTP values.')},
+        #                        'desc' : _('When OTP values are retrieved
+        # for a HOTP token, '
+        #                                   'this is the maximum number of
+        # retrievable OTP values.')},
         #     'max_count_totp': {'type': 'int',
-        #                        'desc' : _('When OTP values are retrieved for a TOTP token, '
-        #                                   'this is the maximum number of retrievable OTP values.')},
+        #                        'desc' : _('When OTP values are retrieved
+        # for a TOTP token, '
+        #                                   'this is the maximum number of
+        # retrievable OTP values.')},
         # },
         SCOPE.USER: {
             ACTION.ASSIGN: {
@@ -718,11 +755,17 @@ def get_static_policy_definitions(scope=None):
                           " that is not yet assigned"
                           " using the token serial number.")},
             ACTION.DISABLE: {'type': 'bool',
-                        'desc': _('The user is allowed to disable his own tokens.')},
+                             'desc': _(
+                                 'The user is allowed to disable his own '
+                                 'tokens.')},
             ACTION.ENABLE: {'type': 'bool',
-                       'desc': _("The user is allowed to enable his own tokens.")},
+                            'desc': _(
+                                "The user is allowed to enable his own "
+                                "tokens.")},
             ACTION.DELETE: {'type': 'bool',
-                       "desc": _("The user is allowed to delete his own tokens.")},
+                            "desc": _(
+                                "The user is allowed to delete his own "
+                                "tokens.")},
             ACTION.UNASSIGN: {'type': 'bool',
                               "desc": _("The user is allowed to unassign his "
                                         "own tokens.")},
@@ -749,17 +792,23 @@ def get_static_policy_definitions(scope=None):
                                               "(c)haracters, (n)umeric, "
                                               "(s)pecial, (o)thers. [+/-]!")},
             # 'setMOTPPIN': {'type': 'bool',
-            #                "desc": _("The user is allowed to set the mOTP PIN of his mOTP tokens.")},
+            #                "desc": _("The user is allowed to set the mOTP
+            # PIN of his mOTP tokens.")},
             # 'getotp': {'type': 'bool',
-            #            "desc": _("The user is allowed to retrieve OTP values for his own tokens.")},
+            #            "desc": _("The user is allowed to retrieve OTP
+            # values for his own tokens.")},
             # 'activateQR': {'type': 'bool',
-            #                "desc": _("The user is allowed to enroll a QR token.")},
+            #                "desc": _("The user is allowed to enroll a QR
+            # token.")},
             # 'max_count_dpw': {'type': 'int',
-            #                   "desc": _("This is the maximum number of OTP values, the user is allowed to retrieve for a DPW token.")},
+            #                   "desc": _("This is the maximum number of OTP
+            # values, the user is allowed to retrieve for a DPW token.")},
             # 'max_count_hotp': {'type': 'int',
-            #                    "desc": _("This is the maximum number of OTP values, the user is allowed to retrieve for a HOTP token.")},
+            #                    "desc": _("This is the maximum number of OTP
+            #  values, the user is allowed to retrieve for a HOTP token.")},
             # 'max_count_totp': {'type': 'int',
-            #                    "desc": _("This is the maximum number of OTP values, the user is allowed to retrieve for a TOTP token.")},
+            #                    "desc": _("This is the maximum number of OTP
+            #  values, the user is allowed to retrieve for a TOTP token.")},
             ACTION.AUDIT: {
                 'type': 'bool',
                 'desc': _('Allow the user to view his own token history.')},
@@ -769,8 +818,9 @@ def get_static_policy_definitions(scope=None):
                                           "his password.")}
             # 'getserial': {
             #     'type': 'bool',
-            #     'desc': _('Allow the user to search an unassigned token by OTP value.')},
-            },
+            #     'desc': _('Allow the user to search an unassigned token by
+            # OTP value.')},
+        },
         SCOPE.ENROLL: {
             ACTION.MAXTOKENREALM: {
                 'type': 'int',
@@ -799,7 +849,8 @@ def get_static_policy_definitions(scope=None):
                           "unassigned token to authenticate.")},
             # 'ignore_autoassignment_pin': {
             #     'type': 'bool',
-            #     'desc' : _("Do not set password from auto assignment as token pin.")},
+            #     'desc' : _("Do not set password from auto assignment as
+            # token pin.")},
             ACTION.LOSTTOKENPWLEN: {
                 'type': 'int',
                 'value': range(1, 32),
@@ -814,7 +865,7 @@ def get_static_policy_definitions(scope=None):
                 'value': range(1, 61),
                 'desc': _('The length of the validity for the temporary '
                           'token (in days).')},
-            },
+        },
         SCOPE.AUTH: {
             ACTION.OTPPIN: {
                 'type': 'str',
@@ -828,21 +879,22 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('If set, the user in this realm will be '
                           'authenticated against the UserIdResolver,'
                           ' if the user has no tokens assigned.')
-                },
+            },
             ACTION.PASSNOTOKEN: {
                 'type': 'bool',
                 'desc': _('If the user has no token, the authentication '
                           'request for this user will always be true.')
-                },
+            },
             ACTION.PASSNOUSER: {
                 'type': 'bool',
                 'desc': _('If the user user does not exist, '
                           'the authentication request for this '
                           'non-existing user will always be true.')
-                }
+            }
             # 'qrtanurl': {
             #     'type': 'str',
-            #     'desc': _('The URL for the half automatic mode that should be '
+            #     'desc': _('The URL for the half automatic mode that should
+            # be '
             #             'used in a QR Token')
             #     },
             # 'challenge_response': {
@@ -850,7 +902,7 @@ def get_static_policy_definitions(scope=None):
             #     'desc': _('A list of tokentypes for which challenge response '
             #               'should be used.')
             #     }
-            },
+        },
         SCOPE.AUTHZ: {
             ACTION.TOKENTYPE: {
                 'type': 'str',
@@ -878,8 +930,8 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('The sending of an API Auth Key is required during'
                           'authentication. This avoids rogue authenticate '
                           'requests against the /validate/check interface.')
-                }
-            },
+            }
+        },
 
         SCOPE.WEBUI: {
             ACTION.LOGINMODE: {

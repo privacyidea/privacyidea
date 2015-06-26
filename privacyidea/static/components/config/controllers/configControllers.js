@@ -539,6 +539,13 @@ myApp.controller("configController", function ($scope, $location,
             console.log($scope.params);
         })
     };
+
+    $scope.getSystemDocumentation = function () {
+        ConfigFactory.getDocumentation(function (data) {
+            console.log(data);
+            $scope.systemDocumentation = data;
+        });
+    };
     $scope.getSystemConfig();
 
 });

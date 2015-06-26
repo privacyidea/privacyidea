@@ -71,6 +71,11 @@ def list_db_admin():
         print("%s \t %s" % (admin.username, admin.email))
 
 
+def get_db_admins():
+    admins = Admin.query.all()
+    return admins
+
+
 def delete_db_admin(username):
     print("Deleting admin %s" % username)
     Admin.query.filter(Admin.username == username).first().delete()

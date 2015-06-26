@@ -718,7 +718,6 @@ class APIConfigTestCase(MyTestCase):
             pol = result.get("value")
             self.assertFalse(pol[0].get("active"), pol[0])
 
-
         # enable Policy
         with self.app.test_request_context('/policy/enable/pol2',
                                            method='POST',
@@ -735,3 +734,12 @@ class APIConfigTestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             pol = result.get("value")
             self.assertTrue(pol[0].get("active"), pol[0])
+
+    def test_15_get_documentation(self):
+        with self.app.test_request_context('/system/documentation',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue("privacyIDEA configuration documentation" in
+                            res.data)

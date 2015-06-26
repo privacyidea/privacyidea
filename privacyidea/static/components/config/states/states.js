@@ -123,6 +123,10 @@ angular.module('privacyideaApp.configStates', ['ui.router']).config(
                     url: "/system",
                     templateUrl: configpath + "config.system.html"
                 })
+                .state('config.sysdoc', {
+                    url: "/system/documentation",
+                    templateUrl: configpath + "config.system.html"
+                })
                 .state('config.policies', {
                     url: "/policies",
                     templateUrl: configpath + "config.policies.html"

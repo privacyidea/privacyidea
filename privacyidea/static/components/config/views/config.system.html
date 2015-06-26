@@ -1,7 +1,42 @@
 <div ng-include="instanceUrl+'/static/components/config/views/config.system.addons.html'">
 </div>
-<form>
-    <div class="panel">
+
+<div class="row">
+    <div class="col-lg-3">
+        <div class="pa-sidebar panel">
+            <ul class="nav nav-pills nav-stacked">
+                <li role="presentation">
+                    <li role="presentation"
+                        ng-class="{ active: $state.includes('config.system')}">
+                        <a ui-sref="config.system">
+                            <span class="glyphicon
+                            glyphicon-wrench"></span> System Config</a></li>
+                    <li role="presentation"
+                        ng-class="{ active: $state.includes('config.sysdoc')}">
+                    <a ng-click="getSystemDocumentation()"
+                            ui-sref="config.sysdoc"><span
+                            class="glyphicon
+                    glyphicon-download">
+                        Get System Documentation</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="col-lg-9 panel"
+            ng-show="$state.includes('config.sysdoc')">
+        <div class="form-group col-sm-12">
+        <p class="help-block">This documentation contains the current
+            configuration of your system in restructured text. You can use
+            this to document your installed system.</p>
+        <textarea ng-model="systemDocumentation"
+                  rows="15"
+                 class="form-group col-sm-12">
+        </textarea>
+        </div>
+    </div>
+    <div class="col-lg-9 panel"
+            ng-show="$state.includes('config.system')">
+        <form>
         <div class="form-group col-sm-12">
             <input name="splitAtSign" id="splitAtSign"
                    ng-model="params.splitAtSign"
@@ -188,6 +223,6 @@
                     class="btn btn-primary">Save System Config
             </button>
         </div>
-
+    </form>
     </div>
-</form>
+</div>
