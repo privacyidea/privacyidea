@@ -226,8 +226,10 @@ def get_config_documentation():
                "policyconfig": policies,
                "admins": admins}
 
-    return render_template("documentation.rst", context=context).replace(
-        "\n\n", "\n")
+    import re
+    # Three or more line breaks will be changed to two.
+    return re.sub("\n{3,}", "\n\n", render_template("documentation.rst",
+                                               context=context))
 
 
 @system_blueprint.route('/<key>', methods=['GET'])
