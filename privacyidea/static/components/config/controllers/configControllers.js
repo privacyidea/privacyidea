@@ -43,7 +43,8 @@ myApp.controller("policyListController", function($scope, $stateParams,
 });
 
 myApp.controller("policyDetailsController", function($scope, $stateParams,
-                                                     ConfigFactory, $state) {
+                                                     ConfigFactory, $state,
+                                                     PolicyTemplateFactory) {
     // init
     $scope.realms = [];
     $scope.adminRealms = [];
@@ -53,6 +54,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
     $scope.adminRealmsLoaded = false;
     $scope.policyDefsLoaded = false;
     $scope.scopes = [];
+    $scope.viewPolicyTemplates = false;
 
     check_all_loaded = function() {
         if ($scope.resolversLoaded &&
@@ -61,6 +63,28 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             $scope.policyDefsLoaded) {
             $scope.presetEditValues();
         }
+    };
+
+    // Get the policy templates from github
+    PolicyTemplateFactory.getTemplates(function(data){
+        console.log("Getting Policy Templates.");
+        console.log(data);
+        $scope.policyTemplates = data;
+    });
+
+    $scope.getTemplate = function(templateName) {
+        PolicyTemplateFactory.getTemplate(templateName, function(data){
+            console.log("Get template ". templateName);
+            console.log(data);
+            // Set template data.
+            $scope.policyname = data.name;
+            $scope.presetEditValues2({name: data.name,
+                    scope: data.scope,
+                    realm: data.realm || [],
+                    action: data.action || [],
+                    resolver: data.resolver || [],
+                    adminrealm: data.adminrealm || []})
+        });
     };
 
     // get init values from the server
@@ -254,12 +278,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             })
     };
 
-    $scope.presetEditValues = function () {
-        console.log("presetEditValues");
-        console.log($scope.policies);
-        console.log($scope.policyDefs);
-
-        presetEditValues2 = function(policy) {
+    $scope.presetEditValues2 = function(policy) {
             console.log(policy);
             // fill $scope.params
             $scope.params.user = policy.user;
@@ -291,11 +310,16 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             $scope.fillActionList(policy.scope, policy.action);
         };
 
+    $scope.presetEditValues = function () {
+        console.log("presetEditValues");
+        console.log($scope.policies);
+        console.log($scope.policyDefs);
+
         if ($scope.policies) {
             // We have $scope.policies, since we come from the state policies.list
             angular.forEach($scope.policies, function (value, key){
                if (value.name == $stateParams.policyname) {
-                    presetEditValues2(value);
+                    $scope.presetEditValues2(value);
                }
             });
         } else {
@@ -303,7 +327,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             // So we need to fetch this policy definition
             ConfigFactory.getPolicy($stateParams.policyname, function (data) {
                 var policy = data.result.value[0];
-                presetEditValues2(policy);
+                $scope.presetEditValues2(policy);
             });
         }
     }

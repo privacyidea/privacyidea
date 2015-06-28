@@ -22,7 +22,7 @@
         <label for="policyname" class="col-sm-3 control-label">Policy
             Name</label>
 
-        <div class="col-sm-9">
+        <div class="col-sm-6">
             <input name="policyname" id="policyname" class="form-control"
                    ng-model="policyname" required placeholder="policy1"
                    autofocus required/>
@@ -32,7 +32,39 @@
                 with the new name!
             </p>
         </div>
-
+        <div class="col-sm-3">
+        <button class="btn btn-primary"
+                ng-hide="existingPolicyname || viewPolicyTemplates"
+                ng-click="viewPolicyTemplates=true">
+                <span class="glyphicon glyphicon-leaf"></span>
+                Show Policy templates
+        </button>
+        <button class="btn btn-warning"
+                ng-hide="existingPolicyname || !viewPolicyTemplates"
+                ng-click="viewPolicyTemplates=false">
+                <span class="glyphicon glyphicon-leaf"></span>
+                Hide Policy templates
+        </button>
+        </div>
+    </div>
+    <div ng-show="viewPolicyTemplates"
+            class="form-group">
+        <label for="scope" class="col-sm-3 control-label">
+            Policy Templates</label>
+        <div class="col-sm-9">
+            <table class="table table-hover">
+            <tr ng-repeat="(templateName, templateDesc) in policyTemplates">
+                <td>
+                    <a href=""
+                       ng-click="getTemplate(templateName)"
+                            >{{ templateName }}</a>
+                </td>
+                <td>
+                    <p class="help-block">{{ templateDesc }}</p>
+                </td>
+            </tr>
+            </table>
+        </div>
     </div>
     <div class="form-group">
         <label for="scope" class="col-sm-3 control-label">
