@@ -62,6 +62,13 @@ from flask import (g, current_app, render_template)
 import logging
 import json
 import datetime
+import re
+import socket
+from privacyidea.lib.resolver import get_resolver_list
+from privacyidea.lib.realm import get_realms
+from privacyidea.lib.policy import PolicyClass
+from privacyidea.lib.auth import get_db_admins
+
 
 
 log = logging.getLogger(__name__)
@@ -205,11 +212,6 @@ def get_config_documentation():
     returns an restructured text document, that describes the complete
     configuration.
     """
-    import socket
-    from privacyidea.lib.resolver import get_resolver_list
-    from privacyidea.lib.realm import get_realms
-    from privacyidea.lib.policy import PolicyClass
-    from privacyidea.lib.auth import get_db_admins
     P = PolicyClass()
 
     config = get_from_config()
@@ -226,7 +228,7 @@ def get_config_documentation():
                "policyconfig": policies,
                "admins": admins}
 
-    import re
+    g.audit_object.log({"success": True})
     # Three or more line breaks will be changed to two.
     return re.sub("\n{3,}", "\n\n", render_template("documentation.rst",
                                                context=context))
