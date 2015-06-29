@@ -14,7 +14,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_max_token_realm, set_realm,
                                            init_tokenlabel, init_random_pin,
                                            encrypt_pin, check_otp_pin,
-                                           check_external, api_key_required)
+                                           check_external, api_key_required,
+                                           mangle)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             no_detail_on_success,
                                             no_detail_on_fail, autoassign,
@@ -571,6 +572,46 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         self.assertRaises(PolicyError, api_key_required, req)
 
         delete_policy("pol_api")
+
+    def test_12_mangle(self):
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+
+        # Set a mangle policy to change the username
+        # and only use the last 4 characters of the username
+        set_policy(name="mangle1",
+                   scope=SCOPE.AUTH,
+                   action="%s=user/.*(.{4}$)/\\1/" % ACTION.MANGLE)
+        g.policy_object = PolicyClass()
+
+        # request, that matches the policy
+        req.all_data = {"user": "Thiswillbesplit_user"}
+        mangle(req)
+        # Check if the user was modified
+        self.assertEqual(req.all_data.get("user"), "user")
+
+        # Set a mangle policy to remove blanks from realm name
+        set_policy(name="mangle2",
+                   scope=SCOPE.AUTH,
+                   action="%s=realm/\\s//" % ACTION.MANGLE)
+        g.policy_object = PolicyClass()
+
+        # request, that matches the policy
+        req.all_data = {"realm": "lower Realm"}
+        mangle(req)
+        # Check if the realm was modified
+        self.assertEqual(req.all_data.get("realm"), "lowerRealm")
+
+        # finally delete policy
+        delete_policy("mangle1")
+        delete_policy("mangle2")
 
 
 class PostPolicyDecoratorTestCase(MyTestCase):

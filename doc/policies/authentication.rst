@@ -160,6 +160,50 @@ type: bool
 If set, a new OTP Email will be sent, when successfully authenticated with an
 Email Token.
 
+
+.. _policy_mangle:
+
+mangle
+~~~~~~
+
+.. index:: Mangle authentication request, Mangle policy
+
+type: string
+
+The ``mangle`` policy can mangle the authentication request data before they
+are processed. I.e. the parameters ``user``, ``pass`` and ``realm`` can be
+modified prior to authentication.
+
+This is usefull if either information needs to be stripped or added to such a
+parameter.
+To accomplish that, the mangle policy can do a regular expression search and
+replace using the keyword *user*, *pass* (password) and *realm*.
+
+A valid action could look like this::
+
+   action: mangle=user/.*(.{4})/user\\1/
+
+This would modify a username like "userwithalongname" to "username", since it
+would use the last four characters of the given username ("name") and prepend
+the fixed string "user".
+
+This way you can add, remove or modify the contents of the three parameters.
+For more information on the regular expressions see [#pythonre]_.
+
+.. note:: You must escape the backslash as **\\** to refer to the found
+   substrings.
+
+**Example**: A policy to remove whitespace characters from the realm name would
+look like this::
+
+   action: mangle=realm/\\s//
+
+**Example**: If you want to authenticate the user only by the OTP value, no
+matter what OTP PIN he enters, a policy might look like this::
+
+   action: mangle=pass/.*(.{6})/\\1/
+
+
 qrtanurl
 ~~~~~~~~
 
@@ -179,3 +223,5 @@ type: string
 
 This is a list of token types for which challenge response can
 be used during authentication.
+
+.. [#pythonre] https://docs.python.org/2/library/re.html

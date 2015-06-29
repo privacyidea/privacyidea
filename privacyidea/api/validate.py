@@ -58,7 +58,7 @@ from privacyidea.lib.token import (check_user_pass, check_serial_pass)
 from privacyidea.api.lib.utils import remove_session_from_param
 from privacyidea.lib.audit import getAudit
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
-                                           api_key_required)
+                                           api_key_required, mangle)
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
                                             no_detail_on_fail,
@@ -116,6 +116,7 @@ def after_request(response):
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)
 @prepolicy(set_realm, request=request)
+@prepolicy(mangle, request=request)
 @check_user_or_serial_in_request
 @prepolicy(api_key_required, request=request)
 def check():
@@ -191,6 +192,7 @@ def check():
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)
 @prepolicy(set_realm, request=request)
+@prepolicy(mangle, request=request)
 @check_user_or_serial_in_request
 @prepolicy(api_key_required, request=request)
 def samlcheck():

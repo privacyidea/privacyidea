@@ -335,8 +335,8 @@ def set_realm(request=None, action=None):
     This decorator should wrap
         /validate/check
 
-    :param req: The request that is intercepted during the API call
-    :type req: Request Object
+    :param request: The request that is intercepted during the API call
+    :type request: Request Object
     :param action: An optional Action
     :type action: basestring
     :returns: Always true. Modified the parameter request
@@ -363,6 +363,49 @@ def set_realm(request=None, action=None):
     elif len(new_realm) == 1:
         # There is one specific realm, which we set in the request
         request.all_data["realm"] = new_realm[0]
+
+    return True
+
+
+def mangle(request=None, action=None):
+    """
+    This pre condition checks if either of the parameters pass, user or realm
+    in a validate/check request should be rewritten based on an
+    authentication policy with action "mangle".
+    See :ref:`policy_mangle` for an example.
+
+    Check ACTION.MANGLE
+
+    This decorator should wrap
+        /validate/check
+
+    :param request: The request that is intercepted during the API call
+    :type request: Request Object
+    :param action: An optional Action
+    :type action: basestring
+    :returns: Always true. Modified the parameter request
+    """
+    user_object = get_user_from_param(request.all_data)
+
+    policy_object = g.policy_object
+    mangle_pols = policy_object.get_action_values(ACTION.MANGLE,
+                                                  scope=SCOPE.AUTH,
+                                                  realm=user_object.realm,
+                                                  user=user_object.login,
+                                                  client=request.remote_addr)
+    # reduce the entries to unique entries
+    mangle_pols = list(set(mangle_pols))
+    # We can have several mangle policies! One for user, one for realm and
+    # one for pass. So we do no checking here.
+    for mangle_pol_action in mangle_pols:
+        # mangle_pol_action looks like this:
+        # keyword/search/replace/. Where "keyword" can be "user", "pass" or
+        # "realm".
+        mangle_key, search, replace, _rest = mangle_pol_action.split("/", 3)
+        mangle_value = request.all_data.get(mangle_key)
+        if mangle_value:
+            request.all_data[mangle_key] = re.sub(search, replace,
+                                                  mangle_value)
 
     return True
 

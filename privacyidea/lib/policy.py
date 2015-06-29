@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-06-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add the mangle policy
 #  2015-04-03 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add WebUI logout time.
 #  2015-03-27 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -142,6 +144,7 @@ class ACTION():
     MACHINERESOLVERDELETE = "mresolverdelete"
     MACHINELIST = "machinelist"
     MACHINETOKENS = "manage_machine_tokens"
+    MANGLE = "mangle"
     MAXTOKENREALM = "max_token_per_realm"
     MAXTOKENUSER = "max_token_per_user"
     NODETAILSUCCESS = "no_detail_on_success"
@@ -891,6 +894,12 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('If the user user does not exist, '
                           'the authentication request for this '
                           'non-existing user will always be true.')
+            },
+            ACTION.MANGLE: {
+                'type': 'str',
+                'desc': _('Can be used to modify the parameters pass, '
+                          'user and realm in an authentication request. See '
+                          'the documentation for an example.')
             }
             # 'qrtanurl': {
             #     'type': 'str',
