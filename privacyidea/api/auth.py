@@ -59,7 +59,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.user import split_user
 from privacyidea.lib.policy import PolicyClass, SCOPE
 from privacyidea.lib.realm import get_default_realm
-from privacyidea.api.lib.postpolicy import postpolicy, get_logout_time
+from privacyidea.api.lib.postpolicy import postpolicy, get_webui_settings
 
 
 jwtauth = Blueprint('jwtauth', __name__)
@@ -83,7 +83,7 @@ def before_request():
 
 
 @jwtauth.route('', methods=['POST'])
-@postpolicy(get_logout_time)
+@postpolicy(get_webui_settings)
 def get_auth_token():
     """
     This call verifies the credentials of the user and issues an

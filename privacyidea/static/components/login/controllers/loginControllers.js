@@ -23,7 +23,8 @@ angular.module("privacyideaApp")
                             function (Idle,
                                       $scope, $http, $location,
                                       authUrl, AuthFactory, $rootScope,
-                                      $state, ConfigFactory, inform) {
+                                      $state, ConfigFactory, inform,
+                                      PolicyTemplateFactory) {
     $scope.myCountdown = "";
     // We save the previous State in the $rootScope, so that we
     // can return there
@@ -86,6 +87,7 @@ angular.module("privacyideaApp")
             $scope.privacyideaVersionNumber = data.versionnumber;
             $scope.loggedInUser = AuthFactory.getUser();
             timeout = data.result.value.logout_time;
+            PolicyTemplateFactory.setUrl(data.result.value.policy_template_url);
             console.log(timeout);
             Idle.setIdle(timeout-10);
             Idle.watch();

@@ -21,6 +21,9 @@
 myApp.factory("PolicyTemplateFactory", function($http, inform){
     var URL = "https://raw.githubusercontent.com/privacyidea/policy-templates/master/templates/";
     return {
+        setUrl: function(url) {
+            URL = url;
+        },
         getTemplates: function(callback) {
             console.log("Going to fetch Policy Templates");
             $http.get(URL + "index.json")

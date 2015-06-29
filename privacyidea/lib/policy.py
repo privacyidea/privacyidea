@@ -156,6 +156,7 @@ class ACTION():
     PASSTHRU = "passthru"
     POLICYDELETE = "policydelete"
     POLICYWRITE = "policywrite"
+    POLICYTEMPLATEURL = "policy_template_url"
     RESET = "reset"
     RESOLVERDELETE = "resolverdelete"
     RESOLVERWRITE = "resolverwrite"
@@ -947,6 +948,13 @@ def get_static_policy_definitions(scope=None):
                 'type': 'int',
                 'desc': _("Set the time in seconds after which the user will "
                           "be logged out from the WebUI. Default: 120")
+            },
+            ACTION.POLICYTEMPLATEURL: {
+                'type': 'str',
+                'desc': _("The URL of a repository, where the policy "
+                          "templates can be found.  (Default "
+                          "https://raw.githubusercontent.com/privacyidea/"
+                          "policy-templates/master/templates/)")
             }
         }
 

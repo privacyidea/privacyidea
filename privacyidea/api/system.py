@@ -70,7 +70,6 @@ from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.auth import get_db_admins
 
 
-
 log = logging.getLogger(__name__)
 
 

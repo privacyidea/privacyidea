@@ -55,3 +55,20 @@ Set the timeout, after which a user in th WebUI will be logged out.
 The default timeout is 120 seconds.
 
 Being a policy this time can be set based on clients, realms and users.
+
+.. _policy_template_url:
+
+policy_template_url
+~~~~~~~~~~~~~~~~~~~
+
+.. index:: policy template URL
+
+type: str
+
+Here you can define a URL from where the policies should be fetched. The
+default URL is a Github repository [#defaulturl]_.
+
+.. note:: When setting a template_url policy the modified URL will only get
+   active after the user has logged out and in again.
+
+.. [#defaulurl] https://github.com/privacyidea/policy-templates/.

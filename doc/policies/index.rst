@@ -20,9 +20,9 @@ privacyIDEA knows the scopes:
    authorization
    enrollment
    webui
-   audit  **(TODO)**: not migrated, yet.
+   audit
+   gettoken
    ocra **(TODO)**: not migrated, yet.
-   gettoken **(TODO)**: not migrated, yet.
 
 You can define as many policies as you wish to.
 The logic of the policies in the scopes is additive.
@@ -31,6 +31,13 @@ The logic of the policies in the scopes is additive.
    :width: 500
 
    *Policy Definition*
+
+Starting with privacyIDEA 2.5 you can use policy templates to ease the setup.
+
+.. toctree::
+   :maxdepth: 1
+
+   templates
 
 Each policy can contain the following attributes:
 

@@ -50,6 +50,8 @@ import netaddr
 optional = True
 required = False
 DEFAULT_LOGOUT_TIME = 120
+DEFAULT_POLICY_TEMPLATE_URL = "https://raw.githubusercontent.com/privacyidea/" \
+                              "policy-templates/master/templates/"
 
 
 class postpolicy(object):
@@ -238,10 +240,10 @@ def offline_info(request, response):
     return response
 
 
-def get_logout_time(request, response):
+def get_webui_settings(request, response):
     """
     This decorator is used in the /auth API to add configuration information
-    like the logout time to the response.
+    like the logout_time or the policy_template_url to the response.
     :param request: flask request object
     :param response: flask response object
     :return: the response
@@ -265,7 +267,18 @@ def get_logout_time(request, response):
         if len(logout_time_pol) == 1:
             logout_time = int(logout_time_pol[0])
 
+        policy_template_url_pol = policy_object.get_action_values(
+            action=ACTION.POLICYTEMPLATEURL,
+            scope=SCOPE.WEBUI,
+            client=client,
+            unique=True)
+
+        policy_template_url = DEFAULT_POLICY_TEMPLATE_URL
+        if len(policy_template_url_pol) == 1:
+            policy_template_url = policy_template_url_pol[0]
+
         content["result"]["value"]["logout_time"] = logout_time
+        content["result"]["value"]["policy_template_url"] = policy_template_url
         response.data = json.dumps(content)
     return response
 
