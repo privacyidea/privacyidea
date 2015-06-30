@@ -404,9 +404,9 @@ def mangle(request=None, action=None):
         mangle_key, search, replace, _rest = mangle_pol_action.split("/", 3)
         mangle_value = request.all_data.get(mangle_key)
         if mangle_value:
+            log.debug("mangling authentication data: %s" % mangle_key)
             request.all_data[mangle_key] = re.sub(search, replace,
                                                   mangle_value)
-
     return True
 
 
