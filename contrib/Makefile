@@ -1,20 +1,22 @@
 CONTRIB1=python-flask-cache
-URL1=https://pypi.python.org/packages/source/F/Flask-Cache/Flask-Cache-0.13.1.tar.gz
 VERSION1=0.13.1
+URL1=https://pypi.python.org/packages/source/F/Flask-Cache/Flask-Cache-$(VERSION1).tar.gz
 
 CONTRIB2=python-pyjwt
-URL2=https://pypi.python.org/packages/source/P/PyJWT/PyJWT-0.4.3.tar.gz
-VERSION2=0.4.3
+VERSION2=1.3.0
+URL2=https://pypi.python.org/packages/source/P/PyJWT/PyJWT-$(VERSION2).tar.gz
 
 CONTRIB3=python-ldap3
-URL3=https://pypi.python.org/packages/source/l/ldap3/ldap3-0.9.8.4.tar.gz
 VERSION3=0.9.8.4
+URL3=https://pypi.python.org/packages/source/l/ldap3/ldap3-$(VERSION3).tar.gz
 
 CONTRIB4=python-flask-sqlalchemy
-URL4=https://pypi.python.org/packages/source/F/Flask-SQLAlchemy/Flask-SQLAlchemy-2.0.tar.gz
 VERSION4=2.0
+URL4=https://pypi.python.org/packages/source/F/Flask-SQLAlchemy/Flask-SQLAlchemy-$(VERSION4).tar.gz
 
 ME=Cornelius Kölbel <cornelius@privacyidea.org>
+
+series=trusty
 
 info:
 	@echo "make ubuntu  - build packages for ubuntu 14.04LTS"
@@ -43,8 +45,11 @@ ldap3:
 pyjwt:
 	mkdir -p $(CONTRIB2)
 	mkdir -p DEBUILD
-	(cd $(CONTRIB2); curl $(URL2) -o pyjwt-$(VERSION2).tar.gz)
-	(cd $(CONTRIB2); py2dsc -m '$(ME)' pyjwt-$(VERSION2).tar.gz)
+	(cd $(CONTRIB2); curl $(URL2) -o PyJWT-$(VERSION2).tar.gz; tar -zxf PyJWT-$(VERSION2).tar.gz)
+	(cd $(CONTRIB2); cd PyJWT-$(VERSION2); patch < ../../patches/jwt_remove_setup_required)
+	(cd $(CONTRIB2); cd PyJWT-$(VERSION2); find . -name \*.pyc -exec rm {} \;)
+	(cd $(CONTRIB2); cd PyJWT-$(VERSION2); python setup.py sdist; cp dist/* ..)
+	(cd $(CONTRIB2); py2dsc -m '$(ME)' PyJWT-$(VERSION2).tar.gz)
 	(cd $(CONTRIB2)/deb_dist/pyjwt-$(VERSION2); dch -v $(VERSION2)-1$(series)1 --distribution $(series) -M "built for privacyidea")
 	(cd $(CONTRIB2)/deb_dist/pyjwt-$(VERSION2); debuild -sa -S)
 	(cd $(CONTRIB2)/deb_dist/pyjwt-$(VERSION2); debuild -b)
@@ -73,16 +78,16 @@ flask-sqlalchemy:
 
 
 ppa-dev:
-	dput -f ppa:privacyidea/privacyidea-dev DEBUILD/flask-cache_${VERSION1}-*_source.changes || true
-	dput -f ppa:privacyidea/privacyidea-dev DEBUILD/pyjwt_${VERSION2}-*_source.changes || true
-	dput -f ppa:privacyidea/privacyidea-dev DEBUILD/ldap3_${VERSION3}-*_source.changes || true
-	dput -f ppa:privacyidea/privacyidea-dev DEBUILD/flask-sqlalchemy_${VERSION4}-*_source.changes || true
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev flask-cache_${VERSION1}-1${series}1_source.changes || true )
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev pyjwt_${VERSION2}-1${series}1_source.changes || true)
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev ldap3_${VERSION3}-1${series}1_source.changes || true)
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev flask-sqlalchemy_${VERSION4}-1${series}1_source.changes || true)
 
 ppa:
-	dput -f ppa:privacyidea/privacyidea DEBUILD/flask-cache_${VERSION1}-*_source.changes || true
-	dput -f ppa:privacyidea/privacyidea DEBUILD/pyjwt_${VERSION2}-*_source.changes || true
-	dput -f ppa:privacyidea/privacyidea DEBUILD/ldap3_${VERSION3}-*_source.changes || true
-	dput -f ppa:privacyidea/privacyidea DEBUILD/flask-sqlalchemy_${VERSION4}-*_source.changes || true
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea flask-cache_${VERSION1}-1${series}1_source.changes || true)
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea pyjwt_${VERSION2}-1${series}1_source.changes || true)
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea ldap3_${VERSION3}-1${series}1_source.changes || true)
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea flask-sqlalchemy_${VERSION4}-1${series}1_source.changes || true)
 
 	
 

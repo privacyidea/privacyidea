@@ -1,0 +1,10 @@
+--- pyjwt/setup.py	2015-05-22 17:50:55.000000000 +0200
++++ setup.py	2015-06-30 17:20:32.439431201 +0200
+@@ -61,7 +61,6 @@
+         'Topic :: Utilities',
+     ],
+     test_suite='tests',
+-    setup_requires=['pytest-runner'],
+     tests_require=tests_require,
+     extras_require=dict(
+         test=tests_require,

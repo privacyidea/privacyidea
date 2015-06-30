@@ -63,7 +63,7 @@ setup(
                       "MarkupSafe==0.23",
                       "MySQL-python==1.2.5",
                       "Pillow==2.6.1",
-                      "PyJWT==0.4.3",
+                      "PyJWT==1.3.0",
                       "PyYAML==3.11",
                       "Pygments==2.0.2",
                       "SQLAlchemy==1.0.5",
