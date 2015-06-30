@@ -46,6 +46,7 @@ If possible, policies are checked with policy decorators.
    useridresolvers
    audit
    machineresolvers
+   pinhandler
 
 
 DB level

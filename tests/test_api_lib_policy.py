@@ -410,6 +410,10 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         set_policy(name="pol1",
                    scope=SCOPE.ENROLL,
                    action="%s=%s" % (ACTION.OTPPINRANDOM, "12"))
+        set_policy(name="pinhandling",
+                   scope=SCOPE.ENROLL,
+                   action="%s=privacyidea.lib.pinhandling.base.PinHandler" %
+                          ACTION.PINHANDLING)
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -422,6 +426,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         self.assertEqual(len(req.all_data.get("pin")), 12)
         # finally delete policy
         delete_policy("pol1")
+        delete_policy("pinhandling")
 
     def test_08_encrypt_pin(self):
         g.logged_in_user = {"username": "admin1",

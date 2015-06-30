@@ -113,6 +113,27 @@ def init_random_pin(request=None, action=None):
         log.debug("Creating random OTP PIN with length %s" % pin_pols[0])
         request.all_data["pin"] = generate_password(size=int(pin_pols[0]))
 
+        # handle the PIN
+        handle_pols = policy_object.get_action_values(
+            action=ACTION.PINHANDLING, scope=SCOPE.ENROLL,
+            user=user_object.login, realm=user_object.realm,
+            client=request.remote_addr)
+        # We can have more than one pin handler policy. So we can process the
+        #  PIN in several ways!
+        for handle_pol in handle_pols:
+            log.debug("Handle the random PIN with the class %s" % handle_pol)
+            packageName = ".".join(handle_pol.split(".")[:-1])
+            className = handle_pol.split(".")[-1:][0]
+            mod = __import__(packageName, globals(), locals(), [className])
+            pin_handler_class = getattr(mod, className)
+            pin_handler = pin_handler_class()
+            # Send the PIN
+            pin_handler.send(request.all_data["pin"],
+                             request.all_data.get("serial", "N/A"),
+                             user_object,
+                             tokentype=request.all_data.get("type", "hotp"),
+                             logged_in_user=g.logged_in_user)
+
     return True
 
 

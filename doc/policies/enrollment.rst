@@ -95,8 +95,25 @@ type: int
 Generates a random OTP PIN of the given length during enrollment. Thus the user
 is forced to set a certain OTP PIN.
 
-.. note:: At the moment this randomly generated PIN is not used.
-   It could be used to be sent via a PIN letter in the future.
+.. note:: To use the random PIN, you also need to define a
+   :ref:`policy_pinhandling` policy.
+
+.. _policy_pinhandling:
+
+pinhandling
+~~~~~~~~~~~
+.. index:: PinHandler
+
+type: string
+
+If the ``otp_pin_random`` policy is defined, you can use this policy to
+define, what should happen with the random pin.
+The action value take the class of a PinHandler like
+``privacyidea.lib.pinhandling.base.PinHandler``.
+The base PinHandler just logs the PIN to the log file. You can add classes to
+send the PIN via EMail or print it in a letter.
+
+For more information see the base class :ref:`code_pinhandler`.
 
 otp_pin_encrypt
 ~~~~~~~~~~~~~~~

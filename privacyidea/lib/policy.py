@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-06-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add the OTP PIN handling
 #  2015-06-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add the mangle policy
 #  2015-04-03 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -157,6 +159,7 @@ class ACTION():
     PASSNOTOKEN = "passOnNoToken"
     PASSNOUSER = "passOnNoUser"
     PASSTHRU = "passthru"
+    PINHANDLING = "pinhandling"
     POLICYDELETE = "policydelete"
     POLICYWRITE = "policywrite"
     POLICYTEMPLATEURL = "policy_template_url"
@@ -838,6 +841,10 @@ def get_static_policy_definitions(scope=None):
                 'value': range(0, 32),
                 "desc": _("Set a random OTP PIN with this length for a "
                           "token.")},
+            ACTION.PINHANDLING: {
+                'type': 'str',
+                'desc': _('In case of a random OTP PIN use this python '
+                          'module to process the PIN.')},
             ACTION.ENCRYPTPIN: {
                 'type': 'bool',
                 "desc": _("The OTP PIN can be hashed or encrypted. Hashing "

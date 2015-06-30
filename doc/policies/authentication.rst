@@ -190,7 +190,7 @@ the fixed string "user".
 This way you can add, remove or modify the contents of the three parameters.
 For more information on the regular expressions see [#pythonre]_.
 
-.. note:: You must escape the backslash as **\\** to refer to the found
+.. note:: You must escape the backslash as **\\\\** to refer to the found
    substrings.
 
 **Example**: A policy to remove whitespace characters from the realm name would
