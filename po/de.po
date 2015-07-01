@@ -579,6 +579,10 @@ msgstr "Neuen Token ausrollen "
 msgid "Enter OTP key..."
 msgstr "OTP Schlüssel eingeben..."
 
+#: privacyidea/static/components/token/views/token.details.html:287
+msgid "Enter PIN and OTP to check the token."
+msgstr "PIN und OTP eingeben um den Token zu prüfen."
+
 #: privacyidea/static/components/token/views/token.details.html:240
 msgid "Enter first OTP value"
 msgstr "Ersten OTP-Wert eingeben"
@@ -648,8 +652,8 @@ msgstr "Vorname"
 msgid "HOTP Token settings"
 msgstr "HOTP Token Einstellungen"
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:41
-#: privacyidea/static/components/token/views/token.enroll.totp.html:50
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:44
+#: privacyidea/static/components/token/views/token.enroll.totp.html:53
 msgid "Hash algorithm"
 msgstr "Hash Algorithmus"
 
@@ -1398,6 +1402,16 @@ msgid "The Email Token sends the OTP value to the users email address."
 msgstr ""
 "Der EMail Token sendet einen OTP-Wert an die EMail-Adresse des Benutzers."
 
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:38
+#: privacyidea/static/components/token/views/token.enroll.totp.html:39
+msgid "The Google Authenticator only supports an OTP length of 6."
+msgstr "Der Google Authenticator unterstützt lediglich OTP Länge 6."
+
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:50
+#: privacyidea/static/components/token/views/token.enroll.totp.html:59
+msgid "The Google Authenticator only supports the SHA1 algorithm."
+msgstr "Der Google Authenticator unterstützt lediglich den SHA1 Algorithmus."
+
 #: privacyidea/static/components/config/views/config.token.hotp.html:2
 msgid ""
 "The HOTP Token is a event based one time password token.\n"
@@ -1856,7 +1870,7 @@ msgstr "Time-out"
 msgid "Timeout (seconds)"
 msgstr "Time-out (Sekunden)"
 
-#: privacyidea/static/components/token/views/token.enroll.totp.html:41
+#: privacyidea/static/components/token/views/token.enroll.totp.html:44
 msgid "Timestep"
 msgstr "Zeitschritt"
 

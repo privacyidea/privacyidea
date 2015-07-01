@@ -35,6 +35,9 @@ The HOTP token is an event based token. You can paste a secret key or
             ng-model="form.otplen"
             ng-options="otplen for otplen in formInit.otplens">
     </select>
+    <p class="help-block" ng-show="form.genkey" translate>
+        The Google Authenticator only supports an OTP length of 6.
+    </p>
 </div>
 
 <div class="form-group">
@@ -44,4 +47,7 @@ The HOTP token is an event based token. You can paste a secret key or
             ng-model="form.hashlib"
             ng-options="hashlib for hashlib in formInit.hashlibs">
     </select>
+    <p class="help-block" ng-show="form.genkey" translate>
+        The Google Authenticator only supports the SHA1 algorithm.
+    </p>
 </div>

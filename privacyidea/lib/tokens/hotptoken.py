@@ -169,9 +169,12 @@ class HotpTokenClass(TokenClass):
                     goo_url = cr_google(key=otpkey,
                                         user=user.login,
                                         realm=user.realm,
-                                        type=tok_type.lower(),
+                                        tokentype=tok_type.lower(),
                                         serial=self.get_serial(),
-                                        tokenlabel=tokenlabel)
+                                        tokenlabel=tokenlabel,
+                                        hash_algo=params.get("hashlib",
+                                                             "sha1"),
+                                        digits=params.get("otplen", 6))
                     response_detail["googleurl"] = {"description":
                                                     _("URL for google "
                                                       "Authenticator"),

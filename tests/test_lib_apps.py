@@ -14,10 +14,11 @@ class AppsTestCase(MyTestCase):
 
     def test_01_apps_urls(self):
         r = create_google_authenticator_url("12345678")
-        self.assertEqual(r,"otpauth://hotp/mylabel?secret=CI2FM6A&counter=0")
+        self.assertTrue("otpauth://hotp/mylabel?secret=CI2FM6A&counter=1" in
+                        r, r)
         r = create_oathtoken_url("12345678")
-        self.assertEqual(r,"oathtoken:///addToken?name=mylabel&"
-                           "lockdown=true&key=12345678")
+        self.assertEqual(r, "oathtoken:///addToken?name=mylabel&"
+                            "lockdown=true&key=12345678")
         r = create_oathtoken_url("12345678", type="totp")
         self.assertEqual(r, "oathtoken:///addToken?name=mylabel&"
                              "lockdown=true&key=12345678&timeBased=true")

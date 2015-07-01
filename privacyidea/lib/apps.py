@@ -2,6 +2,8 @@
 #
 #  privacyIDEA is a fork of LinOTP
 #
+#  * 2015-07-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#               Add SHA Algorithms to QR Code
 #  * 2014-12-01 Cornelius Kölbel <cornelius@privacyidea.org>
 #               Migrate to flask
 #
@@ -71,20 +73,21 @@ def create_motp_url(key, user=None, realm=None, serial=""):
 
 @log_with(log)
 def create_google_authenticator_url(key=None, user=None,
-                                    realm=None, type="hotp",
-                                    serial="mylabel", tokenlabel="<s>"):
+                                    realm=None, tokentype="hotp",
+                                    serial="mylabel", tokenlabel="<s>",
+                                    hash_algo="SHA1", digits="6",
+                                    issuer="privacyIDEA"):
     """
     This creates the google authenticator URL.
     This url may only be 119 characters long.
-    Otherwise we qrcode.js can not create the qrcode.
     If the URL would be longer, we shorten the username
-    
+
     We expect the key to be hexlified!
     """
     # policy depends on some lib.util
 
-    if "hotp" == type.lower():
-        type = "hotp"
+    if "hotp" == tokentype.lower():
+        tokentype = "hotp"
 
     # We need realm und user to be a string
     realm = realm or ""
@@ -94,7 +97,7 @@ def create_google_authenticator_url(key=None, user=None,
     # also strip the padding =, as it will get problems with the google app.
     otpkey = base64.b32encode(key_bin).strip('=')
 
-    base_len = len("otpauth://%s/?secret=%s&counter=0" % (type, otpkey))
+    base_len = len("otpauth://%s/?secret=%s&counter=1" % (tokentype, otpkey))
     max_len = 119
     allowed_label_len = max_len - base_len
     log.debug("we have got %s characters left for the token label" %
@@ -106,7 +109,18 @@ def create_google_authenticator_url(key=None, user=None,
     label = label[0:allowed_label_len]
     url_label = quote(label)
 
-    return "otpauth://%s/%s?secret=%s&counter=0" % (type, url_label, otpkey)
+    if hash_algo.lower() != "sha1":
+        hash_algo = "algorithm=%s&" % hash_algo
+    else:
+        # If the hash_algo is SHA1, we do not add it to the QR code to keep
+        # the QR code simpler
+        hash_algo = ""
+
+    return ("otpauth://%s/%s?secret=%s&"
+            "counter=1&%s"
+            "digits=%s&"
+            "issuer=%s" % (tokentype, url_label, otpkey,
+                           hash_algo, digits, issuer))
 
 @log_with(log)
 def create_oathtoken_url(otpkey=None, user=None, realm=None,
