@@ -6,11 +6,11 @@
                 <ul class="nav nav-pills nav-stacked">
                     <li role="presentation"
                         ng-class="{active: $state.includes('user.list')}"><a
-                            ui-sref="user.list">All
-                        users</a> </li>
+                            ui-sref="user.list"
+                            translate>All users</a> </li>
                     <li role="presentation"
                             ng-show="$state.includes('user.list')">
-                        Select Realm
+                            <translate>Select Realm</translate>
                         <select class="form-control"
 
                                 ng-change="changeRealm()"
@@ -25,15 +25,16 @@
                     {{ $stateParams.username }}</a></li>
                     <li role="presentation"
                         ng-class="{active:$state.includes('user.add')}">
-                        <a ui-sref="user.add">
-                            Add user
+                        <a ui-sref="user.add"
+                                translate>Add user
                         </a>
                     </li>
-                    <li>Quick links</li>
+                    <li translate>Quick links</li>
                     <li>
-                        <a ui-sref="config.realms.list">Edit realms</a>
+                        <a ui-sref="config.realms.list"
+                                translate>Edit realms</a>
                     </li>
-                    <li>total users: {{ usercount }}</li>
+                    <li translate>total users: {{ usercount }}</li>
                 </ul>
             </div>
 

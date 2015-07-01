@@ -1,18 +1,20 @@
 <div ng-controller="SqlResolverController">
 
     <h2 class="form-signin-heading"
-        ng-show="resolvername">Edit SQL Resolver {{ resolvername }}</h2>
+        ng-show="resolvername"
+            translate>Edit SQL Resolver {{ resolvername }}</h2>
 
     <h2 class="form-signin-heading"
-        ng-hide="resolvername">Create a new SQL Resolver</h2>
+        ng-hide="resolvername"
+            translate>Create a new SQL Resolver</h2>
 
     <form name="formResolverAddSql" role="form" validate
           class="form-horizontal">
 
 
         <div class="form-group">
-            <label for="resolvername" class="col-sm-3 control-label">Resolver
-                name</label>
+            <label for="resolvername" class="col-sm-3 control-label"
+                    translate>Resolver name</label>
 
             <div class="col-sm-9">
                 <input name="resolvername" id="resolvername"
@@ -22,8 +24,8 @@
             </div>
         </div>
         <div class="form-group">
-            <label for="driver" class="col-sm-3 control-label">
-                Driver</label>
+            <label for="driver" class="col-sm-3 control-label"
+                    translate>Driver</label>
 
             <div class="col-sm-9">
                 <input name="driver" class="form-control"
@@ -33,14 +35,16 @@
         </div>
 
         <div class="form-group">
-            <label for="server" class="col-sm-3 control-label">Server</label>
+            <label for="server" class="col-sm-3 control-label"
+                    translate>Server</label>
 
             <div class="col-sm-3">
                 <input name="server" class="form-control"
                        ng-model="params.Server" required
                        placeholder="127.0.0.1"/>
             </div>
-            <label for="port" class="col-sm-3 control-label">Port</label>
+            <label for="port" class="col-sm-3 control-label"
+                    translate>Port</label>
 
             <div class="col-sm-3">
                 <input name="port" class="form-control"
@@ -51,7 +55,8 @@
 
         <div class="form-group">
             <label for="database"
-                   class="col-sm-3 control-label">Database</label>
+                   class="col-sm-3 control-label"
+                    translate>Database</label>
 
             <div class="col-sm-9">
                 <input name="database" class="form-control"
@@ -69,7 +74,7 @@
             </div>
         </div>
         <div class="form-group">
-            <label for="password" class="col-sm-3 control-label">
+            <label for="password" class="col-sm-3 control-label" translate>
                 Password</label>
 
             <div class="col-sm-9">
@@ -81,14 +86,14 @@
         </div>
         <div class="form-group">
             <label for="editable"
-                class="col-sm-3 control-label">
+                class="col-sm-3 control-label" translate>
                 Edit user store
             </label>
             <div class="col-sm-9">
             <input name="editable" id="editable"
                    ng-model="params.Editable"
                    type="checkbox"/>
-                <p class="help-block">
+                <p class="help-block" translate>
                     The user data in this database can be modified from within
                     privacyIDEA.
                 </p>
@@ -96,24 +101,25 @@
         </div>
         <div class="well">
             <div class="form-group">
-                <button class="btn btn-info" ng-click="presetWordpress()">
-                    Wordpress
+                <button class="btn btn-info" ng-click="presetWordpress()"
+                        translate>Wordpress
                 </button>
-                <button class="btn btn-info" ng-click="presetOTRS()">
-                    OTRS
+                <button class="btn btn-info" ng-click="presetOTRS()"
+                        translate>OTRS
                 </button>
-                <button class="btn btn-info" ng-click="presetTine()">
-                    Tine 2.0
+                <button class="btn btn-info" ng-click="presetTine()"
+                        translate>Tine 2.0
                 </button>
-                <button class="btn btn-info" ng-click="presetOwncloud()">
-                    Owncloud
+                <button class="btn btn-info" ng-click="presetOwncloud()"
+                        translate>Owncloud
                 </button>
-                <button class="btn btn-info" ng-click="presetTypo3()">
-                    Typo3
+                <button class="btn btn-info" ng-click="presetTypo3()"
+                        translate>Typo3
                 </button>
             </div>
             <div class="form-group">
-                <label for="table" class="col-sm-3 control-label">Table</label>
+                <label for="table" class="col-sm-3 control-label"
+                        translate>Table</label>
 
                 <div class="col-sm-3">
                     <input name="table" class="form-control"
@@ -121,7 +127,8 @@
                            placeholder="Users"/>
                 </div>
 
-                <label for="limit" class="col-sm-3 control-label">Limit</label>
+                <label for="limit" class="col-sm-3 control-label"
+                        translate>Limit</label>
 
                 <div class="col-sm-3">
                     <input name="limit" class="form-control"
@@ -132,7 +139,8 @@
 
             <div class="form-group">
                 <label for="mapping"
-                       class="col-sm-3 control-label">Mapping</label>
+                       class="col-sm-3 control-label"
+                        translate>Mapping</label>
 
                 <div class="col-sm-9">
                     <input name="mapping" class="form-control"
@@ -144,7 +152,8 @@
 
             <div class="form-group">
                 <label for="where"
-                       class="col-sm-3 control-label">Where statement</label>
+                       class="col-sm-3 control-label"
+                        translate>Where statement</label>
 
                 <div class="col-sm-9">
                     <input name="where" class="form-control"
@@ -153,7 +162,8 @@
             </div>
             <div class="form-group">
                 <label for="encoding"
-                       class="col-sm-3 control-label">Database Encoding</label>
+                       class="col-sm-3 control-label"
+                        translate>Database Encoding</label>
 
                 <div class="col-sm-9">
                     <input name="encoding" class="form-control"
@@ -162,8 +172,8 @@
             </div>
             <div class="form-group">
                 <label for="conparams"
-                       class="col-sm-3 control-label">Connection
-                    Parameters</label>
+                       class="col-sm-3 control-label"
+                        translate>Connection Parameters</label>
 
                 <div class="col-sm-9">
                     <input name="conparams" class="form-control"
@@ -183,11 +193,11 @@
         <div class="text-center">
             <button ng-click="testSQL()"
                     ng-disabled="formResolverAddSql.$invalid"
-                    class="btn btn-success">Test SQL Resolver
+                    class="btn btn-success" translate>Test SQL Resolver
             </button>
             <button ng-click="setSQLResolver()"
                     ng-disabled="formResolverAddSql.$invalid"
-                    class="btn btn-primary">Save Resolver
+                    class="btn btn-primary" translate>Save Resolver
             </button>
         </div>
 

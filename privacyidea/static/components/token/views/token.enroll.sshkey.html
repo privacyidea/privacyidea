@@ -1,22 +1,22 @@
-<p class="help-block">
+<p class="help-block" translate>
     The SSH Key Token stores the public SSH Key in the server.
     This can be used to authenticate to a secure shell.
 </p>
 
-<h4>Token data</h4>
+<h4 translate>Token data</h4>
 
 <div class="form-group">
-    <label for="sshkey">SSH public Key</label>
+    <label for="sshkey" translate>SSH public Key</label>
     <textarea type="text"
            autofocus
            rows="5"
            class="form-control"
-           placeholder="Paste the ssh PUBLIC key"
+           placeholder="{{ 'Paste the ssh PUBLIC key'|translate }}"
            ng-model="form.sshkey" name="sshkey"
            ng-change="sshkeyChanged()"></textarea>
-    <label for="description">Description</label>
+    <label for="description" translate>Description</label>
     <input type="text" class="form-control"
-            placeholder="Some nice words..."
+            placeholder="{{ 'Some nice words...'|translate }}"
             ng-model="form.description" />
 </div>
 

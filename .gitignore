@@ -18,3 +18,5 @@ doc/_build/
 tests/testdata/ca/*.pem
 tests/testdata/ca/*.txt
 tests/testdata/ca/*.der
+node_modules
+po/*.mo

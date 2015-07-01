@@ -17,25 +17,25 @@
                     <a ui-sref="token.list">
                     <span class="glyphicon glyphicon-phone"
                           aria-hidden="true"></span>
-                        Tokens</a></li>
+                        <translate>Tokens</translate></a></li>
                 <li ng-class="{active: $state.includes('user')}"
                     ng-show="loggedInUser.role == 'admin'">
                     <a ui-sref="user.list">
                     <span class="glyphicon glyphicon-user"
                           aria-hidden="true"></span>
-                        Users</a></li>
+                        <translate>Users</translate></a></li>
                 <li ng-class="{active: $state.includes('machine')}"
                     ng-show="loggedInUser.role == 'admin'">
                     <a ui-sref="machine.list">
                     <span class="glyphicon glyphicon-tasks"
                           aria-hidden="true"></span>
-                        Machines</a></li>
+                        <translate>Machines</translate></a></li>
                 <li ng-class="{active: $state.includes('config')}"
                     ng-show="loggedInUser.role == 'admin'">
                     <a ui-sref="config.system">
                         <span class="glyphicon glyphicon-cog"
                               aria-hidden="true"></span>
-                        Config
+                        <translate>Config</translate>
                     </a>
                 </li>
                 <li ng-class="{active: $state.includes('audit')}"
@@ -43,20 +43,24 @@
                     <a ui-sref="audit">
                         <span class="glyphicon glyphicon-search"
                               aria-hidden="true"></span>
-                        Audit
+                        <translate>Audit</translate>
                     </a>
                 </li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
-                <li><a ui-sref="login" ng-hide="loggedInUser.username">Login</a>
+                <li><a ui-sref="login" ng-hide="loggedInUser.username" translate
+                        >Login</a>
                 </li>
                 <li>
                     <button ng-show="loggedInUser.username"
                             ng-click="logout()"
                             class="btn btn-sm btn-warning">
-                        Logout
-                        {{ loggedInUser.username }} @{{ loggedInUser.realm }}<br>
-                    (Role: {{ loggedInUser.role }})</button>
+                        <translate>Logout
+                        {{ loggedInUser.username }} @{{ loggedInUser.realm }}
+                        </translate>
+                        <br>
+                    (<translate>Role</translate>: {{ loggedInUser.role }})
+                    </button>
                 </li>
             </ul>
         </div>
@@ -65,6 +69,6 @@
 
 <div inform class="inform-fixed inform-shadow"></div>
 
-<div class="alert alert-warning" ng-show="logoutWarning">
+<div class="alert alert-warning" ng-show="logoutWarning" translate>
 	You will be logged out in {{ myCountdown }} second(s).
 </div>

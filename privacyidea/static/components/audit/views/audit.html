@@ -2,7 +2,8 @@
     <csv-download url="{{ instanceUrl }}/audit/audit.csv"
                   filename="audit.csv"></csv-download>
     <button class="btn btn-default" ng-click="getAuditList()">
-        <span class="glyphicon glyphicon-refresh"></span>Refresh</button>
+        <span class="glyphicon glyphicon-refresh"></span>
+        <translate>Refresh</translate></button>
 
     <pagination ng-show="auditdata.count > 10"
                 total-items="auditdata.count" ng-model="params.page"
@@ -10,50 +11,50 @@
                 max-size="10"
                 boundary-links="true" ng-change="pageChanged()"></pagination>
 
-    {{ auditdata.count }} entries found.
+    <translate>{{ auditdata.count }} entries found.</translate>
 
     <div class="table-responsive">
         <table class="table table-bordered table-striped">
             <thead>
             <tr>
-                <th>number</th>
-                <th>date</th>
-                <th>action
+                <th translate>number</th>
+                <th translate>date</th>
+                <th><translate>action</translate>
                     <pi-filter ng-model="actionFilter"
                                ng-change="getAuditList()">
                 </th>
-                <th>success
+                <th><translate>success</translate>
                     <pi-filter ng-model="successFilter"
                                ng-change="getAuditList()">
                 </th>
-                <th>action detail
+                <th><translate>action detail</translate>
                     <pi-filter ng-model="action_detailFilter"
                                ng-change="getAuditList()">
                 </th>
-                <th>serial
+                <th><translate>serial</translate>
                     <pi-filter ng-model="serialFilter"
                                ng-change="getAuditList()"></pi-filter>
                 </th>
-                <th>token type
+                <th><translate>token type</translate>
                     <pi-filter ng-model="typeFilter"
                                ng-change="getAuditList()">
                 </th>
-                <th>administrator
+                <th><translate>administrator</translate>
                     <pi-filter ng-model="administratorFilter"
                                ng-change="getAuditList()">
                 </th>
-                <th>user
+                <th><translate>user</translate>
                     <pi-filter ng-model="userFilter"
                                ng-change="getAuditList()">
                 </th>
-                <th>realm</th>
-                <th>client</th>
-                <th>info</th>
-                <th>sig_check</th>
-                <th>missing_line</th>
-                <th>clearance</th>
-                <th>log level</th>
-                <th>privacyidea server</th>
+                <th translate>realm</th>
+                <th translate>client</th>
+                <th translate>info</th>
+                <th translate>sig_check</th>
+                <th translate>missing_line</th>
+                <th translate>clearance</th>
+                <th translate>log level</th>
+                <th translate>privacyidea server</th>
             </tr>
             </thead>
             <tbody>

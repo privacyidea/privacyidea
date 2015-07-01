@@ -17,6 +17,10 @@
           rel="stylesheet"/>
     <link href="{{ instance }}/static/contrib/css/angular-inform.css"
           rel="stylesheet"/>
+    <script type="application/javascript">
+        // Pass the browser Language to our Javascript code
+        var browserLanguage = "{{ browser_lang }}";
+    </script>
 
 </head>
 <body ng-controller="mainController">

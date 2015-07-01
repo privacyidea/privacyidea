@@ -1,12 +1,12 @@
 <div class="panel" ng-controller="userAddController">
     <form name="formAddUser" role="form" validate>
-        <h2>Add a new user</h2>
+        <h2 translate>Add a new user</h2>
 
         <div ng-show="formInit.resolvernames.length">
             <div class="panel-body">
                 <div class="col-xs-12">
                     <div class="form-group">
-                        <label for="resolvername">Resolver</label>
+                        <label for="resolvername" translate>Resolver</label>
                         <select class="form-control" required
                                 name="resolvername"
                                 id="resolvername"
@@ -14,7 +14,7 @@
                                 ng-options="resolvername for resolvername in formInit.resolvernames">
                         </select>
                     </div>
-                    <div class="help-block">
+                    <div class="help-block" translate>
                         These are the resolvers marked as editable. You can add
                         a user
                         to the resolver. The user will appear in the realms,
@@ -25,46 +25,46 @@
 
                 <div class="col-xs-6">
                     <div class="form-group">
-                        <label for="username">Username</label>
+                        <label for="username" translate>Username</label>
                         <input name="givenname" class="form-control"
                                required
                                ng-model="User.username">
                     </div>
                     <div class="form-group">
-                        <label for="givenname">Given name</label>
+                        <label for="givenname" translate>Given name</label>
                         <input name="givenname" class="form-control"
                                ng-model="User.givenname">
                     </div>
                     <div class="form-group">
-                        <label for="surname">Surname</label>
+                        <label for="surname" translate>Surname</label>
                         <input name="surname" class="form-control"
                                ng-model="User.surname">
                     </div>
                     <div class="form-group">
-                        <label for="description">Description</label>
+                        <label for="description" translate>Description</label>
                         <input name="description" class="form-control"
                                ng-model="User.description">
                     </div>
                 </div>
                 <div class="col-xs-6">
                     <div class="form-group">
-                        <label for="email">Email</label>
+                        <label for="email" translate>Email</label>
                         <input name="email" class="form-control"
                                type="email"
                                ng-model="User.email">
                     </div>
                     <div class="form-group">
-                        <label for="phone">Phone</label>
+                        <label for="phone" translate>Phone</label>
                         <input name="phone" class="form-control"
                                ng-model="User.phone">
                     </div>
                     <div class="form-group">
-                        <label for="mobile">Mobile</label>
+                        <label for="mobile" translate>Mobile</label>
                         <input name="mobile" class="form-control"
                                ng-model="User.mobile">
                     </div>
                     <div class="form-group">
-                        <label for="password">Password</label>
+                        <label for="password" translate>Password</label>
                         <input type="password" name="password"
                                class="form-control" ng-model="User.password">
                     </div>
@@ -74,14 +74,14 @@
             <div class="text-center">
                 <button ng-click="createUser()" class="btn btn-primary"
                         ng-disabled="formAddUser.$invalid">
-                    <div class="glyphicon glyphicon-edit">
-                        Save user
+                    <div class="glyphicon glyphicon-edit"
+                            translate>Save user
                     </div>
                 </button>
             </div>
         </div>
         <div ng-show="formInit.resolvernames.length==0">
-            <div class="help-block">
+            <div class="help-block" translate>
                 You have no editable resolvers defined. So you can not write
                 to any user store. If you want to add users, you need to
                 <a ui-sref="config.resolvers.list">define an editable

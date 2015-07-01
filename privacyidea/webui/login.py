@@ -36,6 +36,9 @@ def single_page_application():
         instance = ""
     # The backend URL should come from the configuration of the system.
     backend_url = ""
+
+    browser_lang = request.accept_languages.best_match(["en", "de"])
     return render_template("index.html", instance=instance,
-                           backendUrl=backend_url)
+                           backendUrl=backend_url,
+                           browser_lang=browser_lang)
 

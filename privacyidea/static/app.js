@@ -28,8 +28,8 @@ myApp = angular.module("privacyideaApp",
         'privacyideaApp.userStates',
         'privacyideaApp.machineStates',
         'privacyideaApp.loginStates',
-    'multi-select', 'angularFileUpload',
-    'inform']);
+        'multi-select', 'angularFileUpload',
+        'inform', 'gettext']);
 myApp.config(function ($urlRouterProvider) {
     // For any unmatched url, redirect to /token
     $urlRouterProvider.otherwise("/token/list");
@@ -63,8 +63,8 @@ myApp.constant("systemUrl", backendUrl + instance + "/system");
 myApp.constant("auditUrl", backendUrl + instance + "/audit");
 myApp.constant("policyUrl", backendUrl + instance + "/policy");
 myApp.constant("CAConnectorUrl", backendUrl + instance + "/caconnector");
-myApp.run(['$rootScope', '$state', '$stateParams',
-        function ($rootScope, $state, $stateParams) {
+myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
+        function ($rootScope, $state, $stateParams, gettextCatalog) {
 
             // It's very handy to add references to $state and $stateParams to the $rootScope
             // so that you can access them from any scope within your applications.For example,
@@ -72,6 +72,8 @@ myApp.run(['$rootScope', '$state', '$stateParams',
             // to active whenever 'contacts.list' or one of its decendents is active.
             $rootScope.$state = $state;
             $rootScope.$stateParams = $stateParams;
+            gettextCatalog.setCurrentLanguage(browserLanguage);
+            gettextCatalog.debug = true;
         }
     ]
 );

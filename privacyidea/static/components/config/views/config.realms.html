@@ -4,9 +4,10 @@
             <ul class="nav nav-pills nav-stacked">
                 <li role="presentation"
                     ng-class="{ active: $state.includes('config.realms.list')}">
-                    <a ui-sref="config.realms.list">All Realms</a></li>
-                <li><a ng-click="clearDefaultRealm()">Clear default
-                    realm</a></li>
+                    <a ui-sref="config.realms.list"
+                            translate>All Realms</a></li>
+                <li><a ng-click="clearDefaultRealm()"
+                        translate>Clear default realm</a></li>
             </ul>
         </div>
 

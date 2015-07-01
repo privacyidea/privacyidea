@@ -2,12 +2,12 @@
 This is the directive for attach tokens to machines.
 -->
 <div class="form-group">
-    <label for="serial">Serial</label>
+    <label for="serial" translate>Serial</label>
     <input name="serial" type="text" ng-model="newTokenObject.serial"
-           placeholder="start typing a serial number of a token."
+           placeholder="{{ 'start typing a serial number of a token.'|
+           translate }}"
            typeahead="serial for serial in loadSerials($viewValue)"
            typeahead-loading="loadingSerials" class="form-control" >
-    <i ng-show="loadingSerials" class="glyphicon glyphicon-refresh">Loading
-        serials...
-    </i>
+    <i ng-show="loadingSerials" class="glyphicon glyphicon-refresh"
+            translate>Loading serials...</i>
 </div>

@@ -10,14 +10,16 @@
         <tr>
             <th>
                 <button class="btn btn-default unsorted"
-                        pi-sort-by="serial">serial
+                        pi-sort-by="serial"
+                        translate>serial
                 </button>
                 <pi-filter ng-model="serialFilter"
                            ng-change="getTokens()"></pi-filter>
             </th>
             <th>
                 <button class="btn btn-default unsorted"
-                        pi-sort-by="tokentype">type
+                        pi-sort-by="tokentype"
+                        translate>type
                 </button>
                 <pi-filter ng-model="typeFilter"
                            ng-change="getTokens()"></pi-filter>
@@ -25,13 +27,15 @@
             <th>
                 <button pi-sort-by="active"
                         class="btn btn-default
-                            unsorted">active
+                            unsorted"
+                        translate>active
                 </button>
             </th>
             <th>
                 <button pi-sort-by="description"
                         class="btn btn-default
-                       unsorted">description
+                       unsorted"
+                        translate>description
                 </button>
                 <pi-filter ng-model="descriptionFilter"
                            ng-change="getTokens()"></pi-filter>
@@ -39,11 +43,12 @@
             <th>
                 <button pi-sort-by="failcount"
                         class="btn btn-default
-                         unsorted">failcounter
+                         unsorted"
+                        translate>failcounter
                 </button>
             </th>
-            <th ng-show="loggedInUser.role == 'admin'">user</th>
-            <th ng-show="loggedInUser.role == 'admin'">realm</th>
+            <th ng-show="loggedInUser.role == 'admin'" translate>user</th>
+            <th ng-show="loggedInUser.role == 'admin'" translate>realm</th>
         </tr>
         </thead>
         <tbody>
@@ -54,11 +59,11 @@
                 {{ token.serial }}</a></td>
             <td>{{ token.tokentype }}</td>
             <td>
-                <span class="label label-success" ng-show="token.active">
-                    active
+                <span class="label label-success" ng-show="token.active"
+                        translate>active
                 </span>
-                <span class="label label-danger" ng-hide="token.active">
-                    disabled
+                <span class="label label-danger" ng-hide="token.active"
+                        translate>disabled
                 </span>
             </td>
             <!--<td>{{ token.count_window }}</td>-->

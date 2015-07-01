@@ -4,14 +4,16 @@
             <ul class="nav nav-pills nav-stacked">
                 <li role="presentation"
                     ng-class="{ active: $state.includes('config.resolvers.list')}">
-                    <a ui-sref="config.resolvers.list">All Resolvers</a></li>
+                    <a ui-sref="config.resolvers.list"
+                            translate>All Resolvers</a></li>
                 <li role="presentation"
                     ng-class="{ active: $state.includes('config.resolvers.edit')}"
                         ng-show="$state.includes('config.resolvers.edit')">
-                    <a ui-sref="config.resolvers.edit">Edit Resolver
-                        {{ resolvername }}</a></li>
+                    <a ui-sref="config.resolvers.edit"
+                            translate>Edit Resolver {{ resolvername }}</a></li>
 
-                <li class="nav nav-pills nav-header">New Resolvers</li>
+                <li class="nav nav-pills nav-header"
+                        translate>New Resolvers</li>
                 <!-- Here we can get all resolvers and iterated over
                      the resolver types.
                 -->
@@ -19,7 +21,8 @@
                         role="presentation"
                     ng-class="{active:
                     $state.includes('config.resolvers.add'+resolvertype) }">
-                    <a ui-sref="config.resolvers.add{{ resolvertype }}">
+                    <a ui-sref="config.resolvers.add{{ resolvertype }}"
+                            translate>
                         New {{ resolvertype }}</a>
                 </li>
             </ul>

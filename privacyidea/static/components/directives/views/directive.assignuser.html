@@ -2,7 +2,7 @@
 This is the directive for assigning users.
 -->
 <div class="form-group">
-    <label for="realm">Realm</label>
+    <label for="realm" translate>Realm</label>
     <select class="form-control"
             name="realm" ng-model="newUserObject.realm"
             ng-options="realmname as realmname for (realmname, realm) in
@@ -11,17 +11,16 @@ This is the directive for assigning users.
 </div>
 
 <div class="form-group">
-    <label for="username">Username</label>
+    <label for="username" translate>Username</label>
     <input name="username" type="text" ng-model="newUserObject.user"
-           placeholder="start typing a username"
+           placeholder="{{ 'start typing a username'|translate }}"
            typeahead="newuser for newuser in loadUsers($viewValue)"
            typeahead-loading="loadingUsers" class="form-control" >
-    <i ng-show="loadingUsers" class="glyphicon glyphicon-refresh">Loading
-        users...
-    </i>
+    <i ng-show="loadingUsers" class="glyphicon glyphicon-refresh"
+            translate>Loading users...</i>
 </div>
 <div class="form-group">
-    <label for="otppin">PIN</label>
+    <label for="otppin" translate>PIN</label>
     <input name="otppin" ng-model="newUserObject.pin"
             type=password class="form-control"
             euqals="{{pin2}}"

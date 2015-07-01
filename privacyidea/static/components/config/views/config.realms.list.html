@@ -2,9 +2,9 @@
     <table class="table table-bordered table-responsive table-striped">
         <thead>
         <tr>
-            <th>Default</th>
-            <th>Realm name</th>
-            <th>resolvers</th>
+            <th translate>Default</th>
+            <th translate>Realm name</th>
+            <th translate>resolvers</th>
         </tr>
         </thead>
         <tbody>
@@ -14,8 +14,8 @@
                       ng-show="realm.default"></span>
                 <button class="btn btn-success"
                         ng-hide="realm.default"
-                        ng-click="setDefaultRealm(realmname)">set
-                    Default
+                        ng-click="setDefaultRealm(realmname)"
+                        translate>set Default
                 </button>
 
             </td>
@@ -56,21 +56,25 @@
             <td>
                 <span ng-hide="editRealm">
                 <button class="btn btn-primary"
-                        ng-click="startEdit(realmname, realm)">Edit
+                        ng-click="startEdit(realmname, realm)"
+                        translate>Edit
                 </button>
                 <button class="btn btn-danger"
                         ng-click="delRealm(realmname)">
-                        <div class="glyphicon glyphicon-trash">
+                        <div class="glyphicon glyphicon-trash"
+                                translate>
                         Delete
                         </div>
                 </button>
                 </span>
                 <span ng-show="editRealm == realmname">
                     <button class="btn btn-primary"
-                            ng-click="setRealm(realmname)">Save
+                            ng-click="setRealm(realmname)"
+                            translate>Save
                     </button>
                     <button class="btn btn-danger"
-                            ng-click="cancelEdit()">Cancel
+                            ng-click="cancelEdit()"
+                            translate>Cancel
                     </button>
                 </span>
             </td>
@@ -110,7 +114,7 @@
                     <span ng-hide="editRealm">
                     <button ng-click="setRealm(realm.name)"
                             ng-disabled="formNewRealm.$invalid"
-                            class="btn btn-primary">Create realm
+                            class="btn btn-primary" translate>Create realm
                     </button>
                     </span>
                 </td>

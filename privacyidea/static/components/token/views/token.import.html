@@ -1,4 +1,4 @@
-<h3>Import tokens from a file</h3>
+<h3 translate>Import tokens from a file</h3>
 
 <form name="formImportToken" role="form" validate>
     <select id="filetype"
@@ -10,41 +10,41 @@
     </select>
 
     <div ng-show="form.type==='OATH CSV'">
-        <p class="help-block">
+        <p class="help-block" translate>
             Here you can upload a csv file for your OATH token.
             The file is supposed to contain one token per line.
         </p>
 
-        <p class="help-block">
+        <p class="help-block" translate>
             For HOTP and TOTP tokens:
         </p>
 
-        <p class="help-block">
+        <p class="help-block" translate>
             serial number, seed, type, otplen, timeStep
         </p>
 
-        <p class="help-block">
+        <p class="help-block" translate>
             For OCRA tokens:
         </p>
 
-        <p class="help-block">
+        <p class="help-block" translate>
             serial number, seed, type, ocrasuite
         </p>
 
-        <p class="help-block">
+        <p class="help-block" translate>
             type (default hotp), otplen (default 6), timeStep (default 30) and
             ocrasuite are optional.
         </p></div>
 
     <div ng-show="form.type==='Yubikey CSV'">
-        <p class="help-block">
+        <p class="help-block" translate>
             Here you can upload a csv file for your Yubikey token.
             The file is supposed to contain one token per line.
         </p>
     </div>
 
     <div ng-show="form.type==='pskc'">
-        <p class="help-block">
+        <p class="help-block" translate>
             This is an RFC6030 OATH compliant PSKC file.
             At the moment only unencrypted PSKC files are supported.
             Please ask for an update to import encrypted PSKC files.
@@ -54,19 +54,20 @@
 
     <div class="text-center">
         <button class="btn btn-primary" ng-file-select
-                ng-file-change="upload($files)">Select file and import
+                ng-file-change="upload($files)"
+                translate>Select file and import
         </button>
     </div>
 </form>
 
 <div ng-show="uploadedFile">
-    <div>
+    <div translate>
         Progress: {{ progressPercentage }}%
     </div>
-    <div>
+    <div translate>
         Uploaded File: {{ uploadedFile }}
     </div>
-    <div>
+    <div translate>
         Uploaded Tokens: {{ uploadedTokens }}
     </div>
 </div>

@@ -4,7 +4,6 @@
 
 <ng-include src="'{{ instance }}/static/templates/menu.html'">
 </ng-include>
-
 <div class="container">
     <div ui-view class="slide"></div>
 </div>
@@ -20,7 +19,7 @@
         <a class="navbar-btn btn btn-success pull-right"
            href="https://netknights.it/leistungen/support/"
            target="_external">
-            Support
+            <translate>Support</translate>
         </a>
         <a class="navbar-text pull-right"
                 href="https://groups.google.com/forum/#!forum/privacyidea"
@@ -30,7 +29,7 @@
            ng-show="privacyideaVersionNumber"
                 href="http://privacyidea.readthedocs.org/en/v{{ privacyideaVersionNumber }}"
                 target="documentation">
-            Online Documentation
+            <translate>Online Documentation</translate>
         </a>
     </div>
 </div>

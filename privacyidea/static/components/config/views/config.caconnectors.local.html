@@ -1,18 +1,18 @@
 <div ng-controller="LocalCAConnectorController">
 
     <h2 class="form-signin-heading"
-        ng-show="connectorname">Edit Local CA Connector
+        ng-show="connectorname" translate>Edit Local CA Connector
         {{ connectorname }}</h2>
 
     <h2 class="form-signin-heading"
-        ng-hide="connectorname">Create a new Local CA Connector</h2>
+        ng-hide="connectorname" translate>Create a new Local CA Connector</h2>
 
     <form name="formAddLocal" role="form" validate
           class="form-horizontal">
 
         <div class="form-group">
             <label for="connectorname" class="col-sm-3
-            control-label">Connector name</label>
+            control-label" translate>Connector name</label>
 
             <div class="col-sm-9">
                 <input name="connectorname" id="connectorname"
@@ -25,7 +25,8 @@
 
         <div class="form-group">
             <label for="openssl.cnf"
-                   class="col-sm-3 control-label">OpenSSL config file</label>
+                   class="col-sm-3 control-label" translate>
+                OpenSSL config file</label>
 
             <div class="col-sm-9">
                 <input name="openssl.cnf" id="openssl.cnf"
@@ -37,7 +38,8 @@
 
         <div class="form-group">
             <label for="cacert"
-                   class="col-sm-3 control-label">CA Certificate</label>
+                   class="col-sm-3 control-label" translate>
+                CA Certificate</label>
 
             <div class="col-sm-9">
                 <input name="cacert" id="cacert"
@@ -49,7 +51,7 @@
 
         <div class="form-group">
             <label for="cakey"
-                   class="col-sm-3 control-label">CA Key</label>
+                   class="col-sm-3 control-label" translate>CA Key</label>
 
             <div class="col-sm-9">
                 <input name="cakey" id="cakey"
@@ -61,7 +63,7 @@
 
         <div class="form-group">
             <label for="workingdir"
-                   class="col-sm-3 control-label">Working Directory</label>
+                   class="col-sm-3 control-label" translate>Working Directory</label>
 
             <div class="col-sm-9">
                 <input name="workingdir" id="workingdir"
@@ -73,7 +75,7 @@
 
         <div class="form-group">
             <label for="csrdir"
-                   class="col-sm-3 control-label">Certificate Signing
+                   class="col-sm-3 control-label" translate>Certificate Signing
                 Request Directory</label>
 
             <div class="col-sm-9">
@@ -86,7 +88,7 @@
 
         <div class="form-group">
             <label for="certdir"
-                   class="col-sm-3 control-label">Certificate Directory</label>
+                   class="col-sm-3 control-label" translate>Certificate Directory</label>
 
             <div class="col-sm-9">
                 <input name="certdir" id="certdir"
@@ -99,7 +101,7 @@
         <div class="text-center">
             <button ng-click="setCAConnector()"
                     ng-disabled="forAddLocal.$invalid"
-                    class="btn btn-primary">Save resolver
+                    class="btn btn-primary" translate>Save resolver
             </button>
         </div>
 

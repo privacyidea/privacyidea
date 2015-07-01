@@ -1,20 +1,20 @@
-<p class="help-block">
+<p class="help-block" translate>
 The TOTP token is a time based token. You can paste a secret key or
     have the server generate the secret and scan the QR code with a
     smartphone app like the Google Authenticator or FreeOTP turning your
     smartphone into an authentication device.
 </p>
 
-<h4>Token data</h4>
+<h4 translate>Token data</h4>
 
 <div class="form-group">
     <input type="checkbox" ng-model="form.genkey"
            name="generate" id="generate">
-    <label for="generate">Generate OTP Key on the Server</label>
+    <label for="generate" translate>Generate OTP Key on the Server</label>
 
     <div ng-show="form.genkey">
-        <p class="help-block">
-            The server will create the OTP value
+        <p class="help-block" translate>
+            The server will create the OTP key
             and a QR Code
             will be
             displayed to you to be scanned.
@@ -22,15 +22,15 @@ The TOTP token is a time based token. You can paste a secret key or
     </div>
 </div>
 <div class="form-group" ng-hide="form.genkey">
-    <label for="otpkey">OTP Key</label>
+    <label for="otpkey" translate>OTP Key</label>
     <input type="text" ng-pattern="/^[0-9a-fA-F]*$/"
            autofocus
            class="form-control"
-           placeholder="Enter OTP key..."
+           placeholder="{{ 'Enter OTP key...'|translate }}"
            ng-model="form.otpkey" name="otpkey">
 </div>
 <div class="form-group">
-    <label for="otplen">OTP length</label>
+    <label for="otplen" translate>OTP length</label>
     <select class="form-control"
             id="otplen"
             ng-model="form.otplen"
@@ -38,7 +38,7 @@ The TOTP token is a time based token. You can paste a secret key or
     </select>
 </div>
 <div class="form-group">
-    <label for="timestep">Timestep</label>
+    <label for="timestep" translate>Timestep</label>
     <select class="form-control"
             ng-model="form.timeStep"
             name="timestep"
@@ -47,7 +47,7 @@ The TOTP token is a time based token. You can paste a secret key or
 </div>
 
 <div class="form-group">
-    <label for="hashlib">Hash algorithm</label>
+    <label for="hashlib" translate>Hash algorithm</label>
     <select class="form-control"
             id="hashlib"
             ng-model="form['totp.hashlib']"

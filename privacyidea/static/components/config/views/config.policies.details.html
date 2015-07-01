@@ -1,33 +1,34 @@
 <h2 class="form-signin-heading"
-        ng-show="existingPolicyname">Edit Policy {{ existingPolicyname }}
+        ng-show="existingPolicyname">
+    <translate>Edit Policy {{ existingPolicyname }}</translate>
 <button class="btn btn-danger"
         ng-click="disablePolicy(existingPolicyname)"
-        ng-show="params.active">
+        ng-show="params.active" translate>
     Disable
 </button>
 <button class="btn btn-success"
         ng-click="enablePolicy(existingPolicyname)"
-        ng-hide="params.active">
+        ng-hide="params.active" translate>
     Enable
 </button>
 </h2>
 
 <h2 class="form-signin-heading"
-        ng-hide="existingPolicyname">Create a new Policy</h2>
+        ng-hide="existingPolicyname" translate>Create a new Policy</h2>
 
 <form name="formPolicyAdd" role="form" validate
       class="form-horizontal">
 
     <div class="form-group">
-        <label for="policyname" class="col-sm-3 control-label">Policy
-            Name</label>
+        <label for="policyname" class="col-sm-3 control-label" translate>
+            Policy Name</label>
 
         <div class="col-sm-6">
             <input name="policyname" id="policyname" class="form-control"
                    ng-model="policyname" required placeholder="policy1"
                    autofocus required/>
             <p class="help-block"
-                ng-show="existingPolicyname">
+                ng-show="existingPolicyname" translate>
                 If you change the name of the policy, it will create a new policy
                 with the new name!
             </p>
@@ -37,19 +38,19 @@
                 ng-hide="existingPolicyname || viewPolicyTemplates"
                 ng-click="viewPolicyTemplates=true">
                 <span class="glyphicon glyphicon-leaf"></span>
-                Show Policy templates
+            <translate>Show Policy templates</translate>
         </button>
         <button class="btn btn-warning"
                 ng-hide="existingPolicyname || !viewPolicyTemplates"
                 ng-click="viewPolicyTemplates=false">
                 <span class="glyphicon glyphicon-leaf"></span>
-                Hide Policy templates
+                <translate>Hide Policy templates</translate>
         </button>
         </div>
     </div>
     <div ng-show="viewPolicyTemplates"
             class="form-group">
-        <label for="scope" class="col-sm-3 control-label">
+        <label for="scope" class="col-sm-3 control-label" translate>
             Policy Templates</label>
         <div class="col-sm-9">
             <table class="table table-hover">
@@ -86,7 +87,7 @@
 
     <div class="form-group" ng-show="selectedScope[0].name=='admin'">
         <label for="adminrealm" class="col-sm-3
-        control-label">Admin-Realm</label>
+        control-label" translate>Admin-Realm</label>
 
         <div class="col-sm-9">
             <div multi-select
@@ -101,7 +102,7 @@
     </div>
 
     <div class="form-group">
-        <label for="action" class="col-sm-3 control-label">Action</label>
+        <label for="action" class="col-sm-3 control-label" translate>Action</label>
 
         <div class="col-sm-9">
             <div multi-select
@@ -178,7 +179,8 @@
         </div>
     </div>
     <div class="form-group">
-        <label for="realm" class="col-sm-3 control-label">User-Realm</label>
+        <label for="realm" class="col-sm-3 control-label"
+                translate>User-Realm</label>
 
         <div class="col-sm-9">
             <div multi-select
@@ -193,7 +195,7 @@
     </div>
     <div class="form-group">
         <label for="resolver" class="col-sm-3
-        control-label">User-Resolver</label>
+        control-label" translate>User-Resolver</label>
 
         <div class="col-sm-9">
             <div multi-select
@@ -208,8 +210,10 @@
     </div>
     <div class="form-group">
         <label for="user" class="col-sm-3 control-label">
-            <span ng-show="selectedScope[0].name=='admin'">Admin</span>
-            <span ng-hide="selectedScope[0].name=='admin'">User</span>
+            <span ng-show="selectedScope[0].name=='admin'"
+                    translate>Admin</span>
+            <span ng-hide="selectedScope[0].name=='admin'"
+                    translate>User</span>
         </label>
 
 
@@ -222,7 +226,8 @@
     </div>
 
     <div class="form-group">
-        <label for="client" class="col-sm-3 control-label">Client</label>
+        <label for="client" class="col-sm-3 control-label"
+               translate>Client</label>
 
         <div class="col-sm-9">
             <input name="client" class="form-control"
@@ -237,7 +242,7 @@
         <button ng-click="createPolicy()"
                 ng-disabled="formPolicyAdd.$invalid"
                 class="btn btn-primary">
-            <div class="glyphicon glyphicon-plus">
+            <div class="glyphicon glyphicon-plus" translate>
                 Create Policy
             </div>
         </button>

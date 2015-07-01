@@ -1,16 +1,18 @@
 <div ng-controller="ScimResolverController">
 
 <h2 class="form-signin-heading"
-        ng-show="resolvername">Edit SCIM Resolver {{ resolvername }}</h2>
+        ng-show="resolvername"
+        translate>Edit SCIM Resolver {{ resolvername }}</h2>
 <h2 class="form-signin-heading"
-        ng-hide="resolvername">Create a new SCIM Resolver</h2>
+        ng-hide="resolvername"
+        translate>Create a new SCIM Resolver</h2>
 
 <form name="formResolverAddScim" role="form" validate
       class="form-horizontal">
 
     <div class="form-group">
-        <label for="resolvername" class="col-sm-3 control-label">Resolver
-            name</label>
+        <label for="resolvername" class="col-sm-3 control-label"
+                translate>Resolver name</label>
 
         <div class="col-sm-9">
             <input name="resolvername" id="resolvername" class="form-control"
@@ -19,7 +21,8 @@
         </div>
     </div>
     <div class="form-group">
-        <label for="authserver" class="col-sm-3 control-label">
+        <label for="authserver" class="col-sm-3 control-label"
+                translate>
             Authentication Server URI</label>
 
         <div class="col-sm-9">
@@ -30,7 +33,8 @@
     </div>
 
     <div class="form-group">
-        <label for="resourceserver" class="col-sm-3 control-label">
+        <label for="resourceserver" class="col-sm-3 control-label"
+                translate>
             Resource Server URI</label>
 
         <div class="col-sm-9">
@@ -42,7 +46,8 @@
 
 
     <div class="form-group">
-        <label for="client" class="col-sm-3 control-label">Client</label>
+        <label for="client" class="col-sm-3 control-label"
+                translate>Client</label>
 
         <div class="col-sm-9">
             <input name="client" class="form-control"
@@ -52,7 +57,8 @@
     </div>
 
         <div class="form-group">
-        <label for="secret" class="col-sm-3 control-label">Secret</label>
+        <label for="secret" class="col-sm-3 control-label"
+                translate>Secret</label>
 
         <div class="col-sm-9">
             <input name="secret" class="form-control"
@@ -74,11 +80,13 @@
     <div class="text-center">
         <button ng-click="testResolver()"
                 ng-disabled="formResolverAddScim.$invalid"
-                class="btn btn-success">Test SCIM Resolver
+                class="btn btn-success"
+                translate>Test SCIM Resolver
         </button>
         <button ng-click="setSCIMResolver()"
                 ng-disabled="formResolverAddScim.$invalid"
-                class="btn btn-primary">Save resolver
+                class="btn btn-primary"
+                translate>Save resolver
         </button>
     </div>
 

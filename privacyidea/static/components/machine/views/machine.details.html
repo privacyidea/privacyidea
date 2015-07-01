@@ -1,29 +1,29 @@
 <div class="panel" ng-controller="machineDetailsController">
-    <h2>Details for machine {{ machineid }} in Machine Resolver
+    <h2 translate>Details for machine {{ machineid }} in Machine Resolver
         {{ machineresolver }}
     </h2>
 
     <div class="panel-body">
         <div class="col-xs-6">
             <div class="form-group">
-                <label for="hostname">Hostname</label>
+                <label for="hostname" translate>Hostname</label>
 
                 <div name="hostname">{{ machine.hostname }}</div>
             </div>
             <div class="form-group">
-                <label for="id">Machine ID</label>
+                <label for="id" translate>Machine ID</label>
 
                 <div name="id">{{ machine.id}}</div>
             </div>
         </div>
         <div class="col-xs-6">
             <div class="form-group">
-                <label for="ip">IP Address</label>
+                <label for="ip" translate>IP Address</label>
 
                 <div name="ip">{{ machine.ip }}</div>
             </div>
             <div class="form-group">
-                <label for="resolver">Machine Resolver</label>
+                <label for="resolver" translate>Machine Resolver</label>
 
                 <div name="resolver">
                     <a ui-sref="machine.list({resolver:machine.resolver_name})">
@@ -31,7 +31,7 @@
             </div>
         </div>
     </div>
-    <h3>Tokens and Applications for machine {{ machineid }}</h3>
+    <h3 translate>Tokens and Applications for machine {{ machineid }}</h3>
 
     <pagination ng-show="tokenCount > tokensPerPage"
                 total-items="tokenCount" ng-model="params.page"
@@ -43,9 +43,9 @@
         <table class="table table-bordered table-striped">
             <thead>
             <tr>
-                <th>Serial</th>
-                <th>Application</th>
-                <th>Options</th>
+                <th translate>Serial</th>
+                <th translate>Application</th>
+                <th translate>Options</th>
                 <th></th>
             </tr>
             </thead>
@@ -88,21 +88,24 @@
                 </td>
                 <td ng-hide="token.optionsEdit">
                     <button class="btn btn-primary"
-                            ng-click="token.optionsEdit=true">Edit Options
+                            ng-click="token.optionsEdit=true"
+                            translate>Edit Options
                     </button>
                     <button class="btn btn-danger"
                             ng-click="detachMachineToken(token.serial,
-                            token.application)">Detach
+                            token.application)" translate>Detach
                     </button>
                 </td>
                 <td ng-show="token.optionsEdit">
                     <button class="btn btn-primary"
                             ng-click="saveOptions(token.serial,
                             token.application, token.options);
-                            token.optionsEdit=false">Save Options
+                            token.optionsEdit=false"
+                            translate>Save Options
                     </button>
                     <button class="btn btn-danger"
-                            ng-click="token.optionsEdit=false">Cancel
+                            ng-click="token.optionsEdit=false"
+                            translate>Cancel
                     </button>
                 </td>
             </tr>
@@ -116,7 +119,7 @@
         <div attach-token new-token-object="newToken"></div>
 
         <div class="form-group">
-            <label for="application">Application</label>
+            <label for="application" translate>Application</label>
             <select class="form-control"
                 id="application"
                 ng-model="form.application"
@@ -145,7 +148,7 @@
         <div class="text-center">
             <button ng-click="attachToken()"
                     ng-disabled="formAttachToken.$invalid"
-                    class="btn btn-primary">Attach Token
+                    class="btn btn-primary" translate>Attach Token
             </button>
         </div>
     </form>

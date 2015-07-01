@@ -10,35 +10,35 @@
         userid: "115"
         username: "pulse"
     -->
-    <h2>Details for user {{ username }} in realm
-        <a ui-sref="config.realms.list">{{ realmname }}</a>
+    <h2><translate>Details for user {{ username }} in realm</translate>
+        <a ui-sref="config.realms.list">{{ realmname }}</a></h2>
         <a class="btn btn-default" ui-sref="audit({user: username})">
-        View user in Audit log</a>
+        <translate>View user in Audit log</translate></a>
     </h2>
 
     <div class="panel-body">
         <div class="col-xs-6">
             <div class="form-group">
-                <label for="username">Username</label>
+                <label for="username" translate>Username</label>
 
                 <div name="username" >{{ User.username }}</div>
             </div>
             <div class="form-group">
-                <label for="givenname">Given name</label>
+                <label for="givenname" translate>Given name</label>
                 <div name="givenname" ng-hide="editUser">{{ User.givenname }}</div>
                 <input name="givenname" class="form-control"
                        ng-model="User.givenname"
                        ng-show="editUser">
             </div>
             <div class="form-group">
-                <label for="surname">Surname</label>
+                <label for="surname" translate>Surname</label>
                 <div name="surname" ng-hide="editUser">{{ User.surname }}</div>
                 <input name="surname" class="form-control"
                        ng-model="User.surname"
                        ng-show="editUser">
             </div>
             <div class="form-group">
-                <label for="description">Description</label>
+                <label for="description" translate>Description</label>
                 <div name="description" ng-hide="editUser">{{ User.description
                         }}</div>
                 <input name="description" class="form-control"
@@ -48,7 +48,7 @@
         </div>
         <div class="col-xs-6">
             <div class="form-group">
-                <label for="email">Email</label>
+                <label for="email" translate>Email</label>
 
                 <div name="email" ng-hide="editUser">
                     <a href="mailto:{{ User.email }}">
@@ -58,21 +58,21 @@
                        ng-show="editUser">
             </div>
             <div class="form-group">
-                <label for="phone">Phone</label>
+                <label for="phone" translate>Phone</label>
                 <div name="phone" ng-hide="editUser">{{ User.phone }}</div>
                 <input name="phone" class="form-control"
                        ng-model="User.phone"
                        ng-show="editUser">
             </div>
             <div class="form-group">
-                <label for="mobile">Mobile</label>
+                <label for="mobile" translate>Mobile</label>
                 <div name="mobile" ng-hide="editUser">{{ User.mobile }}</div>
                 <input name="mobile" class="form-control"
                        ng-model="User.mobile"
                        ng-show="editUser">
             </div>
             <div class="form-group" ng-show="editUser">
-                <label for="password">Password</label>
+                <label for="password" translate>Password</label>
                 <input type="password" name="password" class="form-control"
                        ng-model="User.password">
             </div>
@@ -82,31 +82,27 @@
     <div class="text-center" ng-show="editable">
         <button ng-click="editUser=true" class="btn btn-primary"
                 ng-show="!editUser">
-            <div class="glyphicon glyphicon-edit">
-                Edit user
+            <div class="glyphicon glyphicon-edit" translate>Edit user
             </div>
         </button>
         <button ng-click="editUser=false; updateUser()" class="btn btn-primary"
                 ng-show="editUser">
-            <div class="glyphicon glyphicon-save">
-                Save user
+            <div class="glyphicon glyphicon-save" translate>Save user
             </div>
         </button>
         <button ng-click="editUser=false; getUserDetails()"
                 class="btn btn-danger"
-                ng-show="editUser">
-            Cancel
+                ng-show="editUser" translate>Cancel
         </button>
         <button ng-click="deleteUserAsk()"
                 class="btn btn-danger"
                 ng-show="!editUser">
-            <div class="glyphicon glyphicon-trash">
-                Delete user
+            <div class="glyphicon glyphicon-trash" translate>Delete user
             </div>
         </button>
     </div>
 
-    <h3>Tokens for user {{ username }}</h3>
+    <h3 translate>Tokens for user {{ username }}</h3>
     <!-- Tokens for user -->
     <pagination ng-show="tokendata.count > 5"
                 total-items="tokendata.count" ng-model="params.page"
@@ -118,14 +114,14 @@
         <table class="table table-bordered table-striped">
             <thead>
             <tr>
-                <th>serial</th>
-                <th>type</th>
-                <th>Active</th>
-                <th>window</th>
-                <th>description</th>
-                <th>failcounter</th>
-                <th>maxfail</th>
-                <th>otplen</th>
+                <th translate>serial</th>
+                <th translate>type</th>
+                <th translate>Active</th>
+                <th translate>window</th>
+                <th translate>description</th>
+                <th translate>failcounter</th>
+                <th translate>maxfail</th>
+                <th translate>otplen</th>
             </tr>
             </thead>
             <tbody>
@@ -159,20 +155,19 @@
         </table>
     </div>
     <div class="text-center">
-        <button ng-click="enrollToken()" class="btn btn-primary">
-            Enroll New
-            Token
+        <button ng-click="enrollToken()" class="btn btn-primary"
+                translate>Enroll New Token
         </button>
     </div>
 
-    <h3>Assign a new token {{ newTokenObject.serial }}</h3>
+    <h3 translate>Assign a new token {{ newTokenObject.serial }}</h3>
 
     <form name="formAssignToken" role="form" validate>
         <div assign-token new-token-object="newToken"></div>
         <div class="text-center">
             <button ng-click="assignToken()"
                     ng-disabled="formAssignToken.$invalid"
-                    class="btn btn-primary">Assign Token
+                    class="btn btn-primary" translate>Assign Token
             </button>
         </div>
     </form>

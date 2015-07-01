@@ -1,11 +1,11 @@
-<h2>EMail Token settings</h2>
-<p class="help-block">
+<h2 translate>EMail Token settings</h2>
+<p class="help-block" translate>
     The EMail token is a challenge response token that sends the OTP value to
     the given email address, when the correct OTP PIN was presented by the user.
 </p>
 
 <div class="form-group">
-    <label for="mailServer">Mail Server</label>
+    <label for="mailServer" translate>Mail Server</label>
     <input type="text"
            required
            class="form-control"
@@ -14,14 +14,14 @@
 </div>
 
 <div class="form-group">
-    <label for="mailport">Port</label>
+    <label for="mailport" translate>Port</label>
     <input type="text"
            class="form-control"
            ng-model="form['email.port']" name="mailport">
 </div>
 
 <div class="form-group">
-    <label for="mailuser">Mail User</label>
+    <label for="mailuser" translate>Mail User</label>
     <input type="text"
            class="form-control"
            placeholder="Username if required"
@@ -29,7 +29,7 @@
 </div>
 
 <div class="form-group">
-    <label for="mailpassword">Mail User Password</label>
+    <label for="mailpassword" translate>Mail User Password</label>
     <input type="password"
            class="form-control"
            placeholder="topSecret"
@@ -37,7 +37,7 @@
 </div>
 
 <div class="form-group">
-    <label for="mailfrom">Mail Sender Address</label>
+    <label for="mailfrom" translate>Mail Sender Address</label>
     <input type="email"
            required
            class="form-control"
@@ -46,8 +46,8 @@
 </div>
 
 <div class="form-group">
-    <label for="mailvalid">OTP validity time</label>
-    <p class="help-block">
+    <label for="mailvalid" translate>OTP validity time</label>
+    <p class="help-block" translate>
         The time in seconds for which the sent OTP value is valid for
         authentication.
     </p>
@@ -62,5 +62,5 @@
            ng-checked="form['email.tls'] == '1'"
            name="mailtls"
            id="mailtls">
-    <label for="mailtls">Use TLS</label>
+    <label for="mailtls" translate>Use TLS</label>
 </div>

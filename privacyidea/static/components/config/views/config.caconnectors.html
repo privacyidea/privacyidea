@@ -5,16 +5,17 @@
                 <li role="presentation"
                     ng-class="{ active:
                     $state.includes('config.caconnectors.list')}">
-                    <a ui-sref="config.caconnectors.list">All
-                        CA Connectors</a></li>
+                    <a ui-sref="config.caconnectors.list" translate>
+                        All CA Connectors</a></li>
                 <li role="presentation"
                     ng-class="{ active:
                     $state.includes('config.caconnectors.edit')}"
                         ng-show="$state.includes('config.caconnectors.edit')">
-                    <a ui-sref="config.caconnector.edit">Edit CA Connector
-                        {{ connectorname }}</a></li>
+                    <a ui-sref="config.caconnector.edit" translate>
+                        Edit CA Connector {{ connectorname }}</a></li>
 
-                <li class="nav nav-pills nav-header">New Connectors</li>
+                <li class="nav nav-pills nav-header" translate>
+                    New Connectors</li>
                 <!-- Here we can get all connectors and iterated over
                      the resolver types.
                 -->
@@ -22,7 +23,8 @@
                         role="presentation"
                     ng-class="{active:
                     $state.includes('config.caconnectors.add'+connectortype) }">
-                    <a ui-sref="config.caconnectors.add{{ connectortype }}">
+                    <a ui-sref="config.caconnectors.add{{ connectortype }}"
+                       translate>
                         New {{ connectortype | uppercase }} CA Connector</a>
                 </li>
             </ul>

@@ -1,5 +1,4 @@
 info:
-	@echo "make translate    - collect new strings and translate them"
 	@echo "make clean        - remove all automatically created files"
 	@echo "make epydoc       - create the API documentation"
 	@echo "make doc-man      - create the documentation as man-page"
@@ -8,6 +7,7 @@ info:
 	@echo "make debianzie    - prepare the debian build environment in DEBUILD"
 	@echo "make builddeb     - build .deb file locally on ubuntu 14.04LTS!"
 	@echo "make venvdeb      - build .deb file, that contains the whole setup in a virtualenv."
+	@echo "make translate    - translate WebUI"
 	@echo "                    This is to be used with debian Wheezy"
 	@echo "make ppa-dev      - upload to launchpad development repo"
 	
@@ -18,15 +18,6 @@ LOCAL_SERIES=`lsb_release -a | grep Codename | cut -f2`
 SRCDIRS=deploy authmodules migrations doc tests tools privacyidea 
 SRCFILES=setup.py MANIFEST.in Makefile Changelog LICENSE pi-manage.py requirements.txt
 
-translate:
-	# according to http://docs.pylonsproject.org/projects/pylons-webframework/en/latest/i18n.html#using-babel
-	# To add a new translation do:
-	# python setip.py init_catalog -l es
-	python setup.py extract_messages
-	(cd privacyidea/i18n; msgmerge de/LC_MESSAGES/privacyidea.po privacyidea.pot > de.po; cp de.po de/LC_MESSAGES/privacyidea.po)
-#	python setup.py init_catalog -l de
-	gtranslator privacyidea/i18n/de/LC_MESSAGES/privacyidea.po
-	python setup.py compile_catalog
 clean:
 	find . -name \*.pyc -exec rm {} \;
 	rm -fr build/
@@ -36,6 +27,12 @@ clean:
 	rm -fr cover
 	rm -f .coverage
 	(cd doc; make clean)
+
+translate:
+	grunt nggettext_extract
+	(cd po; msgmerge de.po template.pot > tmp.po; mv tmp.po de.po)
+	poedit po/de.po
+	grunt nggettext_compile
 
 pypi:
 	make doc-man

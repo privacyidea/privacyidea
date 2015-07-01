@@ -1,18 +1,19 @@
 <div ng-controller="hostsResolverController">
 
     <h2 class="form-signin-heading"
-        ng-show="resolvername">Edit hosts Machine Resolver
+        ng-show="resolvername" translate>Edit hosts Machine Resolver
         {{ resolvername }}</h2>
 
     <h2 class="form-signin-heading"
-        ng-hide="resolvername">Create a new hosts Machine Resolver</h2>
+        ng-hide="resolvername" translate>Create a new hosts Machine
+        Resolver</h2>
 
     <form name="formMResolverAddHosts" role="form" validate
             class="form-horizontal">
 
         <div class="form-group">
-            <label for="resolvername" class="col-sm-3 control-label">Resolver
-                name</label>
+            <label for="resolvername" class="col-sm-3 control-label"
+                    translate>Resolver name</label>
 
             <div class="col-sm-9">
                 <input name="resolvername" id="resolvername"
@@ -24,7 +25,7 @@
         </div>
         <div class="form-group">
             <label for="resolverfile"
-                   class="col-sm-3 control-label">File name</label>
+                   class="col-sm-3 control-label" translate>File name</label>
 
             <div class="col-sm-9">
                 <input name="resolverfile" id="resolverfile"
@@ -37,7 +38,7 @@
         <div class="text-center">
             <button ng-click="setMachineResolver()"
                     ng-disabled="formMResolverAddHosts.$invalid"
-                    class="btn btn-primary">Save resolver
+                    class="btn btn-primary" translate>Save resolver
             </button>
         </div>
 

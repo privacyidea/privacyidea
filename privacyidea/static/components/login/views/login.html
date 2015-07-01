@@ -3,27 +3,31 @@
     <div class="alert alert-info alert-dismissible" role="alert">
         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
             <span aria-hidden="true">&times;</span></button>
-        Enter your username and password and click Log In to authenticate.
+        <translate>
+            Enter your username and password and click Log In to authenticate.
+        </translate>
     </div>
 
     <div class="container">
         <form name="formSignin" class="form-signin" role="form" novalidate>
-            <h2 class="form-signin-heading">Please sign in</h2>
+            <h2 class="form-signin-heading" translate>Please sign in</h2>
 
-            <label for="username" class="sr-only">Username</label>
+            <label for="username" class="sr-only" translate>Username</label>
             <input name="username" id="username" class="form-control"
-                   ng-model="login.username" required placeholder="Username"
+                   ng-model="login.username" required
+                   placeholder="{{'Username'|translate}}"
                    autofocus/>
 
-            <label for="password" class="sr-only">Password</label>
+            <label for="password" class="sr-only" translate>Password</label>
             <input name="password" type="password"
                    id="password" class="form-control"
-                   ng-model="login.password" required placeholder="Password"/>
+                   ng-model="login.password" required
+                   placeholder="{{'Password'|translate}}"/>
 
             <div class="text-center">
                 <button ng-click="authenticate()"
                         ng-disabled="authForm.$invalid"
-                        class="btn btn-primary btn-block">Log In
+                        class="btn btn-primary btn-block" translate>Log In
                 </button>
             </div>
 
