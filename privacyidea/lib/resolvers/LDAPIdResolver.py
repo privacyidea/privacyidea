@@ -538,32 +538,43 @@ class IdResolver (UserIdResolver):
                           client_strategy=ldap3.SYNC,
                           check_names=True,
                           auto_referrals=False):
+
+        authentication = None
+        if not user:
+            authentication = ldap3.ANONYMOUS
+
         if authtype == AUTHTYPE.SIMPLE:
+            if not authentication:
+                authentication = ldap3.SIMPLE
             l = ldap3.Connection(server,
                                  user=user,
                                  password=password,
                                  auto_bind=auto_bind,
                                  client_strategy=client_strategy,
-                                 authentication=ldap3.SIMPLE,
+                                 authentication=authentication,
                                  check_names=check_names,
                                  auto_referrals=auto_referrals)
         elif authtype == AUTHTYPE.NTLM:
+            if not authentication:
+                authentication = ldap3.NTLM
             l = ldap3.Connection(server,
                                  user=user,
                                  password=password,
                                  auto_bind=auto_bind,
                                  client_strategy=client_strategy,
-                                 authentication=ldap3.NTLM,
+                                 authentication=authentication,
                                  check_names=check_names,
                                  auto_referrals=auto_referrals)
         elif authtype == AUTHTYPE.SASL_DIGEST_MD5:
+            if not authentication:
+                authentication = ldap3.SASL
             sasl_credentials = (str(user), str(password))
             l = ldap3.Connection(server,
                                  sasl_mechanism="DIGEST-MD5",
                                  sasl_credentials=sasl_credentials,
                                  auto_bind=auto_bind,
                                  client_strategy=client_strategy,
-                                 authentication=ldap3.SASL,
+                                 authentication=authentication,
                                  check_names=check_names,
                                  auto_referrals=auto_referrals)
         else:

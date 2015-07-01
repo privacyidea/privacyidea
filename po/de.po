@@ -139,7 +139,7 @@ msgstr "Token anhängen"
 msgid "Attach to a new Machine"
 msgstr "An eine neue Maschine anhängen"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:141
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:144
 msgid "Attribute mapping"
 msgstr "Attributszuordnung"
 
@@ -170,12 +170,12 @@ msgid "Bind DN"
 msgstr "Bind DN"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:57
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:52
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:55
 msgid "Bind Password"
 msgstr "Bind Passwort"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:67
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:62
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:65
 msgid "Bind Type"
 msgstr "Bind Typ"
 
@@ -762,6 +762,12 @@ msgstr "Den Fehlerzähler erhöhen, wenn eine falsche PIN eingegeben wurde."
 msgid "Info"
 msgstr "Info"
 
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:49
+msgid "Leave the Bind DN empty if you want to do anonymous binding."
+msgstr ""
+"Lassen Sie Bind DN leer, um einen Anonymous Bind gegen das LDAP-Verzeichnis "
+"zu machen."
+
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:27
 msgid "Length of UID"
 msgstr "Länger des UID"
@@ -913,7 +919,7 @@ msgid "No Serial number could be found for OTP value {{ otp }}."
 msgstr "Zu dem OTP-Wert {{ otp }} konnte keine Seriennummer gefunden werden."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:106
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:104
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:107
 msgid "No anonymous referral chasing"
 msgstr "Referrals werden nicht (anonym) verfolgt."
 
@@ -1066,11 +1072,11 @@ msgstr ""
 "angehängt."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:99
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:97
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:100
 msgid "Preset Active Directory"
 msgstr "Active Directory vorbelegen"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:94
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:97
 msgid "Preset OpenLDAP"
 msgstr "OpenLDAP vorbelegen"
 
@@ -1238,7 +1244,7 @@ msgstr "Realms speichern"
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:102
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:39
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:166
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:180
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:183
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:38
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:86
 msgid "Save resolver"
@@ -1254,7 +1260,7 @@ msgid "Scope"
 msgstr "Geltungsbereich"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:120
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:119
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:122
 msgid "Search Filter"
 msgstr "Suchfilter"
 
@@ -1314,7 +1320,7 @@ msgid "Show Policy templates"
 msgstr "Vorlagen anzeigen"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:88
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:83
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:86
 msgid "Size Limit"
 msgstr "Größenbeschränkung"
 
@@ -1359,7 +1365,7 @@ msgid "Table"
 msgstr "Tabelle"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:162
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:175
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:178
 msgid "Test LDAP Resolver"
 msgstr "LDAP Resolver testen"
 
@@ -1866,7 +1872,7 @@ msgid "Timeout"
 msgstr "Time-out"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:79
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:74
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:77
 msgid "Timeout (seconds)"
 msgstr "Time-out (Sekunden)"
 
@@ -1931,7 +1937,7 @@ msgstr "Geben Sie ein Passwort ein"
 msgid "Typo3"
 msgstr "TYPO3"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:153
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:156
 msgid "UID Type"
 msgstr "UID Typ"
 
@@ -1975,7 +1981,7 @@ msgstr "TLS verwenden"
 msgid "User"
 msgstr "Benutzer "
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:130
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:133
 msgid "User Filter"
 msgstr "Benutzerfilter"
 
