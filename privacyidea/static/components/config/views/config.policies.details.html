@@ -72,7 +72,7 @@
             Scope</label>
 
         <div class="col-sm-9">
-            <div multi-select
+            <div isteven-multi-select
                  input-model="scopes"
                  output-model="selectedScope"
                  button-label="name"
@@ -90,7 +90,7 @@
         control-label" translate>Admin-Realm</label>
 
         <div class="col-sm-9">
-            <div multi-select
+            <div isteven-multi-select
                  input-model="adminRealms"
                  output-model="selectedAdminRealms"
                  button-label="icon name"
@@ -105,7 +105,7 @@
         <label for="action" class="col-sm-3 control-label" translate>Action</label>
 
         <div class="col-sm-9">
-            <div multi-select
+            <div isteven-multi-select
                  ng-hide="isActionValues"
                  input-model="actions"
                  output-model="selectedActions"
@@ -183,7 +183,7 @@
                 translate>User-Realm</label>
 
         <div class="col-sm-9">
-            <div multi-select
+            <div isteven-multi-select
                  input-model="realms"
                  output-model="selectedRealms"
                  button-label="icon name"
@@ -198,13 +198,12 @@
         control-label" translate>User-Resolver</label>
 
         <div class="col-sm-9">
-            <div multi-select
+            <div isteven-multi-select
                  input-model="resolvers"
                  output-model="selectedResolvers"
                  button-label="icon name"
                  item-label="icon name maker"
-                 tick-property="ticked"
-                    >
+                 tick-property="ticked">
             </div>
         </div>
     </div>
