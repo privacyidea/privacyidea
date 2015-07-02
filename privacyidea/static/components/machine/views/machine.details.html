@@ -37,6 +37,10 @@
                 total-items="tokenCount" ng-model="params.page"
                 items-per-page="{{ tokensPerPage }}"
                 max-size="5"
+                previous-text="{{ 'Previous'|translate }}"
+                next-text="{{ 'Next'|translate }}"
+                last-text="{{ 'Last'|translate }}"
+                first-text="{{ 'First'|translate }}"
                 boundary-links="true" ng-change="pageChanged()"></pagination>
 
     <div class="table-responsive">

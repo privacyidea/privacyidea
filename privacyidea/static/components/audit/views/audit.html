@@ -9,6 +9,10 @@
                 total-items="auditdata.count" ng-model="params.page"
                 items-per-page="10"
                 max-size="10"
+                previous-text="{{ 'Previous'|translate }}"
+                next-text="{{ 'Next'|translate }}"
+                last-text="{{ 'Last'|translate }}"
+                first-text="{{ 'First'|translate }}"
                 boundary-links="true" ng-change="pageChanged()"></pagination>
 
     <translate>{{ auditdata.count }} entries found.</translate>

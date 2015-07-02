@@ -25,6 +25,7 @@ msgstr ""
 "Seite neu. Ansonsten wenden Sie sich an Ihren System Administrator!</p>"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:25
+#: privacyidea/static/components/config/views/config.token.yubico.html:29
 msgid "API Key"
 msgstr "API-Schlüssel"
 
@@ -95,10 +96,18 @@ msgstr "Alle Token"
 msgid "All users"
 msgstr "Alle Benutzer"
 
-#: privacyidea/static/components/machine/views/machine.details.html:122
-#: privacyidea/static/components/machine/views/machine.details.html:47
-#: privacyidea/static/components/token/views/token.details.html:385
-#: privacyidea/static/components/token/views/token.details.html:467
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:116
+msgid "An Attribute or the DN to identify the machine"
+msgstr "Ein Attribut oder DN zur Identifizierung der Maschine"
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:147
+msgid "An Attribute that contains the IP address."
+msgstr "Ein Attribut, das die IP-Adresse der Maschine enthält"
+
+#: privacyidea/static/components/machine/views/machine.details.html:126
+#: privacyidea/static/components/machine/views/machine.details.html:51
+#: privacyidea/static/components/token/views/token.details.html:389
+#: privacyidea/static/components/token/views/token.details.html:471
 msgid "Application"
 msgstr "Applikationen"
 
@@ -127,15 +136,15 @@ msgstr "Token einem Benutzer zuweisen"
 msgid "Assignment State"
 msgstr "Zuweisung"
 
-#: privacyidea/static/components/token/views/token.details.html:495
+#: privacyidea/static/components/token/views/token.details.html:499
 msgid "Attach Machine"
 msgstr "Maschine anhängen"
 
-#: privacyidea/static/components/machine/views/machine.details.html:149
+#: privacyidea/static/components/machine/views/machine.details.html:153
 msgid "Attach Token"
 msgstr "Token anhängen"
 
-#: privacyidea/static/components/token/views/token.details.html:461
+#: privacyidea/static/components/token/views/token.details.html:465
 msgid "Attach to a new Machine"
 msgstr "An eine neue Maschine anhängen"
 
@@ -214,10 +223,10 @@ msgstr "Zertifizierungsstellen"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:75
 #: privacyidea/static/components/directives/views/directive.tokendata.html:21
-#: privacyidea/static/components/machine/views/machine.details.html:106
+#: privacyidea/static/components/machine/views/machine.details.html:110
 #: privacyidea/static/components/token/views/token.details.html:186
 #: privacyidea/static/components/token/views/token.details.html:225
-#: privacyidea/static/components/token/views/token.details.html:451
+#: privacyidea/static/components/token/views/token.details.html:455
 #: privacyidea/static/components/user/views/user.details.html:93
 msgid "Cancel"
 msgstr "Abbrechen"
@@ -426,8 +435,8 @@ msgstr "Benutzer löschen"
 msgid "Description"
 msgstr "Beschreibung"
 
-#: privacyidea/static/components/machine/views/machine.details.html:94
-#: privacyidea/static/components/token/views/token.details.html:437
+#: privacyidea/static/components/machine/views/machine.details.html:98
+#: privacyidea/static/components/token/views/token.details.html:441
 msgid "Detach"
 msgstr "abhängen"
 
@@ -502,8 +511,8 @@ msgstr "Bearbeite Lokalen CA Konnektor {{ connectorname }}"
 msgid "Edit Machine Resolvers"
 msgstr "Maschinen-Resolver bearbeiten"
 
-#: privacyidea/static/components/machine/views/machine.details.html:90
-#: privacyidea/static/components/token/views/token.details.html:433
+#: privacyidea/static/components/machine/views/machine.details.html:94
+#: privacyidea/static/components/token/views/token.details.html:437
 msgid "Edit Options"
 msgstr "Optionen bearbeiten"
 
@@ -579,9 +588,17 @@ msgstr "Neuen Token ausrollen "
 msgid "Enter OTP key..."
 msgstr "OTP Schlüssel eingeben..."
 
+#: privacyidea/static/components/token/views/token.details.html:268
+msgid "Enter PIN again"
+msgstr "PIN wiederholen"
+
 #: privacyidea/static/components/token/views/token.details.html:287
 msgid "Enter PIN and OTP to check the token."
 msgstr "PIN und OTP eingeben um den Token zu prüfen."
+
+#: privacyidea/static/components/token/views/token.details.html:263
+msgid "Enter PIN for token"
+msgstr "Token-PIN eingeben"
 
 #: privacyidea/static/components/token/views/token.details.html:240
 msgid "Enter first OTP value"
@@ -604,6 +621,14 @@ msgstr "Fehlerzähler"
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:25
 msgid "File name"
 msgstr "Dateiname"
+
+#: privacyidea/static/components/audit/views/audit.html:15
+#: privacyidea/static/components/machine/views/machine.details.html:43
+#: privacyidea/static/components/machine/views/machine.list.html:5
+#: privacyidea/static/components/token/views/token.details.html:377
+#: privacyidea/static/components/token/views/token.list.html:6
+msgid "First"
+msgstr "Anfang"
 
 #: privacyidea/static/components/token/views/token.import.html:18
 msgid "For HOTP and TOTP tokens:"
@@ -709,7 +734,7 @@ msgid "Hostname Attribute"
 msgstr "Attribut für Hostnamen"
 
 #: privacyidea/static/components/machine/views/machine.details.html:21
-#: privacyidea/static/components/machine/views/machine.list.html:15
+#: privacyidea/static/components/machine/views/machine.list.html:19
 msgid "IP Address"
 msgstr "IP-Adresse"
 
@@ -717,7 +742,7 @@ msgstr "IP-Adresse"
 msgid "IP Address Attribute"
 msgstr "Attribut für IP-Adresse"
 
-#: privacyidea/static/components/machine/views/machine.list.html:19
+#: privacyidea/static/components/machine/views/machine.list.html:23
 msgid "Id"
 msgstr "ID"
 
@@ -761,6 +786,14 @@ msgstr "Den Fehlerzähler erhöhen, wenn eine falsche PIN eingegeben wurde."
 #: privacyidea/static/components/token/views/token.details.html:103
 msgid "Info"
 msgstr "Info"
+
+#: privacyidea/static/components/audit/views/audit.html:14
+#: privacyidea/static/components/machine/views/machine.details.html:42
+#: privacyidea/static/components/machine/views/machine.list.html:4
+#: privacyidea/static/components/token/views/token.details.html:376
+#: privacyidea/static/components/token/views/token.list.html:5
+msgid "Last"
+msgstr "Ende"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:49
 msgid "Leave the Bind DN empty if you want to do anonymous binding."
@@ -816,7 +849,7 @@ msgid "Machine"
 msgstr "Maschine"
 
 #: privacyidea/static/components/machine/views/machine.details.html:14
-#: privacyidea/static/components/token/views/token.details.html:383
+#: privacyidea/static/components/token/views/token.details.html:387
 msgid "Machine ID"
 msgstr "Maschinen-ID"
 
@@ -825,7 +858,7 @@ msgid "Machine ID Attribute"
 msgstr "Attribut für Maschinen ID"
 
 #: privacyidea/static/components/machine/views/machine.details.html:26
-#: privacyidea/static/components/machine/views/machine.list.html:23
+#: privacyidea/static/components/machine/views/machine.list.html:27
 msgid "Machine Resolver"
 msgstr "Maschinen-Resolver"
 
@@ -910,6 +943,14 @@ msgstr "Neuer {{ mResolvertype | uppercase }} Resolver"
 msgid "New {{ resolvertype }}"
 msgstr "Neuer {{ resolvertype }}"
 
+#: privacyidea/static/components/audit/views/audit.html:13
+#: privacyidea/static/components/machine/views/machine.details.html:41
+#: privacyidea/static/components/machine/views/machine.list.html:3
+#: privacyidea/static/components/token/views/token.details.html:375
+#: privacyidea/static/components/token/views/token.list.html:4
+msgid "Next"
+msgstr "Weiter"
+
 #: privacyidea/static/components/user/views/dialog.ask_user_delete.html:19
 msgid "No"
 msgstr "Nein"
@@ -993,8 +1034,8 @@ msgstr "Ein neues Tab öffnen, um die Zertifikatsanforderung zu erstellen."
 msgid "OpenSSL config file"
 msgstr "OpenSSL Konfigurationsdatei"
 
-#: privacyidea/static/components/machine/views/machine.details.html:48
-#: privacyidea/static/components/token/views/token.details.html:386
+#: privacyidea/static/components/machine/views/machine.details.html:52
+#: privacyidea/static/components/token/views/token.details.html:390
 msgid "Options"
 msgstr "Optionen"
 
@@ -1080,6 +1121,14 @@ msgstr "Active Directory vorbelegen"
 msgid "Preset OpenLDAP"
 msgstr "OpenLDAP vorbelegen"
 
+#: privacyidea/static/components/audit/views/audit.html:12
+#: privacyidea/static/components/machine/views/machine.details.html:40
+#: privacyidea/static/components/machine/views/machine.list.html:2
+#: privacyidea/static/components/token/views/token.details.html:374
+#: privacyidea/static/components/token/views/token.list.html:3
+msgid "Previous"
+msgstr "Zurück"
+
 #: privacyidea/static/components/token/views/token.import.html:64
 msgid "Progress: {{ progressPercentage }}%"
 msgstr "Fortschritt: {{ progressPercentage }}%"
@@ -1164,6 +1213,7 @@ msgid "Remote User"
 msgstr "Remote Benutzer"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:22
+#: privacyidea/static/components/directives/views/directive.assignuser.html:31
 #: privacyidea/static/components/token/views/token.enroll.html:41
 #: privacyidea/static/components/token/views/token.enroll.motp.html:43
 msgid "Repeat password"
@@ -1175,7 +1225,7 @@ msgstr "Fehlerzähler zurücksetzen"
 
 #: privacyidea/static/components/config/views/config.policies.list.html:11
 #: privacyidea/static/components/token/views/token.details.html:333
-#: privacyidea/static/components/token/views/token.details.html:384
+#: privacyidea/static/components/token/views/token.details.html:388
 #: privacyidea/static/components/user/views/user.add.html:9
 msgid "Resolver"
 msgstr "Resolver"
@@ -1220,8 +1270,8 @@ msgstr "Öffentlicher SSH Schlüssel"
 msgid "Save"
 msgstr "Speichern"
 
-#: privacyidea/static/components/machine/views/machine.details.html:100
-#: privacyidea/static/components/token/views/token.details.html:444
+#: privacyidea/static/components/machine/views/machine.details.html:104
+#: privacyidea/static/components/token/views/token.details.html:448
 msgid "Save Options"
 msgstr "Optionen speichern"
 
@@ -1278,7 +1328,7 @@ msgstr "Datei auswählen und importieren"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:5
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:5
-#: privacyidea/static/components/machine/views/machine.details.html:46
+#: privacyidea/static/components/machine/views/machine.details.html:50
 msgid "Serial"
 msgstr "Seriennummer "
 
@@ -1609,6 +1659,10 @@ msgstr "Das Zertifikat wurde erfolgreich ausgestellt."
 msgid "The challenge validity time"
 msgstr "Die Gültigkeitszeit der Challenge"
 
+#: privacyidea/static/components/config/views/config.token.yubico.html:20
+msgid "The client ID"
+msgstr "Die Client ID"
+
 #: privacyidea/static/components/token/views/token.enroll.motp.html:33
 msgid "The mOTP PIN is the PIN that needs to be entered on the mobile device."
 msgstr ""
@@ -1928,6 +1982,7 @@ msgid "Type"
 msgstr "Typ"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:18
+#: privacyidea/static/components/directives/views/directive.assignuser.html:27
 #: privacyidea/static/components/token/views/token.enroll.html:37
 #: privacyidea/static/components/token/views/token.enroll.motp.html:39
 msgid "Type a password"
@@ -2079,21 +2134,21 @@ msgstr "Yubico Token Einstellungen"
 msgid "Yubikey Identifier"
 msgstr "Yubikey ID"
 
-#: privacyidea/static/components/audit/views/audit.html:22
+#: privacyidea/static/components/audit/views/audit.html:26
 msgid "action"
 msgstr "Aktion"
 
-#: privacyidea/static/components/audit/views/audit.html:30
+#: privacyidea/static/components/audit/views/audit.html:34
 msgid "action detail"
 msgstr "Aktionsdetail"
 
 #: privacyidea/static/components/token/views/token.details.html:22
-#: privacyidea/static/components/token/views/token.list.html:28
-#: privacyidea/static/components/token/views/token.list.html:62
+#: privacyidea/static/components/token/views/token.list.html:32
+#: privacyidea/static/components/token/views/token.list.html:66
 msgid "active"
 msgstr "aktiv"
 
-#: privacyidea/static/components/audit/views/audit.html:42
+#: privacyidea/static/components/audit/views/audit.html:46
 msgid "administrator"
 msgstr "Administrator"
 
@@ -2101,26 +2156,26 @@ msgstr "Administrator"
 msgid "an optional serial substring"
 msgstr "Optionaler Teil der Seriennummer"
 
-#: privacyidea/static/components/audit/views/audit.html:55
+#: privacyidea/static/components/audit/views/audit.html:59
 msgid "clearance"
 msgstr "Freigabestufe"
 
-#: privacyidea/static/components/audit/views/audit.html:51
+#: privacyidea/static/components/audit/views/audit.html:55
 msgid "client"
 msgstr "Client"
 
-#: privacyidea/static/components/audit/views/audit.html:21
+#: privacyidea/static/components/audit/views/audit.html:25
 msgid "date"
 msgstr "Datum"
 
-#: privacyidea/static/components/token/views/token.list.html:35
+#: privacyidea/static/components/token/views/token.list.html:39
 #: privacyidea/static/components/user/views/user.details.html:121
 #: privacyidea/static/components/user/views/user.list.html:29
 msgid "description"
 msgstr "Beschreibung"
 
 #: privacyidea/static/components/token/views/token.details.html:25
-#: privacyidea/static/components/token/views/token.list.html:65
+#: privacyidea/static/components/token/views/token.list.html:69
 msgid "disabled"
 msgstr "deaktiviert"
 
@@ -2136,7 +2191,7 @@ msgstr "Die öffentliche UID mit ausgeben"
 msgid "enter some OTP value"
 msgstr "Geben Sie einen OTP-Wert ein..."
 
-#: privacyidea/static/components/token/views/token.list.html:44
+#: privacyidea/static/components/token/views/token.list.html:48
 #: privacyidea/static/components/user/views/user.details.html:122
 msgid "failcounter"
 msgstr "Fehlerzähler"
@@ -2145,7 +2200,7 @@ msgstr "Fehlerzähler"
 msgid "givenname"
 msgstr "Vorname"
 
-#: privacyidea/static/components/machine/views/machine.list.html:11
+#: privacyidea/static/components/machine/views/machine.list.html:15
 msgid "hostname"
 msgstr "Hostname"
 
@@ -2153,11 +2208,11 @@ msgstr "Hostname"
 msgid "id"
 msgstr "ID"
 
-#: privacyidea/static/components/audit/views/audit.html:52
+#: privacyidea/static/components/audit/views/audit.html:56
 msgid "info"
 msgstr "Info"
 
-#: privacyidea/static/components/audit/views/audit.html:56
+#: privacyidea/static/components/audit/views/audit.html:60
 msgid "log level"
 msgstr "Logstufe"
 
@@ -2169,7 +2224,7 @@ msgstr "mOTP PIN"
 msgid "maxfail"
 msgstr "Max. Fehlerzähler"
 
-#: privacyidea/static/components/audit/views/audit.html:54
+#: privacyidea/static/components/audit/views/audit.html:58
 msgid "missing_line"
 msgstr "Fehlende Zeile"
 
@@ -2177,7 +2232,11 @@ msgstr "Fehlende Zeile"
 msgid "mobile"
 msgstr "Mobiltelefon"
 
-#: privacyidea/static/components/audit/views/audit.html:20
+#: privacyidea/static/components/config/views/config.realms.list.html:92
+msgid "new realm"
+msgstr "Neuer Realm"
+
+#: privacyidea/static/components/audit/views/audit.html:24
 msgid "number"
 msgstr "Nr."
 
@@ -2197,12 +2256,12 @@ msgstr "privacyIDEA Single Page Web Client"
 msgid "privacyIDEA authentication backend"
 msgstr "privacyIDEA Authentisierungsbackend"
 
-#: privacyidea/static/components/audit/views/audit.html:57
+#: privacyidea/static/components/audit/views/audit.html:61
 msgid "privacyidea server"
 msgstr "privacyIDEA Server"
 
-#: privacyidea/static/components/audit/views/audit.html:50
-#: privacyidea/static/components/token/views/token.list.html:51
+#: privacyidea/static/components/audit/views/audit.html:54
+#: privacyidea/static/components/token/views/token.list.html:55
 msgid "realm"
 msgstr "Realm"
 
@@ -2210,8 +2269,8 @@ msgstr "Realm"
 msgid "resolvers"
 msgstr "Resolver"
 
-#: privacyidea/static/components/audit/views/audit.html:34
-#: privacyidea/static/components/token/views/token.list.html:12
+#: privacyidea/static/components/audit/views/audit.html:38
+#: privacyidea/static/components/token/views/token.list.html:16
 #: privacyidea/static/components/user/views/user.details.html:117
 msgid "serial"
 msgstr "Seriennummer"
@@ -2228,7 +2287,7 @@ msgstr "Seriennummer, OTP-Schlüssel, Typ, OTP-Länge, Zeitschritt"
 msgid "set Default"
 msgstr "Setze als Standard"
 
-#: privacyidea/static/components/audit/views/audit.html:53
+#: privacyidea/static/components/audit/views/audit.html:57
 msgid "sig_check"
 msgstr "Signatur"
 
@@ -2248,7 +2307,7 @@ msgstr "Fangen Sie an, eine Seriennummer zu tippen."
 msgid "start typing a username"
 msgstr "Fangen Sie an, einen Benutzernamen zu tippen."
 
-#: privacyidea/static/components/audit/views/audit.html:26
+#: privacyidea/static/components/audit/views/audit.html:30
 msgid "success"
 msgstr "Erfolg"
 
@@ -2256,7 +2315,7 @@ msgstr "Erfolg"
 msgid "surname"
 msgstr "Nachname"
 
-#: privacyidea/static/components/audit/views/audit.html:38
+#: privacyidea/static/components/audit/views/audit.html:42
 msgid "token type"
 msgstr "Tokentyp"
 
@@ -2271,7 +2330,7 @@ msgstr "Benutzeranzahl: {{ usercount }}"
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:6
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:6
 #: privacyidea/static/components/config/views/config.resolvers.list.html:6
-#: privacyidea/static/components/token/views/token.list.html:20
+#: privacyidea/static/components/token/views/token.list.html:24
 #: privacyidea/static/components/user/views/user.details.html:118
 msgid "type"
 msgstr "Typ"
@@ -2284,8 +2343,8 @@ msgstr ""
 "Der Typ (Standard HOTP), OTP-Länge (Standard 6), Zeitschritt (Standard 30) "
 "und OCRA-Suite sind optional."
 
-#: privacyidea/static/components/audit/views/audit.html:46
-#: privacyidea/static/components/token/views/token.list.html:50
+#: privacyidea/static/components/audit/views/audit.html:50
+#: privacyidea/static/components/token/views/token.list.html:54
 msgid "user"
 msgstr "Benutzer"
 
@@ -2297,6 +2356,6 @@ msgstr "Benutzername"
 msgid "window"
 msgstr "Fenster"
 
-#: privacyidea/static/components/audit/views/audit.html:14
+#: privacyidea/static/components/audit/views/audit.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."

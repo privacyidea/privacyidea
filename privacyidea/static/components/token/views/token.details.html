@@ -260,12 +260,12 @@
             <td>
                 <input type="password" ng-model="pin1"
                        class="form-control"
-                       placeholder="Enter PIN for token">
+                       placeholder="{{ 'Enter PIN for token'|translate }}">
             </td>
             <td>
                 <input type="password" ng-model="pin2"
                        class="form-control"
-                       placeholder="Enter PIN again">
+                       placeholder="{{ 'Enter PIN again'|translate }}">
             </td>
             <td>
                 <button class="btn btn-primary"
@@ -371,6 +371,10 @@
 
 
     <pagination ng-show="machineCount > machinesPerPage"
+                previous-text="{{ 'Previous'|translate }}"
+                next-text="{{ 'Next'|translate }}"
+                last-text="{{ 'Last'|translate }}"
+                first-text="{{ 'First'|translate }}"
                 total-items="machineCount" ng-model="params.page"
                 items-per-page="{{ machinesPerPage }}"
                 max-size="5"

@@ -24,9 +24,9 @@ This is the directive for assigning users.
     <input name="otppin" ng-model="newUserObject.pin"
             type=password class="form-control"
             euqals="{{pin2}}"
-            placeholder="Type a password">
+            placeholder="{{ 'Type a password'|translate }}">
     <input name="otppin2" ng-model="pin2"
             type=password class="form-control"
             equals="{{newUserObject.pin}}"
-            placeholder="Repeat password">
+            placeholder="{{ 'Repeat password'|translate }}">
 </div>
