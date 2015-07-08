@@ -76,6 +76,7 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
 
 myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                                                     $stateParams, AuthFactory,
+                                                    UserFactory,
                                                     ConfigFactory, instanceUrl,
                                                     $http) {
     $scope.loggedInUser = AuthFactory.getUser();
@@ -84,33 +85,14 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     $scope.instanceUrl = instanceUrl;
     // System default values for enrollment
     $scope.systemDefault = {};
-
-    // Get the realms and fill the realm dropdown box
-    if (AuthFactory.getRole() == 'admin') {
-        ConfigFactory.getRealms(function (data) {
-            $scope.realms = data.result.value;
-            angular.forEach($scope.realms, function (realm, realmname) {
-                if (realm.default && !$stateParams.realmname) {
-                    // Set the default realm
-                    $scope.newUser = {user: "", realm: realmname};
-                    console.log("tokenEnrollController");
-                    console.log($scope.newUser);
-                }
-            });
-        });
-    } else if (AuthFactory.getRole() == 'user') {
-        // init the user, if token.enroll was called as a normal user
-        $scope.newUser.user = AuthFactory.getUser().username;
-        $scope.newUser.realm = AuthFactory.getUser().realm;
-    }
-
-    // init the user, if token.enroll was called from the user.details
-    if ($stateParams.username) {
-        $scope.newUser.user = $stateParams.username;
-    }
-    if ($stateParams.realmname) {
-        $scope.newUser.realm = $stateParams.realmname;
-    }
+    // These are values that are also sent to the backend!
+    $scope.form = {
+        timeStep: 30,
+        otplen: 6,
+        genkey: true,
+        type: "hotp",
+        hashlib: "sha1"
+    };
 
     $scope.formInit = {
         tokenTypes: {"hotp": "HOTP: event based One Time Passwords",
@@ -131,14 +113,50 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         hashlibs: ["sha1", "sha256", "sha512"]
     };
 
-    // These are values that are also sent to the backend!
-    $scope.form = {
-        timeStep: 30,
-        otplen: 6,
-        genkey: true,
-        type: "hotp",
-        hashlib: "sha1"
-    };
+
+    // A watch function to change the form data in case another user is selected
+    $scope.$watch(function(scope) {return scope.newUser.email},
+        function(newValue, oldValue){
+            $scope.form.email = newValue;
+        });
+    $scope.$watch(function(scope) {return scope.newUser.mobile},
+        function(newValue, oldValue){
+            $scope.form.phone = newValue;
+        });
+
+    // Get the realms and fill the realm dropdown box
+    if (AuthFactory.getRole() == 'admin') {
+        ConfigFactory.getRealms(function (data) {
+            $scope.realms = data.result.value;
+            angular.forEach($scope.realms, function (realm, realmname) {
+                if (realm.default && !$stateParams.realmname) {
+                    // Set the default realm
+                    $scope.newUser = {user: "", realm: realmname};
+                    console.log("tokenEnrollController");
+                    console.log($scope.newUser);
+                }
+            });
+        });
+        // init the user, if token.enroll was called from the user.details
+        if ($stateParams.realmname) {
+            $scope.newUser.realm = $stateParams.realmname;
+        }
+        if ($stateParams.username) {
+            $scope.newUser.user = $stateParams.username;
+            // preset the mobile and email for SMS or EMAIL token
+            UserFactory.getUsers({realm: $scope.newUser.realm,
+                username: $scope.newUser.user},
+                function(data) {
+                    userObject = data.result.value[0];
+                    $scope.form.email = userObject.email;
+                    $scope.form.phone = userObject.mobile;
+            });
+        }
+    } else if (AuthFactory.getRole() == 'user') {
+        // init the user, if token.enroll was called as a normal user
+        $scope.newUser.user = AuthFactory.getUser().username;
+        $scope.newUser.realm = AuthFactory.getUser().realm;
+    }
 
     // Read the the tokentypes from the server
     TokenFactory.getEnrollTokens(function(data){

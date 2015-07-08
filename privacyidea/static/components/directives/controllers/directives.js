@@ -106,6 +106,9 @@ myApp.directive('assignUser', function($http, userUrl, AuthFactory, instanceUrl)
                 headers: {'Authorization': auth_token}
             }).then(function ($response) {
                 return $response.data.result.value.map(function (item) {
+                    scope.newUserObject.email = item.email;
+                    scope.newUserObject.mobile = item.mobile;
+                    scope.newUserObject.phone = item.phone;
                     return "[" + item.userid + "] " + item.username +
                         " (" + item.givenname + " " + item.surname + ")"
                 });

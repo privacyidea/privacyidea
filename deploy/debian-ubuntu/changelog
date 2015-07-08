@@ -1,9 +1,10 @@
-python-privacyidea (2.5~dev2) trusty; urgency=low
+python-privacyidea (2.5~dev3) trusty; urgency=low
 
   * Add ownCloud plugin
   * Add translation
+  * Add preset SMS and EMail in token enrollment
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 01 Jul 2015 15:45:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 08 Jul 2015 09:45:00 +0200
 
 python-privacyidea (2.4-1trusty) trusty; urgency=low
 
