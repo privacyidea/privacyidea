@@ -83,7 +83,7 @@ def create_app(config_name="development",
     except IOError:
         print(50*"!")
         print("  WARNING: privacyidea create_app has no access")
-        print( "  to %s!" % config_file)
+        print("  to %s!" % config_file)
         print(50*"!")
 
     # Try to load the file, that was specified in the environment variable
@@ -120,30 +120,31 @@ def create_app(config_name="development",
     except Exception as exx:
         #print("%s" % traceback.format_exc())
         print("%s" % exx)
-        print("No log config file defined in PI_LOGCONFIG. Using default "
-              "logging settings")
-        logging.config.dictConfig(DEFAULT_LOGGING_CONFIG)
-
-    # If there is another level in pi.cfg we use this.
-    level = app.config.get("PI_LOGLEVEL")
-    if level:
-        print("PI_LOGLEVEL found. Setting to %s" % level)
-        logging.getLogger("privacyidea").setLevel(level)
-    # If there is another logfile in pi.cfg we use this.
-    logfile = app.config.get("PI_LOGFILE")
-    if logfile:
-        logger = logging.getLogger("privacyidea")
-        handlers = logger.handlers
-        for handler in handlers:
-            if type(handler) == logging.handlers.RotatingFileHandler:
-                # Set a new filename for the RotatingFileHandler
-                print("PI_LOGFILE found. Setting to %s" % logfile)
-                if handler.baseFilename != logfile:
-                    # We need to reopen the file, if it has changed
-                    logger.removeHandler(handler)
-                    handler.baseFilename = logfile
-                    handler.doRollover()
-                    logger.addHandler(handler)
+        print("No log config file defined in PI_LOGCONFIG. Using PI_LOGLEVEL "
+              "and PI_LOGFILE.")
+        # If there is another level in pi.cfg we use this.
+        level = app.config.get("PI_LOGLEVEL")
+        if level:
+            print("PI_LOGLEVEL found. Setting to %s" % level)
+            logging.getLogger("privacyidea").setLevel(level)
+        # If there is another logfile in pi.cfg we use this.
+        logfile = app.config.get("PI_LOGFILE")
+        if logfile:
+            logger = logging.getLogger("privacyidea")
+            handlers = logger.handlers
+            for handler in handlers:
+                if type(handler) == logging.handlers.RotatingFileHandler:
+                    # Set a new filename for the RotatingFileHandler
+                    print("PI_LOGFILE found. Setting to %s" % logfile)
+                    if handler.baseFilename != logfile:
+                        # We need to reopen the file, if it has changed
+                        logger.removeHandler(handler)
+                        handler.baseFilename = logfile
+                        handler.doRollover()
+                        logger.addHandler(handler)
+        else:
+            print("No PI_LOGFILE found. Using default config.")
+            logging.config.dictConfig(DEFAULT_LOGGING_CONFIG)
 
     return app
 

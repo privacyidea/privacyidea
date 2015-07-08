@@ -94,7 +94,7 @@ setup(
     include_package_data=True,
     data_files=[('etc/privacyidea/',
                  ['deploy/apache/privacyideaapp.wsgi',
-                  'tests/testdata/dictionary',
+                  'deploy/privacyidea/dictionary',
                   'deploy/privacyidea/enckey',
                   'deploy/privacyidea/private.pem',
                   'deploy/privacyidea/public.pem']),
