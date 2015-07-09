@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
 #
-#  privacyIDEA is a fork of LinOTP
+#  2015-07-09 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Fix mOTP reuse of OTP values
+#  2015-01-27 Rewrite due to flask migration
+#             Cornelius Kölbel <cornelius@privacyidea.org>
+#  2014-10-03 Add getInitDetail
+#             Cornelius Kölbel <cornelius@privacyidea.org>
+#
 #  May 08, 2014 Cornelius Kölbel
 #  Sept 16, 2014 Cornelius Kölbel, added key generation for Token2
 #
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
-#  2015-01-27 Rewrite due to flask migration
-#             Cornelius Klöbel <cornelius@privacyidea.org>
-#  2014-10-03 Add getInitDetail
-#             Cornelius Kölbel <cornelius@privacyidea.org>
 #
+#  privacyIDEA is a fork of LinOTP
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  LSE
 #  contact:  http://www.linotp.org
@@ -186,7 +189,7 @@ class MotpTokenClass(TokenClass):
 
         :param anOtpVal: the to be verified otpvalue
         :type anOtpVal:  string
-        :param counter: the counter state, that shoule be verified
+        :param counter: the counter state, that should be verified
         :type counter: int
         :param window: the counter +window, which should be checked
         :type window: int
@@ -199,22 +202,27 @@ class MotpTokenClass(TokenClass):
 
         # otime contains the previous verification time
         # the new one must be newer than this!
-        otime = self.token.count
+        oCount = self.get_otp_count()
         secretHOtp = self.token.get_otpkey()
         window = self.token.count_window
         secretPin = self.token.get_user_pin()
 
-        log.debug("otime %s", otime)
+        log.debug("original counter %s", oCount)
 
-        mtimeOtp = mTimeOtp(secretHOtp, secretPin, otime, otplen)
+        mtimeOtp = mTimeOtp(secretHOtp, secretPin, oCount, otplen)
         res = mtimeOtp.checkOtp(anOtpVal, window, options=options)
 
-        if res != -1:
-            # later on this will be incremented by 1
-            res -= 1
-            msg = "verifiction was successful"
-        else:
-            msg = "verification failed"
+        if res != -1 and oCount != 0 and res <= oCount:
+            log.warning("a previous OTP value was used again! former "
+                        "tokencounter: %i, presented counter %i" %
+                        (oCount, res))
+            res = -1
+            return res
 
-        log.debug("%s :res %r" % (msg, res))
+        if res != -1:
+            # on success, we have to save the last attempt
+            self.set_otp_count(res)
+            # and we reset the fail counter
+            self.reset()
+
         return res

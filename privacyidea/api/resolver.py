@@ -133,6 +133,8 @@ def set_resolver(resolver=None):
         # The resolver parameter was passed as a part of the URL
         param.update({"resolver": resolver})
     res = save_resolver(param)
+    g.audit_object.log({"success": res,
+                        "info": resolver})
     return send_result(res)
 
 

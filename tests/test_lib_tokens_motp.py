@@ -12,7 +12,7 @@ from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
 PWFILE = "tests/testdata/passwords"
 
-class SpassTokenTestCase(MyTestCase):
+class MotpTokenTestCase(MyTestCase):
 
     otppin = "topsecret"
     motppin = "1234"
@@ -26,8 +26,8 @@ class SpassTokenTestCase(MyTestCase):
 
     def test_00_create_user_realm(self):
         rid = save_resolver({"resolver": self.resolvername1,
-                               "type": "passwdresolver",
-                               "fileName": PWFILE})
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
         self.assertTrue(rid > 0, rid)
 
         (added, failed) = set_realm(self.realm1,
@@ -164,3 +164,25 @@ class SpassTokenTestCase(MyTestCase):
 
             self.assertTrue(sotp == otp, "%s==%s" % (sotp, otp))
             i += 1
+
+    def test_06_reuse_otp_value(self):
+        key = "0123456789abcdef"
+        db_token = Token("motp002", tokentype="motp")
+        db_token.save()
+        token = MotpTokenClass(db_token)
+        token.update({"otpkey": key,
+                      "motppin": "6666",
+                      "pin": "test"})
+        self.assertTrue(token.token.tokentype == "motp", token.token.tokentype)
+        self.assertTrue(token.type == "motp", token)
+        class_prefix = token.get_class_prefix()
+        self.assertTrue(class_prefix == "PIMO", class_prefix)
+        self.assertTrue(token.get_class_type() == "motp", token)
+
+        # Correct OTP value
+        r = token.check_otp("6ed4e4", options={"initTime": 129612120})
+        self.assertTrue(r == 129612120, r)
+
+        # Check the same value again
+        r = token.check_otp("6ed4e4", options={"initTime": 129612120})
+        self.assertTrue(r == -1, r)
