@@ -46,7 +46,7 @@ msgstr ""
 msgid "Add user"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:213
+#: privacyidea/static/components/config/views/config.policies.details.html:212
 msgid "Admin"
 msgstr ""
 
@@ -258,7 +258,7 @@ msgid ""
 "            want to add the Token to your mOTP App like Token2."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:229
+#: privacyidea/static/components/config/views/config.policies.details.html:228
 #: privacyidea/static/components/config/views/config.policies.list.html:12
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:49
 msgid "Client"
@@ -295,7 +295,7 @@ msgid ""
 "                    newly enrolled tokens"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:245
+#: privacyidea/static/components/config/views/config.policies.details.html:244
 msgid "Create Policy"
 msgstr ""
 
@@ -407,7 +407,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:95
 #: privacyidea/static/components/token/views/token.enroll.email.html:15
-#: privacyidea/static/components/token/views/token.enroll.sms.html:15
+#: privacyidea/static/components/token/views/token.enroll.sms.html:14
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:17
 #: privacyidea/static/components/user/views/user.add.html:44
 #: privacyidea/static/components/user/views/user.details.html:41
@@ -1326,7 +1326,7 @@ msgstr ""
 msgid "Size Limit"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.sms.html:17
+#: privacyidea/static/components/token/views/token.enroll.sms.html:16
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:19
 msgid "Some nice words..."
 msgstr ""
@@ -1851,7 +1851,7 @@ msgstr ""
 msgid "Use TLS"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:215
+#: privacyidea/static/components/config/views/config.policies.details.html:214
 #: privacyidea/static/components/config/views/config.policies.list.html:10
 msgid "User"
 msgstr ""
@@ -1886,7 +1886,7 @@ msgstr ""
 msgid "Users"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.sms.html:13
+#: privacyidea/static/components/token/views/token.enroll.sms.html:12
 msgid "Users phone number..."
 msgstr ""
 

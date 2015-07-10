@@ -330,13 +330,19 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
         if isinstance(tokenobject, TokenClass):
             token_dict = tokenobject.get_as_dict()
             # add user information
-            userobject = tokenobject.get_user()
-            if userobject:
-                token_dict["username"] = userobject.login
-                token_dict["user_realm"] = userobject.realm
-            else:
-                token_dict["username"] = ""
-                token_dict["user_realm"] = ""
+            # In certain cases the LDAP or SQL server might not be reachable.
+            # Then an exception is raised
+            token_dict["username"] = ""
+            token_dict["user_realm"] = ""
+            try:
+                userobject = tokenobject.get_user()
+                if userobject:
+                    token_dict["username"] = userobject.login
+                    token_dict["user_realm"] = userobject.realm
+            except Exception as exx:
+                log.error("User information can not be retrieved: %s" % exx)
+                token_dict["username"] = "**resolver error**"
+
             token_list.append(token_dict)
 
     ret = {"tokens": token_list,
