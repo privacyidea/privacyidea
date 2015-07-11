@@ -169,9 +169,9 @@ def create_user_api():
 @prepolicy(check_base_action, request, ACTION.UPDATEUSER)
 def update_user():
     """
-    Delete a User in the user store.
+    Edit a user in the user store.
     The resolver must have the flag editable, so that the user can be deleted.
-    Only administrators are allowed to delete users.
+    Only administrators are allowed to edit users.
 
     **Example request**:
 

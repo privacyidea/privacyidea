@@ -169,19 +169,6 @@ def init():
     :param otplen: length of the OTP value
     :param hashlib: used hashlib sha1 oder sha256
 
-    ocra arguments: for generating OCRA Tokens type=ocra you can specify
-    the following parameters:
-    :param ocrasuite: if you do not want to use the default
-                      ocra suite OCRA-1:HOTP-SHA256-8:QA64
-    :param sharedsecret: if you are in Step0 of enrolling an
-                         OCRA/QR token the
-                         sharedsecret=1 specifies,
-                         that you want to generate a shared secret
-    :param activationcode: if you are in Step1 of enrolling an
-                           OCRA token you need to pass the
-                           activation code, that was generated in
-                           the QRTAN-App
-
     :return: a json result with a boolean "result": true
 
     **Example response**:
@@ -273,21 +260,21 @@ def init():
     return send_result(True, details=response_details)
 
 
-# TODO: MAXTOKENUSER and MAXTOKENREALM policy
 @token_blueprint.route('/', methods=['GET'])
 @log_with(log)
 def list_api():
     """
-    The method is called at /token
-    Display the list of available tokens.
+    Display the list of tokens. Using different parameters you can choose,
+    which tokens you want to get and also in which format you want to get the
+    information (*outform*).
 
     :param serial: Display the token data of this single token. You can do a
-    not strict matching by specifying a serial like "*OATH*".
+        not strict matching by specifying a serial like "*OATH*".
     :param type: Display only token of type. You ca do a non strict matching by
-    specifying a tokentype like "*otp*", to file hotp and totp tokens.
+        specifying a tokentype like "*otp*", to file hotp and totp tokens.
     :param user: display tokens of this user
     :param viewrealm: takes a realm, only the tokens in this realm will be
-    displayed
+        displayed
     :param description: Display token with this kind of description
     :type description: basestring
     :param sortby: sort the output by column
@@ -296,12 +283,13 @@ def list_api():
     :param assigned: Only return assigned (True) or not assigned (False) tokens
     :param pagesize: limit the number of returned tokens
     :param user_fields: additional user fields from the userid resolver of
-    the owner (user)
+        the owner (user)
     :param outform: if set to "csv", than the token list will be given in CSV
 
-    :return: a json result with the data being a list of token dictionaries
-        { "data": [ { <token1> }, { <token2> }. ]
-        }
+    :return: a json result with the data being a list of token dictionaries::
+
+        { "data": [ { <token1> }, { <token2> } ]}
+
     :rtype: json
     """
     param = request.all_data
@@ -369,8 +357,11 @@ def list_api():
 @log_with(log)
 def assign_api():
     """
-    Assign a token to a user. The required arguments are serial, user and realm.
+    Assign a token to a user.
 
+    :param serial: The token, which should be assigned to a user
+    :param user: The username of the user
+    :param realm: The realm of the user
     :return: In case of success it returns "value": True.
     :rtype: json object
     """
@@ -410,11 +401,6 @@ def enable_api(serial=None):
     """
     Enable a single token or all the tokens of a user.
 
-    You can call the function like this:
-        POST /token/enable?serial=<serial>
-        POST /token/enable?user=<user>&realm=<realm>
-        POST /token/enable/<serial>
-
     :param serial: the serial number of the single token to enable
     :type serial: basestring
     :param user: The login name of the user
@@ -422,7 +408,7 @@ def enable_api(serial=None):
     :param realm: the realm name of the user
     :type realm: basestring
     :return: In case of success it returns the number of enabled
-    tokens in "value".
+        tokens in "value".
     :rtype: json object
     """
     user = get_user_from_param(request.all_data, optional)
@@ -440,13 +426,10 @@ def enable_api(serial=None):
 @log_with(log)
 def disable_api(serial=None):
     """
-    Disable a single token or all the tokens of a user.
-    Disabled tokens can not be used to authenticate but can be enabled again.
+    Disable a single token or all the tokens of a user either by providing
+    the serial number of the single token or a username and realm.
 
-    You can call the function like this:
-        POST /token/disable?serial=<serial>
-        POST /token/disable?user=<user>&realm=<realm>
-        POST /token/disable/<serial>
+    Disabled tokens can not be used to authenticate but can be enabled again.
 
     :param serial: the serial number of the single token to disable
     :type serial: basestring
@@ -455,7 +438,7 @@ def disable_api(serial=None):
     :param realm: the realm name of the user
     :type realm: basestring
     :return: In case of success it returns the number of disabled
-    tokens in "value".
+        tokens in "value".
     :rtype: json object
     """
     user = get_user_from_param(request.all_data, optional)
@@ -473,12 +456,14 @@ def disable_api(serial=None):
 @log_with(log)
 def delete_api(serial=None):
     """
-    Delete a token by its serial number.
-    There are three different ways to delete a token.
-        DELETE /token/<serial>
+    Delete a token by its serial number or delete all tokens of a user.
+
+    :param serial: The serial number of a single token.
+    :param user: The username of the user, whose tokens should be deleted.
+    :param realm: The realm of the user.
 
     :return: In case of success it return the number of deleted tokens in
-    "value"
+        "value"
     :rtype: json object
     """
     # If the API is called by a user, we pass the User Object to the function
@@ -494,11 +479,6 @@ def delete_api(serial=None):
 def reset_api(serial=None):
     """
     Reset the failcounter of a single token or of all tokens of a user.
-
-    You can call the function like this:
-        POST /token/reset?serial=<serial>
-        POST /token/reset?user=<user>&realm=<realm>
-        POST /token/reset/<serial>
 
     :param serial: the serial number of the single token to reset
     :type serial: basestring
@@ -526,10 +506,6 @@ def reset_api(serial=None):
 def resync_api(serial=None):
     """
     Resync the OTP token by providing two consecutive OTP values.
-
-    You can call the function like this:
-        POST /token/resync?serial=<serial>&otp1=<otp1>&otp2=<otp2>
-        POST /token/resync/<serial>?otp1=<otp1>&otp2=<otp2>
 
     :param serial: the serial number of the single token to reset
     :type serial: basestring
@@ -563,10 +539,6 @@ def setpin_api(serial=None):
     E.g. the userpin is used with mOTP tokens to store the mOTP PIN.
 
     The token is identified by the unique serial number.
-
-    You can call the function like this:
-        POST /token/setpin?serial=<serial>&userpin=<userpin>&sopin=<sopin>
-        POST /token/setpin/<serial>?userpin=<userpin>&sopin=<sopin>
 
     :param serial: the serial number of the single token to reset
     :type serial: basestring
@@ -624,11 +596,6 @@ def set_api(serial=None):
 
     The token is identified by the unique serial number or by the token owner.
     In the later case all tokens of the owner will be modified.
-
-    You can call the function like this:
-        POST /token/set?serial=<serial>&description=<something>
-        POST /token/set/<serial>?hashlib=<hash>
-        POST /token/set?user=<username>&realm=<realm>&sync_window=100
 
     :param serial: the serial number of the single token to reset
     :type serial: basestring
@@ -865,14 +832,11 @@ def copypin_api():
     """
     Copy the token PIN from one token to the other.
 
-    You can call the function like this:
-        POST /token/copypin?from=<serial>&to=<something>
-
-    :param from: the serial number of the single, from where you want to
-    copy the pin.
+    :param from: the serial number of the token, from where you want to
+        copy the pin.
     :type from: basestring
-    :param to: the serial number of the single, from where you want to
-    copy the pin.
+    :param to: the serial number of the token, from where you want to
+        copy the pin.
     :type to: basestring
     :return: returns value=True in case of success
     :rtype: bool
@@ -892,14 +856,11 @@ def copyuser_api():
     """
     Copy the token user from one token to the other.
 
-    You can call the function like this:
-        POST /token/copyuser?from=<serial>&to=<something>
-
-    :param from: the serial number of the single, from where you want to
-    copy the pin.
+    :param from: the serial number of the token, from where you want to
+        copy the pin.
     :type from: basestring
-    :param to: the serial number of the single, from where you want to
-    copy the pin.
+    :param to: the serial number of the token, from where you want to
+        copy the pin.
     :type to: basestring
     :return: returns value=True in case of success
     :rtype: bool

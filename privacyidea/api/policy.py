@@ -28,7 +28,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""
+__doc__ = """
 The code of this module is tested in tests/test_api_system.py
 """
 from flask import (Blueprint,
@@ -76,6 +76,7 @@ policy_blueprint = Blueprint('policy_blueprint', __name__)
 def enable_policy_api(name):
     """
     Enable a given policy by its name.
+
     :param name: Name of the policy
     :return: ID in the database
     """
@@ -90,6 +91,7 @@ def enable_policy_api(name):
 def disable_policy_api(name):
     """
     Disable a given policy by its name.
+
     :param name: The name of the policy
     :return: ID in the database
     """

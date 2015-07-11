@@ -57,7 +57,7 @@ def list_machines_api():
     :param id: filter for substring matching ids
     :param resolver: filter for substring matching resolvers
     :param any: filter for a substring either matching in "hostname", "ip"
-    or "id"
+        or "id"
     
     :return: json result with "result": true and the machine list in "value".
 
@@ -127,7 +127,7 @@ def attach_token_api():
 
     :param hostname: identify the machine by the hostname
     :param machineid: identify the machine by the machine ID and the resolver
-    name
+        name
     :param resolver: identify the machine by the machine ID and the resolver name
     :param serial: identify the token by the serial number
     :param application: the name of the application like "luks" or "ssh".
@@ -184,7 +184,7 @@ def detach_token_api(serial, machineid, resolver, application):
     Detach a token from a machine with a certain application.
 
     :param machineid: identify the machine by the machine ID and the resolver
-    name
+        name
     :param resolver: identify the machine by the machine ID and the resolver name
     :param serial: identify the token by the serial number
     :param application: the name of the application like "luks" or "ssh".
@@ -225,9 +225,9 @@ def list_machinetokens_api():
     :param serial: Return the MachineTokens for a the given Token
     :param hostname: Identify the machine by the hostname
     :param machineid: Identify the machine by the machine ID and the resolver
-    name
+        name
     :param resolver: Identify the machine by the machine ID and the resolver
-    name
+        name
     :return:
     """
     hostname = getParam(request.all_data, "hostname")
@@ -259,7 +259,7 @@ def set_option_api():
 
     :param hostname: identify the machine by the hostname
     :param machineid: identify the machine by the machine ID and the resolver
-    name
+        name
     :param resolver: identify the machine by the machine ID and the resolver name
     :param serial: identify the token by the serial number
     :param application: the name of the application like "luks" or "ssh".
@@ -314,10 +314,9 @@ def get_auth_items_api(application=None):
     given client machine.
 
     :param challenge: A challenge for which the authentication item is
-    calculated. In case of the Yubikey this can be a challenge that produces
-    a response. The authentication item is the combination of the challenge
-    and the response.
-
+        calculated. In case of the Yubikey this can be a challenge that produces
+        a response. The authentication item is the combination of the challenge
+        and the response.
     :type challenge: basestring
     :param hostname: The hostname of the machine
     :type hostname: basestring

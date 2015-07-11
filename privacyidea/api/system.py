@@ -262,10 +262,10 @@ def set_config():
 
     parameter are generic keyname=value pairs.
 
-    *remark: In case of key-value pairs the type information could be
-             provided by an additional parameter with same keyname with the
-             postfix ".type". Value could then be 'password' to trigger the
-             storing of the value in an encrypted form
+    **remark** In case of key-value pairs the type information could be
+        provided by an additional parameter with same keyname with the
+        postfix ".type". Value could then be 'password' to trigger the
+        storing of the value in an encrypted form
 
     :param key: configuration entry name
     :param value: configuration value
@@ -273,9 +273,35 @@ def set_config():
                  password will trigger to store the encrypted value
     :param description: additional information for this config entry
 
-    * or
+    **or**
+
     :param key-value pairs: pair of &keyname=value pairs
     :return: a json result with a boolean "result": true
+
+    **Example request 1**:
+
+    .. sourcecode:: http
+
+       POST /system/setConfig
+       key=splitAtSign
+       value=true
+
+       Host: example.com
+       Accept: application/json
+
+    **Example request 2**:
+
+    .. sourcecode:: http
+
+       POST /system/setConfig
+       BINDDN=myName
+       BINDPW=mySecretPassword
+       BINDPW.type=password
+
+       Host: example.com
+       Accept: application/json
+
+
     """
     param = request.all_data
     result = {}
@@ -296,33 +322,20 @@ def set_config():
 @prepolicy(check_base_action, request, ACTION.SYSTEMWRITE)
 def set_default():
     """
-    method:
-        system/set
+    define default settings for tokens. These default settings
+    are used when new tokens are generated. The default settings will
+    not affect already enrolled tokens.
 
-    description:
-        define default settings for tokens. These default settings
-        are used when new tokens are generated. The default settings will
-        not affect already enrolled tokens.
+    :param DefaultMaxFailCount: Default value for the maximum allowed
+        authentication failures
+    :param DefaultSyncWindow: Default value for the synchronization window
+    :param DefaultCountWindow: Default value for the counter window
+    :param DefaultOtpLen: Default value for the OTP value length --
+        usually 6 or 8
+    :param DefaultResetFailCount: Default value, if the FailCounter should
+        be reset on successful authentication [True|False]
 
-    arguments:
-        DefaultMaxFailCount    - Default value for the maximum allowed
-                                 authentication failures
-        DefaultSyncWindow      - Default value for the synchronization
-                                 window
-        DefaultCountWindow     - Default value for the coutner window
-        DefaultOtpLen          - Default value for the OTP value length --
-                                 usually 6 or 8
-        DefaultResetFailCount  - Default value, if the FailCounter should
-                                 be reset on successful authentication
-                                 [True|False]
-
-
-    returns:
-        a json result with a boolean
-          "result": true
-
-    exception:
-        if an error occurs an exception is serialized and returned
+    :return: a json result with a boolean "result": true
 
     """
     keys = ["DefaultMaxFailCount",
@@ -357,7 +370,6 @@ def set_default():
 def delete_config(key=None):
     """
     delete a configuration key
-    * if an error occurs an exception is serializedsetConfig and returned
 
     :param key: configuration key name
     :returns: a json result with the deleted value

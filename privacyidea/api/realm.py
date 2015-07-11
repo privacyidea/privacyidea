@@ -79,16 +79,16 @@ def set_realm_api(realm=None):
     This call creates a new realm or reconfigures a realm.
     The realm contains a list of resolvers.
 
+    In the result it returns a list of added resolvers and a list of
+    resolvers, that could not be added.
+
     :param realm: The unique name of the realm
     :param resolvers: A comma separated list of unique resolver names or a
-    list object
+        list object
     :type resolvers: string or list
     :param priority: Additional parameters priority.<resolvername> define the
         priority of the resolvers within this realm.
     :return: a json result with a list of Realms
-
-    In the result it returns a list of added resolvers and a list of
-    resolvers, that could not be added.
 
     **Example request**:
 
@@ -150,7 +150,7 @@ def set_realm_api(realm=None):
 def get_realms_api():
     """
     This call returns the list of all defined realms.
-    It take no arguments.
+    It takes no arguments.
 
     :return: a json result with a list of realms
 
@@ -211,7 +211,8 @@ def get_realms_api():
 def get_super_user_realms():
     """
     This call returns the list of all superuser realms
-    as they are defined in pi.cfg
+    as they are defined in *pi.cfg*.
+    See :ref:`cfgfile` for more information about this.
 
     :return: a json result with a list of realms
 
