@@ -47,7 +47,7 @@ Setup
 
 You can setup the system in a virtual environment:
     
-    git checkout https://github.com/privacyidea/privacyidea.git
+    git clone https://github.com/privacyidea/privacyidea.git
     cd privacyidea
     virtualenv venv
     source venv/bin/activate
