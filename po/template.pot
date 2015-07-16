@@ -598,7 +598,7 @@ msgstr ""
 msgid "File name"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:15
+#: privacyidea/static/components/audit/views/audit.log.html:15
 #: privacyidea/static/components/machine/views/machine.details.html:43
 #: privacyidea/static/components/machine/views/machine.list.html:5
 #: privacyidea/static/components/token/views/token.details.html:377
@@ -746,7 +746,7 @@ msgstr ""
 msgid "Info"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:14
+#: privacyidea/static/components/audit/views/audit.log.html:14
 #: privacyidea/static/components/machine/views/machine.details.html:42
 #: privacyidea/static/components/machine/views/machine.list.html:4
 #: privacyidea/static/components/token/views/token.details.html:376
@@ -781,6 +781,10 @@ msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.assignuser.html:19
 msgid "Loading users..."
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.html:20
+msgid "Log"
 msgstr ""
 
 #: privacyidea/static/components/login/views/login.html:28
@@ -900,7 +904,7 @@ msgstr ""
 msgid "New {{ resolvertype }}"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:13
+#: privacyidea/static/components/audit/views/audit.log.html:13
 #: privacyidea/static/components/machine/views/machine.details.html:41
 #: privacyidea/static/components/machine/views/machine.list.html:3
 #: privacyidea/static/components/token/views/token.details.html:375
@@ -1073,7 +1077,7 @@ msgstr ""
 msgid "Preset OpenLDAP"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:12
+#: privacyidea/static/components/audit/views/audit.log.html:12
 #: privacyidea/static/components/machine/views/machine.details.html:40
 #: privacyidea/static/components/machine/views/machine.list.html:2
 #: privacyidea/static/components/token/views/token.details.html:374
@@ -1132,7 +1136,7 @@ msgstr ""
 msgid "Realms"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:6
+#: privacyidea/static/components/audit/views/audit.log.html:6
 msgid "Refresh"
 msgstr ""
 
@@ -1329,6 +1333,10 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.sms.html:16
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:19
 msgid "Some nice words..."
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.html:25
+msgid "Statistics"
 msgstr ""
 
 #: privacyidea/static/templates/index.html:22
@@ -1949,11 +1957,11 @@ msgstr ""
 msgid "Yubikey Identifier"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:26
+#: privacyidea/static/components/audit/views/audit.log.html:26
 msgid "action"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:34
+#: privacyidea/static/components/audit/views/audit.log.html:34
 msgid "action detail"
 msgstr ""
 
@@ -1963,7 +1971,7 @@ msgstr ""
 msgid "active"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:46
+#: privacyidea/static/components/audit/views/audit.log.html:46
 msgid "administrator"
 msgstr ""
 
@@ -1971,15 +1979,15 @@ msgstr ""
 msgid "an optional serial substring"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:59
+#: privacyidea/static/components/audit/views/audit.log.html:59
 msgid "clearance"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:55
+#: privacyidea/static/components/audit/views/audit.log.html:55
 msgid "client"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:25
+#: privacyidea/static/components/audit/views/audit.log.html:25
 msgid "date"
 msgstr ""
 
@@ -2023,11 +2031,11 @@ msgstr ""
 msgid "id"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:56
+#: privacyidea/static/components/audit/views/audit.log.html:56
 msgid "info"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:60
+#: privacyidea/static/components/audit/views/audit.log.html:60
 msgid "log level"
 msgstr ""
 
@@ -2039,7 +2047,7 @@ msgstr ""
 msgid "maxfail"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:58
+#: privacyidea/static/components/audit/views/audit.log.html:58
 msgid "missing_line"
 msgstr ""
 
@@ -2051,7 +2059,7 @@ msgstr ""
 msgid "new realm"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:24
+#: privacyidea/static/components/audit/views/audit.log.html:24
 msgid "number"
 msgstr ""
 
@@ -2071,11 +2079,11 @@ msgstr ""
 msgid "privacyIDEA authentication backend"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:61
+#: privacyidea/static/components/audit/views/audit.log.html:61
 msgid "privacyidea server"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:54
+#: privacyidea/static/components/audit/views/audit.log.html:54
 #: privacyidea/static/components/token/views/token.list.html:55
 msgid "realm"
 msgstr ""
@@ -2084,7 +2092,7 @@ msgstr ""
 msgid "resolvers"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:38
+#: privacyidea/static/components/audit/views/audit.log.html:38
 #: privacyidea/static/components/token/views/token.list.html:16
 #: privacyidea/static/components/user/views/user.details.html:117
 msgid "serial"
@@ -2102,7 +2110,7 @@ msgstr ""
 msgid "set Default"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:57
+#: privacyidea/static/components/audit/views/audit.log.html:57
 msgid "sig_check"
 msgstr ""
 
@@ -2122,7 +2130,7 @@ msgstr ""
 msgid "start typing a username"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:30
+#: privacyidea/static/components/audit/views/audit.log.html:30
 msgid "success"
 msgstr ""
 
@@ -2130,7 +2138,7 @@ msgstr ""
 msgid "surname"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:42
+#: privacyidea/static/components/audit/views/audit.log.html:42
 msgid "token type"
 msgstr ""
 
@@ -2156,7 +2164,7 @@ msgid ""
 "            ocrasuite are optional."
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:50
+#: privacyidea/static/components/audit/views/audit.log.html:50
 #: privacyidea/static/components/token/views/token.list.html:54
 msgid "user"
 msgstr ""
@@ -2169,6 +2177,6 @@ msgstr ""
 msgid "window"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:18
+#: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr ""

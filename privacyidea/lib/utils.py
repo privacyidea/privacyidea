@@ -36,15 +36,15 @@ def create_png(data, alt=None):
 
 def create_img(data, width=0, alt=None):
     """
-        _create_img - create the qr image data
+    create the qr image data
 
-        :param data: input data that will be munched into the qrcode
-        :type  data: string
-        :param width: image width in pixel
-        :type  width: int
+    :param data: input data that will be munched into the qrcode
+    :type  data: string
+    :param width: image width in pixel
+    :type  width: int
 
-        :return: image data to be used in an <img> tag
-        :rtype:  string
+    :return: image data to be used in an <img> tag
+    :rtype:  string
     """
     width_str = ''
     alt_str = ''

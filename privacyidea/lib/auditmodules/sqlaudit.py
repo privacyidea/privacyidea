@@ -45,10 +45,18 @@ import traceback
 from Crypto.Hash import SHA256 as HashFunc
 from Crypto.PublicKey import RSA
 from sqlalchemy.exc import OperationalError
+try:
+    from pandas import DataFrame
+    PANDAS_READY = True
+    # matplotlib is needed to plot
+except Exception as exx:
+    log.warning(exx)
+    PANDAS_READY = False
 
 metadata = MetaData()
 
-logentry = Table('pidea_audit',
+TABLE_NAME = 'pidea_audit'
+logentry = Table(TABLE_NAME,
                  metadata,
                  Column('id', Integer, primary_key=True),
                  Column('date', DateTime),
@@ -386,8 +394,8 @@ class Audit(AuditBase):
         if paging_object.total > (page_size * page):
             paging_object.next = page + 1
 
-        auditIter = self.searchQuery(search_dict, page_size=page_size,
-                                     page=page, sortorder=sortorder)
+        auditIter = self.search_query(search_dict, page_size=page_size,
+                                      page=page, sortorder=sortorder)
         try:
             le = auditIter.next()
             while le:
@@ -398,8 +406,8 @@ class Audit(AuditBase):
             pass
         return paging_object
         
-    def searchQuery(self, search_dict, page_size=15, page=1, sortorder="asc",
-                    sortname="number"):
+    def search_query(self, search_dict, page_size=15, page=1, sortorder="asc",
+                     sortname="number"):
         """
         This function returns the audit log as an iterator on the result
         """
@@ -433,6 +441,33 @@ class Audit(AuditBase):
             return iter([])
         else:
             return iter(logentries)
+
+    def get_dataframe(self,
+                      start_time=datetime.datetime.now()
+                                 -datetime.timedelta(days=7),
+                      end_time=datetime.datetime.now()):
+        """
+        The Audit module can handle its data the best. This function is used
+        to return a pandas.dataframe with all audit data in the given time
+        frame.
+
+        This dataframe then can be used for extracting statistics.
+
+        :param start_time: The start time of the data
+        :type start_time: datetime
+        :param end_time: The end time of the data
+        :type end_time: datetime
+        :return: Audit data
+        :rtype: dataframe
+        """
+        if not PANDAS_READY:
+            log.warning("If you want to use statistics, you need to install "
+                        "python-pandas.")
+            return None
+        result = self.engine.execute("select * from %s" % TABLE_NAME)
+        rows = result.fetchall()
+        df = DataFrame(rows, columns=result.keys())
+        return df
 
     def clear(self):
         """

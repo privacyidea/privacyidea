@@ -130,3 +130,22 @@ class AuditTestCase(MyTestCase):
             self.assertTrue(type(audit_entry).__name__ == "unicode",
                             type(audit_entry).__name__)
 
+    def test_05_dataframe(self):
+        self.Audit.log({"action": "action1",
+                        "serial": "s2"})
+        self.Audit.finalize_log()
+
+        # next audit entry
+        self.Audit.log({"action": "action2",
+                        "serial": "s1"})
+        self.Audit.finalize_log()
+
+        # 3rd audit entry
+        self.Audit.log({"action": "action2",
+                        "serial": "s1"})
+        self.Audit.finalize_log()
+        df = self.Audit.get_dataframe()
+        series = df['serial'].value_counts()
+        self.assertEqual(series.values[0], 2)
+        self.assertEqual(series.values[1], 1)
+

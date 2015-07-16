@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2015-07-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+ *     Add state for audit.log and audit.stats
  * 2015-01-11 Cornelius Kölbel, <cornelius@privacyidea.org>
  *
  * This code is free software; you can redistribute it and/or
@@ -30,8 +32,17 @@ angular.module('privacyideaApp.auditStates', ['ui.router']).config(
             var auditpath = instance + "/static/components/audit/views/";
             $stateProvider
                 .state('audit', {
-                    url: "/audit?serial&user",
+                    url: "/audit",
                     templateUrl: auditpath + "audit.html",
+                    controller: "auditController"
+                })
+                .state('audit.log', {
+                    url: "/log?serial&user",
+                    templateUrl: auditpath + "audit.log.html",
+                    controller: "auditController"
+                }).state('audit.stats', {
+                    url: "/stats",
+                    templateUrl: auditpath + "audit.stats.html",
                     controller: "auditController"
                 });
         }]);

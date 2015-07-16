@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2015-07-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+ *     Add statistics
  * 2015-01-20 Cornelius Kölbel, <cornelius@privacyidea.org>
  *
  * This code is free software; you can redistribute it and/or
@@ -20,11 +22,20 @@
  */
 myApp.controller("auditController", function (AuditFactory, $scope,
                                               $stateParams, $http,
-                                              AuthFactory, instanceUrl) {
+                                              AuthFactory, instanceUrl,
+                                              $location) {
     $scope.params = {sortorder: "desc",
                      page_size: 10,
                      page: 1};
     $scope.instanceUrl = instanceUrl;
+
+    if ($location.path() == "/audit") {
+        $location.path("/audit/log");
+    }
+
+    if ($location.path() == "/audit/statistics") {
+        $scope.getStatistics;
+    }
 
     // If the state is called with some filter values
     if ($stateParams.serial) {
@@ -33,6 +44,14 @@ myApp.controller("auditController", function (AuditFactory, $scope,
     if ($stateParams.user) {
         $scope.userFilter = $stateParams.user;
     }
+
+    // get statistics
+    $scope.getStatistics = function() {
+        AuditFactory.statistics($scope.params, function(data) {
+            $scope.stats = data.result.value;
+            console.log($scope.stats);
+        });
+    };
 
     $scope.getAuditList = function () {
         $scope.params.serial = "*" + ($scope.serialFilter || "") + "*";

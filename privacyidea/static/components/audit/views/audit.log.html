@@ -1,0 +1,97 @@
+<div class="well">
+    <csv-download url="{{ instanceUrl }}/audit/audit.csv"
+                  filename="audit.csv"></csv-download>
+    <button class="btn btn-default" ng-click="getAuditList()">
+        <span class="glyphicon glyphicon-refresh"></span>
+        <translate>Refresh</translate></button>
+
+    <pagination ng-show="auditdata.count > 10"
+                total-items="auditdata.count" ng-model="params.page"
+                items-per-page="10"
+                max-size="10"
+                previous-text="{{ 'Previous'|translate }}"
+                next-text="{{ 'Next'|translate }}"
+                last-text="{{ 'Last'|translate }}"
+                first-text="{{ 'First'|translate }}"
+                boundary-links="true" ng-change="pageChanged()"></pagination>
+
+    <translate>{{ auditdata.count }} entries found.</translate>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead>
+            <tr>
+                <th translate>number</th>
+                <th translate>date</th>
+                <th><translate>action</translate>
+                    <pi-filter ng-model="actionFilter"
+                               ng-change="getAuditList()">
+                </th>
+                <th><translate>success</translate>
+                    <pi-filter ng-model="successFilter"
+                               ng-change="getAuditList()">
+                </th>
+                <th><translate>action detail</translate>
+                    <pi-filter ng-model="action_detailFilter"
+                               ng-change="getAuditList()">
+                </th>
+                <th><translate>serial</translate>
+                    <pi-filter ng-model="serialFilter"
+                               ng-change="getAuditList()"></pi-filter>
+                </th>
+                <th><translate>token type</translate>
+                    <pi-filter ng-model="typeFilter"
+                               ng-change="getAuditList()">
+                </th>
+                <th><translate>administrator</translate>
+                    <pi-filter ng-model="administratorFilter"
+                               ng-change="getAuditList()">
+                </th>
+                <th><translate>user</translate>
+                    <pi-filter ng-model="userFilter"
+                               ng-change="getAuditList()">
+                </th>
+                <th translate>realm</th>
+                <th translate>client</th>
+                <th translate>info</th>
+                <th translate>sig_check</th>
+                <th translate>missing_line</th>
+                <th translate>clearance</th>
+                <th translate>log level</th>
+                <th translate>privacyidea server</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="audit in auditdata.auditdata">
+                <td>{{ audit.number }}</td>
+                <td>{{ audit.date | date:'medium' }}</td>
+                <td>{{ audit.action }}</td>
+                <td><span status-class="{{ audit.success }}">
+                {{ audit.success }}
+            </span></td>
+                <td>{{ audit.action_detail }}</td>
+                <td><a ui-sref="token.details({tokenSerial:audit.serial})"
+                       ng-click="$rootScope.returnTo=audit;">
+                    {{ audit.serial }}</a></td>
+                <td>{{ audit.token_type }}</td>
+                <td>{{ audit.administrator }}</td>
+                <td><a ui-sref="user.details({username:audit.user,
+                realmname:audit.realm})">
+                    {{ audit.user }}</a></td>
+                <td><a ui-sref="config.realms.list">{{ audit.realm }}</a></td>
+                <td>{{ audit.client }}</td>
+                <td>{{ audit.info }}</td>
+                <td><span status-class="{{ audit.sig_check }}">
+                {{ audit.sig_check }}
+            </span></td>
+                <td><span status-class="{{ audit.missing_line }}">
+                {{ audit.missing_line }}</span></td>
+                <td>{{ audit.clearance_level }}</td>
+                <td>{{ audit.log_level }}</td>
+                <td>{{ audit.privacyidea_server }}</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>

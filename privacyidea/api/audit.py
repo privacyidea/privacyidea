@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2015-07-16 Cornelius Kölbel, <cornelius.koelbel@netknights.it>
+#            Add statistics endpoint
 # 2015-01-20 Cornelius Kölbel, <cornelius@privacyidea.org>
 #            Complete rewrite during flask migration
 #            Try to provide REST API
@@ -34,6 +36,7 @@ from ..lib.policy import ACTION
 from flask import g
 import logging
 from ..lib.audit import search, getAudit
+from ..lib.stats import get_statistics
 log = logging.getLogger(__name__)
 
 audit_blueprint = Blueprint('audit_blueprint', __name__)
@@ -127,3 +130,42 @@ def download_csv(csvfile=None):
                     mimetype='text/csv',
                     headers={"Content-Disposition": ("attachment; "
                                                      "filename=%s" % csvfile)})
+
+@audit_blueprint.route('/statistics', methods=['GET'])
+@prepolicy(check_base_action, request, ACTION.AUDIT)
+def statistics():
+    """
+    get the statistics values from the audit log
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+       GET /audit/statistics HTTP/1.1
+       Host: example.com
+       Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+       HTTP/1.1 200 OK
+       Content-Type: text/csv
+
+        {
+          "id": 1,
+          "jsonrpc": "2.0",
+          "result": {
+            "status": true,
+            "value": [
+              {
+                 "serial_plot": "...image data...",
+              }
+            ]
+          },
+          "version": "privacyIDEA unknown"
+        }
+    """
+    stats = get_statistics(g.audit_object)
+    g.audit_object.log({'success': True})
+    return send_result(stats)

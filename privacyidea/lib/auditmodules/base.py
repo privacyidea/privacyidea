@@ -52,6 +52,7 @@ import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.log import log_with
 import socket
+from datetime import datetime, timedelta
 
 
 class Paginate(object):
@@ -233,9 +234,26 @@ class Audit(object):  # pragma: no cover
 
     def audit_entry_to_dict(self, audit_entry):
         """
-        If the searchQuery returns an iteretor with elements that are not a
+        If the search_query returns an iterator with elements that are not a
         dictionary, the audit module needs
         to provide this function, to convert the audit entry to a dictionary.
         """
         return {}
 
+    def get_dataframe(self, start_time=datetime.now()-timedelta(days=7),
+                      end_time=datetime.now()):
+        """
+        The Audit module can handle its data the best. This function is used
+        to return a pandas.dataframe with all audit data in the given time
+        frame.
+
+        This dataframe then can be used for extracting statistics.
+
+        :param start_time: The start time of the data
+        :type start_time: datetime
+        :param end_time: The end time of the data
+        :type end_time: datetime
+        :return: Audit data
+        :rtype: dataframe
+        """
+        return None
