@@ -46,6 +46,10 @@ from Crypto.Hash import SHA256 as HashFunc
 from Crypto.PublicKey import RSA
 from sqlalchemy.exc import OperationalError
 try:
+    import matplotlib
+    MATPLOT_READY = True
+    matplotlib.use('Agg')
+    # We need to set the matplotlib backend before importing pandas with pyplot
     from pandas import DataFrame
     PANDAS_READY = True
     # matplotlib is needed to plot
@@ -464,7 +468,10 @@ class Audit(AuditBase):
             log.warning("If you want to use statistics, you need to install "
                         "python-pandas.")
             return None
-        result = self.engine.execute("select * from %s" % TABLE_NAME)
+        result = self.engine.execute("select * from %s where date "
+                                     "> '%s' and date < "
+                                     "'%s'"
+                                     % (TABLE_NAME, start_time, end_time))
         rows = result.fetchall()
         df = DataFrame(rows, columns=result.keys())
         return df

@@ -30,13 +30,15 @@ It only provides the method
 from flask import (Blueprint,
                    request, current_app, Response,
                    stream_with_context)
-from lib.utils import (send_result)
+from lib.utils import (send_result, getParam)
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policy import ACTION
 from flask import g
 import logging
 from ..lib.audit import search, getAudit
 from ..lib.stats import get_statistics
+import datetime
+
 log = logging.getLogger(__name__)
 
 audit_blueprint = Blueprint('audit_blueprint', __name__)
@@ -166,6 +168,9 @@ def statistics():
           "version": "privacyIDEA unknown"
         }
     """
-    stats = get_statistics(g.audit_object)
+    days = int(getParam(request.all_data, "days", default=7))
+    stats = get_statistics(g.audit_object,
+                           start_time=datetime.datetime.now()
+                                      -datetime.timedelta(days=days))
     g.audit_object.log({'success': True})
     return send_result(stats)

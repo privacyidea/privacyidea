@@ -6,6 +6,7 @@ This tests the files
 
 from .base import MyTestCase
 from privacyidea.lib.audit import getAudit, search
+import datetime
 
 PUBLIC = "tests/testdata/public.pem"
 PRIVATE = "tests/testdata/private.pem"
@@ -144,7 +145,10 @@ class AuditTestCase(MyTestCase):
         self.Audit.log({"action": "action2",
                         "serial": "s1"})
         self.Audit.finalize_log()
-        df = self.Audit.get_dataframe()
+        df = self.Audit.get_dataframe(start_time=datetime.datetime.now()
+                                      -datetime.timedelta(days=7),
+                                      end_time=datetime.datetime.now()
+                                      +datetime.timedelta(days=1))
         series = df['serial'].value_counts()
         self.assertEqual(series.values[0], 2)
         self.assertEqual(series.values[1], 1)

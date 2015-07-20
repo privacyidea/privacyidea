@@ -1,14 +1,85 @@
 <div class="well">
-        <button class="btn btn-default" ng-click="getStatistics()">
+    <button class="btn btn-default" ng-click="getStatistics()">
         <span class="glyphicon glyphicon-refresh"></span>
-        <translate>Refresh</translate></button>
+        <translate>Refresh</translate>
+    </button>
 
-        <hr>
+    <select class="form-control"
+            ng-model="params.days">
+        <option>1</option>
+        <option selected>7</option>
+        <option>30</option>
+        <option>180</option>
+    </select>
 
-        <img width="500" src="{{ stats.serial_plot }}"
-             alt="No data found" />
-        <img width="500" src="{{ stats.action_plot }}"
-             alt="No data found" />
-        <img width="500" src="{{ stats.validate_plot }}"
-             alt="No data found" />
+    <accordion close-others="false">
+        <accordion-group>
+            <accordion-heading>
+                <translate>Validate Requests per users</translate>
+            </accordion-heading>
+            <p class="help-block" translate>
+                These are the validate-requests (authentication) grouped by
+                users.
+                The successful and the failed requests are listed.
+            </p>
+            <img width="700" src="{{ stats.validate_user_plot }}"
+                 alt="{{ stats.validate_user_plot }}"/>
+        </accordion-group>
+        <accordion-group>
+            <accordion-heading>
+                <translate>Validate Requests per token</translate>
+            </accordion-heading>
+            <p class="help-block" translate>
+                These are the validate-requests (authentication) grouped by the
+                serial number of the token.
+                The successful and the failed requests are listed.
+            </p>
+            <img width="700" src="{{ stats.validate_serial_plot }}"
+                 alt="{{ stats.validate_serial_plot }}"/>
+        </accordion-group>
+
+        <accordion-group>
+            <accordion-heading>
+                <translate>Failed authentication requests per token</translate>
+            </accordion-heading>
+            <p class="help-block" translate>
+                Failed authentication requests per token
+            </p>
+            <img width="700" src="{{ stats.validate_failed_serial_plot }}"
+                 alt="{{ stats.validate_failed_serial_plot }}"/>
+        </accordion-group>
+
+        <accordion-group>
+            <accordion-heading>
+                <translate>Failed authentication requests per user</translate>
+            </accordion-heading>
+            <p class="help-block" translate>
+                Failed authentication requests per user
+            </p>
+            <img width="700" src="{{ stats.validate_failed_user_plot }}"
+                 alt="{{ stats.validate_failed_user_plot }}"/>
+        </accordion-group>
+
+        <accordion-group>
+            <accordion-heading>
+                <translate>Administrative actions</translate>
+            </accordion-heading>
+            <p class="help-block" translate>
+                Which administrative request where the most popular.
+            </p>
+            <img width="700" src="{{ stats.admin_plot }}"
+                 alt="{{ stats.admin_plot }}"/>
+        </accordion-group>
+
+        <accordion-group>
+            <accordion-heading>
+                <translate>Overall token usage</translate>
+            </accordion-heading>
+            <p class="help-block" translate>This is the overall token usage with
+                any
+                kind of action in regards to the serial number.</p>
+            <img width="700" src="{{ stats.serial_plot }}"
+                 alt="{{ stats.serial_plot }}"/>
+        </accordion-group>
+    </accordion>
 </div>

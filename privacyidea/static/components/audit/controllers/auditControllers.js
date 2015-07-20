@@ -29,6 +29,9 @@ myApp.controller("auditController", function (AuditFactory, $scope,
                      page: 1};
     $scope.instanceUrl = instanceUrl;
 
+    $scope.statsTime = {7: "Last Week",
+        28: "Last 4 Weeks"};
+
     if ($location.path() == "/audit") {
         $location.path("/audit/log");
     }

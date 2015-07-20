@@ -32,10 +32,14 @@ log = logging.getLogger(__name__)
 try:
     import matplotlib
     MATPLOT_READY = True
+    matplotlib.style.use('ggplot')
+    matplotlib.use('Agg')
 except Exception as exx:
     MATPLOT_READY = False
     log.warning("If you want to see statistics you need to install python "
                 "matplotlib.")
+
+customcmap = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]
 
 
 @log_with(log)
@@ -54,33 +58,34 @@ def get_statistics(auditobject, start_time=datetime.datetime.now()
     result = {}
     df = auditobject.get_dataframe(start_time=start_time, end_time=end_time)
 
+    # authentication successful/fail per user or serial
+    for key in ["user", "serial"]:
+        result["validate_%s_plot" % key] = _get_success_fail(df, key)
+
     # get simple usage
     for key in ["serial", "action"]:
         result["%s_plot" % key] = _get_number_of(df, key)
 
-    # authentication successful/fail per user
-    image_uri = "No data"
-    output = StringIO.StringIO()
-    series = df[df.action=="POST /validate/check"].groupby(['user',
-                                                            'success']).size()
-    fig = series.plot(kind="barh").get_figure()
-    fig.savefig(output, format="png")
-    o_data = output.getvalue()
-    output.close()
-    image_data = o_data.encode("base64")
-    image_uri = 'data:image/png;base64,%s' % image_data
+    # failed authentication requests
+    for key in ["user", "serial"]:
+        result["validate_failed_%s_plot" % key] = _get_fail(df, key)
 
-    result["validate_plot"] = image_uri
-
+    result["admin_plot"] = _get_number_of(df, "action", nums=20)
 
     return result
 
-def _get_number_of(df, key):
-    image_uri = "No data"
-    output = StringIO.StringIO()
+def _get_success_fail(df, key):
+
     try:
-        series = df[key].value_counts()[:5]
-        fig = series.plot(kind="barh").get_figure()
+        output = StringIO.StringIO()
+        series = df[df.action.isin(["POST /validate/check",
+                                    "GET /validate/check"])].groupby([key,
+                                                                'success']).size().unstack()
+        fig = series.plot(kind="bar", stacked=True,
+                          legend=True,
+                          title="Authentications",
+                          grid=True,
+                          color=customcmap).get_figure()
         fig.savefig(output, format="png")
         o_data = output.getvalue()
         output.close()
@@ -88,4 +93,69 @@ def _get_number_of(df, key):
         image_uri = 'data:image/png;base64,%s' % image_data
     except Exception as exx:
         log.info(exx)
+        image_uri = "%s" % exx
+    return image_uri
+
+def _get_fail(df, key):
+
+    try:
+        output = StringIO.StringIO()
+        series = df[(df.success==0)
+                    & (df.action.isin(["POST /validate/check",
+                                       "GET /validate/check"]))][
+                     key].value_counts()[:5]
+
+        plot_canvas = matplotlib.pyplot.figure()
+        ax = plot_canvas.add_subplot(1,1,1)
+
+        fig = series.plot(ax=ax, kind="bar",
+                          colormap="Reds",
+                          stacked=False,
+                          legend=False,
+                          grid=True,
+                          title="Failed Authentications").get_figure()
+        fig.savefig(output, format="png")
+        o_data = output.getvalue()
+        output.close()
+        image_data = o_data.encode("base64")
+        image_uri = 'data:image/png;base64,%s' % image_data
+    except Exception as exx:
+        log.info(exx)
+        image_uri = "%s" % exx
+    return image_uri
+
+
+
+def _get_number_of(df, key, nums=5):
+    """
+    return a data url image with a single keyed value.
+    It plots the "nums" most occurrences of the "key" column in the dataframe.
+
+    :param df: The DataFrame
+    :type df: Pandas DataFrame
+    :param key: The key, which should be plotted.
+    :param count: how many of the most often values should be plotted
+    :return: A data url
+    """
+    output = StringIO.StringIO()
+    output.truncate(0)
+    try:
+        plot_canvas = matplotlib.pyplot.figure()
+        ax = plot_canvas.add_subplot(1, 1, 1)
+
+        series = df[key].value_counts()[:nums]
+        fig = series.plot(ax=ax, kind="bar", colormap="Blues",
+                          legend=False,
+                          x=-10,
+                          stacked=False,
+                          title="Numbers of %s" % key,
+                          grid=True).get_figure()
+        fig.savefig(output, format="png")
+        o_data = output.getvalue()
+        output.close()
+        image_data = o_data.encode("base64")
+        image_uri = 'data:image/png;base64,%s' % image_data
+    except Exception as exx:
+        log.info(exx)
+        image_uri = "No data"
     return image_uri
