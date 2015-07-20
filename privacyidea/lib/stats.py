@@ -54,8 +54,24 @@ def get_statistics(auditobject, start_time=datetime.datetime.now()
     result = {}
     df = auditobject.get_dataframe(start_time=start_time, end_time=end_time)
 
+    # get simple usage
     for key in ["serial", "action"]:
         result["%s_plot" % key] = _get_number_of(df, key)
+
+    # authentication successful/fail per user
+    image_uri = "No data"
+    output = StringIO.StringIO()
+    series = df[df.action=="POST /validate/check"].groupby(['user',
+                                                            'success']).size()
+    fig = series.plot(kind="barh").get_figure()
+    fig.savefig(output, format="png")
+    o_data = output.getvalue()
+    output.close()
+    image_data = o_data.encode("base64")
+    image_uri = 'data:image/png;base64,%s' % image_data
+
+    result["validate_plot"] = image_uri
+
 
     return result
 
