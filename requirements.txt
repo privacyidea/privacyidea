@@ -33,6 +33,7 @@ ldap3==0.9.8.4
 mock==1.0.1
 netaddr==0.7.12
 nose==1.3.4
+pandas=0.16.2
 passlib==1.6.2
 psycopg2==2.6
 pyOpenSSL==0.15.1
