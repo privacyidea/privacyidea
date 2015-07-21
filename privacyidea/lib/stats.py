@@ -146,7 +146,6 @@ def _get_number_of(df, key, nums=5):
         series = df[key].value_counts()[:nums]
         fig = series.plot(ax=ax, kind="bar", colormap="Blues",
                           legend=False,
-                          x=-10,
                           stacked=False,
                           title="Numbers of %s" % key,
                           grid=True).get_figure()
