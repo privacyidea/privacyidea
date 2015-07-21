@@ -149,21 +149,13 @@ class RegistrationTokenClass(PasswordTokenClass):
         PasswordTokenClass.update(self, param)
 
     @log_with(log, log_entry=False)
-    def check_otp(self, anOtpVal, counter=None, window=None, options=None):
+    def inc_count_auth_success(self):
         """
-        This checks the static password
-
-        :param anOtpVal: This contains the "OTP" value, which is the static
-        password
-        :return: result of password check, 0 in case of success, -1 if fail
-        :rtype: int
+        Increase the counter, that counts successful authentications
+        In case of successful authentication the token does needs to be deleted.
         """
-        res = super(RegistrationTokenClass, self).check_otp(anOtpVal, counter,
-                                                            window, options)
-        if res == 0:
-            # delete token
-            self.delete_token()
-        return res
+        self.delete_token()
+        return 1
 
     @log_with(log)
     def get_init_detail(self, params=None, user=None):

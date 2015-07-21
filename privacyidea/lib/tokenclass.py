@@ -5,7 +5,8 @@
 #                 Migration to flask
 #                 Rewrite of methods
 #                 100% test code coverage
-#  * Oct 03, 2014 Cornelius Kölbel <cornelius@privacyidea.org>
+#  * Oct676
+#  03, 2014 Cornelius Kölbel <cornelius@privacyidea.org>
 #                 Move the QR stuff in getInitDetail into the token classes
 #  * Sep 17, 2014 Cornelius Kölbel, cornelius@privacyidea.org
 #                 Improve the return value of the InitDetail

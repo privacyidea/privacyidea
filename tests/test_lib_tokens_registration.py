@@ -47,8 +47,12 @@ class RegistrationTokenTestCase(MyTestCase):
         r = token.check_otp(detail.get("registrationcode"))
         self.assertTrue(r == 0, r)
 
-        # check if the token was deleted.
+        # check if the token sill exists after check_otp
+        db_token = Token.query.filter(Token.serial == self.serial1).first()
+        self.assertNotEqual(db_token, None)
+
+        # check if the token is deleted after inc_success
+        token.inc_count_auth_success()
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         self.assertEqual(db_token, None)
-
 
