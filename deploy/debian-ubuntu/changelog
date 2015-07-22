@@ -1,10 +1,23 @@
-python-privacyidea (2.5~dev3) trusty; urgency=low
+python-privacyidea (2.5~dev4) trusty; urgency=low
 
+  Features
+  * Add statistics
+  * Add German translation
+  * Add PinHandler in case of random PIN used
+  * Add automatic documentation of system setup
   * Add ownCloud plugin
-  * Add translation
-  * Add preset SMS and EMail in token enrollment
+  
+  Enhancements
+  * Preset Email and SMS of a user when enrolling token
+  * Enable LDAP anonymous bind
+  * Add Hashalgorithms and digits to QR Code
+  * Add support for CentOS 6 and 7
+  
+  Fixes
+  * Fix registration token
+  * Fix mOTP reuse problem
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 08 Jul 2015 09:45:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Tue, 21 Jul 2015 22:45:00 +0200
 
 python-privacyidea (2.4-1trusty) trusty; urgency=low
 

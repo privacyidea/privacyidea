@@ -1,6 +1,22 @@
 python-privacyidea (2.5~dev1) wheezy; urgency=low
 
+  Features
+  * Add statistics
+  * Add German translation
+  * Add PinHandler in case of random PIN used
+  * Add automatic documentation of system setup
   * Add ownCloud plugin
+  
+  Enhancements
+  * Preset Email and SMS of a user when enrolling token
+  * Enable LDAP anonymous bind
+  * Add Hashalgorithms and digits to QR Code
+  * Add support for CentOS 6 and 7
+  
+  Fixes
+  * Fix registration token
+  * Fix mOTP reuse problem
+
 
  -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 25 Jun 2015 11:45:00 +0200
 
