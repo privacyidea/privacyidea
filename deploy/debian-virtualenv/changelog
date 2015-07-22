@@ -1,4 +1,4 @@
-python-privacyidea (2.5~dev1) wheezy; urgency=low
+python-privacyidea (2.5-1) wheezy; urgency=low
 
   Features
   * Add statistics
@@ -18,7 +18,7 @@ python-privacyidea (2.5~dev1) wheezy; urgency=low
   * Fix mOTP reuse problem
 
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 25 Jun 2015 11:45:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 22 Jul 2015 17:00:00 +0200
 
 
 privacyidea-venv (2.4-1) wheezy; urgency=low

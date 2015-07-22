@@ -1,4 +1,4 @@
-python-privacyidea (2.5~dev4) trusty; urgency=low
+python-privacyidea (2.5-1trusty) trusty; urgency=low
 
   Features
   * Add statistics
@@ -17,7 +17,7 @@ python-privacyidea (2.5~dev4) trusty; urgency=low
   * Fix registration token
   * Fix mOTP reuse problem
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Tue, 21 Jul 2015 22:45:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 22 Jul 2015 17:00:00 +0200
 
 python-privacyidea (2.4-1trusty) trusty; urgency=low
 
