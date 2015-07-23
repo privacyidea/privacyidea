@@ -1,4 +1,4 @@
-python-privacyidea (2.5-1) wheezy; urgency=low
+privacyidea-venv (2.5-1) wheezy; urgency=low
 
   Features
   * Add statistics
