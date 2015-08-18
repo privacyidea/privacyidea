@@ -24,7 +24,7 @@ angular.module("privacyideaApp")
                                       $scope, $http, $location,
                                       authUrl, AuthFactory, $rootScope,
                                       $state, ConfigFactory, inform,
-                                      PolicyTemplateFactory) {
+                                      PolicyTemplateFactory, gettext) {
     $scope.myCountdown = "";
     // We save the previous State in the $rootScope, so that we
     // can return there
@@ -95,7 +95,7 @@ angular.module("privacyideaApp")
             console.log($scope.loggedInUser);
             $location.path("/token");
         }).error(function (error) {
-            inform.add("Authentication failed. " + error.result.error.message,
+            inform.add(gettext("Authentication failed. ") + error.result.error.message,
                 {type: "danger", ttl: 10000});
         }).then(function () {
             // We delete the login object, so that the password is not
@@ -144,7 +144,7 @@ angular.module("privacyideaApp")
                     ConfigFactory.setRealm("defrealm",
                         realm_params, function (data) {
                             if (data.result.value) {
-                                inform.add("Realm defrealm created.",
+                                inform.add(gettext("Realm defrealm created."),
                                 {type: "info"});
 
                             }

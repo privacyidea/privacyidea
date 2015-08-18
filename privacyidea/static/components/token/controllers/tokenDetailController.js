@@ -6,7 +6,8 @@ myApp.controller("tokenDetailController", function ($scope,
                                                     ValidateFactory,
                                                     AuthFactory,
                                                     ConfigFactory,
-                                                    MachineFactory) {
+                                                    MachineFactory, inform,
+                                                    gettext) {
     $scope.tokenSerial = $stateParams.tokenSerial;
     // This is the parents object
     $scope.selectedToken.serial = $scope.tokenSerial;
@@ -118,7 +119,13 @@ myApp.controller("tokenDetailController", function ($scope,
         }, function (data) {
             $scope.otp1 = "";
             $scope.otp2 = "";
-            $scope.resultResync = data.result.value;
+            if (data.result.value === true) {
+                inform.add(gettext("Token resync successful."),
+                                {type: "info", ttl: 10000});
+            } else {
+                inform.add(gettext("Token resync failed."),
+                                {type: "danger", ttl: 10000});
+            }
             $scope.get();
         });
     };

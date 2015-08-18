@@ -1048,7 +1048,7 @@ def unassign_token(serial, user=None):
 
 
 @log_with(log)
-def resync_token(serial, otp1, otp2, options=None):
+def resync_token(serial, otp1, otp2, options=None, user=None):
     """
     Resyncronize the token of the given serial number by searching the
     otp1 and otp2 in the future otp values.
@@ -1065,7 +1065,7 @@ def resync_token(serial, otp1, otp2, options=None):
     """
     ret = False
 
-    tokenobject_list = get_tokens(serial=serial)
+    tokenobject_list = get_tokens(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
         ret = tokenobject.resync(otp1, otp2, options)
@@ -1126,7 +1126,7 @@ def set_pin(serial, pin, user=None, encrypt_pin=False):
 
 
 @log_with(log)
-def set_pin_user(serial, user_pin):
+def set_pin_user(serial, user_pin, user=None):
     """
     This sets the user pin of a token. This just stores the information of
     the user pin for (e.g. an eTokenNG, Smartcard) in the database
@@ -1138,7 +1138,7 @@ def set_pin_user(serial, user_pin):
     :return: The number of PINs set (usually 1)
     :rtype: int
     """
-    tokenobject_list = get_tokens(serial=serial)
+    tokenobject_list = get_tokens(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
         tokenobject.set_user_pin(user_pin)
@@ -1148,7 +1148,7 @@ def set_pin_user(serial, user_pin):
 
 
 @log_with(log)
-def set_pin_so(serial, so_pin):
+def set_pin_so(serial, so_pin, user=None):
     """
     Set the SO PIN of a smartcard. The SO Pin can be used to reset the
     PIN of a smartcard. The SO PIN is stored in the database, so that it
@@ -1161,7 +1161,7 @@ def set_pin_so(serial, so_pin):
     :return: The number of SO PINs set. (usually 1)
     :rtype: int
     """
-    tokenobject_list = get_tokens(serial=serial)
+    tokenobject_list = get_tokens(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
         tokenobject.set_so_pin(so_pin)

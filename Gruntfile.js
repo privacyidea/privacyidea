@@ -5,7 +5,9 @@ grunt.initConfig({
     pot: {
       files: {
         'po/template.pot': ['privacyidea/static/components/*/views/*.html',
-                            'privacyidea/static/templates/*.html']
+                            'privacyidea/static/templates/*.html',
+                            'privacyidea/static/components/*/controllers/*.js',
+                            'privacyidea/static/*.js']
       }
     },
   },

@@ -338,7 +338,7 @@ myApp.controller("tokenConfigController", function ($scope, $location,
                                                     $rootScope, $state,
                                                     $stateParams,
                                                     ConfigFactory,instanceUrl,
-                                                    inform) {
+                                                    inform, gettext) {
     $scope.defaultSMSProvider = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider";
     $scope.tokentype = $stateParams.tokentype || "hotp";
     $scope.form = {};
@@ -381,7 +381,7 @@ myApp.controller("tokenConfigController", function ($scope, $location,
         });
         ConfigFactory.saveSystemConfig(save_params, function (data) {
             if (data.result.status === true) {
-                inform.add("System Config saved.",
+                inform.add(gettext("System Config saved."),
                                 {type: "info"});
             }
         });
@@ -392,7 +392,7 @@ myApp.controller("tokenConfigController", function ($scope, $location,
 myApp.controller("configController", function ($scope, $location,
                                                $rootScope, $state,
                                                ConfigFactory, instanceUrl,
-                                               inform) {
+                                               inform, gettext) {
     $scope.instanceUrl = instanceUrl;
     $scope.params = {};
     // go to the system view by default
@@ -543,7 +543,7 @@ myApp.controller("configController", function ($scope, $location,
         ConfigFactory.saveSystemConfig($scope.params, function (data) {
             console.log($scope.params);
             console.log(data);
-            inform.add("System Config saved.",
+            inform.add(gettext("System Config saved."),
                                 {type: "info"});
         })
     };

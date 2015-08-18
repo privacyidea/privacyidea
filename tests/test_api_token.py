@@ -387,7 +387,6 @@ class APITokenTestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             self.assertTrue(result.get("value") == 1, result)
 
-
     def test_07_resync(self):
 
         with self.app.test_request_context('/token/init', method="POST",
@@ -437,7 +436,7 @@ class APITokenTestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             self.assertTrue(result.get("value") is True, result)
 
-        # Get the OTP token an inspect the counter
+        # Get the OTP token and inspect the counter
         with self.app.test_request_context('/token/',
                                             method="GET",
                                             query_string=urlencode({"serial": "Resync01"}),
@@ -448,6 +447,57 @@ class APITokenTestCase(MyTestCase):
             value = result.get("value")
             token = value.get("tokens")[0]
             self.assertTrue(token.get("count") == 4, result)
+
+        # Authenticate a user
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username":
+                                                     "selfservice@realm1",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("status"), res.data)
+            # In self.at_user we store the user token
+            self.at_user = result.get("value").get("token")
+
+        # The user fails to resync the token, since it does not belong to him
+        with self.app.test_request_context('/token/resync',
+                                            method="POST",
+                                            data={"serial": "Resync01",
+                                                  "otp1": 254676,
+                                                  "otp2": 287922},
+                                            headers={'Authorization':
+                                                         self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value") is False, result)
+
+        # assign the token to the user selfservice@realm1.
+        with self.app.test_request_context('/token/assign',
+                                            method="POST",
+                                            data={"serial": "Resync01",
+                                                  "user": "selfservice@realm1"},
+                                            headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+
+        # let the user resync the token
+        with self.app.test_request_context('/token/resync',
+                                            method="POST",
+                                            data={"serial": "Resync01",
+                                                  "otp1": 254676,
+                                                  "otp2": 287922},
+                                            headers={'Authorization':
+                                                         self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value") is True, result)
+
 
     def test_08_setpin(self):
         self._create_temp_token("PToken")

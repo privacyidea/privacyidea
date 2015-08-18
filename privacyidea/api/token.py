@@ -467,7 +467,8 @@ def delete_api(serial=None):
     :rtype: json object
     """
     # If the API is called by a user, we pass the User Object to the function
-    res = remove_token(serial, get_user_from_param(request.all_data))
+    user = get_user_from_param(request.all_data)
+    res = remove_token(serial, user=user)
     g.audit_object.log({"success": True})
     return send_result(res)
 
@@ -502,7 +503,6 @@ def reset_api(serial=None):
 @token_blueprint.route('/resync/<serial>', methods=['POST'])
 @prepolicy(check_base_action, request, action=ACTION.RESYNC)
 @log_with(log)
-@admin_required
 def resync_api(serial=None):
     """
     Resync the OTP token by providing two consecutive OTP values.
@@ -516,12 +516,13 @@ def resync_api(serial=None):
     :return: In case of success it returns "value"=True
     :rtype: json object
     """
+    user = get_user_from_param(request.all_data, optional)
     if not serial:
         serial = getParam(request.all_data, "serial", required)
     otp1 = getParam(request.all_data, "otp1", required)
     otp2 = getParam(request.all_data, "otp2", required)
 
-    res = resync_token(serial, otp1, otp2)
+    res = resync_token(serial, otp1, otp2, user=user)
     g.audit_object.log({"success": True})
     return send_result(res)
 
@@ -562,11 +563,11 @@ def setpin_api(serial=None):
     res = 0
     if userpin:
         g.audit_object.add_to_log({'action_detail': "userpin, "})
-        res += set_pin_user(serial, userpin)
+        res += set_pin_user(serial, userpin, user=user)
 
     if sopin:
         g.audit_object.add_to_log({'action_detail': "sopin, "})
-        res += set_pin_so(serial, sopin)
+        res += set_pin_so(serial, sopin, user=user)
 
     if otppin:
         g.audit_object.add_to_log({'action_detail': "otppin, "})

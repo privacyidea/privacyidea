@@ -21,7 +21,7 @@
 angular.module("privacyideaApp")
     .controller("userAddController", function ($scope, userUrl, $state,
                                                $location, ConfigFactory,
-                                               UserFactory, inform){
+                                               UserFactory, inform, gettext){
 
         $scope.formInit = {};
         ConfigFactory.getEditableResolvers(function (data){
@@ -40,7 +40,7 @@ angular.module("privacyideaApp")
             UserFactory.createUser($scope.resolvername, $scope.User,
                 function (data) {
                     console.log(data.result);
-                    inform.add("User created.",
+                    inform.add(gettext("User created."),
                                 {type: "info"});
 
                     // reload the users
@@ -56,7 +56,7 @@ angular.module("privacyideaApp")
                                                    $rootScope, TokenFactory,
                                                    UserFactory, $state,
                                                    instanceUrl,  $location,
-                                                   inform) {
+                                                   inform, gettext) {
         $scope.tokensPerPage = 5;
         $scope.newToken = {"serial": "", pin: ""};
         $scope.params = {page: 1};
@@ -97,7 +97,7 @@ angular.module("privacyideaApp")
             UserFactory.updateUser($scope.resolvername, $scope.User,
             function (data) {
                 if (data.result.value==true) {
-                    inform.add("User updated successfully.",
+                    inform.add(gettext("User updated successfully."),
                                 {type: "info"});
                     // we also need to update the user list
                     $scope._getUsers();
@@ -112,7 +112,7 @@ angular.module("privacyideaApp")
             UserFactory.deleteUser($scope.resolvername, $scope.User.username,
             function (data) {
                 if (data.result.value==true) {
-                    inform.add("User deleted successfully.",
+                    inform.add(gettext("User deleted successfully."),
                                 {type: "info"});
                     $scope._getUsers();
                     $location.path("/user/list");

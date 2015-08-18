@@ -77,14 +77,15 @@ myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
         }
     ]
 );
-myApp.config(['$httpProvider', function ($httpProvider, inform) {
+myApp.config(['$httpProvider', function ($httpProvider, inform, gettext) {
     $httpProvider.interceptors.push(function ($q, inform) {
         return {
             responseError: function (rejection) {
                 if(rejection.status === 0) {
                     // The API is offline, not reachable
-                    inform.add("The privacyIDEA system seems to be offline." +
-                        " The API is not reachable!", {type: "danger", ttl: 10000});
+                    inform.add(gettext("The privacyIDEA system seems to be" +
+                    " offline. The API is not reachable!"),
+                        {type: "danger", ttl: 10000});
                     return;
                 }
                 return $q.reject(rejection);

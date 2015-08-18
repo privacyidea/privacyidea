@@ -18,7 +18,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.factory("PolicyTemplateFactory", function($http, inform){
+myApp.factory("PolicyTemplateFactory", function($http, inform, gettext){
     var URL = "https://raw.githubusercontent.com/privacyidea/policy-templates/master/templates/";
     return {
         setUrl: function(url) {
@@ -30,7 +30,7 @@ myApp.factory("PolicyTemplateFactory", function($http, inform){
                 .success(callback).error(function (error) {
                     console.log("Error fetching Policy Templates.");
                     console.log(error);
-                    inform.add("Error fetching policy templates.",
+                    inform.add(gettext("Error fetching policy templates."),
                                 {type: "danger", ttl:10000});
             });
         },
@@ -39,7 +39,8 @@ myApp.factory("PolicyTemplateFactory", function($http, inform){
             $http.get(URL + templateName + ".json")
                 .success(callback).error(function (error) {
                     console.log(error);
-                    inform.add("Error fetching policy template " + templateName,
+                    inform.add(gettext("Error fetching policy template ")
+                        + templateName,
                                 {type: "danger", ttl:10000});
             });
         }
