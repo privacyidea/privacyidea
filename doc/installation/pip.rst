@@ -27,7 +27,7 @@ Please see the section :ref:`cfgfile` for a quick setup of your configuration.
 Then create the encryption key and the signing keys::
 
    pi-manage.py create_enckey
-   pi-manage.py create_signkey
+   pi-manage.py create_audit_keys
 
 Create the database and the first administrator::
 
