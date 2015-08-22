@@ -63,6 +63,10 @@ Create the database and encryption key:
     ./pi-manage.py createdb
     ./pi-manage.py create_enckey
 
+Create the key for the audit log:
+
+    ./pi-manage.py create_audit_keys
+
 Create the first administrator:
 
     ./pi-manage.py admin add <username> <email>
