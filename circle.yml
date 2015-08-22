@@ -4,7 +4,7 @@ machine:
 
 dependencies:
   pre:
-    - sudo apt-get install python-sphinx python-all
+    - sudo apt-get update; sudo apt-get install python-sphinx python-all
 #    - sudo add-apt-repository -y ppa:privacyidea/privacyidea
 #    - sudo apt-get update
 
