@@ -50,6 +50,7 @@ in addition all offline information is passed to the client and cached on the
 client so that the token can be used to authenticate without the privacyIDEA
 server available.
 
+Read more about how to use PAM to do :ref:`openvpn`.
 
 .. _freeradius_plugin:
 
