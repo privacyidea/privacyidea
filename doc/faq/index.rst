@@ -115,7 +115,7 @@ environment do::
 
 This will create a subdirectory *node_modules*.
 
-To simpley run the German translatio do::
+To simply run the German translation do::
 
    make translate
 
@@ -140,4 +140,23 @@ Finally you can add the translation to the javascript translation file
    *translation* or issue a pull request.
 
 
+How can I setup HA (High Availability) with privacyIDEA?
+--------------------------------------------------------
+
+.. index:: HA
+
+privacyIDEA does not track any state internally. All information is kept in
+the database. Thus you can configure several privacyIDEA instances against one
+DBMS [#dbms]_ and have the DBMS do the high availability.
+
+
+.. note:: The passwords and OTP key material in the database is encrypted
+   using the *encKey*. Thus it is possible to put the database onto a DBMS
+   that is controlled by another database administrator in another department.
+
+Read more about :ref:`ha_setups`.
+
+.. rubric:: Footnotes
+
+.. [#dbms] Database management system
 
