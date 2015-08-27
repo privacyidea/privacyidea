@@ -111,7 +111,8 @@ def create_tokenclass_object(db_token):
 
 def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                         serial=None, active=None, resolver=None,
-                        rollout_state=None, description=None):
+                        rollout_state=None, description=None, revoked=None,
+                        locked=None):
     """
     This function create the sql query for getting tokens. It is used by
     get_tokens and get_tokens_paginate.
@@ -190,6 +191,20 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
         else:
             sql_query = sql_query.filter(Token.active == False)
 
+    if revoked is not None:
+        # Filter revoked or not revoked tokens
+        if revoked is True:
+            sql_query = sql_query.filter(Token.revoked == True)
+        else:
+            sql_query = sql_query.filter(Token.revoked == False)
+
+    if locked is not None:
+        # Filter revoked or not revoked tokens
+        if locked is True:
+            sql_query = sql_query.filter(Token.locked == True)
+        else:
+            sql_query = sql_query.filter(Token.locked == False)
+
     if rollout_state is not None:
         # Filter for tokens with the given rollout state
         sql_query = sql_query.filter(Token.rollout_state == rollout_state)
@@ -200,7 +215,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
 #@cache.memoize(10)
 def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
                serial=None, active=None, resolver=None, rollout_state=None,
-               count=False):
+               count=False, revoked=None, locked=None):
     """
     (was getTokensOfType)
     This function returns a list of token objects of a
@@ -234,6 +249,11 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     :param count: If set to True, only the number of the result and not the
         list is returned.
     :type count: bool
+    :param revoked: Only search for revoked tokens or only for not revoked
+        tokens
+    :type revoked: bool
+    :param locked: Only search for locked tokens or only for not locked tokens
+    :type locked: bool
 
     :return: A list of tokenclasses (lib.tokenclass)
     :rtype: list
@@ -243,7 +263,8 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
                                     assigned=assigned, user=user,
                                     serial=serial, active=active,
                                     resolver=resolver,
-                                    rollout_state=rollout_state)
+                                    rollout_state=rollout_state,
+                                    revoked=revoked, locked=locked)
 
     # Decide, what we are supposed to return
     if count is True:
@@ -1165,6 +1186,30 @@ def set_pin_so(serial, so_pin, user=None):
 
     for tokenobject in tokenobject_list:
         tokenobject.set_so_pin(so_pin)
+        tokenobject.save()
+
+    return len(tokenobject_list)
+
+
+@log_with(log)
+@check_user_or_serial
+def revoke_token(serial, user=None):
+    """
+    Revoke a token.
+
+    :param serial: The serial number of the token
+    :type serial: basestring
+    :param enable: False is the token should be disabled
+    :type enable: bool
+    :param user: all tokens of the user will be enabled or disabled
+    :type user: User object
+    :return: Number of tokens that were enabled/disabled
+    :rtype:
+    """
+    tokenobject_list = get_tokens(user=user, serial=serial)
+
+    for tokenobject in tokenobject_list:
+        tokenobject.revoke()
         tokenobject.save()
 
     return len(tokenobject_list)

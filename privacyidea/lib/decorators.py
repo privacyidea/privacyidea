@@ -24,6 +24,28 @@ log = logging.getLogger(__name__)
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.error import ParameterError
 from flask import request
+from gettext import gettext as _
+
+
+def check_token_locked(func):
+    """
+    Decorator to check if a token is locked or not.
+    The decorator is to be used in token class methods.
+    It can be used to avoid performing an action on a locked token.
+
+    If the token is locked, a TokenAdminError is raised.
+    """
+    @functools.wraps(func)
+    def token_locked_wrapper(*args, **kwds):
+        # The token object
+        token = args[0]
+        if token.is_locked():
+            raise TokenAdminError(_("This action is not possible, since the "
+                                    "token is locked"), id=1007)
+        f_result = func(*args, **kwds)
+        return f_result
+
+    return token_locked_wrapper
 
 
 def check_user_or_serial(func):
@@ -38,7 +60,7 @@ def check_user_or_serial(func):
         # If there is no user and serial keyword parameter and if
         # there is no normal argument, we do not have enough information
         serial = kwds.get("serial")
-        user= kwds.get("user")
+        user = kwds.get("user")
         if serial is None and (len(args) == 0 or args[0] is None):
             # We have no serial! The serial would be the first arg
             if user is None or (user is not None and user.is_empty()):
@@ -63,7 +85,7 @@ def check_user_or_serial_in_request(func):
         user = request.all_data.get("user")
         serial = request.all_data.get("serial")
         if not serial and not user:
-            raise ParameterError("You need to specify a serial or a user.")
+            raise ParameterError(_("You need to specify a serial or a user."))
         f_result = func(*args, **kwds)
         return f_result
 

@@ -263,3 +263,15 @@ attributes in the user store.
 
 .. note:: To be able to edit the attributes, the resolver must be defined as
    editable.
+
+
+revoke
+~~~~~~
+
+type: bool
+
+Tokens can be revoked. Usually this means the token is disabled and locked.
+A locked token can not be modified anymore. It can only be deleted.
+
+Certain token types like *certificate* may define special actions when
+revoking a token.

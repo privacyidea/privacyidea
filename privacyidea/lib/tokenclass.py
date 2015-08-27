@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2015-08-27 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Add revocation of token
 #  * Nov 27, 2014 Cornelius Kölbel <cornelius@privacyidea.org>
 #                 Migration to flask
 #                 Rewrite of methods
 #                 100% test code coverage
-#  * Oct676
-#  03, 2014 Cornelius Kölbel <cornelius@privacyidea.org>
+#  * Oct 03, 2014 Cornelius Kölbel <cornelius@privacyidea.org>
 #                 Move the QR stuff in getInitDetail into the token classes
 #  * Sep 17, 2014 Cornelius Kölbel, cornelius@privacyidea.org
 #                 Improve the return value of the InitDetail
@@ -63,7 +64,7 @@ from .challenge import get_challenges
 from .crypto import encryptPassword
 from .crypto import decryptPassword
 from .policydecorators import libpolicy, auth_otppin
-
+from .decorators import check_token_locked
 
 DATE_FORMAT = "%d/%m/%y %H:%M"
 optional = True
@@ -122,7 +123,8 @@ class TokenClass(object):
 
     def get_type(self):
         return self.token.tokentype
-    
+
+    @check_token_locked
     def set_user(self, user, report=None):
         """
         Set the user attributes (uid, resolvername, resolvertype) of a token.
@@ -161,6 +163,7 @@ class TokenClass(object):
                                realm=realmname)
         return user_object
 
+    @check_token_locked
     def set_user_identifiers(self, uid, resolvername, resolvertype):
         """
         (was setUid)
@@ -174,6 +177,7 @@ class TokenClass(object):
         self.token.resolver_type = resolvertype
         self.token.user_id = uid
 
+    @check_token_locked
     def reset(self):
         """
         Reset the failcounter
@@ -181,6 +185,7 @@ class TokenClass(object):
         self.token.failcount = 0
         self.token.save()
 
+    @check_token_locked
     def add_init_details(self, key, value):
         """
         (was addInfo)
@@ -189,6 +194,7 @@ class TokenClass(object):
         self.init_details[key] = value
         return self.init_details
 
+    @check_token_locked
     def set_init_details(self, details):
         if type(details) not in [dict]:
             raise Exception("Details setting: wrong data type - must be dict")
@@ -205,6 +211,7 @@ class TokenClass(object):
         """
         return self.init_details
 
+    @check_token_locked
     def set_tokeninfo(self, info):
         """
         Set the tokeninfo field in the DB. Old values will be deleted.
@@ -224,6 +231,7 @@ class TokenClass(object):
 
         self.token.set_info(info)
 
+    @check_token_locked
     def add_tokeninfo(self, key, value, value_type=None):
         """
         Add a key and a value to the DB tokeninfo
@@ -239,6 +247,7 @@ class TokenClass(object):
                 add_info[key] = encryptPassword(value)
         self.token.set_info(add_info)
 
+    @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):
         """
         This checks the OTP value, AFTER the upper level did
@@ -294,6 +303,7 @@ class TokenClass(object):
         return False, "get_multi_otp not implemented for this tokentype", {}
 
     @libpolicy(auth_otppin)
+    @check_token_locked
     def check_pin(self, pin, user=None, options=None):
         """
         Check the PIN of the given Password.
@@ -318,6 +328,7 @@ class TokenClass(object):
         res = self.token.check_pin(pin)
         return res
 
+    @check_token_locked
     def authenticate(self, passw, user=None, options=None):
         """
         High level interface which covers the check_pin and check_otp
@@ -436,6 +447,7 @@ class TokenClass(object):
                 otpkeylen = 20
         return generate_otpkey(otpkeylen)
 
+    @check_token_locked
     def set_description(self, description):
         """
         Set the description on the database level
@@ -521,25 +533,32 @@ class TokenClass(object):
     def get_tokentype(self):
         return self.token.tokentype
 
+    @check_token_locked
     def set_so_pin(self, soPin):
         self.token.set_so_pin(soPin)
 
+    @check_token_locked
     def set_user_pin(self, userPin):
         self.token.set_user_pin(userPin)
 
+    @check_token_locked
     def set_otpkey(self, otpKey):
         self.token.set_otpkey(otpKey)
 
+    @check_token_locked
     def set_otplen(self, otplen):
         self.token.otplen = int(otplen)
 
+    @check_token_locked
     def get_otplen(self):
         return self.token.otplen
 
+    @check_token_locked
     def set_otp_count(self, otpCount):
         self.token.count = int(otpCount)
         self.token.save()
 
+    @check_token_locked
     def set_pin(self, pin, encrypt=False):
         """
         set the PIN of a token.
@@ -556,19 +575,55 @@ class TokenClass(object):
     def get_pin_hash_seed(self):
         return self.token.pin_hash, self.token.pin_seed
 
+    @check_token_locked
     def set_pin_hash_seed(self, pinhash, seed):
         self.token.pin_hash = pinhash
         self.token.pin_seed = seed
 
+    @check_token_locked
     def enable(self, enable=True):
         self.token.active = enable
 
+    def revoke(self):
+        """
+        This revokes the token.
+        By default it
+        1. sets the revoked-field
+        2. set the locked field
+        3. disables the token.
+
+        Some token types may revoke a token without locking it.
+        """
+        self.token.revoked = True
+        self.token.locked = True
+        self.token.active = False
+
+    def is_revoked(self):
+        """
+        Check if the token is in the revoked state
+
+        :return: True, if the token is revoked
+        """
+        return self.token.revoked
+
+    def is_locked(self):
+        """
+        Check if the token is in a locked state
+        A locked token can not be modified
+
+        :return: True, if the token is locked.
+        """
+        return self.token.locked
+
+    @check_token_locked
     def set_maxfail(self, maxFail):
         self.token.maxfail = maxFail
 
+    @check_token_locked
     def set_hashlib(self, hashlib):
         self.add_tokeninfo("hashlib", hashlib)
 
+    @check_token_locked
     def inc_failcount(self):
         if self.token.failcount < self.token.maxfail:
             self.token.failcount = (self.token.failcount + 1)
@@ -579,12 +634,14 @@ class TokenClass(object):
             raise TokenAdminError("Token Fail Counter update failed", id=1106)
         return self.token.failcount
 
+    @check_token_locked
     def set_count_window(self, countWindow):
         self.token.count_window = int(countWindow)
 
     def get_count_window(self):
         return self.token.count_window
 
+    @check_token_locked
     def set_sync_window(self, syncWindow):
         self.token.sync_window = int(syncWindow)
 
@@ -651,6 +708,7 @@ class TokenClass(object):
     def del_tokeninfo(self, key=None):
         self.token.del_info(key)
 
+    @check_token_locked
     def set_count_auth_success_max(self, count):
         """
         Sets the counter for the maximum allowed successful logins
@@ -660,6 +718,7 @@ class TokenClass(object):
         """
         self.add_tokeninfo("count_auth_success_max", int(count))
 
+    @check_token_locked
     def set_count_auth_success(self, count):
         """
         Sets the counter for the occurred successful logins
@@ -669,6 +728,7 @@ class TokenClass(object):
         """
         self.add_tokeninfo("count_auth_success", int(count))
 
+    @check_token_locked
     def set_count_auth_max(self, count):
         """
         Sets the counter for the maximum allowed login attemps
@@ -678,6 +738,7 @@ class TokenClass(object):
         """
         self.add_tokeninfo("count_auth_max", int(count))
 
+    @check_token_locked
     def set_count_auth(self, count):
         """
         Sets the counter for the occurred login attepms
@@ -725,6 +786,7 @@ class TokenClass(object):
         ret = self.get_tokeninfo("validity_period_end", "")
         return ret
 
+    @check_token_locked
     def set_validity_period_end(self, end_date):
         """
         sets the end date of the validity period for a token
@@ -754,6 +816,7 @@ class TokenClass(object):
         ret = self.get_tokeninfo("validity_period_start", "")
         return ret
 
+    @check_token_locked
     def set_validity_period_start(self, start_date):
         """
         sets the start date of the validity period for a token
@@ -773,6 +836,7 @@ class TokenClass(object):
 
         self.add_tokeninfo("validity_period_start", start_date)
 
+    @check_token_locked
     def inc_count_auth_success(self):
         """
         Increase the counter, that counts successful authentications
@@ -782,6 +846,7 @@ class TokenClass(object):
         self.set_count_auth_success(count)
         return count
 
+    @check_token_locked
     def inc_count_auth(self):
         """
         Increase the counter, that counts authentications - successful and
@@ -844,6 +909,7 @@ class TokenClass(object):
         return True
 
     @log_with(log)
+    @check_token_locked
     def inc_otp_counter(self, counter=None, reset=True):
         """
         Increase the otp counter and store the token in the database
@@ -887,7 +953,6 @@ class TokenClass(object):
         """
         return -1
 
-
     def split_pin_pass(self, passw, user=None, options=None):
         """
         Split the password into the token PIN and the OTP value
@@ -915,7 +980,7 @@ class TokenClass(object):
             otpval = passw[-otplen:]
         else:
             pin = passw[otplen:]
-            otpval = passw[0:otplen]#
+            otpval = passw[0:otplen]
 
         return True, pin, otpval
 
@@ -1031,7 +1096,7 @@ class TokenClass(object):
     challenge_janitor       challenge_janitor
 
     """
-        # challenge interfaces starts here
+    # challenge interfaces starts here
     def is_challenge_request(self, passw, user=None, options=None):
         """
         This method checks, if this is a request, that triggers a challenge.
@@ -1098,6 +1163,7 @@ class TokenClass(object):
 
         return challenge_response
 
+    @check_token_locked
     def check_challenge_response(self, user=None, passw=None, options=None):
         """
         This method verifies if there is a matching challenge for the given

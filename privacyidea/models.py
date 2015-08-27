@@ -3,6 +3,9 @@
 # Nov 11, 2014 Cornelius Kölbel, info@privacyidea.org
 # http://www.privacyidea.org
 #
+#  2015-08-27 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Add revocation of token
+#
 # privacyIDEA is a fork of LinOTP. This model definition
 # is based on the LinOTP model.
 #
@@ -107,7 +110,14 @@ class Token(MethodsMixin, db.Model):
     maxfail = db.Column(db.Integer(),
                         default=10)
     active = db.Column(db.Boolean(),
+                       nullable=False,
                        default=True)
+    revoked = db.Column(db.Boolean(),
+                        nullable=False,
+                        default=False)
+    locked = db.Column(db.Boolean(),
+                       nullable=False,
+                       default=False)
     failcount = db.Column(db.Integer(),
                           default=0)
     count = db.Column(db.Integer(),
@@ -119,8 +129,8 @@ class Token(MethodsMixin, db.Model):
     rollout_state = db.Column(db.Unicode(10),
                               default=u'')
     info = db.relationship('TokenInfo',
-                              lazy='dynamic',
-                              backref='info')
+                           lazy='dynamic',
+                           backref='info')
         
     def __init__(self, serial, tokentype=u"",
                  isactive=True, otplen=6,
@@ -134,6 +144,8 @@ class Token(MethodsMixin, db.Model):
         self.failcount = 0
         self.maxfail = 10
         self.active = isactive
+        self.revoked = False
+        self.locked = False
         self.count_window = 10
         self.otplen = otplen
         self.pin_seed = u""
@@ -418,6 +430,8 @@ class Token(MethodsMixin, db.Model):
 
         ret['maxfail'] = self.maxfail
         ret['active'] = self.active
+        ret['revoked'] = self.revoked
+        ret['locked'] = self.locked
         ret['failcount'] = self.failcount
         ret['count'] = self.count
         ret['count_window'] = self.count_window

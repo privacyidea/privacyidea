@@ -69,6 +69,17 @@ Tokens can be enabled and disabled. Disabled tokens can not be
 used to authenticate. The ``disable`` action allows the 
 administrator to disable tokens.
 
+revoke
+~~~~~~
+
+type: bool
+
+Tokens can be revoked. Usually this means the token is disabled and locked.
+A locked token can not be modified anymore. It can only be deleted.
+
+Certain token types like *certificate* may define special actions when
+revoking a token.
+
 set
 ~~~
 

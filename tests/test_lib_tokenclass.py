@@ -601,3 +601,14 @@ class TokenBaseTestCase(MyTestCase):
 
         sshkey = token.get_tokeninfo("sshkey")
         self.assertTrue(sshkey == data, sshkey)
+
+    def test_31_revoke(self):
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = TokenClass(db_token)
+        token.revoke()
+        self.assertTrue(token.is_revoked())
+        self.assertTrue(token.is_locked())
+        self.assertTrue(token.token.active is False)
+        # A revoked token can not be enabled anymore
+        self.assertRaises(Exception, token.enable)
+

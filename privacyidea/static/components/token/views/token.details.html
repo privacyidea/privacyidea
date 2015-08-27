@@ -26,16 +26,25 @@
             <span class="label label-danger" ng-hide="token.active"
                     translate>disabled
             </span>
+            <span class="label label-danger" ng-show="token.locked"
+                  translate>locked</span>
+            <span class="label label-danger" ng-show="token.revoked"
+                  translate>revoked</span>
             <td>
             <span ng-show="token.active"
                   ng-click="disable()">
                 <button class="btn btn-danger"
                         translate>Disable</button>
             </span>
-            <span ng-show="!token.active"
+            <span ng-show="!token.active && !token.locked"
                   ng-click="enable()">
                 <button class="btn btn-success"
                         translate>Enable</button>
+            </span>
+            <span ng-show="!token.revoked"
+                  ng-click="revoke()">
+                <button class="btn btn-danger" translate>
+                    Revoke</button>
             </span>
             </td>
         </tr>

@@ -167,6 +167,7 @@ class ACTION():
     RESOLVERDELETE = "resolverdelete"
     RESOLVERWRITE = "resolverwrite"
     RESYNC = "resync"
+    REVOKE = "revoke"
     SET = "set"
     SETPIN = "setpin"
     SETREALM = "setrealm"
@@ -602,6 +603,8 @@ def get_static_policy_definitions(scope=None):
                            'desc': _(
                                'Admin is allowed to reset the Failcounter of '
                                'a token.')},
+            ACTION.REVOKE: {'tpye': 'bool',
+                            'desc': _("Admin is allowed to revoke a token")},
             ACTION.ASSIGN: {'type': 'bool',
                             'desc': _(
                                 'Admin is allowed to assign a token to a '
@@ -779,6 +782,8 @@ def get_static_policy_definitions(scope=None):
             ACTION.RESYNC: {'type': 'bool',
                             "desc": _("The user is allowed to resyncronize his "
                                       "tokens.")},
+            ACTION.REVOKE: {'tpye': 'bool',
+                            'desc': _("The user is allowed to revoke a token")},
             ACTION.RESET: {'type': 'bool',
                            'desc': _('The user is allowed to reset the '
                                      'failcounter of his tokens.')},

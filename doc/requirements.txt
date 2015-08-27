@@ -22,7 +22,7 @@ gunicorn==19.3.0
 itsdangerous==0.24
 Jinja2==2.7.3
 ldap3==0.9.8.4
-Mako==1.0.0
+Mako>=0.9.1
 MarkupSafe==0.23
 mock==1.0.1
 MySQL-python==1.2.5

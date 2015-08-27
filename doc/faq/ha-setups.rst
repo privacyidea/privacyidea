@@ -22,7 +22,8 @@ Using one central DBMS
 .. figure:: images/ha-one-dbms.png
    :width: 500
 
-If you already have a high available, redundant DBMS which might even be
+If you already have a high available, redundant DBMS -
+like MariaDB Galera Cluster - which might even be
 addressable via one cluster IP address the configuration is fairly simple.
 In such a case you can configure the same ``SQLALCHEMY_DATABASE_URI`` on all
 instances.

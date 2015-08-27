@@ -894,3 +894,23 @@ class APITokenTestCase(MyTestCase):
             detail = json.loads(res.data).get("detail")
             certificate = detail.get("certificate")
             self.assertTrue("-----BEGIN CERTIFICATE-----" in certificate)
+
+    def test_18_revoke_token(self):
+        self._create_temp_token("RevToken")
+
+        # revoke token
+        with self.app.test_request_context('/token/revoke/RevToken',
+                                           method='POST',
+                                           data={},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value") == 1, result)
+
+        # Try to enable the revoked token
+        with self.app.test_request_context('/token/enable/RevToken',
+                                           method='POST',
+                                           data={},
+                                           headers={'Authorization': self.at}):
+            self.assertRaises(Exception, self.app.full_dispatch_request)

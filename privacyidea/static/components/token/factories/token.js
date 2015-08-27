@@ -129,6 +129,13 @@ angular.module("TokenModule", ["privacyideaAuth"])
                     }).success(callback
                 ).error(error_func)
             },
+            revoke: function(serial, callback) {
+                $http.post(tokenUrl + "/revoke", {"serial": serial},
+                    {
+                        headers: {'Authorization': AuthFactory.getAuthToken()}
+                    }).success(callback
+                ).error(error_func)
+            },
             lost: function(serial, callback) {
                 $http.post(tokenUrl + "/lost/" + serial, {},
                     {

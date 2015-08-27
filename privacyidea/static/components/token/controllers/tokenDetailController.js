@@ -53,7 +53,9 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.disable = function () {
         TokenFactory.disable($scope.tokenSerial, $scope.get);
     };
-
+    $scope.revoke = function () {
+        TokenFactory.revoke($scope.tokenSerial, $scope.get);
+    };
     $scope.set = function (key, value) {
         TokenFactory.set($scope.tokenSerial, key, value, $scope.get);
     };

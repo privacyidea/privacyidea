@@ -59,7 +59,7 @@ setup(
                       "Flask-SQLAlchemy>=2.0",
                       "Flask-Script>=2.0.5",
                       "Jinja2>=2.7.3",
-                      "Mako>=1.0.0",
+                      "Mako>=0.9.1",
                       "MarkupSafe>=0.23",
                       "MySQL-python>=1.2.5",
                       "Pillow>=2.6.1",
@@ -121,7 +121,8 @@ setup(
                   "migrations/versions/4f32a4e1bf33_.py",
                   "migrations/versions/2181294eed0b_.py",
                   "migrations/versions/e5cbeb7c177_.py",
-                  "migrations/versions/4d9178fa8336_.py"])
+                  "migrations/versions/4d9178fa8336_.py",
+		  "migrations/versions/20969b4cbf06_.py"])
                 ],
     classifiers=["Framework :: Flask",
                  "License :: OSI Approved :: "

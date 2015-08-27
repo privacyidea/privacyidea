@@ -24,10 +24,11 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #    
-'''contains Errors and Exceptions
-'''
+"""
+contains Errors and Exceptions
+"""
 
-
+from gettext import gettext as _
 import logging
 log = logging.getLogger(__name__)
 
@@ -140,6 +141,7 @@ class SelfserviceException(privacyIDEAError):
 
 
 class ParameterError(privacyIDEAError):
-    USER_OR_SERIAL = 'You either need to provide user or serial'
+    USER_OR_SERIAL = _('You either need to provide user or serial')
+
     def __init__(self, description="unspecified parameter error!", id=905):
         privacyIDEAError.__init__(self, description=description, id=id)

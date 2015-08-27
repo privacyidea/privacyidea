@@ -42,6 +42,7 @@ from lib.utils import (optional,
 from ..lib.user import get_user_from_param
 from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          unassign_token, remove_token, enable_token,
+                         revoke_token,
                          reset_token, resync_token, set_pin_so, set_pin_user,
                          set_pin, set_description, set_count_window,
                          set_sync_window, set_count_auth,
@@ -391,6 +392,38 @@ def unassign_api():
     res = unassign_token(serial, user=user)
     g.audit_object.log({"success": True})
     return send_result(res)
+
+
+@token_blueprint.route('/revoke', methods=['POST'])
+@token_blueprint.route('/revoke/<serial>', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.REVOKE)
+@log_with(log)
+def revoke_api(serial=None):
+    """
+    Revoke a single token or all the tokens of a user.
+    A revoked token will usually be locked. A locked token can not be used
+    anymore.
+    For certain token types additional actions might occur when revoking a
+    token.
+
+    :param serial: the serial number of the single token to revoke
+    :type serial: basestring
+    :param user: The login name of the user
+    :type user: basestring
+    :param realm: the realm name of the user
+    :type realm: basestring
+    :return: In case of success it returns the number of revoked
+        tokens in "value".
+    :rtype: json object
+    """
+    user = get_user_from_param(request.all_data, optional)
+    if not serial:
+        serial = getParam(request.all_data, "serial", optional)
+
+    res = revoke_token(serial, user=user)
+    g.audit_object.log({"success": res > 0})
+    return send_result(res)
+
 
 
 @token_blueprint.route('/enable', methods=['POST'])
