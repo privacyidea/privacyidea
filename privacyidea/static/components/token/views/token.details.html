@@ -52,6 +52,7 @@
             button-text="{{ 'Set max fail'|translate}}"
             token-data="{{ token.maxfail }}"
             token-key="max_failcount"
+            token-locked="{{ token.locked }}"
             input-pattern="[0-9]*"
             callback-cancel="get()"
             callback="set(key, value)"
@@ -87,6 +88,7 @@
             button-text="{{ 'Set count window'|translate }}"
             token-data="{{ token.count_window }}"
             token-key="count_window"
+            token-locked="{{ token.locked }}"
             input-pattern="[0-9]*"
             callback-cancel="get()"
             callback="set(key, value)"
@@ -96,6 +98,7 @@
             button-text="{{ 'Set sync window'|translate }}"
             token-data="{{ token.sync_window }}"
             token-key="sync_window"
+            token-locked="{{ token.locked }}"
             input-pattern="[0-9]*"
             callback-cancel="get()"
             callback="set(key, value)"
@@ -105,6 +108,7 @@
         <tr token-data-edit text="{{ 'Description'|translate }}"
             button-text="{{ 'Set description'|translate }}"
             token-data="{{ token.description }}"
+            token-locked="{{ token.locked }}"
             token-key="description"
             callback-cancel="get()"
             callback="set(key, value)"
@@ -182,7 +186,7 @@
                 </div>
             </td>
             <td>
-                <div ng-show="loggedInUser.role == 'admin'">
+                <div ng-show="loggedInUser.role == 'admin' && !token.locked">
                     <button class="btn btn-primary"
                             ng-hide="editTokenInfo"
                             ng-click="editTokenInfo=1"
@@ -204,7 +208,7 @@
         <tr>
             <td>Realms</td>
             <td><span ng-hide="editTokenRealm">
-            <ul ng-click="editTokenRealm = true;">
+            <ul ng-click="!token.locked ? editTokenRealm = true : null">
                 <li ng-repeat="realm in token.realms">{{ realm }}</li>
             </ul>
             </span>
@@ -221,7 +225,7 @@
                 </span></span>
             </td>
             <td>
-                <div ng-show="loggedInUser.role == 'admin'">
+                <div ng-show="loggedInUser.role == 'admin' && !token.locked">
                     <button class="btn btn-primary"
                             ng-hide="editTokenRealm"
                             ng-click="startEditRealm()"
@@ -243,7 +247,8 @@
 
         <!-- =================== TOKEN FUNCTIONS =============================== -->
 
-        <tr ng-hide="['spass', 'registration'].indexOf(token.tokentype) >= 0">
+        <tr ng-hide="['spass', 'registration'].indexOf(token.tokentype) >= 0
+            || token.locked">
             <td>
                 <input type="text" ng-model="otp1"
                        class="form-control"
@@ -265,7 +270,7 @@
             </td>
         </tr>
 
-        <tr>
+        <tr ng-hide="token.locked">
             <td>
                 <input type="password" ng-model="pin1"
                        class="form-control"
@@ -287,7 +292,7 @@
             </td>
         </tr>
 
-        <tr>
+        <tr ng-hide="token.locked">
             <td></td>
             <td ng-hide="token.tokentype == 'registration'">
                 <input type="text" ng-model="testPassword"
@@ -325,7 +330,8 @@
             realmname: token.user_realm})">
                     {{ token.username }}</a></td>
                 <td>
-                    <button ng-click="unassign()"
+                    <button ng-hide="token.locked"
+                            ng-click="unassign()"
                             class="btn btn-warning">
                         <div class="glyphicon glyphicon-resize-full"
                                 translate>Unassign User
@@ -349,7 +355,7 @@
             </tr>
         </table>
     </div>
-    <div ng-show="loggedInUser.role== 'user'">
+    <div ng-show="loggedInUser.role== 'user' && !token.locked">
         <button ng-click="unassign()"
                 class="btn btn-warning">
             <div class="glyphicon glyphicon-resize-full"
@@ -359,8 +365,11 @@
     </div>
 </div>
 
-<h4 ng-hide="token.user_id" translate>Assign User</h4>
-<form ng-hide="token.user_id" name="formAssignToken" role="form" validate>
+<h4 ng-hide="token.user_id || token.locked" translate>
+    Assign User</h4>
+<form ng-hide="token.user_id || token.locked"
+      name="formAssignToken"
+      role="form" validate>
     <div assign-user new-user-object="newUser" realms="realms"></div>
 
     <div class="text-center">
@@ -471,9 +480,11 @@
         </table>
     </div>
 
-    <h4 translate>Attach to a new Machine</h4>
+    <h4 translate ng-hide="token.locked">Attach to a new Machine</h4>
 
-    <form name="formAttachMachine" role="form" validate>
+    <form name="formAttachMachine" role="form"
+          ng-hide="token.locked"
+          validate>
         <div attach-machine new-machine="newMachine"></div>
 
         <div class="form-group">

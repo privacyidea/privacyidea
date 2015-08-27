@@ -1,7 +1,7 @@
-<td>{{ text }}</td>
+<td>{{ text }} </td>
 
 <td><span ng-hide="editFlag"
-        ng-click="editFlag = true;">
+        ng-click="tokenLocked == 'false' ? editFlag = true: null">
     {{ tokenData }}
     </span>
     <form name="tokenDataForm" role="form" ng-show="editFlag" validate>
@@ -10,7 +10,7 @@
     </form>
 </td>
 
-<td><div ng-hide="loggedInUser.role == 'user'">
+<td><div ng-hide="loggedInUser.role == 'user' || tokenLocked == 'true' ">
     <button ng-show="editFlag"
             class="btn btn-primary"
             ng-click="callback({key: tokenKey, value: tokenData}); editFlag =
