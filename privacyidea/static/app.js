@@ -29,7 +29,7 @@ myApp = angular.module("privacyideaApp",
         'privacyideaApp.machineStates',
         'privacyideaApp.loginStates',
         'isteven-multi-select', 'angularFileUpload',
-        'inform', 'gettext']);
+        'inform', 'gettext', 'cfp.hotkeys']);
 myApp.config(function ($urlRouterProvider) {
     // For any unmatched url, redirect to /token
     $urlRouterProvider.otherwise("/token/list");

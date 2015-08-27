@@ -20,7 +20,7 @@
  */
 myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
                                               $scope, $location, AuthFactory,
-                                              $rootScope) {
+                                              $rootScope, gettext, hotkeys) {
     $scope.params = {page: 1, sortdir: "asc"};
     $scope.reverse = false;
     $scope.loggedInUser = AuthFactory.getUser();
@@ -76,9 +76,27 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
 
 myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                                                     $stateParams, AuthFactory,
-                                                    UserFactory,
+                                                    UserFactory, $state,
                                                     ConfigFactory, instanceUrl,
-                                                    $http) {
+                                                    $http, hotkeys, gettext) {
+
+    hotkeys.bindTo($scope).add({
+        combo: 'alt+e',
+        description: gettext('Enroll a new token'),
+        callback: function (event, hotkey) {
+            event.preventDefault();
+            $state.go('token.enroll');
+            $scope.enrolledToken = null;
+        }
+    });
+    hotkeys.bindTo($scope).add({
+        combo: 'alt+r',
+        description: gettext('Roll the token'),
+        callback: function () {
+            $scope.enrollToken();
+        }
+    });
+
     $scope.loggedInUser = AuthFactory.getUser();
     $scope.newUser = {};
     $scope.tempData = {};

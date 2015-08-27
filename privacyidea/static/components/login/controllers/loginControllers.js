@@ -24,7 +24,30 @@ angular.module("privacyideaApp")
                                       $scope, $http, $location,
                                       authUrl, AuthFactory, $rootScope,
                                       $state, ConfigFactory, inform,
-                                      PolicyTemplateFactory, gettext) {
+                                      PolicyTemplateFactory, gettext, hotkeys) {
+
+    hotkeys.add({
+        combo: 'alt+e',
+        description: gettext('Enroll a new token'),
+        callback: function(event, hotkey) {
+            event.preventDefault();
+            $state.go('token.enroll');
+        }
+    });
+    hotkeys.add({
+        combo: 'alt+l',
+        description: gettext("List tokens"),
+        callback: function() {
+            $state.go('token.list');
+        }
+    });
+    hotkeys.add({
+        combo: 'alt+q',
+        description: gettext('Log out'),
+        callback: function() {
+            $scope.logout();
+        }
+    });
     $scope.myCountdown = "";
     // We save the previous State in the $rootScope, so that we
     // can return there
