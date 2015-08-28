@@ -117,6 +117,8 @@ angular.module("privacyideaApp")
             console.log("successfully authenticated");
             console.log($scope.loggedInUser);
             $location.path("/token");
+            inform.add(gettext("privacyIDEA UI supports hotkeys. Use '?' to" +
+                    " get help."), {type: "info", ttl: 10000});
         }).error(function (error) {
             inform.add(gettext("Authentication failed. ") + error.result.error.message,
                 {type: "danger", ttl: 10000});

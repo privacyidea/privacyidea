@@ -137,9 +137,14 @@ myApp.controller("tokenDetailController", function ($scope,
             serial: $scope.tokenSerial,
             pass: $scope.testPassword
         }, function (data) {
-            $scope.resultTestOtp  = {result:data.result.value,
-                                     detail:data.detail.message};
-            $scope.get();
+            console.log(data);
+            if (data.result.value === true) {
+                inform.add(gettext("Successfully authenticated."),
+                    {type: "success", ttl: 10000})
+            } else {
+                inform.add(data.detail.message,
+                    {type: "danger", ttl: 10000})
+            }
         });
     };
 

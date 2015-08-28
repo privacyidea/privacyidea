@@ -528,14 +528,15 @@ myApp.controller("configController", function ($scope, $location,
     $scope.getResolvers();
     $scope.selectedResolvers = {};
 
-    $scope.showResult = false;
     $scope.testResolver = function () {
         ConfigFactory.testResolver($scope.params, function (data) {
-            $scope.result = {
-                result: data.result.value,
-                description: data.detail.description
-            };
-            $scope.showResult = true;
+            if (data.result.value === true) {
+                inform.add(data.detail.description,
+                    {type: "success", ttl: 10000});
+            } else {
+                inform.add(data.detail.description,
+                    {type: "danger", ttl: 10000});
+            }
         });
     };
 
@@ -715,7 +716,8 @@ myApp.controller("machineResolverController", function ($scope,
     };
 });
 
-myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $state, $stateParams) {
+myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $state,
+                                                     $stateParams, inform, gettext) {
     /*
      BINDDN, BINDPW, LDAPURI, TIMEOUT, LDAPBASE, LOGINNAMEATTRIBUTE,
      LDAPSEARCHFILTER,
@@ -776,17 +778,21 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
 
     $scope.testResolver = function () {
         ConfigFactory.testResolver($scope.params, function (data) {
-            $scope.result = {
-                result: data.result.value,
-                description: data.detail.description
-            };
-            $scope.showResult = true;
+            if (data.result.value === true) {
+                inform.add(data.detail.description,
+                    {type: "success", ttl: 10000});
+            } else {
+                inform.add(data.detail.description,
+                    {type: "danger", ttl: 10000});
+            }
         });
     }
 
 });
 
-myApp.controller("ScimResolverController", function ($scope, ConfigFactory, $state, $stateParams) {
+myApp.controller("ScimResolverController", function ($scope, ConfigFactory,
+                                                     $state, $stateParams,
+                                                     inform, gettext) {
     /*
      Authserver, Resourceserver, Client, Secret
      */
@@ -815,17 +821,21 @@ myApp.controller("ScimResolverController", function ($scope, ConfigFactory, $sta
 
     $scope.testResolver = function () {
         ConfigFactory.testResolver($scope.params, function (data) {
-            $scope.result = {
-                result: data.result.value,
-                description: data.detail.description
-            };
-            $scope.showResult = true;
+            if (data.result.value === true) {
+                inform.add(data.detail.description,
+                    {type: "success", ttl: 10000});
+            } else {
+                inform.add(data.detail.description,
+                    {type: "danger", ttl: 10000});
+            }
         });
     }
 
 });
 
-myApp.controller("SqlResolverController", function ($scope, ConfigFactory, $state, $stateParams) {
+myApp.controller("SqlResolverController", function ($scope, ConfigFactory,
+                                                    $state, $stateParams,
+                                                    inform, gettext) {
     /*
 
      */
@@ -834,7 +844,6 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory, $stat
     };
     $scope.result = {};
     $scope.resolvername = $stateParams.resolvername;
-    $scope.showResult = false;
 
     if ($scope.resolvername) {
         /* If we have a resolvername, we do an Edit
@@ -883,11 +892,14 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory, $stat
 
     $scope.testSQL = function () {
         ConfigFactory.testResolver($scope.params, function (data) {
-            $scope.result = {
-                result: data.result.value,
-                description: data.detail.description
-            };
-            $scope.showResult = true;
+            console.log(data.result);
+            if (data.result.value >= 0) {
+                inform.add(data.detail.description,
+                    {type: "success", ttl: 10000});
+            } else {
+                inform.add(data.detail.description,
+                    {type: "danger", ttl: 10000});
+            }
         });
     }
 
