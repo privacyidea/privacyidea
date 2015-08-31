@@ -113,19 +113,27 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     };
 
     $scope.formInit = {
-        tokenTypes: {"hotp": "HOTP: event based One Time Passwords",
-            "totp": "TOTP: time based One Time Passwords",
-            "spass": "SPass: Simple Pass token. Static passwords",
-            "motp": "mOTP: classical mobile One Time Passwords",
-            "sshkey": "SSH Public Key: The public SSH key",
-            "yubikey": "Yubikey AES mode: One Time Passwords with Yubikey",
-            "remote": "Remote Token: Forward authentication request to another server",
-            "yubico": "Yubikey Cloud mode: Forward authentication request to YubiCloud",
-            "radius": "RADIUS: Forward authentication request to a RADIUS server",
-            "email": "EMail: Send a One Time Password to the users email" +
-            " address",
-            "sms": "SMS: Send a One Time Password to the users mobile phone",
-            "certificate": "Certificate: Enroll an x509 Certificate Token."},
+        tokenTypes: {"hotp": gettext("HOTP: event based One Time Passwords"),
+            "totp": gettext("TOTP: time based One Time Passwords"),
+            "spass": gettext("SPass: Simple Pass token. Static passwords"),
+            "motp": gettext("mOTP: classical mobile One Time Passwords"),
+            "sshkey": gettext("SSH Public Key: The public SSH key"),
+            "yubikey": gettext("Yubikey AES mode: One Time Passwords with" +
+                " Yubikey"),
+            "remote": gettext("Remote Token: Forward authentication request" +
+                " to another server"),
+            "yubico": gettext("Yubikey Cloud mode: Forward authentication" +
+                " request to YubiCloud"),
+            "radius": gettext("RADIUS: Forward authentication request to a" +
+                " RADIUS server"),
+            "email": gettext("EMail: Send a One Time Password to the users email" +
+                " address."),
+            "sms": gettext("SMS: Send a One Time Password to the users" +
+                " mobile phone."),
+            "certificate": gettext("Certificate: Enroll an x509 Certificate" +
+                " Token."),
+            "4eyes": gettext("Four Eyes: Two or more users are required to" +
+                " log in.")},
         timesteps: [30, 60],
         otplens: [6, 8],
         hashlibs: ["sha1", "sha256", "sha512"]

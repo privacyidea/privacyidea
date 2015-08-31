@@ -21,6 +21,8 @@ At the moment the following tokentypes are supported:
   `RFC6238 <https://tools.ietf.org/html/rfc6238>`_.
 * mOTP - time based One Time Password tokens for mobile phones based on an
   a `public Algorithm <http://motp.sourceforge.net>`_.
+* :ref:`four_eyes` - Meta token that can be used to create a
+  `Two Man Rule <https://en.wikipedia.org/wiki/Two-man_rule>`_.
 * password - A password token used for :ref:`lost_token` scenario.
 * :ref:`registration` - A special token type used for enrollment scenarios (see
   :ref:`faq_registration_code`).
@@ -46,7 +48,11 @@ At the moment the following tokentypes are supported:
 The Tokentypes:
 
 .. toctree::
+   tokens/4eyes
    tokens/certificate
+   tokens/email
+   tokens/hotp
+   tokens/totp
    tokens/radius
    tokens/registration
    tokens/remote

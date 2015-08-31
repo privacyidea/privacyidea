@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2015-08-31 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Add check_realm_pass for 4-eyes policy
 #  2015-03-20 Cornelius Kölbel, <cornelius@privacyidea.org>
 #             Add policy decorator for encryption
 #  2015-03-15 Cornelius Kölbel, <cornelius@privacyidea.org>
@@ -1675,6 +1677,38 @@ def lost_token(serial, new_serial=None, password=None,
 
 
 @log_with(log)
+def check_realm_pass(realm, passw, options=None):
+    """
+    This function checks, if the given passw matches any token in the given
+    realm. This can be used for the 4-eyes token.
+    Only tokens that are assigned are tested.
+
+    It returns the res True/False and a reply_dict, which contains the
+    serial number of the matching token.
+
+    :param realm: The realm of the user
+    :param passw: The password containing PIN+OTP
+    :param options: Additional options that are passed to the tokens
+    :type options: dict
+    :return: tuple of bool and dict
+    """
+    res = False
+    reply_dict = {}
+    # since an attacker does not know, which token is tested, we restrict to
+    # only active tokens. He would not guess that the given OTP value is that
+    #  of an inactive token.
+    tokenobject_list = get_tokens(realm=realm, assigned=True, active=True)
+    if len(tokenobject_list) == 0:
+        res = False
+        reply_dict["message"] = "There is no active and assigned token in " \
+                                "this realm"
+    else:
+        res, reply_dict = check_token_list(tokenobject_list, passw,
+                                           options=options)
+    return res, reply_dict
+
+
+@log_with(log)
 def check_serial_pass(serial, passw, options=None):
     """
     This function checks the otp for a given serial
@@ -1757,7 +1791,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
     :param tokenobject_list: list of identified tokens
     :param passw: the provided passw (mostly pin+otp)
     :param user: the identified use - as class object
-    :param option: additional parameters, which are passed to the token
+    :param options: additional parameters, which are passed to the token
 
     :return: tuple of success and optional response
     :rtype: (bool, dict)

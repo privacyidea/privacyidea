@@ -50,6 +50,7 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    set_max_failcount, copy_token_pin,
                                    copy_token_user, lost_token,
                                    check_token_list, check_serial_pass,
+                                   check_realm_pass,
                                    check_user_pass, auto_assign_token,
                                    get_dynamic_policy_definitions,
                                    get_tokens_paginate,
@@ -1030,6 +1031,59 @@ class TokenTestCase(MyTestCase):
         vp = tokenobj.get_validity_period_end()
         self.assertEqual(vp, "28/05/15 20:22")
 
+    def test_45_check_realm_pass(self):
+        # create a bunch of tokens in the realm
 
+        # disabled token
+        serial = "inactive"
+        init_token({"serial": serial,
+                    "otpkey": self.otpkey,
+                    "pin": serial}, User("cornelius", self.realm1))
+        enable_token(serial, False)
 
+        # not assigned token
+        serial = "not_assigned"
+        init_token({"serial": serial,
+                    "otpkey": self.otpkey,
+                    "pin": serial}, tokenrealms=[self.realm1])
 
+        # a normal token
+        serial = "assigned"
+        init_token({"serial": serial,
+                    "otpkey": self.otpkey,
+                    "pin": serial}, User("cornelius", self.realm1))
+
+        # check if the tokens were created accordingly
+        tokens = get_tokens(realm=self.realm1, tokentype="hotp",
+                            assigned=False, serial="not_assigned")
+        self.assertEqual(len(tokens), 1)
+
+        tokens = get_tokens(realm=self.realm1, tokentype="hotp",
+                            active=False, serial="inactive")
+        self.assertEqual(len(tokens), 1)
+
+        tokens = get_tokens(realm=self.realm1, tokentype="hotp",
+                            active=True, assigned=True, serial="assigned")
+        self.assertEqual(len(tokens), 1)
+
+        # an inactive token does not match
+        r = check_realm_pass(self.realm1, "inactive" + "287082")
+        self.assertEqual(r[0], False)
+        # The remaining tokens are checked, but the pin does not match,
+        # so we get "wrong otp pin"
+        self.assertEqual(r[1].get("message"), "wrong otp pin")
+
+        # an unassigned token does not match
+        r = check_realm_pass(self.realm1, "unassigned" + "287082")
+        self.assertEqual(r[0], False)
+        # The remaining tokens are checked, but the pin does not match,
+        # so we get "wrong otp pin"
+        self.assertEqual(r[1].get("message"), "wrong otp pin")
+
+        # a token assigned to a user does match
+        r = check_realm_pass(self.realm1, "assigned" + "287082")
+        # One token in the realm matches the pin and the OTP value
+        self.assertEqual(r[0], True)
+        # The remaining tokens are checked, but the pin does not match,
+        # so we get "wrong otp pin"
+        self.assertEqual(r[1].get("message"), "matching 1 tokens")
