@@ -1721,7 +1721,7 @@ msgid ""
 "                        service itself</a>."
 msgstr ""
 
-#: privacyidea/static/app.js:86
+#: privacyidea/static/app.js:95
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
 msgstr ""
 
