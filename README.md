@@ -26,7 +26,8 @@ concerned. But privacyIDEA is completely licensed under the AGPLv3.
 
 It supports a wide variety of authentication devices like OTP tokens 
 (HMAC, HOTP, TOTP, OCRA, mOTP), Yubikey (HOTP, TOTP, AES), Smartphone
-Apps like Google Authenticator, SMS, Email, SSH keys, x509 certificates 
+Apps like Google Authenticator, FreeOTP, Token2  or TiQR,
+SMS, Email, SSH keys, x509 certificates 
 and Registration Codes for easy deployment.
 
 Since version 2 privacyIDEA is based on flask and sqlalchemy as the python backend. The
