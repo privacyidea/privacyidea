@@ -202,7 +202,7 @@ class TiqrTokenClass(TokenClass):
                                   "/2014/05/privacyIDEA1.png",
                        "infoUrl": "https://www.privacyidea.org",
                        "authenticationUrl":
-                           "%s/validate/check" % auth_server,
+                           "%s" % auth_server,
                        "ocraSuite": ocrasuite,
                        "enrollmentUrl":
                            "%s?action=enrollment&session=%s&serial=%s" % (reg_server,

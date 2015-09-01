@@ -92,13 +92,13 @@ def token(ttype=None):
     tokenc = get_token_class(ttype)
     res = tokenc.api_endpoint(request.all_data)
     serial = getParam(request.all_data, "serial")
-    user = get_user_from_param()
+    user = get_user_from_param(request.all_data)
     g.audit_object.log({"success": 1,
                         "user": user,
                         "serial": serial,
                         "tokentype": ttype})
     if res[0] == "json":
         return jsonify(res[1])
-    elif res[1] == "text":
+    elif res[0] == "text":
         return Response(res[1])
 
