@@ -133,7 +133,9 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             "certificate": gettext("Certificate: Enroll an x509 Certificate" +
                 " Token."),
             "4eyes": gettext("Four Eyes: Two or more users are required to" +
-                " log in.")},
+                " log in."),
+            "tiqr": gettext("TiQR: Authenticate with Smartphone by scanning" +
+                " a QR code.")},
         timesteps: [30, 60],
         otplens: [6, 8],
         hashlibs: ["sha1", "sha256", "sha512"]

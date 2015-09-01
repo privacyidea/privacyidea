@@ -38,7 +38,7 @@ from flask import Blueprint
 from ..lib.log import log_with
 from lib.utils import (optional,
                        send_result,
-                       send_csv_result, required, remove_session_from_param)
+                       send_csv_result, required, get_all_params)
 from ..lib.user import get_user_from_param
 from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          unassign_token, remove_token, enable_token,
@@ -104,7 +104,7 @@ def before_request():
     """
     # remove session from param and gather all parameters, either
     # from the Form data or from JSON in the request body.
-    request.all_data = remove_session_from_param(request.values, request.data)
+    request.all_data = get_all_params(request.values, request.data)
 
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)

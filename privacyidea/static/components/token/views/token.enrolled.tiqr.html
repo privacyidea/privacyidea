@@ -1,0 +1,18 @@
+<div class="row">
+    <div class="col-sm-6">
+        <img width="250" src="{{ enrolledToken.tiqrenroll.img }}"/>
+    </div>
+    <div class="col-sm-6">
+        <accordion close-others="oneAtATime">
+            <accordion-group heading="{{ 'The Enrollment URL'|translate }}">
+                {{ enrolledToken.tiqrenroll.value }}
+            </accordion-group>
+        </accordion>
+        <p translate>
+            Click <a href="{{ enrolledToken.tiqrenroll.value }}">here</a> or
+            scan
+            the QR Code, if you
+            want to add the Token to your TiQR App.
+        </p>
+    </div>
+</div>

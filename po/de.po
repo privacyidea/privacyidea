@@ -291,6 +291,16 @@ msgstr ""
 "scannen Sie den QR-Code, um den Token Ihrer mOTP App wie \"Token2\" "
 "hinzuzufügen."
 
+#: privacyidea/static/components/token/views/token.enrolled.tiqr.html:11
+msgid ""
+"Click <a href=\"{{ enrolledToken.tiqrenroll.value }}\">here</a> or\n"
+"            scan\n"
+"            the QR Code, if you\n"
+"            want to add the Token to your TiQR App."
+msgstr ""
+"Klicken Sie <a href=\"{{ enrolledToken.tiqrenroll.value }}\">hier</a> oder "
+"scannen  Sie den QR-Code, um den Token Ihrer TiQR-App hinzuzufügen."
+
 #: privacyidea/static/components/config/views/config.policies.details.html:228
 #: privacyidea/static/components/config/views/config.policies.list.html:12
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:49
@@ -1034,6 +1044,10 @@ msgstr "Anzahl der Maschinen: {{ $sope.machinecount }}"
 msgid "Number of required tokens"
 msgstr "Anzahl der benötigten Token"
 
+#: privacyidea/static/components/config/views/config.token.tiqr.html:41
+msgid "OCRA Suite"
+msgstr "OCRA Suite"
+
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:24
 #: privacyidea/static/components/token/views/token.enroll.motp.html:23
 #: privacyidea/static/components/token/views/token.enroll.totp.html:25
@@ -1374,7 +1388,7 @@ msgid "SSH public Key"
 msgstr "Öffentlicher SSH Schlüssel"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:71
-#: privacyidea/static/components/config/views/config.tokens.html:56
+#: privacyidea/static/components/config/views/config.tokens.html:60
 msgid "Save"
 msgstr "Speichern"
 
@@ -1574,6 +1588,14 @@ msgstr ""
 "oder mehr Benutzer benötigt. Sie können angeben, wieviele Token aus dem "
 "jeweiligen Realm zur Authentisierung benötigt werden."
 
+#: privacyidea/static/components/config/views/config.token.tiqr.html:21
+msgid ""
+"The Authentication Server is this privacyIDEA server. Note that the\n"
+"        privacyIDEA server needs to be accessible from the users smartphone."
+msgstr ""
+"Der Authentisierungsserver ist das privacyIDEA System. Bitte beachten Sie, "
+"dass privacyIDEA vom Smartphone aus erreichbar sein muss."
+
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:1
 msgid ""
 "The Certificate Token lets you enroll an x509 ceritificate\n"
@@ -1596,6 +1618,10 @@ msgstr ""
 msgid "The Email Token sends the OTP value to the users email address."
 msgstr ""
 "Der EMail Token sendet einen OTP-Wert an die EMail-Adresse des Benutzers."
+
+#: privacyidea/static/components/token/views/token.enrolled.tiqr.html:7
+msgid "The Enrollment URL"
+msgstr "Registrierungs-URL"
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:38
 #: privacyidea/static/components/token/views/token.enroll.totp.html:39
@@ -1674,6 +1700,14 @@ msgstr ""
 "Der private Schlüssel bleibt in ihrem Browser und Sie können anschließend "
 "das Zertifikat in Ihrem Browser installieren."
 
+#: privacyidea/static/components/config/views/config.token.tiqr.html:9
+msgid ""
+"The Registration Server is this privacyIDEA server. Note that the\n"
+"        privacyIDEA server needs to be accessible from the users smartphone."
+msgstr ""
+"Der Registrierungsserver ist das privacyIDEA System. Bitte beachten Sie, "
+"dass privacyIDEA vom Smartphone aus erreichbar sein muss."
+
 #: privacyidea/static/components/config/views/config.token.remote.html:2
 msgid ""
 "The Remote token forwards the authentication request to another\n"
@@ -1743,6 +1777,23 @@ msgstr ""
 "Schlüssel hier einfügen oder den Server einen Schlüssel generieren lassen. "
 "Diesen können Sie in Ihre Smartphone-App wie Google Authenticator oder "
 "FreeOTP importieren, indem Sie den QR-Code scannen."
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:2
+msgid ""
+"The TiQR Token is an OCRA based Smartphone Token, that can be used to\n"
+"    authenticate by just scanning a QR code."
+msgstr ""
+"Der TiQR Token ist eine auf dem OCRA Algorithmus basierende Smartphone App. "
+"DieAuthentisierung erfolgt durch das Scannen eines QR-Codes."
+
+#: privacyidea/static/components/token/views/token.enroll.tiqr.html:1
+msgid ""
+"The TiQR token is a Smartphone App token, which allows easy\n"
+"    authentication by just scanning a QR Code during the authentication "
+"process."
+msgstr ""
+"Der TiQR Token ist eine Smartphone App, die eine leichte Authentisierung "
+"durch das Scannen eines QR-Codes ermöglicht."
 
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:1
 msgid ""
@@ -2085,6 +2136,25 @@ msgstr ""
 "unverschlüsselte PSKC-Dateien unterstützt. Bitte fragen Sie nach einem "
 "update, um verschlüsselte PSKC-Dateien zu importieren."
 
+#: privacyidea/static/components/config/views/config.token.tiqr.html:42
+msgid ""
+"This is the OCRA suite used by the TiQR App.\n"
+"        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QH10-S.\n"
+"        For more details see the\n"
+"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA"
+"\">RFC\n"
+"            6287</a>."
+msgstr ""
+"Dies ist die OCRA-Suite, die von der TiQR-App verwendet wird. Standardmäßig "
+"wird dieOCRA-Suite OCRA-1:HOTP-SHA1-6:QH10-S verwendet. Um mehr über OCRA-"
+"Suites zu erfahren,lesen Sie  <a href=\"http://tools.ietf.org/html/"
+"rfc6287#page-8\" target=\"OCRA\">RFC\n"
+"            6287</a>."
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:32
+msgid "This is the display name of your service in the TiQR app."
+msgstr "Dies ist der Anzeigename Ihres Service in der TiQR-App."
+
 #: privacyidea/static/components/audit/views/audit.stats.html:78
 msgid ""
 "This is the overall token usage with\n"
@@ -2101,6 +2171,26 @@ msgid ""
 msgstr ""
 "Dieser wird verwendet, damit ein Benutzer sich einmalig anmelden kann, um "
 "danach sich selber einen Token auszustellen."
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:20
+msgid "TiQR Authentication Server"
+msgstr "TiQR Authentisierungsserver"
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:8
+msgid "TiQR Registration Server"
+msgstr "TiQR Registrierungsserver"
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:31
+msgid "TiQR Service Displayname"
+msgstr "TiQR Service Anzeigename"
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:1
+msgid "TiQR Token settings"
+msgstr "TiQR Token Einstellungen"
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:137
+msgid "TiQR: Authenticate with Smartphone by scanning a QR code."
+msgstr "TiQR: Authentisierung mit Smartphone durch Scannen eines QR-Codes."
 
 #: privacyidea/static/components/config/views/config.token.sms.html:21
 msgid "Timeout"

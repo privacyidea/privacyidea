@@ -43,7 +43,7 @@ from flask import (Blueprint,
                    jsonify,
                    abort,
                    g)
-from lib.utils import (send_result, remove_session_from_param,
+from lib.utils import (send_result, get_all_params,
                        verify_auth_token)
 from ..lib.crypto import geturandom
 from ..lib.error import AuthError
@@ -79,7 +79,7 @@ def before_request():
                         "action": "%s %s" % (request.method, request.url_rule),
                         "action_detail": "",
                         "info": ""})
-    request.all_data = remove_session_from_param(request.values, request.data)
+    request.all_data = get_all_params(request.values, request.data)
 
 
 @jwtauth.route('', methods=['POST'])

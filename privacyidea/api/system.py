@@ -44,7 +44,7 @@ from .lib.utils import (getParam,
                         required,
                         send_result,
                         send_error,
-                        remove_session_from_param)
+                        get_all_params)
 from ..lib.log import log_with
 from ..lib.config import (get_privacyidea_config,
                           set_privacyidea_config,
@@ -105,7 +105,7 @@ def before_request():
     """
     # remove session from param and gather all parameters, either
     # from the Form data or from JSON in the request body.
-    request.all_data = remove_session_from_param(request.values, request.data)
+    request.all_data = get_all_params(request.values, request.data)
     # Already get some typical parameters to log
     serial = getParam(request.all_data, "serial")
     realm = getParam(request.all_data, "realm")

@@ -1269,3 +1269,17 @@ class TokenClass(object):
         token_dict = self.token.get()
 
         return token_dict
+
+    @classmethod
+    def api_endpoint(cls, params):
+        """
+        This provides a function to be plugged into the API endpoint
+        /ttype/<tokentype> which is defined in api/ttype.py
+
+        :param params: The Request Parameters which can be handled with getParam
+        :return: Flask Response or text
+        """
+        raise ParameterError("%s does not support the API endpoint" %
+                             cls.get_tokentype())
+        return "json", {}
+        # or return "text", "OK"

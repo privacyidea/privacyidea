@@ -1,0 +1,54 @@
+<h2 translate>TiQR Token settings</h2>
+<p class="help-block" translate>
+    The TiQR Token is an OCRA based Smartphone Token, that can be used to
+    authenticate by just scanning a QR code.
+</p>
+
+<div class="form-group">
+    <label for="tiqrRegServer" translate>TiQR Registration Server</label>
+    <p class="help-block" translate>
+        The Registration Server is this privacyIDEA server. Note that the
+        privacyIDEA server needs to be accessible from the users smartphone.
+    </p>
+    <input type="url"
+           required
+           class="form-control"
+           ng-model="form['tiqr.regServer']" name="tiqrRegServer">
+</div>
+
+<div class="form-group">
+    <label for="tiqrAuthServer" translate>TiQR Authentication Server</label>
+    <p class="help-block" translate>
+        The Authentication Server is this privacyIDEA server. Note that the
+        privacyIDEA server needs to be accessible from the users smartphone.
+    </p>
+    <input type="url"
+           class="form-control"
+           ng-model="form['tiqr.authServer']" name="tiqrAuthServer">
+</div>
+
+<div class="form-group">
+    <label for="tiqrDisplayname" translate>TiQR Service Displayname</label>
+    <p class="help-block" translate>
+        This is the display name of your service in the TiQR app.
+    </p>
+    <input type="text"
+           class="form-control"
+           ng-model="form['tiqr.serviceDisplayname']" name="tiqrDisplayname">
+</div>
+
+<div class="form-group">
+    <label for="tiqrOCRA" translate>OCRA Suite</label>
+    <p class="help-block" translate>
+        This is the OCRA suite used by the TiQR App.
+        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QH10-S.
+        For more details see the
+        <a href="http://tools.ietf.org/html/rfc6287#page-8" target="OCRA">RFC
+            6287</a>.
+    </p>
+    <input type="text"
+           class="form-control"
+           ng-model="form['tiqr.ocrasuite']" name="tiqrOCRA">
+</div>
+
+

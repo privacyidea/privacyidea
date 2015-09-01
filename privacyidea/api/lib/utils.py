@@ -217,16 +217,13 @@ def getLowerParams(param):
     return ret
 
 
-def remove_session_from_param(param, body):
-    '''
-    Some low level functions like the userlisting do not like to have a
-    session parameter in the param dictionary.
-    So we remove the session from the params.
-    '''
+def get_all_params(param, body):
+    """
+    Combine parameters from GET and POST requests
+    """
     return_param = {}
     for key in param.keys():
-        if "session" != key.lower():
-            return_param[key] = param[key]
+        return_param[key] = param[key]
 
     # In case of serialized JSON data in the body, add these to the values.
     try:

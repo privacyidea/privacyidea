@@ -457,6 +457,7 @@ def get_token_list():
     module_list.add("tokens.registrationtoken")
     module_list.add("tokens.certificatetoken")
     module_list.add("tokens.foureyestoken")
+    module_list.add("tokens.tiqrtoken")
     #module_list.add(".tokens.ocra2token")
 
     #module_list.add(".tokens.tagespassworttoken")

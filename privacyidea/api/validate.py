@@ -55,7 +55,7 @@ from lib.utils import send_result, getParam
 from ..lib.decorators import (check_user_or_serial_in_request)
 from lib.utils import required
 from privacyidea.lib.token import (check_user_pass, check_serial_pass)
-from privacyidea.api.lib.utils import remove_session_from_param
+from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.audit import getAudit
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle)
@@ -76,7 +76,7 @@ def before_request():
     """
     This is executed before the request
     """
-    request.all_data = remove_session_from_param(request.values, request.data)
+    request.all_data = get_all_params(request.values, request.data)
     # Create a policy_object, that reads the database audit settings
     # and contains the complete policy definition during the request.
     # This audit_object can be used in the postpolicy and prepolicy and it
@@ -258,3 +258,4 @@ def samlcheck():
                         "user": user.login,
                         "realm": user.realm})
     return send_result(result_obj, details=details)
+
