@@ -473,7 +473,7 @@ class LDAPResolverTestCase(MyTestCase):
         })
 
         result = y.getUserList({'username': '*'})
-        self.assertTrue(len(result) == 3, result)
+        self.assertEqual(len(result), 3)
 
         user = "bob"
         user_id = y.getUserId(user)
@@ -527,7 +527,7 @@ class LDAPResolverTestCase(MyTestCase):
         })
 
         result = y.getUserList({'username': '*'})
-        self.assertTrue(len(result) == 3, result)
+        self.assertEqual(len(result), 3)
 
         user = "bob"
         user_id = y.getUserId(user)

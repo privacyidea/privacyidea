@@ -132,12 +132,17 @@ class IdResolver (UserIdResolver):
 
         return new_list
 
-    def _get_uid(self, entry):
+    @classmethod
+    def _get_uid(cls, entry, uidtype):
         uid = None
-        if type(entry.get(self.uidtype)) == list:
-            uid = entry.get(self.uidtype)[0]
+        if uidtype.lower() == "dn":
+           uid = entry.get("dn")
         else:
-            uid = entry.get(self.uidtype)
+            attributes = entry.get("attributes")
+            if type(attributes.get(uidtype)) == list:
+                uid = attributes.get(uidtype)[0]
+            else:
+                uid = attributes.get(uidtype)
         return uid
         
     def _getDN(self, userId):
@@ -250,7 +255,8 @@ class IdResolver (UserIdResolver):
         self._bind()
         filter = "(&%s(%s=%s))" % \
             (self.searchfilter, self.loginname_attribute, LoginName)
-        
+
+        # create search attributes
         attributes = self.userinfo.values()
         if self.uidtype.lower() != "dn":
             attributes.append(str(self.uidtype))
@@ -267,11 +273,7 @@ class IdResolver (UserIdResolver):
                             LoginName)
         
         for entry in r:
-            if self.uidtype.lower() == "dn":
-                userid = entry.get("dn")
-            else:
-                attributes = entry.get("attributes")
-                userid = self._get_uid(attributes)
+            userid = self._get_uid(entry, self.uidtype)
 
         return userid
 
@@ -295,21 +297,15 @@ class IdResolver (UserIdResolver):
         filter += ")"
             
         self.l.search(search_base=self.basedn,
-                          search_scope=ldap3.SUBTREE,
-                          search_filter=filter,
-                          attributes=attributes,
-                          paged_size=self.sizelimit)
+                      search_scope=ldap3.SUBTREE,
+                      search_filter=filter,
+                      attributes=attributes,
+                      paged_size=self.sizelimit)
         # returns a list of dictionaries
         for entry in self.l.response:
-            dn = entry.get("dn")
-            attributes = entry.get("attributes")
             try:
-                user = {}
-                if self.uidtype.lower() == "dn":
-                    user['userid'] = dn
-                else:
-                    user['userid'] = self._get_uid(attributes)
-                    #del(attributes[self.uidtype])
+                attributes = entry.get("attributes")
+                user = {'userid': self._get_uid(entry, self.uidtype)}
                 for k, v in attributes.items():
                     key = self.reverse_map.get(k)
                     if key:
@@ -500,6 +496,7 @@ class IdResolver (UserIdResolver):
             AUTHTYPE
         """
         success = False
+        uidtype = param.get("UIDTYPE")
         try:
             server_pool = self.get_serverpool(param.get("LDAPURI"),
                                               float(param.get("TIMEOUT", 5)))
@@ -514,15 +511,29 @@ class IdResolver (UserIdResolver):
             #log.error("LDAP Server Pool States: %s" % server_pool.pool_states)
             if not l.bind():
                 raise Exception("Wrong credentials")
+            # create searchattributes
+            attributes = yaml.load(param["USERINFO"]).values()
+            if uidtype.lower() != "dn":
+                attributes.append(str(uidtype))
             # search for users...
             l.search(search_base=param["LDAPBASE"],
                      search_scope=ldap3.SUBTREE,
                      search_filter="(&" + param["LDAPSEARCHFILTER"] + ")",
-                     attributes=yaml.load(param["USERINFO"]).values())
-        
-            count = len(l.response)
-            desc = _("Your LDAP config seems to be OK, %i user objects found.")\
-                % count
+                     attributes=attributes)
+
+            r = l.response
+            count = len(r)
+            uidtype_count = 0
+            for entry in r:
+                userid = self._get_uid(entry, uidtype)
+                if userid:
+                    uidtype_count += 1
+            if uidtype_count < count:
+                desc = _("Your LDAP config found %i user objects, but only %i "
+                         "with the specified uidtype" % (count, uidtype_count))
+            else:
+                desc = _("Your LDAP config seems to be OK, %i user objects found.")\
+                    % count
             
             l.unbind()
             success = True
