@@ -44,6 +44,8 @@ import traceback
 import logging
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.error import ParameterError
+from privacyidea.models import (TokenRealm, Challenge, cleanup_challenges)
+from privacyidea.lib.challenge import get_challenges
 
 log = logging.getLogger(__name__)
 optional = True
@@ -55,6 +57,13 @@ keylen = {'sha1': 20,
           'sha256': 32,
           'sha512': 64
           }
+
+
+class API_ACTIONS():
+    METADATA = "metadata"
+    ENROLLMENT = "enrollment"
+    AUTHENTICATION = "authentication"
+    ALLOWED_ACTIONS = [METADATA, ENROLLMENT, AUTHENTICATION]
 
 
 class TiqrTokenClass(TokenClass):
@@ -155,7 +164,8 @@ class TiqrTokenClass(TokenClass):
         session = generate_otpkey()
         # save the session in the token
         self.add_tokeninfo("session", session)
-        tiqrenroll = "tiqrenroll://%s?action=metadata&session=%s&serial=%s" % (
+        tiqrenroll = "tiqrenroll://%s?action=%s&session=%s&serial=%s" % (
+            API_ACTIONS.METADATA,
             enroll_url, session, serial)
 
         response_detail["tiqrenroll"] = {"description":
@@ -176,12 +186,13 @@ class TiqrTokenClass(TokenClass):
         :param params: The Request Parameters which can be handled with getParam
         :return: Flask Response
         """
-        action = getParam(params, "action", required)
-        allowed_actions = ["metadata", "enrollment"]
-        if action not in allowed_actions:
-            raise ParameterError("Allowed actions are %s" % allowed_actions)
+        action = getParam(params, "action", optional) or \
+                 API_ACTIONS.AUTHENTICATION
+        if action not in API_ACTIONS.ALLOWED_ACTIONS:
+            raise ParameterError("Allowed actions are %s" %
+                                 API_ACTIONS.ALLOWED_ACTIONS)
 
-        if action == "metadata":
+        if action == API_ACTIONS.METADATA:
             session = getParam(params, "session", required)
             serial = getParam(params, "serial", required)
             # The user identifier is displayed in the App
@@ -189,6 +200,8 @@ class TiqrTokenClass(TokenClass):
             user_idenitfier = "1289734"
             user_displayname = "hans"
 
+            # TODO: Make this configurable
+            service_identifier = "org.privacyidea"
             ocrasuite_default = "OCRA-1:HOTP-SHA1-6:QH10-S"
             ocrasuite = get_from_config("tiqr.ocrasuite") or ocrasuite_default
             service_displayname = get_from_config("tiqr.serviceDisplayname") or \
@@ -197,7 +210,7 @@ class TiqrTokenClass(TokenClass):
             auth_server = get_from_config("tiqr.authServer") or reg_server
 
             service = {"displayName": service_displayname,
-                       "identifier": "org.privacyidea",
+                       "identifier": service_identifier,
                        "logoUrl": "https://www.privacyidea.org/wp-content/uploads"
                                   "/2014/05/privacyIDEA1.png",
                        "infoUrl": "https://www.privacyidea.org",
@@ -205,8 +218,10 @@ class TiqrTokenClass(TokenClass):
                            "%s" % auth_server,
                        "ocraSuite": ocrasuite,
                        "enrollmentUrl":
-                           "%s?action=enrollment&session=%s&serial=%s" % (reg_server,
-                                                            session, serial)
+                           "%s?action=%s&session=%s&serial=%s" % (
+                               API_ACTIONS.ENROLLMENT,
+                               reg_server,
+                               session, serial)
                        }
             identity = {"identifier": user_idenitfier,
                         "displayName": user_displayname
@@ -218,7 +233,7 @@ class TiqrTokenClass(TokenClass):
 
             return "json", res
 
-        elif action == "enrollment":
+        elif action == API_ACTIONS.ENROLLMENT:
             """
             operation: register
             secret: HEX
@@ -247,3 +262,91 @@ class TiqrTokenClass(TokenClass):
                     raise ParameterError("Invalid Session")
 
             return "text", res
+        elif action == API_ACTIONS.AUTHENTICATION:
+            userId = getParam(params, "userId", required)
+            session = getParam(params, "sessionKey", required)
+            passw = getParam(params, "response", required)
+            operation = getParam(params, "operation", required)
+            res = "INVALID_RESPONSE"
+            # Check the passw and set res = "OK"
+            res = "OK"
+            return "text", res
+
+
+    @log_with(log)
+    def is_challenge_request(self, passw, user=None, options=None):
+        """
+        check, if the request would start a challenge
+        In fact every Request that is not a response needs to start a
+        challenge request.
+
+        At the moment we do not think of other ways to trigger a challenge.
+
+        :param passw: The PIN of the token.
+        :param options: dictionary of additional request parameters
+
+        :return: returns true or false
+        """
+        trigger_challenge = False
+        options = options or {}
+        pin_match = self.check_pin(passw, user=user, options=options)
+        if pin_match is True:
+            trigger_challenge = True
+
+        return trigger_challenge
+
+    def create_challenge(self, transactionid=None, options=None):
+        """
+        This method creates a challenge, which is submitted to the user.
+        The submitted challenge will be preserved in the challenge
+        database.
+
+        If no transaction id is given, the system will create a transaction
+        id and return it, so that the response can refer to this transaction.
+
+        :param transactionid: the id of this challenge
+        :param options: the request context parameters / data
+        :type options: dict
+        :return: tuple of (bool, message, transactionid, attributes)
+        :rtype: tuple
+
+        The return tuple builds up like this:
+        ``bool`` if submit was successful;
+        ``message`` which is displayed in the JSON response;
+        additional ``attributes``, which are displayed in the JSON response.
+        """
+        options = options or {}
+        message = 'Please scan the QR Code'
+
+        # Get ValidityTime=120s. Maybe there is a TIQRChallengeValidityTime...
+        validity = int(get_from_config('DefaultChallengeValidityTime', 120))
+        tokentype = self.get_tokentype().lower()
+        lookup_for = tokentype.capitalize() + 'ChallengeValidityTime'
+        validity = int(get_from_config(lookup_for, validity))
+
+        # TODO: We need to set the user ID
+        user_idenitfier = "1289734"
+
+        # TODO: Make this configurable
+        service_identifier = "org.privacyidea"
+
+        # TODO: At the moment we are fixed to "OCRA-1:HOTP-SHA1-6:QH10-S"
+        challenge = "1234567890"
+
+        # Create the challenge in the database
+        db_challenge = Challenge(self.token.serial,
+                                 transaction_id=None,
+                                 challenge=challenge,
+                                 data=None,
+                                 session=options.get("session"),
+                                 validitytime=validity)
+        db_challenge.save()
+
+        authurl = "tiqrauth://%s@%s/%s/%s" % (user_idenitfier,
+                                              service_identifier,
+                                              db_challenge.transaction_id,
+                                              challenge)
+        attributes = {"img": create_img(authurl, width=250),
+                      "value": authurl}
+
+        return True, message, db_challenge.transaction_id, attributes

@@ -16,7 +16,9 @@ class TiQRTokenTestCase(MyTestCase):
     # set_user, get_user, reset, set_user_identifiers
     
     def test_01_create_token(self):
-        token = init_token({"type": "tiqr"})
+        pin = "test"
+        token = init_token({"type": "tiqr",
+                            "pin": pin})
         self.assertEqual(token.type, "tiqr")
 
         prefix = TiqrTokenClass.get_class_prefix()
@@ -34,6 +36,19 @@ class TiQRTokenTestCase(MyTestCase):
         self.assertTrue("serial" in idetail, idetail)
         self.assertTrue("img" in idetail.get("tiqrenroll"), idetail)
         self.assertTrue("value" in idetail.get("tiqrenroll"), idetail)
+
+        # Check the challenge request
+        r = token.is_challenge_request(pin)
+        self.assertEqual(r, True)
+        r = token.is_challenge_request(pin + "123456")
+        self.assertEqual(r, False)
+
+        # Check create_challenge
+        r = token.create_challenge()
+        self.assertEqual(r[0], True)
+        self.assertEqual(r[1], "Please scan the QR Code")
+        self.assertTrue("img" in r[3], r[3])
+        self.assertTrue("value" in r[3], r[3])
 
     def test_02_api_endpoint(self):
         token = init_token({"type": "tiqr"})
@@ -74,3 +89,10 @@ class TiQRTokenTestCase(MyTestCase):
                                          "secret": "313233"})
         self.assertEqual(r[0], "text")
         self.assertEqual(r[1], "OK")
+
+        # test authentication endpoint
+        r = TiqrTokenClass.api_endpoint({"response": "12345",
+                                         "userId": "1234",
+                                         "sessionKey": "1234",
+                                         "operation": "login"})
+        self.assertEqual(r[0], "text")
