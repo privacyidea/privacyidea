@@ -138,9 +138,7 @@ class TokenClass(object):
         self.token.resolver_type = resolvertype
         self.token.user_id = uid
         # set the tokenrealm
-        Tr = TokenRealm(token_id=self.token.id,
-                        realmname=user.realm)
-        Tr.save()
+        self.set_realms([user.realm])
 
     def get_user(self):
         """
@@ -162,6 +160,20 @@ class TokenClass(object):
                                resolver=self.token.resolver,
                                realm=realmname)
         return user_object
+
+    def get_user_displayname(self):
+        """
+        Returns a tuple of a user identifier like user@realm and the
+        displayname of "givenname surname".
+
+        :return: tuple
+        """
+        user_object = self.get_user()
+        user_info = user_object.get_user_info()
+        user_identifier = "%s@%s" % (user_object.login, user_object.realm)
+        user_displayname = "%s %s" % (user_info.get("givenname"),
+                                      user_info.get("surname"))
+        return user_identifier, user_displayname
 
     @check_token_locked
     def set_user_identifiers(self, uid, resolvername, resolvertype):

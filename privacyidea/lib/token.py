@@ -1014,11 +1014,6 @@ def assign_token(serial, user, pin=None, encrypt_pin=False):
                               old_user, id=1103)
 
     tokenobject.set_user(user)
-
-    # If the token is assigned to a user, the new and only realm of the token
-    # is only the users realm
-    tokenobject.set_realms([user.realm])
-
     if pin is not None:
         tokenobject.set_pin(pin, encrypt=encrypt_pin)
 

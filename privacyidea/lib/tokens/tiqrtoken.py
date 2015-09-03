@@ -46,6 +46,7 @@ from privacyidea.lib.token import get_tokens
 from privacyidea.lib.error import ParameterError
 from privacyidea.models import (TokenRealm, Challenge, cleanup_challenges)
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.user import get_user_from_param
 
 log = logging.getLogger(__name__)
 optional = True
@@ -143,10 +144,19 @@ class TiqrTokenClass(TokenClass):
         :type param: dict
         :return: None
         """
+        # We should only initialize such a token, when the user is
+        # immediately given in the init process, since the token on the
+        # smartphone needs to contain a userId.
+        user_object = get_user_from_param(param, required)
+        self.set_user(user_object)
+
         ocrasuite_default = "OCRA-1:HOTP-SHA1-6:QH10-S"
         ocrasuite = get_from_config("tiqr.ocrasuite") or ocrasuite_default
         self.add_tokeninfo("ocrasuite", ocrasuite)
         TokenClass.update(self, param)
+        # We have to set the realms here, since the token DB object does not
+        # have an ID before TokenClass.update.
+        self.set_realms([user_object.realm])
 
     @log_with(log)
     def get_init_detail(self, params=None, user=None):
@@ -165,8 +175,8 @@ class TiqrTokenClass(TokenClass):
         # save the session in the token
         self.add_tokeninfo("session", session)
         tiqrenroll = "tiqrenroll://%s?action=%s&session=%s&serial=%s" % (
-            API_ACTIONS.METADATA,
-            enroll_url, session, serial)
+            enroll_url, API_ACTIONS.METADATA,
+            session, serial)
 
         response_detail["tiqrenroll"] = {"description":
                                                     _("URL for TiQR "
@@ -196,9 +206,11 @@ class TiqrTokenClass(TokenClass):
             session = getParam(params, "session", required)
             serial = getParam(params, "serial", required)
             # The user identifier is displayed in the App
-            # TODO: We need to set the user ID
-            user_idenitfier = "1289734"
-            user_displayname = "hans"
+            # We need to set the user ID
+            tokens = get_tokens(serial=serial)
+            if len(tokens) == 0:  # pragma: no cover
+                raise ParameterError("No token with serial %s" % serial)
+            user_identifier, user_displayname = tokens[0].get_user_displayname()
 
             # TODO: Make this configurable
             service_identifier = "org.privacyidea"
@@ -219,11 +231,11 @@ class TiqrTokenClass(TokenClass):
                        "ocraSuite": ocrasuite,
                        "enrollmentUrl":
                            "%s?action=%s&session=%s&serial=%s" % (
-                               API_ACTIONS.ENROLLMENT,
                                reg_server,
+                               API_ACTIONS.ENROLLMENT,
                                session, serial)
                        }
-            identity = {"identifier": user_idenitfier,
+            identity = {"identifier": user_identifier,
                         "displayName": user_displayname
                         }
 
@@ -324,8 +336,8 @@ class TiqrTokenClass(TokenClass):
         lookup_for = tokentype.capitalize() + 'ChallengeValidityTime'
         validity = int(get_from_config(lookup_for, validity))
 
-        # TODO: We need to set the user ID
-        user_idenitfier = "1289734"
+        # We need to set the user ID
+        user_identifier, user_displayname = self.get_user_displayname()
 
         # TODO: Make this configurable
         service_identifier = "org.privacyidea"
@@ -342,7 +354,7 @@ class TiqrTokenClass(TokenClass):
                                  validitytime=validity)
         db_challenge.save()
 
-        authurl = "tiqrauth://%s@%s/%s/%s" % (user_idenitfier,
+        authurl = "tiqrauth://%s@%s/%s/%s" % (user_identifier,
                                               service_identifier,
                                               db_challenge.transaction_id,
                                               challenge)

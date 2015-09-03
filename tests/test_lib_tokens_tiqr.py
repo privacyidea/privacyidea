@@ -14,11 +14,16 @@ class TiQRTokenTestCase(MyTestCase):
     serial1 = "ser1"
 
     # set_user, get_user, reset, set_user_identifiers
-    
+
+    def test_00_users(self):
+        self.setUp_user_realms()
+
     def test_01_create_token(self):
         pin = "test"
         token = init_token({"type": "tiqr",
-                            "pin": pin})
+                            "pin": pin,
+                            "user": "cornelius",
+                            "realm": self.realm1})
         self.assertEqual(token.type, "tiqr")
 
         prefix = TiqrTokenClass.get_class_prefix()
@@ -51,7 +56,11 @@ class TiQRTokenTestCase(MyTestCase):
         self.assertTrue("value" in r[3], r[3])
 
     def test_02_api_endpoint(self):
-        token = init_token({"type": "tiqr"})
+        pin = "1234"
+        token = init_token({"type": "tiqr",
+                            "pin": pin,
+                            "user": "cornelius",
+                            "realm": self.realm1})
         idetail = token.get_init_detail()
         value = idetail.get("tiqrenroll").get("value")
         # 'tiqrenroll://None?action=metadata&session=b81ecdf74118dcf6fa1cd41d3d4b2fec56c9107f&serial=TiQR000163CB
