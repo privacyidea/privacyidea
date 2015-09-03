@@ -217,6 +217,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         console.log($scope.newUser.user);
         console.log($scope.newUser.realm);
         console.log($scope.newUser.pin);
+        $scope.newUser.user = fixUser($scope.newUser.user);
         TokenFactory.enroll($scope.newUser,
             $scope.form, $scope.callback);
     };
