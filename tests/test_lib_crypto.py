@@ -6,7 +6,8 @@ This test file tests the lib.crypto and lib.security.default
 from .base import MyTestCase
 from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     decryptPassword, urandom,
-                                    get_rand_digit_str, geturandom)
+                                    get_rand_digit_str, geturandom,
+                                    get_alphanum_str)
 from privacyidea.lib.security.default import (SecurityModule,
                                               DefaultSecurityModule)
 
@@ -86,7 +87,6 @@ class SecurityModuleTestCase(MyTestCase):
         cipher = DefaultSecurityModule.password_encrypt(enckey, "topSecret123!")
         clear = DefaultSecurityModule.password_decrypt(cipher, "topSecret123!")
         self.assertTrue(enckey == clear, (enckey, clear))
-
 
     def test_07_encrypted_key_file(self):
         config = current_app.config
@@ -185,3 +185,6 @@ class RandomTestCase(MyTestCase):
         r = get_rand_digit_str(19182)
         self.assertTrue(len(r) == 19182)
 
+    def test_05_get_alphanum_str(self):
+        r = get_alphanum_str(20)
+        self.assertEqual(len(r), 20)

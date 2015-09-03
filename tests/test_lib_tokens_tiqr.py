@@ -1,13 +1,132 @@
 """
-This test file tests the lib.tokens.tiqrtoken
+This test file tests the lib.tokens.tiqrtoken and lib.tokens.ocra
 This depends on lib.tokenclass
 """
 
 from .base import MyTestCase
 from privacyidea.lib.tokens.tiqrtoken import TiqrTokenClass
+from privacyidea.lib.tokens.ocra import OCRASuite
 from privacyidea.lib.token import init_token
 from privacyidea.lib.error import ParameterError
 import re
+
+
+class OCRATestCase(MyTestCase):
+
+    def test_00_ocrasuite_fail(self):
+        self.assertRaises(Exception, OCRASuite, "algo:crypto")
+        self.assertRaises(Exception, OCRASuite,
+                          "algo:crypto:data:ss")
+
+        # NO OCRA-2
+        self.assertRaises(Exception, OCRASuite,
+                          "OCRA-2:HOTP-SHA1-6:QH10-S128")
+
+        # no TOTP
+        self.assertRaises(Exception, OCRASuite,
+                          "OCRA-2:TOTP-SHA1-6:QH10-S128")
+
+        # No unknown SHA
+        self.assertRaises(Exception, OCRASuite,
+                          "OCRA-1:HOTP-SHA3-6:QH10-S128")
+
+        # No unknown truncation
+        self.assertRaises(Exception, OCRASuite,
+                          "OCRA-1:HOTP-SHA1-3:QH10-S128")
+
+        # wrong cryptofunction
+        self.assertRaises(Exception, OCRASuite,
+                          "OCRA-1:HOTPSHA13:QH10-S128")
+
+        # No HOTP
+        self.assertRaises(Exception, OCRASuite,
+                          "OCRA-1:TOTP-SHA1-4:QH10-S128")
+
+        # check datainput
+        # counter
+        self.assertRaises(Exception, OCRASuite,
+                          "OCRA-1:HOTP-SHA512-8:X-QN08-PSHA1")
+
+        # challenge
+        # wrong datainput
+        self.assertRaises(Exception, OCRASuite,
+                          "OCRA-1:HOTP-SHA512-8:CQX04PSHA1")
+        # wrong challenge type
+        self.assertRaises(Exception, OCRASuite,
+                          "OCRA-1:HOTP-SHA512-8:C-QX04-PSHA1")
+        # challenge to short
+        self.assertRaises(Exception, OCRASuite,
+                          "OCRA-1:HOTP-SHA512-8:C-QN03-PSHA1")
+        # challenge to long
+        self.assertRaises(Exception, OCRASuite,
+                          "OCRA-1:HOTP-SHA512-8:C-QN65-PSHA1")
+        # challenge length not a number
+        self.assertRaises(Exception, OCRASuite,
+                          "OCRA-1:HOTP-SHA512-8:C-QNXX-PSHA1")
+
+        # signature
+        # unknown signature type
+        self.assertRaises(Exception, OCRASuite,
+                          "OCRA-1:HOTP-SHA512-8:C-QN04-XSHA1")
+        # Wrong hash
+        self.assertRaises(Exception, OCRASuite,
+                          "OCRA-1:HOTP-SHA512-8:C-QN04-PSHA3")
+
+        # Session length
+        self.assertRaises(Exception, OCRASuite,
+                          "OCRA-1:HOTP-SHA512-8:C-QN04-SXXX")
+
+        self.assertRaises(Exception, OCRASuite,
+                          "OCRA-1:HOTP-SHA512-8:C-QN04-S100")
+
+        # Timestamp
+        self.assertRaises(Exception, OCRASuite,
+                          "OCRA-1:HOTP-SHA512-8:C-QN04-T10X")
+        self.assertRaises(Exception, OCRASuite,
+                          "OCRA-1:HOTP-SHA512-8:C-QN04-T100M")
+        self.assertRaises(Exception, OCRASuite,
+                          "OCRA-1:HOTP-SHA512-8:C-QN04-TxxM")
+
+    def test_01_ocrasuite_success(self):
+        os = OCRASuite("OCRA-1:HOTP-SHA1-6:QH10-S128")
+        self.assertEqual(os.algorithm, "OCRA-1")
+        self.assertEqual(os.sha, "SHA1")
+        self.assertEqual(os.truncation, 6)
+        self.assertEqual(os.challenge_type, "QH")
+        self.assertEqual(os.challenge_length, 10)
+        self.assertEqual(os.signature_type, "S")
+        self.assertEqual(os.session_length, 128)
+        os = OCRASuite("OCRA-1:HOTP-SHA512-8:C-QN08-PSHA1")
+        self.assertEqual(os.sha, "SHA512")
+        self.assertEqual(os.truncation, 8)
+        self.assertEqual(os.counter, "C")
+        self.assertEqual(os.challenge_type, "QN")
+        self.assertEqual(os.signature_hash, "SHA1")
+        os = OCRASuite("OCRA-1:HOTP-SHA256-6:QA10-T1M")
+        self.assertEqual(os.time_frame, "M")
+        self.assertEqual(os.time_value, 1)
+        os = OCRASuite("OCRA-1:HOTP-SHA1-4:QH8-S512")
+
+    def test_02_create_challenge(self):
+        # test creation of hex challenge
+        os = OCRASuite("OCRA-1:HOTP-SHA1-6:QH10-S128")
+        c = os.create_challenge()
+        self.assertEqual(len(c), 20)
+        self.assertTrue("G" not in c, c)
+
+        # test creation of alphanum challenge
+        os = OCRASuite("OCRA-1:HOTP-SHA1-6:QA10-S128")
+        c = os.create_challenge()
+        self.assertEqual(len(c), 10)
+        self.assertTrue("-" not in c, c)
+
+        # test creation of numeric challenge
+        os = OCRASuite("OCRA-1:HOTP-SHA1-6:QN10-S128")
+        c = os.create_challenge()
+        self.assertEqual(len(c), 10)
+        # Test, if this is a number
+        i_c = int(c)
+
 
 
 class TiQRTokenTestCase(MyTestCase):
@@ -105,3 +224,4 @@ class TiQRTokenTestCase(MyTestCase):
                                          "sessionKey": "1234",
                                          "operation": "login"})
         self.assertEqual(r[0], "text")
+

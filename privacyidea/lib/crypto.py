@@ -33,13 +33,11 @@ This lib.cryto is tested in tests/test_lib_crypto.py
 import hmac
 import logging
 from hashlib import sha256
-import base64
+import random
+import string
 from .log import log_with
 from .error import HSMException
-
 import binascii
-import os
-import stat
 
 ''' for the hmac algo, we have to check the python version '''
 import sys
@@ -481,13 +479,13 @@ def get_rand_digit_str(length=16):
     using the urandom
 
     This is used for creating transaction ids of challenges.
-    It does not work for lenght==1!
+    It does not work for length==1!
 
     :return: random string
     :rtype: basestring
     """
-    if length==1:
-        raise ValueError    ("get_rand_digit_str only works for values > 1")
+    if length == 1:
+        raise ValueError("get_rand_digit_str only works for values > 1")
     clen = int(length / 2.4 + 0.5)
     randd = geturandom(clen)
     s = "%d" % (int(randd.encode('hex'), 16))
@@ -496,6 +494,20 @@ def get_rand_digit_str(length=16):
     elif len(s) > length:
         s = s[:length]
     return s
+
+
+def get_alphanum_str(length=16):
+    """
+    return a string of alphanumeric characters
+
+    :return: random string
+    :rtype: basestring
+    """
+    ret = ""
+    for i in range(length):
+        ret += random.choice(string.lowercase + string.uppercase +
+                             string.digits)
+    return ret
 
 
 def zerome(bufferObject):

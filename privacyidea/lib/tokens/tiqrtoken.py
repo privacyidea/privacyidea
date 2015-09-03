@@ -29,24 +29,18 @@ which is based on OCRA.
 This code is tested in tests/test_lib_tokens_tiqr
 """
 
-import time
-from .HMAC import HmacOtp
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
-from privacyidea.lib.apps import create_google_authenticator_url as cr_google
-from privacyidea.lib.apps import create_oathtoken_url as cr_oath
-from privacyidea.lib.utils import create_img
 from privacyidea.lib.utils import generate_otpkey
 from privacyidea.lib.utils import create_img
-import traceback
 import logging
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.error import ParameterError
-from privacyidea.models import (TokenRealm, Challenge, cleanup_challenges)
-from privacyidea.lib.challenge import get_challenges
+from privacyidea.models import Challenge
 from privacyidea.lib.user import get_user_from_param
+from privacyidea.lib.tokens.ocra import OCRASuite
 
 log = logging.getLogger(__name__)
 optional = True
@@ -58,6 +52,7 @@ keylen = {'sha1': 20,
           'sha256': 32,
           'sha512': 64
           }
+OCRA_DEFAULT_SUITE = "OCRA-1:HOTP-SHA1-6:QH10-S128"
 
 
 class API_ACTIONS():
@@ -150,8 +145,8 @@ class TiqrTokenClass(TokenClass):
         user_object = get_user_from_param(param, required)
         self.set_user(user_object)
 
-        ocrasuite_default = "OCRA-1:HOTP-SHA1-6:QH10-S"
-        ocrasuite = get_from_config("tiqr.ocrasuite") or ocrasuite_default
+        ocrasuite = get_from_config("tiqr.ocrasuite") or OCRA_DEFAULT_SUITE
+        OCRASuite(ocrasuite)
         self.add_tokeninfo("ocrasuite", ocrasuite)
         TokenClass.update(self, param)
         # We have to set the realms here, since the token DB object does not
@@ -214,8 +209,7 @@ class TiqrTokenClass(TokenClass):
 
             # TODO: Make this configurable
             service_identifier = "org.privacyidea"
-            ocrasuite_default = "OCRA-1:HOTP-SHA1-6:QH10-S"
-            ocrasuite = get_from_config("tiqr.ocrasuite") or ocrasuite_default
+            ocrasuite = get_from_config("tiqr.ocrasuite") or OCRA_DEFAULT_SUITE
             service_displayname = get_from_config("tiqr.serviceDisplayname") or \
                                   "privacyIDEA"
             reg_server = get_from_config("tiqr.regServer")
@@ -342,8 +336,11 @@ class TiqrTokenClass(TokenClass):
         # TODO: Make this configurable
         service_identifier = "org.privacyidea"
 
-        # TODO: At the moment we are fixed to "OCRA-1:HOTP-SHA1-6:QH10-S"
-        challenge = "1234567890"
+        # Get the OCRASUITE from the token information
+        ocrasuite = self.get_tokeninfo("ocrasuite") or OCRA_DEFAULT_SUITE
+        # Depending on the OCRA-SUITE we create the challenge
+        os = OCRASuite(ocrasuite)
+        challenge = os.create_challenge()
 
         # Create the challenge in the database
         db_challenge = Challenge(self.token.serial,
