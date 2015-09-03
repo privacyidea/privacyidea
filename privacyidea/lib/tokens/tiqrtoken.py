@@ -207,8 +207,8 @@ class TiqrTokenClass(TokenClass):
                 raise ParameterError("No token with serial %s" % serial)
             user_identifier, user_displayname = tokens[0].get_user_displayname()
 
-            # TODO: Make this configurable
-            service_identifier = "org.privacyidea"
+            service_identifier = get_from_config("tiqr.serviceIdentifier") or\
+                                 "org.privacyidea"
             ocrasuite = get_from_config("tiqr.ocrasuite") or OCRA_DEFAULT_SUITE
             service_displayname = get_from_config("tiqr.serviceDisplayname") or \
                                   "privacyIDEA"
@@ -274,7 +274,7 @@ class TiqrTokenClass(TokenClass):
             passw = getParam(params, "response", required)
             operation = getParam(params, "operation", required)
             res = "INVALID_RESPONSE"
-            # Check the passw and set res = "OK"
+            # TODO: Check the passw and set res = "OK"
             res = "OK"
             return "text", res
 
@@ -333,8 +333,8 @@ class TiqrTokenClass(TokenClass):
         # We need to set the user ID
         user_identifier, user_displayname = self.get_user_displayname()
 
-        # TODO: Make this configurable
-        service_identifier = "org.privacyidea"
+        service_identifier = get_from_config("tiqr.serviceIdentifier") or \
+                             "org.privacyidea"
 
         # Get the OCRASUITE from the token information
         ocrasuite = self.get_tokeninfo("ocrasuite") or OCRA_DEFAULT_SUITE
