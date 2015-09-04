@@ -170,9 +170,9 @@ class TokenClass(object):
         """
         user_object = self.get_user()
         user_info = user_object.get_user_info()
-        user_identifier = "%s@%s" % (user_object.login, user_object.realm)
-        user_displayname = "%s %s" % (user_info.get("givenname"),
-                                      user_info.get("surname"))
+        user_identifier = "%s_%s" % (user_object.login, user_object.realm)
+        user_displayname = "%s %s" % (user_info.get("givenname", "."),
+                                      user_info.get("surname", "."))
         return user_identifier, user_displayname
 
     @check_token_locked
@@ -1206,7 +1206,7 @@ class TokenClass(object):
         # get the challenges for this transaction ID
         if transaction_id is not None:
             challengeobject_list = get_challenges(serial=self.token.serial,
-                                                 transaction_id=transaction_id)
+                                                  transaction_id=transaction_id)
 
             for challengeobject in challengeobject_list:
                 if challengeobject.is_valid():
@@ -1215,7 +1215,8 @@ class TokenClass(object):
                     otp_counter = self.check_otp(passw, options=options)
                     if otp_counter >= 0:
                         # We found the matching challenge, so lets return the
-                        #  successful result
+                        #  successful result and delete the challenge object.
+                        challengeobject.delete()
                         break
 
         return otp_counter

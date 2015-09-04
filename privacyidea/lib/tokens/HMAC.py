@@ -59,6 +59,14 @@ class HmacOtp():
              counter=None,
              key=None,
              challenge=None):
+        """
+
+        :param counter:
+        :param key:
+        :param challenge: The datainput for OCRA
+        :type challenge: hex string
+        :return:
+        """
         # log.error("hmacSecret()")
         counter = counter or self.counter
 
@@ -68,7 +76,7 @@ class HmacOtp():
             data_input = struct.pack(">Q", counter)
         else:
             data_input = binascii.unhexlify(challenge)
-            
+
         if key is None:
             dig = str(self.secretObj.hmac_digest(data_input, self.hashfunc))
         else:
@@ -95,6 +103,15 @@ class HmacOtp():
                  key=None,
                  do_truncation=True,
                  challenge=None):
+        """
+
+        :param counter:
+        :param inc_counter:
+        :param key:
+        :param do_truncation:
+        :param challenge: hexlified challenge
+        :return:
+        """
         
         counter = counter or self.counter
 

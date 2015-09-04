@@ -1,9 +1,10 @@
-privacyidea-venv (2.6~dev1) wheezy; urgency=low
+privacyidea-venv (2.6~dev2) wheezy; urgency=low
 
   * start 2.6 version
   * Add 4 eyes token
+  * Add TiQR token
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 31 Aug 2015 17:00:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 04 Sep 2015 17:30:00 +0200
 
 privacyidea-venv (2.5-1) wheezy; urgency=low
 

@@ -20,8 +20,16 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-This API endpoint is used by special token types to provide additional
-special API calls.
+This API endpoint is a generic endpoint that can be used by any token
+type.
+
+The tokentype needs to implement a classmethod *api_endpoint* and can then be
+called by /ttype/<tokentype>.
+This way, each tokentype can create its own API without the need to change
+the core API.
+
+The TiQR Token uses this API to implement its special functionalities. See
+:ref:`code_tiqr_token`.
 """
 from flask import (Blueprint,
                    request)

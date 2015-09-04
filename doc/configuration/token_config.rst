@@ -4,14 +4,14 @@ Tokens
 ------
 
 .. toctree::
-   tokens/supported.rst
+   supported_tokens.rst
 
 .. _tokentypes:
 
 Supported Tokentypes
 .....................
 
-.. index:: token types, Yubico, Yubikey, SMS, SSH Key, registration
+.. index:: token types, Yubico, Yubikey, SMS, SSH Key, registration, TiQR
 
 At the moment the following tokentypes are supported:
 
@@ -44,22 +44,16 @@ At the moment the following tokentypes are supported:
 * :ref:`yubikey` - A Yubikey hardware initialized in the AES mode, that
   authenticates against privacyIDEA.
 * Daplug - A hardware OTP token similar to the Yubikey.
+* :ref:`tiqr` - A Smartphone token that can be used to login by only scanning
+  a QR code.
 
 The Tokentypes:
 
 .. toctree::
-   tokens/4eyes
-   tokens/certificate
-   tokens/email
-   tokens/hotp
-   tokens/totp
-   tokens/radius
-   tokens/registration
-   tokens/remote
-   tokens/sms
-   tokens/sshkey
-   tokens/yubico
-   tokens/yubikey
+   :glob:
+   :maxdepth: 1
+
+   tokens/*
 
 .. _token_config:
 
@@ -79,7 +73,8 @@ types.
    *Token Configuration: SMS*
 
 .. toctree::
-   tokenconfig/email
-   tokenconfig/sms
-   tokenconfig/yubico
+   :glob:
+   :maxdepth: 1
+
+   tokenconfig/*
 

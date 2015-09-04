@@ -26,4 +26,5 @@ Now you can take a look at the several REST endpoints.
    api/machineresolver
    api/machines
    api/application
+   api/ttype
 

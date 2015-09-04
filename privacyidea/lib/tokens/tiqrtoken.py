@@ -19,14 +19,49 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 __doc__ = """
-This is the implementation for the TiQR token. See:
-    https://tiqr.org
-    https://www.usenix.org/legacy/events/lisa11/tech/full_papers/Rijswijk.pdf
-
 The TiQR token is a special App based token, which allows easy login and
 which is based on OCRA.
 
-This code is tested in tests/test_lib_tokens_tiqr
+It generates an enrollment QR code, which contains a link with the more
+detailed enrollment information.
+
+For a description of the TiQR protocol see
+
+* https://www.usenix.org/legacy/events/lisa11/tech/full_papers/Rijswijk.pdf
+* https://github.com/SURFnet/tiqr/wiki/Protocol-documentation.
+* https://tiqr.org
+
+The TiQR token is based on the OCRA algorithm. It lets you authenticate
+with your smartphone by scanning a QR code.
+
+The TiQR token is enrolled via /token/init, but it requires no otpkey, since
+the otpkey is generated on the smartphone and pushed to the privacyIDEA
+server in a seconds step.
+
+Enrollment
+----------
+
+1. Start enrollment with /token/init
+2. Scan the QR code in the details of the JSON result. The QR code contains
+   a link to /ttype/tiqr?action=metadata
+3. The TiQR Smartphone App will fetch this link and get more information
+4. The TiQR Smartphone App will push the otpkey to a
+   link /ttype/tiqr?action=enrollment and the token will be ready for use.
+
+Authentication
+--------------
+
+1. Call /validate/check with the PIN of the TiQR token
+2. The details of the JSON response contains a QR code, that needs to
+   be shown to the user.
+3. The user scans the QR code.
+4. The App communicates with privacyIDEA via the API /ttype/tiqr. In this
+   step the response of the App to the challenge is verified. The successful
+   authentication is stored in the Challenge DB table.
+5. Use */validate/check?transaction_id=* to verifiy the successful
+   authentication
+
+This code is tested in tests/test_lib_tokens_tiqr.
 """
 
 from privacyidea.api.lib.utils import getParam
@@ -40,19 +75,17 @@ from privacyidea.lib.token import get_tokens
 from privacyidea.lib.error import ParameterError
 from privacyidea.models import Challenge
 from privacyidea.lib.user import get_user_from_param
-from privacyidea.lib.tokens.ocra import OCRASuite
+from privacyidea.lib.tokens.ocra import OCRASuite, OCRA
+from privacyidea.lib.challenge import get_challenges
+from privacyidea.models import cleanup_challenges
+import gettext
 
 log = logging.getLogger(__name__)
 optional = True
 required = False
-import gettext
 _ = gettext.gettext
 
-keylen = {'sha1': 20,
-          'sha256': 32,
-          'sha512': 64
-          }
-OCRA_DEFAULT_SUITE = "OCRA-1:HOTP-SHA1-6:QH10-S128"
+OCRA_DEFAULT_SUITE = "OCRA-1:HOTP-SHA1-6:QN10"
 
 
 class API_ACTIONS():
@@ -65,9 +98,6 @@ class API_ACTIONS():
 class TiqrTokenClass(TokenClass):
     """
     The TiQR Token implementation.
-
-    It generated an enrollment QR code, which contains a link with the more
-    detailed enrollment information.
     """
 
     @classmethod
@@ -160,9 +190,6 @@ class TiqrTokenClass(TokenClass):
         """
         response_detail = TokenClass.get_init_detail(self, params, user)
         params = params or {}
-        #secretHOtp = self.token.get_otpkey()
-        #registrationcode = secretHOtp.getKey()
-        #response_detail["registrationcode"] = registrationcode
         enroll_url = get_from_config("tiqr.regServer")
         log.info("using tiqr.regServer for enrollment: %s" % enroll_url)
         serial = self.token.serial
@@ -187,6 +214,7 @@ class TiqrTokenClass(TokenClass):
         """
         This provides a function to be plugged into the API endpoint
         /ttype/<tokentype> which is defined in api/ttype.py
+        See :ref:`rest_ttype`.
 
         :param params: The Request Parameters which can be handled with getParam
         :return: Flask Response
@@ -269,15 +297,35 @@ class TiqrTokenClass(TokenClass):
 
             return "text", res
         elif action == API_ACTIONS.AUTHENTICATION:
+            res = "FAIL"
             userId = getParam(params, "userId", required)
             session = getParam(params, "sessionKey", required)
             passw = getParam(params, "response", required)
             operation = getParam(params, "operation", required)
-            res = "INVALID_RESPONSE"
-            # TODO: Check the passw and set res = "OK"
-            res = "OK"
-            return "text", res
+            res = "INVALID_CHALLENGE"
+            # The sessionKey is stored in the db_challenge.transaction_id
+            # We need to get the token serial for this sessionKey
+            challenges = get_challenges(transaction_id=session)
+            if len(challenges) == 1:
+                # We found exactly one challenge
+                if challenges[0].is_valid():
+                    # Challenge is still valid, time has not passed
+                    serial = challenges[0].serial
+                    tokens = get_tokens(serial=serial)
+                    if len(tokens) == 1:
+                        # We found exactly the one token
+                        res = "INVALID_RESPONSE"
+                        r = tokens[0].check_challenge_response(
+                            challenge=challenges[0].challenge, passw=passw)
+                        if r > 0:
+                            res = "OK"
+                            # delete the challenge, so that it can not be
+                            # used a second time
+                            challenges[0].delete()
 
+            cleanup_challenges()
+
+            return "text", res
 
     @log_with(log)
     def is_challenge_request(self, passw, user=None, options=None):
@@ -359,3 +407,27 @@ class TiqrTokenClass(TokenClass):
                       "value": authurl}
 
         return True, message, db_challenge.transaction_id, attributes
+
+    def check_challenge_response(self, user=None, passw=None, options=None,
+                                 challenge=None):
+        """
+        This method verifies if the *passw* is the valid OCRA response to the
+        *challenge*.
+        In case of success we return a value > 0
+
+        :param user: the requesting user
+        :type user: User object
+        :param passw: the password (pin+otp)
+        :type passw: string
+        :param options: additional arguments from the request, which could
+                        be token specific. Usually "transactionid"
+        :type options: dict
+        :return: return otp_counter. If -1, challenge does not match
+        :rtype: int
+        """
+        ocrasuite = self.get_tokeninfo("ocrasuite")
+        security_object = self.token.get_otpkey()
+        ocra_object = OCRA(ocrasuite, security_object=security_object)
+        # TODO: We might need to add additional Signing or Counter objects
+        r = ocra_object.check_response(passw, question=challenge)
+        return r
