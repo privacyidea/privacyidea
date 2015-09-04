@@ -1,4 +1,4 @@
-privacyidea-venv (2.6~dev2) wheezy; urgency=low
+privacyidea-venv (2.6~dev3) wheezy; urgency=low
 
   * start 2.6 version
   * Add 4 eyes token

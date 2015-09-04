@@ -439,7 +439,7 @@ class TiQRTokenTestCase(MyTestCase):
         self.assertEqual(r[1], "OK")
 
         # Send the same response a second time would not work
-        # since the SESSION does not exist anymore
+        # since the Challenge is marked as answered
         r = TiqrTokenClass.api_endpoint({"response": response,
                                          "userId": "cornelius_%s" %
                                                    self.realm1,
@@ -447,5 +447,16 @@ class TiQRTokenTestCase(MyTestCase):
                                          "operation": "login"})
         self.assertEqual(r[0], "text")
         self.assertEqual(r[1], "INVALID_CHALLENGE")
+
+        # Finally we check the OTP status:
+        r = token.check_challenge_response(options={"transaction_id":
+                                                    transaction_id})
+        self.assertTrue(r > 0, r)
+
+        # Check the same challenge again. It will fail, since the
+        # challenge was deleted from the database
+        r = token.check_challenge_response(options={"transaction_id":
+                                                    transaction_id})
+        self.assertTrue(r < 0, r)
 
 

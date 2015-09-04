@@ -1,4 +1,4 @@
-python-privacyidea (2.6~dev2) trusty; urgency=low
+python-privacyidea (2.6~dev3) trusty; urgency=low
 
   * Start 2.6 version
   * Add 4 eyes token
