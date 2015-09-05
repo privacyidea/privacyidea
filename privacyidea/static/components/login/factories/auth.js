@@ -51,3 +51,29 @@ angular.module("privacyideaAuth", [])
             }
         }
     });
+
+//
+// Taken from
+// https://timesheets.altamiracorp.com/blog/employee-posts/simple-polling-service-in-angularjs
+angular.module('privacyideaAuth')
+    .factory('PollingAuthFactory', ['$http', 'authUrl', function($http,
+                                                                 authUrl){
+        var pollingTime = 1000;
+        var polls = {};
+        // We only need one poller
+        var name = "authPoller";
+
+        return {
+            start: function(polling_func) {
+                // Check to make sure poller doesn't already exist
+                if (!polls[name]) {
+                    polls[name] = setInterval(polling_func, pollingTime);
+                }
+            },
+
+            stop: function() {
+                clearInterval(polls[name]);
+                delete polls[name];
+            }
+        }
+    }]);

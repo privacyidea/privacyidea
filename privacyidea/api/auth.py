@@ -38,10 +38,7 @@ and password.
 """
 from flask import (Blueprint,
                    request,
-                   url_for,
                    current_app,
-                   jsonify,
-                   abort,
                    g)
 from lib.utils import (send_result, get_all_params,
                        verify_auth_token)
@@ -49,10 +46,10 @@ from ..lib.crypto import geturandom
 from ..lib.error import AuthError
 from ..lib.auth import verify_db_admin
 import jwt
-import json
 from functools import wraps
 from datetime import (datetime,
                       timedelta)
+from lib.utils import getParam
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import check_webui_user, ROLE
 from privacyidea.lib.user import User
@@ -189,15 +186,25 @@ def get_auth_token():
         user_obj = User(username, realm)
         options = {"g": g,
                    "clientip": request.remote_addr}
+        transaction_id = getParam(request.all_data, "transaction_id")
+        state = getParam(request.all_data, "state")
+        if transaction_id:
+            options["transaction_id"] = transaction_id
+        if state:
+            options["state"] = state
         superuser_realms = current_app.config.get("SUPERUSER_REALM", [])
-        user_auth, role = check_webui_user(user_obj,
-                                           password,
-                                           options=options,
-                                           superuser_realms=superuser_realms)
+        user_auth, role, details = check_webui_user(user_obj,
+                                                    password,
+                                                    options=options,
+                                                    superuser_realms=
+                                                    superuser_realms)
+        # The details with the transaction_id are raised with the AuthError
+        details = details or {}
 
     if not admin_auth and not user_auth:
         raise AuthError("Authentication failure",
-                        "Wrong credentials", status=401)
+                        "Wrong credentials", status=401,
+                        details=details)
 
     # Add the role to the JWT, so that we can verify it internally
     # Add the authtype to the JWT, so that we could use it for access

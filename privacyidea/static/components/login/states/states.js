@@ -39,5 +39,10 @@ angular.module('privacyideaApp.loginStates', ['ui.router']).config(
                     // This is the state, when no login path is specified
                     url: "",
                     templateUrl: loginpath + "login.html"
+                }).state('response', {
+                    // This is the state, when the login is performed via
+                    // challenge response.
+                    url: "/response",
+                    templateUrl: loginpath + "enter-response.html"
                 })
         }]);

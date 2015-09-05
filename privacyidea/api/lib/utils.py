@@ -126,7 +126,7 @@ def send_result(obj, rid=1, details=None):
     return jsonify(res)
 
 
-def send_error(errstring, rid=1, context=None, error_code = -311):
+def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
     """
     sendError - return a json error result document
 
@@ -145,12 +145,16 @@ def send_error(errstring, rid=1, context=None, error_code = -311):
     :param error_code: The error code in the JSON object along with the error
     message.
     :type error_code: int
+    :param details: dict with additional details about the error (like
+        challenges)
+    :type details: dict
 
     :return: json rendered sting result
     :rtype: string
 
     """
     res = {"jsonrpc": "2.0",
+           "detail": details,
            "result": {"status": False,
                       "error": {"code": error_code,
                                 "message": errstring}

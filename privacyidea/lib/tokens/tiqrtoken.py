@@ -51,12 +51,12 @@ Enrollment
 Authentication
 --------------
 
-An application that want to use the TiQR token with privacyIDEA has to use
+An application that wants to use the TiQR token with privacyIDEA has to use
 the token in challenge response.
 
 1. Call ``/validate/check?user=<user>&pass=<pin>``
    with the PIN of the TiQR token
-2. The details of the JSON response contains a QR code, that needs to
+2. The details of the JSON response contain a QR code, that needs to
    be shown to the user.
    In addition the application needs to save the ``transaction_id`` in the
    response.
@@ -65,10 +65,10 @@ the token in challenge response.
    step the response of the App to the challenge is verified. The successful
    authentication is stored in the Challenge DB table.
    (No need for the application to take any action)
-5. The application needs to poll
+5. Now, the application needs to poll
    ``/validate/check?user=<user>&transaction_id=*&pass=`` to verifiy the
    successful authentication. The ``pass`` can be empty.
-   If it is returned ``value=true``, then the user authenticated successfully
+   If ``value=true`` is returned, the user authenticated successfully
    with the TiQR token.
 
 This code is tested in tests/test_lib_tokens_tiqr.
@@ -415,7 +415,8 @@ class TiqrTokenClass(TokenClass):
                                               db_challenge.transaction_id,
                                               challenge)
         attributes = {"img": create_img(authurl, width=250),
-                      "value": authurl}
+                      "value": authurl,
+                      "poll": True}
 
         return True, message, db_challenge.transaction_id, attributes
 

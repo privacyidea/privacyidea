@@ -30,6 +30,6 @@ class AuthTestCase(MyTestCase):
         delete_db_admin("mytestadmin")
 
     def test_02_users(self):
-        r, role = check_webui_user(User("cornelius"), "test")
+        r, role, detail = check_webui_user(User("cornelius"), "test")
         self.assertFalse(r)
         self.assertEqual(role, "user")

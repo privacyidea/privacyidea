@@ -90,8 +90,11 @@ def check_webui_user(user_obj,
     """
     This function is used to authenticate the user at the web ui.
     It checks against the userstore or against OTP/privacyidea (check_otp).
-    It returns true/false if the user authenticated successfully and the
-    role of the user.
+    It returns a tuple of
+
+    * true/false if the user authenticated successfully
+    * the role of the user
+    * the "detail" dictionary of the response
 
     :param user_obj: The user who tries to authenticate
     :type user_obj: User Object
@@ -102,16 +105,17 @@ def check_webui_user(user_obj,
     :type superuser_realms: list
     :param check_otp: If set, the user is not authenticated against the
          userstore but against privacyidea
-    :return: tuple of bool and string
+    :return: tuple of bool, string and dict/None
     """
     options = options or {}
     superuser_realms = superuser_realms or []
     user_auth = False
     role = ROLE.USER
+    details = None
 
     if check_otp:
         # check if the given password matches an OTP token
-        check, _dict = check_user_pass(user_obj, password, options=options)
+        check, details = check_user_pass(user_obj, password, options=options)
         if check:
             user_auth = True
     else:
@@ -124,4 +128,4 @@ def check_webui_user(user_obj,
     if user_obj.realm in superuser_realms:
         role = ROLE.ADMIN
 
-    return user_auth, role
+    return user_auth, role, details

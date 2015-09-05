@@ -165,7 +165,9 @@ def auth_error(error):
     if "audit_object" in g:
         g.audit_object.log({"info": error.description})
         g.audit_object.finalize_log()
-    return send_error(error.description, error_code=-401), error.status_code
+    return send_error(error.description,
+                      error_code=-401,
+                      details=error.details), error.status_code
 
 
 @system_blueprint.errorhandler(PolicyError)

@@ -164,7 +164,7 @@ msgstr "Audit"
 msgid "Authentication Server URI"
 msgstr "URI des Authentisierungsservers"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:123
+#: privacyidea/static/components/login/controllers/loginControllers.js:138
 msgid "Authentication failed."
 msgstr "Authentisierung fehlgeschlagen."
 
@@ -260,6 +260,11 @@ msgstr "Zertifikatsanforderung (PEM)"
 #: privacyidea/static/components/token/controllers/tokenControllers.js:133
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr "Zertifikate: x509 Zertifikate ausrollen."
+
+#: privacyidea/static/components/login/controllers/loginControllers.js:126
+msgid ""
+"Challange Response Authentication. You are not completely authenticated, yet."
+msgstr "Challenge-Response Anmeldung. Sie sind noch nicht fertig angemeldet!"
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:12
 #: privacyidea/static/components/token/views/token.enroll.remote.html:12
@@ -606,7 +611,7 @@ msgstr "Neuen Token ausrollen"
 msgid "Enroll Token"
 msgstr "Token ausrollen"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:31
+#: privacyidea/static/components/login/controllers/loginControllers.js:32
 #: privacyidea/static/components/token/controllers/tokenControllers.js:85
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:79
@@ -869,7 +874,7 @@ msgstr "Lizenziert unter"
 msgid "Limit"
 msgstr "Begrenzung"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:39
+#: privacyidea/static/components/login/controllers/loginControllers.js:40
 msgid "List tokens"
 msgstr "Tokenliste anzeigen"
 
@@ -890,11 +895,12 @@ msgstr "Lade Benutzer..."
 msgid "Log"
 msgstr "Logbuch"
 
+#: privacyidea/static/components/login/views/enter-response.html:29
 #: privacyidea/static/components/login/views/login.html:28
 msgid "Log In"
 msgstr "Anmelden"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:46
+#: privacyidea/static/components/login/controllers/loginControllers.js:47
 msgid "Log out"
 msgstr "Abmelden"
 
@@ -1044,7 +1050,7 @@ msgstr "Anzahl der Maschinen: {{ $sope.machinecount }}"
 msgid "Number of required tokens"
 msgstr "Anzahl der benötigten Token"
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:41
+#: privacyidea/static/components/config/views/config.token.tiqr.html:53
 msgid "OCRA Suite"
 msgstr "OCRA Suite"
 
@@ -1258,7 +1264,7 @@ msgstr ""
 msgid "Realm"
 msgstr "Realm "
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:172
+#: privacyidea/static/components/login/controllers/loginControllers.js:224
 msgid "Realm defrealm created."
 msgstr "Der Realm defrealm wurde erzeugt."
 
@@ -1345,6 +1351,11 @@ msgstr "Resolvername"
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:36
 msgid "Resource Server URI"
 msgstr "URI des Resource Servers"
+
+#: privacyidea/static/components/login/views/enter-response.html:14
+#: privacyidea/static/components/login/views/enter-response.html:22
+msgid "Response"
+msgstr "Antwort"
 
 #: privacyidea/static/components/token/views/token.details.html:266
 msgid "Resync Token"
@@ -2136,17 +2147,17 @@ msgstr ""
 "unverschlüsselte PSKC-Dateien unterstützt. Bitte fragen Sie nach einem "
 "update, um verschlüsselte PSKC-Dateien zu importieren."
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:42
+#: privacyidea/static/components/config/views/config.token.tiqr.html:54
 msgid ""
 "This is the OCRA suite used by the TiQR App.\n"
-"        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QH10-S.\n"
+"        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.\n"
 "        For more details see the\n"
 "        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA"
 "\">RFC\n"
 "            6287</a>."
 msgstr ""
 "Dies ist die OCRA-Suite, die von der TiQR-App verwendet wird. Standardmäßig "
-"wird dieOCRA-Suite OCRA-1:HOTP-SHA1-6:QH10-S verwendet. Um mehr über OCRA-"
+"wird dieOCRA-Suite OCRA-1:HOTP-SHA1-6:QH10 verwendet. Um mehr über OCRA-"
 "Suites zu erfahren,lesen Sie  <a href=\"http://tools.ietf.org/html/"
 "rfc6287#page-8\" target=\"OCRA\">RFC\n"
 "            6287</a>."
@@ -2164,6 +2175,14 @@ msgstr ""
 "Dies ist die allgemeine Tokennutzung, egal welche Aktion mit dem Tokenoder "
 "in Bezug auf den Token durchgeführt wurde."
 
+#: privacyidea/static/components/config/views/config.token.tiqr.html:42
+msgid ""
+"This is the service identifier that will be passed to the TiQR app.\n"
+"        This should contain a reverse FQDN (defaults to org.privacyidea)."
+msgstr ""
+"Dies ist die Dienste ID, die der TiQR App übergeben wird. Dieser sollte der "
+"umgekehrte DNS-Name des Systems sein. (Standard: org.privacyidea)"
+
 #: privacyidea/static/components/token/views/token.enroll.registration.html:6
 msgid ""
 "This is used, so that the user can enroll a token on his own, after\n"
@@ -2179,6 +2198,12 @@ msgstr "TiQR Authentisierungsserver"
 #: privacyidea/static/components/config/views/config.token.tiqr.html:8
 msgid "TiQR Registration Server"
 msgstr "TiQR Registrierungsserver"
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:40
+msgid ""
+"TiQR Service\n"
+"        Identifier"
+msgstr "TiQR Dienste ID"
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:31
 msgid "TiQR Service Displayname"
@@ -2574,7 +2599,7 @@ msgstr "Telefon"
 msgid "privacyIDEA Single Page Web Client"
 msgstr "privacyIDEA Single Page Web Client"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:120
+#: privacyidea/static/components/login/controllers/loginControllers.js:180
 msgid "privacyIDEA UI supports hotkeys. Use '?' to get help."
 msgstr "Das privacyIDEA UI unterstützt Hotkeys. Benutzen Sie '?' für Hilfe."
 

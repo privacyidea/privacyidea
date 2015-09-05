@@ -92,7 +92,9 @@ class BaseError(Exception):
 
 
 class AuthError(BaseError):
-    def __init__(self, error, description, status=401, headers=None):
+    def __init__(self, error, description, status=401, headers=None,
+                 details=None):
+        self.details = details
         BaseError.__init__(self, error, description, status, headers)
         
 

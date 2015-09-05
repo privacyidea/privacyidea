@@ -154,7 +154,7 @@ msgstr ""
 msgid "Authentication Server URI"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:123
+#: privacyidea/static/components/login/controllers/loginControllers.js:138
 msgid "Authentication failed."
 msgstr ""
 
@@ -244,6 +244,10 @@ msgstr ""
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:133
 msgid "Certificate: Enroll an x509 Certificate Token."
+msgstr ""
+
+#: privacyidea/static/components/login/controllers/loginControllers.js:126
+msgid "Challange Response Authentication. You are not completely authenticated, yet."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:12
@@ -579,7 +583,7 @@ msgstr ""
 msgid "Enroll Token"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:31
+#: privacyidea/static/components/login/controllers/loginControllers.js:32
 #: privacyidea/static/components/token/controllers/tokenControllers.js:85
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:79
@@ -820,7 +824,7 @@ msgstr ""
 msgid "Limit"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:39
+#: privacyidea/static/components/login/controllers/loginControllers.js:40
 msgid "List tokens"
 msgstr ""
 
@@ -841,11 +845,12 @@ msgstr ""
 msgid "Log"
 msgstr ""
 
+#: privacyidea/static/components/login/views/enter-response.html:29
 #: privacyidea/static/components/login/views/login.html:28
 msgid "Log In"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:46
+#: privacyidea/static/components/login/controllers/loginControllers.js:47
 msgid "Log out"
 msgstr ""
 
@@ -995,7 +1000,7 @@ msgstr ""
 msgid "Number of required tokens"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:41
+#: privacyidea/static/components/config/views/config.token.tiqr.html:53
 msgid "OCRA Suite"
 msgstr ""
 
@@ -1202,7 +1207,7 @@ msgstr ""
 msgid "Realm"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:172
+#: privacyidea/static/components/login/controllers/loginControllers.js:224
 msgid "Realm defrealm created."
 msgstr ""
 
@@ -1286,6 +1291,11 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:36
 msgid "Resource Server URI"
+msgstr ""
+
+#: privacyidea/static/components/login/views/enter-response.html:14
+#: privacyidea/static/components/login/views/enter-response.html:22
+msgid "Response"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:266
@@ -1927,10 +1937,10 @@ msgid ""
 "            Please ask for an update to import encrypted PSKC files."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:42
+#: privacyidea/static/components/config/views/config.token.tiqr.html:54
 msgid ""
 "This is the OCRA suite used by the TiQR App.\n"
-"        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QH10-S.\n"
+"        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.\n"
 "        For more details see the\n"
 "        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA\">RFC\n"
 "            6287</a>."
@@ -1947,6 +1957,12 @@ msgid ""
 "                kind of action in regards to the serial number."
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.token.tiqr.html:42
+msgid ""
+"This is the service identifier that will be passed to the TiQR app.\n"
+"        This should contain a reverse FQDN (defaults to org.privacyidea)."
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.enroll.registration.html:6
 msgid ""
 "This is used, so that the user can enroll a token on his own, after\n"
@@ -1959,6 +1975,12 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:8
 msgid "TiQR Registration Server"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:40
+msgid ""
+"TiQR Service\n"
+"        Identifier"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:31
@@ -2347,7 +2369,7 @@ msgstr ""
 msgid "privacyIDEA Single Page Web Client"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:120
+#: privacyidea/static/components/login/controllers/loginControllers.js:180
 msgid "privacyIDEA UI supports hotkeys. Use '?' to get help."
 msgstr ""
 

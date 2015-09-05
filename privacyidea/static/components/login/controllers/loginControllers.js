@@ -24,7 +24,8 @@ angular.module("privacyideaApp")
                                       $scope, $http, $location,
                                       authUrl, AuthFactory, $rootScope,
                                       $state, ConfigFactory, inform,
-                                      PolicyTemplateFactory, gettext, hotkeys) {
+                                      PolicyTemplateFactory, gettext, hotkeys,
+                                      PollingAuthFactory) {
 
     hotkeys.add({
         combo: 'alt+e',
@@ -94,16 +95,75 @@ angular.module("privacyideaApp")
 
     // This holds the user object, the username, the password and the token.
     $scope.login = {username: "", password: ""};
+    $scope.transactionid = "";
     AuthFactory.setUser();
 
+    $scope.authenticate_first = function() {
+        $scope.transactionid = "";
+        $scope.authenticate();
+    };
+
     $scope.authenticate = function () {
+        $scope.polling = false;
+        $scope.image = false;
         $http.post(authUrl, {
             username: $scope.login.username,
-            password: $scope.login.password
+            password: $scope.login.password,
+            transaction_id: $scope.transactionid
         }, {
             withCredentials: true
         }).success(function (data) {
-            AuthFactory.setUser(data.result.value.username,
+            $scope.do_login_stuff(data);
+        }).error(function (error) {
+            console.log("challenge response");
+            console.log(error);
+            $scope.transactionid = "";
+            $scope.login.password = "";
+            // In case of error.detail.transaction_id is present, we
+            // have a challenge response and we need to go to the state response
+            if (error.detail['transaction_id']) {
+                $state.go("response");
+                inform.add(gettext("Challange Response Authentication. You" +
+                    " are not completely authenticated, yet."),
+                    {type: "warning", ttl:10000});
+                $scope.challenge_message = error.detail.message;
+                $scope.transactionid = error.detail["transaction_id"];
+                $scope.image = error.detail.attributes.img;
+                $scope.polling = error.detail.attributes.poll;
+                console.log($scope.polling);
+                $scope.login.password = "";
+                // Now we need to start the poller
+                PollingAuthFactory.start($scope.check_authentication);
+            } else {
+                inform.add(gettext("Authentication failed. ") + error.result.error.message,
+                {type: "danger", ttl: 10000});
+            }
+        }).then(function () {
+            // We delete the login object, so that the password is not
+            // contained in the scope
+            $scope.login = {username: "", password: ""};
+            }
+        );
+    };
+    $scope.check_authentication = function() {
+        // This function is used to poll, if a challenge response
+        // authentication was performed successfully in the background
+        // This is used for the TiQR token.
+        console.log("calling check_authentication.");
+        $http.post(authUrl, {
+            username: $scope.login.username,
+            password: "",
+            transaction_id: $scope.transactionid
+        }, {
+            withCredentials: true
+        }).success(function (data) {
+            $scope.do_login_stuff(data);
+            PollingAuthFactory.stop();
+        })
+    };
+
+    $scope.do_login_stuff = function(data) {
+        AuthFactory.setUser(data.result.value.username,
                 data.result.value.realm,
                 data.result.value.token,
                 data.result.value.role);
@@ -119,15 +179,7 @@ angular.module("privacyideaApp")
             $location.path("/token");
             inform.add(gettext("privacyIDEA UI supports hotkeys. Use '?' to" +
                     " get help."), {type: "info", ttl: 10000});
-        }).error(function (error) {
-            inform.add(gettext("Authentication failed. ") + error.result.error.message,
-                {type: "danger", ttl: 10000});
-        }).then(function () {
-            // We delete the login object, so that the password is not
-            // contained in the scope
-            $scope.login = {username: "", password: ""};
-            }
-        );
+            $scope.transactionid = "";
     };
 
     $scope.logout = function () {
