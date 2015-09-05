@@ -1,10 +1,11 @@
-python-privacyidea (2.6~dev3) trusty; urgency=low
+python-privacyidea (2.6~dev4) trusty; urgency=low
 
   * Start 2.6 version
   * Add 4 eyes token
   * Add TiQR token
+  * Fix LDAP bind problem with anonymous bind
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 04 Sep 2015 17:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Sat, 05 Sep 2015 09:30:00 +0200
 
 
 python-privacyidea (2.5-1trusty) trusty; urgency=low
