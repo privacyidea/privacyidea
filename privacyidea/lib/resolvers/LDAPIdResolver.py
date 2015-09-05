@@ -93,15 +93,25 @@ class IdResolver (UserIdResolver):
 
         server_pool = self.get_serverpool(self.uri, self.timeout)
         try:
+            log.debug("Authtype: %s" % self.authtype)
+            log.debug("user    : %s" % bind_user)
+            # Whatever happens. If we have an empty bind_user, we must break
+            # since we must avoid anonymous binds!
+            if not bind_user or len(bind_user) < 1:
+                raise Exception("No valid user. Empty bind_user.")
             l = self.create_connection(authtype=self.authtype,
                                        server=server_pool,
                                        user=bind_user,
                                        password=password,
                                        auto_referrals=not self.noreferrals)
             l.open()
-            if not l.bind():
+            r = l.bind()
+            log.debug("bind result: %s" % r)
+            if not r:
                 raise Exception("Wrong credentials")
+            log.debug("bind seems successful.")
             l.unbind()
+            log.debug("unbind successful.")
         except Exception, e:
             log.warning("failed to check password for %r/%r: %r"
                         % (uid, bind_user, e))
