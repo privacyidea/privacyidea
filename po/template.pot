@@ -313,7 +313,7 @@ msgstr ""
 msgid "Count Window"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:149
+#: privacyidea/static/components/config/views/config.system.html:133
 msgid ""
 "Count Window of\n"
 "                    newly enrolled tokens"
@@ -919,7 +919,7 @@ msgstr ""
 msgid "Mark the token to be lost"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:162
+#: privacyidea/static/components/config/views/config.system.html:146
 msgid ""
 "Max Failcount of\n"
 "                    newly enrolled tokens"
@@ -1029,7 +1029,7 @@ msgstr ""
 msgid "OTP length"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:135
+#: privacyidea/static/components/config/views/config.system.html:119
 msgid ""
 "OTP length of\n"
 "                    newly enrolled tokens"
@@ -1072,7 +1072,7 @@ msgstr ""
 msgid "Overall token usage"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:115
+#: privacyidea/static/components/config/views/config.system.html:99
 msgid "Override Authorization Clients"
 msgstr ""
 
@@ -1084,14 +1084,6 @@ msgstr ""
 #: privacyidea/static/components/directives/views/directive.assignuser.html:23
 #: privacyidea/static/components/token/views/token.enroll.html:33
 msgid "PIN"
-msgstr ""
-
-#: privacyidea/static/components/config/views/config.system.html:102
-msgid "Pass, if the user does not exist"
-msgstr ""
-
-#: privacyidea/static/components/config/views/config.system.html:110
-msgid "Pass, if the user has no token"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:77
@@ -1352,7 +1344,7 @@ msgstr ""
 msgid "Save Resolver"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:228
+#: privacyidea/static/components/config/views/config.system.html:212
 msgid "Save System Config"
 msgstr ""
 
@@ -1477,7 +1469,7 @@ msgstr ""
 msgid "Sync Window"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:174
+#: privacyidea/static/components/config/views/config.system.html:158
 msgid ""
 "Sync Window of\n"
 "                    newly enrolled tokens"
@@ -1721,7 +1713,7 @@ msgstr ""
 msgid "The certificate was enrolled successfully."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:187
+#: privacyidea/static/components/config/views/config.system.html:171
 msgid "The challenge validity time"
 msgstr ""
 
@@ -1910,7 +1902,7 @@ msgid ""
 "                The successful and the failed requests are listed."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:125
+#: privacyidea/static/components/config/views/config.system.html:109
 msgid ""
 "These client IP addresses or subnets are\n"
 "                    allowed to masquerade as another client."

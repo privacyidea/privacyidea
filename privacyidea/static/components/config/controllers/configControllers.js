@@ -557,8 +557,6 @@ myApp.controller("configController", function ($scope, $location,
             $scope.params.IncFailCountOnFalsePin = $scope.isChecked($scope.params.IncFailCountOnFalsePin);
             $scope.params.ReturnSamlAttributes = $scope.isChecked($scope.params.ReturnSamlAttributes);
             $scope.params.AutoResync = $scope.isChecked($scope.params.AutoResync);
-            $scope.params.PassOnUserNotFound = $scope.isChecked($scope.params.PassOnUserNotFound);
-            $scope.params.PassOnUserNoToken = $scope.isChecked($scope.params.PassOnUserNoToken);
             $scope.params.UiLoginDisplayHelpButton = $scope.isChecked($scope.params.UiLoginDisplayHelpButton);
             $scope.params.UiLoginDisplayRealmBox = $scope.isChecked($scope.params.UiLoginDisplayRealmBox);
             console.log($scope.params);

@@ -337,7 +337,7 @@ msgstr "Zähler"
 msgid "Count Window"
 msgstr "Zählerfenster"
 
-#: privacyidea/static/components/config/views/config.system.html:149
+#: privacyidea/static/components/config/views/config.system.html:133
 msgid ""
 "Count Window of\n"
 "                    newly enrolled tokens"
@@ -969,7 +969,7 @@ msgstr "Zuordnung"
 msgid "Mark the token to be lost"
 msgstr "Den Token als verloren markieren"
 
-#: privacyidea/static/components/config/views/config.system.html:162
+#: privacyidea/static/components/config/views/config.system.html:146
 msgid ""
 "Max Failcount of\n"
 "                    newly enrolled tokens"
@@ -1079,7 +1079,7 @@ msgstr "OTP-Wert"
 msgid "OTP length"
 msgstr "OTP-Länge "
 
-#: privacyidea/static/components/config/views/config.system.html:135
+#: privacyidea/static/components/config/views/config.system.html:119
 msgid ""
 "OTP length of\n"
 "                    newly enrolled tokens"
@@ -1125,7 +1125,7 @@ msgstr "Optionen"
 msgid "Overall token usage"
 msgstr "Allgemeine Tokennutzung"
 
-#: privacyidea/static/components/config/views/config.system.html:115
+#: privacyidea/static/components/config/views/config.system.html:99
 msgid "Override Authorization Clients"
 msgstr "Überschreibe den authorisierenden Client"
 
@@ -1138,14 +1138,6 @@ msgstr "ownCloud"
 #: privacyidea/static/components/token/views/token.enroll.html:33
 msgid "PIN"
 msgstr "PIN"
-
-#: privacyidea/static/components/config/views/config.system.html:102
-msgid "Pass, if the user does not exist"
-msgstr "Durchwinken, wenn der Benutzer nicht existiert"
-
-#: privacyidea/static/components/config/views/config.system.html:110
-msgid "Pass, if the user has no token"
-msgstr "Durchwinken, wenn der Benutzer keinen Token hat"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:77
 #: privacyidea/static/components/login/views/login.html:21
@@ -1412,7 +1404,7 @@ msgstr "Optionen speichern"
 msgid "Save Resolver"
 msgstr "Resolver speichern"
 
-#: privacyidea/static/components/config/views/config.system.html:228
+#: privacyidea/static/components/config/views/config.system.html:212
 msgid "Save System Config"
 msgstr "Systemkonfiguration speichern"
 
@@ -1537,7 +1529,7 @@ msgstr "Nachname"
 msgid "Sync Window"
 msgstr "Sync-Fenster"
 
-#: privacyidea/static/components/config/views/config.system.html:174
+#: privacyidea/static/components/config/views/config.system.html:158
 msgid ""
 "Sync Window of\n"
 "                    newly enrolled tokens"
@@ -1856,7 +1848,7 @@ msgstr ""
 msgid "The certificate was enrolled successfully."
 msgstr "Das Zertifikat wurde erfolgreich ausgestellt."
 
-#: privacyidea/static/components/config/views/config.system.html:187
+#: privacyidea/static/components/config/views/config.system.html:171
 msgid "The challenge validity time"
 msgstr "Die Gültigkeitszeit der Challenge"
 
@@ -2110,7 +2102,7 @@ msgstr ""
 "nach erfolgreichen und fehlgeschlagenen Authentisierungsanfragen "
 "unterschieden."
 
-#: privacyidea/static/components/config/views/config.system.html:125
+#: privacyidea/static/components/config/views/config.system.html:109
 msgid ""
 "These client IP addresses or subnets are\n"
 "                    allowed to masquerade as another client."
@@ -2714,6 +2706,12 @@ msgstr "Fenster"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."
+
+#~ msgid "Pass, if the user does not exist"
+#~ msgstr "Durchwinken, wenn der Benutzer nicht existiert"
+
+#~ msgid "Pass, if the user has no token"
+#~ msgstr "Durchwinken, wenn der Benutzer keinen Token hat"
 
 #, fuzzy
 #~ msgid ""

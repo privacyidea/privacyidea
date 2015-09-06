@@ -47,21 +47,6 @@ and if during ``auto resync timeout`` the user tries to authenticate again
 with the next, successive OTP value, the system tries to resync this token with the 
 two given OTP values.
 
-.. index:: pass on user not found, pass on user no token
-
-``Pass on user not found`` let the system return a successful authentication
-response if the authenticating user does not exist in the system.
-
-.. warning:: Use with care and only if you know what you are doing!
-
-``Pass on user no token`` let the system return a successful authentication
-response if the authenticating user exists in the system but has no token
-assigned. 
-
-.. warning:: Use with care and only if you know what you are doing! Since 
-   the user could remove all his tokens in selfservice and then have free
-   rides forever.
-
 .. index:: authenticating client, client, override client
 
 ``Override Authentication client`` is important with client specific 
@@ -70,14 +55,6 @@ for the privacyIDEA system will always be the RADIUS serve, which issues
 the authentication request. But you can allow the RADIUS server IP to 
 send another client information (in this case the RADIUS client) so that
 the policy is evaluated for the RADIUS client. This field takes a comma seperated list of IP addresses.
-
-``maximum concurrent OCRA challenges`` defines how many OCRA requests for
-a single OCRA token are allowed to be active simultaniously. **(TODO)**: Not
-migrated, yet.
-
-``OCRA challenge timeout`` defines how many seconds an OCRA challenge is kept
-active. The response must be sent within this timeout. **(TODO)**: Not
-migrated, yet.
 
 Token default settings
 ......................
@@ -114,29 +91,3 @@ an authentication request.
 ``DefaultChallengeValidityTime`` is the timeout for a challenge response
 authentication.
 
-
-OCRA settings
-~~~~~~~~~~~~~
-
-``default OCRA suite`` is the OCRA suite that is set for an OCRA token 
-during enrollment if no OCRA suite is specified. **(TODO)**: Not
-migrated, yet.
-
-``default QR suite`` is the OCRA suite that is set for a QR token 
-during enrollment if no OCRA suite is specified. **(TODO)**: Not
-migrated, yet.
-
-
-.. _gui_settings:
-
-GUI settings
-............
-
-.. index: GUI settings, login form
-
-The login window of the WebUI may display a dropdown box with all realms.
-You might hide this dropdown box, if you do not want to tell the world
-which realms are defined on your system.
-If you check ``display realm select box`` the list of all realms including 
-the special realm *admin* for the administrators from the superuser file
-will be displayed in the login form.
