@@ -1,11 +1,11 @@
-privacyidea-venv (2.6~dev4) wheezy; urgency=low
+privacyidea-venv (2.6~dev5) wheezy; urgency=low
 
   * start 2.6 version
   * Add 4 eyes token
   * Add TiQR token
   * Fix LDAP bind problem with anonymous bind
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Sat, 05 Sep 2015 09:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 07 Sep 2015 12:30:00 +0200
 
 privacyidea-venv (2.5-1) wheezy; urgency=low
 
