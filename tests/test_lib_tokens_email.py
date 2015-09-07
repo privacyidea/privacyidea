@@ -386,6 +386,6 @@ class EmailTokenTestCase(MyTestCase):
         token = EmailTokenClass(db_token)
         c = token.create_challenge(transactionid)
         self.assertFalse(c[0])
-        self.assertEqual(c[1], "The PIN was correct, but the EMail could not "
-                               "be sent: SMTPException(u'MOCK TLS ERROR',)")
+        self.assertTrue("The PIN was correct, but the EMail could not "
+                        "be sent" in c[1])
 
