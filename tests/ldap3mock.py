@@ -24,7 +24,7 @@ from __future__ import (
 )
 
 import six
-
+import ldap3
 
 try:
     from six import cStringIO as BufferIO
@@ -180,13 +180,10 @@ class Ldap3Mock(object):
 
         return "FakeServerObject"
 
-    def _on_Connection(self, server, user,
-                                 password,
-                                 auto_bind,
-                                 client_strategy,
-                                 authentication,
-                                 check_names,
-                                 auto_referrals):
+    def _on_Connection(self, server, user, password,
+                       auto_bind=None, client_strategy=None,
+                       authentication=None, check_names=None,
+                       auto_referrals=None):
         """
         We need to create a Connection object with
         methods:
@@ -197,6 +194,9 @@ class Ldap3Mock(object):
         """
         # check the password
         correct_password = False
+        # Anonymous bind
+        if authentication == ldap3.ANONYMOUS and user == "":
+            correct_password = True
         for entry in self.directory:
             if entry.get("dn") == user:
                 pw = entry.get("attributes").get("userPassword")

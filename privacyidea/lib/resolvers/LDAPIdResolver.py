@@ -486,7 +486,7 @@ class IdResolver (UserIdResolver):
         return {typ: descriptor}
 
     @classmethod
-    def testconnection(self, param):
+    def testconnection(cls, param):
         """
         This function lets you test the to be saved LDAP connection.
         
@@ -508,9 +508,9 @@ class IdResolver (UserIdResolver):
         success = False
         uidtype = param.get("UIDTYPE")
         try:
-            server_pool = self.get_serverpool(param.get("LDAPURI"),
+            server_pool = cls.get_serverpool(param.get("LDAPURI"),
                                               float(param.get("TIMEOUT", 5)))
-            l = self.create_connection(authtype=param.get("AUTHTYPE",
+            l = cls.create_connection(authtype=param.get("AUTHTYPE",
                                                           AUTHTYPE.SIMPLE),
                                        server=server_pool,
                                        user=param.get("BINDDN"),
@@ -535,10 +535,10 @@ class IdResolver (UserIdResolver):
             count = len(r)
             uidtype_count = 0
             for entry in r:
-                userid = self._get_uid(entry, uidtype)
+                userid = cls._get_uid(entry, uidtype)
                 if userid:
                     uidtype_count += 1
-            if uidtype_count < count:
+            if uidtype_count < count:  # pragma: no cover
                 desc = _("Your LDAP config found %i user objects, but only %i "
                          "with the specified uidtype" % (count, uidtype_count))
             else:
@@ -554,7 +554,7 @@ class IdResolver (UserIdResolver):
         return success, desc
 
     @classmethod
-    def create_connection(self, authtype=None, server=None, user=None,
+    def create_connection(cls, authtype=None, server=None, user=None,
                           password=None, auto_bind=False,
                           client_strategy=ldap3.SYNC,
                           check_names=True,
@@ -575,7 +575,7 @@ class IdResolver (UserIdResolver):
                                  authentication=authentication,
                                  check_names=check_names,
                                  auto_referrals=auto_referrals)
-        elif authtype == AUTHTYPE.NTLM:
+        elif authtype == AUTHTYPE.NTLM:  # pragma: no cover
             if not authentication:
                 authentication = ldap3.NTLM
             l = ldap3.Connection(server,
@@ -586,7 +586,7 @@ class IdResolver (UserIdResolver):
                                  authentication=authentication,
                                  check_names=check_names,
                                  auto_referrals=auto_referrals)
-        elif authtype == AUTHTYPE.SASL_DIGEST_MD5:
+        elif authtype == AUTHTYPE.SASL_DIGEST_MD5:  # pragma: no cover
             if not authentication:
                 authentication = ldap3.SASL
             sasl_credentials = (str(user), str(password))

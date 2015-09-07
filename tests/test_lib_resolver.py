@@ -507,6 +507,45 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertFalse(res)
 
     @ldap3mock.activate
+    def test_01_broken_uidtype(self):
+        # checkPass with wrong UIDtype
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'LDAPFILTER': '(&(cn=%s))',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'unknownType',
+        })
+
+        result = y.getUserList({'username': '*'})
+        self.assertEqual(len(result), 3)
+
+        rid = y.getResolverId()
+        self.assertTrue(rid == "ldap://localhost", rid)
+
+        rtype = y.getResolverType()
+        self.assertTrue(rtype == "ldapresolver", rtype)
+
+        rdesc = y.getResolverClassDescriptor()
+        rdesc = y.getResolverDescriptor()
+        self.assertTrue("ldapresolver" in rdesc, rdesc)
+        self.assertTrue("config" in rdesc.get("ldapresolver"), rdesc)
+        self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
+
+        res = y.checkPass("bob", "bobpw")
+        self.assertFalse(res)
+
+    @ldap3mock.activate
     def test_02_LDAP_OID(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         y = LDAPResolver()
@@ -569,6 +608,29 @@ class LDAPResolverTestCase(MyTestCase):
                                 'BINDPW': 'ldaptest',
                                 'LOGINNAMEATTRIBUTE': 'cn',
                                 'LDAPSEARCHFILTER': '(cn=*)',
+                                'LDAPFILTER': '(&(cn=%s))',
+                                'USERINFO': '{ "username": "cn",'
+                                            '"phone" : "telephoneNumber", '
+                                            '"mobile" : "mobile"'
+                                            ', "email" : "mail", '
+                                            '"surname" : "sn", '
+                                            '"givenname" : "givenName" }',
+                                'UIDTYPE': 'oid',
+        })
+
+        self.assertTrue(res[0], res)
+        self.assertTrue(res[1] == 'Your LDAP config seems to be OK, 3 user '
+                                  'objects found.', res)
+
+    @ldap3mock.activate
+    def test_03_testconnection_anonymous(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        res = y.testconnection({'LDAPURI': 'ldap://localhost',
+                                'LDAPBASE': 'o=test',
+                                'LOGINNAMEATTRIBUTE': 'cn',
+                                'LDAPSEARCHFILTER': '(cn=*)',
+                                'BINDDN': '',
                                 'LDAPFILTER': '(&(cn=%s))',
                                 'USERINFO': '{ "username": "cn",'
                                             '"phone" : "telephoneNumber", '
@@ -681,6 +743,35 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(len(server_pool), 2)
         self.assertEqual(server_pool.servers[0].name, "ldap://themis:389")
         self.assertEqual(server_pool.servers[1].name, "ldaps://server2:636")
+
+    @ldap3mock.activate
+    def test_08_trimresult(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'LDAPFILTER': '(&(cn=%s))',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'oid',
+                      'NOREFERRALS': True
+        })
+        r = y._trim_result([{"type": "searchResEntry",
+                             "DN": "blafoo"},
+                            {"type": "searchResEntry",
+                             "DN": "foobar"},
+                            {"type": "searchResRef",
+                             "info": "this is located on another LDAP"}])
+
+        self.assertEqual(len(r), 2)
 
 
 class ResolverTestCase(MyTestCase):
