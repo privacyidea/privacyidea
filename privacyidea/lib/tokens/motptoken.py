@@ -46,14 +46,14 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import create_img
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import generate_otpkey
+from privacyidea.lib.decorators import check_token_locked
+import traceback
+import logging
+import gettext
 
 optional = True
 required = False
-
-import traceback
-import logging
 log = logging.getLogger(__name__)
-import gettext
 _ = gettext.gettext
 
 
@@ -183,6 +183,7 @@ class MotpTokenClass(TokenClass):
         return
 
     @log_with(log)
+    @check_token_locked
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
         validate the token otp against a given otpvalue

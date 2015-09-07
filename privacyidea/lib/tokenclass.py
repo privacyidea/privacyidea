@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2015-09-07 Corneluis Kölbel <cornelius@privacyidea.org>
+#             Add challenge response decorator
 #  2015-08-27 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Add revocation of token
 #  * Nov 27, 2014 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -63,7 +65,7 @@ from ..models import (TokenRealm, Challenge, cleanup_challenges)
 from .challenge import get_challenges
 from .crypto import encryptPassword
 from .crypto import decryptPassword
-from .policydecorators import libpolicy, auth_otppin
+from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .decorators import check_token_locked
 
 DATE_FORMAT = "%d/%m/%y %H:%M"
@@ -1087,28 +1089,8 @@ class TokenClass(object):
 
         return url, hparam
 
-    # TODO Migration: All the Ocra Token stuff is missing. Do we still
-    # TODO want to use the OCRA Token or are we ok with the OCRA2 Token?
-
-    """
-    The Challenge workflow is like this.
-
-    When an authentication request is issued, first it is checked if this is
-    a request which will create a new challenge (is_challenge_request) or if
-    this is a response to an existing challenge (is_challenge_response).
-    In these two cases during request processing the following functions are
-    called.
-
-    is_challenge_request or is_challenge_response
-             |                       |
-             V                       V
-    create_challenge        check_challenge
-             |                       |
-             V                       V
-    challenge_janitor       challenge_janitor
-
-    """
     # challenge interfaces starts here
+    @challenge_response_allowed
     def is_challenge_request(self, passw, user=None, options=None):
         """
         This method checks, if this is a request, that triggers a challenge.
@@ -1124,6 +1106,22 @@ class TokenClass(object):
         **please note**: in case of pin policy == 2 (no pin is required)
         the ``check_pin`` would always return true! Thus each request
         containing a ``data`` or ``challenge`` would trigger a challenge!
+
+        The Challenge workflow is like this.
+
+        When an authentication request is issued, first it is checked if this is
+        a request which will create a new challenge (is_challenge_request) or if
+        this is a response to an existing challenge (is_challenge_response).
+        In these two cases during request processing the following functions are
+        called.
+
+        is_challenge_request or is_challenge_response
+                 |                       |
+                 V                       V
+        create_challenge        check_challenge
+                 |                       |
+                 V                       V
+        challenge_janitor       challenge_janitor
 
         :param passw: password, which might be pin or pin+otp
         :type passw: string

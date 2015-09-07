@@ -38,11 +38,11 @@ This code is tested in tests/test_lib_tokens_spass
 
 import logging
 from privacyidea.lib.log import log_with
+from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.decorators import check_token_locked
 
 optional = True
 required = False
-
-from privacyidea.lib.tokenclass import TokenClass
 
 log = logging.getLogger(__name__)
 
@@ -122,6 +122,7 @@ class SpassTokenClass(TokenClass):
     def is_challenge_response(self, passw, user, options=None, challenges=None):
         return False  # pragma: no cover
 
+    @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):
         """
         As we have no otp value we always return true == 0
@@ -129,6 +130,7 @@ class SpassTokenClass(TokenClass):
         return 0
 
     @log_with(log)
+    @check_token_locked
     def authenticate(self, passw, user=None, options=None):
         """
         in case of a wrong passw, we return a bad matching pin,

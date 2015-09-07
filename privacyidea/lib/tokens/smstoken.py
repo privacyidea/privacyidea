@@ -53,9 +53,11 @@ from gettext import gettext as _
 
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.models import Challenge
+from privacyidea.lib.decorators import check_token_locked
 
 
 import logging
+from privacyidea.lib.policydecorators import challenge_response_allowed
 log = logging.getLogger(__name__)
 
 keylen = {'sha1': 20,
@@ -230,6 +232,7 @@ class SmsTokenClass(HotpTokenClass):
         HotpTokenClass.update(self, param, reset_failcount)
 
     @log_with(log)
+    @challenge_response_allowed
     def is_challenge_request(self, passw, user=None, options=None):
         """
         check, if the request would start a challenge
@@ -307,6 +310,7 @@ class SmsTokenClass(HotpTokenClass):
         return success, return_message, transactionid, attributes
 
     @log_with(log)
+    @check_token_locked
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
         check the otpval of a token against a given counter

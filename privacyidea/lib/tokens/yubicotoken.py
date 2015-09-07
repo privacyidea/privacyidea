@@ -29,14 +29,14 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-"""
+__doc__ = """
 This is the implementation of the yubico token type.
 Authentication requests are forwarded to the Yubico Cloud service YubiCloud.
 
 The code is tested in tests/test_lib_tokens_yubico
 """
 import logging
-
+from privacyidea.lib.decorators import check_token_locked
 import traceback
 import requests
 from privacyidea.api.lib.utils import getParam
@@ -129,6 +129,7 @@ class YubicoTokenClass(TokenClass):
         self.add_tokeninfo("yubico.tokenid", self.tokenid)
 
     @log_with(log)
+    @check_token_locked
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
         Here we contact the Yubico Cloud server to validate the OtpVal.

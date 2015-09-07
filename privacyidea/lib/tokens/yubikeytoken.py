@@ -33,19 +33,17 @@ It is tested in tests/test_lib_tokens_yubikey.py
 """
 
 import logging
-
-import traceback
-from Crypto.Cipher import AES
 from privacyidea.lib.log import log_with
-
+from privacyidea.lib.policydecorators import challenge_response_allowed
+from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.utils import modhex_decode
+from privacyidea.lib.utils import checksum
 import binascii
+from privacyidea.lib.decorators import check_token_locked
 
 optional = True
 required = False
 
-from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.utils import modhex_decode
-from privacyidea.lib.utils import checksum
 
 log = logging.getLogger(__name__)
 
@@ -125,6 +123,7 @@ class YubikeyTokenClass(TokenClass):
         return res
 
     @log_with(log)
+    @challenge_response_allowed
     def is_challenge_request(self, passw, user=None, options=None):
         """
         This method checks, if this is a request, that triggers a challenge.
@@ -148,6 +147,7 @@ class YubikeyTokenClass(TokenClass):
 
 
     @log_with(log)
+    @check_token_locked
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
         validate the token otp against a given otpvalue

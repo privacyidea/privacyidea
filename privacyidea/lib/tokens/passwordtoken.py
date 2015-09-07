@@ -22,6 +22,7 @@ import logging
 from privacyidea.lib.crypto import zerome
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
+from privacyidea.lib.decorators import check_token_locked
 
 optional = True
 required = False
@@ -120,6 +121,7 @@ class PasswordTokenClass(TokenClass):
         self.set_otplen()
 
     @log_with(log)
+    @check_token_locked
     def set_otplen(self, otplen=0):
         """
         sets the OTP length to the length of the password
@@ -135,6 +137,7 @@ class PasswordTokenClass(TokenClass):
         return
 
     @log_with(log, log_entry=False)
+    @check_token_locked
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
         This checks the static password

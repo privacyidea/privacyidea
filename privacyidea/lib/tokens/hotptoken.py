@@ -26,7 +26,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""
+__doc__ = """
 This is the HOTP implementation.
 It is inherited from lib.tokenclass and is thus dependent on models.py
 
@@ -43,14 +43,15 @@ from privacyidea.lib.apps import create_google_authenticator_url as cr_google
 from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import create_img
 from privacyidea.lib.utils import generate_otpkey
+from privacyidea.lib.policydecorators import challenge_response_allowed
+from privacyidea.lib.decorators import check_token_locked
+import gettext
+import traceback
+import logging
 
 optional = True
 required = False
-import gettext
 _ = gettext.gettext
-
-import traceback
-import logging
 log = logging.getLogger(__name__)
 
 keylen = {'sha1': 20,
@@ -262,6 +263,7 @@ class HotpTokenClass(TokenClass):
 
     # challenge interfaces starts here
     @log_with(log)
+    @challenge_response_allowed
     def is_challenge_request(self, passw, user=None, options=None):
         """
         check, if the request would start a challenge
@@ -286,6 +288,7 @@ class HotpTokenClass(TokenClass):
 
 
     @log_with(log)
+    @check_token_locked
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
         check if the given OTP value is valid for this token.

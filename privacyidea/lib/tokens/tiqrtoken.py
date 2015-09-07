@@ -89,6 +89,8 @@ from privacyidea.lib.tokens.ocra import OCRASuite, OCRA
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.models import cleanup_challenges
 import gettext
+from privacyidea.lib.policydecorators import challenge_response_allowed
+from privacyidea.lib.decorators import check_token_locked
 
 log = logging.getLogger(__name__)
 optional = True
@@ -347,6 +349,10 @@ class TiqrTokenClass(TokenClass):
 
         At the moment we do not think of other ways to trigger a challenge.
 
+        This function is not decorated with
+            @challenge_response_allowed
+        as the TiQR token is always a challenge response token!
+
         :param passw: The PIN of the token.
         :param options: dictionary of additional request parameters
 
@@ -438,6 +444,7 @@ class TiqrTokenClass(TokenClass):
         r = ocra_object.check_response(passw, question=challenge)
         return r
 
+    @check_token_locked
     def check_challenge_response(self, user=None, passw=None, options=None):
         """
         This function checks, if the challenge for the given transaction_id

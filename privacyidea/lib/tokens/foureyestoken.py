@@ -37,7 +37,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.token import check_realm_pass
-
+from privacyidea.lib.decorators import check_token_locked
 
 log = logging.getLogger(__name__)
 optional = True
@@ -213,6 +213,7 @@ class FourEyesTokenClass(TokenClass):
         self.add_tokeninfo("4eyes", realms)
 
     @log_with(log)
+    @check_token_locked
     def authenticate(self, passw, user=None, options=None):
         """
         do the authentication on base of password / otp and user and

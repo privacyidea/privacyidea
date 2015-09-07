@@ -340,6 +340,22 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(value.get("username"),  "cornelius")
 
     def test_11_challenge_response_hotp(self):
+        # set a chalresp policy for HOTP
+        with self.app.test_request_context('/policy/pol_chal_resp',
+                                           data={'action':
+                                                     "challenge_response=hotp",
+                                                 'scope': "authentication",
+                                                 'realm': '',
+                                                 'active': True},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result["status"] is True, result)
+            self.assertTrue('"setPolicy pol_chal_resp": 1' in res.data,
+                            res.data)
+
         serial = "CHALRESP1"
         pin = "chalresp1"
         # create a token and assign to the user
@@ -379,15 +395,30 @@ class ValidateAPITestCase(MyTestCase):
         remove_token(serial=serial)
 
     def test_12_challenge_response_sms(self):
+        # set a chalresp policy for SMS
+        with self.app.test_request_context('/policy/pol_chal_resp',
+                                           data={'action':
+                                                     "challenge_response=sms",
+                                                 'scope': "authentication",
+                                                 'realm': '',
+                                                 'active': True},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result["status"] is True, result)
+            self.assertTrue('"setPolicy pol_chal_resp": 1' in res.data,
+                            res.data)
+
         serial = "CHALRESP2"
         pin = "chalresp2"
         # create a token and assign to the user
-        db_token = Token(serial, tokentype="sms")
-        db_token.update_otpkey(self.otpkey)
-        db_token.save()
-        token = HotpTokenClass(db_token)
-        token.set_user(User("cornelius", self.realm1))
-        token.set_pin(pin)
+        init_token({"serial": serial,
+                    "type": "sms",
+                    "otpkey": self.otpkey,
+                    "phone": "123456",
+                    "pin": pin}, user=User("cornelius", self.realm1))
         # create the challenge by authenticating with the OTP PIN
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -398,36 +429,39 @@ class ValidateAPITestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             detail = json.loads(res.data).get("detail")
             self.assertFalse(result.get("value"))
-            self.assertEqual(detail.get("message"), "please enter otp: ")
+            self.assertTrue("The PIN was correct, "
+                            "but the SMS could not be sent" in
+                            detail.get("message"))
             transaction_id = detail.get("transaction_id")
-
-        # send the OTP value
-        with self.app.test_request_context('/validate/check',
-                                           method='POST',
-                                           data={"user": "cornelius",
-                                                 "transaction_id":
-                                                     transaction_id,
-                                                 "pass": "359152"}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
-            self.assertTrue(result.get("value"))
 
         # delete the token
         remove_token(serial=serial)
 
-
     def test_13_challenge_response_email(self):
+        # set a chalresp policy for HOTP
+        with self.app.test_request_context('/policy/pol_chal_resp',
+                                           data={'action':
+                                                     "challenge_response=email",
+                                                 'scope': "authentication",
+                                                 'realm': '',
+                                                 'active': True},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result["status"] is True, result)
+            self.assertTrue('"setPolicy pol_chal_resp": 1' in res.data,
+                            res.data)
+
         serial = "CHALRESP3"
         pin = "chalresp3"
         # create a token and assign to the user
-        db_token = Token(serial, tokentype="email")
-        db_token.update_otpkey(self.otpkey)
-        db_token.save()
-        token = HotpTokenClass(db_token)
-        token.set_user(User("cornelius", self.realm1))
-        token.set_pin(pin)
+        init_token({"serial": serial,
+                    "type": "email",
+                    "otpkey": self.otpkey,
+                    "email": "hans@dampf.com",
+                    "pin": pin}, user=User("cornelius", self.realm1))
         # create the challenge by authenticating with the OTP PIN
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -438,7 +472,8 @@ class ValidateAPITestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             detail = json.loads(res.data).get("detail")
             self.assertFalse(result.get("value"))
-            self.assertEqual(detail.get("message"), "please enter otp: ")
+            self.assertEqual(detail.get("message"), "Enter the OTP from the "
+                                                    "Email:")
             transaction_id = detail.get("transaction_id")
 
         # send the OTP value

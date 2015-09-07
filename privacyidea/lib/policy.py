@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-09-06 Cornelius Kölbel <cornelius.koelbel@netkngihts.it>
+#             Add challenge_response authentication policy
 #  2015-06-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add the OTP PIN handling
 #  2015-06-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -128,6 +130,7 @@ class ACTION():
     CACONNECTORREAD = "caconnectorread"
     CACONNECTORWRITE = "caconnectorwrite"
     CACONNECTORDELETE = "caconnectordelete"
+    CHALLENGERESPONSE = "challenge_response"
     COPYTOKENPIN = "copytokenpin"
     COPYTOKENUSER = "copytokenuser"
     DELETE = "delete"
@@ -286,9 +289,9 @@ class PolicyClass(object):
                 reduced_policies = new_policies
 
         # Match the client IP.
-        # Client IPs may be direct machts, may be located in subnets or may
+        # Client IPs may be direct match, may be located in subnets or may
         # be excluded by a leading "-" or "!" sign.
-        # The client definition in the policy may ba a comma seperated list.
+        # The client definition in the policy may ba a comma separated list.
         # It may start with a "-" or a "!" to exclude the client
         # from a subnet.
         # Thus a client 10.0.0.2 matches a policy "10.0.0.0/8, -10.0.0.1" but
@@ -339,7 +342,7 @@ class PolicyClass(object):
             than one value is returned
         :param allow_white_space_in_action: Some policies like emailtext
             would allow entering text with whitespaces. These whitespaces
-            must not be used to seperate action values!
+            must not be used to separate action values!
         :type allow_white_space_in_action: bool
         :return: A list of the allowed tokentypes
         :rtype: list
@@ -446,7 +449,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :param name: The name of the policy
     :param scope: The scope of the policy. Something like "admin", "system",
     "authentication"
-    :param action: A scope specific action or a comma seperated list of actions
+    :param action: A scope specific action or a comma separated list of actions
     :type active: basestring
     :param realm: A realm, for which this policy is valid
     :param resolver: A resolver, for which this policy is valid
@@ -890,6 +893,11 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('Either use the Token PIN , use the Userstore '
                           'Password or use no fixed password '
                           'component.')},
+            ACTION.CHALLENGERESPONSE: {
+                'type': 'str',
+                'desc': _('This is a comma separated list of tokentypes, '
+                          'that can be used with challenge response.')
+            },
             ACTION.PASSTHRU: {
                 'type': 'bool',
                 'desc': _('If set, the user in this realm will be '

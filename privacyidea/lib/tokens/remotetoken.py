@@ -28,7 +28,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""This is the implementation of the remote token. The remote token
+__doc__ = """This is the implementation of the remote token. The remote token
 forwards an authentication request to another privacyidea server.
 
 To do this it uses the parameters remote.server, remote.realm,
@@ -42,16 +42,15 @@ The code is tested in tests/test_lib_tokens_remote
 import logging
 import traceback
 import requests
-
+from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.log import log_with
+from privacyidea.lib.policydecorators import challenge_response_allowed
+from privacyidea.lib.tokenclass import TokenClass
 
 optional = True
 required = False
-
-from privacyidea.lib.tokenclass import TokenClass
-
 
 log = logging.getLogger(__name__)
 
@@ -170,6 +169,7 @@ class RemoteTokenClass(TokenClass):
         return local_check
 
     @log_with(log)
+    @check_token_locked
     def authenticate(self, passw, user=None, options=None):
         """
         do the authentication on base of password / otp and user and
@@ -208,6 +208,7 @@ class RemoteTokenClass(TokenClass):
 
         return res, otp_count, reply
 
+    @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):
         """
         run the http request against the remote host
@@ -294,6 +295,7 @@ class RemoteTokenClass(TokenClass):
         return otp_count
 
     @log_with(log)
+    @challenge_response_allowed
     def is_challenge_request(self, passw, user=None, options=None):
         """
         This method checks, if this is a request, that triggers a challenge.

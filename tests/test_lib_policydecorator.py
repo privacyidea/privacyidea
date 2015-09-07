@@ -14,7 +14,8 @@ from privacyidea.lib.policydecorators import (auth_otppin,
                                               auth_user_does_not_exist,
                                               auth_user_passthru,
                                               auth_user_has_no_token,
-                                              login_mode, config_lost_token)
+                                              login_mode, config_lost_token,
+                                              challenge_response_allowed)
 from privacyidea.lib.user import User
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
@@ -330,3 +331,31 @@ class LibPolicyTestCase(MyTestCase):
 
         # Policy is set, the function is called with check_otp=True
         config_lost_token(func2, "LOST001", options=options)
+
+    def test_09_challenge_response_allowed(self):
+        user = User("cornelius", realm="r1")
+        pin = "test"
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        options = {"g": g}
+        token = init_token({"type": "hotp",
+                            "otpkey": "1234",
+                            "pin": pin}, user=user)
+        # With no policy, it will be no chal resp
+        rv = token.is_challenge_request(pin, user=user, options=options)
+        self.assertEqual(rv, False)
+
+        # Now we set a policy with several tokentypes
+        set_policy(name="pol_chal_resp_1",
+                   scope=SCOPE.AUTH,
+                   action="%s=hotp tiqr totp" % ACTION.CHALLENGERESPONSE)
+        set_policy(name="pol_chal_resp_2",
+                   scope=SCOPE.AUTH,
+                   action="%s=hotp motp" % ACTION.CHALLENGERESPONSE)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        options = {"g": g}
+        rv = token.is_challenge_request(pin, user=user, options=options)
+        self.assertEqual(rv, True)
+        delete_policy("pol_chal_resp_1")

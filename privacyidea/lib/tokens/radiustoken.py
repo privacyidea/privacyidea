@@ -28,7 +28,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""This module defines the RadiusTokenClass. The RADIUS token
+__doc__ = """This module defines the RadiusTokenClass. The RADIUS token
 forwards the authentication request to another RADIUS server.
 
 The code is tested in tests/test_lib_tokens_radius
@@ -43,7 +43,8 @@ from privacyidea.lib.tokens.remotetoken import RemoteTokenClass
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.log import log_with
 from privacyidea.lib.config import get_from_config
-# we need this for the radius token
+from privacyidea.lib.decorators import check_token_locked
+
 import pyrad.packet
 from pyrad.client import Client
 from pyrad.dictionary import Dictionary
@@ -157,6 +158,7 @@ class RadiusTokenClass(RemoteTokenClass):
         return res, pin, otpval
 
     @log_with(log)
+    @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):
         """
         run the RADIUS request against the RADIUS server

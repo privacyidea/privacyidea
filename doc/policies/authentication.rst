@@ -204,24 +204,18 @@ matter what OTP PIN he enters, a policy might look like this::
    action: mangle=pass/.*(.{6})/\\1/
 
 
-qrtanurl
-~~~~~~~~
-
-**(TODO)**: not yet migrated.
-
-type: string
-
-This is the URL for the half automatic mode of the QR token.
-To this URL the TAN/OTP value will be pushed.
+.. _policy_challenge_response:
 
 challenge_response
 ~~~~~~~~~~~~~~~~~~
 
-**(TODO)**: not yet migrated.
-
 type: string
 
 This is a list of token types for which challenge response can
-be used during authentication.
+be used during authentication. The list is separated by whitespaces like
+*"hotp totp"*.
+
+.. note:: The TiQR token does not need this setting, since it always works with
+   challenge response.
 
 .. [#pythonre] https://docs.python.org/2/library/re.html

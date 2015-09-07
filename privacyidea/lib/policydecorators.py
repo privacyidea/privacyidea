@@ -54,7 +54,7 @@ class libpolicy(object):
     """
     def __init__(self, decorator_function):
         """
-        :param decorator_function: This is the policy function the is to be
+        :param decorator_function: This is the policy function that is to be
         called
         :type decorator_function: function
         """
@@ -77,6 +77,60 @@ class libpolicy(object):
             return self.decorator_function(wrapped_function, *args, **kwds)
 
         return policy_wrapper
+
+
+def challenge_response_allowed(func):
+    """
+    This decorator is used to wrap tokenclass.is_challenge_request.
+    It checks, if a challenge response authentication is allowed for this
+    token type. To allow this, the policy
+
+    scope:authentication, action:challenge_response must be set.
+
+    If the tokentype is not allowed for challenge_response, this decorator
+    returns false.
+
+    See :ref:`policy_challenge_response`.
+
+    :param func: wrapped function
+    """
+    @functools.wraps(func)
+    def challenge_response_wrapper(*args, **kwds):
+        options = kwds.get("options", {})
+        g = options.get("g")
+        token = args[0]
+        passw = args[1]
+        clientip = options.get("clientip")
+        user_object = kwds.get("user", User())
+        if g:
+            policy_object = g.policy_object
+            allowed_tokentypes = policy_object.get_action_values(
+                action=ACTION.CHALLENGERESPONSE,
+                scope=SCOPE.AUTH,
+                realm=user_object.realm,
+                user=user_object.login,
+                client=clientip)
+            log.debug("Found these allowed tokentypes: %s" % allowed_tokentypes)
+
+            # allowed_tokentypes is a list of actions from several policies. I
+            # could look like this:
+            # ["tiqr hotp totp", "tiqr motp"]
+            # We need to create a upper case list of pure tokentypes.
+            token_list = " ".join(allowed_tokentypes)
+            token_list = token_list.split(" ")
+            # uniquify
+            token_list = list(set(token_list))
+            # uppercase
+            token_list = [x.upper() for x in token_list]
+            if token.get_tokentype().upper() not in token_list:
+                # The chal resp is not defined for this tokentype
+                # This is no challenge response request!
+                return False
+
+        f_result = func(*args, **kwds)
+        return f_result
+
+    return challenge_response_wrapper
 
 
 def auth_user_has_no_token(wrapped_function, user_object, passw,

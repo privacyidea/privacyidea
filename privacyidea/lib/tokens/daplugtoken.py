@@ -26,7 +26,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-"""
+__doc__ = """
 This is the token module for the daplug token. It behaves like HOTP,
 but uses another OTP format/mapping.
 
@@ -36,8 +36,8 @@ This code is tested in tests/test_lib_tokens_daplug
 import binascii
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.log import log_with
-from privacyidea.lib.config import get_from_config, get_prepend_pin
-
+from privacyidea.lib.config import get_prepend_pin
+from privacyidea.lib.decorators import check_token_locked
 optional = True
 required = False
 
@@ -134,6 +134,7 @@ class DaplugTokenClass(HotpTokenClass):
         return
 
     @log_with(log)
+    @check_token_locked
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
         checkOtp - validate the token otp against a given otpvalue

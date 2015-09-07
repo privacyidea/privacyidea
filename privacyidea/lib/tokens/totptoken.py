@@ -45,6 +45,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
+from privacyidea.lib.decorators import check_token_locked
 
 optional = True
 required = False
@@ -268,6 +269,7 @@ class TotpTokenClass(HotpTokenClass):
                      * 10 ** 6) * 1.0) / 10 ** 6
         return tCounter
 
+    @check_token_locked
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
         validate the token otp against a given otpvalue

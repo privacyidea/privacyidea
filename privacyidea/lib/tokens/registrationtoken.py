@@ -31,6 +31,7 @@ import logging
 from privacyidea.lib.tokens.passwordtoken import PasswordTokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import generate_password
+from privacyidea.lib.decorators import check_token_locked
 
 optional = True
 required = False
@@ -149,6 +150,7 @@ class RegistrationTokenClass(PasswordTokenClass):
         PasswordTokenClass.update(self, param)
 
     @log_with(log, log_entry=False)
+    @check_token_locked
     def inc_count_auth_success(self):
         """
         Increase the counter, that counts successful authentications

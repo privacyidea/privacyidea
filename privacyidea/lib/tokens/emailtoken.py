@@ -47,10 +47,8 @@ The code is tested in tests/test_lib_tokens_email
 """
 
 import logging
-import datetime
 import smtplib
 import traceback
-from email.mime.text import MIMEText
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
@@ -58,6 +56,7 @@ from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.log import log_with
 from gettext import gettext as _
 from privacyidea.models import Challenge
+from privacyidea.lib.decorators import check_token_locked
 
 log = logging.getLogger(__name__)
 
@@ -232,6 +231,7 @@ class EmailTokenClass(HotpTokenClass):
         return success, return_message, transactionid, attributes
 
     @log_with(log)
+    @check_token_locked
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
         check the otpval of a token against a given counter
