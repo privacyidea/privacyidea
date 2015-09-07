@@ -207,9 +207,6 @@ class EmailTokenClass(HotpTokenClass):
                 subject_template = self._get_email_text_or_subject(options,
                                                                    EMAILACTION.EMAILSUBJECT,
                                                                    "Your OTP")
-                success, sent_message = self._send_email(
-                    message=message_template,
-                    subject=subject_template)
                 validity = int(get_from_config("email.validtime", 120))
 
                 # Create the challenge in the database
@@ -220,6 +217,10 @@ class EmailTokenClass(HotpTokenClass):
                                          validitytime=validity)
                 db_challenge.save()
                 transactionid = transactionid or db_challenge.transaction_id
+                # We send the email after creating the challenge for testing.
+                success, sent_message = self._send_email(
+                    message=message_template,
+                    subject=subject_template)
 
             except Exception as e:
                 info = ("The PIN was correct, but the "
