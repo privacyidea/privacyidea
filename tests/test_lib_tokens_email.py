@@ -381,7 +381,7 @@ class EmailTokenTestCase(MyTestCase):
     @smtpmock.activate
     def test_20_sending_email_exception(self):
         smtpmock.setdata(exception=True)
-        transactionid = "123456098712"
+        transactionid = "123456098714"
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = EmailTokenClass(db_token)
         c = token.create_challenge(transactionid)
