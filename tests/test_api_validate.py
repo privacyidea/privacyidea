@@ -11,6 +11,8 @@ from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    reset_token)
 
 from privacyidea.lib.error import (ParameterError, UserError)
+import smtpmock
+
 
 PWFILE = "tests/testdata/passwords"
 
@@ -437,8 +439,10 @@ class ValidateAPITestCase(MyTestCase):
         # delete the token
         remove_token(serial=serial)
 
+    @smtpmock.activate
     def test_13_challenge_response_email(self):
-        # set a chalresp policy for HOTP
+        smtpmock.setdata(response={})
+        # set a chalresp policy for Email
         with self.app.test_request_context('/policy/pol_chal_resp',
                                            data={'action':
                                                      "challenge_response=email",
@@ -472,9 +476,8 @@ class ValidateAPITestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             detail = json.loads(res.data).get("detail")
             self.assertFalse(result.get("value"))
-            # On travis-ci this fails.
-            #self.assertEqual(detail.get("message"), "Enter the OTP from the "
-            #                                        "Email:")
+            self.assertEqual(detail.get("message"), "Enter the OTP from the "
+                                                    "Email:")
             transaction_id = detail.get("transaction_id")
 
         # send the OTP value
