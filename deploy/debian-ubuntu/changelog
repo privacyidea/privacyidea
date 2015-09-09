@@ -1,11 +1,33 @@
-python-privacyidea (2.6~dev5) trusty; urgency=low
+python-privacyidea (2.6-1trusty) trusty; urgency=low
 
-  * Start 2.6 version
-  * Add 4 eyes token
-  * Add TiQR token
-  * Fix LDAP bind problem with anonymous bind
+  Features
+  * Add OCRA base TiQR token to authenticate by scanning
+    a QR code.
+  * Add Challenge Response authentication to Web UI
+  * Add 4-Eyes token, to enable two man policy. Two tokens
+    of two users are needed to authenticate.
+  * "Revoke Token" lets you perform special action on token types.
+    Tokens can be revoke, meaning they are blocked an can not
+    be unblocked anymore.
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 07 Sep 2015 12:30:00 +0200
+  Enhancements
+  * Add HA information in the documentation.
+  * Add OpenVPN documentation.
+  * Add challenge response policy, to define if e.g. HOTP or TOTP are 
+    allowed to be used in challenge response mode.
+  * Add hotkeys for easier use of Web Ui.
+  * Remove wrong system wide PassOnNoUser and PassOnNoToken.
+  * Set default language to "en" in Web UI.
+
+  Fixes
+  * Fix LDAP bug #179, which allows authentication with
+    wrong password under certain conditions
+  * Small fixes in coverage tests
+  * Fix username in web UI during enrollment
+  * Fix link to privacyIDEA logo in Web UI
+  * Fixed bug, that user was not able to resync his own tokens.
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 09 Sep 2015 09:30:00 +0200
 
 
 python-privacyidea (2.5-1trusty) trusty; urgency=low

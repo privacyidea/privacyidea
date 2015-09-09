@@ -339,6 +339,7 @@ class PolicyClass(object):
         would return a list of allowed serials
 
         :param unique: if set, the function will raise an exception if more
+
             than one value is returned
         :param allow_white_space_in_action: Some policies like emailtext
             would allow entering text with whitespaces. These whitespaces
