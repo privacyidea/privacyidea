@@ -1,0 +1,3 @@
+[submodule "authmodules/simpleSAMLphp"]
+	path = authmodules/simpleSAMLphp
+	url = https://github.com/cornelinux/simplesamlphp-module-privacyidea
