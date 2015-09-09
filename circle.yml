@@ -10,6 +10,8 @@ dependencies:
 
 test:
   override:
+    - git submodule init
+    - git submodule update
     - make builddeb-nosign
 #    - sudo dpkg -i DEBUILD/privacyidea-apache*.deb
 #    - sudo apt-get -f install
