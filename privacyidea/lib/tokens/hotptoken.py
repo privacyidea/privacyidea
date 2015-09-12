@@ -330,7 +330,7 @@ class HotpTokenClass(TokenClass):
         return res
 
     @log_with(log)
-    def check_otp_exist(self, otp, window=10):
+    def check_otp_exist(self, otp, window=10, symetric=False, inc_counter=True):
         """
         checks if the given OTP value is/are values of this very token.
         This is used to autoassign and to determine the serial number of
@@ -352,9 +352,9 @@ class HotpTokenClass(TokenClass):
         secretHOtp = self.token.get_otpkey()
         hmac2Otp = HmacOtp(secretHOtp, counter, otplen,
                            self.get_hashlib(self.hashlib))
-        res = hmac2Otp.checkOtp(otp, window)
+        res = hmac2Otp.checkOtp(otp, window, symetric=symetric)
 
-        if res >= 0:
+        if inc_counter and res >= 0:
             # As usually the counter is increased in lib.token.checkUserPass,
             # we need to do this manually here:
             self.inc_otp_counter(res)
@@ -363,6 +363,22 @@ class HotpTokenClass(TokenClass):
         else:
             msg = "otp counter %r was found" % otp
         log.debug("end. %r: res %r" % (msg, res))
+        return res
+
+    @log_with(log)
+    def is_previous_otp(self, otp, window=10):
+        """
+        Check if the OTP values was previously used.
+
+        :param otp:
+        :param window:
+        :return:
+        """
+        res = False
+        r = self.check_otp_exist(otp, window=window, symetric=True,
+                                 inc_counter=False)
+        if 0 <= r < self.token.count:
+            res = True
         return res
 
     @log_with(log)

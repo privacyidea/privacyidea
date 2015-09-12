@@ -101,7 +101,7 @@ def challenge_response_allowed(func):
         token = args[0]
         passw = args[1]
         clientip = options.get("clientip")
-        user_object = kwds.get("user", User())
+        user_object = kwds.get("user") or User()
         if g:
             policy_object = g.policy_object
             allowed_tokentypes = policy_object.get_action_values(

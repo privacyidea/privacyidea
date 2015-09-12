@@ -1928,6 +1928,13 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
         for tokenobject in pin_matching_token_list:
             tokenobject.inc_failcount()
             reply_dict["message"] = "wrong otp value"
+            if len(pin_matching_token_list) == 1:
+                # If there is only one pin matching token, we look if it was
+                # a previous OTP value
+                token = pin_matching_token_list[0]
+                _r, pin, otp = token.split_pin_pass(passw)
+                if token.is_previous_otp(otp):
+                    reply_dict["message"] += ". previous otp used again"
             for token_obj in pin_matching_token_list:
                 token_obj.inc_count_auth()
             # write the serial numbers to the audit log

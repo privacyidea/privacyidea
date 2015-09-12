@@ -656,3 +656,35 @@ class HOTPTokenTestCase(MyTestCase):
         token.set_otp_count(0x00000000023523ED - 1)
         token.save()
         token.check_otp("67062674")
+
+    def test_26_is_previous_otp(self):
+        # check if the OTP was used prebiously
+        serial = "previous"
+        db_token = Token(serial, tokentype="hotp")
+        db_token.save()
+        token = HotpTokenClass(db_token)
+        token.set_otpkey(self.otpkey)
+        token.set_otplen(6)
+        token.save()
+        """
+                          Truncated
+        Count    Hexadecimal    Decimal        HOTP
+        0        4c93cf18       1284755224     755224
+        1        41397eea       1094287082     287082
+        2         82fef30        137359152     359152
+        3        66ef7655       1726969429     969429
+        4        61c5938a       1640338314     338314
+        5        33c083d4        868254676     254676
+        6        7256c032       1918287922     287922
+        7         4e5b397         82162583     162583
+        8        2823443f        673399871     399871
+        9        2679dc69        645520489     520489
+        """
+        r = token.check_otp("969429")
+        self.assertEqual(r, 3)
+        r = token.is_previous_otp("755224")
+        self.assertEqual(r, True)
+        r = token.is_previous_otp("254676")
+        self.assertEqual(r, False)
+        r = token.check_otp("254676")
+        self.assertEqual(r, 5)

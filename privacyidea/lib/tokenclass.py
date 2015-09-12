@@ -967,6 +967,22 @@ class TokenClass(object):
         """
         return -1
 
+    def is_previous_otp(self, otp, window=10):
+        """
+        checks if a given OTP value is a previous OTP value, that lies in the
+        past or has a lower counter.
+
+        This is used in case of a failed authentication to return the
+        information, that this OTP values was used previously and is invalid.
+
+        :param otp: The OTP value.
+        :type otp: basestring
+        :param window: A counter window, how far we should look into the past.
+        :type window: int
+        :return: bool
+        """
+        return False
+
     def split_pin_pass(self, passw, user=None, options=None):
         """
         Split the password into the token PIN and the OTP value

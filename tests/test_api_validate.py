@@ -172,8 +172,11 @@ class ValidateAPITestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
+            details = json.loads(res.data).get("detail")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is False, result)
+            self.assertEqual(details.get("message"), "wrong otp value. "
+                                                     "previous otp used again")
 
     def test_06_fail_counter(self):
         # test if a user has several tokens that the fail counter is increased

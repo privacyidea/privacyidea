@@ -68,7 +68,8 @@ class HmacOtp():
         :return:
         """
         # log.error("hmacSecret()")
-        counter = counter or self.counter
+        if counter is None:
+            counter = self.counter
 
         # When using a counter, we can only use 64bit as data_input.
         # When we allow a raw data_input, we could use 160bit or more.
@@ -112,8 +113,8 @@ class HmacOtp():
         :param challenge: hexlified challenge
         :return:
         """
-        
-        counter = counter or self.counter
+        if counter is None:
+            counter = self.counter
 
         if challenge:
             hmac = self.hmac(challenge=challenge, key=key)
