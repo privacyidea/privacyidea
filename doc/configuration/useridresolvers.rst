@@ -104,7 +104,7 @@ as "NTLM".
 
 .. note:: When using bind type "Simple" you need to specify the Bind DN like
    *cn=administrator,cn=users,dc=domain,dc=name*. When using bind type "NTLM"
-   you need to specify Bind DN like *DOMAINNAME\username*.
+   you need to specify Bind DN like *DOMAINNAME\\username*.
 
 The ``LoginName`` attribute is the attribute that holds the loginname. It
 can be changed to your needs.
