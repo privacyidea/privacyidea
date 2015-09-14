@@ -20,7 +20,7 @@ def upgrade():
                                          nullable=False,
                                          default=False))
     except Exception as exx:
-        print "Could not add column 'revoked' to table 'token'"
+        print ("Could not add column 'revoked' to table 'token'")
         print (exx)
 
     try:
@@ -28,7 +28,7 @@ def upgrade():
                                          nullable=False,
                                          default=False))
     except Exception as exx:
-        print "Could not add column 'locked' to table 'token'"
+        print ("Could not add column 'locked' to table 'token'")
         print (exx)
 
 

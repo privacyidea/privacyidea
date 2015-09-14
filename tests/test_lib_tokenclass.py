@@ -573,7 +573,7 @@ class TokenBaseTestCase(MyTestCase):
         token = TokenClass(db_token)
         token_data = token.get_as_dict()
 
-        print token_data
+        print(token_data)
         self.assertTrue("info" in token_data)
         self.assertTrue(token_data.get("user_id") == "2000")
         self.assertTrue(token_data.get("tokentype") == "newtype")

@@ -303,7 +303,7 @@ class LdapMachineResolver(BaseMachineResolver):
             l.unbind()
             success = True
 
-        except Exception, e:
+        except Exception as e:
             desc = "%r" % e
 
         return success, desc

@@ -18,7 +18,7 @@ def upgrade():
     try:
         op.add_column('tokeninfo', sa.Column('Type', sa.Unicode(length=100), nullable=True))
     except Exception as exx:
-        print "Could not add the column 'Type' to table tokeninfo"
+        print("Could not add the column 'Type' to table tokeninfo")
         print (exx)
     ### end Alembic commands ###
 

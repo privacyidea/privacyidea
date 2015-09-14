@@ -239,9 +239,9 @@ class Admin(Base):
 
 
 def create_update_token_table():
-    print "----------------------------------"
-    print "Migrating the Token information..."
-    print "----------------------------------"
+    print("----------------------------------")
+    print("Migrating the Token information...")
+    print("----------------------------------")
     # rename the old table
     op.rename_table('Token', 'Token_old')
 
@@ -253,7 +253,7 @@ def create_update_token_table():
     TokenInfo.__table__.create(bind)
 
     for ot in session.query(Token_old):
-        print ot.privacyIDEATokenSerialnumber
+        print(ot.privacyIDEATokenSerialnumber)
         resolvername = None
         resolvertype = None
         if ot.privacyIDEAIdResClass:
@@ -266,7 +266,7 @@ def create_update_token_table():
             elif reso[3] == "SQLIdResolver":
                 resolvertype = "sqlresolver"
             else:
-                print "Error: Unknown resolvertype: %s" % reso[3]
+                print("Error: Unknown resolvertype: %s" % reso[3])
                 resolvertype = "FIXME"
         if ot.privacyIDEATokenType.lower() == "hmac":
             tokentype = "hotp"
@@ -314,8 +314,8 @@ def create_resolver_config():
     # and create ONE Resolver entry and the corresponding ResolverConfig
     # entries.
 
-    print "----------------------------------"
-    print "Read the resolvers from the config"
+    print("----------------------------------")
+    print("Read the resolvers from the config")
 
     bind = op.get_bind()
     session = Session(bind=bind)
@@ -326,7 +326,7 @@ def create_resolver_config():
 
     # Read Passwd resolver like privacyidea.passwdresolver.*.name
     for resolvertype in ["passwdresolver", "ldapresolver", "sqlresolver"]:
-        print "processing %s" % resolvertype
+        print("processing %s" % resolvertype)
         resolvers = {}
         configs = session.query(Config_old).filter(
             Config_old.Key.like("privacyidea." + resolvertype + ".%"))
@@ -380,15 +380,15 @@ def create_realms():
     ResolverRealm.__table__.create(bind)
     TokenRealm.__table__.create(bind)
 
-    print "--------------------------------"
-    print "Migrating Realms and tokenrealms"
+    print("--------------------------------")
+    print("Migrating Realms and tokenrealms")
     for realm in session.query(Realm_old):
         try:
             r = Realm(name=realm.name, id=realm.id, default=realm.default,
                       option=realm.option)
             session.add(r)
             session.commit()
-        except Exception as (exx):
+        except Exception as exx:
             print(exx)
 
     for tokenrealm in session.query(TokenRealm_old):
@@ -397,18 +397,18 @@ def create_realms():
                             realm_id=tokenrealm.realm_id)
             session.add(tr)
             session.commit()
-        except Exception as (exx):
+        except Exception as exx:
             session.rollback()
             print (exx)
 
-    print "Add resolvers to the realms"
+    print("Add resolvers to the realms")
     realms = session.query(Config_old).\
         filter(Config_old.Key.like("privacyidea.useridresolver.group.%"))
     for realm in realms:
         realmname = realm.Key.split(".")[-1]
-        print realmname
+        print(realmname)
         resolver_list = [x.split(".")[-1] for x in realm.Value.split(",")]
-        print "   with resolvers: %s" % resolver_list
+        print("   with resolvers: %s" % resolver_list)
         for resolvername in resolver_list:
             try:
                 res_id = session.query(Resolver).\
@@ -439,8 +439,8 @@ def finalize_config():
     session = Session(bind=bind)
 
     Config.__table__.create(bind)
-    print "--------------------------------"
-    print "Migrate remaining config entries"
+    print("--------------------------------")
+    print("Migrate remaining config entries")
 
     configs = session.query(Config_old)
     for conf in configs:
@@ -467,7 +467,7 @@ def finalize_config():
 
 
 def create_new_tables():
-    print "Create remaining tables"
+    print("Create remaining tables")
     bind = op.get_bind()
     Admin.__table__.create(bind)
     #op.drop_table("Challenges")
@@ -509,5 +509,5 @@ def upgrade():
 
 
 def downgrade():
-    print "We do not support downgrading to version 1.5."
-    pass
+    print("We do not support downgrading to version 1.5.")
+

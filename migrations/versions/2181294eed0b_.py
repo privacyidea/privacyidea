@@ -18,7 +18,7 @@ def upgrade():
     try:
         op.add_column('policy', sa.Column('condition', sa.Integer(), nullable=False))
     except Exception as exx:
-        print "Could not add column 'condition' to table 'policy'"
+        print ("Could not add column 'condition' to table 'policy'")
         print (exx)
 
 

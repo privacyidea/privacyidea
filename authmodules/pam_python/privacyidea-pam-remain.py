@@ -59,8 +59,8 @@ def main():
     username = getpass.getuser()
     remains = check_remain(username, SQLFILE)
 
-    print "Remaining OTP hashes:"
-    print "====================="
+    print("Remaining OTP hashes:")
+    print("=====================")
     for k, v in remains.iteritems():
         print("%s: %s" % (k, v))
 

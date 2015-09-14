@@ -112,7 +112,7 @@ class IdResolver (UserIdResolver):
             log.debug("bind seems successful.")
             l.unbind()
             log.debug("unbind successful.")
-        except Exception, e:
+        except Exception as e:
             log.warning("failed to check password for %r/%r: %r"
                         % (uid, bind_user, e))
             return False
@@ -548,7 +548,7 @@ class IdResolver (UserIdResolver):
             l.unbind()
             success = True
             
-        except Exception, e:
+        except Exception as e:
             desc = "%r" % e
         
         return success, desc

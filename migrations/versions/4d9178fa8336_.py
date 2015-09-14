@@ -20,8 +20,8 @@ def upgrade():
                                           sa.Unicode(length=256),
                                           nullable=True))
     except Exception as exx:
-        print "Could not add the column 'adminrealm' to table policy"
-        print (exx)
+        print("Could not add the column 'adminrealm' to table policy")
+        print(exx)
 
 
 def downgrade():

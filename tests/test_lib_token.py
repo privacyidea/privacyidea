@@ -951,7 +951,7 @@ class TokenTestCase(MyTestCase):
 
         tokens = tokendata.get("tokens")
         for token in tokens:
-            print token.get("serial")
+            print(token.get("serial"))
 
         self.assertTrue(tokens[0].get("serial") == "AUTO001",
                         tokens[0])
@@ -963,7 +963,7 @@ class TokenTestCase(MyTestCase):
                                      sortdir="desc")
         tokens = tokendata.get("tokens")
         for token in tokens:
-            print token.get("serial")
+            print(token.get("serial"))
 
         self.assertTrue(tokens[0].get("serial") == "hotptoken")
         self.assertTrue(tokens[-1].get("serial") == "AUTO001")
@@ -973,7 +973,7 @@ class TokenTestCase(MyTestCase):
                                         sortdir="asc")
         tokens = tokendata.get("tokens")
         for token in tokens:
-            print token.get("serial")
+            print(token.get("serial"))
 
         self.assertTrue(tokens[-1].get("serial") == "hotptoken")
         self.assertTrue(tokens[0].get("serial") == "AUTO001")
@@ -982,7 +982,7 @@ class TokenTestCase(MyTestCase):
                                         sortdir="desc")
         tokens = tokendata.get("tokens")
         for token in tokens:
-            print token.get("serial")
+            print(token.get("serial"))
 
         self.assertTrue(tokens[0].get("serial") == "hotptoken")
         self.assertTrue(tokens[-1].get("serial") == "AUTO001")

@@ -145,7 +145,7 @@ class SQLResolverTestCase(MyTestCase):
         # 772cb52221f19104310cd2f549f5131fbfd34e0f4de7590c87b1d73175812607
 
         result = y.checkPass(3, "dunno")
-        print result
+        print(result)
         assert result is True
         '''
         SHA1 base64 encoded of "dunno"
