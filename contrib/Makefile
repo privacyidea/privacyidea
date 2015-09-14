@@ -14,6 +14,10 @@ CONTRIB4=python-flask-sqlalchemy
 VERSION4=2.0
 URL4=https://pypi.python.org/packages/source/F/Flask-SQLAlchemy/Flask-SQLAlchemy-$(VERSION4).tar.gz
 
+CONTRIB5=python-pymysql
+VERSION5=0.6.6
+URL5=https://pypi.python.org/packages/source/P/PyMySQL/PyMySQL-$(VERSION5).tar.gz
+
 ME=Cornelius Kölbel <cornelius@privacyidea.org>
 
 series=trusty
@@ -77,17 +81,30 @@ flask-sqlalchemy:
 	(cp $(CONTRIB4)/deb_dist/* DEBUILD || true)
 
 
+pymysql:
+	mkdir -p $(CONTRIB5)
+	mkdir -p DEBUILD
+	(cd $(CONTRIB5); curl $(URL5) -o PyMySQL-$(VERSION5).tar.gz) 
+	(cd $(CONTRIB5); py2dsc -m '$(ME)' PyMySQL-$(VERSION5).tar.gz)
+	(cd $(CONTRIB5)/deb_dist/pymysql-$(VERSION5); dch -v $(VERSION5)-1$(series)1 --distribution $(series) -M "built for privacyidea")
+	(cd $(CONTRIB5)/deb_dist/pymysql-$(VERSION5); debuild -sa -S)
+	(cd $(CONTRIB5)/deb_dist/pymysql-$(VERSION5); debuild -b)
+	(cp $(CONTRIB5)/deb_dist/* DEBUILD || true)
+
+
 ppa-dev:
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev flask-cache_${VERSION1}-1${series}1_source.changes || true )
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev pyjwt_${VERSION2}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev ldap3_${VERSION3}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev flask-sqlalchemy_${VERSION4}-1${series}1_source.changes || true)
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev pymysql_${VERSION5}-1${series}1_source.changes || true)
 
 ppa:
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea flask-cache_${VERSION1}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea pyjwt_${VERSION2}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea ldap3_${VERSION3}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea flask-sqlalchemy_${VERSION4}-1${series}1_source.changes || true)
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea pymysql_${VERSION5}-1${series}1_source.changes || true)
 
 	
 
@@ -96,4 +113,5 @@ clean:
 	rm -fr $(CONTRIB2)
 	rm -fr $(CONTRIB3)
 	rm -fr $(CONTRIB4)
+	rm -fr $(CONTRIB5)
 	rm -fr DEBUILD

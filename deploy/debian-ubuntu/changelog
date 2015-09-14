@@ -1,8 +1,9 @@
-python-privacyidea (2.7~dev0) trusty; urgency=low
+python-privacyidea (2.7~dev1) trusty; urgency=low
 
   * Start 2.7
+  * Change dependency for PyMySQL
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Sat, 12 Sep 2015 09:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 14 Sep 2015 20:30:00 +0200
 
 python-privacyidea (2.6-1trusty) trusty; urgency=low
 

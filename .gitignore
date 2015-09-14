@@ -20,3 +20,6 @@ tests/testdata/ca/*.txt
 tests/testdata/ca/*.der
 node_modules
 po/*.mo
+contrib/python-pyjwt/
+contrib/python-pymysql/
+htmlcov/
