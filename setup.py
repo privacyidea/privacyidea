@@ -56,8 +56,7 @@ install_requires = ["Flask>=0.10.1",
                     "pyusb>=1.0.0b2",
                     "qrcode>=5.1",
                     "requests>=2.7.0",
-                    "sqlsoup>=0.9.0",
-                    "wsgiref>=0.1.2"
+                    "sqlsoup>=0.9.0"
                     ]
 
 # For python 2.6 we need additional dependency importlib

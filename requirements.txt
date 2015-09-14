@@ -63,4 +63,3 @@ SQLAlchemy==1.0.5
 sqlsoup==0.9.0
 stdeb==0.8.5
 Werkzeug==0.10.4
-wsgiref==0.1.2
