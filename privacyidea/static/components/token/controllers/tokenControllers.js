@@ -73,6 +73,18 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
 });
 
 
+myApp.controller("tokenAssignController", function ($scope, TokenFactory,
+                                                    $stateParams, AuthFactory,
+                                                    UserFactory, $state) {
+    $scope.assignToken = function () {
+        TokenFactory.assign({
+            serial: fixSerial($scope.newToken.serial),
+            pin: $scope.newToken.pin
+        }, function () {
+            $state.go('token.list');
+        });
+    };
+});
 
 myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                                                     $stateParams, AuthFactory,

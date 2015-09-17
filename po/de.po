@@ -119,6 +119,8 @@ msgstr "Applikationen"
 msgid "Assgined User"
 msgstr "Benutzer zuweisen"
 
+#: privacyidea/static/components/token/views/token.assign.html:12
+#: privacyidea/static/components/token/views/token.html:31
 #: privacyidea/static/components/user/views/user.details.html:168
 msgid "Assign Token"
 msgstr "Token zuweisen"
@@ -128,6 +130,7 @@ msgstr "Token zuweisen"
 msgid "Assign User"
 msgstr "Benutzer zuweisen"
 
+#: privacyidea/static/components/token/views/token.assign.html:1
 #: privacyidea/static/components/user/views/user.details.html:163
 msgid "Assign a new token {{ newTokenObject.serial }}"
 msgstr "Einen neuen Token {{ newTokenObject.serial }} zuweisen"
@@ -257,7 +260,7 @@ msgstr "Verzeichnis für Zertifikatsanfragen"
 msgid "Certificate Signing Request (PEM)"
 msgstr "Zertifikatsanforderung (PEM)"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:133
+#: privacyidea/static/components/token/controllers/tokenControllers.js:145
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr "Zertifikate: x509 Zertifikate ausrollen."
 
@@ -504,7 +507,7 @@ msgstr "Treiber"
 msgid "EMail Token settings"
 msgstr "Email Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:129
+#: privacyidea/static/components/token/controllers/tokenControllers.js:141
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr ""
 "EMail: Ein Einmal-Passwort per Email an die Email-Adresse des Benutzers "
@@ -612,7 +615,7 @@ msgid "Enroll Token"
 msgstr "Token ausrollen"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:32
-#: privacyidea/static/components/token/controllers/tokenControllers.js:85
+#: privacyidea/static/components/token/controllers/tokenControllers.js:97
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:79
 msgid "Enroll a new token"
@@ -683,7 +686,7 @@ msgstr "Für HOTP und TOTP Token:"
 msgid "For OCRA tokens:"
 msgstr "Für OCRA Token:"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:135
+#: privacyidea/static/components/token/controllers/tokenControllers.js:147
 msgid "Four Eyes: Two or more users are required to log in."
 msgstr "Vier-Augen: Zwei oder mehr Benutzer werden für den Login benötigt."
 
@@ -701,7 +704,7 @@ msgstr "Zertifikatsanforderung erzeugen"
 msgid "Generate the Key Pair on the Server"
 msgstr "Das Schlüsselpaar auf dem Server erzeugen"
 
-#: privacyidea/static/components/token/views/token.html:48
+#: privacyidea/static/components/token/views/token.html:59
 msgid "Get Serial"
 msgstr "Seriennummer bestimmen"
 
@@ -726,7 +729,7 @@ msgstr "Vorname"
 msgid "HOTP Token settings"
 msgstr "HOTP Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:116
+#: privacyidea/static/components/token/controllers/tokenControllers.js:128
 msgid "HOTP: event based One Time Passwords"
 msgstr "HOTP: Ereignisbasiertes Einmal-Passwort"
 
@@ -826,7 +829,19 @@ msgstr ""
 "Wenn Sie den Namen der Richtlinie ändern, wird eine neue Richtlinie mit "
 "diesem Namen erzeugt. Die Richtlinie mit dem alten Namen bleibt erhalten."
 
-#: privacyidea/static/components/token/views/token.html:31
+#: privacyidea/static/components/token/views/token.assign.html:3
+msgid ""
+"If you were handed a token device, you may connect this device to your\n"
+"    account. Turn over the token, you may find a serial number printed on "
+"the\n"
+"    token. Please enter this serial number and make up a token pin."
+msgstr ""
+"Wenn Sie einen Hardware-Token ausgehändigt bekommen haben, können Sie "
+"hierdiesen Token mit Ihrem Account verbinden. Drehen Sie den Token um, auf "
+"dem Gehäuse werden Sie eineSeriennummer finden. Geben Sie hier bitte diese "
+"Seriennummer ein und denken Sie sich eine PIN aus."
+
+#: privacyidea/static/components/token/views/token.html:40
 msgid "Import Tokens"
 msgstr "Token imporieren"
 
@@ -914,7 +929,7 @@ msgid ""
 "                        {{ loggedInUser.username }} @{{ loggedInUser.realm }}"
 msgstr "{{ loggedInUser.username }} @{{ loggedInUser.realm }} Abmelden"
 
-#: privacyidea/static/components/token/views/token.html:40
+#: privacyidea/static/components/token/views/token.html:50
 msgid "Lost Token"
 msgstr "Verlorener Token"
 
@@ -1244,7 +1259,7 @@ msgstr "RADIUS Benutzer"
 msgid "RADIUS dictionary file"
 msgstr "RADIUS dictionary Datei"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:127
+#: privacyidea/static/components/token/controllers/tokenControllers.js:139
 msgid "RADIUS: Forward authentication request to a RADIUS server"
 msgstr ""
 "RADIUS: Die Authentisierungsanfrage wird an einen RADIUS Server "
@@ -1297,7 +1312,7 @@ msgstr "Remote-Server"
 msgid "Remote Token settings"
 msgstr "Remote Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:123
+#: privacyidea/static/components/token/controllers/tokenControllers.js:135
 msgid "Remote Token: Forward authentication request to another server"
 msgstr ""
 "Remote: Die Authentisierungsanfrage wird an einen anderen privacyIDEA Server "
@@ -1361,7 +1376,7 @@ msgstr "Widerrufen"
 msgid "Role"
 msgstr "Rolle"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:94
+#: privacyidea/static/components/token/controllers/tokenControllers.js:106
 msgid "Roll the token"
 msgstr "Token ausrollen"
 
@@ -1373,16 +1388,16 @@ msgstr "SMS Provider"
 msgid "SMS Token settings"
 msgstr "SMS Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:131
+#: privacyidea/static/components/token/controllers/tokenControllers.js:143
 msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr ""
 "SMS: Einmal-Passwort wird per SMS an das Mobiltelefon des Benutzers gesendet."
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:118
+#: privacyidea/static/components/token/controllers/tokenControllers.js:130
 msgid "SPass: Simple Pass token. Static passwords"
 msgstr "SPass: Simple Pass Token. Statisches Passwort."
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:120
+#: privacyidea/static/components/token/controllers/tokenControllers.js:132
 msgid "SSH Public Key: The public SSH key"
 msgstr "SSH Public Key: Der öffentliche SSH Schlüssel"
 
@@ -1552,7 +1567,7 @@ msgstr "Systemkonfiguration gespeichert."
 msgid "TOTP Token settings"
 msgstr "TOTP Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:117
+#: privacyidea/static/components/token/controllers/tokenControllers.js:129
 msgid "TOTP: time based One Time Passwords"
 msgstr "TOTP: Zeitbasiertes Einmal-Passwort."
 
@@ -2205,7 +2220,7 @@ msgstr "TiQR Service Anzeigename"
 msgid "TiQR Token settings"
 msgstr "TiQR Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:137
+#: privacyidea/static/components/token/controllers/tokenControllers.js:149
 msgid "TiQR: Authenticate with Smartphone by scanning a QR code."
 msgstr "TiQR: Authentisierung mit Smartphone durch Scannen eines QR-Codes."
 
@@ -2451,11 +2466,11 @@ msgstr "Sie werden nach {{ myCountdown }} Sekunden abgemeldet."
 msgid "Yubico Token settings"
 msgstr "Yubico Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:121
+#: privacyidea/static/components/token/controllers/tokenControllers.js:133
 msgid "Yubikey AES mode: One Time Passwords with Yubikey"
 msgstr "Yubikey AES Mode: Einmalpasswort mit dem Yubikey."
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:125
+#: privacyidea/static/components/token/controllers/tokenControllers.js:137
 msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud"
 msgstr ""
 "Yubikey Cloud Mode: Die Authentifisierungsanfrage wird an den YubiCloud "
@@ -2555,7 +2570,7 @@ msgstr "Logstufe"
 msgid "mOTP PIN"
 msgstr "mOTP PIN"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:119
+#: privacyidea/static/components/token/controllers/tokenControllers.js:131
 msgid "mOTP: classical mobile One Time Passwords"
 msgstr "mOTP: Klassischer Mobiles Einmal-Passwort."
 
@@ -2666,7 +2681,7 @@ msgstr "Nachname"
 msgid "token type"
 msgstr "Tokentyp"
 
-#: privacyidea/static/components/token/views/token.html:52
+#: privacyidea/static/components/token/views/token.html:64
 msgid "total tokens: {{ tokendata.count }}"
 msgstr "Tokenanzahl: {{ tokendata.count }}"
 

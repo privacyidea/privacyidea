@@ -7,28 +7,38 @@
                     <li role="presentation"
                         ng-class="{active: $state.includes('token.list')}"><a
                             ui-sref="token.list"
-                            translate>All tokens</a> </li>
+                            translate>All tokens</a></li>
                     <li role="presentation"
                         ng-class="{active: $state.includes('token.details')}"
                         ng-show="$state.includes('token.details')"><a>Token
-                            {{ $stateParams.tokenSerial }}</a>
+                        {{ $stateParams.tokenSerial }}</a>
                     </li>
 
                     <li role="presentation"
-                            ng-class="{active: $state.includes('token.enroll')}"
+                        ng-class="{active: $state.includes('token.enroll')}"
                             >
                         <a ui-sref="token.enroll">
                             <span class="glyphicon glyphicon-edit"></span>
-                            <translate>Enroll Token</translate></a>
+                            <translate>Enroll Token</translate>
+                        </a>
                     </li>
-
                     <li role="presentation"
-                            ng-class="{active: $state.includes('token.import')}"
-                            ng-show="loggedInUser.role == 'admin'"
+                        ng-class="{active: $state.includes('token.assign')}"
+                        ng-show="loggedInUser.role == 'user'"
+                            >
+                        <a ui-sref="token.assign">
+                            <span class="glyphicon glyphicon-plus"></span>
+                            <translate>Assign Token</translate>
+                        </a>
+                    </li>
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('token.import')}"
+                        ng-show="loggedInUser.role == 'admin'"
                             >
                         <a ui-sref="token.import">
                             <span class="glyphicon glyphicon-upload"></span>
-                            <translate>Import Tokens</translate></a>
+                            <translate>Import Tokens</translate>
+                        </a>
                     </li>
                     <hr>
                     <li role="presentation"
@@ -37,7 +47,8 @@
                         $state.includes('token.lost')">
                         <a ui-sref="token.lost({tokenSerial:selectedToken.serial})">
                             <span class="glyphicon glyphicon-eye-open"></span>
-                            <translate>Lost Token</translate></a>
+                            <translate>Lost Token</translate>
+                        </a>
                     </li>
                     <li role="presentation"
                         ng-show="loggedInUser.role == 'admin'"
@@ -45,7 +56,8 @@
                         <a ui-sref="token.getserial">
                             <span class="glyphicon glyphicon-question-sign">
                             </span>
-                            <translate>Get Serial</translate></a>
+                            <translate>Get Serial</translate>
+                        </a>
                     </li>
                 </ul>
 

@@ -31,12 +31,17 @@ angular.module('privacyideaApp.tokenStates', ['ui.router']).config(
             $stateProvider
                 .state('token', {
                     url: "/token",
-                    templateUrl: tokenpath + "token.html",
+                    templateUrl: tokenpath + "token.html"
                 })
                 .state('token.list', {
                     url: "/list",
                     templateUrl: tokenpath + "token.list.html",
                     controller: "tokenController"
+                })
+                .state('token.assign', {
+                    url: "/assign",
+                    templateUrl: tokenpath + "token.assign.html",
+                    controller: "tokenAssignController"
                 })
                 .state('token.details', {
                     url: "/details/{tokenSerial:.*}",
