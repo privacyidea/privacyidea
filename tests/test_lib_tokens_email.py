@@ -304,16 +304,6 @@ class EmailTokenTestCase(MyTestCase):
         self.assertTrue(token.check_pin("test"))
         self.assertFalse(token.check_pin("wrong pin"))
 
-    def test_15_status_validation(self):
-        db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = EmailTokenClass(db_token)
-        token.status_validation_fail()
-        token.status_validation_success()
-        d = token.get_vars()
-        self.assertTrue("type" in d, d)
-        self.assertTrue("mode" in d, d)
-        self.assertTrue("token" in d, d)
-
     def test_17_challenge_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = EmailTokenClass(db_token)

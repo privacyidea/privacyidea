@@ -1044,23 +1044,6 @@ class TokenClass(object):
         res = "<%r %r>" % (self.__class__, ldict)
         return res
 
-    def get_vars(self, save=False):
-        """
-        return the token state as dicts with keys like type, token, mode...
-        :return: token as dict
-        """
-        ldict = {}
-        for attr in self.__dict__:
-            key = attr
-            val = getattr(self, attr)
-            if type(val) in [list, dict, str, unicode, int, float, bool]:
-                ldict[key] = val
-            elif type(val).__name__.startswith('Token'):
-                ldict[key] = val.get_vars(save=save)
-            else:
-                ldict[key] = "%r" % val  # pragma: no cover
-        return ldict
-
     def get_init_detail(self, params=None, user=None):
         """
         to complete the token normalisation, the response of the initialiastion
