@@ -89,10 +89,11 @@ class CertificateTokenClass(TokenClass):
                 }
 
     """
+    using_pin = False
+    hKeyRequired = False
 
     def __init__(self, aToken):
         TokenClass.__init__(self, aToken)
-        self.hKeyRequired = False
         self.set_type(u"certificate")
         self.otp_len = 0
 

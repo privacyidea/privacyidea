@@ -77,6 +77,11 @@ log = logging.getLogger(__name__)
 
 class TokenClass(object):
 
+    # Class properties
+    using_pin = True
+    hKeyRequired = False
+    mode = ['authenticate', 'challenge']
+
     @log_with(log)
     def __init__(self, db_token):
         """
@@ -96,8 +101,6 @@ class TokenClass(object):
         # These are temporary details to store during authentication
         # like the "matched_otp_counter".
         self.auth_details = {}
-        self.hKeyRequired = False
-        self.mode = ['authenticate', 'challenge']
 
     def set_type(self, tokentype):
         """

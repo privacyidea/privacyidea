@@ -51,10 +51,12 @@ class SSHkeyTokenClass(TokenClass):
     This can be used to manage SSH keys and retrieve the public ssh key
     to import it to authorized keys files.
     """
+    mode = ['authenticate']
+    using_pin = False
+
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)
         self.set_type(u"sshkey")
-        self.mode = ['authenticate']
 
     @classmethod
     def get_class_type(cls):

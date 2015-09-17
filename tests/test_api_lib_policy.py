@@ -35,6 +35,19 @@ from datetime import datetime, timedelta
 
 
 HOSTSFILE = "tests/testdata/hosts"
+SSHKEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDO1rx366cmSSs/89j" \
+         "/0u5aEiXa7bYArHn7zFNCBaVnDUiK9JDNkpWBj2ucbmOpDKWzH0Vl3in21E" \
+         "8BaRlq9AobASG0qlEqlnwrYwlH+vcYp6td4QBoh3sOelzhyrJFug9dnfe8o7" \
+         "0r3IL4HIbdQOdh1b8Ogi7aL01V/eVE9RgGfTNHUzuYRMUL3si4dtqbCsSjFZ" \
+         "6dN1nnVhos9cSphPr7pQEbq8xW0uxzOGrFDY9g1NSOleA8bOjsCT9k+3X4R7" \
+         "00iVGvpzWkKopcWrzXJDIa3yxylAMOM0c3uO9U3NLfRsucvcQ5Cs8S6ctM30" \
+         "8cua3t5WaBOsr3RyoXs+cHIPIkXnJHg03HsnWONaGxl8VPymC9s3P0zVwm2jMFx" \
+         "JD9WbBqep7Dwc5unxLOSKidKrnNflQiMyiIv+5dY5lhc0YTJdktC2Scse64ac2E" \
+         "7ldjG3bJuKSIWAz8Sd1km4ZJWWIx8NlpC9AfbHcgMyFUDniV1EtFIaSQLPspIk" \
+         "thzIMqPTpKblzdRZP37mPu/FpwfYG4S+F34dCmJ4BipslsVcqgCFJQHoAYAJc4N" \
+         "Dq5IRDQqXH2KybHpSLATnbSY7zjVD+evJeU994yTaXTFi5hBmd0aWTC+ph79mmE" \
+         "tu3dokA2YbLa7uWkAIXvX/HHauGLMTyCOpYi1BxN47c/kccxyNg" \
+         "jPw== corny@schnuck"
 
 
 class PrePolicyDecoratorTestCase(MyTestCase):
@@ -499,7 +512,25 @@ class PrePolicyDecoratorTestCase(MyTestCase):
                         "user": "cornelius",
                         "realm": "home",
                         "pin": "abc123"}
-        # Good length and goot contents
+        # Good length and good contents
+        self.assertTrue(check_otp_pin(req))
+
+        # A token that does not use pins is ignored.
+        init_token({"type": "certificate",
+                    "serial": "certificate"})
+        req.all_data = {"serial": "certificate",
+                        "realm": "somerealm",
+                        "user": "cornelius",
+                        "pin": ""}
+        self.assertTrue(check_otp_pin(req))
+
+        init_token({"type": "sshkey",
+                    "serial": "sshkey",
+                    "sshkey": SSHKEY})
+        req.all_data = {"serial": "sshkey",
+                        "realm": "somerealm",
+                        "user": "cornelius",
+                        "pin": ""}
         self.assertTrue(check_otp_pin(req))
 
         # finally delete policy
