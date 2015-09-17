@@ -837,8 +837,8 @@ msgid ""
 "    token. Please enter this serial number and make up a token pin."
 msgstr ""
 "Wenn Sie einen Hardware-Token ausgehändigt bekommen haben, können Sie "
-"hierdiesen Token mit Ihrem Account verbinden. Drehen Sie den Token um, auf "
-"dem Gehäuse werden Sie eineSeriennummer finden. Geben Sie hier bitte diese "
+"hier diesen Token mit Ihrem Account verbinden. Drehen Sie den Token um, auf "
+"dem Gehäuse werden Sie eineS eriennummer finden. Geben Sie hier bitte diese "
 "Seriennummer ein und denken Sie sich eine PIN aus."
 
 #: privacyidea/static/components/token/views/token.html:40
