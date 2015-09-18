@@ -153,6 +153,16 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         hashlibs: ["sha1", "sha256", "sha512"]
     };
 
+    // These token need to PIN
+    // TODO: THis is also contained in the tokentype class!
+    $scope.changeTokenType = function() {
+        console.log("Token Type Changed.");
+        if (["sshkey", "certificate"].indexOf($scope.form.type) >= 0) {
+            $scope.hidePin = true;
+        } else {
+            $scope.hidePin = false;
+        }
+    };
 
     // A watch function to change the form data in case another user is selected
     $scope.$watch(function(scope) {return scope.newUser.email},
