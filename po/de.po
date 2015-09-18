@@ -838,7 +838,7 @@ msgid ""
 msgstr ""
 "Wenn Sie einen Hardware-Token ausgehändigt bekommen haben, können Sie "
 "hier diesen Token mit Ihrem Account verbinden. Drehen Sie den Token um, auf "
-"dem Gehäuse werden Sie eineS eriennummer finden. Geben Sie hier bitte diese "
+"dem Gehäuse werden Sie eine Seriennummer finden. Geben Sie hier bitte diese "
 "Seriennummer ein und denken Sie sich eine PIN aus."
 
 #: privacyidea/static/components/token/views/token.html:40
