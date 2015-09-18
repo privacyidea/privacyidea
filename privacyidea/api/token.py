@@ -760,6 +760,8 @@ def loadtokens_api(filename=None):
     :type filename: basestring
     :param type: The file type. Can be "aladdin-xml", "oathcsv" or "yubikeycsv".
     :type type: basestring
+    :param tokenrealms: comma separated list of tokens.
+    :type param: basestring
     :return: The number of the imported tokens
     :rtype: int
     """
@@ -769,6 +771,8 @@ def loadtokens_api(filename=None):
                    'Yubikey CSV', 'pskc']
     file_type = getParam(request.all_data, "type", required)
     hashlib = getParam(request.all_data, "aladdin_hashlib")
+    trealms = getParam(request.all_data, "tokenrealms") or ""
+    tokenrealms = trealms.split(",")
 
     TOKENS = {}
     token_file = request.files['file']
@@ -816,17 +820,6 @@ def loadtokens_api(filename=None):
     for serial in TOKENS:
         log.debug("importing token %s" % TOKENS[serial])
 
-        # TODO: Migration
-        # this needs to return the valid realms of the admin.
-        # it also checks the license token number
-        # res = self.Policy.checkPolicyPre('admin', 'import', {})
-        # we put the token in the FIRST realm of the admin.
-        # so tokenrealm will either be ONE realm or NONE
-        # log.info("setting tokenrealm %s" % res['realms'])
-        tokenrealms = []
-        #if res['realms']:
-        #    tokenrealm = res.get('realms')[0]
-
         log.info("initialize token. serial: %s, realm: %s" % (serial,
                                                               tokenrealms))
 
@@ -848,10 +841,9 @@ def loadtokens_api(filename=None):
 
         init_token(init_param, tokenrealms=tokenrealms)
 
-
     g.audit_object.log({'info': "%s, %s (imported: %i)" % (file_type,
-                                                              token_file,
-                                                 len(TOKENS)),
+                                                           token_file,
+                                                           len(TOKENS)),
                         'serial': ', '.join(TOKENS.keys())})
     # logTokenNum()
 

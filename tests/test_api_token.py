@@ -627,6 +627,7 @@ class APITokenTestCase(MyTestCase):
         with self.app.test_request_context('/token/load/yubico.csv',
                                             method="POST",
                                             data={"type": "yubikeycsv",
+                                                  "tokenrealms": self.realm1,
                                                   "file": (YUBICOFILE,
                                                            "yubico.csv")},
                                             headers={'Authorization': self.at}):
@@ -636,6 +637,11 @@ class APITokenTestCase(MyTestCase):
             value = result.get("value")
             self.assertTrue(value == 3, result)
 
+        # check if the token was put into self.realm1
+        tokenobject_list = get_tokens(serial="UBOM508327_X")
+        self.assertEqual(len(tokenobject_list), 1)
+        token = tokenobject_list[0]
+        self.assertEqual(token.token.realm_list[0].realm.name, self.realm1)
 
         # Try to load empty file
         with self.app.test_request_context('/token/load/empty.oath',
