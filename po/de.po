@@ -836,14 +836,14 @@ msgid ""
 "the\n"
 "    token. Please enter this serial number and make up a token pin."
 msgstr ""
-"Wenn Sie einen Hardware-Token ausgehändigt bekommen haben, können Sie "
-"hier diesen Token mit Ihrem Account verbinden. Drehen Sie den Token um, auf "
-"dem Gehäuse werden Sie eine Seriennummer finden. Geben Sie hier bitte diese "
+"Wenn Sie einen Hardware-Token ausgehändigt bekommen haben, können Sie hier "
+"diesen Token mit Ihrem Account verbinden. Drehen Sie den Token um, auf dem "
+"Gehäuse werden Sie eine Seriennummer finden. Geben Sie hier bitte diese "
 "Seriennummer ein und denken Sie sich eine PIN aus."
 
 #: privacyidea/static/components/token/views/token.html:40
 msgid "Import Tokens"
-msgstr "Token imporieren"
+msgstr "Token importieren"
 
 #: privacyidea/static/components/token/views/token.import.html:1
 msgid "Import tokens from a file"
