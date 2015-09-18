@@ -254,11 +254,11 @@ class TiqrTokenClass(TokenClass):
                                   "privacyIDEA"
             reg_server = get_from_config("tiqr.regServer")
             auth_server = get_from_config("tiqr.authServer") or reg_server
+            logo_url = get_from_config("tiqr.logoUrl")
 
             service = {"displayName": service_displayname,
                        "identifier": service_identifier,
-                       "logoUrl": "https://www.privacyidea.org/wp-content/uploads"
-                                  "/2014/05/privacyIDEA1.png",
+                       "logoUrl": logo_url,
                        "infoUrl": "https://www.privacyidea.org",
                        "authenticationUrl":
                            "%s" % auth_server,

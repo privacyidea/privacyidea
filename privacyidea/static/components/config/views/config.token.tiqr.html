@@ -12,6 +12,7 @@
     </p>
     <input type="url"
            required
+           placeholder="http://pi.server/ttype/tiqr"
            class="form-control"
            ng-model="form['tiqr.regServer']" name="tiqrRegServer">
 </div>
@@ -47,6 +48,18 @@
            class="form-control"
            ng-model="form['tiqr.serviceIdentifier']"
            name="tiqrServiceIdentifier">
+</div>
+
+<div class="form-group">
+    <label for="tiqrLogoUrl" translate>TiQR Logo URL</label>
+    <p class="help-block" translate>
+        The URL that contains the logo of the service.
+    </p>
+    <input type="url"
+           required
+           placeholder="https://pi.server/static/css/privacyIDEA1.png"
+           class="form-control"
+           ng-model="form['tiqr.logoUrl']" name="tiqrLogoUrl">
 </div>
 
 <div class="form-group">

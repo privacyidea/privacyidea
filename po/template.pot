@@ -1010,7 +1010,7 @@ msgstr ""
 msgid "Number of required tokens"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:53
+#: privacyidea/static/components/config/views/config.token.tiqr.html:66
 msgid "OCRA Suite"
 msgstr ""
 
@@ -1162,7 +1162,7 @@ msgstr ""
 msgid "Previous"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:64
+#: privacyidea/static/components/token/views/token.import.html:75
 msgid "Progress: {{ progressPercentage }}%"
 msgstr ""
 
@@ -1397,7 +1397,7 @@ msgstr ""
 msgid "Select Realm"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:56
+#: privacyidea/static/components/token/views/token.import.html:67
 msgid "Select file and import"
 msgstr ""
 
@@ -1538,7 +1538,7 @@ msgid ""
 "    realms need to be present to perform a successful authentication."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:21
+#: privacyidea/static/components/config/views/config.token.tiqr.html:22
 msgid ""
 "The Authentication Server is this privacyIDEA server. Note that the\n"
 "        privacyIDEA server needs to be accessible from the users smartphone."
@@ -1688,6 +1688,10 @@ msgstr ""
 msgid ""
 "The TiQR token is a Smartphone App token, which allows easy\n"
 "    authentication by just scanning a QR Code during the authentication process."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:55
+msgid "The URL that contains the logo of the service."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:1
@@ -1939,7 +1943,7 @@ msgid ""
 "            Please ask for an update to import encrypted PSKC files."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:54
+#: privacyidea/static/components/config/views/config.token.tiqr.html:67
 msgid ""
 "This is the OCRA suite used by the TiQR App.\n"
 "        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.\n"
@@ -1948,7 +1952,7 @@ msgid ""
 "            6287</a>."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:32
+#: privacyidea/static/components/config/views/config.token.tiqr.html:33
 msgid "This is the display name of your service in the TiQR app."
 msgstr ""
 
@@ -1959,7 +1963,7 @@ msgid ""
 "                kind of action in regards to the serial number."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:42
+#: privacyidea/static/components/config/views/config.token.tiqr.html:43
 msgid ""
 "This is the service identifier that will be passed to the TiQR app.\n"
 "        This should contain a reverse FQDN (defaults to org.privacyidea)."
@@ -1971,21 +1975,25 @@ msgid ""
 "    logging in for the first time."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:20
+#: privacyidea/static/components/config/views/config.token.tiqr.html:21
 msgid "TiQR Authentication Server"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:54
+msgid "TiQR Logo URL"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:8
 msgid "TiQR Registration Server"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:40
+#: privacyidea/static/components/config/views/config.token.tiqr.html:41
 msgid ""
 "TiQR Service\n"
 "        Identifier"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:31
+#: privacyidea/static/components/config/views/config.token.tiqr.html:32
 msgid "TiQR Service Displayname"
 msgstr ""
 
@@ -2097,11 +2105,11 @@ msgstr ""
 msgid "Upload Request"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:67
+#: privacyidea/static/components/token/views/token.import.html:78
 msgid "Uploaded File: {{ uploadedFile }}"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:70
+#: privacyidea/static/components/token/views/token.import.html:81
 msgid "Uploaded Tokens: {{ uploadedTokens }}"
 msgstr ""
 
@@ -2209,6 +2217,12 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:65
 msgid "Working Directory"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.import.html:55
+msgid ""
+"You can choose a realm to which the tokens should be imported.\n"
+"            You can also change the realms of each token later."
 msgstr ""
 
 #: privacyidea/static/components/user/views/user.add.html:84

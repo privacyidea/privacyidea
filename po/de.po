@@ -1065,7 +1065,7 @@ msgstr "Anzahl der Maschinen: {{ $sope.machinecount }}"
 msgid "Number of required tokens"
 msgstr "Anzahl der benötigten Token"
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:53
+#: privacyidea/static/components/config/views/config.token.tiqr.html:66
 msgid "OCRA Suite"
 msgstr "OCRA Suite"
 
@@ -1222,7 +1222,7 @@ msgstr "OpenLDAP vorbelegen"
 msgid "Previous"
 msgstr "Zurück"
 
-#: privacyidea/static/components/token/views/token.import.html:64
+#: privacyidea/static/components/token/views/token.import.html:75
 msgid "Progress: {{ progressPercentage }}%"
 msgstr "Fortschritt: {{ progressPercentage }}%"
 
@@ -1462,7 +1462,7 @@ msgstr "Secret"
 msgid "Select Realm"
 msgstr "Realm auswählen"
 
-#: privacyidea/static/components/token/views/token.import.html:56
+#: privacyidea/static/components/token/views/token.import.html:67
 msgid "Select file and import"
 msgstr "Datei auswählen und importieren"
 
@@ -1606,7 +1606,7 @@ msgstr ""
 "oder mehr Benutzer benötigt. Sie können angeben, wieviele Token aus dem "
 "jeweiligen Realm zur Authentisierung benötigt werden."
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:21
+#: privacyidea/static/components/config/views/config.token.tiqr.html:22
 msgid ""
 "The Authentication Server is this privacyIDEA server. Note that the\n"
 "        privacyIDEA server needs to be accessible from the users smartphone."
@@ -1812,6 +1812,10 @@ msgid ""
 msgstr ""
 "Der TiQR Token ist eine Smartphone App, die eine leichte Authentisierung "
 "durch das Scannen eines QR-Codes ermöglicht."
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:55
+msgid "The URL that contains the logo of the service."
+msgstr "Diese URL zeigt auf das Logo des Dienstes."
 
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:1
 msgid ""
@@ -2154,7 +2158,7 @@ msgstr ""
 "unverschlüsselte PSKC-Dateien unterstützt. Bitte fragen Sie nach einem "
 "update, um verschlüsselte PSKC-Dateien zu importieren."
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:54
+#: privacyidea/static/components/config/views/config.token.tiqr.html:67
 msgid ""
 "This is the OCRA suite used by the TiQR App.\n"
 "        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.\n"
@@ -2169,7 +2173,7 @@ msgstr ""
 "rfc6287#page-8\" target=\"OCRA\">RFC\n"
 "            6287</a>."
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:32
+#: privacyidea/static/components/config/views/config.token.tiqr.html:33
 msgid "This is the display name of your service in the TiQR app."
 msgstr "Dies ist der Anzeigename Ihres Service in der TiQR-App."
 
@@ -2182,7 +2186,7 @@ msgstr ""
 "Dies ist die allgemeine Tokennutzung, egal welche Aktion mit dem Tokenoder "
 "in Bezug auf den Token durchgeführt wurde."
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:42
+#: privacyidea/static/components/config/views/config.token.tiqr.html:43
 msgid ""
 "This is the service identifier that will be passed to the TiQR app.\n"
 "        This should contain a reverse FQDN (defaults to org.privacyidea)."
@@ -2198,21 +2202,25 @@ msgstr ""
 "Dieser wird verwendet, damit ein Benutzer sich einmalig anmelden kann, um "
 "danach sich selber einen Token auszustellen."
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:20
+#: privacyidea/static/components/config/views/config.token.tiqr.html:21
 msgid "TiQR Authentication Server"
 msgstr "TiQR Authentisierungsserver"
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:54
+msgid "TiQR Logo URL"
+msgstr "TiQR Logo-URL"
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:8
 msgid "TiQR Registration Server"
 msgstr "TiQR Registrierungsserver"
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:40
+#: privacyidea/static/components/config/views/config.token.tiqr.html:41
 msgid ""
 "TiQR Service\n"
 "        Identifier"
 msgstr "TiQR Dienste ID"
 
-#: privacyidea/static/components/config/views/config.token.tiqr.html:31
+#: privacyidea/static/components/config/views/config.token.tiqr.html:32
 msgid "TiQR Service Displayname"
 msgstr "TiQR Service Anzeigename"
 
@@ -2324,11 +2332,11 @@ msgstr "Zertifikat hochladen"
 msgid "Upload Request"
 msgstr "Zertifikatsanforderung hochladen"
 
-#: privacyidea/static/components/token/views/token.import.html:67
+#: privacyidea/static/components/token/views/token.import.html:78
 msgid "Uploaded File: {{ uploadedFile }}"
 msgstr "Hochgeladene Datei: {{ uploadedFile }}"
 
-#: privacyidea/static/components/token/views/token.import.html:70
+#: privacyidea/static/components/token/views/token.import.html:81
 msgid "Uploaded Tokens: {{ uploadedTokens }}"
 msgstr "Hochgeladene Token: {{ uploadedTokens }}"
 
@@ -2438,6 +2446,14 @@ msgstr "Wordpress"
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:65
 msgid "Working Directory"
 msgstr "Arbeitsverzeichnis"
+
+#: privacyidea/static/components/token/views/token.import.html:55
+msgid ""
+"You can choose a realm to which the tokens should be imported.\n"
+"            You can also change the realms of each token later."
+msgstr ""
+"Hier wählen Sie den Realm, in den die Token importiert werden. Sie können "
+"später die die Realms der Token ändern."
 
 #: privacyidea/static/components/user/views/user.add.html:84
 msgid ""
