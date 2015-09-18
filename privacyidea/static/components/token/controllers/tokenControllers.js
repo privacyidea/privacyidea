@@ -308,14 +308,21 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
 
 
 myApp.controller("tokenImportController", function ($scope, $upload,
-                                                    AuthFactory, inform) {
+                                                    AuthFactory,
+                                                    ConfigFactory, inform) {
     $scope.formInit = {
         fileTypes: ["OATH CSV", "Yubikey CSV", "pskc"]
     };
     // These are values that are also sent to the backend!
     $scope.form = {
-        type: "OATH CSV"
+        type: "OATH CSV",
+        realm: ""
     };
+
+    // get Realms
+    ConfigFactory.getRealms(function (data) {
+        $scope.realms = data.result.value;
+    });
 
     $scope.upload = function (files) {
         if (files && files.length) {
@@ -324,7 +331,8 @@ myApp.controller("tokenImportController", function ($scope, $upload,
                 $upload.upload({
                     url: 'token/load/filename',
                     headers: {'Authorization': AuthFactory.getAuthToken()},
-                    fields: {type: $scope.form.type},
+                    fields: {type: $scope.form.type,
+                            tokenrealms: $scope.form.realm},
                     file: file
                 }).progress(function (evt) {
                     $scope.progressPercentage = parseInt(100.0 * evt.loaded / evt.total);

@@ -51,6 +51,17 @@
         </p>
     </div>
 
+    <div >
+        <p class="help help-block" translate>
+            You can choose a realm to which the tokens should be imported.
+            You can also change the realms of each token later.
+        </p>
+        <select class="form-control"
+           ng-model="form.realm">
+            <option ng-repeat="(realmname, realm) in realms"
+                    ng-selected="realm.default">{{ realmname }}</option>
+        </select>
+    </div>
 
     <div class="text-center">
         <button class="btn btn-primary" ng-file-select
