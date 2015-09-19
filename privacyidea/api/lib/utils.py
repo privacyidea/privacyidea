@@ -26,21 +26,16 @@
 from ...lib.error import (ParameterError,
                           AuthError)
 from ...lib.log import log_with
-import binascii
-import string
-from ...lib.crypto import urandom
-from ...lib.crypto import geturandom
+import time
 import pkg_resources
 import logging
 import json
 import jwt
 from flask import (jsonify,
-                   request,
                    current_app,
                    Response)
 
 log = logging.getLogger(__name__)
-import re
 ENCODING = "utf-8"
 
 SESSION_KEY_LENGTH = 32
@@ -118,7 +113,8 @@ def send_result(obj, rid=1, details=None):
                       "value": obj},
            "version": get_version(),
            "versionnumber": get_version_number(),
-           "id": rid}
+           "id": rid,
+           "time": time.time()}
 
     if details is not None and len(details) > 0:
         res["detail"] = details
@@ -160,7 +156,8 @@ def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
                                 "message": errstring}
                       },
            "version": get_version(),
-           "id": rid
+           "id": rid,
+           "time": time.time()
            }
 
     ret = jsonify(res)
