@@ -9,6 +9,8 @@ privacyIDEA
 [![License](https://img.shields.io/github/license/privacyidea/privacyidea.svg)](https://pypi.python.org/pypi/privacyidea/)
 [![Documentation Status](https://readthedocs.org/projects/privacyidea/badge/?version=latest)](http://privacyidea.readthedocs.org/en/latest/)
 [![Code Climate](https://codeclimate.com/github/privacyidea/privacyidea/badges/gpa.svg)](https://codeclimate.com/github/privacyidea/privacyidea)
+[![Issue Stats](http://issuestats.com/github/privacyidea/privacyidea/badge/pr?style=flat)](http://issuestats.com/github/privacyidea/privacyidea)
+[![Issue Stats](http://issuestats.com/github/privacyidea/privacyidea/badge/issue?style=flat)](http://issuestats.com/github/privacyidea/privacyidea)
 
 privacyIDEA is an open solution for strong two-factor authentication like 
 OTP tokens, SMS, Smartphones or SSH keys.
