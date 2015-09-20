@@ -25,6 +25,7 @@ preacct {
 }
 
 accounting {
+	detail
 }
 
 
