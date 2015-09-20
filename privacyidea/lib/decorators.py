@@ -20,11 +20,11 @@
 
 import logging
 import functools
-log = logging.getLogger(__name__)
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.error import ParameterError
 from flask import request
 from gettext import gettext as _
+log = logging.getLogger(__name__)
 
 
 def check_token_locked(func):

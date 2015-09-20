@@ -38,27 +38,23 @@ import string
 from .log import log_with
 from .error import HSMException
 import binascii
-
-''' for the hmac algo, we have to check the python version '''
+import ctypes
+from flask import current_app
+from Crypto.Hash import SHA as SHA1
+from Crypto.Hash import SHA256 as HashFunc
+from Crypto.Cipher import AES
 import sys
+import traceback
+from Crypto.PublicKey import RSA
+
+
 (ma, mi, _, _, _,) = sys.version_info
 pver = float(int(ma) + int(mi) * 0.1)
-
-import ctypes
-
-from flask import current_app
-
-from Crypto.Hash import HMAC
-from Crypto.Hash import SHA as SHA1
-from Crypto.Hash import SHA256
-from Crypto.Cipher import AES
-
-from passlib.hash import pbkdf2_sha512
 
 log = logging.getLogger(__name__)
 
 c_hash = {'sha1': SHA1,
-          'sha256': SHA256}
+          'sha256': HashFunc}
 
 try:
     from Crypto.Hash import SHA224
@@ -527,3 +523,62 @@ def zerome(bufferObject):
     ctypes.memset(data, 0, size.value)
 
     return
+
+
+class Sign(object):
+    """
+    Signing class that is used to sign Audit Entries and to sign API responses.
+    """
+    def __init__(self, private_file, public_file):
+        """
+        :param private_file: The privacy Key file
+        :type private_file: filename
+        :param public_file:  The public key file
+        :type public_file: filename
+        :return: Sign Object
+        """
+        self.private = ""
+        self.public = ""
+        try:
+            f = open(private_file, "r")
+            self.private = f.read()
+            f.close()
+        except Exception as e:
+            log.error("Error reading private key %s: (%r)" % (private_file, e))
+            raise e
+
+        try:
+            f = open(public_file, "r")
+            self.public = f.read()
+            f.close()
+        except Exception as e:
+            log.error("Error reading public key %s: (%r)" % (public_file, e))
+            raise e
+
+    def sign(self, s):
+        """
+        Create a signature of the string s
+
+        :return: The signature of the string
+        :rtype: long
+        """
+        RSAkey = RSA.importKey(self.private)
+        hashvalue = HashFunc.new(s).digest()
+        signature = RSAkey.sign(hashvalue, 1)
+        s_signature = str(signature[0])
+        return s_signature
+
+    def verify(self, s, signature):
+        """
+        Check the signature of the string s
+        """
+        r = False
+        try:
+            RSAkey = RSA.importKey(self.public)
+            hashvalue = HashFunc.new(s).digest()
+            signature = long(signature)
+            r = RSAkey.verify(hashvalue, (signature,))
+        except Exception:  # pragma: no cover
+            log.error("Failed to verify signature: %r" % s)
+            log.error(traceback.format_exc())
+        return r

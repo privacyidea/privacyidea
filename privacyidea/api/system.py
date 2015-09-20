@@ -79,7 +79,7 @@ from .machineresolver import machineresolver_blueprint
 from .machine import machine_blueprint
 from .application import application_blueprint
 from .caconnector import caconnector_blueprint
-from privacyidea.api.lib.postpolicy import (postpolicy, sign_response)
+from privacyidea.api.lib.postpolicy import postrequest, sign_response
 
 log = logging.getLogger(__name__)
 
@@ -137,7 +137,7 @@ def before_request():
 @machine_blueprint.after_request
 @machineresolver_blueprint.after_request
 @caconnector_blueprint.after_request
-@postpolicy(sign_response, request=request)
+@postrequest(sign_response, request=request)
 def after_request(response):
     """
     This function is called after a request
@@ -162,6 +162,7 @@ def after_request(response):
 @token_blueprint.app_errorhandler(AuthError)
 @audit_blueprint.app_errorhandler(AuthError)
 @application_blueprint.app_errorhandler(AuthError)
+@postrequest(sign_response, request=request)
 def auth_error(error):
     if "audit_object" in g:
         g.audit_object.log({"info": error.description})
@@ -180,6 +181,7 @@ def auth_error(error):
 @token_blueprint.app_errorhandler(PolicyError)
 @audit_blueprint.app_errorhandler(PolicyError)
 @application_blueprint.app_errorhandler(PolicyError)
+@postrequest(sign_response, request=request)
 def policy_error(error):
     if "audit_object" in g:
         g.audit_object.log({"info": error.message})
@@ -196,6 +198,7 @@ def policy_error(error):
 @token_blueprint.app_errorhandler(500)
 @audit_blueprint.app_errorhandler(500)
 @application_blueprint.app_errorhandler(500)
+@postrequest(sign_response, request=request)
 def internal_error(error):
     """
     This function is called when an internal error (500) occurs.

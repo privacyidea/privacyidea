@@ -63,9 +63,11 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
                                             no_detail_on_fail,
                                             no_detail_on_success, autoassign,
-                                            offline_info, sign_response)
+                                            offline_info)
 from privacyidea.lib.policy import PolicyClass
 import logging
+from privacyidea.api.lib.postpolicy import postrequest, sign_response
+
 log = logging.getLogger(__name__)
 
 validate_blueprint = Blueprint('validate_blueprint', __name__)
@@ -93,7 +95,7 @@ def before_request():
 
 
 @validate_blueprint.after_request
-@postpolicy(sign_response, request=request)
+@postrequest(sign_response, request=request)
 def after_request(response):
     """
     This function is called after a request

@@ -38,17 +38,19 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.error import PolicyError
-from flask import g
+from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.token import get_tokens, assign_token
 from privacyidea.lib.machine import get_hostname, get_auth_items
 from .prepolicy import check_max_token_user, check_max_token_realm
-from .utils import get_all_params
 import functools
 import json
 import re
 import netaddr
+from privacyidea.lib.crypto import Sign
+from privacyidea.api.lib.utils import get_all_params
+
 
 optional = True
 required = False
@@ -89,6 +91,79 @@ class postpolicy(object):
             return self.function(self.request, response, *args, **kwds)
 
         return policy_wrapper
+
+
+class postrequest(object):
+    """
+    Decorator that is supposed to be used with after_request.
+    """
+    def __init__(self, function, request=None):
+        """
+        :param function: This is the policy function the is to be called
+        :type function: function
+        :param request: The original request object, that needs to be passed
+        :type request: Request Object
+        """
+        self.request = request
+        self.function = function
+
+    def __call__(self, wrapped_function):
+        @functools.wraps(wrapped_function)
+        def policy_wrapper(*args, **kwds):
+            response = wrapped_function(*args, **kwds)
+            return self.function(self.request, response, **kwds)
+
+        return policy_wrapper
+
+
+def sign_response(request, response):
+    """
+    This decorator is used to sign the response. It adds the nonce from the
+    request, if it exist and adds the nonce and the signature to the response.
+
+    .. note:: This only works for JSON responses. So if we fail to decode the
+       JSON, we just pass on.
+
+    The usual way to use it is, to wrap the after_request, so that we can also
+    sign errors.
+
+    @postrequest(sign_response, request=request)
+    def after_request(response):
+
+    :param request: The Request object
+    :param response: The Response object
+    """
+    priv_file = current_app.config.get("PI_AUDIT_KEY_PRIVATE")
+    pub_file = current_app.config.get("PI_AUDIT_KEY_PUBLIC")
+    sign_object = Sign(priv_file, pub_file)
+    request.all_data = get_all_params(request.values, request.data)
+    # response can be either a Response object or a Tuple (Response, ErrorID)
+    response_value = 200
+    response_is_tuple = False
+    if type(response).__name__ == "tuple":
+        response_is_tuple = True
+        response_value = response[1]
+        response_object = response[0]
+    else:
+        response_object = response
+    try:
+        content = json.loads(response_object.data)
+        nonce = request.all_data.get("nonce")
+        if nonce:
+            content["nonce"] = nonce
+
+        content["signature"] = sign_object.sign(json.dumps(content))
+        response_object.data = json.dumps(content)
+    except ValueError:
+        # The response.data is no JSON (but CSV or policy export)
+        # We do no signing in this case.
+        pass
+
+    if response_is_tuple:
+        resp = (response_object, response_value)
+    else:
+        resp = response_object
+    return resp
 
 
 def check_tokentype(request, response):
@@ -207,41 +282,6 @@ def no_detail_on_fail(request, response):
             del content["detail"]
             response.data = json.dumps(content)
 
-    return response
-
-
-def sign_response(request, response, response2=None):
-    """
-    This decorator is used to sign the response. It adds the nonce from the
-    request, if it exist and adds the nonce and the signature to the response.
-
-    .. note:: This only works for JSON responses. So if we fail to decode the
-       JSON, we just pass on.
-
-    The usual way to use it is, to wrap the after_request, so that we can also
-    sign errors.
-
-    @postpolicy(sign_response, request=request)
-    def after_request(response):
-
-    :param request: The Request object
-    :param response: The Response object
-    :param response2: The same Response object. We get it twice when wrapping
-        after_request.
-    """
-    request.all_data = get_all_params(request.values, request.data)
-    try:
-        content = json.loads(response.data)
-    except ValueError:
-        return response
-
-    nonce = request.all_data.get("nonce")
-    if nonce:
-        content["nonce"] = nonce
-
-    # TODO: create the signature
-    content["signature"] = "signature"
-    response.data = json.dumps(content)
     return response
 
 

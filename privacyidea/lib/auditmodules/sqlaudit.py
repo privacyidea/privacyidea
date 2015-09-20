@@ -34,17 +34,16 @@ token database.
 """
 
 import logging
-log = logging.getLogger(__name__)
 from privacyidea.lib.auditmodules.base import (Audit as AuditBase, Paginate)
-
+from privacyidea.lib.crypto import Sign
 from sqlalchemy import Table, MetaData, Column
 from sqlalchemy import Integer, String, DateTime, asc, desc, and_
 from sqlalchemy.orm import mapper
 import datetime
 import traceback
-from Crypto.Hash import SHA256 as HashFunc
-from Crypto.PublicKey import RSA
 from sqlalchemy.exc import OperationalError
+
+log = logging.getLogger(__name__)
 try:
     import matplotlib
     MATPLOT_READY = True
@@ -131,6 +130,7 @@ class Audit(AuditBase):
         self.name = "sqlaudit"
         self.config = config or {}
         self.audit_data = {}
+        self.sign_object = None
         self.read_keys(self.config.get("PI_AUDIT_KEY_PUBLIC"),
                        self.config.get("PI_AUDIT_KEY_PRIVATE"))
         
@@ -242,11 +242,12 @@ class Audit(AuditBase):
             self.session.add(le)
             self.session.commit()
             # Add the signature
-            s = self._log_to_string(le)
-            sign = self._sign(s)
-            le.signature = sign
-            self.session.merge(le)
-            self.session.commit()
+            if self.sign_object:
+                s = self._log_to_string(le)
+                sign = self.sign_object.sign(s)
+                le.signature = sign
+                self.session.merge(le)
+                self.session.commit()
         except Exception as exx:  # pragma: no cover
             log.error("exception %r" % exx)
             log.error("DATA: %s" % self.audit_data)
@@ -257,34 +258,22 @@ class Audit(AuditBase):
             self.session.close()
             # clear the audit data
             self.audit_data = {}
-    
-    def _sign(self, s):
+
+    def read_keys(self, pub, priv):
         """
-        Create a signature of the string s
-        
-        :return: The signature of the string
-        :rtype: long
+        Set the private and public key for the audit class. This is achieved by
+        passing the entries.
+
+        #priv = config.get("privacyideaAudit.key.private")
+        #pub = config.get("privacyideaAudit.key.public")
+
+        :param pub: Public key, used for verifying the signature
+        :type pub: string with filename
+        :param priv: Private key, used to sign the audit entry
+        :type priv: string with filename
+        :return: None
         """
-        RSAkey = RSA.importKey(self.private)
-        hashvalue = HashFunc.new(s).digest()
-        signature = RSAkey.sign(hashvalue, 1)
-        s_signature = str(signature[0])
-        return s_signature
-    
-    def _verify_sig(self, audit_entry):
-        """
-        Check the signature of the audit log in the database
-        """
-        r = False
-        try:
-            RSAkey = RSA.importKey(self.public)
-            hashvalue = HashFunc.new(self._log_to_string(audit_entry)).digest()
-            signature = long(audit_entry.signature)
-            r = RSAkey.verify(hashvalue, (signature,))
-        except Exception:  # pragma: no cover
-            log.error("Failed to verify audit entry: %r" % audit_entry.id)
-            log.error(traceback.format_exc())
-        return r
+        self.sign_object = Sign(priv, pub)
 
     def _check_missing(self, audit_id):
         """
@@ -486,7 +475,8 @@ class Audit(AuditBase):
         self.session.commit()
     
     def audit_entry_to_dict(self, audit_entry):
-        sig = self._verify_sig(audit_entry)
+        sig = self.sign_object.verify(self._log_to_string(audit_entry),
+                                      audit_entry.signature)
         is_not_missing = self._check_missing(int(audit_entry.id))
         # is_not_missing = True
         audit_dict = {'number': audit_entry.id,

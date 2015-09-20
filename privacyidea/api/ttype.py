@@ -45,7 +45,7 @@ from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import get_token_class
 from privacyidea.lib.user import get_user_from_param
-from privacyidea.api.lib.postpolicy import (postpolicy, sign_response)
+from privacyidea.api.lib.postpolicy import postrequest, sign_response
 
 
 log = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ def before_request():
 
 
 @ttype_blueprint.after_request
-@postpolicy(sign_response, request=request)
+@postrequest(sign_response, request=request)
 def after_request(response):
     """
     This function is called after a request
