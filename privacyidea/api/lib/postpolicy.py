@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-09-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add decorator to sign a response
 #  2015-04-03 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add logout time config
 #  2015-03-31 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -42,6 +44,7 @@ from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.token import get_tokens, assign_token
 from privacyidea.lib.machine import get_hostname, get_auth_items
 from .prepolicy import check_max_token_user, check_max_token_realm
+from .utils import get_all_params
 import functools
 import json
 import re
@@ -204,6 +207,41 @@ def no_detail_on_fail(request, response):
             del content["detail"]
             response.data = json.dumps(content)
 
+    return response
+
+
+def sign_response(request, response, response2=None):
+    """
+    This decorator is used to sign the response. It adds the nonce from the
+    request, if it exist and adds the nonce and the signature to the response.
+
+    .. note:: This only works for JSON responses. So if we fail to decode the
+       JSON, we just pass on.
+
+    The usual way to use it is, to wrap the after_request, so that we can also
+    sign errors.
+
+    @postpolicy(sign_response, request=request)
+    def after_request(response):
+
+    :param request: The Request object
+    :param response: The Response object
+    :param response2: The same Response object. We get it twice when wrapping
+        after_request.
+    """
+    request.all_data = get_all_params(request.values, request.data)
+    try:
+        content = json.loads(response.data)
+    except ValueError:
+        return response
+
+    nonce = request.all_data.get("nonce")
+    if nonce:
+        content["nonce"] = nonce
+
+    # TODO: create the signature
+    content["signature"] = "signature"
+    response.data = json.dumps(content)
     return response
 
 

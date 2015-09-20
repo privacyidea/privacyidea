@@ -19,7 +19,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             no_detail_on_success,
                                             no_detail_on_fail, autoassign,
-                                            offline_info)
+                                            offline_info, sign_response)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass)
 from privacyidea.lib.user import User
@@ -921,3 +921,25 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         self.assertEqual(tokenobject.token.count, 101)
         delete_policy("pol2")
 
+    def test_07_sign_response(self):
+        builder = EnvironBuilder(method='POST',
+                                 data={},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "192.168.0.1"
+        req = Request(env)
+        req.values = {"user": "cornelius",
+                      "pass": "offline287082",
+                      "nonce": "12345678"}
+
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": True},
+               "version": "privacyIDEA test",
+               "id": 1}
+        resp = Response(json.dumps(res))
+
+        new_response = sign_response(req, resp)
+        jresult = json.loads(new_response.data)
+        self.assertEqual(jresult.get("nonce"), "12345678")
+        self.assertEqual(jresult.get("signature"), "signature")

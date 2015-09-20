@@ -68,12 +68,6 @@ from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.auth import get_db_admins
-
-
-log = logging.getLogger(__name__)
-
-
-system_blueprint = Blueprint('system_blueprint', __name__)
 from .resolver import resolver_blueprint
 from .policy import policy_blueprint
 from .realm import realm_blueprint
@@ -85,6 +79,12 @@ from .machineresolver import machineresolver_blueprint
 from .machine import machine_blueprint
 from .application import application_blueprint
 from .caconnector import caconnector_blueprint
+from privacyidea.api.lib.postpolicy import (postpolicy, sign_response)
+
+log = logging.getLogger(__name__)
+
+
+system_blueprint = Blueprint('system_blueprint', __name__)
 
 
 @system_blueprint.before_request
@@ -137,6 +137,7 @@ def before_request():
 @machine_blueprint.after_request
 @machineresolver_blueprint.after_request
 @caconnector_blueprint.after_request
+@postpolicy(sign_response, request=request)
 def after_request(response):
     """
     This function is called after a request
