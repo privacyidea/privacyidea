@@ -615,3 +615,36 @@ class ValidateAPITestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
             self.assertTrue(result.get("value"))
+
+    def test_16_autoresync_hotp(self):
+        serial = "autosync1"
+        token = init_token({"serial": serial,
+                            "otpkey": self.otpkey,
+                            "pin": "async"}, User("cornelius", self.realm2))
+        set_privacyidea_config("AutoResync", True)
+        token.set_sync_window(10)
+        token.set_count_window(5)
+        # counter = 8, is out of sync
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user":
+                                                    "cornelius@"+self.realm2,
+                                                 "pass": "async399871"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), False)
+
+        # counter = 9, will be autosynced.
+        # Authentication is successful
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user":
+                                                    "cornelius@"+self.realm2,
+                                                 "pass": "async520489"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+
+        delete_privacyidea_config("AutoResync")
