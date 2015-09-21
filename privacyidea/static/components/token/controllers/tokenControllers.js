@@ -278,17 +278,21 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         ConfigFactory.loadSystemConfig(function (data) {
             /* Default config values like
                 radius.server, radius.secret...
-             are stored in $scope.systemDefault
+             are stored in systemDefault and $scope.form
              */
             var systemDefault = data.result.value;
+            console.log("SystemDefault");
+            console.log(systemDefault);
             // TODO: The entries should be handled automatically.
             var entries = ["radius.server", "radius.secret", "remote.server",
-                "totp.hashlib", "hotp.hashlib"];
+                "totp.hashlib", "hotp.hashlib", "email.mailserver",
+                "email.mailfrom", "sms.provider", "yubico.id", "tiqr.regServer"];
             entries.forEach(function(entry) {
                 if (!$scope.form[entry]) {
                     $scope.form[entry] = systemDefault[entry];
                 }
             });
+            console.log($scope.form);
         });
     }
 

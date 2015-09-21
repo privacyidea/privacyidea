@@ -4,6 +4,11 @@
 
 <h4 translate>Token data</h4>
 
+<div ng-hide="form['sms.provider']" translate class="bg-danger">
+    For SMS tokens to work properly you need to set the
+    <a ui-sref="config.tokens({tokentype:'sms'})">SMS Token Config</a>!
+</div>
+
 <div class="form-group">
     <label for="phone" translate>Phone number</label>
     <input type="text"

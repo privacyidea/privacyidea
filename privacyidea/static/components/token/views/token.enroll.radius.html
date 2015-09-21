@@ -6,6 +6,12 @@
 
 <h4 translate>Token data</h4>
 
+<div ng-hide="form['radius.server']" translate class="bg-info">
+    To ease the enrolling of RADIUS tokens you can
+    set default values in the
+    <a ui-sref="config.tokens({tokentype:'radius'})">RADIUS Token Config</a>.
+</div>
+
 <div class="form-group">
     <input type="checkbox" ng-model="form['radius.local_checkpin']"
            name="localPin" id="localPin">

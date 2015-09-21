@@ -3,10 +3,13 @@
 </p>
 
 <h4 translate>Token data</h4>
+<div ng-hide="form['email.mailserver']" translate class="bg-danger">
+    For Email tokens to work properly you need to set the
+    <a ui-sref="config.tokens({tokentype:'email'})">Email Token Config</a>!
+</div>
 
 <div class="form-group">
     <label for="phone" translate>Email Address</label>
-    <!-- TODO: preset the users email address, if a user is selected. -->
     <input type="email"
            autofocus
            class="form-control"
