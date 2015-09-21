@@ -90,7 +90,8 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                                                     $stateParams, AuthFactory,
                                                     UserFactory, $state,
                                                     ConfigFactory, instanceUrl,
-                                                    $http, hotkeys, gettext) {
+                                                    $http, hotkeys, gettext,
+                                                    inform) {
 
     hotkeys.bindTo($scope).add({
         combo: 'alt+e',
@@ -113,6 +114,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     $scope.newUser = {};
     $scope.tempData = {};
     $scope.instanceUrl = instanceUrl;
+    $scope.click_wait = false;
     // System default values for enrollment
     $scope.systemDefault = {};
     // These are values that are also sent to the backend!
@@ -147,7 +149,8 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             "4eyes": gettext("Four Eyes: Two or more users are required to" +
                 " log in."),
             "tiqr": gettext("TiQR: Authenticate with Smartphone by scanning" +
-                " a QR code.")},
+                " a QR code."),
+            "u2f": gettext("U2F: Universal 2nd Factor hardware token.")},
         timesteps: [30, 60],
         otplens: [6, 8],
         hashlibs: ["sha1", "sha256", "sha512"]
@@ -228,10 +231,18 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
 
     $scope.callback = function (data) {
         $scope.enrolledToken = data.detail;
+        console.log($scope.enrolledToken);
         if ($scope.enrolledToken.certificate) {
             var blob = new Blob([ $scope.enrolledToken.certificate ],
                 { type : 'text/plain' });
             $scope.certificateBlob = (window.URL || window.webkitURL).createObjectURL( blob );
+        }
+        if ($scope.enrolledToken.u2fRegisterRequest) {
+            // save serial
+            $scope.serial = data.detail.serial;
+            // We need to send the 2nd stage of the U2F enroll
+            $scope.register_u2f($scope.enrolledToken.u2fRegisterRequest);
+            $scope.click_wait=true;
         }
     };
 
@@ -258,6 +269,28 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                 $scope.tempData.yubikeyUidLen = $scope.tempData.yubikeyTest.length - 32;
             }
         }
+    };
+
+    // U2F
+    $scope.register_u2f = function (registerRequest) {
+        u2f.register([registerRequest], [], function(u2fData) {
+            console.log(u2fData);
+            if (u2fData.errorCode > 0) {
+                inform.add(gettext("Error enrolling U2F token. ErrorCode : " +
+                    u2fData.errorCode,
+                    {type: "warning", ttl: 10000}));
+            } else {
+                $scope.click_wait = false;
+                // Send the necessary data to privacyIDEA
+                var params = {serial: $scope.serial,
+                    type: "u2f",
+                    regdata: u2fData.registrationData};
+                TokenFactory.enroll($scope.newUser,
+                    params, function(response){
+                        console.log(response);
+                    });
+            }
+        });
     };
 
     // get the list of configured CA connectors

@@ -75,7 +75,7 @@
     '/static/components/token/views/token.enrolled.' + form.type + '.html'">
     </ng-include>
 
-    <div class="text-center">
+    <div class="text-center" ng-hide="click_wait">
         <button ng-click="enrolledToken = null;"
                 class="btn btn-primary" translate>Enroll a new token
         </button>
