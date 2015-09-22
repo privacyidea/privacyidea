@@ -132,8 +132,16 @@ angular.module("privacyideaApp")
                 $scope.polling = error.detail.attributes.poll;
                 console.log($scope.polling);
                 $scope.login.password = "";
-                // Now we need to start the poller
-                PollingAuthFactory.start($scope.check_authentication);
+                // In case of TiQR we need to start the poller
+                if ($scope.polling)
+                    PollingAuthFactory.start($scope.check_authentication);
+                // In case of u2f we do:
+                if (error.detail.attributes['u2fSignRequest']) {
+                    var signRequests = [ error.detail.attributes.u2fSignRequest ];
+                    u2f.sign(signRequests, function(result) {
+                        console.log(result);
+                    });
+                }
             } else {
                 inform.add(gettext("Authentication failed. ") + error.result.error.message,
                 {type: "danger", ttl: 10000});

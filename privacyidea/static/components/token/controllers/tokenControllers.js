@@ -292,7 +292,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                 TokenFactory.enroll($scope.newUser,
                     params, function(response){
                         $scope.click_wait=false;
-                        $scope.U2FToken.subject = response.detail.u2fResponse.subject;
+                        $scope.U2FToken.subject = response.detail.u2fRegisterResponse.subject;
                         $scope.U2FToken.vendor = $scope.U2FToken.subject.split(" ")[0];
                         console.log($scope.U2FToken);
                     });

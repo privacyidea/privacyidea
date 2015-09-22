@@ -41,9 +41,12 @@ from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.crypto import geturandom
 import base64
+import binascii
+from OpenSSL import crypto
 
 
 U2F_Version = "U2F_V2"
+APP_ID = "http://localhost:5000"
 
 log = logging.getLogger(__name__)
 optional = True
@@ -146,9 +149,12 @@ class U2fTokenClass(TokenClass):
             reserved_byte = reg_data_bin[0]  # must be '\x05'
             user_pub_key = reg_data_bin[1:66]
             key_handle_len = ord(reg_data_bin[66])
+            # We need to save the key handle
             key_handle = reg_data_bin[67:67+key_handle_len]
+            key_handle_hex = binascii.hexlify(key_handle)
+            self.set_otpkey(key_handle)
+
             certificate = reg_data_bin[67+key_handle_len:]
-            from OpenSSL import crypto
             x509 = crypto.load_certificate(crypto.FILETYPE_ASN1, certificate)
             # TODO: We might want to check the certificate.
             pkey = x509.get_pubkey()
@@ -171,7 +177,7 @@ class U2fTokenClass(TokenClass):
         response_detail = {}
         if self.init_step == 1:
             # This is the first step of the init request
-            app_id = "http://localhost:5000"
+            app_id = APP_ID
             nonce = base64.urlsafe_b64encode(geturandom(32))
             response_detail = TokenClass.get_init_detail(self, params, user)
             register_request = {"version": U2F_Version,
@@ -182,8 +188,82 @@ class U2fTokenClass(TokenClass):
 
         elif self.init_step == 2:
             # This is the second step of the init request
-            response_detail["u2fResponse"] = {"subject": self.token.description}
+            response_detail["u2fRegisterResponse"] = {"subject":
+                                                          self.token.description}
 
         return response_detail
 
+    @log_with(log)
+    def is_challenge_request(self, passw, user=None, options=None):
+        """
+        check, if the request would start a challenge
+        In fact every Request that is not a response needs to start a
+        challenge request.
 
+        At the moment we do not think of other ways to trigger a challenge.
+
+        This function is not decorated with
+            @challenge_response_allowed
+        as the U2F token is always a challenge response token!
+
+        :param passw: The PIN of the token.
+        :param options: dictionary of additional request parameters
+
+        :return: returns true or false
+        """
+        trigger_challenge = False
+        options = options or {}
+        pin_match = self.check_pin(passw, user=user, options=options)
+        if pin_match is True:
+            trigger_challenge = True
+
+        return trigger_challenge
+
+    def create_challenge(self, transactionid=None, options=None):
+        """
+        This method creates a challenge, which is submitted to the user.
+        The submitted challenge will be preserved in the challenge
+        database.
+
+        If no transaction id is given, the system will create a transaction
+        id and return it, so that the response can refer to this transaction.
+
+        :param transactionid: the id of this challenge
+        :param options: the request context parameters / data
+        :type options: dict
+        :return: tuple of (bool, message, transactionid, attributes)
+        :rtype: tuple
+
+        The return tuple builds up like this:
+        ``bool`` if submit was successful;
+        ``message`` which is displayed in the JSON response;
+        additional ``attributes``, which are displayed in the JSON response.
+        """
+        options = options or {}
+        message = 'Please confirm with your U2F token'
+
+        validity = int(get_from_config('DefaultChallengeValidityTime', 120))
+        tokentype = self.get_tokentype().lower()
+        lookup_for = tokentype.capitalize() + 'ChallengeValidityTime'
+        validity = int(get_from_config(lookup_for, validity))
+
+        challenge_hex = binascii.hexlify(geturandom(32))
+        # Create the challenge in the database
+        db_challenge = Challenge(self.token.serial,
+                                 transaction_id=None,
+                                 challenge=challenge_hex,
+                                 data=None,
+                                 session=options.get("session"),
+                                 validitytime=validity)
+        db_challenge.save()
+        sec_object = self.token.get_otpkey()
+        key_handle = sec_object.getKey()
+        key_handle_hex = binascii.hexlify(key_handle)
+        u2f_sign_request = {"appId": APP_ID,
+                            "version": U2F_Version,
+                            "challenge": challenge_hex,
+                            "keyHandle": key_handle_hex}
+
+        response_details = {"u2fSignRequest": u2f_sign_request}
+
+        return True, message, db_challenge.transaction_id, response_details
