@@ -119,12 +119,29 @@ class APISelfserviceTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 401, res)
 
+        # The user is allowed to get his own information
         with self.app.test_request_context('/user/',
                                            method='GET',
                                            headers={'Authorization':
                                                         self.at_user}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 401, res)
+            self.assertTrue(res.status_code == 200, res)
+            response = json.loads(res.data)
+            value = response.get("result").get("value")
+            self.assertEqual(len(value), 1)
+            self.assertEqual(value[0].get("username"), "selfservice")
+
+        # If he wants to see other information, he still sees his own
+        with self.app.test_request_context('/user/?username=*',
+                                           method='GET',
+                                           headers={'Authorization':
+                                                        self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            response = json.loads(res.data)
+            value = response.get("result").get("value")
+            self.assertEqual(len(value), 1)
+            self.assertEqual(value[0].get("username"), "selfservice")
 
         with self.app.test_request_context('/audit/',
                                            method='GET',
