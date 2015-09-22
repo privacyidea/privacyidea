@@ -50,6 +50,11 @@ angular.module('privacyideaApp.userStates', ['ui.router']).config(
                             $scope.editable = $stateParams.editable;
                         }]
                 })
+                .state('user.password', {
+                    url: "/password",
+                    templateUrl: userpath + "user.password.html",
+                    controller: "userPasswordController"
+                })
                 .state('user.add', {
                     url: "/add",
                     templateUrl: userpath + "user.add.html"

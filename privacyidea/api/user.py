@@ -27,7 +27,7 @@ from lib.utils import (getParam,
                        send_result)
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policy import ACTION
-from privacyidea.api.auth import admin_required
+from privacyidea.api.auth import admin_required, user_required
 from privacyidea.lib.user import create_user, get_user_from_param, User
 
 from flask import (g)
@@ -43,10 +43,13 @@ user_blueprint = Blueprint('user_blueprint', __name__)
 
 @user_blueprint.route('/', methods=['GET'])
 @prepolicy(check_base_action, request, ACTION.USERLIST)
-@admin_required
+@user_required
 def get_users():
     """
     list the users in a realm
+
+    A normal user can call this endpoint and will get information about his
+    own account.
 
     :param realm: a realm that contains several resolvers. Only show users
                   from this realm

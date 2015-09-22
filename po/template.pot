@@ -42,7 +42,7 @@ msgstr ""
 msgid "Add a new user"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.html:28
+#: privacyidea/static/components/user/views/user.html:38
 msgid "Add user"
 msgstr ""
 
@@ -86,7 +86,7 @@ msgstr ""
 msgid "All tokens"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.html:8
+#: privacyidea/static/components/user/views/user.html:18
 msgid "All users"
 msgstr ""
 
@@ -149,7 +149,7 @@ msgstr ""
 msgid "Attribute mapping"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:46
+#: privacyidea/static/templates/menu.html:52
 msgid "Audit"
 msgstr ""
 
@@ -253,7 +253,7 @@ msgstr ""
 msgid "Challange Response Authentication. You are not completely authenticated, yet."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.radius.html:12
+#: privacyidea/static/components/token/views/token.enroll.radius.html:18
 #: privacyidea/static/components/token/views/token.enroll.remote.html:12
 msgid "Check the PIN locally"
 msgstr ""
@@ -295,7 +295,7 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:38
+#: privacyidea/static/templates/menu.html:44
 msgid "Config"
 msgstr ""
 
@@ -433,11 +433,12 @@ msgid "Delete user"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:108
-#: privacyidea/static/components/token/views/token.enroll.email.html:15
-#: privacyidea/static/components/token/views/token.enroll.sms.html:14
+#: privacyidea/static/components/token/views/token.enroll.email.html:18
+#: privacyidea/static/components/token/views/token.enroll.sms.html:19
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:17
 #: privacyidea/static/components/user/views/user.add.html:44
 #: privacyidea/static/components/user/views/user.details.html:41
+#: privacyidea/static/components/user/views/user.password.html:21
 msgid "Description"
 msgstr ""
 
@@ -551,7 +552,7 @@ msgid ""
 "        {{ resolvername }}"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.html:34
+#: privacyidea/static/components/user/views/user.html:44
 msgid "Edit realms"
 msgstr ""
 
@@ -565,10 +566,11 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.add.html:51
 #: privacyidea/static/components/user/views/user.details.html:51
+#: privacyidea/static/components/user/views/user.password.html:28
 msgid "Email"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.email.html:8
+#: privacyidea/static/components/token/views/token.enroll.email.html:12
 msgid "Email Address"
 msgstr ""
 
@@ -649,12 +651,36 @@ msgstr ""
 msgid "First"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.enroll.email.html:6
+msgid ""
+"For Email tokens to work properly you need to set the\n"
+"    <a ui-sref=\"config.tokens({tokentype:'email'})\">Email Token Config</a>!"
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.import.html:18
 msgid "For HOTP and TOTP tokens:"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.import.html:26
 msgid "For OCRA tokens:"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.sms.html:7
+msgid ""
+"For SMS tokens to work properly you need to set the\n"
+"    <a ui-sref=\"config.tokens({tokentype:'sms'})\">SMS Token Config</a>!"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.tiqr.html:1
+msgid ""
+"For TiQR tokens to work properly you need to set the\n"
+"    <a ui-sref=\"config.tokens({tokentype:'tiqr'})\">TiQR Token Config</a>!"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.yubico.html:8
+msgid ""
+"For Yubico tokens to work properly you need to set the\n"
+"    <a ui-sref=\"config.tokens({tokentype:'yubico'})\">Yubico Token Config</a>!"
 msgstr ""
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:147
@@ -693,6 +719,7 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.add.html:34
 #: privacyidea/static/components/user/views/user.details.html:27
+#: privacyidea/static/components/user/views/user.password.html:11
 msgid "Given name"
 msgstr ""
 
@@ -864,11 +891,11 @@ msgstr ""
 msgid "Log out"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:51
+#: privacyidea/static/templates/menu.html:57
 msgid "Login"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:58
+#: privacyidea/static/templates/menu.html:64
 msgid ""
 "Logout\n"
 "                        {{ loggedInUser.username }} @{{ loggedInUser.realm }}"
@@ -897,7 +924,7 @@ msgid "Machine Resolver"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.html:35
-#: privacyidea/static/templates/menu.html:32
+#: privacyidea/static/templates/menu.html:38
 msgid "Machines"
 msgstr ""
 
@@ -953,6 +980,7 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.add.html:62
 #: privacyidea/static/components/user/views/user.details.html:68
+#: privacyidea/static/components/user/views/user.password.html:40
 msgid "Mobile"
 msgstr ""
 
@@ -1101,7 +1129,12 @@ msgstr ""
 #: privacyidea/static/components/login/views/login.html:25
 #: privacyidea/static/components/user/views/user.add.html:67
 #: privacyidea/static/components/user/views/user.details.html:75
+#: privacyidea/static/components/user/views/user.password.html:51
 msgid "Password"
+msgstr ""
+
+#: privacyidea/static/components/user/controllers/userControllers.js:73
+msgid "Password set successfully."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:14
@@ -1110,10 +1143,11 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.add.html:57
 #: privacyidea/static/components/user/views/user.details.html:61
+#: privacyidea/static/components/user/views/user.password.html:35
 msgid "Phone"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.sms.html:8
+#: privacyidea/static/components/token/views/token.enroll.sms.html:13
 msgid "Phone number"
 msgstr ""
 
@@ -1175,15 +1209,15 @@ msgid "Push Yubikey button here..."
 msgstr ""
 
 #: privacyidea/static/components/machine/views/machine.html:15
-#: privacyidea/static/components/user/views/user.html:32
+#: privacyidea/static/components/user/views/user.html:42
 msgid "Quick links"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.radius.html:37
+#: privacyidea/static/components/token/views/token.enroll.radius.html:43
 msgid "RADIUS Secret"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.radius.html:16
+#: privacyidea/static/components/token/views/token.enroll.radius.html:22
 msgid "RADIUS Server"
 msgstr ""
 
@@ -1191,7 +1225,7 @@ msgstr ""
 msgid "RADIUS Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.radius.html:28
+#: privacyidea/static/components/token/views/token.enroll.radius.html:34
 msgid "RADIUS User"
 msgstr ""
 
@@ -1262,6 +1296,7 @@ msgstr ""
 #: privacyidea/static/components/directives/views/directive.assignuser.html:31
 #: privacyidea/static/components/token/views/token.enroll.html:41
 #: privacyidea/static/components/token/views/token.enroll.motp.html:43
+#: privacyidea/static/components/user/views/user.password.html:59
 msgid "Repeat password"
 msgstr ""
 
@@ -1308,7 +1343,7 @@ msgstr ""
 msgid "Revoke"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:62
+#: privacyidea/static/templates/menu.html:68
 msgid "Role"
 msgstr ""
 
@@ -1393,7 +1428,7 @@ msgstr ""
 msgid "Secret"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.html:13
+#: privacyidea/static/components/user/views/user.html:23
 msgid "Select Realm"
 msgstr ""
 
@@ -1453,7 +1488,7 @@ msgstr ""
 msgid "Size Limit"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.sms.html:16
+#: privacyidea/static/components/token/views/token.enroll.sms.html:21
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:19
 msgid "Some nice words..."
 msgstr ""
@@ -1472,6 +1507,7 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.add.html:39
 #: privacyidea/static/components/user/views/user.details.html:34
+#: privacyidea/static/components/user/views/user.password.html:16
 msgid "Surname"
 msgstr ""
 
@@ -1595,7 +1631,7 @@ msgstr ""
 msgid "The OTP key"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.radius.html:22
+#: privacyidea/static/components/token/views/token.enroll.radius.html:28
 msgid "The RADIUS server may include the port number."
 msgstr ""
 
@@ -1684,7 +1720,7 @@ msgid ""
 "    authenticate by just scanning a QR code."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.tiqr.html:1
+#: privacyidea/static/components/token/views/token.enroll.tiqr.html:6
 msgid ""
 "The TiQR token is a Smartphone App token, which allows easy\n"
 "    authentication by just scanning a QR Code during the authentication process."
@@ -1885,7 +1921,7 @@ msgid ""
 "    newly generated password."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.radius.html:32
+#: privacyidea/static/components/token/views/token.enroll.radius.html:38
 msgid "The username on the RADIUS server"
 msgstr ""
 
@@ -2022,6 +2058,13 @@ msgstr ""
 msgid "Tine 2.0"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.enroll.radius.html:9
+msgid ""
+"To ease the enrolling of RADIUS tokens you can\n"
+"    set default values in the\n"
+"    <a ui-sref=\"config.tokens({tokentype:'radius'})\">RADIUS Token Config</a>."
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.getserial.html:21
 msgid "Token Type"
 msgstr ""
@@ -2078,6 +2121,7 @@ msgstr ""
 #: privacyidea/static/components/directives/views/directive.assignuser.html:27
 #: privacyidea/static/components/token/views/token.enroll.html:37
 #: privacyidea/static/components/token/views/token.enroll.motp.html:39
+#: privacyidea/static/components/user/views/user.password.html:55
 msgid "Type a password"
 msgstr ""
 
@@ -2125,6 +2169,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.details.html:214
 #: privacyidea/static/components/config/views/config.policies.list.html:10
+#: privacyidea/static/templates/menu.html:32
 msgid "User"
 msgstr ""
 
@@ -2140,11 +2185,11 @@ msgstr ""
 msgid "User created."
 msgstr ""
 
-#: privacyidea/static/components/user/controllers/userControllers.js:115
+#: privacyidea/static/components/user/controllers/userControllers.js:143
 msgid "User deleted successfully."
 msgstr ""
 
-#: privacyidea/static/components/user/controllers/userControllers.js:100
+#: privacyidea/static/components/user/controllers/userControllers.js:128
 msgid "User updated successfully."
 msgstr ""
 
@@ -2162,6 +2207,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:323
 #: privacyidea/static/components/user/views/user.add.html:28
 #: privacyidea/static/components/user/views/user.details.html:22
+#: privacyidea/static/components/user/views/user.password.html:6
 msgid "Username"
 msgstr ""
 
@@ -2170,7 +2216,7 @@ msgstr ""
 msgid "Users"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.sms.html:12
+#: privacyidea/static/components/token/views/token.enroll.sms.html:17
 msgid "Users phone number..."
 msgstr ""
 
@@ -2239,8 +2285,13 @@ msgstr ""
 msgid "You may pass this registration code to the user."
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:72
+#: privacyidea/static/templates/menu.html:78
 msgid "You will be logged out in {{ myCountdown }} second(s)."
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.html:11
+#: privacyidea/static/components/user/views/user.password.html:2
+msgid "Your details"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:1
@@ -2255,7 +2306,7 @@ msgstr ""
 msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.yubico.html:9
+#: privacyidea/static/components/token/views/token.enroll.yubico.html:14
 msgid "Yubikey Identifier"
 msgstr ""
 
@@ -2428,6 +2479,10 @@ msgstr ""
 msgid "set Default"
 msgstr ""
 
+#: privacyidea/static/components/user/views/user.password.html:66
+msgid "set password"
+msgstr ""
+
 #: privacyidea/static/components/audit/views/audit.log.html:57
 msgid "sig_check"
 msgstr ""
@@ -2464,7 +2519,7 @@ msgstr ""
 msgid "total tokens: {{ tokendata.count }}"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.html:37
+#: privacyidea/static/components/user/views/user.html:47
 msgid "total users: {{ usercount }}"
 msgstr ""
 

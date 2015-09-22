@@ -24,6 +24,12 @@
                     <span class="glyphicon glyphicon-user"
                           aria-hidden="true"></span>
                         <translate>Users</translate></a></li>
+                <li ng-class="{active: $state.includes('user')}"
+                    ng-show="loggedInUser.role == 'user'">
+                    <a ui-sref="user.password">
+                    <span class="glyphicon glyphicon-user"
+                          aria-hidden="true"></span>
+                        <translate>User</translate></a></li>
                 <li ng-class="{active: $state.includes('machine')}"
                     ng-show="loggedInUser.role == 'admin'">
                     <a ui-sref="machine.list">

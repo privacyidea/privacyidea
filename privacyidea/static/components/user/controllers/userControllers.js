@@ -51,6 +51,34 @@ angular.module("privacyideaApp")
     });
 
 angular.module("privacyideaApp")
+    .controller("userPasswordController", function ($scope, userUrl,
+                                                    UserFactory, inform,
+                                                    gettext) {
+
+        // The user can fetch his own information.
+        $scope.getUserDetails = function () {
+            UserFactory.getUsers({}, function (data) {
+                $scope.User = data.result.value[0];
+                $scope.User["password"] = "";
+            });
+        };
+        $scope.getUserDetails();
+
+        // Set the password
+        $scope.setPassword = function () {
+            console.log($scope.User);
+            UserFactory.updateUser($scope.User.resolver,
+                {username: $scope.User.username,
+                 password: $scope.User.password}, function (data) {
+                    inform.add(gettext("Password set successfully."),
+                               {type: "info"});
+                    $scope.User.password = "";
+                    $scope.password2 = "";
+                });
+        }
+    });
+
+angular.module("privacyideaApp")
     .controller("userDetailsController", function ($scope, userUrl,
                                                    realmUrl, tokenUrl,
                                                    $rootScope, TokenFactory,
@@ -146,7 +174,8 @@ angular.module("privacyideaApp")
 angular.module("privacyideaApp")
     .controller("userController", function ($scope, $location, userUrl,
                                             realmUrl, $rootScope,
-                                            ConfigFactory, UserFactory) {
+                                            ConfigFactory, UserFactory,
+                                            AuthFactory) {
 
         $scope.usersPerPage = 15;
         $scope.params = {page: 1,
@@ -154,6 +183,7 @@ angular.module("privacyideaApp")
                         surnameFilter: "",
                         givennameFilter: "",
                         emailFilter: ""};
+        $scope.loggedInUser = AuthFactory.getUser();
         // scroll to the top of the page
         document.body.scrollTop = document.documentElement.scrollTop = 0;
         // go to the list view by default
@@ -210,7 +240,8 @@ angular.module("privacyideaApp")
             });
         };
 
-        $scope.getRealms();
+        if ($scope.loggedInUser.role === "admin")
+            $scope.getRealms();
 
         $scope.changeRealm = function () {
             $scope.params = {page: 1};

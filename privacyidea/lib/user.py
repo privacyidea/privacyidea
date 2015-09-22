@@ -543,6 +543,9 @@ def get_user_list(param=None, user=None):
             continue
         if key == "resolver":
             continue
+        if key == "user":
+            # If "user" is in the param we overwrite the username
+            key = "username"
 
         searchDict[key] = lval
         log.debug("Parameter key:%r=%r" % (key, lval))
