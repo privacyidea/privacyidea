@@ -79,12 +79,12 @@ Be sure that RADIUS works before you start.
 Copy the file */usr/share/doc/openvpn-auth-radius/examples/radiusplugn.cnf* into */etc/openvpn*
 and adapt it to your configuration. The most important parts of the file should contain::
 
-# The NAS identifier which is sent to the RADIUS server
-NAS-Identifier=OpenVpn
-OpenVPNConfig=/etc/openvpn/server.conf
-...
-server
-{
+  # The NAS identifier which is sent to the RADIUS server
+  NAS-Identifier=OpenVPN
+  OpenVPNConfig=/etc/openvpn/server.conf
+  [...]
+  server
+  {
         # The UDP port for radius accounting.
         acctport=1813
         # The UDP port for radius authentication.
@@ -96,8 +96,8 @@ server
         # How long should the plugin wait for a response?
         wait=1
         # The shared secret.
-        sharedsecret=Secret123
-}
+        sharedsecret=<shared-secret>
+  }
 
 After the changes restart your OpenVPN service and keep a look at the
 logs of OpenVPN on your access server as well as the freeradius logs on
@@ -106,14 +106,47 @@ your RADIUS server.
 If you use *privacyidea-radius* 2.6 or earlier, you make sure you have the
 following entry in */etc/freeradius/sites-enabled/privacyidea*::
 
-...
-accounting {
+  [...]
+  accounting {
         detail
-}
-...
+  }
+  [...]
 
+Otherwise RADIUS will authenticate your user, but refuse to add the 
+accounting data that the OpenVPN plugin sends and the connect will fail.
 
 Using the PAM module for RADIUS in OpenVPN
 ==========================================
 
+The other method to integrate OpenVPN with RADIUS (and privacyIDEA) is to
+use the PAM module *libpam-radius-auth*. If you have other services running
+on your OpenVPN server that should integrate into privacyIDEA as well, this
+might be your preferred method.
 
+You can create a file */etc/pam.d/openvpn* on your OpenVPN server that
+basically looks like this::
+
+   auth    [success=1 default=ignore]      pam_radius_auth.so
+   auth    requisite           pam_deny.so
+   auth    required            pam_permit.so
+   session sufficient          pam_permit.so
+   account sufficient          pam_permit.so
+
+Then you need to configure the OpenVPN server like this::
+
+   port 1194
+   [...]
+   plugin /usr/lib/openvpn/openvpn-auth-pam.so openvpn
+
+Now we need to tell the PAM plugin which RADIUS server to use. Modify the 
+file */etc/pam_radius_auth.conf* to point to your RADIUS server and add
+the shared secret::
+
+  # server[:port] shared_secret      timeout (s)
+  #127.0.0.1      secret             1
+  #other-server    other-secret       3
+  <your-radius-server>:1812 <shared-secret> 3
+
+Now you can restart your OpenVPN service and should be able to connect
+with your PIN and OTP. Again, have a look at the logs of both OpenVPN
+and RADIUS.
