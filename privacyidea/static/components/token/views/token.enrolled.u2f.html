@@ -5,9 +5,16 @@
 
         <div class="row">
             <div class="col-sm-4">
-                <img hg-hide="click_wait"
+                <img ng-show="U2FToken.vendor=='Plug-up'"
+                     src="{{ instanceUrl }}/static/css/plugup.jpg"
+                     width="80">
+                <img ng-show="U2FToken.vendor=='Yubico'"
                      src="{{ instanceUrl }}/static/css/FIDO-U2F-Security-Key-444x444.png"
-                     width="80"></div>
+                     width="80">
+                <p>
+                {{ U2FToken.subject }}
+                </p>
+            </div>
             <div class="col-sm-6">
                 <div translate ng-show="click_wait">
                     You need to confirm the registration with your token

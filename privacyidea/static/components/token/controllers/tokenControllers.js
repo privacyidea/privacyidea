@@ -114,7 +114,8 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     $scope.newUser = {};
     $scope.tempData = {};
     $scope.instanceUrl = instanceUrl;
-    $scope.click_wait = false;
+    $scope.click_wait = true;
+    $scope.U2FToken = {};
     // System default values for enrollment
     $scope.systemDefault = {};
     // These are values that are also sent to the backend!
@@ -229,15 +230,18 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     $scope.CAConnectors = [];
     $scope.radioCSR = 'csrgenerate';
 
+    // default callback
     $scope.callback = function (data) {
+        $scope.U2FToken = {};
         $scope.enrolledToken = data.detail;
-        console.log($scope.enrolledToken);
+        $scope.click_wait=false;
         if ($scope.enrolledToken.certificate) {
             var blob = new Blob([ $scope.enrolledToken.certificate ],
                 { type : 'text/plain' });
             $scope.certificateBlob = (window.URL || window.webkitURL).createObjectURL( blob );
         }
         if ($scope.enrolledToken.u2fRegisterRequest) {
+            // This is the first step of U2F registering
             // save serial
             $scope.serial = data.detail.serial;
             // We need to send the 2nd stage of the U2F enroll
@@ -287,7 +291,10 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                     regdata: u2fData.registrationData};
                 TokenFactory.enroll($scope.newUser,
                     params, function(response){
-                        console.log(response);
+                        $scope.click_wait=false;
+                        $scope.U2FToken.subject = response.detail.u2fResponse.subject;
+                        $scope.U2FToken.vendor = $scope.U2FToken.subject.split(" ")[0];
+                        console.log($scope.U2FToken);
                     });
             }
         });

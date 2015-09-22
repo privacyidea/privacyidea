@@ -116,6 +116,7 @@ class U2fTokenClass(TokenClass):
         TokenClass.__init__(self, db_token)
         self.set_type(u"u2f")
         self.hKeyRequired = False
+        self.init_step = 1
 
     def update(self, param):
         """
@@ -132,8 +133,10 @@ class U2fTokenClass(TokenClass):
         # have an ID before TokenClass.update.
         #self.set_realms([user_object.realm])
 
+        description = ""
         reg_data = getParam(param, "regdata")
         if reg_data:
+            self.init_step = 2
             pad_len = len(reg_data) % 4
             padding = pad_len * "="
             reg_data_bin = base64.urlsafe_b64decode(str(reg_data) + padding)
@@ -145,18 +148,42 @@ class U2fTokenClass(TokenClass):
             key_handle_len = ord(reg_data_bin[66])
             key_handle = reg_data_bin[67:67+key_handle_len]
             certificate = reg_data_bin[67+key_handle_len:]
+            from OpenSSL import crypto
+            x509 = crypto.load_certificate(crypto.FILETYPE_ASN1, certificate)
+            # TODO: We might want to check the certificate.
+            pkey = x509.get_pubkey()
+            subj_x509name = x509.get_subject()
+            issuer = x509.get_issuer()
+            not_after = x509.get_notAfter()
+            subj_list = subj_x509name.get_components()
+            for component in subj_list:
+                # each component is a tuple. We are looking for CN
+                if component[0].upper() == "CN":
+                    description = component[1]
+                    break
+        self.set_description(description)
 
     @log_with(log)
     def get_init_detail(self, params=None, user=None):
         """
         At the end of the initialization we ask the user the press the button
         """
-        app_id = "http://localhost:5000"
-        nonce = base64.urlsafe_b64encode(geturandom(32))
-        response_detail = TokenClass.get_init_detail(self, params, user)
-        register_request = {"version": U2F_Version,
-                            "challenge": nonce,
-                            "appId": app_id,
-                            "origin": app_id}
-        response_detail["u2fRegisterRequest"] = register_request
+        response_detail = {}
+        if self.init_step == 1:
+            # This is the first step of the init request
+            app_id = "http://localhost:5000"
+            nonce = base64.urlsafe_b64encode(geturandom(32))
+            response_detail = TokenClass.get_init_detail(self, params, user)
+            register_request = {"version": U2F_Version,
+                                "challenge": nonce,
+                                "appId": app_id,
+                                "origin": app_id}
+            response_detail["u2fRegisterRequest"] = register_request
+
+        elif self.init_step == 2:
+            # This is the second step of the init request
+            response_detail["u2fResponse"] = {"subject": self.token.description}
+
         return response_detail
+
+
