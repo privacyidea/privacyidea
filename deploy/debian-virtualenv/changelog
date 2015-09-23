@@ -1,8 +1,8 @@
-python-privacyidea (2.7~dev0) wheezy; urgency=low
+python-privacyidea (2.7~dev2) wheezy; urgency=low
 
   * Start 2.7
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Sat, 12 Sep 2015 09:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 23 Sep 2015 10:30:00 +0200
 
 
 privacyidea-venv (2.6-1) wheezy; urgency=low

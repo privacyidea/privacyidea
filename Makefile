@@ -12,7 +12,7 @@ info:
 	@echo "make ppa-dev      - upload to launchpad development repo"
 	
 #VERSION=1.3~dev5
-VERSION=2.7~dev1
+VERSION=2.7~dev2
 SERIES="trusty precise vivid"
 LOCAL_SERIES=`lsb_release -a | grep Codename | cut -f2`
 SRCDIRS=deploy authmodules migrations doc tests tools privacyidea 
@@ -83,7 +83,7 @@ debianize:
 	cp LICENSE DEBUILD/privacyidea.org/debian/python-privacyidea.copyright
 	cp LICENSE DEBUILD/privacyidea.org/debian/privacyidea-all.copyright
 	cp authmodules/FreeRADIUS/copyright DEBUILD/privacyidea.org/debian/privacyidea-radius.copyright
-	cp authmodules/simpleSAMLphp/copyright DEBUILD/privacyidea.org/debian/privacyidea-simplesamlphp.copyright
+	cp authmodules/simpleSAMLphp/LICENSE DEBUILD/privacyidea.org/debian/privacyidea-simplesamlphp.copyright
 	(cd DEBUILD; tar -zcf python-privacyidea_${VERSION}.orig.tar.gz --exclude=privacyidea.org/debian privacyidea.org)
 	(cd DEBUILD; tar -zcf privacyidea-venv_${VERSION}.orig.tar.gz --exclude=privacyidea.org/debian privacyidea.org)
 
