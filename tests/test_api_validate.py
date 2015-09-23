@@ -352,13 +352,15 @@ class ValidateAPITestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             detail = json.loads(res.data).get("detail")
             value = result.get("value")
+            attributes = value.get("attributes")
             self.assertEqual(value.get("auth"), True)
-            self.assertEqual(value.get("email"), "user@localhost.localdomain")
-            self.assertEqual(value.get("givenname"), "Cornelius")
-            self.assertEqual(value.get("mobile"), "+491111111")
-            self.assertEqual(value.get("phone"),  "+491234566")
-            self.assertEqual(value.get("realm"),  "realm1")
-            self.assertEqual(value.get("username"),  "cornelius")
+            self.assertEqual(attributes.get("email"),
+                             "user@localhost.localdomain")
+            self.assertEqual(attributes.get("givenname"), "Cornelius")
+            self.assertEqual(attributes.get("mobile"), "+491111111")
+            self.assertEqual(attributes.get("phone"),  "+491234566")
+            self.assertEqual(attributes.get("realm"),  "realm1")
+            self.assertEqual(attributes.get("username"),  "cornelius")
 
     def test_11_challenge_response_hotp(self):
         # set a chalresp policy for HOTP

@@ -246,13 +246,16 @@ def samlcheck():
     auth, details = check_user_pass(user, password, options=options)
     ui = user.get_user_info()
     result_obj = {"auth": auth,
-                  "username": user.login,
-                  "realm": user.realm,
-                  "email": ui.get("email"),
-                  "surname": ui.get("surname"),
-                  "givenname": ui.get("givenname"),
-                  "mobile": ui.get("mobile"),
-                  "phone": ui.get("phone")}
+                  "attributes": {"username": ui.get("username"),
+                                 "realm": user.realm,
+                                 "resolver": user.resolver,
+                                 "email": ui.get("email"),
+                                 "surname": ui.get("surname"),
+                                 "givenname": ui.get("givenname"),
+                                 "mobile": ui.get("mobile"),
+                                 "phone": ui.get("phone")
+                                 }
+                  }
 
     g.audit_object.log({"info": details.get("message"),
                         "success": auth,
