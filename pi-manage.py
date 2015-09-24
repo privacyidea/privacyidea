@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+# 2015-09-24 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Add validate call
 # 2015-06-16 Cornelius Kölbel <cornelius@privacyidea.org>
 #            Add creation of JWT token
 # 2015-03-27 Cornelius Kölbel, cornelius@privacyidea.org
@@ -54,8 +56,10 @@ from privacyidea.lib.auditmodules.sqlaudit import LogEntry
 from Crypto.PublicKey import RSA
 import jwt
 
+SILENT = False
 
-app = create_app(config_name='production')
+
+app = create_app(config_name='production', silent=SILENT)
 manager = Manager(app)
 admin_manager = Manager(usage='Create new administrators or modify existing '
                               'ones.')
@@ -74,7 +78,7 @@ manager.add_command('api', api_manager)
 
 
 @admin_manager.command
-def add(username, email, password=None):
+def add(username, email=None, password=None):
     """
     Register a new administrator in the database.
     """
@@ -136,7 +140,7 @@ def create(directory="/var/lib/privacyidea/backup/"):
     sqltype = sqluri.split(":")[0]
     if sqltype == "sqlite":
         productive_file = sqluri[len("sqlite:///"):]
-        print "Backup SQLite %s" % productive_file
+        print("Backup SQLite %s" % productive_file)
         sqlfile = "%s/db-%s.sqlite" % (directory, DATE)
         call(["cp", productive_file, sqlfile])
     elif sqltype == "mysql":
@@ -153,7 +157,7 @@ def create(directory="/var/lib/privacyidea/backup/"):
              shell=True)
 
     else:
-        print "unsupported SQL syntax: %s" % sqltype
+        print("unsupported SQL syntax: %s" % sqltype)
         sys.exit(2)
 
     call(["mkdir", "-p", directory])
@@ -169,7 +173,7 @@ def restore(backup_file):
     SQLALCHEMY_DATABASE_URI = None
     directory = os.path.dirname(backup_file)
     call(["tar", "-zxf", backup_file, "-C", "/"])
-    print 60*"="
+    print(60*"=")
     """
     The restore of the SQL file will not work, since at the moment we "
     can not be sure to know the correct SQLALCHEMY_DATABASE_URI. The "
@@ -182,13 +186,13 @@ def restore(backup_file):
     # Now we know the variable SQLALCHEMY_DATABASE_URI
     sqluri = SQLALCHEMY_DATABASE_URI
     if sqluri is None:
-        print "No SQLALCHEMY_DATABASE_URI found in /etc/privacyidea/pi.cfg"
+        print("No SQLALCHEMY_DATABASE_URI found in /etc/privacyidea/pi.cfg")
         sys.exit(2)
     sqltype = sqluri.split(":")[0]
     if sqltype == "sqlite":
         productive_file = sqluri[len("sqlite:///"):]
-        print "Restore SQLite %s" % productive_file
-        sqlfile = "%s/db-*.sqlite" % (directory)
+        print("Restore SQLite %s" % productive_file)
+        sqlfile = "%s/db-*.sqlite" % directory
         call(["cp", sqlfile, productive_file])
         os.unlink(sqlfile)
     elif sqltype == "mysql":
@@ -197,7 +201,7 @@ def restore(backup_file):
         password = m.groups()[1]
         datahost = m.groups()[2]
         database = m.groups()[3]
-        sqlfile = "%s/dbdump-*.sql" % (directory)
+        sqlfile = "%s/dbdump-*.sql" % directory
         call("mysql -u %s --password=%s -h %s %s < %s" % (username,
                                                           password,
                                                           datahost,
@@ -205,7 +209,7 @@ def restore(backup_file):
                                                           sqlfile), shell=True)
         os.unlink(sqlfile)
     else:
-        print "unsupported SQL syntax: %s" % sqltype
+        print("unsupported SQL syntax: %s" % sqltype)
         sys.exit(2)
 
 
@@ -240,7 +244,7 @@ def encrypt_enckey(encfile):
     enckey = f.read()
     f.close()
     res = DefaultSecurityModule.password_encrypt(enckey, password)
-    print res
+    print(res)
 
 
 @manager.command
@@ -257,8 +261,8 @@ def create_enckey():
     f = open(filename, "w")
     f.write(DefaultSecurityModule.random(96))
     f.close()
-    print "Encryption key written to %s" % filename
-    print "Please ensure to set the access rights for the correct user to 400!"
+    print("Encryption key written to %s" % filename)
+    print("Please ensure to set the access rights for the correct user to 400!")
 
 
 @manager.command
@@ -294,9 +298,26 @@ def createdb():
     Initially create the tables in the database. The database must exist.
     (SQLite database will be created)
     """
-    print db
+    print(db)
     db.create_all()
     db.session.commit()
+
+
+@manager.command
+def validate(user, password, realm=None, client=None):
+    """
+    Do an authentication request
+    """
+    from privacyidea.lib.user import get_user_from_param
+    from privacyidea.lib.token import check_user_pass
+    try:
+        user = get_user_from_param({"user": user, "realm": realm})
+        auth, details = check_user_pass(user, password)
+        print("RESULT=%s" % auth)
+        print("DETAILS=%s" % details)
+    except Exception as exx:
+        print("RESULT=Error")
+        print("ERROR=%s" % exx)
 
 
 @manager.option('--highwatermark', help="If entries exceed this value, "
@@ -386,7 +407,7 @@ def create_internal(name):
     # determine host and user
     hostparts = user_pw_host.split("@")
     if len(hostparts) > 2:
-        print "Invalid database URI: %s" % sqluri
+        print("Invalid database URI: %s" % sqluri)
         sys.exit(2)
     elif len(hostparts) == 1:
         host = hostparts[0] or "/"
@@ -400,7 +421,7 @@ def create_internal(name):
         elif len(userparts) == 1:
             username = userparts[0]
         else:
-            print "Invalid username and password in database URI: %s" % sqluri
+            print("Invalid username and password in database URI: %s" % sqluri)
             sys.exit(3)
     # now we can create the resolver
     params = {'resolver': name,
@@ -447,7 +468,7 @@ def list():
     from privacyidea.lib.resolver import get_resolver_list
     resolver_list = get_resolver_list()
     for name, resolver in resolver_list.iteritems():
-        print "%16s - (%s)" % (name, resolver.get("type"))
+        print("%16s - (%s)" % (name, resolver.get("type")))
 
 
 @realm_manager.command
@@ -459,7 +480,7 @@ def list():
     realm_list = get_realms()
     for name, realm_data in realm_list.iteritems():
         resolvernames = [x.get("name") for x in realm_data.get("resolver")]
-        print "%16s: %s" % (name, resolvernames)
+        print("%16s: %s" % (name, resolvernames))
 
 
 @realm_manager.command
@@ -484,8 +505,8 @@ def list():
     """
     P = PolicyClass()
     policies = P.get_policies()
-    print "Active \t Name \t Scope"
-    print 40*"="
+    print("Active \t Name \t Scope")
+    print(40*"=")
     for policy in policies:
         print("%s \t %s \t %s" % (policy.get("active"), policy.get("name"),
                                   policy.get("scope")))
@@ -497,7 +518,7 @@ def enable(name):
     enable a policy by name
     """
     r = enable_policy(name)
-    print r
+    print(r)
 
 
 @policy_manager.command
@@ -506,7 +527,7 @@ def disable(name):
     disable a policy by name
     """
     r = enable_policy(name, False)
-    print r
+    print(r)
 
 
 @policy_manager.command
@@ -515,7 +536,7 @@ def delete(name):
     delete a policy by name
     """
     r = delete_policy(name)
-    print r
+    print(r)
 
 @policy_manager.command
 def create(name, scope, action):
@@ -545,10 +566,18 @@ def createtoken(role=ROLE.ADMIN):
                         "exp": datetime.datetime.utcnow() + validity,
                         "rights": "TODO"},
                        secret)
-    print "Username:   %s" % username
-    print "Role:       %s" % role
-    print "Auth-Token: %s" % token
+    print("Username:   %s" % username)
+    print("Role:       %s" % role)
+    print("Auth-Token: %s" % token)
 
 
 if __name__ == '__main__':
+    # We add one blank line, to separate the messages from the initialization
+    print("""
+             _                    _______  _______
+   ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
+  / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
+ / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|
+/_/                       /___/
+   """)
     manager.run()

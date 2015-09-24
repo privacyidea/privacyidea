@@ -247,11 +247,10 @@ def hash(val, seed, algo=None):
 def _get_hsm():
     config = current_app.config
     if "pi_hsm" not in config or not isinstance(config["pi_hsm"], dict):
-        #raise HSMException('no hsm defined in execution context!')
         from security.default import DefaultSecurityModule
         # TODO: Migration fix it
-        HSM_config = {"obj": DefaultSecurityModule({"file": config.get(
-            "PI_ENCFILE")})}
+        HSM_config = {"obj": DefaultSecurityModule({"file":
+                                                        config.get("PI_ENCFILE")})}
         current_app.config["pi_hsm"] = HSM_config
     hsm = current_app.config.get("pi_hsm").get('obj')
 

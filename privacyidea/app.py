@@ -22,7 +22,7 @@
 import os
 import logging
 import logging.config
-import traceback
+import sys
 from flask import Flask
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.api.token import token_blueprint
@@ -52,7 +52,8 @@ MY_LOG_FORMAT = "[%(asctime)s][%(process)d][%(thread)d][%(levelname)s][%(" \
 
 
 def create_app(config_name="development",
-               config_file='/etc/privacyidea/pi.cfg'):
+               config_file='/etc/privacyidea/pi.cfg',
+               silent=False):
     """
     First the configuration from the config.py is loaded depending on the
     config type like "production" or "development" or "testing".
@@ -65,13 +66,19 @@ def create_app(config_name="development",
     :type config_name: basestring
     :param config_file: The name of a config file to read configuration from
     :type config_file: basestring
+    :param silent: If set to True the additional information are not printed
+        to stdout
+    :type silent: bool
     :return: The flask application
     :rtype: App object
     """
-    print("The configuration name is: %s" % config_name)
+    if not silent:
+        print("The configuration name is: %s" % config_name)
     if os.environ.get(ENV_KEY):
         config_file = os.environ[ENV_KEY]
-    print("Additional configuration can be read from the file %s" % config_file)
+    if not silent:
+        print("Additional configuration can be read from the file %s" %
+              config_file)
     app = Flask(__name__, static_folder="static",
                 template_folder="static/templates")
     if config_name:
@@ -82,10 +89,10 @@ def create_app(config_name="development",
         # If it does not exist, just ignore it.
         app.config.from_pyfile(config_file, silent=True)
     except IOError:
-        print(50*"!")
-        print("  WARNING: privacyidea create_app has no access")
-        print("  to %s!" % config_file)
-        print(50*"!")
+        sys.stderr.write(50*"!")
+        sys.stderr.write("  WARNING: privacyidea create_app has no access")
+        sys.stderr.write("  to %s!" % config_file)
+        sys.stderr.write(50*"!")
 
     # Try to load the file, that was specified in the environment variable
     # PRIVACYIDEA_CONFIG_FILE
@@ -118,16 +125,18 @@ def create_app(config_name="development",
         log_config_file = app.config.get("PI_LOGCONFIG",
                                          "/etc/privacyidea/logging.cfg")
         logging.config.fileConfig(log_config_file)
-        print("Reading Logging settings from %s" % log_config_file)
+        if not silent:
+            print("Reading Logging settings from %s" %
+                            log_config_file)
     except Exception as exx:
         #print("%s" % traceback.format_exc())
-        print("%s" % exx)
-        print("No log config file defined in PI_LOGCONFIG. Using PI_LOGLEVEL "
-              "and PI_LOGFILE.")
+        sys.stderr.write("%s" % exx)
+        sys.stderr.write("No log config file defined in PI_LOGCONFIG. "
+                         "Using PI_LOGLEVEL and PI_LOGFILE.")
         # If there is another level in pi.cfg we use this.
         level = app.config.get("PI_LOGLEVEL")
         if level:
-            print("PI_LOGLEVEL found. Setting to %s" % level)
+            sys.stderr.write("PI_LOGLEVEL found. Setting to %s" % level)
             logging.getLogger("privacyidea").setLevel(level)
         # If there is another logfile in pi.cfg we use this.
         logfile = app.config.get("PI_LOGFILE")
@@ -137,7 +146,8 @@ def create_app(config_name="development",
             for handler in handlers:
                 if type(handler) == logging.handlers.RotatingFileHandler:
                     # Set a new filename for the RotatingFileHandler
-                    print("PI_LOGFILE found. Setting to %s" % logfile)
+                    sys.stderr.write("PI_LOGFILE found. Setting to %s" %
+                                     logfile)
                     if handler.baseFilename != logfile:
                         # We need to reopen the file, if it has changed
                         logger.removeHandler(handler)
@@ -145,10 +155,10 @@ def create_app(config_name="development",
                         handler.doRollover()
                         logger.addHandler(handler)
         else:
-            print("No PI_LOGFILE found. Using default config.")
+            sys.stderr.write("No PI_LOGFILE found. Using default config.")
             logging.config.dictConfig(DEFAULT_LOGGING_CONFIG)
 
     return app
 
 # This is used for heroku
-heroku_app = create_app(config_name="heroku")
+heroku_app = create_app(config_name="heroku", silent=True)

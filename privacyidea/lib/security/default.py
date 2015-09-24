@@ -165,17 +165,23 @@ class DefaultSecurityModule(SecurityModule):
         self.is_ready = True
         self._id = binascii.hexlify(os.urandom(3))
 
+        if "file" not in config:
+            log.error("No secret file defined. A parameter "
+                      "PI_ENCFILE is missing in your pi.cfg.")
+            raise Exception("no secret file defined: PI_ENCFILE!")
+
+        # We determine, if the file is encrypted.
+        f = open(config.get("file"))
+        cipher = f.read()
+        f.close()
+        if len(cipher) > 100:
+            config["crypted"] = True
+
         if "crypted" in config:
             if config.get("crypted") is True or config.get('crypted').lower() \
                     == "true":
                 self.crypted = True
                 self.is_ready = False
-
-        if "file" not in config:
-            log.error("No secret file defined. A parameter "
-                      "privacyideaSecretFile is missing in your "
-                      "privacyidea.ini.")
-            raise Exception("no secret file defined: privacyideaSecretFile!")
 
         self.secFile = config.get('file')
         self.secrets = {}
@@ -232,7 +238,7 @@ class DefaultSecurityModule(SecurityModule):
         self.secrets[slot_id] = secret
         return secret
 
-    def setup_module(self, param):
+    def setup_module(self, params):
         """
         callback, which is called during the runtime to initialze the
         security module.
@@ -241,15 +247,15 @@ class DefaultSecurityModule(SecurityModule):
 
            {"password": "top secreT"}
 
-        :param param: The password for the key file
-        :type  param: dict
+        :param params: The password for the key file
+        :type  params: dict
 
         :return: -
         """
         if self.crypted is False:
             return
-        if "password" in param:
-            PASSWORD = param.get("password")
+        if "password" in params:
+            PASSWORD = params.get("password")
         else:
             raise Exception("missing password")
 
@@ -264,7 +270,7 @@ class DefaultSecurityModule(SecurityModule):
 
     # the real interfaces: random, encrypt, decrypt
     @classmethod
-    def random(self, length=32):
+    def random(cls, length=32):
         """
         Create and return random bytes.
 
