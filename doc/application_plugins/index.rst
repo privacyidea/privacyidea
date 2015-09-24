@@ -261,7 +261,6 @@ configure Apache2 like this::
    access the redis database to read the passwords of the users. This way the
    fix password component of the user will get exposed!
 
-
 ownCloud
 --------
 
@@ -286,6 +285,10 @@ original password from the original user backend.
 .. note:: At the moment using a desktop client with a static password is not
    supported.
 
+OpenVPN
+-------
+
+Read more about how to use OpenVPN with privacyidea at :ref:`openvpn`.
 
 Further plugins
 ---------------
@@ -294,6 +297,6 @@ Dokuwiki, Wordpress, Contao and Django at [#cornelinuxGithub]_.
 
 
 .. [#rlmPerl] https://github.com/privacyidea/privacyidea/tree/master/authmodules/FreeRADIUS
-.. [#simpleSAML] https://github.com/privacyidea/privacyidea/tree/master/authmodules/simpleSAMLphp
+.. [#simpleSAML] https://github.com/privacyidea/simplesamlphp-module-privacyidea
 .. [#privacyideaGithub] https://github.com/privacyidea/privacyidea/tree/master/authmodules
 .. [#cornelinuxGithub] https://github.com/cornelinux?tab=repositories
