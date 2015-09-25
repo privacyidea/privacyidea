@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2015-09-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add HSM interface
 # 2015-06-26 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add system config documentation API
 # 2014-12-08 Cornelius Kölbel, <cornelius@privacyidea.org>
@@ -80,6 +82,7 @@ from .machine import machine_blueprint
 from .application import application_blueprint
 from .caconnector import caconnector_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
+from privacyidea.lib.error import HSMException
 
 log = logging.getLogger(__name__)
 
@@ -389,48 +392,33 @@ def delete_config(key=None):
     return send_result(res)
 
 
-"""
-@log_with(log)
-@system_blueprint.route('/setupSecurityModule', methods=['POST'])
-def setup_security_module_api():
+@log_with
+@system_blueprint.route('/hsm', methods=['POST'])
+@prepolicy(check_base_action, request, ACTION.SETHSM)
+def set_security_module():
+    """
+    Set the password for the security module
+    """
+    password = getParam(request.all_data, "password", required)
+    HSM = current_app.config["pi_hsm"]
+    hsm = HSM.get("obj")
+    if hsm.is_ready:
+        raise HSMException("HSM already set up.")
 
-    res = {}
-    params = getLowerParams(request.values)
-    hsm_id = params.get('hsm_id', None)
-
-    # TODO: Migration
-    #from privacyidea.lib.config import getGlobalObject
-    #glo = getGlobalObject()
-    #sep = glo.security_provider
-
-    if hsm_id is None:
-        hsm_id = sep.activeOne
-        hsm = c.hsm.get('obj')
-        error = c.hsm.get('error')
-        if hsm is None or len(error) != 0:
-            raise Exception('current activeSecurityModule >%r< '
-                            'is not initialized::%s:: - Please '
-                            'check your security module configuration'
-                            ' and connection!' % (hsm_id, error))
-
-        ready = hsm.is_ready()
-        res['setupSecurityModule'] = {'activeSecurityModule': hsm_id,
-                                      'connected': ready}
-        ret = ready
-    else:
-        if hsm_id != sep.activeOne:
-            raise Exception('current activeSecurityModule >%r< could '
-                            'only be changed through the '
-                            'configuration!' % sep.activeOne)
-
-        ret = sep.setupModule(hsm_id, config=params)
-
-        hsm = c.hsm.get('obj')
-        ready = hsm.is_ready()
-        res['setupSecurityModule'] = {'activeSecurityModule': hsm_id,
-                                      'connected': ready,
-                                      'result': ret}
-
-    c.audit['success'] = ret
+    is_ready = hsm.setup_module({"password": password})
+    res = {"is_ready": is_ready}
+    g.audit_object.log({'success': res})
     return send_result(res)
-"""
+
+
+@log_with
+@system_blueprint.route('/hsm', methods=['GET'])
+def get_security_module():
+    """
+    Get the status of the security module.
+    """
+    HSM = current_app.config["pi_hsm"]
+    is_ready = HSM.get("obj").is_ready
+    res = {"is_ready": is_ready}
+    g.audit_object.log({'success': res})
+    return send_result(res)

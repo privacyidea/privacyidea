@@ -244,7 +244,11 @@ def hash(val, seed, algo=None):
     return m.digest()
 
 
-def _get_hsm():
+def init_hsm():
+    """
+    Initialize the HSM in the current_app config
+    :return: hsm object
+    """
     config = current_app.config
     if "pi_hsm" not in config or not isinstance(config["pi_hsm"], dict):
         from security.default import DefaultSecurityModule
@@ -253,7 +257,11 @@ def _get_hsm():
                                                         config.get("PI_ENCFILE")})}
         current_app.config["pi_hsm"] = HSM_config
     hsm = current_app.config.get("pi_hsm").get('obj')
+    return hsm
 
+
+def _get_hsm():
+    hsm = init_hsm()
     if hsm is None or not hsm.is_ready:  # pragma: no cover
         raise HSMException('hsm not ready!')
 

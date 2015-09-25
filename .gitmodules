@@ -1,6 +1,0 @@
-[submodule "authmodules/simpleSAMLphp"]
-	path = authmodules/simpleSAMLphp
-	url = https://github.com/privacyidea/simplesamlphp-module-privacyidea
-[submodule "adminclient"]
-	path = adminclient
-	url = https://github.com/privacyidea/privacyideaadm

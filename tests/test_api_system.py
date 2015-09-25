@@ -1,6 +1,7 @@
 import json
 from .base import MyTestCase
-from privacyidea.lib.error import (ParameterError, ConfigAdminError)
+from privacyidea.lib.error import (ParameterError, ConfigAdminError,
+                                   HSMException)
 from privacyidea.lib.policy import PolicyClass
 from urllib import urlencode
 
@@ -743,3 +744,20 @@ class APIConfigTestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue("privacyIDEA configuration documentation" in
                             res.data)
+
+    def test_16_get_hsm(self):
+        with self.app.test_request_context('/system/hsm',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            self.assertTrue(value.get("is_ready"), value)
+
+        # HSM is already set up. We do not need to set a password
+        with self.app.test_request_context('/system/hsm',
+                                           data={"password": "xx"},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            self.assertRaises(HSMException, self.app.full_dispatch_request)

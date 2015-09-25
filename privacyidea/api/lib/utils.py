@@ -252,6 +252,7 @@ def get_priority_from_param(param):
             priority[k[len("priority."):]] = int(v)
     return priority
 
+
 def verify_auth_token(auth_token, required_role=["admin", "user"]):
     """
     Check if a given auth token is valid.

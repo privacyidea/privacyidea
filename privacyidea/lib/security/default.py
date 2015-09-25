@@ -46,6 +46,8 @@ from Crypto.Cipher import AES
 from privacyidea.lib.crypto import zerome
 from privacyidea.lib.crypto import geturandom
 from hashlib import sha256
+from privacyidea.lib.error import HSMException
+
 
 TOKEN_KEY = 0
 CONFIG_KEY = 1
@@ -168,7 +170,7 @@ class DefaultSecurityModule(SecurityModule):
         if "file" not in config:
             log.error("No secret file defined. A parameter "
                       "PI_ENCFILE is missing in your pi.cfg.")
-            raise Exception("no secret file defined: PI_ENCFILE!")
+            raise HSMException("no secret file defined: PI_ENCFILE!")
 
         # We determine, if the file is encrypted.
         f = open(config.get("file"))
@@ -219,8 +221,8 @@ class DefaultSecurityModule(SecurityModule):
             try:
                 keys = self.password_decrypt(cipher, password)
             except UnicodeDecodeError as e:
-                raise Exception("Error decrypting the encryption key. You "
-                                "probably provided the wrong password.")
+                raise HSMException("Error decrypting the encryption key. You "
+                                   "probably provided the wrong password.")
             secret = keys[slot_id*32:(slot_id+1)*32]
 
         else:
@@ -230,9 +232,9 @@ class DefaultSecurityModule(SecurityModule):
                 secret = f.read(32)
             f.close()
             if secret == "":
-                raise Exception("No secret key defined for index: %s !\n"
-                                "Please extend your %s"" !"
-                                % (str(slot_id), self.secFile))
+                raise HSMException("No secret key defined for index: %s !\n"
+                                   "Please extend your %s"" !"
+                                   % (str(slot_id), self.secFile))
 
         # cache the result
         self.secrets[slot_id] = secret
@@ -257,7 +259,7 @@ class DefaultSecurityModule(SecurityModule):
         if "password" in params:
             PASSWORD = params.get("password")
         else:
-            raise Exception("missing password")
+            raise HSMException("missing password")
 
         # if we have a crypted file and a password, we take all keys
         # from the file and put them in a hash
@@ -267,6 +269,7 @@ class DefaultSecurityModule(SecurityModule):
             self.secrets[handle] = self._get_secret(handle, PASSWORD)
 
         self.is_ready = True
+        return self.is_ready
 
     # the real interfaces: random, encrypt, decrypt
     @classmethod
@@ -300,7 +303,7 @@ class DefaultSecurityModule(SecurityModule):
         :rtype:  byte string
         """
         if self.is_ready is False:
-            raise Exception('setup of security module incomplete')
+            raise HSMException('setup of security module incomplete')
 
         key = self._get_secret(slot_id)
         # convert input to ascii, so we can securely append bin data
@@ -386,7 +389,7 @@ class DefaultSecurityModule(SecurityModule):
         :rtype: byte string
         """
         if self.is_ready is False:
-            raise Exception('setup of security module incomplete')
+            raise HSMException('setup of security module incomplete')
 
         key = self._get_secret(slot_id)
         aes = AES.new(key, AES.MODE_CBC, iv)

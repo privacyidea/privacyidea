@@ -187,6 +187,7 @@ class ACTION():
     DELETEUSER = "deleteuser"
     UPDATEUSER = "updateuser"
     APIKEY = "api_key_required"
+    SETHSM = "set_hsm_password"
 
 
 class LOGINMODE():
@@ -743,7 +744,10 @@ def get_static_policy_definitions(scope=None):
                                 "group": "system"},
             ACTION.DELETEUSER: {'type': 'bool',
                                 "desc": _("Admin is allowed to delete a user "
-                                          "object in a userstore.")}
+                                          "object in a userstore.")},
+            ACTION.SETHSM: {'type': 'bool',
+                            'desc': _("Admin is allowed to set the password "
+                                      "of the HSM/Security Module.")}
         },
         # 'gettoken': {
         #     'max_count_dpw': {'type': 'int',

@@ -42,7 +42,7 @@ from flask import (Blueprint,
                    g)
 from lib.utils import (send_result, get_all_params,
                        verify_auth_token)
-from ..lib.crypto import geturandom
+from ..lib.crypto import geturandom, init_hsm
 from ..lib.error import AuthError
 from ..lib.auth import verify_db_admin
 import jwt
@@ -206,12 +206,21 @@ def get_auth_token():
                         "Wrong credentials", status=401,
                         details=details)
 
+    # If the HSM is not ready, we need to create the nonce in another way!
+    hsm = init_hsm()
+    if hsm.is_ready:
+        nonce = geturandom(hex=True)
+    else:
+        import os
+        import binascii
+        nonce = binascii.hexlify(os.urandom(20))
+
     # Add the role to the JWT, so that we can verify it internally
     # Add the authtype to the JWT, so that we could use it for access
     # definitions
     token = jwt.encode({"username": username,
                         "realm": realm,
-                        "nonce": geturandom(hex=True),
+                        "nonce": nonce,
                         "role": role,
                         "authtype": authtype,
                         "exp": datetime.utcnow() + validity,
