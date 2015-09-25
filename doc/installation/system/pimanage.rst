@@ -48,7 +48,7 @@ You can also encrypt the encryption key with a passphrase. To do this do::
 
 and pipe the encrypted *enckey* to a new file.
 
-**NotYetImplemented**
+Read more about the database encryption and the enckey in :ref:`securitymodule`.
 
 Backup and Restore
 ------------------

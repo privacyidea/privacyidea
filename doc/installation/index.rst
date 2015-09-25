@@ -23,8 +23,9 @@ If you want to upgrade from a privacyIDEA 1.5 installation please read :ref:`upg
    system/logging
    system/wsgiscript
    system/pimanage
+   system/securitymodule
 
-After installtion you might want to take a look at :ref:`first_steps`.
+After installation you might want to take a look at :ref:`first_steps`.
 
 
 .. rubric:: Footnotes
