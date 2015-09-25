@@ -115,29 +115,34 @@ angular.module("privacyideaApp")
         }).success(function (data) {
             $scope.do_login_stuff(data);
         }).error(function (error) {
-            console.log("challenge response");
+            console.log("Error authenticating");
             console.log(error);
             $scope.transactionid = "";
             $scope.login.password = "";
-            // In case of error.detail.transaction_id is present, we
-            // have a challenge response and we need to go to the state response
-            if (error.detail['transaction_id']) {
-                $state.go("response");
-                inform.add(gettext("Challange Response Authentication. You" +
-                    " are not completely authenticated, yet."),
-                    {type: "warning", ttl:10000});
-                $scope.challenge_message = error.detail.message;
-                $scope.transactionid = error.detail["transaction_id"];
-                $scope.image = error.detail.attributes.img;
-                $scope.polling = error.detail.attributes.poll;
-                console.log($scope.polling);
-                $scope.login.password = "";
-                // Now we need to start the poller
-                PollingAuthFactory.start($scope.check_authentication);
-            } else {
-                inform.add(gettext("Authentication failed. ") + error.result.error.message,
-                {type: "danger", ttl: 10000});
-            }
+            if (!error.detail) {
+                // This could be problems like 'HSM not ready'
+                inform.add(error.result.error.message,
+                    {type: "danger", ttl:10000});
+            } else
+                if (error.detail['transaction_id']) {
+                    // In case of error.detail.transaction_id is present, we
+                    // have a challenge response and we need to go to the state response
+                    $state.go("response");
+                    inform.add(gettext("Challange Response Authentication. You" +
+                        " are not completely authenticated, yet."),
+                        {type: "warning", ttl:10000});
+                    $scope.challenge_message = error.detail.message;
+                    $scope.transactionid = error.detail["transaction_id"];
+                    $scope.image = error.detail.attributes.img;
+                    $scope.polling = error.detail.attributes.poll;
+                    console.log($scope.polling);
+                    $scope.login.password = "";
+                    // Now we need to start the poller
+                    PollingAuthFactory.start($scope.check_authentication);
+                } else {
+                    inform.add(gettext("Authentication failed. ") + error.result.error.message,
+                    {type: "danger", ttl: 10000});
+                }
         }).then(function () {
             // We delete the login object, so that the password is not
             // contained in the scope
