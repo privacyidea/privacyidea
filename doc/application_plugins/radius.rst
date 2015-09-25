@@ -6,7 +6,11 @@ RADIUS plugin configuration
 The RADIUS plugin configuration is read from the file
 ``/opt/privacyIDEA/rlm_perl.ini``.
 
-If it does not exist, the default values are::
+Starting with version 2.7 the plugin first tries to read
+``/etc/privacyidea/rlm_perl.ini`` and if it does not exist the file
+``/opt/privacyIDEA/rlm_perl.ini``.
+
+If no file exists, the default values are::
 
    [Default]
    URL = https://localhost/validate/check
@@ -85,7 +89,7 @@ Debugging RADIUS
 
 If you need to DEBUG the FreeRADIUS go like this.
 
-Add "DEBUG = true" to ``/opt/privacyIDEA/rlm_perl.inì``.
+Add "DEBUG = true" to ``/opt/privacyIDEA/rlm_perl.ini``.
 Then stop the FreeRADIUS and run it in debug mode as user root::
 
    /etc/init.d/freeradius stop; freeradius -X
