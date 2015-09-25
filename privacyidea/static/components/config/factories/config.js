@@ -151,7 +151,7 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
             ).error(error_func);
         },
         getRealms: function (callback) {
-            $http.get(realmUrl, {
+            $http.get(realmUrl + "/", {
                 headers: {'Authorization': AuthFactory.getAuthToken()}
             }).success(callback)
                 .error(error_func);
