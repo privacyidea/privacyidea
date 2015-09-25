@@ -32,7 +32,7 @@ myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope,
 
         return {
             getUsers: function(params, callback) {
-                $http.get(userUrl, {
+                $http.get(userUrl + "/", {
                     headers: {'Authorization': AuthFactory.getAuthToken() },
                     params: params
                 }).success(callback

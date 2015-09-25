@@ -194,6 +194,22 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
+    def test_05_check_serial_with_no_user(self):
+        # Check a token per serial when the token has no user assigned.
+        init_token({"serial": "nouser",
+                    "otpkey": self.otpkey,
+                    "pin": "pin"})
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": "nouser",
+                                                 "pass": "pin359152"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            details = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("status"), True)
+            self.assertEqual(result.get("value"), True)
+
     def test_06_fail_counter(self):
         # test if a user has several tokens that the fail counter is increased
         # reset the failcounter

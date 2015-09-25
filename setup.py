@@ -29,7 +29,7 @@ install_requires = ["Flask>=0.10.1",
                     "Jinja2>=2.7.3",
                     "Mako>=0.9.1",
                     "MarkupSafe>=0.23",
-                    "PyMySQL>=0.6.6",
+                    "MySQL-python>=1.2.5",
                     "Pillow>=2.6.1",
                     "PyJWT>=1.3.0",
                     "PyYAML>=3.11",
@@ -56,7 +56,8 @@ install_requires = ["Flask>=0.10.1",
                     "pyusb>=1.0.0b2",
                     "qrcode>=5.1",
                     "requests>=2.7.0",
-                    "sqlsoup>=0.9.0"
+                    "sqlsoup>=0.9.0",
+                    "wsgiref>=0.1.2"
                     ]
 
 # For python 2.6 we need additional dependency importlib

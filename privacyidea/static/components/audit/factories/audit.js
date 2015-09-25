@@ -37,7 +37,7 @@ myApp.factory("AuditFactory", function (AuthFactory,
 
         return {
             get: function (params, callback) {
-                $http.get(auditUrl, {
+                $http.get(auditUrl + "/", {
                     headers: {'Authorization': AuthFactory.getAuthToken()},
                     params: params
                 }).success(callback
