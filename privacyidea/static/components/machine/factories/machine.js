@@ -33,7 +33,7 @@ myApp.factory("MachineFactory", function (AuthFactory, $http, $state,
 
         return {
             getMachines: function(params, callback) {
-                $http.get(machineUrl, {
+                $http.get(machineUrl + "/", {
                     headers: {'Authorization': AuthFactory.getAuthToken() },
                     params: params
                 }).success(callback

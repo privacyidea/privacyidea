@@ -78,7 +78,7 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
             ).error(error_func);
         },
         getPolicies: function (callback) {
-            $http.get(policyUrl, {
+            $http.get(policyUrl + "/", {
                 headers: {'Authorization': AuthFactory.getAuthToken()}
             }).success(callback
             ).error(error_func);
@@ -109,7 +109,7 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
             ).error(error_func);
         },
         getResolvers: function (callback) {
-            $http.get(resolverUrl, {
+            $http.get(resolverUrl + "/", {
                 headers: {'Authorization': AuthFactory.getAuthToken()}
             }).success(callback
             ).error(error_func);
@@ -133,13 +133,13 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
             ).error(error_func);
         },
         getMachineResolvers: function (callback) {
-            $http.get(machineResolverUrl, {
+            $http.get(machineResolverUrl + "/", {
                 headers: {'Authorization': AuthFactory.getAuthToken()}
             }).success(callback
             ).error(error_func);
         },
         getCAConnectors: function (callback) {
-            $http.get(CAConnectorUrl, {
+            $http.get(CAConnectorUrl + "/", {
                 headers: {'Authorization': AuthFactory.getAuthToken()}
             }).success(callback
             ).error(error_func);
@@ -252,7 +252,7 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
             }).success(callback).error(error_func);
         },
         getSystemConfig: function(callback) {
-            $http.get(systemUrl, {
+            $http.get(systemUrl + "/", {
                 headers: {'Authorization': AuthFactory.getAuthToken(),
                           'Content-Type': 'application/json'}
             }).success(callback).error(error_func);
