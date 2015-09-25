@@ -1,3 +1,10 @@
+python-privacyidea (2.6.1-1trusty) trusty; urgency=low
+
+  * Fix authentication with token serial
+  * Fix GET realm/ in Safari and IE11
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 25 Sep 2015 09:30:00 +0200
+
 python-privacyidea (2.6-1trusty) trusty; urgency=low
 
   Features
