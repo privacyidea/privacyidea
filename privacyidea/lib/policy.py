@@ -206,6 +206,12 @@ class ACTIONVALUE():
     NONE = "none"
 
 
+class AUTOASSIGNVALUE():
+    __doc__ = """This is the possible values for autoassign"""
+    USERSTORE = "userstore"
+    NONE = "any_pin"
+
+
 class PolicyClass(object):
 
     """
@@ -868,13 +874,10 @@ def get_static_policy_definitions(scope=None):
                           "Possible tags are <u> (user), <r> ("
                           "realm), <s> (serial).")},
             ACTION.AUTOASSIGN: {
-                'type': 'bool',
+                'type': 'str',
+                'value': [AUTOASSIGNVALUE.NONE, AUTOASSIGNVALUE.USERSTORE],
                 'desc': _("Users can assign a token just by using the "
                           "unassigned token to authenticate.")},
-            # 'ignore_autoassignment_pin': {
-            #     'type': 'bool',
-            #     'desc' : _("Do not set password from auto assignment as
-            # token pin.")},
             ACTION.LOSTTOKENPWLEN: {
                 'type': 'int',
                 'value': range(1, 32),

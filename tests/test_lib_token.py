@@ -14,16 +14,11 @@ getToken....
 """
 PWFILE = "tests/testdata/passwords"
 
-import json
 from .base import MyTestCase
-from privacyidea.lib.resolver import (save_resolver)
-from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
-from privacyidea.models import (Token,
-                                 Config,
-                                 Challenge, TokenRealm)
+from privacyidea.models import (Token, Challenge, TokenRealm)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types)
 import datetime
 from privacyidea.lib.token import (create_tokenclass_object,
@@ -51,7 +46,7 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    copy_token_user, lost_token,
                                    check_token_list, check_serial_pass,
                                    check_realm_pass,
-                                   check_user_pass, auto_assign_token,
+                                   check_user_pass,
                                    get_dynamic_policy_definitions,
                                    get_tokens_paginate,
                                    set_validity_period_end,
@@ -812,66 +807,6 @@ class TokenTestCase(MyTestCase):
         remove_token("CHALL001")
         remove_token("CHALL002")
 
-    def test_38_autoassign(self):
-        user = User("autoassignuser", realm=self.realm1)
-        tokenobject = init_token({"serial": "AUTO001", "type": "hotp",
-                                  "otpkey": self.otpkey,
-                                  "realm": self.realm1})
-
-        tokenobject = init_token({"serial": "AUTO002", "type": "hotp",
-                                  "otpkey": "1234",
-                                  "realm": self.realm1})
-
-        realms = get_realms_of_token("AUTO001")
-        # The token is in realm1
-        self.assertTrue(self.realm1 in realms, realms)
-        realms = get_realms_of_token("AUTO002")
-        # The token is in realm1
-        self.assertTrue(self.realm1 in realms, realms)
-
-        # Authentication by autoassign fails due to wrong password
-        r, reply_dict = auto_assign_token(user, "wrong287082")
-        # Nevertheless the 287082 is void, now!
-        self.assertFalse(r)
-        self.assertTrue("failed to authenticate against userstore"
-                        in reply_dict.get("message"), reply_dict)
-
-        # Authentication by autoassign
-        r, reply_dict = auto_assign_token(user, "test399871")
-        self.assertTrue(r, (r, reply_dict))
-        # Token is assigned
-        self.assertTrue(get_tokens(user=user, count=True) == 1, get_tokens(
-            user=user))
-        # Normal authentication
-        r = check_user_pass(user, "test520489")
-        self.assertTrue(r)
-
-        # Now try to assign a new token to the user, which will not work,
-        # as autoassignment only works for users, who have NO token.
-        r, reply_dict = auto_assign_token(user, "test287082")
-        # Autoassignment fails
-        self.assertFalse(r)
-
-    def test_39_auto_assign_token_2(self):
-        user = User("autoassignuser", realm=self.realm1)
-        # be sure, that the user has no tokens assigned!
-        try:
-            unassign_token(None, user=user)
-        except TokenAdminError:
-            pass
-        tokenobject = init_token({"serial": "AUTO003", "type": "hotp",
-                                  "otpkey": self.otpkey,
-                                  "realm": self.realm1})
-        tokenobject = init_token({"serial": "AUTO004", "type": "hotp",
-                                  "otpkey": self.otpkey,
-                                  "realm": self.realm1})
-
-        # autoassigment fails, if multiple tokens return the same result.
-        r, reply_dict = auto_assign_token(user, "test254676")
-        self.assertFalse(r)
-        self.assertTrue("tokens with the given OTP" in reply_dict.get(
-                        "message"), reply_dict)
-
     def test_40_dynamic_policies(self):
         p = get_dynamic_policy_definitions()
         self.assertTrue("user" in p, p)
@@ -883,32 +818,31 @@ class TokenTestCase(MyTestCase):
         self.assertTrue("enrollPW" in p, p)
 
     def test_41_get_tokens_paginate(self):
+        # create some tokens
         for serial in ["S1", "S2", "S3", "A8", "B", "X"]:
-            init_token({"serial": "AUTO003", "type": "hotp",
-                        "otpkey":self.otpkey,
+            init_token({"serial": serial, "type": "hotp",
+                        "otpkey": self.otpkey,
                         "realm": self.realm1})
-
+        token_count = 15
         # return pagination
         tokens = get_tokens_paginate(sortby=Token.serial, page=1, psize=5)
         self.assertTrue(len(tokens.get("tokens")) == 5,
                         len(tokens.get("tokens")))
-        self.assertTrue(tokens.get("count") == 13, tokens.get("count"))
+        self.assertEqual(tokens.get("count"), token_count)
         self.assertTrue(tokens.get("next") == 2, tokens.get("next"))
         self.assertTrue(tokens.get("prev") is None, tokens.get("prev"))
 
         tokens = get_tokens_paginate(sortby=Token.serial, page=2, psize=5)
-        self.assertTrue(len(tokens.get("tokens")) == 5,
-                        len(tokens.get("tokens")))
-        self.assertTrue(tokens.get("count") == 13, tokens.get("count"))
-        self.assertTrue(tokens.get("next") == 3, tokens.get("next"))
-        self.assertTrue(tokens.get("prev") == 1, tokens.get("prev"))
+        self.assertEqual(len(tokens.get("tokens")), 5)
+        self.assertEqual(tokens.get("count"), token_count)
+        self.assertEqual(tokens.get("next"), 3)
+        self.assertEqual(tokens.get("prev"), 1)
 
         tokens = get_tokens_paginate(sortby=Token.serial, page=3, psize=5)
-        self.assertTrue(len(tokens.get("tokens")) == 2,
-                        len(tokens.get("tokens")))
-        self.assertTrue(tokens.get("count") == 13, tokens.get("count"))
-        self.assertTrue(tokens.get("next") is None, tokens.get("next"))
-        self.assertTrue(tokens.get("prev") == 2, tokens.get("prev"))
+        self.assertEqual(len(tokens.get("tokens")), 4)
+        self.assertEqual(tokens.get("count"), token_count)
+        self.assertEqual(tokens.get("next"), None)
+        self.assertEqual(tokens.get("prev"), 2)
 
         # Test filtering and sorting
         tokens = get_tokens_paginate(assigned=True, page=1)
@@ -920,9 +854,8 @@ class TokenTestCase(MyTestCase):
 
         tokens = get_tokens_paginate(sortby=Token.serial, page=1,
                                      sortdir="desc")
-        self.assertTrue(len(tokens.get("tokens")) == 12,
-                        len(tokens.get("tokens")))
-        self.assertTrue(tokens.get("count") == 13, tokens.get("count"))
+        self.assertTrue(len(tokens.get("tokens")), token_count-1)
+        self.assertEqual(tokens.get("count"), token_count)
         self.assertTrue(tokens.get("next") is None, tokens.get("next"))
         self.assertTrue(tokens.get("prev") is None, tokens.get("prev"))
 
@@ -936,7 +869,6 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(len(tokens.get("tokens")) == 1,
                         len(tokens.get("tokens")))
 
-
     def test_42_sort_tokens(self):
         # return pagination
         tokendata = get_tokens_paginate(sortby=Token.serial, page=1, psize=5)
@@ -945,28 +877,28 @@ class TokenTestCase(MyTestCase):
 
         # sort ascending
         tokendata = get_tokens_paginate(sortby=Token.serial, page=1, psize=100,
-                                     sortdir="asc")
-        self.assertTrue(len(tokendata.get("tokens")) >= 10,
+                                        sortdir="asc")
+        self.assertTrue(len(tokendata.get("tokens")) >= 9,
                         len(tokendata.get("tokens")))
 
         tokens = tokendata.get("tokens")
         for token in tokens:
             print(token.get("serial"))
 
-        self.assertTrue(tokens[0].get("serial") == "AUTO001",
+        self.assertTrue(tokens[0].get("serial") == "A8",
                         tokens[0])
         self.assertTrue(tokens[-1].get("serial") == "hotptoken",
                         tokens[-1])
 
         # Reverse sorting
         tokendata = get_tokens_paginate(sortby=Token.serial, page=1, psize=100,
-                                     sortdir="desc")
+                                        sortdir="desc")
         tokens = tokendata.get("tokens")
         for token in tokens:
             print(token.get("serial"))
 
         self.assertTrue(tokens[0].get("serial") == "hotptoken")
-        self.assertTrue(tokens[-1].get("serial") == "AUTO001")
+        self.assertTrue(tokens[-1].get("serial") == "A8")
 
         # sort with string column
         tokendata = get_tokens_paginate(sortby="serial", page=1, psize=100,
@@ -976,7 +908,7 @@ class TokenTestCase(MyTestCase):
             print(token.get("serial"))
 
         self.assertTrue(tokens[-1].get("serial") == "hotptoken")
-        self.assertTrue(tokens[0].get("serial") == "AUTO001")
+        self.assertTrue(tokens[0].get("serial") == "A8")
 
         tokendata = get_tokens_paginate(sortby="serial", page=1, psize=100,
                                         sortdir="desc")
@@ -985,7 +917,7 @@ class TokenTestCase(MyTestCase):
             print(token.get("serial"))
 
         self.assertTrue(tokens[0].get("serial") == "hotptoken")
-        self.assertTrue(tokens[-1].get("serial") == "AUTO001")
+        self.assertTrue(tokens[-1].get("serial") == "A8")
 
     def test_43_encryptpin(self):
         serial = "ENC01"

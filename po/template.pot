@@ -157,7 +157,7 @@ msgstr ""
 msgid "Authentication Server URI"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:138
+#: privacyidea/static/components/login/controllers/loginControllers.js:143
 msgid "Authentication failed."
 msgstr ""
 
@@ -249,7 +249,7 @@ msgstr ""
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:126
+#: privacyidea/static/components/login/controllers/loginControllers.js:131
 msgid "Challange Response Authentication. You are not completely authenticated, yet."
 msgstr ""
 
@@ -808,6 +808,12 @@ msgid ""
 "                with the new name!"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.import.html:44
+msgid ""
+"If you enrolling the Yubikey in HOTP mode, you should use the\n"
+"            PSKC file format in the newer version of the Yubikey GUI."
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.assign.html:3
 msgid ""
 "If you were handed a token device, you may connect this device to your\n"
@@ -1129,7 +1135,7 @@ msgstr ""
 #: privacyidea/static/components/login/views/login.html:25
 #: privacyidea/static/components/user/views/user.add.html:67
 #: privacyidea/static/components/user/views/user.details.html:75
-#: privacyidea/static/components/user/views/user.password.html:51
+#: privacyidea/static/components/user/views/user.password.html:50
 msgid "Password"
 msgstr ""
 
@@ -1196,7 +1202,7 @@ msgstr ""
 msgid "Previous"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:75
+#: privacyidea/static/components/token/views/token.import.html:79
 msgid "Progress: {{ progressPercentage }}%"
 msgstr ""
 
@@ -1243,7 +1249,7 @@ msgstr ""
 msgid "Realm"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:224
+#: privacyidea/static/components/login/controllers/loginControllers.js:229
 msgid "Realm defrealm created."
 msgstr ""
 
@@ -1296,7 +1302,7 @@ msgstr ""
 #: privacyidea/static/components/directives/views/directive.assignuser.html:31
 #: privacyidea/static/components/token/views/token.enroll.html:41
 #: privacyidea/static/components/token/views/token.enroll.motp.html:43
-#: privacyidea/static/components/user/views/user.password.html:59
+#: privacyidea/static/components/user/views/user.password.html:58
 msgid "Repeat password"
 msgstr ""
 
@@ -1432,7 +1438,7 @@ msgstr ""
 msgid "Select Realm"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:67
+#: privacyidea/static/components/token/views/token.import.html:71
 msgid "Select file and import"
 msgstr ""
 
@@ -1972,7 +1978,7 @@ msgid ""
 "                        privacyIDEA authentication backend."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:47
+#: privacyidea/static/components/token/views/token.import.html:51
 msgid ""
 "This is an RFC6030 OATH compliant PSKC file.\n"
 "            At the moment only unencrypted PSKC files are supported.\n"
@@ -2121,7 +2127,7 @@ msgstr ""
 #: privacyidea/static/components/directives/views/directive.assignuser.html:27
 #: privacyidea/static/components/token/views/token.enroll.html:37
 #: privacyidea/static/components/token/views/token.enroll.motp.html:39
-#: privacyidea/static/components/user/views/user.password.html:55
+#: privacyidea/static/components/user/views/user.password.html:54
 msgid "Type a password"
 msgstr ""
 
@@ -2149,11 +2155,11 @@ msgstr ""
 msgid "Upload Request"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:78
+#: privacyidea/static/components/token/views/token.import.html:82
 msgid "Uploaded File: {{ uploadedFile }}"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:81
+#: privacyidea/static/components/token/views/token.import.html:85
 msgid "Uploaded Tokens: {{ uploadedTokens }}"
 msgstr ""
 
@@ -2265,7 +2271,7 @@ msgstr ""
 msgid "Working Directory"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:55
+#: privacyidea/static/components/token/views/token.import.html:59
 msgid ""
 "You can choose a realm to which the tokens should be imported.\n"
 "            You can also change the realms of each token later."
@@ -2436,7 +2442,7 @@ msgstr ""
 msgid "privacyIDEA Single Page Web Client"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:180
+#: privacyidea/static/components/login/controllers/loginControllers.js:185
 msgid "privacyIDEA UI supports hotkeys. Use '?' to get help."
 msgstr ""
 
@@ -2479,7 +2485,7 @@ msgstr ""
 msgid "set Default"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.password.html:66
+#: privacyidea/static/components/user/views/user.password.html:65
 msgid "set password"
 msgstr ""
 

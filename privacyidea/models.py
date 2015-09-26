@@ -1413,9 +1413,8 @@ class MachineTokenOptions(db.Model):
         self.mt_key = key
         self.mt_value = value
 
-        # TODO: if the combination machinetoken_id / mt_key already exist,
-        # we need
-        # to update
+        # if the combination machinetoken_id / mt_key already exist,
+        # we need to update
         c = MachineTokenOptions.query.filter_by(
             machinetoken_id=self.machinetoken_id,
             mt_key=self.mt_key).first()

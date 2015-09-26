@@ -67,23 +67,29 @@ autoassignment
 
 .. index:: autoassignment
 
-type: bool
+type: string
+
+allowed values: any_pin, userstore
 
 Users can assign a token just by using this token. The user can take
 a token from a pool of unassigned tokens. When this policy is set,
 and the user has no token assigned, autoassignment will be done:
-The user authenticates with a new PIN and an OTP value from the token.
+The user authenticates with a new PIN or his userstore password and an OTP
+value from the token.
 If the OTP value is correct the token gets assigned to the user and the given
 PIN is set as the OTP PIN.
 
 .. note:: Requirements are:
 
-  1. The user must have no other tokens assign.
+  1. The user must have no other tokens assigned.
   2. The token must be not assigned to any user.
   3. The token must be located in the realm of the authenticating user.
+  4. (The user needs to enter the correct userstore password)
 
-.. warning:: In this case assigning the token is only a
-one-factor-authentication: the possession of the token.
+.. warning:: If you set the policy to *any_pin* the token will be assigned to
+   the user no matter what pin he enters.
+   In this case assigning the token is only a
+   one-factor-authentication: the possession of the token.
 
 
 

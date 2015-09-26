@@ -249,8 +249,8 @@ def parseYubicoCSV(csv):
                                       }
                 elif typ.lower() == "oath-hotp":
                     '''
-                    TODO: this does not work out at the moment, since the GUI
-                    either
+                    WARNING: this does not work out at the moment, since the
+                    Yubico GUI either
                     1. creates a serial in the CSV, but then the serial is
                        always prefixed! We can not authenticate with this!
                     2. if it does not prefix the serial there is no serial in

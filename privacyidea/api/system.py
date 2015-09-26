@@ -125,7 +125,6 @@ def before_request():
                         "administrator": g.logged_in_user.get("username"),
                         "action_detail": "",
                         "info": ""})
-    g.Policy = PolicyClass()
 
 
 @system_blueprint.after_request

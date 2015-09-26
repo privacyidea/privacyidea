@@ -39,7 +39,7 @@ import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.error import PolicyError
 from flask import g, current_app
-from privacyidea.lib.policy import SCOPE, ACTION
+from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.token import get_tokens, assign_token
 from privacyidea.lib.machine import get_hostname, get_auth_items
@@ -187,7 +187,9 @@ def check_tokentype(request, response):
                                                  client=request.remote_addr)
     if tokentype and len(allowed_tokentypes) > 0:
         if tokentype not in allowed_tokentypes:
-            # TODO: adapt the audit log!!!
+            g.audit_object.log({"success": False,
+                                'action_detail': "Tokentype not allowed for "
+                                                 "authentication"})
             raise PolicyError("Tokentype not allowed for authentication!")
     return response
 
@@ -383,46 +385,57 @@ def autoassign(request, response):
             # check if the policy is defined
             policy_object = g.policy_object
 
-            autoassign_bool = policy_object.\
-                get_policies(action=ACTION.AUTOASSIGN,
-                             scope=SCOPE.ENROLL,
-                             user=user_obj.login,
-                             realm=user_obj.realm,
-                             client=request.remote_addr,
-                             active=True)
+            autoassign_values = policy_object.\
+                get_action_values(action=ACTION.AUTOASSIGN,
+                                  scope=SCOPE.ENROLL,
+                                  user=user_obj.login,
+                                  realm=user_obj.realm,
+                                  client=request.remote_addr)
 
-            if len(autoassign_bool) >= 1:
+            autoassign_values = list(set(autoassign_values))
+            if len(autoassign_values) > 1:
+                raise PolicyError("Contradicting Autoassign policies.")
+            if len(autoassign_values) >= 1:
                 # check if the user has no token
                 if get_tokens(user=user_obj, count=True) == 0:
                     # Check is the token would match
-                    # get all unassigned tokens in the realm and look for a matching OTP:
+                    # get all unassigned tokens in the realm and look for
+                    # a matching OTP:
                     realm_tokens = get_tokens(realm=user_obj.realm,
                                               assigned=False)
+
                     for token_obj in realm_tokens:
                         (res, pin, otp) = token_obj.split_pin_pass(password)
-                        # TODO: What do we want to do with the PIN?
-                        # Check it against userstore?
-                        if token_obj.check_otp(otp) >= 0:
-                            # we found a matching token
-                            #    check MAXTOKENUSER and MAXTOKENREALM
-                            check_max_token_user(request=request)
-                            check_max_token_realm(request=request)
-                            #    Assign token
-                            assign_token(serial=token_obj.token.serial,
-                                         user=user_obj, pin=pin)
-                            # Set the response to true
-                            content.get("result")["value"] = True
-                            # Set the serial number
-                            if not content.get("detail"):
-                                content["detail"] = {}
-                            content.get("detail")["serial"] = \
-                                token_obj.token.serial
-                            content.get("detail")["type"] = token_obj.type
-                            content.get("detail")["message"] = "Token " \
-                                                               "assigned to " \
-                                                               "user via " \
-                                                               "Autoassignment"
-                            response.data = json.dumps(content)
-                            break
+                        if res:
+                            pin_check = True
+                            if autoassign_values[0] == \
+                                    AUTOASSIGNVALUE.USERSTORE:
+                                # If the autoassign policy is set to userstore,
+                                # we need to check against the userstore.
+                                pin_check = user_obj.check_password(pin)
+                            if pin_check:
+                                otp_check = token_obj.check_otp(otp)
+                                if otp_check >= 0:
+                                    # we found a matching token
+                                    #    check MAXTOKENUSER and MAXTOKENREALM
+                                    check_max_token_user(request=request)
+                                    check_max_token_realm(request=request)
+                                    #    Assign token
+                                    assign_token(serial=token_obj.token.serial,
+                                                 user=user_obj, pin=pin)
+                                    # Set the response to true
+                                    content.get("result")["value"] = True
+                                    # Set the serial number
+                                    if not content.get("detail"):
+                                        content["detail"] = {}
+                                    content.get("detail")["serial"] = \
+                                        token_obj.token.serial
+                                    content.get("detail")["type"] = token_obj.type
+                                    content.get("detail")["message"] = "Token " \
+                                                                       "assigned to " \
+                                                                       "user via " \
+                                                                       "Autoassignment"
+                                    response.data = json.dumps(content)
+                                    break
 
     return response

@@ -262,8 +262,7 @@ def get_policy(name=None, export=None):
     scope = getParam(param, "scope")
     active = getParam(param, "active")
 
-    # TODO: move this to the before method
-    P = PolicyClass()
+    P = g.policy_object
     if not export:
         log.debug("retrieving policy name: %s, realm: %s, scope: %s"
                   % (name, realm, scope))
@@ -478,9 +477,7 @@ def check_policy_api():
     client = getParam(param, "client", optional)
     resolver = getParam(param, "resolver", optional)
 
-    # We only get active policies
-    # TODO: Move policies to the before method
-    P = PolicyClass()
+    P = g.policy_object
     policies = P.get_policies(user=user, realm=realm, resolver=resolver,
                               scope=scope, action=action, client=client,
                               active=True)

@@ -38,14 +38,9 @@ from gettext import gettext as _
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
-       
-'''
-TODO:
-  * Encoding
-'''
 
 
-class AUTHTYPE():
+class AUTHTYPE(object):
     SIMPLE = "Simple"
     SASL_DIGEST_MD5 = "SASL Digest-MD5"
     NTLM = "NTLM"

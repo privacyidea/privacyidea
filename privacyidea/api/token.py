@@ -108,6 +108,20 @@ def before_request():
 
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
+    # Already get some typical parameters to log
+    serial = getParam(request.all_data, "serial")
+    realm = getParam(request.all_data, "realm")
+    # log it
+    g.audit_object.log({"success": False,
+                        "serial": serial,
+                        "realm": realm,
+                        "client": request.remote_addr,
+                        "client_user_agent": request.user_agent.browser,
+                        "privacyidea_server": request.host,
+                        "action": "%s %s" % (request.method, request.url_rule),
+                        "action_detail": "",
+                        "info": ""})
+
     if g.logged_in_user.get("role") == "user":
         # A user is calling this API
         # In case the token API is called by the user and not by the admin we
@@ -125,21 +139,11 @@ def before_request():
     else:
         # An administrator is calling this API
         g.audit_object.log({"administrator": g.logged_in_user.get("username")})
-
-    # Already get some typical parameters to log
-    serial = getParam(request.all_data, "serial")
-    realm = getParam(request.all_data, "realm")
-
-    g.audit_object.log({"success": False,
-                        "serial": serial,
-                        "realm": realm,
-                        "client": request.remote_addr,
-                        "client_user_agent": request.user_agent.browser,
-                        "privacyidea_server": request.host,
-                        "action": "%s %s" % (request.method, request.url_rule),
-                        "action_detail": "",
-                        "info": ""})
-    g.Policy = PolicyClass()
+        # TODO: Check is there are realm specific admin policies, so that the
+        # admin is only allowed to act on certain realms
+        # If now realm is specified, we need to add "filterrealms".
+        # If the admin tries to view realms, he is not allowed to, we need to
+        #  raise an exception.
 
 
 @token_blueprint.route('/init', methods=['POST'])
@@ -317,19 +321,6 @@ def list_api():
     filterRealm = ["*"]
     # TODO: Userfields
 
-    '''
-    # check admin authorization
-    res = self.Policy.checkPolicyPre('admin', 'show', param, user=user)
-
-    filterRealm = res['realms']
-    # check if policies are active at all
-    # If they are not active, we are allowed to SHOW any tokens.
-    pol = self.Policy.getAdminPolicies("show")
-    # If there are no admin policies, we are allowed to see all realms
-    if not pol['active']:
-        filterRealm = ["*"]
-
-    '''
     # If the admin wants to see only one realm, then do it:
     if realm:
         if realm in filterRealm or '*' in filterRealm:
