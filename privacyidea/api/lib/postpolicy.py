@@ -50,6 +50,8 @@ import re
 import netaddr
 from privacyidea.lib.crypto import Sign
 from privacyidea.api.lib.utils import get_all_params
+from privacyidea.lib.user import split_user
+from privacyidea.lib.realm import get_default_realm
 
 
 optional = True
@@ -222,7 +224,8 @@ def check_serial(request, response):
                 serial_matches = True
                 break
         if serial_matches is False:
-            # TODO: adapt the audit log!!!
+            g.audit_object.log({"action_detail": "Serial is not allowed for "
+                                                 "authentication!"})
             raise PolicyError("Serial is not allowed for authentication!")
     return response
 
@@ -331,7 +334,13 @@ def get_webui_settings(request, response):
     content = json.loads(response.data)
     # check, if the authentication was successful, then we need to do nothing
     if content.get("result").get("status") is True:
-        # TODO: get the authenticated user
+        _role = content.get("result").get("value").get("role")
+        username = content.get("result").get("value").get("username")
+        # get the realm
+        _loginname, realm = split_user(username)
+        if not realm:
+            realm = get_default_realm()
+
         policy_object = g.policy_object
         try:
             client = request.remote_addr
@@ -340,6 +349,7 @@ def get_webui_settings(request, response):
         logout_time_pol = policy_object.get_action_values(
             action=ACTION.LOGOUTTIME,
             scope=SCOPE.WEBUI,
+            realm=realm,
             client=client,
             unique=True)
 
