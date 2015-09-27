@@ -28,11 +28,12 @@ angular.module("privacyideaAuth", [])
         var user = {};
 
         return {
-            setUser: function (username, realm, auth_token, role) {
+            setUser: function (username, realm, auth_token, role, rights) {
                 user.username = username;
                 user.realm = realm;
                 user.auth_token = auth_token;
                 user.role = role;
+                user.rights = rights;
             },
             dropUser: function () {
                     user = {};
@@ -48,6 +49,11 @@ angular.module("privacyideaAuth", [])
             },
             getRole: function () {
                 return user.role;
+            },
+            checkRight: function (action) {
+                // check if the action is contained in user.rights
+                var res = (user.rights.indexOf(action) >= 0);
+                return res;
             }
         }
     });

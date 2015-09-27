@@ -171,7 +171,8 @@ angular.module("privacyideaApp")
         AuthFactory.setUser(data.result.value.username,
                 data.result.value.realm,
                 data.result.value.token,
-                data.result.value.role);
+                data.result.value.role,
+                data.result.value.rights);
             $scope.privacyideaVersionNumber = data.versionnumber;
             $scope.loggedInUser = AuthFactory.getUser();
             timeout = data.result.value.logout_time;
