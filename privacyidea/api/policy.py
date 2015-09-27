@@ -77,7 +77,7 @@ def enable_policy_api(name):
     """
     Enable a given policy by its name.
 
-    :param name: Name of the policy
+    :jsonparam name: Name of the policy
     :return: ID in the database
     """
     p = enable_policy(name)
@@ -92,7 +92,7 @@ def disable_policy_api(name):
     """
     Disable a given policy by its name.
 
-    :param name: The name of the policy
+    :jsonparam name: The name of the policy
     :return: ID in the database
     """
     p = enable_policy(name, False)
@@ -108,16 +108,15 @@ def set_policy_api(name=None):
     Creates a new policy that defines access or behaviour of different
     actions in privacyIDEA
 
-    :param name: name of the policy
-    :type name: basestring
+    :jsonparam basestring name: name of the policy
     :jsonparam scope: the scope of the policy like "admin", "system",
         "authentication" or "selfservice"
     :jsonparam adminrealm: Realm of the administrator. (only for admin scope)
     :jsonparam action: which action may be executed
     :jsonparam realm: For which realm this policy is valid
     :jsonparam resolver: This policy is valid for this resolver
-    :jsonparam user: The policy is valid for these users
-    :jsontype user: string with wild cards or list of strings
+    :jsonparam user: The policy is valid for these users.
+        string with wild cards or list of strings
     :jsonparam time: on which time does this policy hold
     :jsonparam client: for which requesting client this should be
     :jsontype client: IP address with subnet
@@ -203,13 +202,13 @@ def get_policy(name=None, export=None):
     defined.
     It can also be used to export the policy to a file.
 
-    :param name: will only return the policy with the given name
-    :param export: The filename needs to be specified as the
+    :query name: will only return the policy with the given name
+    :query export: The filename needs to be specified as the
         third part of the URL like policy.cfg. It
         will then be exported to this file.
-    :jsonparam realm: will return all policies in the given realm
-    :jsonparam scope: will only return the policies within the given scope
-    :jsonparam active: Set to true or false if you only want to display
+    :query realm: will return all policies in the given realm
+    :query scope: will only return the policies within the given scope
+    :query active: Set to true or false if you only want to display
         active or inactive policies.
 
     :return: a json result with the configuration of the specified policies
@@ -285,16 +284,13 @@ def get_policy(name=None, export=None):
 
 
 @log_with(log)
-#@system_blueprint.route('/delPolicy', methods=['POST', 'DELETE'])
-#@system_blueprint.route('/delPolicy/<name>', methods=['POST', 'DELETE'])
-#@policy_blueprint.route('/', methods=['DELETE'])
 @policy_blueprint.route('/<name>', methods=['DELETE'])
 @prepolicy(check_base_action, request, ACTION.POLICYDELETE)
 def delete_policy_api(name=None):
     """
     This deletes the policy of the given name.
 
-    :param name: the policy with the given name
+    :jsonparam name: the policy with the given name
     :return: a json result about the delete success.
              In case of success value > 0
 
@@ -341,7 +337,7 @@ def import_policy_api(filename=None):
     """
     This function is used to import policies from a file.
 
-    :param filename: The name of the file in the request
+    :jsonparam filename: The name of the file in the request
 
     :formparam file: The uploaded file contents
 
@@ -413,15 +409,14 @@ def check_policy_api():
     This function checks, if the given parameters would match a defined policy
     or not.
 
-    :queryparam user: the name of the user
-    :queryparam realm: the realm of the user or the realm the administrator
+    :query user: the name of the user
+    :query realm: the realm of the user or the realm the administrator
         want to do administrative tasks on.
-    :queryparam resolver: the resolver of a user
-    :queryparam scope: the scope of the policy
-    :queryparam action: the action that is done - if applicable
-    :queryparam client: the client, from which this request would be
+    :query resolver: the resolver of a user
+    :query scope: the scope of the policy
+    :query action: the action that is done - if applicable
+    :query IP_Address client: the client, from which this request would be
         issued
-    :querytype client: IP Address
 
     :return: a json result with the keys allowed and policy in the value key
     :rtype: json
@@ -499,6 +494,7 @@ def check_policy_api():
 
     return send_result(res)
 
+
 @log_with(log)
 @policy_blueprint.route('/defs', methods=['GET'])
 @policy_blueprint.route('/defs/<scope>', methods=['GET'])
@@ -508,11 +504,11 @@ def get_policy_defs(scope=None):
     definitions, that can
     be used to define your policies.
 
-    :param scope: if given, the function will only return policy
+    :query scope: if given, the function will only return policy
                   definitions for the given scope.
 
     :return: The policy definitions of the allowed scope with the actions and
-    action types. The top level key is the scope.
+        action types. The top level key is the scope.
     :rtype: dict
     """
     pol = {}

@@ -275,15 +275,15 @@ def set_config():
         postfix ".type". Value could then be 'password' to trigger the
         storing of the value in an encrypted form
 
-    :param key: configuration entry name
-    :param value: configuration value
-    :param type: type of the value: int or string/text or password
-                 password will trigger to store the encrypted value
-    :param description: additional information for this config entry
+    :jsonparam key: configuration entry name
+    :jsonparam value: configuration value
+    :jsonparam type: type of the value: int or string/text or password.
+             password will trigger to store the encrypted value
+    :jsonparam description: additional information for this config entry
 
     **or**
 
-    :param key-value pairs: pair of &keyname=value pairs
+    :jsonparam key-value pairs: pair of &keyname=value pairs
     :return: a json result with a boolean "result": true
 
     **Example request 1**:
@@ -334,13 +334,13 @@ def set_default():
     are used when new tokens are generated. The default settings will
     not affect already enrolled tokens.
 
-    :param DefaultMaxFailCount: Default value for the maximum allowed
+    :jsonparam DefaultMaxFailCount: Default value for the maximum allowed
         authentication failures
-    :param DefaultSyncWindow: Default value for the synchronization window
-    :param DefaultCountWindow: Default value for the counter window
-    :param DefaultOtpLen: Default value for the OTP value length --
+    :jsonparam DefaultSyncWindow: Default value for the synchronization window
+    :jsonparam DefaultCountWindow: Default value for the counter window
+    :jsonparam DefaultOtpLen: Default value for the OTP value length --
         usually 6 or 8
-    :param DefaultResetFailCount: Default value, if the FailCounter should
+    :jsonparam DefaultResetFailCount: Default value, if the FailCounter should
         be reset on successful authentication [True|False]
 
     :return: a json result with a boolean "result": true
@@ -379,7 +379,7 @@ def delete_config(key=None):
     """
     delete a configuration key
 
-    :param key: configuration key name
+    :jsonparam key: configuration key name
     :returns: a json result with the deleted value
 
     """

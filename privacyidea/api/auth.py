@@ -89,7 +89,6 @@ def get_auth_token():
 
     :jsonparam username: The username of the user who wants to authenticate to
         the API.
-    :type username: basestring
     :jsonparam password: The password/credentials of the user who wants to
         authenticate to the API.
 
@@ -287,7 +286,8 @@ def check_auth_token(required_role=None):
 def get_rights():
     """
     This returns the rights of the logged in user.
-    :return:
+
+    :reqheader Authorization: The authorization token acquired by /auth request
     """
     enroll_types = g.policy_object.ui_get_enroll_tokentypes(request.remote_addr,
                                                             g.logged_in_user)
