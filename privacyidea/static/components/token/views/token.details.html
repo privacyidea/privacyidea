@@ -10,7 +10,8 @@
             <td translate>Type</td>
             <td>{{ token.tokentype }}</td>
             <td>
-                <button class="btn btn-danger" ng-click="delete()">
+                <button class="btn btn-danger" ng-click="delete()"
+                        ng-disabled="!AuthFactory.checkRight('delete')">
                     <div class="glyphicon glyphicon-trash"
                             translate>Delete
                     </div>
@@ -34,16 +35,19 @@
             <span ng-show="token.active"
                   ng-click="disable()">
                 <button class="btn btn-danger"
+                        ng-disabled="!AuthFactory.checkRight('disable')"
                         translate>Disable</button>
             </span>
             <span ng-show="!token.active && !token.locked"
                   ng-click="enable()">
                 <button class="btn btn-success"
+                        ng-disabled="!AuthFactory.checkRight('enable')"
                         translate>Enable</button>
             </span>
             <span ng-show="!token.revoked"
                   ng-click="revoke()">
-                <button class="btn btn-danger" translate>
+                <button class="btn btn-danger" translate
+                        ng-disabled="!AuthFactory.checkRight('revoke')">
                     Revoke</button>
             </span>
             </td>
@@ -69,6 +73,7 @@
                 <button class="btn btn-success"
                         ng-show="token.failcount > 0"
                         ng-click="reset()"
+                        ng-disabled="AuthFactory.checkRight('reset')"
                         translate>Reset fail counter
                 </button>
             </td>
@@ -262,7 +267,8 @@
             <td>
                 <button class="btn btn-primary"
                         ng-disabled="(!otp1 || !otp2)"
-                        ng-click="resyncToken()">
+                        ng-click="resyncToken()"
+                        ng-disabled="!AuthFactory.checkRight('resync')">
                     <div class="glyphicon glyphicon-refresh" translate>
                         Resync Token
                     </div>

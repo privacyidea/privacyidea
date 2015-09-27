@@ -52,7 +52,11 @@ angular.module("privacyideaAuth", [])
             },
             checkRight: function (action) {
                 // check if the action is contained in user.rights
+                console.log("checking rights");
+                console.log(action);
                 var res = (user.rights.indexOf(action) >= 0);
+                console.log(user.rights);
+                console.log(res);
                 return res;
             }
         }
