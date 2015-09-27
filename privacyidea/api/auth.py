@@ -218,13 +218,16 @@ def get_auth_token():
     # Add the role to the JWT, so that we can verify it internally
     # Add the authtype to the JWT, so that we could use it for access
     # definitions
+    rights = g.policy_object.ui_get_rights(role, realm, username,
+                                           request.remote_addr)
+
     token = jwt.encode({"username": username,
                         "realm": realm,
                         "nonce": nonce,
                         "role": role,
                         "authtype": authtype,
                         "exp": datetime.utcnow() + validity,
-                        "rights": "TODO"},
+                        "rights": rights},
                        secret)
     g.audit_object.log({"success": True,
                         "administrator": username,
@@ -235,7 +238,7 @@ def get_auth_token():
                         "role": role,
                         "username": username,
                         "realm": realm,
-                        "rights": "TODO"})
+                        "rights": rights})
 
 
 def admin_required(f):

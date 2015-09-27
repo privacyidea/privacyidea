@@ -441,3 +441,26 @@ class PolicyTestCase(MyTestCase):
         self.assertFalse("yubikey" in tt)
         self.assertFalse("radius" in tt)
         delete_policy("tokenEnroll")
+
+    def test_17_ui_get_rights(self):
+        P = PolicyClass()
+        logged_in_user = {"username": "admin",
+                          "role": "admin",
+                          "realm": "realm1"}
+        # Without policies, the admin gets all
+        rights = P.ui_get_rights(SCOPE.ADMIN, "realm1", "admin")
+        self.assertEqual(rights, [])
+
+        # An admin may only enroll Yubikeys
+        set_policy(name="tokenEnroll", scope=SCOPE.ADMIN,
+                   action="enrollYUBIKEY")
+        P = PolicyClass()
+        rights = P.ui_get_rights(SCOPE.ADMIN, "realm1", "admin")
+        self.assertEqual(rights, ["enrollYUBIKEY"])
+
+        # A user may do something else...
+        set_policy(name="userpol", scope=SCOPE.USER, action="enable")
+        P = PolicyClass()
+        rights = P.ui_get_rights(SCOPE.USER, "realm2", "user")
+        # there was still another policy...
+        self.assertEqual(rights, ["enable", "disable"])

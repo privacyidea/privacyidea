@@ -384,6 +384,40 @@ class PolicyClass(object):
                                   " definitions!" % action)
         return action_values
 
+    def ui_get_rights(self, scope, realm, username, client=None):
+        """
+        Get the rights derived from the policies for the given realm and user.
+        Works for admins and normal users.
+        It fetches all policies for this user and compiles a maximum list of
+        allowed rights, that can be used to hide certain UI elements.
+
+        :param scope: Can be SCOPE.ADMIN or SCOPE.USER
+        :param realm: Is either user users realm or the adminrealm
+        :param username: The loginname of the user
+        :param client: The HTTP client IP
+        :return: A list of actions
+        """
+        rights = []
+        userealm = None
+        adminrealm = None
+        if scope == SCOPE.ADMIN:
+            adminrealm = realm
+        elif scope == SCOPE.USER:
+            userealm = realm
+        pols = self.get_policies(scope=scope,
+                                 adminrealm=adminrealm,
+                                 realm=userealm,
+                                 user=username, active=True,
+                                 client=client)
+        for pol in pols:
+            for action, action_value in pol.get("action").items():
+                if action_value:
+                    rights.append(action)
+
+        # reduce the list
+        rights = list(set(rights))
+        return rights
+
     def ui_get_enroll_tokentypes(self, client, logged_in_user):
         """
         Return a dictioary of the allowed tokentypes for the logged in user.
