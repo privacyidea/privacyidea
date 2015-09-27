@@ -413,7 +413,12 @@ class PolicyClass(object):
             for action, action_value in pol.get("action").items():
                 if action_value:
                     rights.append(action)
-
+        # check if we have policies at all:
+        pols = self.get_policies(scope=scope, active=True)
+        if len(pols) == 0:
+            # We do not have any policies in this scope, so we return all
+            # possible actions in this scope.
+            rights = get_static_policy_definitions(scope).keys()
         # reduce the list
         rights = list(set(rights))
         return rights
