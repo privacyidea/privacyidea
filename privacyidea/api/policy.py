@@ -194,7 +194,7 @@ def set_policy_api(name=None):
 
 
 @log_with(log)
-@policy_blueprint.route('', methods=['GET'])
+@policy_blueprint.route('/', methods=['GET'])
 @policy_blueprint.route('/<name>', methods=['GET'])
 @policy_blueprint.route('/export/<export>', methods=['GET'])
 def get_policy(name=None, export=None):
