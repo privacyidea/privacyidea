@@ -20,6 +20,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import os
+import os.path
 import logging
 import logging.config
 import sys
@@ -46,9 +47,32 @@ from privacyidea.config import config
 from privacyidea.models import db
 from flask.ext.migrate import Migrate
 
-ENV_KEY="PRIVACYIDEA_CONFIGFILE"
+ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 MY_LOG_FORMAT = "[%(asctime)s][%(process)d][%(thread)d][%(levelname)s][%(" \
                 "name)s:%(lineno)d] %(message)s"
+
+PI_LOGGING_CONFIG = {
+    "version": 1,
+    "formatters": {"detail": {"class":
+                                  "privacyidea.lib.log.SecureFormatter",
+                              "format": "[%(asctime)s][%(process)d]"
+                                        "[%(thread)d][%(levelname)s]"
+                                        "[%(name)s:%(lineno)d] "
+                                        "%(message)s"}
+                   },
+    "handlers": {"file": {"formatter": "detail",
+                          "class":
+                              "logging.handlers.RotatingFileHandler",
+                          "backupCount": 5,
+                          "maxBytes": 10000000,
+                          "level": logging.DEBUG,
+                          "filename": "/var/log/privacyidea/privacyidea.log"}
+                 },
+    "loggers": {"privacyidea": {"handlers": ["file"],
+                                "qualname": "privacyidea",
+                                "level": logging.DEBUG}
+                }
+}
 
 
 def create_app(config_name="development",
@@ -89,10 +113,10 @@ def create_app(config_name="development",
         # If it does not exist, just ignore it.
         app.config.from_pyfile(config_file, silent=True)
     except IOError:
-        sys.stderr.write(50*"!")
-        sys.stderr.write("  WARNING: privacyidea create_app has no access")
-        sys.stderr.write("  to %s!" % config_file)
-        sys.stderr.write(50*"!")
+        sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
+        sys.stderr.write("  WARNING: privacyidea create_app has no access\n")
+        sys.stderr.write("  to %s!\n" % config_file)
+        sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
 
     # Try to load the file, that was specified in the environment variable
     # PRIVACYIDEA_CONFIG_FILE
@@ -124,38 +148,29 @@ def create_app(config_name="development",
         # Try to read logging config from file
         log_config_file = app.config.get("PI_LOGCONFIG",
                                          "/etc/privacyidea/logging.cfg")
-        logging.config.fileConfig(log_config_file)
-        if not silent:
-            print("Reading Logging settings from %s" %
-                            log_config_file)
+        if os.path.isfile(log_config_file):
+            logging.config.fileConfig(log_config_file)
+            if not silent:
+                print("Reading Logging settings from %s" % log_config_file)
+        else:
+            raise Exception("The config file specified in PI_LOGCONFIG does "
+                            "not exist.")
     except Exception as exx:
-        #print("%s" % traceback.format_exc())
-        sys.stderr.write("%s" % exx)
-        sys.stderr.write("No log config file defined in PI_LOGCONFIG. "
-                         "Using PI_LOGLEVEL and PI_LOGFILE.")
-        # If there is another level in pi.cfg we use this.
-        level = app.config.get("PI_LOGLEVEL")
-        if level:
-            sys.stderr.write("PI_LOGLEVEL found. Setting to %s" % level)
-            logging.getLogger("privacyidea").setLevel(level)
+        sys.stderr.write("%s\n" % exx)
+        sys.stderr.write("Could not use PI_LOGCONFIG. "
+                         "Using PI_LOGLEVEL and PI_LOGFILE.\n")
+        level = app.config.get("PI_LOGLEVEL", logging.DEBUG)
         # If there is another logfile in pi.cfg we use this.
         logfile = app.config.get("PI_LOGFILE")
         if logfile:
-            logger = logging.getLogger("privacyidea")
-            handlers = logger.handlers
-            for handler in handlers:
-                if type(handler) == logging.handlers.RotatingFileHandler:
-                    # Set a new filename for the RotatingFileHandler
-                    sys.stderr.write("PI_LOGFILE found. Setting to %s" %
-                                     logfile)
-                    if handler.baseFilename != logfile:
-                        # We need to reopen the file, if it has changed
-                        logger.removeHandler(handler)
-                        handler.baseFilename = logfile
-                        handler.doRollover()
-                        logger.addHandler(handler)
+            sys.stderr.write("Using PI_LOGLEVEL %s.\n" % level)
+            sys.stderr.write("Using PI_LOGFILE %s.\n" % logfile)
+            PI_LOGGING_CONFIG["handlers"]["file"]["filename"] = logfile
+            PI_LOGGING_CONFIG["handlers"]["file"]["level"] = level
+            PI_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = level
+            logging.config.dictConfig(PI_LOGGING_CONFIG)
         else:
-            sys.stderr.write("No PI_LOGFILE found. Using default config.")
+            sys.stderr.write("No PI_LOGFILE found. Using default config.\n")
             logging.config.dictConfig(DEFAULT_LOGGING_CONFIG)
 
     return app

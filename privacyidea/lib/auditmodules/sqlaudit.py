@@ -139,7 +139,7 @@ class Audit(AuditBase):
         connect_string = self.config.get("PI_AUDIT_SQL_URI",
                                         self.config.get(
                                             "SQLALCHEMY_DATABASE_URI"))
-        log.info("using the connect string %s" % connect_string)
+        log.debug("using the connect string %s" % connect_string)
         self.engine = create_engine(connect_string)
 
         # create a configured "Session" class
