@@ -466,6 +466,9 @@ def split_user(username):
     Split the username of the form user@realm into the username and the realm
     splitting myemail@emailprovider.com@realm is also possible and will
     return (myemail@emailprovider, realm).
+
+    If for a user@domain the "domain" does not exist as realm, the name is
+    not split, since it might be the user@domain in the default realm
     
     We can also split realm\\user to (user, realm)
     
@@ -474,13 +477,15 @@ def split_user(username):
     :return: username and realm
     :rtype: tuple
     """
+    from privacyidea.lib.realm import realm_is_defined
     user = username.strip()
     realm = ""
 
     l = user.split('@')
     if len(l) >= 2:
-        # split the last
-        (user, realm) = user.rsplit('@', 1)
+        if realm_is_defined(l[-1]):
+            # split the last only if the last part is really a realm
+            (user, realm) = user.rsplit('@', 1)
     else:
         l = user.split('\\')
         if len(l) >= 2:

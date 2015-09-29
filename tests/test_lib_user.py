@@ -144,17 +144,21 @@ class UserTestCase(MyTestCase):
         self.assertTrue(self.realm1 in realms, realms)
         
     def test_08_split_user(self):
-        user = split_user("user@realm")
-        self.assertTrue(user == ("user", "realm"), user)
+        user = split_user("user@realm1")
+        self.assertTrue(user == ("user", "realm1"), user)
         
         user = split_user("user")
         self.assertTrue(user == ("user", ""), user)
         
-        user = split_user("user@email@realm")
-        self.assertTrue(user == ("user@email", "realm"), user)
+        user = split_user("user@email@realm1")
+        self.assertTrue(user == ("user@email", "realm1"), user)
         
-        user = split_user("realm\\user")
-        self.assertTrue(user == ("user", "realm"), user)
+        user = split_user("realm1\\user")
+        self.assertTrue(user == ("user", "realm1"), user)
+
+        # The user is not split, since there is no real "non_existing_realm.com"
+        user = split_user("user@non_existing_realm.com")
+        self.assertEqual(user, ("user@non_existing_realm.com", ""))
         
     def test_09_get_user_from_param(self):
         user = get_user_from_param({"user": "cornelius"})
