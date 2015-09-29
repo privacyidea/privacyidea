@@ -1211,6 +1211,8 @@ class TokenClass(object):
             for challengeobject in challengeobject_list:
                 if challengeobject.is_valid():
                     # challenge is still valid
+                    # Add the challenge to the options for check_otp
+                    options["challenge"] = challengeobject.challenge
                     # Now see if the OTP matches:
                     otp_counter = self.check_otp(passw, options=options)
                     if otp_counter >= 0:

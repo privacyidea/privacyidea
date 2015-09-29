@@ -129,6 +129,7 @@ angular.module("privacyideaApp")
                 $scope.challenge_message = error.detail.message;
                 $scope.transactionid = error.detail["transaction_id"];
                 $scope.image = error.detail.attributes.img;
+                $scope.hideResponseInput = error.detail.attributes.hideResponseInput;
                 $scope.polling = error.detail.attributes.poll;
                 console.log($scope.polling);
                 $scope.login.password = "";
@@ -139,7 +140,16 @@ angular.module("privacyideaApp")
                 if (error.detail.attributes['u2fSignRequest']) {
                     var signRequests = [ error.detail.attributes.u2fSignRequest ];
                     u2f.sign(signRequests, function(result) {
-                        console.log(result);
+                        if (result.errorCode > 0) {
+                            inform.add(gettext("errorCode: ") + result.errorCode +
+                                ". " + result.errorMessage,
+                                {type: "danger", ttl: 10000});
+                        } else {
+                            console.log("Got response from U2F device.");
+                            console.log(result);
+                            $scope.check_u2f_response(result.signatureData,
+                                result.clientData);
+                        }
                     });
                 }
             } else {
@@ -168,6 +178,24 @@ angular.module("privacyideaApp")
             $scope.do_login_stuff(data);
             PollingAuthFactory.stop();
         })
+    };
+
+    $scope.check_u2f_response = function(signatureData, clientData) {
+        $http.post(authUrl, {
+            username: $scope.login.username,
+            password: "",
+            signaturedata: signatureData,
+            clientdata: clientData,
+            transaction_id: $scope.transactionid
+        }, {
+            withCredentials: true
+        }).success(function (data) {
+            $scope.do_login_stuff(data);
+        }).error(function (data) {
+            console.log(data);
+            inform.add(gettext("Error in U2F response."),
+                {type: "danger", ttl: 10000});
+        });
     };
 
     $scope.do_login_stuff = function(data) {

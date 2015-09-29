@@ -288,7 +288,8 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                 // Send the necessary data to privacyIDEA
                 var params = {serial: $scope.serial,
                     type: "u2f",
-                    regdata: u2fData.registrationData};
+                    regdata: u2fData.registrationData,
+                    clientdata: u2fData.clientData};
                 TokenFactory.enroll($scope.newUser,
                     params, function(response){
                         $scope.click_wait=false;

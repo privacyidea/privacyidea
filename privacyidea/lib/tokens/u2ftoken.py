@@ -40,9 +40,15 @@ import gettext
 from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.crypto import geturandom
+from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
+                                        parse_registration_data, url_encode,
+                                        parse_response_data, check_response)
+from privacyidea.lib.error import ValidateError
 import base64
 import binascii
+import json
 from OpenSSL import crypto
+import time
 
 
 U2F_Version = "U2F_V2"
@@ -57,13 +63,42 @@ _ = gettext.gettext
 class U2fTokenClass(TokenClass):
     """
     The U2F Token implementation.
+
+    The U2F Token is enrolled in two steps.
+
+    **1. Step**
+
+       .. sourcecode:: http
+
+       POST /token/init HTTP/1.1
+       Host: example.com
+       Accept: application/json
+
+       type=utf
+
+    This step returns a serial number.
+
+    **2. Step**
+
+       .. sourcecode:: http
+
+       POST /token/init HTTP/1.1
+       Host: example.com
+       Accept: application/json
+
+       type=utf
+       serial=U2F1234578
+       clientdata=<clientdata>
+       regdata=<regdata>
+
+    *clientdata* and *regdata* are the values returned by the U2F device.
     """
 
     @classmethod
     def get_class_type(cls):
         """
         Returns the internal token type identifier
-        :return: tiqr
+        :return: u2f
         :rtype: basestring
         """
         return "u2f"
@@ -129,50 +164,29 @@ class U2fTokenClass(TokenClass):
         :type param: dict
         :return: None
         """
-        #user_object = get_user_from_param(param)
-        #self.set_user(user_object)
         TokenClass.update(self, param)
-        # We have to set the realms here, since the token DB object does not
-        # have an ID before TokenClass.update.
-        #self.set_realms([user_object.realm])
-
-        description = ""
+        description = "U2F initialization"
         reg_data = getParam(param, "regdata")
         if reg_data:
             self.init_step = 2
-            pad_len = len(reg_data) % 4
-            padding = pad_len * "="
-            reg_data_bin = base64.urlsafe_b64decode(str(reg_data) + padding)
-            # see
-            # https://fidoalliance.org/specs/fido-u2f-v1.0-nfc-bt-amendment
-            # -20150514/fido-u2f-raw-message-formats.html#registration-messages
-            reserved_byte = reg_data_bin[0]  # must be '\x05'
-            user_pub_key = reg_data_bin[1:66]
-            key_handle_len = ord(reg_data_bin[66])
-            # We need to save the key handle
-            key_handle = reg_data_bin[67:67+key_handle_len]
-            key_handle_hex = binascii.hexlify(key_handle)
+            attestation_cert, user_pub_key, key_handle, \
+                signature, description = parse_registration_data(reg_data)
+            client_data = getParam(param, "clientdata", required)
+            client_data_str = url_decode(client_data)
+            app_id = self.get_tokeninfo("appId", "")
+            # Verify the registration data
+            # In case of any crypto error, check_data raises an exception
+            check_registration_data(attestation_cert, app_id, client_data_str,
+                                    user_pub_key, key_handle, signature)
             self.set_otpkey(key_handle)
+            self.add_tokeninfo("pubKey", user_pub_key)
 
-            certificate = reg_data_bin[67+key_handle_len:]
-            x509 = crypto.load_certificate(crypto.FILETYPE_ASN1, certificate)
-            # TODO: We might want to check the certificate.
-            pkey = x509.get_pubkey()
-            subj_x509name = x509.get_subject()
-            issuer = x509.get_issuer()
-            not_after = x509.get_notAfter()
-            subj_list = subj_x509name.get_components()
-            for component in subj_list:
-                # each component is a tuple. We are looking for CN
-                if component[0].upper() == "CN":
-                    description = component[1]
-                    break
         self.set_description(description)
 
     @log_with(log)
     def get_init_detail(self, params=None, user=None):
         """
-        At the end of the initialization we ask the user the press the button
+        At the end of the initialization we ask the user to press the button
         """
         response_detail = {}
         if self.init_step == 1:
@@ -185,6 +199,7 @@ class U2fTokenClass(TokenClass):
                                 "appId": app_id,
                                 "origin": app_id}
             response_detail["u2fRegisterRequest"] = register_request
+            self.add_tokeninfo("appId", app_id)
 
         elif self.init_step == 2:
             # This is the second step of the init request
@@ -247,23 +262,79 @@ class U2fTokenClass(TokenClass):
         lookup_for = tokentype.capitalize() + 'ChallengeValidityTime'
         validity = int(get_from_config(lookup_for, validity))
 
-        challenge_hex = binascii.hexlify(geturandom(32))
+        challenge = geturandom(32)
         # Create the challenge in the database
         db_challenge = Challenge(self.token.serial,
                                  transaction_id=None,
-                                 challenge=challenge_hex,
+                                 challenge=binascii.hexlify(challenge),
                                  data=None,
                                  session=options.get("session"),
                                  validitytime=validity)
         db_challenge.save()
         sec_object = self.token.get_otpkey()
-        key_handle = sec_object.getKey()
-        key_handle_hex = binascii.hexlify(key_handle)
+        key_handle_hex = sec_object.getKey()
+        key_handle_bin = binascii.unhexlify(key_handle_hex)
+        key_handle_url = url_encode(key_handle_bin)
+        challenge_url = url_encode(challenge)
         u2f_sign_request = {"appId": APP_ID,
                             "version": U2F_Version,
-                            "challenge": challenge_hex,
-                            "keyHandle": key_handle_hex}
+                            "challenge": challenge_url,
+                            "keyHandle": key_handle_url}
 
-        response_details = {"u2fSignRequest": u2f_sign_request}
+        response_details = {"u2fSignRequest": u2f_sign_request,
+                            "hideResponseInput": True}
 
         return True, message, db_challenge.transaction_id, response_details
+
+    @check_token_locked
+    def check_otp(self, otpval, counter=None, window=None, options=None):
+        """
+        This checks the response of a previous challenge.
+        :param otpval: N/A
+        :param counter:
+        :param window: N/A
+        :param options: contains "clientdata", "signaturedata" and
+            "transaction_id"
+        :return: A value > 0 in case of success
+        """
+        ret = -1
+        clientdata = options.get("clientdata")
+        signaturedata = options.get("signaturedata")
+        transaction_id = options.get("transaction_id")
+        # The challenge in the challenge DB object is saved in hex
+        challenge = binascii.unhexlify(options.get("challenge"))
+        if not (clientdata and signaturedata and transaction_id and challenge):
+            # This is no valid response for a U2F token
+            return ret
+        challenge_url = url_encode(challenge)
+        clientdata = url_decode(clientdata)
+        clientdata_dict = json.loads(clientdata)
+        client_challenge = clientdata_dict.get("challenge")
+        if challenge_url != client_challenge:
+            raise ValidateError("Challenge mismatch. The U2F key did not send "
+                                "to original challenge.")
+        if clientdata_dict.get("typ") != "navigator.id.getAssertion":
+            raise ValidateError("Incorrect navigator.id")
+        client_origin = clientdata_dict.get("origin")
+        client_typ = clientdata_dict.get("typ")
+
+        signaturedata = url_decode(signaturedata)
+        signaturedata_hex = binascii.hexlify(signaturedata)
+        user_presence, counter, signature = parse_response_data(
+            signaturedata_hex)
+
+        user_pub_key = self.get_tokeninfo("pubKey")
+        app_id = self.get_tokeninfo("appId", "")
+        if check_response(user_pub_key, app_id, clientdata,
+                          binascii.hexlify(signature), counter,
+                          user_presence):
+            # Signature verified.
+            # check, if the counter increased!
+            if counter > self.get_otp_count():
+                self.set_otp_count(counter)
+                ret = counter
+            else:
+                log.warning("The signature of %s was valid, but contained an "
+                            "old counter." % self.token.serial)
+
+        return ret

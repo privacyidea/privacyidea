@@ -186,12 +186,9 @@ def get_auth_token():
         user_obj = User(username, realm)
         options = {"g": g,
                    "clientip": request.remote_addr}
-        transaction_id = getParam(request.all_data, "transaction_id")
-        state = getParam(request.all_data, "state")
-        if transaction_id:
-            options["transaction_id"] = transaction_id
-        if state:
-            options["state"] = state
+        for key, value in request.all_data.items():
+            if value and key not in ["g", "clientip"]:
+                options[key] = value
         superuser_realms = current_app.config.get("SUPERUSER_REALM", [])
         user_auth, role, details = check_webui_user(user_obj,
                                                     password,

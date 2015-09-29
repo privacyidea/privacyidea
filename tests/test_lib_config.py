@@ -113,8 +113,8 @@ class ConfigTestCase(MyTestCase):
 
     def test_02_token(self):
         r = get_token_list()
-        self.assertTrue("tokens.totptoken" in r, r)
-        self.assertTrue("tokens.hotptoken" in r, r)
+        self.assertTrue("privacyidea.lib.tokens.totptoken" in r, r)
+        self.assertTrue("privacyidea.lib.tokens.hotptoken" in r, r)
 
         # check modules
         mlist = get_token_module_list()
