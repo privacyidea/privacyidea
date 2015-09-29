@@ -22,6 +22,9 @@ __doc__ = """
 U2F Token
 """
 
+IMAGES = {"yubico": "/static/css/FIDO-U2F-Security-Key-444x444.png",
+          "plug-up": "/static/css/plugup.jpg"}
+
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import TokenClass
@@ -255,7 +258,8 @@ class U2fTokenClass(TokenClass):
         additional ``attributes``, which are displayed in the JSON response.
         """
         options = options or {}
-        message = 'Please confirm with your U2F token'
+        message = 'Please confirm with your U2F token (%s)' % \
+                  self.token.description
 
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
         tokentype = self.get_tokentype().lower()
@@ -281,8 +285,10 @@ class U2fTokenClass(TokenClass):
                             "challenge": challenge_url,
                             "keyHandle": key_handle_url}
 
+        image_url = IMAGES.get(self.token.description.lower().split()[0], "")
         response_details = {"u2fSignRequest": u2f_sign_request,
-                            "hideResponseInput": True}
+                            "hideResponseInput": True,
+                            "img": image_url}
 
         return True, message, db_challenge.transaction_id, response_details
 

@@ -34,14 +34,16 @@ def create_png(data, alt=None):
     return o_data
 
 
-def create_img(data, width=0, alt=None):
+def create_img(data, width=0, alt=None, raw=False):
     """
     create the qr image data
 
     :param data: input data that will be munched into the qrcode
-    :type  data: string
+    :type data: string
     :param width: image width in pixel
-    :type  width: int
+    :type width: int
+    :param raw: If set to false, the data will be interpreted as text and a
+        QR code will be generated.
 
     :return: image data to be used in an <img> tag
     :rtype:  string
@@ -49,7 +51,10 @@ def create_img(data, width=0, alt=None):
     width_str = ''
     alt_str = ''
 
-    o_data = create_png(data, alt=alt)
+    if not raw:
+        o_data = create_png(data, alt=alt)
+    else:
+        o_data = data
     data_uri = o_data.encode("base64").replace("\n", "")
 
     if width != 0:
