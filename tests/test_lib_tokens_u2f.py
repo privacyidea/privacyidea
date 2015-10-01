@@ -9,9 +9,8 @@ from privacyidea.lib.tokens.u2f import (check_registration_data,
                                         parse_registration_data, url_decode,
                                         check_response, parse_response_data)
 from privacyidea.lib.token import init_token
+from privacyidea.lib.config import set_privacyidea_config
 import binascii
-from urllib import urlencode
-import json
 from hashlib import sha256
 from OpenSSL import crypto
 
@@ -110,6 +109,8 @@ class U2FTokenTestCase(MyTestCase):
 
     def test_00_users(self):
         self.setUp_user_realms()
+
+        set_privacyidea_config("u2f.appId", "http://localhost:5000")
 
     def test_01_create_token(self):
         pin = "test"

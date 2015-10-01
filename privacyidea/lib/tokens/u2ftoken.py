@@ -18,6 +18,23 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from privacyidea.api.lib.utils import getParam
+from privacyidea.lib.config import get_from_config
+from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.log import log_with
+import logging
+from privacyidea.models import Challenge
+import gettext
+from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.crypto import geturandom
+from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
+                                        parse_registration_data, url_encode,
+                                        parse_response_data, check_response)
+from privacyidea.lib.error import ValidateError
+import base64
+import binascii
+import json
+
 __doc__ = """
 U2F is the "Universal 2nd Factor" specified by the FIDO Alliance.
 The register and authentication process is described here:
@@ -150,22 +167,6 @@ the signatureData and clientData returned by the U2F device in the *u2fResult*:
    clientdata=clientData
 
 """
-from privacyidea.api.lib.utils import getParam
-from privacyidea.lib.config import get_from_config
-from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.log import log_with
-import logging
-from privacyidea.models import Challenge
-import gettext
-from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.crypto import geturandom
-from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
-                                        parse_registration_data, url_encode,
-                                        parse_response_data, check_response)
-from privacyidea.lib.error import ValidateError
-import base64
-import binascii
-import json
 
 IMAGES = {"yubico": "/static/css/FIDO-U2F-Security-Key-444x444.png",
           "plug-up": "/static/css/plugup.jpg"}
@@ -244,7 +245,7 @@ class U2fTokenClass(TokenClass):
         self.hKeyRequired = False
         self.init_step = 1
 
-    def update(self, param):
+    def update(self, param, reset_failcount=True):
         """
         This method is called during the initialization process.
 
@@ -386,7 +387,7 @@ class U2fTokenClass(TokenClass):
         """
         This checks the response of a previous challenge.
         :param otpval: N/A
-        :param counter:
+        :param counter: The authentication counter
         :param window: N/A
         :param options: contains "clientdata", "signaturedata" and
             "transaction_id"
@@ -398,41 +399,38 @@ class U2fTokenClass(TokenClass):
         transaction_id = options.get("transaction_id")
         # The challenge in the challenge DB object is saved in hex
         challenge = binascii.unhexlify(options.get("challenge"))
-        if not (clientdata and signaturedata and transaction_id and challenge):
-            # This is no valid response for a U2F token
-            return ret
-        challenge_url = url_encode(challenge)
-        clientdata = url_decode(clientdata)
-        clientdata_dict = json.loads(clientdata)
-        client_challenge = clientdata_dict.get("challenge")
-        if challenge_url != client_challenge:
-            raise ValidateError("Challenge mismatch. The U2F key did not send "
-                                "to original challenge.")
-        if clientdata_dict.get("typ") != "navigator.id.getAssertion":
-            raise ValidateError("Incorrect navigator.id")
-        client_origin = clientdata_dict.get("origin")
-        client_typ = clientdata_dict.get("typ")
+        if clientdata and signaturedata and transaction_id and challenge:
+            # This is a valid response for a U2F token
+            challenge_url = url_encode(challenge)
+            clientdata = url_decode(clientdata)
+            clientdata_dict = json.loads(clientdata)
+            client_challenge = clientdata_dict.get("challenge")
+            if challenge_url != client_challenge:
+                raise ValidateError("Challenge mismatch. The U2F key did not "
+                                    "send to original challenge.")
+            if clientdata_dict.get("typ") != "navigator.id.getAssertion":
+                raise ValidateError("Incorrect navigator.id")
+            #client_origin = clientdata_dict.get("origin")
+            signaturedata = url_decode(signaturedata)
+            signaturedata_hex = binascii.hexlify(signaturedata)
+            user_presence, counter, signature = parse_response_data(
+                signaturedata_hex)
 
-        signaturedata = url_decode(signaturedata)
-        signaturedata_hex = binascii.hexlify(signaturedata)
-        user_presence, counter, signature = parse_response_data(
-            signaturedata_hex)
-
-        user_pub_key = self.get_tokeninfo("pubKey")
-        app_id = self.get_tokeninfo("appId")
-        if check_response(user_pub_key, app_id, clientdata,
-                          binascii.hexlify(signature), counter,
-                          user_presence):
-            # Signature verified.
-            # check, if the counter increased!
-            if counter > self.get_otp_count():
-                self.set_otp_count(counter)
-                ret = counter
+            user_pub_key = self.get_tokeninfo("pubKey")
+            app_id = self.get_tokeninfo("appId")
+            if check_response(user_pub_key, app_id, clientdata,
+                              binascii.hexlify(signature), counter,
+                              user_presence):
+                # Signature verified.
+                # check, if the counter increased!
+                if counter > self.get_otp_count():
+                    self.set_otp_count(counter)
+                    ret = counter
+                else:
+                    log.warning("The signature of %s was valid, but contained "
+                                "an old counter." % self.token.serial)
             else:
-                log.warning("The signature of %s was valid, but contained an "
-                            "old counter." % self.token.serial)
-        else:
-            log.warning("Checking response for token %s failed." %
-                        self.token.serial)
+                log.warning("Checking response for token %s failed." %
+                            self.token.serial)
 
         return ret

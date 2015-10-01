@@ -4,7 +4,6 @@
 #  2015-09-28 Initial writeup.
 #             Cornelius Kölbel <cornelius@privacyidea.org>
 #
-#
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
 # License as published by the Free Software Foundation; either
@@ -18,11 +17,6 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__ = """Helper functions for U2F protocol according to
-https://fidoalliance.org/specs/fido-u2f-v1.0-nfc-bt-amendment-20150514/fido-u2f-raw-message-formats.html
-
-This file is tested in tests/test_lib_tokens_utf.py
-"""
 from OpenSSL import crypto
 import binascii
 from hashlib import sha256
@@ -31,6 +25,12 @@ import logging
 import time
 import ecdsa
 import struct
+
+__doc__ = """Helper functions for U2F protocol according to
+https://fidoalliance.org/specs/fido-u2f-v1.0-nfc-bt-amendment-20150514/fido-u2f-raw-message-formats.html
+
+This file is tested in tests/test_lib_tokens_utf.py
+"""
 
 log = logging.getLogger(__name__)
 
@@ -130,6 +130,7 @@ def parse_registration_data(reg_data):
     # Get the subject as description
     subj_x509name = attestation_cert.get_subject()
     subj_list = subj_x509name.get_components()
+    description = ""
     for component in subj_list:
         # each component is a tuple. We are looking for CN
         if component[0].upper() == "CN":

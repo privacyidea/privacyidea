@@ -167,7 +167,7 @@ msgstr "Audit"
 msgid "Authentication Server URI"
 msgstr "URI des Authentisierungsservers"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:156
+#: privacyidea/static/components/login/controllers/loginControllers.js:148
 msgid "Authentication failed."
 msgstr "Authentisierung fehlgeschlagen."
 
@@ -178,6 +178,10 @@ msgstr "Timeout für Auto Resynchronisation"
 #: privacyidea/static/components/config/views/config.system.html:82
 msgid "Automatic resync during authentication"
 msgstr "Automatische Resynchronisation während der Authentifizierung"
+
+#: privacyidea/static/components/login/factories/u2f.js:27
+msgid "Bad U2F Request"
+msgstr "Fehlerhafter U2F-Request"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:37
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:34
@@ -264,9 +268,9 @@ msgstr "Zertifikatsanforderung (PEM)"
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr "Zertifikate: x509 Zertifikate ausrollen."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:126
+#: privacyidea/static/components/login/controllers/loginControllers.js:127
 msgid ""
-"Challange Response Authentication. You are not completely authenticated, yet."
+"Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr "Challenge-Response Anmeldung. Sie sind noch nicht fertig angemeldet!"
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:12
@@ -314,6 +318,10 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:49
 msgid "Client"
 msgstr "Client "
+
+#: privacyidea/static/components/login/factories/u2f.js:28
+msgid "Client Configuration is not supported."
+msgstr "Die Client-Konfiguration wird nicht unterstützt."
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:48
 msgid "Close"
@@ -614,7 +622,7 @@ msgstr "Neuen Token ausrollen"
 msgid "Enroll Token"
 msgstr "Token ausrollen"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:32
+#: privacyidea/static/components/login/controllers/loginControllers.js:33
 #: privacyidea/static/components/token/controllers/tokenControllers.js:98
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:79
@@ -655,7 +663,15 @@ msgstr ""
 msgid "Error enrolling U2F token. ErrorCode :"
 msgstr "Fehler beim Ausrollen des U2F Tokens. FehlerCode:"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:196
+#: privacyidea/static/components/config/factories/config.js:42
+msgid "Error fetching policy template"
+msgstr "Fehler beim Laden der Richtlinien-Vorlagen."
+
+#: privacyidea/static/components/config/factories/config.js:33
+msgid "Error fetching policy templates."
+msgstr "Fehler beim Laden der Richtlinien-Vorlagen."
+
+#: privacyidea/static/components/login/factories/u2f.js:63
 msgid "Error in U2F response."
 msgstr "Fehler in der U2F Antwort."
 
@@ -897,7 +913,7 @@ msgstr "Lizenziert unter"
 msgid "Limit"
 msgstr "Begrenzung"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:40
+#: privacyidea/static/components/login/controllers/loginControllers.js:41
 msgid "List tokens"
 msgstr "Tokenliste anzeigen"
 
@@ -923,7 +939,7 @@ msgstr "Logbuch"
 msgid "Log In"
 msgstr "Anmelden"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:47
+#: privacyidea/static/components/login/controllers/loginControllers.js:48
 msgid "Log out"
 msgstr "Abmelden"
 
@@ -1077,6 +1093,10 @@ msgstr "Anzahl der benötigten Token"
 msgid "OCRA Suite"
 msgstr "OCRA Suite"
 
+#: privacyidea/static/components/login/factories/u2f.js:25
+msgid "OK"
+msgstr "OK"
+
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:24
 #: privacyidea/static/components/token/views/token.enroll.motp.html:23
 #: privacyidea/static/components/token/views/token.enroll.totp.html:25
@@ -1143,6 +1163,10 @@ msgstr "OpenSSL Konfigurationsdatei"
 #: privacyidea/static/components/token/views/token.details.html:403
 msgid "Options"
 msgstr "Optionen"
+
+#: privacyidea/static/components/login/factories/u2f.js:26
+msgid "Other Error"
+msgstr "Unbekanter Fehler"
 
 #: privacyidea/static/components/audit/views/audit.stats.html:76
 msgid "Overall token usage"
@@ -1279,7 +1303,7 @@ msgstr ""
 msgid "Realm"
 msgstr "Realm "
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:260
+#: privacyidea/static/components/login/controllers/loginControllers.js:236
 msgid "Realm defrealm created."
 msgstr "Der Realm defrealm wurde erzeugt."
 
@@ -1909,6 +1933,11 @@ msgstr "Die Gültigkeitszeit der Challenge"
 msgid "The client ID"
 msgstr "Die Client ID"
 
+#: privacyidea/static/components/login/factories/u2f.js:29
+msgid "The client device can not be used for this type of request."
+msgstr ""
+"Das Client-Geräte kann für diese Art des Requests nicht verwendet werden."
+
 #: privacyidea/static/components/token/views/token.enroll.motp.html:33
 msgid "The mOTP PIN is the PIN that needs to be entered on the mobile device."
 msgstr ""
@@ -2279,6 +2308,10 @@ msgstr "Time-out"
 msgid "Timeout (seconds)"
 msgstr "Time-out (Sekunden)"
 
+#: privacyidea/static/components/login/factories/u2f.js:31
+msgid "Timeout while waiting for signing response."
+msgstr "Timeout. Warte vergeblich auf die Antwort."
+
 #: privacyidea/static/components/token/views/token.enroll.totp.html:44
 msgid "Timestep"
 msgstr "Zeitschritt"
@@ -2354,10 +2387,13 @@ msgstr "Geben Sie ein Passwort ein"
 msgid "Typo3"
 msgstr "TYPO3"
 
+#: privacyidea/static/components/login/factories/u2f.js:42
+msgid "U2F Error:"
+msgstr "U2F Fehler: "
+
 #: privacyidea/static/components/config/views/config.token.u2f.html:1
-#, fuzzy
 msgid "U2F Token settings"
-msgstr "SMS Token Einstellungen"
+msgstr "U2F Token Einstellungen"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:154
 msgid "U2F: Universal 2nd Factor hardware token."
@@ -2619,10 +2655,6 @@ msgstr "Die öffentliche UID mit ausgeben"
 msgid "enter some OTP value"
 msgstr "Geben Sie einen OTP-Wert ein..."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:144
-msgid "errorCode:"
-msgstr "Fehlernummer:"
-
 #: privacyidea/static/components/token/views/token.list.html:48
 #: privacyidea/static/components/user/views/user.details.html:122
 msgid "failcounter"
@@ -2692,7 +2724,7 @@ msgstr "Telefon"
 msgid "privacyIDEA Single Page Web Client"
 msgstr "privacyIDEA Single Page Web Client"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:216
+#: privacyidea/static/components/login/controllers/loginControllers.js:192
 msgid "privacyIDEA UI supports hotkeys. Use '?' to get help."
 msgstr "Das privacyIDEA UI unterstützt Hotkeys. Benutzen Sie '?' für Hilfe."
 
@@ -2807,6 +2839,9 @@ msgstr "Fenster"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."
+
+#~ msgid "errorCode:"
+#~ msgstr "Fehlernummer:"
 
 #~ msgid "Pass, if the user does not exist"
 #~ msgstr "Durchwinken, wenn der Benutzer nicht existiert"

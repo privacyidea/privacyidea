@@ -25,6 +25,7 @@ angular.module("privacyideaApp")
                                       authUrl, AuthFactory, $rootScope,
                                       $state, ConfigFactory, inform,
                                       PolicyTemplateFactory, gettext, hotkeys,
+                                      U2fFactory,
                                       PollingAuthFactory) {
 
     hotkeys.add({
@@ -121,11 +122,11 @@ angular.module("privacyideaApp")
             $scope.login.password = "";
             // In case of error.detail.transaction_id is present, we
             // have a challenge response and we need to go to the state response
-            if (error.detail['transaction_id']) {
+            if (error.detail && error.detail.transaction_id) {
                 $state.go("response");
-                inform.add(gettext("Challange Response Authentication. You" +
+                inform.add(gettext("Challenge Response Authentication. You" +
                     " are not completely authenticated, yet."),
-                    {type: "warning", ttl:10000});
+                    {type: "warning", ttl:5000});
                 $scope.challenge_message = error.detail.message;
                 $scope.transactionid = error.detail["transaction_id"];
                 $scope.image = error.detail.attributes.img;
@@ -138,22 +139,12 @@ angular.module("privacyideaApp")
                     PollingAuthFactory.start($scope.check_authentication);
                 // In case of u2f we do:
                 if (error.detail.attributes['u2fSignRequest']) {
-                    var signRequests = [ error.detail.attributes.u2fSignRequest ];
-                    u2f.sign(signRequests, function(result) {
-                        if (result.errorCode > 0) {
-                            // TODO: translate error codes
-                            inform.add(gettext("errorCode: ") + result.errorCode +
-                                ". " + result.errorMessage,
-                                {type: "danger", ttl: 10000});
-                        } else {
-                            console.log("Got response from U2F device.");
-                            console.log(result);
-                            $scope.check_u2f_response(result.signatureData,
-                                result.clientData);
-                        }
-                    });
+                    U2fFactory.sign_request(error, $scope.login.username,
+                        $scope.transactionid, $scope.do_login_stuff);
                 }
             } else {
+                // TODO: Do we want to display the error message?
+                // This can show an attacker, if a username exists.
                 inform.add(gettext("Authentication failed. ") + error.result.error.message,
                 {type: "danger", ttl: 10000});
             }
@@ -181,24 +172,6 @@ angular.module("privacyideaApp")
         })
     };
 
-    $scope.check_u2f_response = function(signatureData, clientData) {
-        $http.post(authUrl, {
-            username: $scope.login.username,
-            password: "",
-            signaturedata: signatureData,
-            clientdata: clientData,
-            transaction_id: $scope.transactionid
-        }, {
-            withCredentials: true
-        }).success(function (data) {
-            $scope.do_login_stuff(data);
-        }).error(function (data) {
-            console.log(data);
-            inform.add(gettext("Error in U2F response."),
-                {type: "danger", ttl: 10000});
-        });
-    };
-
     $scope.do_login_stuff = function(data) {
         AuthFactory.setUser(data.result.value.username,
                 data.result.value.realm,
@@ -214,6 +187,8 @@ angular.module("privacyideaApp")
             console.log("successfully authenticated");
             console.log($scope.loggedInUser);
             $location.path("/token");
+            // clear old error messages
+            inform.clear();
             inform.add(gettext("privacyIDEA UI supports hotkeys. Use '?' to" +
                     " get help."), {type: "info", ttl: 10000});
             $scope.transactionid = "";

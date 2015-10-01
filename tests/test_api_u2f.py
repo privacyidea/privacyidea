@@ -3,6 +3,7 @@ import json
 import binascii
 from privacyidea.lib.token import assign_token
 from privacyidea.lib.user import User
+from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.tokens.u2f import (sign_challenge, check_response,
                                         url_encode)
 
@@ -21,6 +22,8 @@ class APIU2fTestCase(MyTestCase):
 
     def test_000_setup_realms(self):
         self.setUp_user_realms()
+
+        set_privacyidea_config("u2f.appId", "http://localhost:5000")
 
     def test_00_sign_check(self):
         # Test the low level functions
