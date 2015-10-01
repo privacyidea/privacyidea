@@ -97,6 +97,9 @@ def parse_registration_data(reg_data):
     """
     reg_data_bin = url_decode(reg_data)
     reserved_byte = reg_data_bin[0]  # must be '\x05'
+    if reserved_byte != '\x05':
+        raise Exception("The registration data is in a wrong format. It must"
+                        "start with 0x05")
     user_pub_key = reg_data_bin[1:66]
     key_handle_len = ord(reg_data_bin[66])
     # We need to save the key handle
@@ -179,6 +182,47 @@ def check_registration_data(attestation_cert, app_id,
     return True
 
 
+def sign_challenge(user_priv_key, app_id, client_data, counter,
+                   user_presence_byte=chr(0x01)):
+    """
+    This creates a signature for the U2F data.
+    Only used in test scenario
+
+    The calculation of the signatrue is described here:
+    https://fidoalliance.org/specs/fido-u2f-v1.0-nfc-bt-amendment-20150514/fido-u2f-raw-message-formats.html#authentication-response-message-success
+
+    The input_data is a concatenation of:
+        * AppParameter: sha256(app_id)
+        * The user presence [1byte]
+        * counter [4byte]
+        * ChallengeParameter: sha256(client_data)
+
+    :param user_priv_key: The private key
+    :type user_priv_key: hex string
+    :param app_id: The application id
+    :type app_id: basestring
+    :param client_data: the stringified JSON
+    :type client_data: basestring
+    :param counter: the authentication counter
+    :type counter: int
+    :param user_presence_byte: one byte 0x01
+    :type user_presence_byte: char
+    :return: The DER encoded signature
+    :rtype: hex string
+    """
+    app_id_hash = sha256(app_id).digest()
+    client_data_hash = sha256(client_data).digest()
+    counter_bin = struct.pack(">L", counter)
+    input_data = app_id_hash + user_presence_byte + counter_bin + \
+                 client_data_hash
+    priv_key_bin = binascii.unhexlify(user_priv_key)
+    sk = ecdsa.SigningKey.from_string(priv_key_bin, curve=ecdsa.NIST256p,
+                                      hashfunc=sha256)
+    signature = sk.sign(input_data)
+    der_sig = der_encode(signature)
+    return binascii.hexlify(der_sig)
+
+
 def check_response(user_pub_key, app_id, client_data, signature,
                    counter, user_presence_byte=chr(0x01)):
     """
@@ -203,6 +247,7 @@ def check_response(user_pub_key, app_id, client_data, signature,
     :type signature: hex string
     :return:
     """
+    res = True
     app_id_hash = sha256(app_id).digest()
     client_data_hash = sha256(client_data).digest()
     user_pub_key_bin = binascii.unhexlify(user_pub_key)
@@ -215,10 +260,53 @@ def check_response(user_pub_key, app_id, client_data, signature,
     # The first byte 0x04 only indicates, that the public key is in the
     # uncompressed format x: 32 byte, y: 32byte
     user_pub_key_bin = user_pub_key_bin[1:]
-    # We need to decode the DER encoded signature, so that we can use it with
-    # ecdsa. (see http://crypto.stackexchange.com/questions/1795/how-can-i
+    signature_bin_asn = der_decode(signature_bin)
+    vkey = ecdsa.VerifyingKey.from_string(user_pub_key_bin,
+                                          curve=ecdsa.NIST256p,
+                                          hashfunc=sha256)
+    try:
+        vkey.verify(signature_bin_asn, input_data)
+    except ecdsa.BadSignatureError:
+        log.error("Bad signature for app_id %s" % app_id)
+        res = False
+    return res
+
+
+def der_encode(signature_bin_asn):
+    """
+    This encodes a raw signature to DER
+    :param signature_bin_asn: RAW signature
+    :return: DER encoded signature
+    """
+    assert(len(signature_bin_asn), 64)
+    vr = signature_bin_asn[:32]
+    b2 = 32
+    if ord(vr[0]) >= 128:
+        b2 = 33
+        vr = chr(00) + vr
+    b3 = 32
+    vs = signature_bin_asn[32:]
+    if ord(vs[0]) >= 128:
+        b3 = 33
+        vs = chr(00) + vs
+    b1 = b2 + b3 + 4
+    signature_bin = chr(0x30) + chr(b1) + chr(2) + chr(b2) + vr + chr(2) + \
+                    chr(b3) + vs
+    return signature_bin
+
+
+def der_decode(signature_bin):
+    """
+    This decodes a DER encoded signatue so that it can be used with ecdsa.
+    (see http://crypto.stackexchange.com/questions/1795/how-can-i
     # -convert-a-der-ecdsa-signature-to-asn-1)
-    # DER encoded signature: 0x30 b1 0x02 b2 (vr) 0x02 b3 (vs)
+
+    The DER encoded signature looks like this:
+    0x30 b1 0x02 b2 (vr) 0x02 b3 (vs)
+
+    :param signature_bin: DER encoded signature
+    :return: raw signature
+    """
     b2 = ord(signature_bin[3])
     vr = signature_bin[4:4+b2]
     if b2 == 33:
@@ -232,8 +320,4 @@ def check_response(user_pub_key, app_id, client_data, signature,
         vs = vs[1:]
     signature_bin_asn = vr + vs
     assert(len(signature_bin_asn) == 64)
-    vkey = ecdsa.VerifyingKey.from_string(user_pub_key_bin,
-                                          curve=ecdsa.NIST256p,
-                                          hashfunc=sha256)
-    vkey.verify(signature_bin_asn, input_data)
-    return True
+    return signature_bin_asn

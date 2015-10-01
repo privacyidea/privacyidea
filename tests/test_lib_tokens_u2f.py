@@ -160,7 +160,7 @@ class U2FTokenTestCase(MyTestCase):
         # create challenge
         res, message, t_id, response = token.create_challenge()
         self.assertTrue(res)
-        self.assertEqual(message, "Please confirm with your U2F token")
+        self.assertTrue("Please confirm with your U2F token" in message)
         self.assertEqual(len(t_id), 20)
         u2f_sign_request = response.get("u2fSignRequest")
         version = u2f_sign_request.get("version")

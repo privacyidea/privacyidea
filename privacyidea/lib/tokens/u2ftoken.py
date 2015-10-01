@@ -19,12 +19,137 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 __doc__ = """
-U2F Token
+U2F is the "Universal 2nd Factor" specified by the FIDO Alliance.
+The register and authentication process is described here:
+
+https://fidoalliance.org/specs/fido-u2f-v1.0-nfc-bt-amendment-20150514/fido-u2f-raw-message-formats.html
+
+But you do not need to be aware of this. privacyIDEA wraps all FIDO specific
+communication, which should make it easier for you, to integrate the U2F
+tokens managed by privacyIDEA into your application.
+
+U2F Tokens can be either
+
+ * registered by administrators for users or
+ * registered by the users themselves.
+
+Enrollment
+----------
+The enrollment/registering can be completely performed within privacyIDEA.
+
+But if you want to enroll the U2F token via the REST API you need to do it in
+two steps:
+
+1. Step
+~~~~~~~
+
+.. sourcecode:: http
+
+   POST /token/init HTTP/1.1
+   Host: example.com
+   Accept: application/json
+
+   type=utf
+
+This step returns a serial number.
+
+2. Step
+~~~~~~~
+
+.. sourcecode:: http
+
+   POST /token/init HTTP/1.1
+   Host: example.com
+   Accept: application/json
+
+   type=utf
+   serial=U2F1234578
+   clientdata=<clientdata>
+   regdata=<regdata>
+
+*clientdata* and *regdata* are the values returned by the U2F device.
+
+You need to call the javascript function
+
+    u2f.register([registerRequest], [], function(u2fData) {} );
+
+and the responseHandler needs to send the *clientdata* and *regdata* back to
+privacyIDEA (2. step).
+
+Authentication
+--------------
+
+The U2F token is a challenge response token. I.e. you need to trigger a
+challenge e.g. by sending the OTP PIN/Password for this token.
+
+Get the challenge
+~~~~~~~~~~~~~~~~~
+
+.. sourcecode:: http
+
+   POST /validate/check HTTP/1.1
+   Host: example.com
+   Accept: application/json
+
+   user=cornelius
+   pass=tokenpin
+
+**Response**
+
+.. sourcecode:: http
+
+   HTTP/1.1 200 OK
+   Content-Type: application/json
+
+   {
+      "detail": {
+        "attributes": {
+                        "hideResponseInput": true,
+                        "img": ...imageUrl...
+                        "u2fSignRequest": {
+                            "challenge": "...",
+                            "appId": "...",
+                            "keyHandle": "...",
+                            "version": "U2F_V2"
+                        }
+                      },
+        "message": "Please confirm with your U2F token (Yubico U2F EE ...)"
+        "transaction_id": "02235076952647019161"
+      },
+      "id": 1,
+      "jsonrpc": "2.0",
+      "result": {
+          "status": true,
+          "value": false,
+      },
+      "version": "privacyIDEA unknown"
+    }
+
+Send the Response
+~~~~~~~~~~~~~~~~~
+
+The application now needs to call the javascript function *u2f.sign* with the
+*u2fSignRequest* from the response.
+
+   var signRequests = [ error.detail.attributes.u2fSignRequest ];
+   u2f.sign(signRequests, function(u2fResult) {} );
+
+The response handler function needs to call the */validate/check* API again with
+the signatureData and clientData returned by the U2F device in the *u2fResult*:
+
+.. sourcecode:: http
+
+   POST /validate/check HTTP/1.1
+   Host: example.com
+   Accept: application/json
+
+   user=cornelius
+   pass=
+   transaction_id=<transaction_id>
+   signaturedata=signatureData
+   clientdata=clientData
+
 """
-
-IMAGES = {"yubico": "/static/css/FIDO-U2F-Security-Key-444x444.png",
-          "plug-up": "/static/css/plugup.jpg"}
-
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import TokenClass
@@ -53,7 +178,8 @@ import json
 from OpenSSL import crypto
 import time
 
-
+IMAGES = {"yubico": "/static/css/FIDO-U2F-Security-Key-444x444.png",
+          "plug-up": "/static/css/plugup.jpg"}
 U2F_Version = "U2F_V2"
 APP_ID = "http://localhost:5000"
 
@@ -66,35 +192,6 @@ _ = gettext.gettext
 class U2fTokenClass(TokenClass):
     """
     The U2F Token implementation.
-
-    The U2F Token is enrolled in two steps.
-
-    **1. Step**
-
-       .. sourcecode:: http
-
-       POST /token/init HTTP/1.1
-       Host: example.com
-       Accept: application/json
-
-       type=utf
-
-    This step returns a serial number.
-
-    **2. Step**
-
-       .. sourcecode:: http
-
-       POST /token/init HTTP/1.1
-       Host: example.com
-       Accept: application/json
-
-       type=utf
-       serial=U2F1234578
-       clientdata=<clientdata>
-       regdata=<regdata>
-
-    *clientdata* and *regdata* are the values returned by the U2F device.
     """
 
     @classmethod
@@ -342,5 +439,8 @@ class U2fTokenClass(TokenClass):
             else:
                 log.warning("The signature of %s was valid, but contained an "
                             "old counter." % self.token.serial)
+        else:
+            log.warning("Checking response for token %s failed." %
+                        self.token.serial)
 
         return ret
