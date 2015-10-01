@@ -154,18 +154,9 @@ from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
-from privacyidea.lib.utils import generate_otpkey
-from privacyidea.lib.utils import create_img
 import logging
-from privacyidea.lib.token import get_tokens
-from privacyidea.lib.error import ParameterError
 from privacyidea.models import Challenge
-from privacyidea.lib.user import get_user_from_param
-from privacyidea.lib.tokens.ocra import OCRASuite, OCRA
-from privacyidea.lib.challenge import get_challenges
-from privacyidea.models import cleanup_challenges
 import gettext
-from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
@@ -175,13 +166,10 @@ from privacyidea.lib.error import ValidateError
 import base64
 import binascii
 import json
-from OpenSSL import crypto
-import time
 
 IMAGES = {"yubico": "/static/css/FIDO-U2F-Security-Key-444x444.png",
           "plug-up": "/static/css/plugup.jpg"}
 U2F_Version = "U2F_V2"
-APP_ID = "http://localhost:5000"
 
 log = logging.getLogger(__name__)
 optional = True
@@ -291,7 +279,11 @@ class U2fTokenClass(TokenClass):
         response_detail = {}
         if self.init_step == 1:
             # This is the first step of the init request
-            app_id = APP_ID
+            app_id = get_from_config("u2f.appId")
+            from privacyidea.lib.error import TokenAdminError
+            if not app_id:
+                raise TokenAdminError(_("You need to define the appId in the "
+                                        "token config!"))
             nonce = base64.urlsafe_b64encode(geturandom(32))
             response_detail = TokenClass.get_init_detail(self, params, user)
             register_request = {"version": U2F_Version,
@@ -377,7 +369,7 @@ class U2fTokenClass(TokenClass):
         key_handle_bin = binascii.unhexlify(key_handle_hex)
         key_handle_url = url_encode(key_handle_bin)
         challenge_url = url_encode(challenge)
-        u2f_sign_request = {"appId": APP_ID,
+        u2f_sign_request = {"appId": self.get_tokeninfo("appId"),
                             "version": U2F_Version,
                             "challenge": challenge_url,
                             "keyHandle": key_handle_url}
@@ -427,7 +419,7 @@ class U2fTokenClass(TokenClass):
             signaturedata_hex)
 
         user_pub_key = self.get_tokeninfo("pubKey")
-        app_id = self.get_tokeninfo("appId", "")
+        app_id = self.get_tokeninfo("appId")
         if check_response(user_pub_key, app_id, clientdata,
                           binascii.hexlify(signature), counter,
                           user_presence):

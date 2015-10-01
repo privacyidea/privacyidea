@@ -167,7 +167,7 @@ msgstr "Audit"
 msgid "Authentication Server URI"
 msgstr "URI des Authentisierungsservers"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:138
+#: privacyidea/static/components/login/controllers/loginControllers.js:156
 msgid "Authentication failed."
 msgstr "Authentisierung fehlgeschlagen."
 
@@ -260,7 +260,7 @@ msgstr "Verzeichnis für Zertifikatsanfragen"
 msgid "Certificate Signing Request (PEM)"
 msgstr "Zertifikatsanforderung (PEM)"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:147
+#: privacyidea/static/components/token/controllers/tokenControllers.js:148
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr "Zertifikate: x509 Zertifikate ausrollen."
 
@@ -507,7 +507,7 @@ msgstr "Treiber"
 msgid "EMail Token settings"
 msgstr "Email Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:143
+#: privacyidea/static/components/token/controllers/tokenControllers.js:144
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr ""
 "EMail: Ein Einmal-Passwort per Email an die Email-Adresse des Benutzers "
@@ -651,9 +651,13 @@ msgid "Enter your username and password and click Log In to authenticate."
 msgstr ""
 "Bitte geben Sie Ihren Benutzernamen und Ihr Passwort ein, um sich anzumelden."
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:279
+#: privacyidea/static/components/token/controllers/tokenControllers.js:283
 msgid "Error enrolling U2F token. ErrorCode :"
 msgstr "Fehler beim Ausrollen des U2F Tokens. FehlerCode:"
+
+#: privacyidea/static/components/login/controllers/loginControllers.js:196
+msgid "Error in U2F response."
+msgstr "Fehler in der U2F Antwort."
 
 #: privacyidea/static/components/token/views/token.details.html:61
 msgid "Fail counter"
@@ -690,7 +694,7 @@ msgstr "Für HOTP und TOTP Token:"
 msgid "For OCRA tokens:"
 msgstr "Für OCRA Token:"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:149
+#: privacyidea/static/components/token/controllers/tokenControllers.js:150
 msgid "Four Eyes: Two or more users are required to log in."
 msgstr "Vier-Augen: Zwei oder mehr Benutzer werden für den Login benötigt."
 
@@ -733,7 +737,7 @@ msgstr "Vorname"
 msgid "HOTP Token settings"
 msgstr "HOTP Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:130
+#: privacyidea/static/components/token/controllers/tokenControllers.js:131
 msgid "HOTP: event based One Time Passwords"
 msgstr "HOTP: Ereignisbasiertes Einmal-Passwort"
 
@@ -1263,7 +1267,7 @@ msgstr "RADIUS Benutzer"
 msgid "RADIUS dictionary file"
 msgstr "RADIUS dictionary Datei"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:141
+#: privacyidea/static/components/token/controllers/tokenControllers.js:142
 msgid "RADIUS: Forward authentication request to a RADIUS server"
 msgstr ""
 "RADIUS: Die Authentisierungsanfrage wird an einen RADIUS Server "
@@ -1275,7 +1279,7 @@ msgstr ""
 msgid "Realm"
 msgstr "Realm "
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:224
+#: privacyidea/static/components/login/controllers/loginControllers.js:260
 msgid "Realm defrealm created."
 msgstr "Der Realm defrealm wurde erzeugt."
 
@@ -1316,7 +1320,7 @@ msgstr "Remote-Server"
 msgid "Remote Token settings"
 msgstr "Remote Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:137
+#: privacyidea/static/components/token/controllers/tokenControllers.js:138
 msgid "Remote Token: Forward authentication request to another server"
 msgstr ""
 "Remote: Die Authentisierungsanfrage wird an einen anderen privacyIDEA Server "
@@ -1392,16 +1396,16 @@ msgstr "SMS Provider"
 msgid "SMS Token settings"
 msgstr "SMS Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:145
+#: privacyidea/static/components/token/controllers/tokenControllers.js:146
 msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr ""
 "SMS: Einmal-Passwort wird per SMS an das Mobiltelefon des Benutzers gesendet."
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:132
+#: privacyidea/static/components/token/controllers/tokenControllers.js:133
 msgid "SPass: Simple Pass token. Static passwords"
 msgstr "SPass: Simple Pass Token. Statisches Passwort."
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:134
+#: privacyidea/static/components/token/controllers/tokenControllers.js:135
 msgid "SSH Public Key: The public SSH key"
 msgstr "SSH Public Key: Der öffentliche SSH Schlüssel"
 
@@ -1571,7 +1575,7 @@ msgstr "Systemkonfiguration gespeichert."
 msgid "TOTP Token settings"
 msgstr "TOTP Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:131
+#: privacyidea/static/components/token/controllers/tokenControllers.js:132
 msgid "TOTP: time based One Time Passwords"
 msgstr "TOTP: Zeitbasiertes Einmal-Passwort."
 
@@ -1821,6 +1825,15 @@ msgstr ""
 "Der TiQR Token ist eine Smartphone App, die eine leichte Authentisierung "
 "durch das Scannen eines QR-Codes ermöglicht."
 
+#: privacyidea/static/components/config/views/config.token.u2f.html:2
+msgid ""
+"The U2F token is a hardware token, that communicates with the browser.\n"
+"    You need to set the correct appId, which in fact is the URL of your\n"
+"    privacyIDEA installation."
+msgstr ""
+"Der U2F Token ist ein Hardware Token, der mit dem Browser kommuniziert. Sie "
+"müssen die korrekte AppID in der Token-Konfiguration setzen."
+
 #: privacyidea/static/components/token/views/token.enroll.u2f.html:1
 msgid ""
 "The U2F token is a token defined by the Fido Alliance.\n"
@@ -1829,6 +1842,10 @@ msgid ""
 msgstr ""
 "Der U2F Token ist von der Fido Alliance definiert. Sie können diesen Token "
 "bei mehreren, verschiedenen Webdiensten registrieren."
+
+#: privacyidea/static/components/config/views/config.token.u2f.html:10
+msgid "The URL of your privacyIDEA installation."
+msgstr "Die URL dieser privacyIDEA Installation."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:55
 msgid "The URL that contains the logo of the service."
@@ -2045,7 +2062,7 @@ msgstr ""
 "Die Zeit in Sekunden, für die der versendete OTP-Wert zur Authentisierung "
 "gültig ist."
 
-#: privacyidea/static/components/token/views/token.enrolled.u2f.html:18
+#: privacyidea/static/components/token/views/token.enrolled.u2f.html:25
 msgid "The token is enrolled."
 msgstr "Der Token wurde ausgerollt."
 
@@ -2249,7 +2266,7 @@ msgstr "TiQR Service Anzeigename"
 msgid "TiQR Token settings"
 msgstr "TiQR Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:151
+#: privacyidea/static/components/token/controllers/tokenControllers.js:152
 msgid "TiQR: Authenticate with Smartphone by scanning a QR code."
 msgstr "TiQR: Authentisierung mit Smartphone durch Scannen eines QR-Codes."
 
@@ -2337,7 +2354,12 @@ msgstr "Geben Sie ein Passwort ein"
 msgid "Typo3"
 msgstr "TYPO3"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:153
+#: privacyidea/static/components/config/views/config.token.u2f.html:1
+#, fuzzy
+msgid "U2F Token settings"
+msgstr "SMS Token Einstellungen"
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:154
 msgid "U2F: Universal 2nd Factor hardware token."
 msgstr "U2F: Universal 2nd Factor. Hardware Token."
 
@@ -2503,7 +2525,7 @@ msgstr ""
 msgid "You may pass this registration code to the user."
 msgstr "Sie können diesen Registrierungscode an den Benutzer übergeben."
 
-#: privacyidea/static/components/token/views/token.enrolled.u2f.html:12
+#: privacyidea/static/components/token/views/token.enrolled.u2f.html:19
 msgid ""
 "You need to confirm the registration with your token\n"
 "                    either by pushing the blinking button or by\n"
@@ -2522,11 +2544,11 @@ msgstr "Sie werden nach {{ myCountdown }} Sekunden abgemeldet."
 msgid "Yubico Token settings"
 msgstr "Yubico Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:135
+#: privacyidea/static/components/token/controllers/tokenControllers.js:136
 msgid "Yubikey AES mode: One Time Passwords with Yubikey"
 msgstr "Yubikey AES Mode: Einmalpasswort mit dem Yubikey."
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:139
+#: privacyidea/static/components/token/controllers/tokenControllers.js:140
 msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud"
 msgstr ""
 "Yubikey Cloud Mode: Die Authentifisierungsanfrage wird an den YubiCloud "
@@ -2557,6 +2579,10 @@ msgstr "Administrator"
 #: privacyidea/static/components/token/views/token.getserial.html:44
 msgid "an optional serial substring"
 msgstr "Optionaler Teil der Seriennummer"
+
+#: privacyidea/static/components/config/views/config.token.u2f.html:9
+msgid "appId"
+msgstr "AppID"
 
 #: privacyidea/static/components/audit/views/audit.log.html:59
 msgid "clearance"
@@ -2593,6 +2619,10 @@ msgstr "Die öffentliche UID mit ausgeben"
 msgid "enter some OTP value"
 msgstr "Geben Sie einen OTP-Wert ein..."
 
+#: privacyidea/static/components/login/controllers/loginControllers.js:144
+msgid "errorCode:"
+msgstr "Fehlernummer:"
+
 #: privacyidea/static/components/token/views/token.list.html:48
 #: privacyidea/static/components/user/views/user.details.html:122
 msgid "failcounter"
@@ -2626,7 +2656,7 @@ msgstr "Logstufe"
 msgid "mOTP PIN"
 msgstr "mOTP PIN"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:133
+#: privacyidea/static/components/token/controllers/tokenControllers.js:134
 msgid "mOTP: classical mobile One Time Passwords"
 msgstr "mOTP: Klassischer Mobiles Einmal-Passwort."
 
@@ -2662,7 +2692,7 @@ msgstr "Telefon"
 msgid "privacyIDEA Single Page Web Client"
 msgstr "privacyIDEA Single Page Web Client"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:180
+#: privacyidea/static/components/login/controllers/loginControllers.js:216
 msgid "privacyIDEA UI supports hotkeys. Use '?' to get help."
 msgstr "Das privacyIDEA UI unterstützt Hotkeys. Benutzen Sie '?' für Hilfe."
 

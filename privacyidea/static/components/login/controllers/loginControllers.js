@@ -141,6 +141,7 @@ angular.module("privacyideaApp")
                     var signRequests = [ error.detail.attributes.u2fSignRequest ];
                     u2f.sign(signRequests, function(result) {
                         if (result.errorCode > 0) {
+                            // TODO: translate error codes
                             inform.add(gettext("errorCode: ") + result.errorCode +
                                 ". " + result.errorMessage,
                                 {type: "danger", ttl: 10000});
