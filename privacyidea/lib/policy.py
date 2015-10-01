@@ -418,9 +418,11 @@ class PolicyClass(object):
         if len(pols) == 0:
             # We do not have any policies in this scope, so we return all
             # possible actions in this scope.
+            log.debug("No policies defined, so we set all rights.")
             rights = get_static_policy_definitions(scope).keys()
         # reduce the list
         rights = list(set(rights))
+        log.debug("returning the admin rights: %s" % rights)
         return rights
 
     def ui_get_enroll_tokentypes(self, client, logged_in_user):
