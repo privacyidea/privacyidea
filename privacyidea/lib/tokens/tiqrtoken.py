@@ -422,7 +422,8 @@ class TiqrTokenClass(TokenClass):
                                               challenge)
         attributes = {"img": create_img(authurl, width=250),
                       "value": authurl,
-                      "poll": True}
+                      "poll": True,
+                      "hideResponseInput": True}
 
         return True, message, db_challenge.transaction_id, attributes
 

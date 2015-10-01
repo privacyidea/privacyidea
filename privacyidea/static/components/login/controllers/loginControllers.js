@@ -25,6 +25,7 @@ angular.module("privacyideaApp")
                                       authUrl, AuthFactory, $rootScope,
                                       $state, ConfigFactory, inform,
                                       PolicyTemplateFactory, gettext, hotkeys,
+                                      U2fFactory,
                                       PollingAuthFactory) {
 
     hotkeys.add({
@@ -115,34 +116,40 @@ angular.module("privacyideaApp")
         }).success(function (data) {
             $scope.do_login_stuff(data);
         }).error(function (error) {
-            console.log("Error authenticating");
+            console.log("challenge response");
             console.log(error);
             $scope.transactionid = "";
             $scope.login.password = "";
-            if (!error.detail) {
-                // This could be problems like 'HSM not ready'
-                inform.add(error.result.error.message,
-                    {type: "danger", ttl:10000});
-            } else
-                if (error.detail['transaction_id']) {
-                    // In case of error.detail.transaction_id is present, we
-                    // have a challenge response and we need to go to the state response
-                    $state.go("response");
-                    inform.add(gettext("Challange Response Authentication. You" +
-                        " are not completely authenticated, yet."),
-                        {type: "warning", ttl:10000});
-                    $scope.challenge_message = error.detail.message;
-                    $scope.transactionid = error.detail["transaction_id"];
-                    $scope.image = error.detail.attributes.img;
-                    $scope.polling = error.detail.attributes.poll;
-                    console.log($scope.polling);
-                    $scope.login.password = "";
-                    // Now we need to start the poller
+            // In case of error.detail.transaction_id is present, we
+            // have a challenge response and we need to go to the state response
+            if (error.detail && error.detail.transaction_id) {
+                $state.go("response");
+                inform.add(gettext("Challenge Response Authentication. You" +
+                    " are not completely authenticated, yet."),
+                    {type: "warning", ttl:5000});
+                $scope.challenge_message = error.detail.message;
+                $scope.transactionid = error.detail["transaction_id"];
+                $scope.image = error.detail.attributes.img;
+                $scope.hideResponseInput = error.detail.attributes.hideResponseInput;
+                $scope.polling = error.detail.attributes.poll;
+                console.log($scope.polling);
+                $scope.login.password = "";
+                // In case of TiQR we need to start the poller
+                if ($scope.polling)
                     PollingAuthFactory.start($scope.check_authentication);
-                } else {
-                    inform.add(gettext("Authentication failed. ") + error.result.error.message,
-                    {type: "danger", ttl: 10000});
+                // In case of u2f we do:
+                if (error.detail.attributes['u2fSignRequest']) {
+                    U2fFactory.sign_request(error, $scope.login.username,
+                        $scope.transactionid, $scope.do_login_stuff);
                 }
+            } else {
+                // TODO: Do we want to display the error message?
+                // This can show an attacker, if a username exists.
+				// But this can also be due to a problem like
+				// "HSM not ready".
+                inform.add(gettext("Authentication failed. ") + error.result.error.message,
+                {type: "danger", ttl: 10000});
+            }
         }).then(function () {
             // We delete the login object, so that the password is not
             // contained in the scope
@@ -183,6 +190,8 @@ angular.module("privacyideaApp")
             console.log("successfully authenticated");
             console.log($scope.loggedInUser);
             $location.path("/token");
+            // clear old error messages
+            inform.clear();
             inform.add(gettext("privacyIDEA UI supports hotkeys. Use '?' to" +
                     " get help."), {type: "info", ttl: 10000});
             $scope.transactionid = "";

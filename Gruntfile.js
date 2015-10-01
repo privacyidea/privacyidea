@@ -7,6 +7,7 @@ grunt.initConfig({
         'po/template.pot': ['privacyidea/static/components/*/views/*.html',
                             'privacyidea/static/templates/*.html',
                             'privacyidea/static/components/*/controllers/*.js',
+                            'privacyidea/static/components/*/factories/*.js',
                             'privacyidea/static/*.js']
       }
     },

@@ -87,7 +87,7 @@ myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
     ]
 );
 myApp.config(['$httpProvider', function ($httpProvider, inform, gettext) {
-    $httpProvider.interceptors.push(function ($q, inform) {
+    $httpProvider.interceptors.push(function ($q, inform, gettext) {
         return {
             responseError: function (rejection) {
                 if(rejection.status === 0) {

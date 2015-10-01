@@ -166,12 +166,10 @@ def check():
     password = getParam(request.all_data, "pass", required)
     options = {"g": g,
                "clientip": request.remote_addr}
-    transaction_id = getParam(request.all_data, "transaction_id")
-    state = getParam(request.all_data, "state")
-    if transaction_id:
-        options["transaction_id"] = transaction_id
-    if state:
-        options["state"] = state
+    # Add all params to the options
+    for key, value in request.all_data.items():
+            if value and key not in ["g", "clientip"]:
+                options[key] = value
 
     g.audit_object.log({"user": user.login,
                         "realm": user.realm})

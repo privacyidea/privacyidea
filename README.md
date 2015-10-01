@@ -27,23 +27,16 @@ privacyIDEA is not only open as far as its modular architecture is
 concerned. But privacyIDEA is completely licensed under the AGPLv3.
 
 It supports a wide variety of authentication devices like OTP tokens 
-(HMAC, HOTP, TOTP, OCRA, mOTP), Yubikey (HOTP, TOTP, AES), Smartphone
+(HMAC, HOTP, TOTP, OCRA, mOTP), Yubikey (HOTP, TOTP, AES), FIDO U2F devices 
+like Yubikey and Plug-Up, Smartphone
 Apps like Google Authenticator, FreeOTP, Token2  or TiQR,
 SMS, Email, SSH keys, x509 certificates 
 and Registration Codes for easy deployment.
 
-Since version 2 privacyIDEA is based on flask and sqlalchemy as the python backend. The
+privacyIDEA is based on flask and sqlalchemy as the python backend. The
 web UI is based on angularJS and bootstrap.
 A MachineToken design lets you assign tokens to machnies. Thus you can use
 your Yubikey to unlock LUKS, assign SSH keys to SSH servers or use Offline OTP with PAM.
-
-With version 2 the code was cleaned up and it was emphasized to keep a good
-code coverage. The design separates the database layer from the library layer
-and from the REST API layer. Thus allowing easy unit testing in each layer.
-
-You are also welcome to take a look at the hopefully tidy code and contribute.
-
-I try to keep up a good test coverage. So run tests!
 
 Setup
 =====

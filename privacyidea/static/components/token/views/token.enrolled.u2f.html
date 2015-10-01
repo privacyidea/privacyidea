@@ -1,0 +1,31 @@
+<div class="row">
+    <div class="col-sm-12">
+        <h4 translate ng-show="click_wait">Take action on your token</h4>
+        <h4 translate ng-hide="click_wait">Token enrolled</h4>
+
+        <div class="row">
+            <div class="col-sm-4">
+                <img ng-show="U2FToken.vendor=='Plug-up'"
+                     src="{{ instanceUrl }}/static/css/plugup.jpg"
+                     width="80">
+                <img ng-show="U2FToken.vendor=='Yubico'"
+                     src="{{ instanceUrl }}/static/css/FIDO-U2F-Security-Key-444x444.png"
+                     width="80">
+                <p>
+                {{ U2FToken.subject }}
+                </p>
+            </div>
+            <div class="col-sm-6">
+                <div translate ng-show="click_wait">
+                    You need to confirm the registration with your token
+                    either by pushing the blinking button or by
+                    replugging your token. This depends on the actual
+                    token model.
+                </div>
+                <div translate ng-hide="click_wait">
+                    The token is enrolled.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
