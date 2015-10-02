@@ -3,7 +3,11 @@
 
 Debian Packages
 ---------------
-You can install privacyIDEA on debian Wheezy either via the
+
+Wheezy
+~~~~~~
+
+You can install privacyIDEA on Debian Wheezy either via the
 :ref:`pip_install` or with a ready made Wheezy package.
 
 The available Wheezy package privacyidea-venv_2.1~dev0_amd64.deb contains a
@@ -19,10 +23,32 @@ You can enter the virtual environment by::
 
    source /opt/privacyidea/privacyidea-venv/bin/activate
 
+Jessie
+~~~~~~
+
+At the moment you can use the Ubuntu Trusty packages with Debian Jessie.
+
+Thus you can create a file ``/etc/apt/sources.list.d/privacyidea.list`` with
+the content::
+
+   deb http://ppa.launchpad.net/privacyidea/privacyidea/ubuntu trusty main
+
+Add the GPG key to the keyring::
+
+   gpg --keyserver keyserver.ubuntu.com --recv-keys C24DCF7D
+   gpg --armor --export C24DCF7D | apt-key add -
+
+Now run::
+
+   apt-get update
+   apt-get install privacyidea-apache2
+
+
 Running privacyIDEA with Apache2 and MySQL
 ..........................................
 
-You need to create and fill the config directory ``/etc/privacyidea`` manually::
+If you installed via pip or the Wheezy package
+you need to create and fill the config directory ``/etc/privacyidea`` manually::
 
    cp /opt/privacyidea/privacyidea-venv/etc/privacyidea/dictionary \
    /etc/privacyidea/

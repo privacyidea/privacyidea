@@ -26,7 +26,7 @@ server via the API. The PAM module also supports offline authentication. In
 this case you need to configure an offline machine application. (See
 :ref:`application_offline`)
 
-You can install the PAM module with a ready made debian package for Ubuntu or
+You can install the PAM module with a ready made Debian package for Ubuntu or
 just use the source code file. It is a python module, that requires pam-python.
 
 The configuration could look like this::

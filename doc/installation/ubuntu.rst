@@ -6,7 +6,7 @@ Ubuntu Packages
 
 .. index:: ubuntu
 
-There are ready made debian packages for Ubuntu 14.04 LTS.
+There are ready made packages for Ubuntu 14.04 LTS.
 These are available in a public ppa repository [#ppa]_,
 so that the installation
 will automatically resolve all dependencies.
