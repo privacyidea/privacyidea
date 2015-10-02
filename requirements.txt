@@ -13,7 +13,6 @@ cryptography==0.8.2
 docutils==0.12
 enum34==1.0.4
 Flask==0.10.1
-Flask-Cache==0.13.1
 Flask-Migrate==1.2.0
 Flask-Script==2.0.5
 Flask-SQLAlchemy==2.0
@@ -33,7 +32,6 @@ numpy==1.9.2
 pandas==0.16.2
 passlib==1.6.2
 Pillow==2.6.1
-psycopg2==2.6
 py==1.4.30
 pyasn1==0.1.7
 pycparser==2.10
