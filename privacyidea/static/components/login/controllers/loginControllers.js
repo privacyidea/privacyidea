@@ -28,6 +28,7 @@ angular.module("privacyideaApp")
                                       U2fFactory,
                                       PollingAuthFactory) {
 
+    $scope.checkRight = AuthFactory.checkRight;
     hotkeys.add({
         combo: 'alt+e',
         description: gettext('Enroll a new token'),

@@ -356,7 +356,8 @@
             </tr>
         </table>
     </div>
-    <div ng-show="loggedInUser.role== 'user' && !token.locked">
+    <div ng-show="loggedInUser.role== 'user' && !token.locked
+        && checkRight('unassign')">
         <button ng-click="unassign()"
                 class="btn btn-warning">
             <div class="glyphicon glyphicon-resize-full"
@@ -366,6 +367,8 @@
     </div>
 </div>
 
+
+<div ng-show="checkRight('assign')">
 <h4 ng-hide="token.user_id || token.locked" translate>
     Assign User</h4>
 <form ng-hide="token.user_id || token.locked"
@@ -383,6 +386,7 @@
         </button>
     </div>
 </form>
+</div>
 
 <!-- ============ Machines ======================= -->
 <div ng-show="loggedInUser.role == 'admin'">
@@ -481,6 +485,7 @@
         </table>
     </div>
 
+    <div ng-show="checkRight('manage_machine_tokens')">
     <h4 translate ng-hide="token.locked">Attach to a new Machine</h4>
 
     <form name="formAttachMachine" role="form"
@@ -523,4 +528,5 @@
             </button>
         </div>
     </form>
+    </div>
 </div>

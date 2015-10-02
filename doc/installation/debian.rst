@@ -45,7 +45,7 @@ Now run::
 
 
 Running privacyIDEA with Apache2 and MySQL
-..........................................
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you installed via pip or the Wheezy package
 you need to create and fill the config directory ``/etc/privacyidea`` manually::

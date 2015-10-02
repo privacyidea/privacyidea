@@ -42,6 +42,7 @@
             </td>
             <td>
                 <button class="btn btn-danger"
+                        ng-show="checkRight('policydelete')"
                         ng-click="delPolicy(policy.name)">
                         <div class="glyphicon glyphicon-trash" translate>
                         Delete

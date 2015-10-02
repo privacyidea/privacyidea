@@ -10,10 +10,12 @@
         userid: "115"
         username: "pulse"
     -->
-    <h2><translate>Details for user {{ username }} in realm</translate>
+    <h2>
+        <translate>Details for user {{ username }} in realm</translate>
         <a ui-sref="config.realms.list">{{ realmname }}</a></h2>
-        <a class="btn btn-default" ui-sref="audit.log({user: username})">
-        <translate>View user in Audit log</translate></a>
+    <a class="btn btn-default" ui-sref="audit.log({user: username})">
+        <translate>View user in Audit log</translate>
+    </a>
     </h2>
 
     <div class="panel-body">
@@ -21,17 +23,20 @@
             <div class="form-group">
                 <label for="username" translate>Username</label>
 
-                <div name="username" >{{ User.username }}</div>
+                <div name="username">{{ User.username }}</div>
             </div>
             <div class="form-group">
                 <label for="givenname" translate>Given name</label>
-                <div name="givenname" ng-hide="editUser">{{ User.givenname }}</div>
+
+                <div name="givenname"
+                     ng-hide="editUser">{{ User.givenname }}</div>
                 <input name="givenname" class="form-control"
                        ng-model="User.givenname"
                        ng-show="editUser">
             </div>
             <div class="form-group">
                 <label for="surname" translate>Surname</label>
+
                 <div name="surname" ng-hide="editUser">{{ User.surname }}</div>
                 <input name="surname" class="form-control"
                        ng-model="User.surname"
@@ -39,8 +44,9 @@
             </div>
             <div class="form-group">
                 <label for="description" translate>Description</label>
-                <div name="description" ng-hide="editUser">{{ User.description
-                        }}</div>
+
+                <div name="description"
+                     ng-hide="editUser">{{ User.description }}</div>
                 <input name="description" class="form-control"
                        ng-model="User.description"
                        ng-show="editUser">
@@ -52,13 +58,14 @@
 
                 <div name="email" ng-hide="editUser">
                     <a href="mailto:{{ User.email }}">
-                    {{ User.email }}</a></div>
+                        {{ User.email }}</a></div>
                 <input name="email" class="form-control"
                        ng-model="User.email"
                        ng-show="editUser">
             </div>
             <div class="form-group">
                 <label for="phone" translate>Phone</label>
+
                 <div name="phone" ng-hide="editUser">{{ User.phone }}</div>
                 <input name="phone" class="form-control"
                        ng-model="User.phone"
@@ -66,6 +73,7 @@
             </div>
             <div class="form-group">
                 <label for="mobile" translate>Mobile</label>
+
                 <div name="mobile" ng-hide="editUser">{{ User.mobile }}</div>
                 <input name="mobile" class="form-control"
                        ng-model="User.mobile"
@@ -81,7 +89,7 @@
 
     <div class="text-center" ng-show="editable">
         <button ng-click="editUser=true" class="btn btn-primary"
-                ng-show="!editUser">
+                ng-show="!editUser && checkRight('updateuser')">
             <div class="glyphicon glyphicon-edit" translate>Edit user
             </div>
         </button>
@@ -96,7 +104,7 @@
         </button>
         <button ng-click="deleteUserAsk()"
                 class="btn btn-danger"
-                ng-show="!editUser">
+                ng-show="!editUser && checkRight('deleteuser')">
             <div class="glyphicon glyphicon-trash" translate>Delete user
             </div>
         </button>
@@ -160,18 +168,21 @@
         </button>
     </div>
 
-    <h3 translate>Assign a new token {{ newTokenObject.serial }}</h3>
+    <div ng-show="checkRight('assign')">
+        <h3 translate>Assign a new token {{ newTokenObject.serial }}</h3>
 
-    <form name="formAssignToken" role="form" validate>
-        <div assign-token new-token-object="newToken"></div>
-        <div class="text-center">
-            <button ng-click="assignToken()"
-                    ng-disabled="formAssignToken.$invalid"
-                    class="btn btn-primary" translate>Assign Token
-            </button>
-        </div>
-    </form>
+        <form name="formAssignToken" role="form" validate>
+            <div assign-token new-token-object="newToken"></div>
+            <div class="text-center">
+                <button ng-click="assignToken()"
+                        ng-disabled="formAssignToken.$invalid"
+                        class="btn btn-primary" translate>Assign Token
+                </button>
+            </div>
+        </form>
+    </div>
 
-    <ng-include src="instanceUrl + '/static/components/user/views/dialog.ask_user_delete.html'">
+    <ng-include
+            src="instanceUrl + '/static/components/user/views/dialog.ask_user_delete.html'">
     </ng-include>
 </div>

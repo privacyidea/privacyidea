@@ -1,16 +1,18 @@
 <h2 class="form-signin-heading"
-        ng-show="existingPolicyname">
+    ng-show="existingPolicyname">
     <translate>Edit Policy {{ existingPolicyname }}</translate>
-<button class="btn btn-danger"
-        ng-click="disablePolicy(existingPolicyname)"
-        ng-show="params.active" translate>
-    Disable
-</button>
-<button class="btn btn-success"
-        ng-click="enablePolicy(existingPolicyname)"
-        ng-hide="params.active" translate>
-    Enable
-</button>
+    <div ng-show="checkRight('policywrite')">
+        <button class="btn btn-danger"
+                ng-click="disablePolicy(existingPolicyname)"
+                ng-show="params.active" translate>
+            Disable
+        </button>
+        <button class="btn btn-success"
+                ng-click="enablePolicy(existingPolicyname)"
+                ng-hide="params.active" translate>
+            Enable
+        </button>
+    </div>
 </h2>
 
 <h2 class="form-signin-heading"
@@ -237,7 +239,8 @@
     </div>
 
 
-    <div class="text-center">
+    <div class="text-center"
+         ng-show="checkRight('policywrite')">
         <button ng-click="createPolicy()"
                 ng-disabled="formPolicyAdd.$invalid"
                 class="btn btn-primary">

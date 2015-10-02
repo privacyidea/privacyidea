@@ -7,6 +7,7 @@
                     <a ui-sref="config.policies.list" translate>
                         All Policies</a></li>
                 <li role="presentation"
+                    ng-show="checkRight('policywrite')"
                     ng-class="{ active: $state.includes('config.policies.details')}">
                     <a ui-sref="config.policies.details"
                        translate>Create new Policy</a></li>

@@ -24,8 +24,8 @@
                     </li>
                     <li role="presentation"
                         ng-class="{active: $state.includes('token.assign')}"
-                        ng-show="loggedInUser.role == 'user'"
-                            >
+                        ng-show="loggedInUser.role == 'user' &&
+                            checkRight('assign')">
                         <a ui-sref="token.assign">
                             <span class="glyphicon glyphicon-plus"></span>
                             <translate>Assign Token</translate>
@@ -33,8 +33,8 @@
                     </li>
                     <li role="presentation"
                         ng-class="{active: $state.includes('token.import')}"
-                        ng-show="loggedInUser.role == 'admin'"
-                            >
+                        ng-show="loggedInUser.role == 'admin' &&
+                            checkRight('importtokens')">
                         <a ui-sref="token.import">
                             <span class="glyphicon glyphicon-upload"></span>
                             <translate>Import Tokens</translate>
@@ -43,15 +43,17 @@
                     <hr>
                     <li role="presentation"
                         ng-class="{active: $state.includes('token.lost')}"
-                        ng-show="$state.includes('token.details')||
-                        $state.includes('token.lost')">
+                        ng-show="($state.includes('token.details')||
+                        $state.includes('token.lost')) &&
+                        checkRight('losttoken')">
                         <a ui-sref="token.lost({tokenSerial:selectedToken.serial})">
                             <span class="glyphicon glyphicon-eye-open"></span>
                             <translate>Lost Token</translate>
                         </a>
                     </li>
                     <li role="presentation"
-                        ng-show="loggedInUser.role == 'admin'"
+                        ng-show="loggedInUser.role == 'admin' &&
+                            checkRight('getserial')"
                         ng-class="{active: $state.includes('token.getserial')}">
                         <a ui-sref="token.getserial">
                             <span class="glyphicon glyphicon-question-sign">

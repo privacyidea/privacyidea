@@ -117,6 +117,7 @@
         </table>
     </div>
 
+    <div ng-show="checkRight('manage_machine_tokens')">
     <h3>Attach a new token {{ newToken.serial }}</h3>
 
     <form name="formAttachToken" role="form" validate>
@@ -156,5 +157,5 @@
             </button>
         </div>
     </form>
-
+    </div>
 </div>

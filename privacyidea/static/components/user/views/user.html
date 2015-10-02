@@ -34,7 +34,8 @@
                         ng-show="$state.includes('user.details')"><a>User
                     {{ $stateParams.username }}</a></li>
                     <li role="presentation"
-                        ng-class="{active:$state.includes('user.add')}">
+                        ng-class="{active:$state.includes('user.add')}"
+                            ng-show="checkRight('adduser')">
                         <a ui-sref="user.add"
                                 translate>Add user
                         </a>

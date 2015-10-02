@@ -12,6 +12,7 @@
                             <span class="glyphicon glyphicon-wrench"></span>
                             <translate>System Config</translate></a></li>
                     <li role="presentation"
+                        ng-show="checkRight('system_documentation')"
                         ng-class="{ active: $state.includes('config.sysdoc')}">
                     <a ng-click="getSystemDocumentation()"
                             ui-sref="config.sysdoc"><span

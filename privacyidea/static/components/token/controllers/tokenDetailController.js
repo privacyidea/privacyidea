@@ -8,7 +8,6 @@ myApp.controller("tokenDetailController", function ($scope,
                                                     ConfigFactory,
                                                     MachineFactory, inform,
                                                     gettext) {
-    $scope.checkRight = AuthFactory.checkRight;
     $scope.tokenSerial = $stateParams.tokenSerial;
     // This is the parents object
     $scope.selectedToken.serial = $scope.tokenSerial;
