@@ -1,0 +1,24 @@
+#config/debian/peivacyidea.ini		etc/privacyidea/
+# start script
+#config/debian/init.d/privacyidea	etc/init.d/
+#config/debian/default/privacyidea	etc/default/
+# apache config
+#config/debian/sites-available/privacyidea	etc/apache2/sites-available/
+#config/debian/privacyidea.ini	etc/privacyidea/
+
+# rotate audit
+#config/debian/cron.daily/privacyidea-rotate-audit etc/cron.daily/
+
+# man page
+doc/_build/man/privacyidea-server.1 	usr/share/man/man1
+
+# uwsgi and nginx config
+#config/nginx/sites-available/privacyidea	etc/nginx/sites-available/
+#config/uwsgi/apps-available/privacyidea.xml	etc/uwsgi/apps-available/
+
+# This is needed, when we create more than one binary package
+debian/tmp/usr/bin/* usr/bin/
+debian/tmp/usr/share/* usr/share/
+debian/tmp/usr/lib/python* usr/lib/
+debian/tmp/usr/lib/privacyidea/migrations/* usr/lib/privacyidea/migrations/
+#debian/tmp/etc/* etc/

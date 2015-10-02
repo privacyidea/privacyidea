@@ -1,0 +1,23 @@
+#!/bin/sh
+# see: dh_installdeb(1)
+
+set -e
+
+# source debconf library
+. /usr/share/debconf/confmodule
+
+# Source dbconfig-common functions
+if [ -f /usr/share/dbconfig-common/dpkg/postinst.pgsql  ]; then
+  . /usr/share/dbconfig-common/dpkg/postinst.pgsql
+fi
+
+unset_sites () {
+	rm -f /etc/apache2/sites-enabled/privacyidea.conf
+}
+
+
+unset_sites
+
+
+#DEBHELPER#
+exit 0

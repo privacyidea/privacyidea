@@ -1,0 +1,8 @@
+python-privacyidea (2.7~dev3) jessie; urgency=low
+
+  * Start 2.7
+  * Change dependency for PyMySQL
+  * Merge u2f branch
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 01 Oct 2015 17:00:00 +0200
+
