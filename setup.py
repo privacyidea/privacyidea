@@ -22,7 +22,6 @@ def get_file_contents(file_path):
     return content
 
 install_requires = ["Flask>=0.10.1",
-                    "Flask-Cache>=0.13.1",
                     "Flask-Migrate>=1.2.0",
                     "Flask-SQLAlchemy>=2.0",
                     "Flask-Script>=2.0.5",
