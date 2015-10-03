@@ -8,6 +8,7 @@ info:
 	@echo "make builddeb     - build .deb file locally on ubuntu 14.04LTS!"
 	@echo "make jessie	 - build .deb file for Debian Jessie"
 	@echo "make venvdeb      - build .deb file, that contains the whole setup in a virtualenv."
+	@echo "make linitian     - run lintian on debian package"
 	@echo "make translate    - translate WebUI"
 	@echo "                    This is to be used with debian Wheezy"
 	@echo "make ppa-dev      - upload to launchpad development repo"
@@ -116,6 +117,9 @@ venvdeb:
 	cp -r deploy/debian-virtualenv/* DEBUILD/privacyidea.org/debian/
 	sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g deploy/debian-virtualenv/changelog > DEBUILD/privacyidea.org/debian/changelog
 	(cd DEBUILD/privacyidea.org; DH_VIRTUALENV_INSTALL_ROOT=/opt/privacyidea dpkg-buildpackage -us -uc)
+
+lintian:
+	(cd DEBUILD; lintian -i -I --show-overrides python-privacyidea_2.*_amd64.changes)
 
 ppa-dev:
 	################### Check for the series
