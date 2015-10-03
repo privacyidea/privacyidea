@@ -19,5 +19,5 @@ python-privacyidea (2.7-1) jessie; urgency=low
   * Fix the writing of logfile privacyidea.log
 
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 03 Oct 2015 17:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Sat, 03 Oct 2015 17:30:00 +0200
 
