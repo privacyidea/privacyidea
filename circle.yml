@@ -29,7 +29,7 @@ deployment:
       - git push git@heroku.com:privacyidea-test.git $CIRCLE_SHA1:refs/heads/master
       - heroku pg:reset DATABASE_URL --confirm privacyidea-test
       - heroku run python ./pi-manage.py createdb --app privacyidea-test
-      - heroku run --app privacyidea-test -- python ./pi-manage.py admin add -p 'Test1234!' admin admin@localhost
+      - heroku run --app privacyidea-test -- python ./pi-manage.py admin add -p 'Test1234!' admin
       # Create default resolver
       - heroku run --app privacyidea-test -- python ./pi-manage.py resolver create resolver1 passwdresolver /app/deploy/heroku/default-resolver
       # Create default realm
