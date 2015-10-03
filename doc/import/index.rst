@@ -67,7 +67,7 @@ PSKC
 The *Portable Symmetric Key Container* is specified in [#RFC6030]_.
 OATH compliant token vendors provide the token seeds in a PSKC file.
 privacyIDEA lets you import PSKC files.
-All necessary information (OTP lenght, Hash algorithm, token type) are read
+All necessary information (OTP length, Hash algorithm, token type) are read
 from the file.
 
 

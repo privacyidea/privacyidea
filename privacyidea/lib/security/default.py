@@ -351,7 +351,7 @@ class DefaultSecurityModule(SecurityModule):
         """
         Decrypt the given data with the password.
         A key is derived from the password. The data is hexlified data, the IV
-        is the first part, seperated with a ":".
+        is the first part, separated with a ":".
 
         :param data: The hexlified data
         :param password: The password, that is used to decrypt the data
@@ -412,7 +412,7 @@ class DefaultSecurityModule(SecurityModule):
         Decrypt the given password. The CONFIG_KEY is used to decrypt it.
 
         :param crypt_pass: the encrypted password with the leading iv,
-            seperated by the ':'
+            separated by the ':'
         :param crypt_pass: byte string
 
         :return: decrypted data
@@ -425,7 +425,7 @@ class DefaultSecurityModule(SecurityModule):
         Decrypt the given encrypted PIN with the TOKEN_KEY
 
         :param crypt_pin: the encrypted pin with the leading iv,
-            seperated by the ':'
+            separated by the ':'
         :param crypt_pin: byte string
 
         :return: decrypted data
@@ -482,7 +482,7 @@ class DefaultSecurityModule(SecurityModule):
     def _decrypt_value(self, crypt_value, slot_id):
         """
         base method to decrypt a value
-        - used one slot id to encrypt a string with leading iv, seperated by ':'
+        - used one slot id to encrypt a string with leading iv, separated by ':'
 
         :param crypt_value: the the value that is to be decrypted
         :param crypt_value: byte string

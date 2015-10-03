@@ -121,8 +121,8 @@ case "$1" in
 	enable_nginx_uwsgi
 	create_files
 	create_certificate
-	update-rc.d nginx defaults
-	update-rc.d uwsgi defaults
+	#update-rc.d nginx defaults
+	#update-rc.d uwsgi defaults
 	service uwsgi restart
 	service nginx restart
 	update_db

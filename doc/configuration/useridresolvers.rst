@@ -84,7 +84,7 @@ In case of Active Directory connections you might need to check the box
 able to do anonymous referral chasing. Active Directory will produce an
 error in this case [#adreferrals]_.
 
-The ``Server URI`` can contain a comma seperated list of servers.
+The ``Server URI`` can contain a comma separated list of servers.
 The servers are used to create a server pool and are used with a round robin
 strategy [#serverpool]_.
 

@@ -69,7 +69,7 @@ The file structure follows [#fileconfig]_ and can be used to define additional
 handlers like logging errors to email addresses.
 
 .. note:: In this example a mail handler is defined, that will send emails
-   to certain email Adresses, if an ERROR occurs.
+   to certain email addresses, if an ERROR occurs.
 
 .. rubric:: Footnotes
 

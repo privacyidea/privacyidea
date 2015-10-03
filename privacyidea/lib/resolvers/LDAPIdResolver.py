@@ -424,13 +424,13 @@ class IdResolver (UserIdResolver):
     def get_serverpool(cls, urilist, timeout):
         """
         This create the serverpool for the ldap3 connection.
-        The URI from the LDAP resolver can contain a comma seperated list of
+        The URI from the LDAP resolver can contain a comma separated list of
         LDAP servers. These are split and then added to the pool.
 
         See
         https://github.com/cannatag/ldap3/blob/master/docs/manual/source/servers.rst#server-pool
 
-        :param urilist: The list of LDAP URIs, comma seperated
+        :param urilist: The list of LDAP URIs, comma separated
         :type urilist: basestring
         :param timeout: The connection timeout
         :type timeout: float

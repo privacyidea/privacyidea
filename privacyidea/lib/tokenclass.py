@@ -42,7 +42,7 @@ This is the Token Base class, which is inherited by all token types.
 It depends on lib.user and lib.config.
 
 You can add your own Tokens by adding the modules comma
-seperated to the directive
+separated to the directive
               privacyideaTokenModules
 in the privacyidea.ini file.
 """
@@ -748,7 +748,7 @@ class TokenClass(object):
     @check_token_locked
     def set_count_auth_max(self, count):
         """
-        Sets the counter for the maximum allowed login attemps
+        Sets the counter for the maximum allowed login attempts
         as key "count_auth_max" in token info
         :param count: a number
         :type count: int

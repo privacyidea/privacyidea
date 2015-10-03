@@ -44,7 +44,7 @@ wish to use. In the *empty* field hit the arrow-down key and you will get
 a list of the ready made modules.
 
 In the ``SMS configuration`` text area you can enter the configuration,
-which contents is very much dependant on the selected provider module.
+which contents is very much dependent on the selected provider module.
 
 The HTTP and the Sipgate module provide a preset-button, which give you
 an idea of the configuration.

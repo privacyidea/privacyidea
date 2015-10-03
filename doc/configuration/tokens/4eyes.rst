@@ -32,7 +32,7 @@ Authentication as::
    username: "root@r2"
    password: "pin123456 secret789434 key098123"
 
-The three blocks seperated by the *blank* are checked, if they match tokens
+The three blocks separated by the *blank* are checked, if they match tokens
 in the realms *realm2* and *sqlite*.
 
 The response looks like this in case of success::

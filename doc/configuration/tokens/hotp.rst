@@ -83,7 +83,7 @@ Default settings for HOTP tokens can be configured at :ref:`hotp_otp_token`.
 During enrollment you can choose, if the server should generate the key or if
 you have a key, that you can enter into the enrollment page.
 
-As mentioned earlier, you can also choose the **OTP lenght** and the **hash
+As mentioned earlier, you can also choose the **OTP length** and the **hash
 algoriothm**.
 
 .. figure:: images/enroll_hotp2.png

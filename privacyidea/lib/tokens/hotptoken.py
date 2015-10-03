@@ -209,7 +209,7 @@ class HotpTokenClass(TokenClass):
         process the initialization parameters
 
         Do we really always need an otpkey?
-        ...the otpKey is handled in the parent class
+        the otpKey is handled in the parent class
         :param param: dict of initialization parameters
         :type param: dict
 

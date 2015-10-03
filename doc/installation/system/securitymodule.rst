@@ -31,7 +31,7 @@ is restarted and the password for decrypting the *enckey* is kept in memory.
 
 :ref:`pimanage` contains the instruction how to encrypt the *enckey*
 
-After starting the server, you can check, if the encryption key is accessable.
+After starting the server, you can check, if the encryption key is accessible.
 To do so run::
 
     privacyidea -U <yourserver> --admin=<youradmin> securitymodule

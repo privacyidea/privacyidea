@@ -174,7 +174,7 @@ The ``mangle`` policy can mangle the authentication request data before they
 are processed. I.e. the parameters ``user``, ``pass`` and ``realm`` can be
 modified prior to authentication.
 
-This is usefull if either information needs to be stripped or added to such a
+This is useful if either information needs to be stripped or added to such a
 parameter.
 To accomplish that, the mangle policy can do a regular expression search and
 replace using the keyword *user*, *pass* (password) and *realm*.

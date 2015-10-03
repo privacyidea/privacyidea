@@ -277,7 +277,7 @@ class TotpTokenClass(HotpTokenClass):
         :param anOtpVal: the to be verified otpvalue
         :type anOtpVal:  string
         :param counter: the counter state, that should be verified. For TOTP
-        this is the unix system time (seconds) devided by 30/60
+        this is the unix system time (seconds) divided by 30/60
         :type counter: int
         :param window: the counter +window (sec), which should be checked
         :type window: int

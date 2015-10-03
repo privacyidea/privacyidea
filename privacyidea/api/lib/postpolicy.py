@@ -63,7 +63,7 @@ DEFAULT_POLICY_TEMPLATE_URL = "https://raw.githubusercontent.com/privacyidea/" \
 
 class postpolicy(object):
     """
-    Decorator that allows to call a specific function after the decorated
+    Decorator that allows one to call a specific function after the decorated
     function.
     The postpolicy decorator is to be used in the API calls.
     """

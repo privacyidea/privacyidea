@@ -21,7 +21,7 @@ where policies can be applied.
 Defaultrealm is a special endpoint to define the default realm. The default
 realm is used if no user realm is specified. If a user from realm1 tries to
 authenticate or is addressed, the notation user@realm1 is used.
-If the @realm1 is ommitted, the user is searched in the default realm.
+If the @realm1 is omitted, the user is searched in the default realm.
 
 Policies are rules how privacyidea behaves and which user and administrator
 is allowed to do what.

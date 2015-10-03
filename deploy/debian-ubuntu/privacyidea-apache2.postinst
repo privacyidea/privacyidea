@@ -59,7 +59,7 @@ fi
 if [ ! -e /etc/ssl/certs/privacyideaserver.pem ]; then
         # This is the certificate when running with apache or nginx
         KEY=/etc/ssl/private/privacyideaserver.key
-        CSR=/tmp/server.csr
+        CSR=`mktemp`
         CERT=/etc/ssl/certs/privacyideaserver.pem
         openssl genrsa -out $KEY 2048
         openssl req -new -key $KEY -out $CSR -subj "/CN=`hostname`"
@@ -120,7 +120,7 @@ case "$1" in
 	enable_apache
 	create_files
 	create_certificate
-	update-rc.d apache2 defaults
+	#update-rc.d apache2 defaults
 	service apache2 restart
 	update_db
   ;;
