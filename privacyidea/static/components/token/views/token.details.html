@@ -11,6 +11,7 @@
             <td>{{ token.tokentype }}</td>
             <td>
                 <button class="btn btn-danger" ng-click="delete()"
+                        id="deleteButton"
                         ng-disabled="!checkRight('delete')">
                     <div class="glyphicon glyphicon-trash"
                             translate>Delete
@@ -35,18 +36,21 @@
             <span ng-show="token.active"
                   ng-click="disable()">
                 <button class="btn btn-danger"
+                        id="disableButton"
                         ng-disabled="!checkRight('disable')"
                         translate>Disable</button>
             </span>
             <span ng-show="!token.active && !token.locked"
                   ng-click="enable()">
                 <button class="btn btn-success"
+                        id="enableButton"
                         ng-disabled="!checkRight('enable')"
                         translate>Enable</button>
             </span>
             <span ng-show="!token.revoked"
                   ng-click="revoke()">
                 <button class="btn btn-danger" translate
+                        id="revokeButton"
                         ng-disabled="!checkRight('revoke')">
                     Revoke</button>
             </span>
@@ -71,6 +75,7 @@
             </span></td>
             <td>
                 <button class="btn btn-success"
+                        id="resetButton"
                         ng-show="token.failcount > 0"
                         ng-click="reset()"
                         ng-disabled="!checkRight('reset')"
@@ -193,16 +198,19 @@
             <td>
                 <div ng-show="loggedInUser.role == 'admin' && !token.locked">
                     <button class="btn btn-primary"
+                            id="tiEditButton"
                             ng-hide="editTokenInfo"
                             ng-click="editTokenInfo=1"
                             translate>Edit
                     </button>
                     <button class="btn btn-primary"
+                            id="tiSaveButton"
                             ng-show="editTokenInfo"
                             ng-click="editTokenInfo=0; saveTokenInfo()"
                             translate>Save Token Info
                     </button>
                     <button class="btn btn-danger"
+                            id="tiCancelButton"
                             ng-show="editTokenInfo"
                             ng-click="editTokenInfo=0"
                             translate>Cancel
@@ -232,16 +240,19 @@
             <td>
                 <div ng-show="loggedInUser.role == 'admin' && !token.locked">
                     <button class="btn btn-primary"
+                            id="trEditButton"
                             ng-hide="editTokenRealm"
                             ng-click="startEditRealm()"
                             translate>Edit
                     </button>
                     <button class="btn btn-primary"
+                            id="trSaveButton"
                             ng-show="editTokenRealm"
                             ng-click="saveRealm()"
                             translate>Save realms
                     </button>
                     <button class="btn btn-danger"
+                            id="trCancelButton"
                             ng-show="editTokenRealm"
                             ng-click="cancelEditRealm();"
                             translate>Cancel
@@ -266,6 +277,7 @@
             </td>
             <td>
                 <button class="btn btn-primary"
+                        id="resyncButton"
                         ng-disabled="(!otp1 || !otp2)"
                         ng-click="resyncToken()"
                         ng-disabled="!checkRight('resync')">
@@ -289,6 +301,7 @@
             </td>
             <td>
                 <button class="btn btn-primary"
+                        id="setPinButton"
                         ng-disabled="pin1 != pin2"
                         ng-click="setPin()">
                     <div class="glyphicon glyphicon-pushpin" translate>
@@ -310,6 +323,7 @@
             <td>
 
                 <button class="btn btn-primary" ng-disabled="!testPassword"
+                        id="testOtpButton"
                         ng-click="testOtp()">
                     <div class="glyphicon glyphicon-question-sign" translate>
                         Test token
@@ -332,6 +346,7 @@
                     {{ token.username }}</a></td>
                 <td>
                     <button ng-hide="token.locked"
+                            id="unassignAdminButton"
                             ng-click="unassign()"
                             class="btn btn-warning">
                         <div class="glyphicon glyphicon-resize-full"
@@ -359,6 +374,7 @@
     <div ng-show="loggedInUser.role== 'user' && !token.locked
         && checkRight('unassign')">
         <button ng-click="unassign()"
+                id="unassignUserButton"
                 class="btn btn-warning">
             <div class="glyphicon glyphicon-resize-full"
                     translate>Unassign Token
@@ -378,6 +394,7 @@
 
     <div class="text-center">
         <button ng-click="assignUser()"
+                id="assignButton"
                 ng-disabled="formAssignToken.$invalid"
                 class="btn btn-primary">
             <div clas="glyphicon glyphicon-resize-small"

@@ -164,6 +164,7 @@
     </div>
     <div class="text-center">
         <button ng-click="enrollToken()" class="btn btn-primary"
+                id="enrollButton"
                 translate>Enroll New Token
         </button>
     </div>
@@ -175,6 +176,7 @@
             <div assign-token new-token-object="newToken"></div>
             <div class="text-center">
                 <button ng-click="assignToken()"
+                        id="assignButton"
                         ng-disabled="formAssignToken.$invalid"
                         class="btn btn-primary" translate>Assign Token
                 </button>
