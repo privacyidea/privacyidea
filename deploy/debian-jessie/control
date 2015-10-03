@@ -73,7 +73,7 @@ Description: Auth Module for Apache Server to authenticate with OTP
 
 Package: privacyidea-all
 Architecture: all
-Depends: ${misc:Depends}, python-privacyidea, privacyidea-radius, privacyidea-otrs, privacyideaadm
+Depends: ${misc:Depends}, python-privacyidea, privacyidea-radius, privacyidea-otrs
 Description: two-factor authenticaion system. This is a metapackage to install everything
  privacyIDEA: identity, multifactor authentication, authorization.
  privacyIDEA is an open solution for strong two-factor authentication.
@@ -96,7 +96,7 @@ Description: 2FA system. This is a meta package to install privacyidea with ngin
 
 Package: privacyidea-apache2
 Architecture: all
-Depends: ${misc:Depends}, python-privacyidea, privacyideaadm, python-mysqldb, apache2,
+Depends: ${misc:Depends}, python-privacyidea, python-mysqldb, apache2,
  mysql-server, mysql-client, libapache2-mod-wsgi
 Conflicts: nginx, nginx-full, privacyidea-nginx
 Description: 2FA system. This is a meta package to install privacyidea with apache2
