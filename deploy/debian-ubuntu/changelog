@@ -1,10 +1,24 @@
-python-privacyidea (2.7-1~dev3) trusty; urgency=low
+python-privacyidea (2.7-1) trusty; urgency=low
 
-  * Start 2.7
-  * Change dependency for PyMySQL
-  * Merge u2f branch
+  Features
+  * Add support for U2F tokens
+  * Add signature to the API JSON response. Thus
+    the client can verify the response.
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 01 Oct 2015 17:00:00 +0200
+  Enhancements
+  * When importing tokens, a realm can be chosen, so that all imported
+    tokens are immediately inserted into this realm.
+  * The user is able to change his password in the WebUI.
+  * The user can assign a token in the WebUI.
+  * Avoid the requiring of a PIN for some tokentypes like SSH
+  * Migrate to pymysql, the pure python mysql implementation
+  * The Audit Log tells if a previous OTP value was used again.
+
+  Fixes
+  * Enable login to WebUI with a loginname containing an @ sign.
+  * Fix the writing of logfile privacyidea.log
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Sat, 03 Oct 2015 17:30:00 +0200
 
 python-privacyidea (2.6-1trusty) trusty; urgency=low
 

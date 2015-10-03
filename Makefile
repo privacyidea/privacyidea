@@ -13,9 +13,9 @@ info:
 	@echo "make ppa-dev      - upload to launchpad development repo"
 	
 #VERSION=1.3~dev5
-VERSION_JESSIE=2.7-1~dev3
-VERSION=2.7~dev3
 SHORT_VERSION=2.7
+VERSION_JESSIE=${SHORT_VERSION}-1
+VERSION=${SHORT_VERSION}-1
 SERIES="trusty precise vivid"
 LOCAL_SERIES=`lsb_release -a | grep Codename | cut -f2`
 SRCDIRS=deploy authmodules migrations doc tests tools privacyidea 

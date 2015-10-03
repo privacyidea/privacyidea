@@ -1,3 +1,23 @@
+Version 2.7, 2015-10-03
+
+  Features
+  * Add support for U2F tokens
+  * Add signature to the API JSON response. Thus
+    the client can verify the response.
+
+  Enhancements
+  * When importing tokens, a realm can be chosen, so that all imported
+    tokens are immediately inserted into this realm.
+  * The user is able to change his password in the WebUI.
+  * The user can assign a token in the WebUI.
+  * Avoid the requiring of a PIN for some tokentypes like SSH
+  * Migrate to pymysql, the pure python mysql implementation
+  * The Audit Log tells if a previous OTP value was used again.
+
+  Fixes
+  * Enable login to WebUI with a loginname containing an @ sign.
+  * Fix the writing of logfile privacyidea.log
+
 Version 2.6, 2015-09-09
 
   Features
