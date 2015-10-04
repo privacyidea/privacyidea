@@ -157,6 +157,9 @@ def get_auth_token():
     validity = timedelta(hours=1)
     username = request.all_data.get("username")
     password = request.all_data.get("password")
+
+    g.audit_object.log({"user": username})
+
     realm = ""
     secret = current_app.secret_key
     # This is the default role for the logged in user.
@@ -176,8 +179,12 @@ def get_auth_token():
     if verify_db_admin(username, password):
         role = ROLE.ADMIN
         admin_auth = True
+        g.audit_object.log({"success": True,
+                            "user": "",
+                            "administrator": username,
+                            "info": "internal admin"})
 
-    if not admin_auth:
+    else:
         # The user could not be identified against the admin database,
         # so we do the rest of the check
         username, realm = split_user(username)
@@ -196,6 +203,13 @@ def get_auth_token():
                                                     superuser_realms)
         # The details with the transaction_id are raised with the AuthError
         details = details or {}
+        # log it
+        if user_auth:
+            g.audit_object.log({"success": True})
+
+        if role == ROLE.ADMIN:
+            g.audit_object.log({"user": "",
+                                "administrator": username})
 
     if not admin_auth and not user_auth:
         raise AuthError("Authentication failure",
@@ -225,9 +239,7 @@ def get_auth_token():
                         "exp": datetime.utcnow() + validity,
                         "rights": rights},
                        secret)
-    g.audit_object.log({"success": True,
-                        "administrator": username,
-                        "jwt_token": token})
+
     # Add the role to the response, so that the WebUI can make decisions
     # based on this (only show selfservice, not the admin part)
     return send_result({"token": token,
@@ -243,7 +255,7 @@ def admin_required(f):
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        check_auth_token(required_role=["admin"])
+        check_auth_token(required_role=[ROLE.ADMIN])
         return f(*args, **kwargs)
     return decorated_function
 

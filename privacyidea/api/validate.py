@@ -67,6 +67,7 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
 from privacyidea.lib.policy import PolicyClass
 import logging
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
+from privacyidea.api.auth import jwtauth
 
 log = logging.getLogger(__name__)
 
@@ -95,6 +96,7 @@ def before_request():
 
 
 @validate_blueprint.after_request
+@jwtauth.after_request
 @postrequest(sign_response, request=request)
 def after_request(response):
     """
