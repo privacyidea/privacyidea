@@ -38,4 +38,6 @@ deployment:
       - curl https://api.ghostinspector.com/v1/tests/556aadbe8607b44136a074eb/execute/?apiKey=7e4c446eb2fb14cb8db9d96bb9a3ad09245994c0
       # User Token enroll
       - curl https://api.ghostinspector.com/v1/tests/556abe5c02ab10dc4b06882f/execute/?apiKey=7e4c446eb2fb14cb8db9d96bb9a3ad09245994c0
+      # login with OTP at Web UI
+      - curl https://api.ghostinspector.com/v1/tests/5610681c7d9e5b2c0df9eda6/execute/?apiKey=7e4c446eb2fb14cb8db9d96bb9a3ad09245994c0
 

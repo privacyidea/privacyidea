@@ -75,6 +75,7 @@
 
         <div class="col-sm-9">
             <div isteven-multi-select
+                 id="selectScope"
                  input-model="scopes"
                  output-model="selectedScope"
                  button-label="name"
@@ -242,6 +243,7 @@
     <div class="text-center"
          ng-show="checkRight('policywrite')">
         <button ng-click="createPolicy()"
+                id="createPolicyButton"
                 ng-disabled="formPolicyAdd.$invalid"
                 class="btn btn-primary">
             <div class="glyphicon glyphicon-plus" translate>
