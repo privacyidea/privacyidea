@@ -507,6 +507,61 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertFalse(res)
 
     @ldap3mock.activate
+    def test_01_LDAP_double_mapping(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'LDAPFILTER': '(&(cn=%s))',
+                      'USERINFO': '{ "username": "email",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "email", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'DN',
+        })
+
+        result = y.getUserList({'username': '*'})
+        self.assertEqual(len(result), 3)
+
+        user = "bob"
+        user_id = y.getUserId(user)
+        self.assertTrue(user_id == "cn=bob,ou=example,o=test", user_id)
+
+        rid = y.getResolverId()
+        self.assertTrue(rid == "ldap://localhost", rid)
+
+        rtype = y.getResolverType()
+        self.assertTrue(rtype == "ldapresolver", rtype)
+
+        rdesc = y.getResolverClassDescriptor()
+        rdesc = y.getResolverDescriptor()
+        self.assertTrue("ldapresolver" in rdesc, rdesc)
+        self.assertTrue("config" in rdesc.get("ldapresolver"), rdesc)
+        self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
+
+        uinfo = y.getUserInfo(user_id)
+        self.assertTrue(uinfo.get("username") == "bob@example.com", uinfo)
+
+        ret = y.getUserList({"username": "bob@example.com"})
+        self.assertTrue(len(ret) == 1, ret)
+
+        username = y.getUsername(user_id)
+        self.assertTrue(username == "bob@example.com", username)
+
+        res = y.checkPass(user_id, "bobpw")
+        self.assertTrue(res)
+
+        res = y.checkPass(user_id, "wrong pw")
+        self.assertFalse(res)
+
+
+    @ldap3mock.activate
     def test_01_broken_uidtype(self):
         # checkPass with wrong UIDtype
         ldap3mock.setLDAPDirectory(LDAPDirectory)

@@ -2,6 +2,9 @@
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
+#  2015-10-05 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Remove reverse_map, so that one LDAP field can map
+#             to several privacyIDEA fields.
 #  2015-04-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add redundancy with LDAP3 Server pools. Round Robin Strategy
 #  2015-04-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -60,7 +63,6 @@ class IdResolver (UserIdResolver):
         self.searchfilter = ""
         self.reversefilter = ""
         self.userinfo = {}
-        self.reverse_map = {}
         self.uidtype = ""
         self.noreferrals = False
         self.certificate = ""
@@ -228,13 +230,26 @@ class IdResolver (UserIdResolver):
 
         for entry in r:
             attributes = entry.get("attributes")
-            for k, v in attributes.items():
-                key = self.reverse_map.get(k)
-                if key:
-                    if type(v) == list:
-                        ret[key] = v[0]
+            ret = self._ldap_attributes_to_user_object(attributes)
+
+        return ret
+
+    def _ldap_attributes_to_user_object(self, attributes):
+        """
+        This helper function converts the LDAP attributes to a dictionary for
+        the privacyIDEA user. The LDAP Userinfo mapping is used to do so.
+
+        :param attributes:
+        :return: dict with privacyIDEA users.
+        """
+        ret = {}
+        for ldap_k, ldap_v in attributes.items():
+            for map_k, map_v in self.userinfo.items():
+                if ldap_k == map_v:
+                    if type(ldap_v) == list:
+                        ret[map_k] = ldap_v[0]
                     else:
-                        ret[key] = v
+                        ret[map_k] = ldap_v
         return ret
     
     def getUsername(self, user_id):
@@ -310,14 +325,8 @@ class IdResolver (UserIdResolver):
         for entry in self.l.response:
             try:
                 attributes = entry.get("attributes")
-                user = {'userid': self._get_uid(entry, self.uidtype)}
-                for k, v in attributes.items():
-                    key = self.reverse_map.get(k)
-                    if key:
-                        if type(v) == list:
-                            user[key] = v[0]
-                        else:
-                            user[key] = v
+                user = self._ldap_attributes_to_user_object(attributes)
+                user['userid'] = self._get_uid(entry, self.uidtype)
                 ret.append(user)
             except Exception as exx:  # pragma: no cover
                 log.error("Error during fetching LDAP objects: %r" % exx)
@@ -378,7 +387,6 @@ class IdResolver (UserIdResolver):
         self.reversefilter = config.get("LDAPFILTER")
         userinfo = config.get("USERINFO", "{}")
         self.userinfo = yaml.load(userinfo)
-        self.reverse_map = dict([[v, k] for k, v in self.userinfo.items()])
         self.uidtype = config.get("UIDTYPE", "DN")
         self.noreferrals = config.get("NOREFERRALS", False)
         self.certificate = config.get("CACERTIFICATE")
