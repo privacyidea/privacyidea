@@ -31,6 +31,25 @@ angular.module("privacyideaAuth")
                 gettext("Timeout while waiting for signing response.")];
 
             return {
+                register_request: function (registerRequest, callback) {
+                    u2f.register([registerRequest], [], function (result) {
+                        console.log(result);
+                        if (result.errorCode > 0) {
+                            inform.add(u2fErrors[result.errorCode] + " / " + result.errorMessage,
+                                {type: "danger", ttl: 10000});
+                        } else {
+                            $scope.click_wait = false;
+                            // Send the necessary data to privacyIDEA
+                            var params = {
+                                serial: $scope.serial,
+                                type: "u2f",
+                                regdata: result.registrationData,
+                                clientdata: result.clientData
+                            };
+                            callback(params);
+                        }
+                    });
+                },
                 sign_request: function (data, username, transactionid,
                                         login_callback) {
                     var signRequests = [data.detail.attributes.u2fSignRequest];
@@ -39,14 +58,11 @@ angular.module("privacyideaAuth")
                         if (result.errorCode > 0) {
                             console.log("U2F error.");
                             console.log(result);
-                            inform.add(gettext("U2F Error: ") + result.errorCode,
+                            inform.add(u2fErrors[result.errorCode] + " / " + result.errorMessage,
                                 {
                                     type: "danger",
-                                    ttl: 5000
-                                });
-                            inform.add(u2fErrors[result.errorCode],
-                                {type:"danger",
-                                 ttl:10000})
+                                    ttl: 10000
+                                })
                         } else {
                             console.log("Got response from U2F device.");
                             $http.post(authUrl, {

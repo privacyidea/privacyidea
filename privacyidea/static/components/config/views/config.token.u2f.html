@@ -10,9 +10,14 @@
     <p class="help-block" translate>
         The URL of your privacyIDEA installation.
     </p>
+    <p class="help-block" translate>
+        This must be a valid FQDN with also a valid top level domain -
+        otherwise you might receive a U2F Error 2 (Bad Request).
+    </p>
+
     <input type="url"
            required
-           placeholder="http://pi.server"
+           placeholder="http://pi.server.com"
            class="form-control"
            ng-model="form['u2f.appId']" name="u2fAppId">
 </div>

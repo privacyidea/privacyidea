@@ -144,3 +144,10 @@ class APIU2fTestCase(MyTestCase):
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), False)
 
+    def test_03_facet_list(self):
+        with self.app.test_request_context('/ttype/u2f',
+                                           method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            data = json.loads(res.data)
+            self.assertTrue("trustedFacets" in data)

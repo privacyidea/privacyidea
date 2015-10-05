@@ -289,8 +289,7 @@ class U2fTokenClass(TokenClass):
             response_detail = TokenClass.get_init_detail(self, params, user)
             register_request = {"version": U2F_Version,
                                 "challenge": nonce,
-                                "appId": app_id,
-                                "origin": app_id}
+                                "appId": app_id}
             response_detail["u2fRegisterRequest"] = register_request
             self.add_tokeninfo("appId", app_id)
 
@@ -398,7 +397,7 @@ class U2fTokenClass(TokenClass):
         signaturedata = options.get("signaturedata")
         transaction_id = options.get("transaction_id")
         # The challenge in the challenge DB object is saved in hex
-        challenge = binascii.unhexlify(options.get("challenge"))
+        challenge = binascii.unhexlify(options.get("challenge", ""))
         if clientdata and signaturedata and transaction_id and challenge:
             # This is a valid response for a U2F token
             challenge_url = url_encode(challenge)
@@ -434,3 +433,25 @@ class U2fTokenClass(TokenClass):
                             self.token.serial)
 
         return ret
+
+    @classmethod
+    def api_endpoint(cls, params):
+        """
+        This provides a function to be plugged into the API endpoint
+        /ttype/u2f
+
+        The u2f token can return the facet list at this URL.
+
+        :param params: The Request Parameters which can be handled with getParam
+        :return: JSON response
+        """
+        # TODO: Needs to be implemented and read from token config or policies.
+        app_id = get_from_config("u2f.appId")
+        facet_list = [app_id]
+        res = {"trustedFacets": [{"version": {"major": 1,
+                                              "minor": 0},
+                                  "ids": facet_list
+                                  }
+                                 ]
+               }
+        return "json", res

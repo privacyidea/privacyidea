@@ -91,7 +91,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                                                     UserFactory, $state,
                                                     ConfigFactory, instanceUrl,
                                                     $http, hotkeys, gettext,
-                                                    inform) {
+                                                    inform, U2fFactory) {
 
     hotkeys.bindTo($scope).add({
         combo: 'alt+e',
@@ -277,27 +277,14 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
 
     // U2F
     $scope.register_u2f = function (registerRequest) {
-        u2f.register([registerRequest], [], function(u2fData) {
-            console.log(u2fData);
-            if (u2fData.errorCode > 0) {
-                inform.add(gettext("Error enrolling U2F token. ErrorCode : " +
-                    u2fData.errorCode,
-                    {type: "warning", ttl: 10000}));
-            } else {
-                $scope.click_wait = false;
-                // Send the necessary data to privacyIDEA
-                var params = {serial: $scope.serial,
-                    type: "u2f",
-                    regdata: u2fData.registrationData,
-                    clientdata: u2fData.clientData};
-                TokenFactory.enroll($scope.newUser,
-                    params, function(response){
-                        $scope.click_wait=false;
-                        $scope.U2FToken.subject = response.detail.u2fRegisterResponse.subject;
-                        $scope.U2FToken.vendor = $scope.U2FToken.subject.split(" ")[0];
-                        console.log($scope.U2FToken);
-                    });
-            }
+        U2fFactory.register_request(registerRequest, function (params) {
+            TokenFactory.enroll($scope.newUser,
+                params, function (response) {
+                    $scope.click_wait = false;
+                    $scope.U2FToken.subject = response.detail.u2fRegisterResponse.subject;
+                    $scope.U2FToken.vendor = $scope.U2FToken.subject.split(" ")[0];
+                    console.log($scope.U2FToken);
+                });
         });
     };
 
