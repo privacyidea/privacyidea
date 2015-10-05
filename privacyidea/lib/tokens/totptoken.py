@@ -207,7 +207,7 @@ class TotpTokenClass(HotpTokenClass):
         return shift
 
     @log_with(log)
-    def check_otp_exist(self, otp, window=None, options=None):
+    def check_otp_exist(self, otp, window=None, options=None, symetric=True):
         """
         checks if the given OTP value is/are values of this very token at all.
         This is used to autoassign and to determine the serial number of
