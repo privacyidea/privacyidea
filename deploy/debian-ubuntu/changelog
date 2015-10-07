@@ -1,4 +1,4 @@
-python-privacyidea (2.7-1) trusty; urgency=low
+python-privacyidea (2.7-1trusty) trusty; urgency=low
 
   Features
   * Add support for U2F tokens
@@ -18,7 +18,7 @@ python-privacyidea (2.7-1) trusty; urgency=low
   * Enable login to WebUI with a loginname containing an @ sign.
   * Fix the writing of logfile privacyidea.log
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Sat, 03 Oct 2015 17:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 07 Oct 2015 08:00:00 +0200
 
 python-privacyidea (2.6-1trusty) trusty; urgency=low
 

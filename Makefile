@@ -15,8 +15,8 @@ info:
 	
 #VERSION=1.3~dev5
 SHORT_VERSION=2.7
-VERSION_JESSIE=${SHORT_VERSION}-1
-VERSION=${SHORT_VERSION}-1
+VERSION_JESSIE=${SHORT_VERSION}
+VERSION=${SHORT_VERSION}
 SERIES="trusty precise vivid"
 LOCAL_SERIES=`lsb_release -a | grep Codename | cut -f2`
 SRCDIRS=deploy authmodules migrations doc tests tools privacyidea 

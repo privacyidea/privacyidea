@@ -18,7 +18,7 @@ python-privacyidea (2.7-1) wheezy; urgency=low
   * Enable login to WebUI with a loginname containing an @ sign.
   * Fix the writing of logfile privacyidea.log
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 03 Oct 2015 17:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 07 Oct 2015 08:00:00 +0200
 
 
 privacyidea-venv (2.6-1) wheezy; urgency=low
