@@ -1,4 +1,4 @@
-python-privacyidea (2.7-1) wheezy; urgency=low
+privacyidea-venv (2.7-1) wheezy; urgency=low
 
   Features
   * Add support for U2F tokens
