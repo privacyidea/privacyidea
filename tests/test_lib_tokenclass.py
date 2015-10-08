@@ -274,7 +274,13 @@ class TokenBaseTestCase(MyTestCase):
         token.set_count_auth_max(1000)
         token.set_count_auth_success_max(10)
         self.assertFalse(token.check_auth_counter())
-        
+
+        # set the max counter to 0 means authentication is allowed
+        # 0 is unlimited
+        token.set_count_auth_max(0)
+        token.set_count_auth_success_max(0)
+        self.assertEqual(token.check_auth_counter(), True)
+
         # handle validity end date
         token.set_validity_period_end("30/12/14 16:00")
         end = token.get_validity_period_end()

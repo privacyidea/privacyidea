@@ -138,6 +138,8 @@ myApp.controller("tokenDetailController", function ($scope,
             pass: $scope.testPassword
         }, function (data) {
             console.log(data);
+            // refresh the token data
+            $scope.get();
             if (data.result.value === true) {
                 inform.add(gettext("Successfully authenticated."),
                     {type: "success", ttl: 10000})

@@ -628,50 +628,50 @@ def set_api(serial=None):
 
     res = 0
 
-    if description:
+    if description is not None:
         g.audit_object.add_to_log({'action_detail': "description=%r, "
                                                     "" % description})
         res += set_description(serial, description, user=user)
 
-    if count_window:
+    if count_window is not None:
         g.audit_object.add_to_log({'action_detail': "count_window=%r, "
                                                     "" % count_window})
         res += set_count_window(serial, count_window, user=user)
 
-    if sync_window:
+    if sync_window is not None:
         g.audit_object.add_to_log({'action_detail': "sync_window=%r, "
                                                     "" % sync_window})
         res += set_sync_window(serial, sync_window, user=user)
 
-    if hashlib:
+    if hashlib is not None:
         g.audit_object.add_to_log({'action_detail': "hashlib=%r, "
                                                     "" % hashlib})
         res += set_hashlib(serial, hashlib, user=user)
 
-    if max_failcount:
+    if max_failcount is not None:
         g.audit_object.add_to_log({'action_detail': "max_failcount=%r, "
                                                     "" % max_failcount})
         res += set_max_failcount(serial, max_failcount, user=user)
 
-    if count_auth_max:
+    if count_auth_max is not None:
         g.audit_object.add_to_log({'action_detail': "count_auth_max=%r, "
                                                     "" % count_auth_max})
         res += set_count_auth(serial, count_auth_max, user=user, max=True)
 
-    if count_auth_success_max:
+    if count_auth_success_max is not None:
         g.audit_object.add_to_log({'action_detail':
                                        "count_auth_success_max=%r, " %
                                        count_auth_success_max})
         res += set_count_auth(serial, count_auth_success_max, user=user,
                               max=True, success=True)
 
-    if validity_period_end:
+    if validity_period_end is not None:
         g.audit_object.add_to_log({'action_detail':
                                        "validity_period_end=%r, " %
                                        validity_period_end})
         res += set_validity_period_end(serial, user, validity_period_end)
 
-    if validity_period_start:
+    if validity_period_start is not None:
         g.audit_object.add_to_log({'action_detail':
                                        "validity_period_start=%r, " %
                                        validity_period_start})
