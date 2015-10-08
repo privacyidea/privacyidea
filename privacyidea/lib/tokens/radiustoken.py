@@ -119,7 +119,7 @@ class RadiusTokenClass(RemoteTokenClass):
         # be overwritten by the parent class, which is ok.
         self.set_otplen(6)
         TokenClass.update(self, param)
-        val = getParam(param, "radius.local_checkpin", optional)
+        val = getParam(param, "radius.local_checkpin", optional) or 0
         self.add_tokeninfo("radius.local_checkpin", val)
 
         val = getParam(param, "radius.user", required)
