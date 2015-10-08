@@ -211,7 +211,8 @@ class IdResolver (UserIdResolver):
         self._bind()
         
         if self.uidtype.lower() == "dn":
-            self.l.search(search_base=userId,
+            # encode utf8, so that also german ulauts work in the DN
+            self.l.search(search_base=userId.encode("utf-8"),
                           search_scope=ldap3.SUBTREE,
                           search_filter="(&" + self.searchfilter + ")",
                           attributes=self.userinfo.values())
