@@ -241,6 +241,7 @@ class RadiusTokenClass(RemoteTokenClass):
                 log.info("Radiusserver %s granted "
                          "access to user %s." % (r_server, radiusUser))
                 otp_count = 0
+                self.reset()
             else:
                 log.warning("Radiusserver %s"
                             "rejected access to user %s." %
