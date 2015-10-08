@@ -944,7 +944,7 @@ def get_static_policy_definitions(scope=None):
                           'component.')},
             ACTION.CHALLENGERESPONSE: {
                 'type': 'str',
-                'desc': _('This is a comma separated list of tokentypes, '
+                'desc': _('This is a whitespace separated list of tokentypes, '
                           'that can be used with challenge response.')
             },
             ACTION.PASSTHRU: {

@@ -151,7 +151,6 @@ class EmailTokenClass(HotpTokenClass):
 
         return ret
 
-
     @log_with(log)
     def update(self, param, reset_failcount=True):
         """
@@ -175,6 +174,27 @@ class EmailTokenClass(HotpTokenClass):
 
         HotpTokenClass.update(self, param, reset_failcount)
         return
+
+    @log_with(log)
+    def is_challenge_request(self, passw, user=None, options=None):
+        """
+        check, if the request would start a challenge
+
+        We need to define the function again, to get rid of the
+        is_challenge_request-decorator of the HOTP-Token
+
+        :param passw: password, which might be pin or pin+otp
+        :param options: dictionary of additional request parameters
+
+        :return: returns true or false
+        """
+        trigger_challenge = False
+        options = options or {}
+        pin_match = self.check_pin(passw, user=user, options=options)
+        if pin_match is True:
+            trigger_challenge = True
+
+        return trigger_challenge
 
     @log_with(log)
     def create_challenge(self, transactionid=None, options=None):
