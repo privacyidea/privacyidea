@@ -24,9 +24,13 @@
 
 <div class="form-group">
     <label for="radiusSecret" translate>Default RADIUS Secret</label>
-    <input type="text"
+    <input type="password"
            required
+           equals="{{ secret2 }}"
            class="form-control"
-           placeholder="testing123"
            ng-model="form['radius.secret']" name="radiusSecret">
+    <input type="password"
+           equals="{{ form['radius.secret'] }}"
+           class="form-control"
+           ng-model="secret2" name="radiusSecret2">
 </div>
