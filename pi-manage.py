@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+# 2015-10-09 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Set file permissions
 # 2015-09-24 Cornelius Kölbel <cornelius@privacyidea.org>
 #            Add validate call
 # 2015-06-16 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -262,7 +264,9 @@ def create_enckey():
     f.write(DefaultSecurityModule.random(96))
     f.close()
     print("Encryption key written to %s" % filename)
-    print("Please ensure to set the access rights for the correct user to 400!")
+    os.chmod(filename, 0400)
+    print("The file permission of %s was set to 400!" % filename)
+    print("Please ensure, that it is owned by the right user.   ")
 
 
 @manager.command
@@ -289,7 +293,9 @@ def create_audit_keys(keysize=2048):
     f.close()
     print("Signing keys written to %s and %s" %
           (filename, app.config.get("PI_AUDIT_KEY_PUBLIC")))
-    print("Please ensure to set the access rights for the correct user to 400!")
+    os.chmod(filename, 0400)
+    print("The file permission of %s was set to 400!" % filename)
+    print("Please ensure, that it is owned by the right user.")
 
 
 @manager.command
