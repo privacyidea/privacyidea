@@ -57,6 +57,7 @@ from privacyidea.lib.realm import get_default_realm
 optional = True
 required = False
 DEFAULT_LOGOUT_TIME = 120
+DEFAULT_PAGE_SIZE = 15
 DEFAULT_POLICY_TEMPLATE_URL = "https://raw.githubusercontent.com/privacyidea/" \
                               "policy-templates/master/templates/"
 
@@ -352,6 +353,27 @@ def get_webui_settings(request, response):
             realm=realm,
             client=client,
             unique=True)
+        token_page_size_pol = policy_object.get_action_values(
+            action=ACTION.TOKENPAGESIZE,
+            scope=SCOPE.WEBUI,
+            realm=realm,
+            client=client,
+            unique=True
+        )
+        user_page_size_pol = policy_object.get_action_values(
+            action=ACTION.USERPAGESIZE,
+            scope=SCOPE.WEBUI,
+            realm=realm,
+            client=client,
+            unique=True
+        )
+
+        token_page_size = DEFAULT_PAGE_SIZE
+        user_page_size = DEFAULT_PAGE_SIZE
+        if len(token_page_size_pol) == 1:
+            token_page_size = int(token_page_size_pol[0])
+        if len(user_page_size_pol) == 1:
+            user_page_size = int(user_page_size_pol[0])
 
         logout_time = DEFAULT_LOGOUT_TIME
         if len(logout_time_pol) == 1:
@@ -368,6 +390,8 @@ def get_webui_settings(request, response):
             policy_template_url = policy_template_url_pol[0]
 
         content["result"]["value"]["logout_time"] = logout_time
+        content["result"]["value"]["token_page_size"] = token_page_size
+        content["result"]["value"]["user_page_size"] = user_page_size
         content["result"]["value"]["policy_template_url"] = policy_template_url
         response.data = json.dumps(content)
     return response

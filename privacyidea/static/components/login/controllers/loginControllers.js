@@ -183,6 +183,8 @@ angular.module("privacyideaApp")
                 data.result.value.rights);
             $scope.privacyideaVersionNumber = data.versionnumber;
             $scope.loggedInUser = AuthFactory.getUser();
+            $scope.token_page_size = data.result.value.token_page_size;
+            $scope.user_page_size = data.result.value.user_page_size;
             timeout = data.result.value.logout_time;
             PolicyTemplateFactory.setUrl(data.result.value.policy_template_url);
             console.log(timeout);

@@ -177,7 +177,7 @@ angular.module("privacyideaApp")
                                             ConfigFactory, UserFactory,
                                             AuthFactory) {
 
-        $scope.usersPerPage = 15;
+        $scope.usersPerPage = $scope.user_page_size;
         $scope.params = {page: 1,
                         usernameFilter: "",
                         surnameFilter: "",

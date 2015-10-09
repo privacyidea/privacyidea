@@ -6,7 +6,7 @@ from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import User
 from privacyidea.lib.auth import create_db_admin
-from privacyidea.api.lib.postpolicy import DEFAULT_POLICY_TEMPLATE_URL
+
 
 PWFILE = "tests/testdata/passwords"
 
@@ -121,7 +121,3 @@ class MyTestCase(unittest.TestCase):
             role = result.get("value").get("role")
             self.assertTrue(role == "user", result)
             self.assertEqual(result.get("value").get("realm"), "realm1")
-            # Test logout time
-            self.assertEqual(result.get("value").get("logout_time"), 120)
-            self.assertEqual(result.get("value").get("policy_template_url"),
-                             DEFAULT_POLICY_TEMPLATE_URL)

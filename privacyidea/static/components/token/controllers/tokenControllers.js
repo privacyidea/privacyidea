@@ -41,6 +41,7 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
         $scope.params.serial = "*" + ($scope.serialFilter || "") + "*";
         $scope.params.type = "*" + ($scope.typeFilter || "") + "*";
         $scope.params.description = "*" + ($scope.descriptionFilter || "") + "*";
+        $scope.params.pagesize = $scope.token_page_size;
         if ($scope.reverse) {
             $scope.params.sortdir = "desc";
         } else {

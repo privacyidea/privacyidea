@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-10-09 Cornelius Kölbel <cornelius.koelbel@netnights.it>
+#             Add token_page_size and user_page_size policy
 #  2015-09-06 Cornelius Kölbel <cornelius.koelbel@netkngihts.it>
 #             Add challenge_response authentication policy
 #  2015-06-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -179,10 +181,12 @@ class ACTION():
     SYSTEMWRITE = "configwrite"
     CONFIGDOCUMENTATION = "system_documentation"
     TOKENLABEL = "tokenlabel"
+    TOKENPAGESIZE = "token_page_size"
     TOKENREALMS = "tokenrealms"
     TOKENTYPE = "tokentype"
     UNASSIGN = "unassign"
     USERLIST = "userlist"
+    USERPAGESIZE = "user_page_size"
     ADDUSER = "adduser"
     DELETEUSER = "deleteuser"
     UPDATEUSER = "updateuser"
@@ -1026,6 +1030,16 @@ def get_static_policy_definitions(scope=None):
                 'type': 'int',
                 'desc': _("Set the time in seconds after which the user will "
                           "be logged out from the WebUI. Default: 120")
+            },
+            ACTION.TOKENPAGESIZE: {
+                'type': 'int',
+                'desc': _("Set how many tokens should be displayed in the "
+                          "token view on one page.")
+            },
+            ACTION.USERPAGESIZE: {
+                'type': 'int',
+                'desc': _("Set how many users should be displayed in the user "
+                          "view on one page.")
             },
             ACTION.POLICYTEMPLATEURL: {
                 'type': 'str',

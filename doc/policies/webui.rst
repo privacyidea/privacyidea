@@ -56,6 +56,33 @@ The default timeout is 120 seconds.
 
 Being a policy this time can be set based on clients, realms and users.
 
+
+token_page_size
+~~~~~~~~~~~~~~~
+
+.. index:: Token view page size
+
+type: int
+
+By default 15 tokens are displayed on one page in the token view.
+On big screens you might want to display more tokens. Thus you can define in
+this
+policy how many tokens should be displayed.
+
+user_page_size
+~~~~~~~~~~~~~~
+
+.. index:: User view page size
+
+type: int
+
+By default 15 users are displayed on one page in the user view.
+On big screens you might want to display more users. Thus you can define in
+this policy how many users should be displayed.
+
+
+
+
 .. _policy_template_url:
 
 policy_template_url

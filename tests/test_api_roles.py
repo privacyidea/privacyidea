@@ -12,6 +12,8 @@ from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
 from privacyidea.lib.user import User
 from privacyidea.models import Token
 from privacyidea.lib.realm import (set_realm, delete_realm)
+from privacyidea.api.lib.postpolicy import DEFAULT_POLICY_TEMPLATE_URL
+from privacyidea.lib.policy import ACTION, SCOPE, set_policy
 
 
 PWFILE = "tests/testdata/passwords"
@@ -462,3 +464,26 @@ class APISelfserviceTestCase(MyTestCase):
                                                          self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 401, res)
+
+    def test_41_webui_settings(self):
+        set_policy(name="webui1", scope=SCOPE.WEBUI, action="%s=%s" % (
+            ACTION.TOKENPAGESIZE, 20))
+        set_policy(name="webui2", scope=SCOPE.WEBUI, action="%s=%s" % (
+            ACTION.USERPAGESIZE, 20))
+        set_policy(name="webui3", scope=SCOPE.WEBUI, action="%s=%s" % (
+            ACTION.LOGOUTTIME, 200))
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username":
+                                                     "selfservice@realm1",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("status"), res.data)
+            # Test logout time
+            self.assertEqual(result.get("value").get("logout_time"), 200)
+            self.assertEqual(result.get("value").get("token_page_size"), 20)
+            self.assertEqual(result.get("value").get("user_page_size"), 20)
+            self.assertEqual(result.get("value").get("policy_template_url"),
+                             DEFAULT_POLICY_TEMPLATE_URL)
