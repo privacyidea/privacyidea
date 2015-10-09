@@ -1,6 +1,8 @@
 #
 #    privacyIDEA, fork of LinOTP (radius_linotp.pm)
 #
+#    2015-10-09 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#               Improve the reading of the config file.
 #    2015-09-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #               Add the possibility to read config from
 #		/etc/privacyidea/rlm_perl.ini
@@ -184,43 +186,31 @@ use constant Error => 4;
 use constant Proxy => 5;
 use constant Acct  => 6;
 
-my $LIN_OK     = ":-)";
-my $LIN_REJECT = ":-(";
-my $LIN_FAIL   = ":-/";
 
-
-our $CONFIG_FILE = "/etc/freeradius/rlm_perl.ini";
-our $OLD_CONFIG_FILE = "/opt/privacyIDEA/rlm_perl.ini";
+our $CONFIG_FILE = "";
+our @CONFIG_FILES = ("/etc/privacyidea/rlm_perl.ini", "/etc/freeradius/rlm_perl.ini", "/opt/privacyIDEA/rlm_perl.ini");
 our $Config = {};
 our $cfg_file;
 
-if ( -e $CONFIG_FILE ) {
-    $cfg_file = Config::IniFiles->new( -file => $CONFIG_FILE);
-    $Config->{FSTAT} = "found!";
-    $Config->{URL} = $cfg_file->val("Default", "URL");
-    $Config->{REALM}   = $cfg_file->val("Default", "REALM");
-    $Config->{RESCONF} = $cfg_file->val("Default", "RESCONF");
-    $Config->{Debug}   = $cfg_file->val("Default", "Debug");
-    $Config->{SSL_CHECK} = $cfg_file->val("Default", "SSL_CHECK");
-
-
-} elsif ( -e $OLD_CONFIG_FILE ) {
-    $cfg_file = Config::IniFiles->new( -file => $OLD_CONFIG_FILE);
-    $Config->{FSTAT} = "found!";
-    $Config->{URL} = $cfg_file->val("Default", "URL");
-    $Config->{REALM}   = $cfg_file->val("Default", "REALM");
-    $Config->{RESCONF} = $cfg_file->val("Default", "RESCONF");
-    $Config->{Debug}   = $cfg_file->val("Default", "Debug");
-    $Config->{SSL_CHECK} = $cfg_file->val("Default", "SSL_CHECK");
-
-}
-else {
     $Config->{FSTAT} = "not found!";
     $Config->{URL}     = 'https://127.0.0.1/validate/check';
     $Config->{REALM}   = '';
     $Config->{RESCONF} = "";
     $Config->{Debug}   = "FALSE";
     $Config->{SSL_CHECK} = "FALSE";
+
+
+foreach my $file (@CONFIG_FILES) {
+	if (( -e $file )) {
+	    $cfg_file = Config::IniFiles->new( -file => $file);
+	    $CONFIG_FILE = $file;
+	    $Config->{FSTAT} = "found!";
+	    $Config->{URL} = $cfg_file->val("Default", "URL");
+	    $Config->{REALM}   = $cfg_file->val("Default", "REALM");
+	    $Config->{RESCONF} = $cfg_file->val("Default", "RESCONF");
+	    $Config->{Debug}   = $cfg_file->val("Default", "Debug");
+	    $Config->{SSL_CHECK} = $cfg_file->val("Default", "SSL_CHECK");
+	}
 }
 
 # Function to handle authenticate

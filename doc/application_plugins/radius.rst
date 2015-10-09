@@ -3,12 +3,23 @@
 RADIUS plugin configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The FreeRADIUS plugin is a perl module, that e.g. requires on a Debian system
+the following packages to be installed:
+
+* libconfig-inifiles-perl
+* libdata-dump-perl
+* libtry-tiny-perl
+* libjson-perl
+
 The RADIUS plugin configuration is read from the file
 ``/opt/privacyIDEA/rlm_perl.ini``.
 
-Starting with version 2.7 the plugin first tries to read
-``/etc/privacyidea/rlm_perl.ini`` and if it does not exist the file
-``/opt/privacyIDEA/rlm_perl.ini``.
+Starting with version 2.7 the plugin first tries to read from the following
+locations:
+
+* ``/etc/privacyidea/rlm_perl.ini``
+* ``/etc/freeradius/rlm_perl.ini``
+* ``/opt/privacyIDEA/rlm_perl.ini``.
 
 If no file exists, the default values are::
 
