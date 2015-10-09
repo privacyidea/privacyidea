@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 #
-#  privacyIDEA is a fork of LinOTP
-#  May 08, 2014 Cornelius Kölbel
-#  License:  AGPLv3
-#  contact:  http://www.privacyidea.org
-#
+#  2015-10-09 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Add the RADIUS-System-Config, so that not each
+#             RADIUS-token needs his own secret. -> change the
+#             secret globally
 #  2015-01-29 Adapt for migration to flask
 #             Cornelius Kölbel <cornelius@privacyidea.org>
 #
+#  May 08, 2014 Cornelius Kölbel
+#  License:  AGPLv3
+#  contact:  http://www.privacyidea.org
 #
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  LSE
@@ -128,6 +130,9 @@ class RadiusTokenClass(RemoteTokenClass):
         val = getParam(param, "radius.secret", required)
         self.token.set_otpkey(binascii.hexlify(val))
 
+        val = getParam(param, "radius.system_settings", default=False)
+        self.add_tokeninfo("radius.system_settings", val)
+
     @property
     def check_pin_local(self):
         """
@@ -175,12 +180,19 @@ class RadiusTokenClass(RemoteTokenClass):
         """
         otp_count = -1
         options = options or {}
-        radiusServer = self.get_tokeninfo("radius.server")
-        radiusUser = self.get_tokeninfo("radius.user")
 
-        # Read the secret
-        secret = self.token.get_otpkey()
-        radiusSecret = binascii.unhexlify(secret.getKey())
+        radiusUser = self.get_tokeninfo("radius.user")
+        system_radius_settings = self.get_tokeninfo("radius.system_settings")
+        if system_radius_settings:
+            radiusServer = get_from_config("radius.server")
+            radiusSecret = get_from_config("radius.secret")
+            # Is returned as unicode, so we convert it to utf-8
+            radiusSecret = radiusSecret.encode("utf-8")
+        else:
+            radiusServer = self.get_tokeninfo("radius.server")
+            # Read the secret
+            secret = self.token.get_otpkey()
+            radiusSecret = binascii.unhexlify(secret.getKey())
 
         # here we also need to check for radius.user
         log.debug("checking OTP len:%s on radius server: %s, user: %s" 
@@ -195,13 +207,12 @@ class RadiusTokenClass(RemoteTokenClass):
             server = radiusServer.split(':')
             r_server = server[0]
             r_authport = 1812
+            if len(server) >= 2:
+                r_authport = int(server[1])
             nas_identifier = get_from_config("radius.nas_identifier",
                                              "privacyIDEA")
             r_dict = get_from_config("radius.dictfile",
                                      "/etc/privacyidea/dictionary")
-
-            if len(server) >= 2:
-                r_authport = int(server[1])
             log.debug("NAS Identifier: %r, "
                       "Dictionary: %r" % (nas_identifier, r_dict))
             log.debug("constructing client object "

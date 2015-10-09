@@ -125,7 +125,8 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         otplen: 6,
         genkey: true,
         type: "hotp",
-        hashlib: "sha1"
+        hashlib: "sha1",
+        'radius.system_settings': true
     };
 
     $scope.formInit = {

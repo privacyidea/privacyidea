@@ -18,7 +18,25 @@
     <label for="localPin" translate>Check the PIN locally</label>
 </div>
 
+<div class="form-group" ng-show="form['radius.local_checkpin']">
+    <label for="otplen" translate>OTP Length</label>
+    <p class="help help-block">If the PIN is split and verified locally, you
+        need to define, how long the password is, that is sent to the RADIUS
+        server.
+    </p>
+    <input type="number" ng-model="form.otplen"/>
+</div>
+
 <div class="form-group">
+    <input type="checkbox" ng-model="form['radius.system_settings']"
+           name="systemSettings" id="systemSettings">
+    <label for="systemSettings" translate>Use the RADIUS server from the
+        system settings. Even if you change the RADIUS system settings later
+        this token will use the new RADIUS server definition.
+    </label>
+</div>
+
+<div class="form-group" ng-hide="form['radius.system_settings']">
     <label for="radiusServer" translate>RADIUS Server</label>
     <input type="text"
            required
@@ -30,20 +48,23 @@
     </p>
 </div>
 
+<div class="form-group" ng-hide="form['radius.system_settings']">
+    <label for="radiusSecret" translate>RADIUS Secret</label>
+    <input type="password" ng-model="form['radius.secret']"
+           class="form-control"
+           required
+           plasceholder="testing123"
+           name="radiusSecret">
+</div>
+
 <div class="form-group">
     <label for="radiusUser" translate>RADIUS User</label>
+    <p class="help help-block" translate>This is the username that is sent
+        to the RADIUS server. It can be different from the owner of this
+        RADIUS token.</p>
     <input type="text" ng-model="form['radius.user']"
            class="form-control"
            required
            plasceholder="{{ 'The username on the RADIUS server'|translate }}"
            name="radiusUser">
-</div>
-
-<div class="form-group">
-    <label for="radiusSecret" translate>RADIUS Secret</label>
-    <input type="text" ng-model="form['radius.secret']"
-           class="form-control"
-           required
-           plasceholder="testing123"
-           name="radiusSecret">
 </div>
