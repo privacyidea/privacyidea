@@ -73,6 +73,8 @@ the realm in this action.
    the realm needs to be available during authentication
    since the user is not located in the default realm.
 
+.. _policy_no_detail_on_success:
+
 no_detail_on_success
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -84,6 +86,8 @@ the authentication request failed.
 
 If this action is set and the user authenticated successfully
 this additional information will not be returned.
+
+.. _policy_no_detail_on_fail:
 
 no_detail_on_fail
 ~~~~~~~~~~~~~~~~~

@@ -1,0 +1,13 @@
+# -*- text -*-
+#
+# 	privacyIDEA dictionary
+#
+
+VENDOR		NetKnights			44929
+
+#  Backwards compatibility.
+BEGIN-VENDOR	NetKnights
+
+ATTRIBUTE	privacyIDEA-Serial					1	string
+
+END-VENDOR	NetKnights

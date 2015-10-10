@@ -95,6 +95,23 @@ in privacyIDEA.
 .. note:: You can define a realm in ``/opt/privacyIDEA/rlm_perl.ini``. Such a
    realm definition will override a RADIUS realm in the ``User-Name``.
 
+Using the Token serial number
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In case of a successful authentication privacyIDEA returns the serial number
+of the token used.
+
+If available (see :ref:`policy_no_detail_on_success` and
+:ref:`policy_no_detail_on_fail`) the FreeRADIUS server can receive this
+serial number.
+The serial number is contained in the response value ``privacyIDEA-Serial``.
+
+To see the ``privacyIDEA-Serial`` in the RADIUS response, you need to include
+the ``dictionary.netknights`` in your FreeRADIUS dictionary.
+
+You can get it here [#netknights_dict]_.
+
+
 Debugging RADIUS
 ~~~~~~~~~~~~~~~~
 
@@ -113,4 +130,6 @@ Now you can send requests to the RADIUS server like this::
 Of course you need to replace the IP of your RADIUS server and the RADIUS
 secret "test" with your clients secret.
 
+.. rubric:: Footnotes
 
+.. [#netknights_dict] https://github.com/privacyidea/privacyidea/blob/master/authmodules/FreeRADIUS/dictionary.netknights

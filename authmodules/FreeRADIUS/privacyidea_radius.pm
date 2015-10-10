@@ -1,6 +1,8 @@
 #
 #    privacyIDEA, fork of LinOTP (radius_linotp.pm)
 #
+#    2015-10-10 Cornelius Kölbel <cornelius.koelbel@nektnights.it>
+#               Add privacyIDEA-Serial to the response.
 #    2015-10-09 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #               Improve the reading of the config file.
 #    2015-09-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -331,10 +333,12 @@ sub authenticate {
         if ( $decoded->{result}{value} ) {
             &radiusd::radlog( Info, "privacyIDEA access granted" );
             $RAD_REPLY{'Reply-Message'} = "privacyIDEA access granted";
+	    $RAD_REPLY{'privacyIDEA-Serial'} = $decoded->{detail}{serial};
             $g_return = RLM_MODULE_OK;
         }
         elsif ( $decoded->{result}{status} ) {
 
+            $RAD_REPLY{'Reply-Message'} = $decoded->{detail}{message};
             if ( $decoded->{detail}{transaction_id} ) {
                 ## we are in challenge response mode:
                 ## 1. split the response in fail, state and challenge
@@ -343,13 +347,12 @@ sub authenticate {
                 ## 4. submit the response and the state to linotp and
                 ## 5. reply ok or reject
                 $RAD_REPLY{'State'} = $decoded->{detail}{transaction_id};
-                $RAD_REPLY{'Reply-Message'} = $decoded->{detail}{message};
                 $RAD_CHECK{'Response-Packet-Type'} = "Access-Challenge";
+		$RAD_REPLY{'privacyIDEA-Serial'} = $decoded->{detail}{serial};
                 $g_return  = RLM_MODULE_HANDLED;
             } else {
                 &radiusd::radlog( Info, "privacyIDEA access denied" );
                 #$RAD_REPLY{'Reply-Message'} = "privacyIDEA access denied";
-                $RAD_REPLY{'Reply-Message'} = $decoded->{detail}{message};
                 $g_return = RLM_MODULE_REJECT;
             }
         }
