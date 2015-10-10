@@ -741,7 +741,9 @@ def loadtokens_api(filename=None):
     file_type = getParam(request.all_data, "type", required)
     hashlib = getParam(request.all_data, "aladdin_hashlib")
     trealms = getParam(request.all_data, "tokenrealms") or ""
-    tokenrealms = trealms.split(",")
+    tokenrealms = []
+    if trealms:
+        tokenrealms = trealms.split(",")
 
     TOKENS = {}
     token_file = request.files['file']
