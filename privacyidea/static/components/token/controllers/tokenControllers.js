@@ -356,6 +356,12 @@ myApp.controller("tokenImportController", function ($scope, $upload,
     // get Realms
     ConfigFactory.getRealms(function (data) {
         $scope.realms = data.result.value;
+        // Preset the default realm
+        angular.forEach($scope.realms, function (realm, realmname) {
+                if (realm.default) {
+                    $scope.form.realm = realmname;
+                }
+            });
     });
 
     $scope.upload = function (files) {
