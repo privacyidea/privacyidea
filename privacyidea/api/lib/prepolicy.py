@@ -496,7 +496,7 @@ def check_token_upload(request=None, action=None):
     policy_object = g.policy_object
     username = g.logged_in_user.get("username")
     admin_realm = g.logged_in_user.get("realm")
-    action = policy_object.get_policies(action="import",
+    action = policy_object.get_policies(action=ACTION.IMPORT,
                                         user=username,
                                         realm=params.get("realm"),
                                         scope=SCOPE.ADMIN,

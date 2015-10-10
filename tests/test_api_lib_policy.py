@@ -211,7 +211,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # Set a policy, that does allow the action
         set_policy(name="pol1",
                    scope=SCOPE.ADMIN,
-                   action="enrollTOTP, enrollHOTP, import",
+                   action="enrollTOTP, enrollHOTP, %s" % ACTION.IMPORT,
                    client="10.0.0.0/8")
         g.policy_object = PolicyClass()
 
