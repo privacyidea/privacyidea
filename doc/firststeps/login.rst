@@ -23,7 +23,7 @@ the management UI.
 Administrators are stored in the database table ``Admin`` and can be managed
 with the tool::
 
-   pi-manage.py admin ...
+   pi-manage admin ...
 
 The administrator just logs in with his username.
 

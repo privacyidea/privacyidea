@@ -56,20 +56,20 @@ Running it
 
 Create the database and encryption key:
 
-    ./pi-manage.py createdb
-    ./pi-manage.py create_enckey
+    ./pi-manage createdb
+    ./pi-manage create_enckey
 
 Create the key for the audit log:
 
-    ./pi-manage.py create_audit_keys
+    ./pi-manage create_audit_keys
 
 Create the first administrator:
 
-    ./pi-manage.py admin add <username> <email>
+    ./pi-manage admin add <username> <email>
 
 Run it:
 
-    ./pi-manage.py runserver
+    ./pi-manage runserver
 
 Now you can connect to http://localhost:5000 with your browser and login as administrator.
 

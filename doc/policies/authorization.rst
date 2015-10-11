@@ -120,7 +120,7 @@ keys. This would result in "blocking" those IP addresses from using the
 
 You can issue API keys like this::
 
-   pi-manage.py api createtoken -r validate
+   pi-manage api createtoken -r validate
 
 The API key (Authorization token) which is generated is valid for 365 days.
 

@@ -76,7 +76,7 @@ setup(
     url='http://www.privacyidea.org',
     keywords='OTP, two factor authentication, management, security',
     packages=find_packages(),
-    scripts=['pi-manage.py',
+    scripts=['pi-manage',
              'tools/privacyidea-convert-token',
              'tools/privacyidea-create-pwidresolver-user',
              'tools/privacyidea-create-sqlidresolver-user',
@@ -84,8 +84,8 @@ setup(
              'tools/privacyidea-create-certificate',
              'tools/privacyidea-fix-access-rights',
              'tools/privacyidea-create-ad-users',
-             'tools/privacyidea-fetchssh.sh',
-             'tools/privacyidea-create-userdb.sh'
+             'tools/privacyidea-fetchssh',
+             'tools/privacyidea-create-userdb'
              ],
     extras_require={
         'dev': ["Sphinx>=1.3.1",

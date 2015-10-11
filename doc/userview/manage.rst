@@ -51,14 +51,14 @@ Simple local users setup
 
 You can setup a local users definition quite easily. Run::
 
-   pi-manage.py resolver create_internal test
+   pi-manage resolver create_internal test
 
 This will create a database table "users_test" in your token database. And it
 will create a resolver "test" that refers to this database table.
 
 Then you can add this resolver to realm::
 
-   pi-manage.py realm create internal_realm test
+   pi-manage realm create internal_realm test
 
 Which will create a realm "internal_realm" containing the resolver "test".
 Now you can start adding users to this resolver as described above.

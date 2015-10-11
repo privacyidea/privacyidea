@@ -607,7 +607,7 @@ class TokenInfo(MethodsMixin, db.Model):
 class Admin(db.Model):
     """
     The administrators for managing the system.
-    To manage the administrators use the command pi-manage.py.
+    To manage the administrators use the command pi-manage.
 
     In addition certain realms can be defined to be administrative realms.
 

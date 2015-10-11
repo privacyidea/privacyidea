@@ -10,8 +10,8 @@ In 2.3 the priority of resolvers in realms was added.
 
 You need to update the database models::
 
-   pi-manage.py db stamp 4f32a4e1bf33 -d path/to/migrations 
-   pi-manage.py db upgrade -d path/to/migrations
+   pi-manage db stamp 4f32a4e1bf33 -d path/to/migrations
+   pi-manage db upgrade -d path/to/migrations
 
 .. note:: You need to specify the path to the migrations scripts.
    This could be /usr/lib/privacyidea/migrations.
@@ -67,7 +67,7 @@ config file might look like this::
 
 To verify the new configuration run::
 
-   pi-manage.py create_enckey
+   pi-manage create_enckey
 
 It should say, that the enckey already exists!
 
@@ -76,7 +76,7 @@ Migrate The Database
 
 You need to upgrade the database to the new database schema::
 
-   pi-manage.py db upgrade -d lib/privacyidea/migrations
+   pi-manage db upgrade -d lib/privacyidea/migrations
 
 .. note:: In the Ubuntu package the migrations folder is located at
    ``/usr/lib/privacyidea/migrations/``.
@@ -90,13 +90,13 @@ having a database administrator slip in a rogue password.
 
 You need to create new administrator accounts::
 
-   pi-manage.py addadmin <email-address> <admin-name>
+   pi-manage addadmin <email-address> <admin-name>
 
 Start The Server
 ................
 
 Run the server::
 
-   pi-manage.py runserver
+   pi-manage runserver
 
 or add it to your Apache or Nginx configuration.

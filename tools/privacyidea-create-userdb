@@ -22,5 +22,5 @@ cat <<END > /etc/privacyidea/usersdb.install
 END
 chown privacyidea $DATABASE
 
-pi-manage.py resolver create localusers sqlresolver /etc/privacyidea/usersdb.install
-pi-manage.py realm create localsql localusers
+pi-manage resolver create localusers sqlresolver /etc/privacyidea/usersdb.install
+pi-manage realm create localsql localusers

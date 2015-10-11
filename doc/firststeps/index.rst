@@ -4,7 +4,7 @@ First Steps
 ===========
 
 You installed privacyIDEA successfully according to :ref:`installation` and
-created an administrator using the command ``pi-manage.py admin`` as e.g.
+created an administrator using the command ``pi-manage admin`` as e.g.
 described in :ref:`install_ubuntu`.
 
 These first steps will guide you through the tasks of logging in to the

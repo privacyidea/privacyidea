@@ -28,12 +28,12 @@ deployment:
       - "[[ ! -s \"$(git rev-parse --git-dir)/shallow\" ]] || git fetch --unshallow"
       - git push git@heroku.com:privacyidea-test.git $CIRCLE_SHA1:refs/heads/master
       - heroku pg:reset DATABASE_URL --confirm privacyidea-test
-      - heroku run python ./pi-manage.py createdb --app privacyidea-test
-      - heroku run --app privacyidea-test -- python ./pi-manage.py admin add -p 'Test1234!' admin
+      - heroku run python ./pi-manage createdb --app privacyidea-test
+      - heroku run --app privacyidea-test -- python ./pi-manage admin add -p 'Test1234!' admin
       # Create default resolver
-      - heroku run --app privacyidea-test -- python ./pi-manage.py resolver create resolver1 passwdresolver /app/deploy/heroku/default-resolver
+      - heroku run --app privacyidea-test -- python ./pi-manage resolver create resolver1 passwdresolver /app/deploy/heroku/default-resolver
       # Create default realm
-      - heroku run --app privacyidea-test -- python ./pi-manage.py realm create default resolver1
+      - heroku run --app privacyidea-test -- python ./pi-manage realm create default resolver1
       # Create local realm
       - curl https://api.ghostinspector.com/v1/tests/556aadbe8607b44136a074eb/execute/?apiKey=7e4c446eb2fb14cb8db9d96bb9a3ad09245994c0
       # User Token enroll

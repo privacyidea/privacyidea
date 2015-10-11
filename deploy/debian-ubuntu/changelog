@@ -125,8 +125,8 @@ python-privacyidea (2.3-1trusty) trusty; urgency=low
 
 python-privacyidea (2.2-1trusty) trusty; urgency=low
 
-  * pi-manage.py: create resolvers and realms
-  * pi-manage.py: manage policies
+  * pi-manage: create resolvers and realms
+  * pi-manage: manage policies
   * Add LostToken UI
   * Add Offline Application
   * Add PAM authentication module with offline support

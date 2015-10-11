@@ -87,13 +87,13 @@ corresponding user access::
 With this config file in place you can create the database tables, the
 encryption key and the audit keys::
 
-   pi-manage.py createdb
-   pi-manage.py create_enckey
-   pi-manage.py create_audit_keys
+   pi-manage createdb
+   pi-manage create_enckey
+   pi-manage create_audit_keys
 
 Now you can create the first administrator::
 
-   pi-manage.py admin add administrator email@domain.tld
+   pi-manage admin add administrator email@domain.tld
 
 The system is set up. You now only need to configure the Apache2 webserver.
 

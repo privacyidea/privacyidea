@@ -28,9 +28,9 @@ the logging process.
 But you can set up a cron job to clean up old audit entries.
 
 You can specify a *highwatermark* and a *lowwatermark*. To clean
-up the audit log table, you can call pi-manage.py at command line::
+up the audit log table, you can call ``pi-manage`` at command line::
    
-   pi-manage.py rotate_audit --highwatermark 20000 --lowwatermark 18000
+   pi-manage rotate_audit --highwatermark 20000 --lowwatermark 18000
 
 This will, if there are more than 20.000 log entries, clean all old
 log entries, so that only 18000 log entries remain.
@@ -46,10 +46,10 @@ So you can simply specify a confgi file with only the content::
 
    PI_AUDIT_SQL_URI = <your database uri>
 
-Then you can call pi-manage.py like this::
+Then you can call ``pi-manage`` like this::
 
    PRIVACYIDEA_CONFIGFILE=/home/cornelius/src/privacyidea/audit.cfg \
-   pi-manage.py rotate_audit
+   pi-manage rotate_audit
 
 This will read the configuration (only the database uri) from the config file
 ``audit.cfg``.

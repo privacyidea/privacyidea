@@ -1,14 +1,14 @@
 .. _pimanage:
 
-The pi-manage.py Script
+The pi-manage Script
 =======================
 
-.. index:: pi-manage.py
+.. index:: pi-manage
 
-*pi-manage.py* is the script that is used during the installation process to
+*pi-manage* is the script that is used during the installation process to
 setup the database and do many other tasks.
 
-.. note:: The interesting thing about pi-manage.py is, that it does not need
+.. note:: The interesting thing about pi-manage is, that it does not need
    the server to run as it acts directly on the database.
    Therefor you need read access to /etc/privacyidea/pi.cfg and the encryption
    key.
@@ -16,11 +16,11 @@ setup the database and do many other tasks.
 If you want to use a config file other than /etc/privacyidea/pi.cfg, you can
 set an environment variable::
 
-   PRIVACYIDEA_CONFIGFILE=/home/user/pi.cfg pi-manage.py
+   PRIVACYIDEA_CONFIGFILE=/home/user/pi.cfg pi-manage
 
-pi-manage.py always takes a command and sometimes a sub command::
+pi-manage always takes a command and sometimes a sub command::
 
-   pi-manage.py <command> [<subcommand>] [<parameters>]
+   pi-manage <command> [<subcommand>] [<parameters>]
 
 For a complete list of commands and sub commands use the *-h* parameter.
 
@@ -33,7 +33,7 @@ You can create an encryption key and encrypt the encryption key.
 
 Create encryption key::
 
-   pi-manage.py create_enckey
+   pi-manage create_enckey
 
 .. note:: This command takes no parameters. The filename of the encryption
    key is read from the configuration. The key will not be created, if it
@@ -44,7 +44,7 @@ to set the correct access rights.
 
 You can also encrypt the encryption key with a passphrase. To do this do::
 
-   pi-manage.py encrypt_enckey /etc/privacyidea/enckey
+   pi-manage encrypt_enckey /etc/privacyidea/enckey
 
 and pipe the encrypted *enckey* to a new file.
 
@@ -70,9 +70,9 @@ tar archive backup to perform a complete restore.
 Rotate Audit Log
 ----------------
 
-Audit logs are written to the database. You can use pi-manage.py to perform a
+Audit logs are written to the database. You can use pi-manage to perform a
 log rotation.
 
-   pi-manage.py rotate_audit
+   pi-manage rotate_audit
 
 You can specify a highwatermark and a lowwatermark.

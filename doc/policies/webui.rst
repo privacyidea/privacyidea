@@ -32,7 +32,7 @@ realms can not login to the UI anymore.
 .. warning:: If you set this action and the user deletes or disables
    all his tokens, he will not be able to login anymore.
 
-.. note:: Administrators defined in the database using the pi-manage.py
+.. note:: Administrators defined in the database using the pi-manage
    command can still login with their normal passwords.
 
 .. note:: A sensible way to use this, is to combine this action in

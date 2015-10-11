@@ -26,17 +26,17 @@ Please see the section :ref:`cfgfile` for a quick setup of your configuration.
 
 Then create the encryption key and the signing keys::
 
-   pi-manage.py create_enckey
-   pi-manage.py create_audit_keys
+   pi-manage create_enckey
+   pi-manage create_audit_keys
 
 Create the database and the first administrator::
 
-   pi-manage.py createdb
-   pi-manage.py admin add admin admin@localhost
+   pi-manage createdb
+   pi-manage admin add admin admin@localhost
 
 Now you can run the server for your first test::
 
-   pi-manage.py runserver
+   pi-manage runserver
 
 
 Depending on the database you want to use, you may have to install additional packages.

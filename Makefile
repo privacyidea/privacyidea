@@ -20,7 +20,7 @@ VERSION=${SHORT_VERSION}
 SERIES="trusty precise vivid"
 LOCAL_SERIES=`lsb_release -a | grep Codename | cut -f2`
 SRCDIRS=deploy authmodules migrations doc tests tools privacyidea 
-SRCFILES=setup.py MANIFEST.in Makefile Changelog LICENSE pi-manage.py requirements.txt
+SRCFILES=setup.py MANIFEST.in Makefile Changelog LICENSE pi-manage requirements.txt
 
 clean:
 	find . -name \*.pyc -exec rm {} \;

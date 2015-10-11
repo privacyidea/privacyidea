@@ -37,7 +37,7 @@ So what's the thing with all the admins?
 
 privacyIDEA comes with its own admins, who are stored in a database table
 ``Admin`` in its own database (:ref:`code_db`). You can use the tool
-``pi-manage.py`` to
+``pi-manage`` to
 manage those admins from the command line as the system's root user. (see
 :ref:`installation`)
 

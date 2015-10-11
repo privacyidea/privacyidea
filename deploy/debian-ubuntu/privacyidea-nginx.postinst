@@ -29,16 +29,16 @@ create_files() {
         mkdir -p /var/log/privacyidea
         mkdir -p /var/lib/privacyidea
         touch /var/log/privacyidea/privacyidea.log
-	pi-manage.py create_enckey || true
-	pi-manage.py createdb || true
-	pi-manage.py create_audit_keys || true
+	pi-manage create_enckey || true
+	pi-manage createdb || true
+	pi-manage create_audit_keys || true
         chown -R $USERNAME /var/log/privacyidea
         chown -R $USERNAME /var/lib/privacyidea
         chown -R $USERNAME /etc/privacyidea
         chmod 600 /etc/privacyidea/enckey
         chmod 600 /etc/privacyidea/private.pem
         # we need to change access right, otherwise each local user could call
-        # pi-manage.py
+        # pi-manage
         chgrp root /etc/privacyidea/pi.cfg
         chmod 640 /etc/privacyidea/pi.cfg
 }
@@ -106,9 +106,9 @@ enable_nginx_uwsgi() {
 
 update_db() {
         # Set the version to the first PI 2.0 version
-        pi-manage.py db stamp 4f32a4e1bf33 -d /usr/lib/privacyidea/migrations
+        pi-manage db stamp 4f32a4e1bf33 -d /usr/lib/privacyidea/migrations
         # Upgrade the database
-        pi-manage.py db upgrade -d /usr/lib/privacyidea/migrations
+        pi-manage db upgrade -d /usr/lib/privacyidea/migrations
 }
 
 

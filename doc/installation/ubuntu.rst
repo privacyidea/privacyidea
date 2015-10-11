@@ -28,7 +28,7 @@ Alternatively you can install privacyIDEA running in an Apache webserver::
 After installing in Nginx or Apache2 you only need to create your first
 administrator and you are done::
 
-   pi-manage.py admin add admin admin@localhost
+   pi-manage admin add admin admin@localhost
 
 
 Now you may proceed to :ref:`first_steps`.
