@@ -11,6 +11,8 @@
 
 # man page
 doc/_build/man/privacyidea-server.1 	usr/share/man/man1
+doc/installation/system/pimanage/_build/man/pi-manage.1  usr/share/man/man1
+
 
 # uwsgi and nginx config
 #config/nginx/sites-available/privacyidea	etc/nginx/sites-available/
