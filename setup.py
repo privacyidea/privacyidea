@@ -110,7 +110,10 @@ setup(
                   "tools/privacyidea-create-sqlidresolver-user.1",
                   "tools/privacyidea-pip-update.1",
                   "tools/privacyidea-create-certificate.1",
-                  "tools/privacyidea-fix-access-rights.1"
+                  "tools/privacyidea-fix-access-rights.1",
+		  "tools/privacyidea-create-userdb.1",
+		  "tools/privacyidea-create-ad-users.1",
+		  "tools/privacyidea-fetchssh.1"
                   ]),
                 ('lib/privacyidea/authmodules/FreeRADIUS',
                  ["authmodules/FreeRADIUS/LICENSE",

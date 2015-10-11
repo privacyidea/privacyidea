@@ -1,0 +1,53 @@
+.\" Manpage for privacyidea-create-ad-users
+.\" Contact info@privacyidea.org for any feedback.
+.TH PRIVACYIDEA-CREATE-AD-USERS  1 "11 Oct 2015" "1.0" "privacyidea-create-ad-users man page"
+.SH NAME
+privacyidea-create-ad-users \- create users in Active Directory from a CSV file.
+.SH SYNOPSIS
+privacyidea-create-pwidresolver-user \-f <csv file> \-u <LDAP URI> -b <LDAP base> -d <LDAP Bind DN>
+.SH DESCRIPTION
+This tool creates users in Active Directory from a given CSV file.
+The first line in the CSV needs to contain the attributes.
+Any further line will contain the values of a new user object.
+.SH COMMON OPTIONS
+.PP
+\fB\-f <csv file> \fR
+.RS 4
+The CSV file with the users.
+.RE
+
+.PP
+\fB\-h\fR
+.RS 4
+Display a help message.
+.RE
+
+.PP
+\fB\-u <LDAP URI>\fR
+.RS 4
+The LDAP URI like ldaps://fqdn.
+.RE
+
+.PP
+\fB\-b <BASE DN>\fR
+.RS 4
+The base DN, where all the users will be created.
+.RE
+
+.PP
+\fB\-d <Bind DN>\fR
+.RS 4
+The bind DN of the user, who is allowed to create the user objects.
+The password will be prompted.
+.RE
+
+
+.SH INTERNET SOURCES
+http://www.privacyidea.org,  http://www.linotp.org
+.SH SEE ALSO
+
+.SH BUGS
+No known bugs.
+.SH AUTHOR
+LSE Leading Security Experts GmbH <linotp-community@lsexperts.de>,
+privacyIDEA <info@privacyidea.org>
