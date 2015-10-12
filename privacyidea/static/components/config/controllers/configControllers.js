@@ -219,7 +219,8 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
         var adminRealms = [];
         var actions = [];
         $scope.params.scope = scope;
-        $scope.params.action = [];
+        $scope.params.action = actions;
+        $scope.params.adminrealm = adminRealms;
         // get actions
 
         if ($scope.isActionValues) {
