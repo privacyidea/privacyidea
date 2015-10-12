@@ -618,3 +618,7 @@ class TokenBaseTestCase(MyTestCase):
         # A revoked token can not be enabled anymore
         self.assertRaises(Exception, token.enable)
 
+    def test_32_test_config(self):
+        r = TokenClass.test_config()
+        self.assertEqual(r[0], False)
+        self.assertEqual(r[1], "Not implemented")

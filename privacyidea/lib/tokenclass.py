@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
-#  2015-09-07 Corneluis Kölbel <cornelius@privacyidea.org>
+#  2015-10-12 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Add testconfig classmethod
+#  2015-09-07 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Add challenge response decorator
 #  2015-08-27 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Add revocation of token
@@ -1298,3 +1300,20 @@ class TokenClass(object):
                              cls.get_tokentype())
         return "json", {}
         # or return "text", "OK"
+
+    @classmethod
+    def test_config(cls, params=None):
+        """
+        This method is used to test the token config. Some tokens require some
+        special token configuration like the SMS-Token or the Email-Token.
+        To test this configuration, this classmethod is used.
+
+        It takes token specific parameters and returns a tuple of a boolean
+        and a result description.
+
+        :param params: token specific parameters
+        :type params: dict
+        :return: success, description
+        :rtype: tuple
+        """
+        return False, "Not implemented"

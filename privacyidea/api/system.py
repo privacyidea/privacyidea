@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2015-10-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add a call for testing token config
 # 2015-09-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add HSM interface
 # 2015-06-26 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -49,6 +51,7 @@ from .lib.utils import (getParam,
                         get_all_params)
 from ..lib.log import log_with
 from ..lib.config import (get_privacyidea_config,
+                          get_token_class,
                           set_privacyidea_config,
                           delete_privacyidea_config,
                           get_from_config)
@@ -57,6 +60,7 @@ from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.error import (ParameterError,
                          AuthError,
                          PolicyError)
+
 from ..lib.audit import getAudit
 
 from .auth import admin_required
@@ -421,3 +425,18 @@ def get_security_module():
     res = {"is_ready": is_ready}
     g.audit_object.log({'success': res})
     return send_result(res)
+
+
+@system_blueprint.route('/test/<tokentype>', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.SYSTEMWRITE)
+@log_with(log)
+@admin_required
+def test(tokentype=None):
+    """
+    The call /system/test/email tests the configuration of the email token.
+    """
+    tokenc = get_token_class(tokentype)
+    res, description = tokenc.test_config(request.all_data)
+    g.audit_object.log({"success": 1,
+                        "tokentype": tokentype})
+    return send_result(res, details={"message": description})

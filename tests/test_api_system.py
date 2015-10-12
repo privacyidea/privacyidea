@@ -761,3 +761,15 @@ class APIConfigTestCase(MyTestCase):
                                            method='POST',
                                            headers={'Authorization': self.at}):
             self.assertRaises(HSMException, self.app.full_dispatch_request)
+
+    def test_17_test_token_config(self):
+        with self.app.test_request_context('/system/test/hotp',
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            details = json.loads(res.data).get("detail")
+            value = result.get("value")
+            self.assertEqual(value, False)
+            self.assertEqual(details.get("message"), "Not implemented")
