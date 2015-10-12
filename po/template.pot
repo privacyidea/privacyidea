@@ -1290,6 +1290,10 @@ msgstr ""
 msgid "Realms"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.token.email.html:69
+msgid "Recipient for testing"
+msgstr ""
+
 #: privacyidea/static/components/audit/views/audit.log.html:6
 #: privacyidea/static/components/audit/views/audit.stats.html:4
 msgid "Refresh"
@@ -1471,6 +1475,10 @@ msgstr ""
 msgid "Select file and import"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.token.email.html:75
+msgid "Send Test Email"
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:10
 msgid "Separator"
 msgstr ""
@@ -1564,8 +1572,8 @@ msgstr ""
 msgid "System Config"
 msgstr ""
 
-#: privacyidea/static/components/config/controllers/configControllers.js:384
-#: privacyidea/static/components/config/controllers/configControllers.js:547
+#: privacyidea/static/components/config/controllers/configControllers.js:380
+#: privacyidea/static/components/config/controllers/configControllers.js:553
 msgid "System Config saved."
 msgstr ""
 
@@ -1874,7 +1882,7 @@ msgid ""
 "                        service itself</a>."
 msgstr ""
 
-#: privacyidea/static/app.js:95
+#: privacyidea/static/app.js:100
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
 msgstr ""
 

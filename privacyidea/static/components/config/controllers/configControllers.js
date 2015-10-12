@@ -383,6 +383,14 @@ myApp.controller("tokenConfigController", function ($scope, $location,
         });
     };
 
+    $scope.sendTestEmail = function() {
+        ConfigFactory.testTokenConfig("email", $scope.form, function(data) {
+           if (data.result.value === true) {
+               inform.add(gettext(data.detail.message), {type: "info"});
+           }
+        });
+    };
+
     $scope.loadSystemConfig();
 });
 myApp.controller("configController", function ($scope, $location,

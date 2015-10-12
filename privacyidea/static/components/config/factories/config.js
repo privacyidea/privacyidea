@@ -244,6 +244,12 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
                           'Content-Type': 'application/json'}
             }).success(callback).error(error_func);
         },
+        testTokenConfig: function(tokentype, params, callback) {
+            $http.post(systemUrl + "/test/" + tokentype, params, {
+                headers: {'Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
         loadSystemConfig: function(callback, key) {
             if (!key) {key = "";}
             $http.get(systemUrl + "/" + key, {

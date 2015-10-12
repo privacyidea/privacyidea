@@ -397,7 +397,7 @@ subject: %s
 
 %s""" % (mail_from, subject, message)
 
-        mail = smtplib.SMTP(mailserver, port)
+        mail = smtplib.SMTP(mailserver, port=int(port))
         mail.ehlo()
         # Start TLS if required
         if email_tls:
