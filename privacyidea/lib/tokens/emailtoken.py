@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-10-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add test config function
 #  2015-04-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Adapt code to work with privacyIDEA 2 (Flask)
 #
@@ -59,6 +61,7 @@ from privacyidea.models import Challenge
 from privacyidea.lib.decorators import check_token_locked
 
 log = logging.getLogger(__name__)
+TEST_SUCCESSFUL = "Successfully sent email. Please check your inbox."
 
 
 class EMAILACTION():
@@ -81,7 +84,6 @@ class EmailTokenClass(HotpTokenClass):
         # we support various hashlib methods, but only on create
         # which is effectively set in the update
         self.hashlibStr = get_from_config("hotp.hashlib", "sha1")
-
 
     @property
     def _email_address(self):
@@ -238,7 +240,7 @@ class EmailTokenClass(HotpTokenClass):
                 db_challenge.save()
                 transactionid = transactionid or db_challenge.transaction_id
                 # We send the email after creating the challenge for testing.
-                success, sent_message = self._send_email(
+                success, sent_message = self._compose_email(
                     message=message_template,
                     subject=subject_template)
 
@@ -273,7 +275,7 @@ class EmailTokenClass(HotpTokenClass):
                                                           action=EMAILACTION.EMAILSUBJECT,
                                                           default="Your OTP")
                 self.inc_otp_counter(ret, reset=False)
-                success, message = self._send_email(message=message,
+                success, message = self._compose_email(message=message,
                                                     subject=subject)
                 log.debug("AutoEmail: send new SMS: %s" % success)
                 log.debug("AutoEmail: %s" % message)
@@ -349,7 +351,7 @@ class EmailTokenClass(HotpTokenClass):
         return autosms
 
     @log_with(log)
-    def _send_email(self, message="<otp>", subject="Your OTP"):
+    def _compose_email(self, message="<otp>", subject="Your OTP"):
         """
         send email
 
@@ -379,16 +381,26 @@ class EmailTokenClass(HotpTokenClass):
         username = get_from_config("email.username")
         password = get_from_config("email.password")
         mail_from = get_from_config("email.mailfrom", "privacyidea@localhost")
+        email_tls = get_from_config("email.tls")
+
+        return self._send_email(mailserver, subject, message, mail_from,
+                                recipient, username=username,
+                                password=password, port=port,
+                                email_tls=email_tls)
+
+    @classmethod
+    def _send_email(cls, mailserver, subject, message, mail_from, recipient,
+                    username=None, password=None, port=25, email_tls=False):
+        # Upper layer will catch exceptions
         body = """From: %s
 subject: %s
 
 %s""" % (mail_from, subject, message)
 
-        # Upper layer will catch exceptions
         mail = smtplib.SMTP(mailserver, port)
         mail.ehlo()
         # Start TLS if required
-        if get_from_config("email.tls"):
+        if email_tls:
             mail.starttls()
         # Authenticate, if a username is given.
         if username:
@@ -398,3 +410,24 @@ subject: %s
         ret = True
 
         return ret, message
+
+    @classmethod
+    def test_config(cls, params=None):
+        mailserver = getParam(params, "email.mailserver", optional=False)
+        subject = "Your TEST OTP"
+        message = "This is a test."
+        mail_from = getParam(params, "email.mailfrom", optional=False)
+        recipient = getParam(params, "email.recipient", optional=False)
+        password = getParam(params, "email.password")
+        username = getParam(params, "email.username")
+        port = getParam(params, "email.port", default=25)
+        email_tls = getParam(params, "email.tls", default=False)
+        r = cls._send_email(mailserver, subject, message, mail_from,
+                            recipient, username=username,
+                            password=password, port=port, email_tls=email_tls)
+
+        description = "Could not send email."
+        if r[0]:
+            description = TEST_SUCCESSFUL
+
+        return r[0], description

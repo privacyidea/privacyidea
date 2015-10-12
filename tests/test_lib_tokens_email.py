@@ -379,3 +379,12 @@ class EmailTokenTestCase(MyTestCase):
         self.assertTrue("The PIN was correct, but the EMail could not "
                         "be sent" in c[1])
 
+    @smtpmock.activate
+    def test_21_test_email_config(self):
+        from privacyidea.lib.tokens.emailtoken import TEST_SUCCESSFUL
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")})
+        r = EmailTokenClass.test_config({"email.mailserver": "mail.example.com",
+                                         "email.mailfrom": "pi@example.com",
+                                         "email.recipient": "user@example.com"})
+        self.assertEqual(r[0], True)
+        self.assertEqual(r[1], TEST_SUCCESSFUL)
