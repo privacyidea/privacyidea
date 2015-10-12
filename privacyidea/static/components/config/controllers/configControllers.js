@@ -39,6 +39,20 @@ myApp.controller("policyListController", function($scope, $stateParams,
         });
     };
 
+    // define functions
+    $scope.enablePolicy = function (name) {
+        ConfigFactory.enablePolicy(name, function () {
+            $scope.getPolicies();
+        });
+    };
+
+    $scope.disablePolicy = function (name) {
+        ConfigFactory.disablePolicy(name, function () {
+            $scope.getPolicies();
+        });
+    };
+
+
     $scope.getPolicies();
 });
 
@@ -63,6 +77,28 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             $scope.policyDefsLoaded) {
             $scope.presetEditValues();
         }
+    };
+
+    // define functions
+    $scope.enablePolicy = function (name) {
+        ConfigFactory.enablePolicy(name, function () {
+            $scope.params.active = true;
+            $scope.getPolicies();
+        });
+    };
+
+    $scope.disablePolicy = function (name) {
+        ConfigFactory.disablePolicy(name, function () {
+            $scope.params.active = false;
+            $scope.getPolicies();
+        });
+    };
+
+    $scope.delPolicy = function (policyName) {
+        ConfigFactory.delPolicy(policyName, function(data) {
+            $scope.getPolicies();
+            $state.go("config.policies.list");
+        });
     };
 
     // Get the policy templates from github
@@ -138,21 +174,6 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
     if ($scope.existingPolicyname) {
         $scope.policyname = $scope.existingPolicyname;
     }
-
-    // define functions
-    $scope.enablePolicy = function (name) {
-        ConfigFactory.enablePolicy(name, function () {
-            $scope.params.active = true;
-            $scope.getPolicies();
-        });
-    };
-
-    $scope.disablePolicy = function (name) {
-        ConfigFactory.disablePolicy(name, function () {
-            $scope.params.active = false;
-            $scope.getPolicies();
-        });
-    };
 
     $scope.fillActionList = function (scope, policyActions) {
         // Each time the scope is changed, we need to fill the

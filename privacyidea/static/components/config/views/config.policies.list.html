@@ -16,7 +16,13 @@
         <tr ng-repeat="policy in policies">
             <td>
                 <span ng-show="policy.active"
-                      class="glyphicon glyphicon-ok"></span>
+                      class="glyphicon glyphicon-ok"
+                      ng-click="disablePolicy(policy.name)">
+                </span>
+                <span ng-hide="policy.active"
+                      class="glyphicon glyphicon-minus"
+                      ng-click="enablePolicy(policy.name)">
+                </span>
             </td>
             <td>
                 <a ui-sref="config.policies.details({policyname: policy.name})">
