@@ -39,7 +39,7 @@ myApp.controller("tokenDetailController", function ($scope,
     };
 
     $scope.unassign = function () {
-        if ($scope.loggedInUser.role == 'user') {
+        if ($scope.loggedInUser.role === 'user') {
             TokenFactory.unassign($scope.tokenSerial, $state.go('token.list'));
         } else {
             TokenFactory.unassign($scope.tokenSerial, $scope.get);
@@ -158,7 +158,7 @@ myApp.controller("tokenDetailController", function ($scope,
     //   Admin functions
     //
 
-    if ($scope.loggedInUser.role == "admin") {
+    if ($scope.loggedInUser.role === "admin") {
         // These are functions that can only be used by administrators.
         // If the user is admin, we can fetch all realms
         // If the loggedInUser is only a user, we do not need the realm list,

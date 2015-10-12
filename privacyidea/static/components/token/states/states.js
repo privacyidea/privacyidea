@@ -24,7 +24,7 @@ angular.module('privacyideaApp.tokenStates', ['ui.router']).config(
         function ($stateProvider) {
             // get the instance, the pathname part
             var instance = window.location.pathname;
-            if (instance == "/") {
+            if (instance === "/") {
                instance = "";
             }
             var tokenpath = instance + "/static/components/token/views/";

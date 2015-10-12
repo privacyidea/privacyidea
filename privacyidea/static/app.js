@@ -75,7 +75,7 @@ myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
             console.log("Browser language "+browserLanguage);
             // remove everythin after the - like en-US -> en
             var nlang = browserLanguage.replace('/-\*$/', '');
-            if (["de"].indexOf(nlang) == -1) {
+            if (["de"].indexOf(nlang) === -1) {
                 // if language is not contained in translations,
                 // we use default to "en"
                 nlang = "en";

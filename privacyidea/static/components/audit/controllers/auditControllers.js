@@ -32,11 +32,11 @@ myApp.controller("auditController", function (AuditFactory, $scope,
     $scope.statsTime = {7: "Last Week",
         28: "Last 4 Weeks"};
 
-    if ($location.path() == "/audit") {
+    if ($location.path() === "/audit") {
         $location.path("/audit/log");
     }
 
-    if ($location.path() == "/audit/statistics") {
+    if ($location.path() === "/audit/statistics") {
         $scope.getStatistics;
     }
 

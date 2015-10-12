@@ -24,7 +24,7 @@ angular.module('privacyideaApp.loginStates', ['ui.router']).config(
         function ($stateProvider) {
             // get the instance, the pathname part
             var instance = window.location.pathname;
-            if (instance == "/") {
+            if (instance === "/") {
                instance = "";
             }
             var loginpath = instance + "/static/components/login/views/";

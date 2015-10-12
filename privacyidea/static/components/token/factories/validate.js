@@ -24,7 +24,7 @@ myApp.factory("ValidateFactory", function ($http, $state, $rootScope,
          Each service - just like this service factory - is a singleton.
          */
         var error_func = function (error) {
-            if (error.result.error.code == -401) {
+            if (error.result.error.code === -401) {
                 $state.go('login');
             } else {
                 inform.add(error.result.error.message,

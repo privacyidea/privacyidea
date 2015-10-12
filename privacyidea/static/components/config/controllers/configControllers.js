@@ -20,7 +20,7 @@
  */
 myApp.controller("policyListController", function($scope, $stateParams,
                                                     $location, ConfigFactory) {
-    if ($location.path() == "/config/policies") {
+    if ($location.path() === "/config/policies") {
         $location.path("/config/policies/list");
     }
 
@@ -173,7 +173,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             //$scope.actions.push({multiSelectGroup: false})
             // Check the given policy actions
             var ticked = false;
-            if (policyActions && policyActions[key] == true) {
+            if (policyActions && policyActions[key] === true) {
                 ticked = true;
             }
             $scope.actions.push({name: key, help: value.desc, ticked: ticked});
@@ -200,9 +200,9 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
                 if (policyActions && policyActions[key]) {
                     $scope.actionCheckBox[key] = true;
                     if (policyActions[key] !== true) {
-                        if (value.type == "str")
+                        if (value.type === "str")
                             $scope.actionValuesStr[key] = policyActions[key];
-                        if (value.type == "int")
+                        if (value.type === "int")
                             $scope.actionValuesNum[key] = parseInt(policyActions[key]);
                     }
                 }
@@ -301,7 +301,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
                 }
             });
             angular.forEach($scope.scopes, function (value, key){
-                if (policy.scope == value.name) {
+                if (policy.scope === value.name) {
                     $scope.scopes[key].ticked = true;
                 } else {
                     $scope.scopes[key].ticked = false;
@@ -318,7 +318,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
         if ($scope.policies) {
             // We have $scope.policies, since we come from the state policies.list
             angular.forEach($scope.policies, function (value, key){
-               if (value.name == $stateParams.policyname) {
+               if (value.name === $stateParams.policyname) {
                     $scope.presetEditValues2(value);
                }
             });
@@ -396,13 +396,13 @@ myApp.controller("configController", function ($scope, $location,
     $scope.instanceUrl = instanceUrl;
     $scope.params = {};
     // go to the system view by default
-    if ($location.path() == "/config") {
+    if ($location.path() === "/config") {
         $location.path("/config/system");
     }
-    if ($location.path() == "/config/resolvers") {
+    if ($location.path() === "/config/resolvers") {
         $location.path("/config/resolvers/list");
     }
-    if ($location.path() == "/config/realms") {
+    if ($location.path() === "/config/realms") {
         $location.path("/config/realms/list");
     }
 
@@ -631,7 +631,7 @@ myApp.controller("hostsResolverController", function ($scope,
 myApp.controller("CAConnectorController", function($scope, ConfigFactory,
                                                    $state, $rootScope,
                                                    $location){
-    if ($location.path() == "/config/caconnectors") {
+    if ($location.path() === "/config/caconnectors") {
         $location.path("/config/caconnectors/list");
     }
 
@@ -690,7 +690,7 @@ myApp.controller("machineResolverController", function ($scope,
                                                         ConfigFactory,
                                                         $state, $rootScope,
                                                         $location) {
-    if ($location.path() == "/config/machineresolvers") {
+    if ($location.path() === "/config/machineresolvers") {
         $location.path("/config/machineresolvers/list");
     }
 

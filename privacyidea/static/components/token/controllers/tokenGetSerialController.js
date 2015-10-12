@@ -23,10 +23,10 @@ myApp.controller("tokenGetSerialController", function ($scope,
     $scope.getSerial = function() {
         $scope.params.assigned = null;
         $scope.params.unassigned = null;
-        if ($scope.assigned == "assigned") {
+        if ($scope.assigned === "assigned") {
             $scope.params.assigned = 1;
         }
-        if ("scope.assigned" == "unassigned") {
+        if ($scope.assigned === "unassigned") {
             $scope.params.unassigned = 1;
         }
         TokenFactory.getserial($scope.otp, $scope.params, function (data) {

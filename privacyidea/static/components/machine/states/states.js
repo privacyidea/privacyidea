@@ -25,7 +25,7 @@ angular.module('privacyideaApp.machineStates', ['ui.router']).config(
         function ($stateProvider) {
             // get the instance, the pathname part
             var instance = window.location.pathname;
-            if (instance == "/") {
+            if (instance === "/") {
                instance = "";
             }
             var machinepath = instance + "/static/components/machine/views/";

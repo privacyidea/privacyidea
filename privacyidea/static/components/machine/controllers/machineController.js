@@ -33,7 +33,7 @@ angular.module("privacyideaApp")
         // scroll to the top of the page
         document.body.scrollTop = document.documentElement.scrollTop = 0;
         // go to the list view by default
-        if ($location.path() == "/machine") {
+        if ($location.path() === "/machine") {
             $location.path("/machine/list");
         }
 
