@@ -18,6 +18,7 @@ If you want to upgrade from a privacyIDEA 1.5 installation please read :ref:`upg
    pip
    ubuntu
    debian
+   centos
    upgrade
    system/inifile
    system/logging
