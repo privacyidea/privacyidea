@@ -207,6 +207,7 @@ angular.module("privacyideaApp")
             }
             UserFactory.getUsers(params,
                 function (data) {
+                    console.log("success");
                     userlist = data.result.value;
                     // The userlist is the complete list of the users.
                     $scope.usercount = userlist.length;

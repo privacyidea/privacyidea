@@ -20,7 +20,7 @@
  */
 
 myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope,
-                                       userUrl, inform) {
+                                       userUrl, inform, $q) {
         var error_func = function (error) {
                         if (error.result.error.code == -401) {
                             $state.go('login');
@@ -30,11 +30,18 @@ myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope,
                         }
                     };
 
+        var canceller = $q.defer();
+
         return {
             getUsers: function(params, callback) {
+                // We only need ONE getUsers call at once.
+                // If another getUsers call is running, we cancel it.
+                canceller.resolve();
+                canceller = $q.defer();
                 $http.get(userUrl + "/", {
                     headers: {'Authorization': AuthFactory.getAuthToken() },
-                    params: params
+                    params: params,
+                    timeout: canceller.promise
                 }).success(callback
                 ).error(error_func)
             },

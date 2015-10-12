@@ -90,13 +90,20 @@ myApp.config(['$httpProvider', function ($httpProvider, inform, gettext) {
     $httpProvider.interceptors.push(function ($q, inform, gettext) {
         return {
             responseError: function (rejection) {
+                console.log(rejection);
                 if(rejection.status === 0) {
-                    // The API is offline, not reachable
-                    inform.add(gettext("The privacyIDEA system seems to be" +
-                    " offline. The API is not reachable!"),
-                        {type: "danger", ttl: 10000});
+                    if (rejection.config.timeout) {
+                        // The Request was canceled on purpose (getUsers)
+                        console.log("user canceled");
+                    } else {
+                        // The API is offline, not reachable
+                        inform.add(gettext("The privacyIDEA system seems to be" +
+                        " offline. The API is not reachable!"),
+                            {type: "danger", ttl: 10000});
+                    }
                     return;
                 }
+
                 return $q.reject(rejection);
             }
         };
