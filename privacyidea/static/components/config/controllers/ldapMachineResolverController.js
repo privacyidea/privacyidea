@@ -66,7 +66,7 @@ myApp.controller("ldapMachineResolverController", function ($scope,
             };
             $scope.showResult = true;
         });
-    }
+    };
 
 });
 

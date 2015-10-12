@@ -172,7 +172,7 @@ angular.module("privacyideaApp")
         }).success(function (data) {
             $scope.do_login_stuff(data);
             PollingAuthFactory.stop();
-        })
+        });
     };
 
     $scope.do_login_stuff = function(data) {
@@ -247,7 +247,7 @@ angular.module("privacyideaApp")
                 }
         });
 
-    }
+    };
 
 
 });

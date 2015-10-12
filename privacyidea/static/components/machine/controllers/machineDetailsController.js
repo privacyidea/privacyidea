@@ -46,7 +46,7 @@ angular.module("privacyideaApp")
                 resolver: $scope.machineresolver},
             function (data) {
                 $scope.machine = data.result.value[0];
-            })
+            });
         };
 
         $scope.getMachineTokens = function () {
@@ -58,7 +58,7 @@ angular.module("privacyideaApp")
                     var start = ($scope.params.page - 1) * $scope.tokensPerPage;
                     var stop = start + $scope.tokensPerPage;
                     $scope.tokendata = tokenlist.slice(start, stop);
-                })
+                });
         };
 
         $scope.getMachineDetails();

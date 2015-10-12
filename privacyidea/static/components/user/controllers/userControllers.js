@@ -27,12 +27,12 @@ angular.module("privacyideaApp")
         ConfigFactory.getEditableResolvers(function (data){
             var resolvers = data.result.value;
             var resolvernames = [];
-            for (rname in resolvers) {
+            for (var rname in resolvers) {
                 resolvernames.push(rname);
             }
             $scope.formInit.resolvernames = resolvernames;
             if (resolvernames.length > 0) {
-                $scope.resolvername = resolvernames[0]
+                $scope.resolvername = resolvernames[0];
             }
         });
 
@@ -59,7 +59,7 @@ angular.module("privacyideaApp")
         $scope.getUserDetails = function () {
             UserFactory.getUsers({}, function (data) {
                 $scope.User = data.result.value[0];
-                $scope.User["password"] = "";
+                $scope.User.password = "";
             });
         };
         $scope.getUserDetails();
@@ -75,7 +75,7 @@ angular.module("privacyideaApp")
                     $scope.User.password = "";
                     $scope.password2 = "";
                 });
-        }
+        };
     });
 
 angular.module("privacyideaApp")
@@ -130,7 +130,7 @@ angular.module("privacyideaApp")
                     // we also need to update the user list
                     $scope._getUsers();
                 }
-            })
+            });
         };
 
         $scope.deleteUserAsk = function() {
@@ -145,7 +145,7 @@ angular.module("privacyideaApp")
                     $scope._getUsers();
                     $location.path("/user/list");
                 }
-            })
+            });
         };
 
         $scope.assignToken = function () {
@@ -241,8 +241,9 @@ angular.module("privacyideaApp")
             });
         };
 
-        if ($scope.loggedInUser.role === "admin")
+        if ($scope.loggedInUser.role === "admin") {
             $scope.getRealms();
+        }
 
         $scope.changeRealm = function () {
             $scope.params = {page: 1};

@@ -67,5 +67,5 @@ angular.module('privacyideaApp.tokenStates', ['ui.router']).config(
                     url: "/import",
                     templateUrl: tokenpath + "token.import.html",
                     controller: "tokenImportController"
-                })
+                });
         }]);

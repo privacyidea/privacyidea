@@ -37,7 +37,7 @@ myApp.directive('tokenDataEdit', function(AuthFactory, instanceUrl) {
             console.log("tokenDataEdit");
             console.log(scope.loggedInUser);
         }
-    }
+    };
 });
 
 myApp.directive("piFilter", function (instanceUrl) {
@@ -54,7 +54,7 @@ myApp.directive("piFilter", function (instanceUrl) {
               scope.$eval(attr.ngChange);
             });
         }
-    }
+    };
 });
 
 myApp.directive("piSortBy", function(){
@@ -78,7 +78,7 @@ myApp.directive("piSortBy", function(){
                 scope.getTokens();
             });
         }
-    }
+    };
 });
 
 
@@ -111,12 +111,12 @@ myApp.directive('assignUser', function($http, userUrl, AuthFactory, instanceUrl)
                     scope.newUserObject.mobile = item.mobile;
                     scope.newUserObject.phone = item.phone;
                     return "[" + item.userid + "] " + item.username +
-                        " (" + item.givenname + " " + item.surname + ")"
+                        " (" + item.givenname + " " + item.surname + ")";
                 });
             });
             };
         }
-    }
+    };
 });
 
 myApp.directive('assignToken', function($http, tokenUrl,
@@ -148,7 +148,7 @@ myApp.directive('assignToken', function($http, tokenUrl,
             });
             };
         }
-    }
+    };
 });
 
 
@@ -179,7 +179,7 @@ myApp.directive('attachToken', function($http, tokenUrl,
             });
             };
         }
-    }
+    };
 });
 
 
@@ -210,7 +210,7 @@ myApp.directive('attachMachine', function($http, machineUrl,
             });
             };
         }
-    }
+    };
 });
 
 
@@ -219,7 +219,9 @@ myApp.directive('equals', function() {
     restrict: 'A', // only activate on element attribute
     require: '?ngModel', // get a hold of NgModelController
     link: function(scope, elem, attrs, ngModel) {
-      if(!ngModel) return; // do nothing if no ng-model
+      if(!ngModel) { // do nothing if no ng-model
+          return;
+      }
 
       // watch own value and re-validate on change
       scope.$watch(attrs.ngModel, function() {
@@ -240,7 +242,7 @@ myApp.directive('equals', function() {
         ngModel.$setValidity('equals', ! val1 || ! val2 || val1 === val2);
       };
     }
-  }
+  };
 });
 
 myApp.directive('statusClass', function() {
@@ -299,7 +301,7 @@ myApp.directive('csvDownload', function(AuthFactory, $http, instanceUrl) {
                     console.log("Downloaded.");
                     $scope.$emit('downloaded', response.data);
                 });
-            }
+            };
         }]
     }
 });

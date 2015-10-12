@@ -10,5 +10,5 @@ myApp.controller("tokenLostController", function ($scope,
             $scope.tokenLost = true;
             $scope.lostResult = data.result.value;
         });
-    }
+    };
 });

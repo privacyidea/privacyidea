@@ -83,7 +83,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
                     realm: data.realm || [],
                     action: data.action || [],
                     resolver: data.resolver || [],
-                    adminrealm: data.adminrealm || []})
+                    adminrealm: data.adminrealm || []});
         });
     };
 
@@ -93,7 +93,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
         console.log($scope.policyDefs);
         // fill the scope:
         angular.forEach($scope.policyDefs, function (value, key) {
-            $scope.scopes.push({name: key, ticked: false})
+            $scope.scopes.push({name: key, ticked: false});
         });
         $scope.policyDefsLoaded = true;
         check_all_loaded();
@@ -111,7 +111,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
     ConfigFactory.getAdminRealms(function(data){
         var adminRealms = data.result.value;
         angular.forEach(adminRealms, function (value, key){
-            $scope.adminRealms.push({name: value, ticked: false})
+            $scope.adminRealms.push({name: value, ticked: false});
         });
         $scope.adminRealmsLoaded = true;
         check_all_loaded();
@@ -144,14 +144,14 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
         ConfigFactory.enablePolicy(name, function () {
             $scope.params.active = true;
             $scope.getPolicies();
-        })
+        });
     };
 
     $scope.disablePolicy = function (name) {
         ConfigFactory.disablePolicy(name, function () {
             $scope.params.active = false;
             $scope.getPolicies();
-        })
+        });
     };
 
     $scope.fillActionList = function (scope, policyActions) {
@@ -275,7 +275,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
                 // Return to the policy list
                 $scope.getPolicies();
                 $state.go("config.policies.list");
-            })
+            });
     };
 
     $scope.presetEditValues2 = function(policy) {
@@ -301,11 +301,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
                 }
             });
             angular.forEach($scope.scopes, function (value, key){
-                if (policy.scope === value.name) {
-                    $scope.scopes[key].ticked = true;
-                } else {
-                    $scope.scopes[key].ticked = false;
-                }
+                $scope.scopes[key].ticked = (policy.scope === value.name);
             });
             $scope.fillActionList(policy.scope, policy.action);
         };
@@ -331,7 +327,6 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             });
         }
     }
-
 });
 
 myApp.controller("tokenConfigController", function ($scope, $location,
@@ -364,7 +359,7 @@ myApp.controller("tokenConfigController", function ($scope, $location,
             $scope.form['hotp.hashlib'] = $scope.form['hotp.hashlib'] || "sha1";
             // RADIUS
             $scope.form['radius.secret.type'] = "password";
-            $scope.form['radius.dictfile'] = "/etc/privacyidea/dictionary"
+            $scope.form['radius.dictfile'] = "/etc/privacyidea/dictionary";
             // SMS
             $scope.form['sms.Provider'] = $scope.form['sms.Provider'] || $scope.defaultSMSProvider;
             // Email
@@ -408,13 +403,15 @@ myApp.controller("configController", function ($scope, $location,
 
     $scope.items = ["item1", "item2", "item3"];
     $scope.dragControlListeners = {
-      accept: function (sourceItemHandleScope, destSortableScope) {return boolean},
+      accept: function (sourceItemHandleScope, destSortableScope) {
+          return boolean;
+      },
       //override to determine drag is allowed or not. default is true.
         itemMoved: function (event) {
         //Do what you want},
         },
     orderChanged: function(event) {
-    //Do what you want},
+        //Do what you want},
     },
     containment: '#board'//optional param.
     };
@@ -428,7 +425,7 @@ myApp.controller("configController", function ($scope, $location,
 
     $scope.isChecked = function (val) {
         // check if val is set
-        return [true, 1, '1', 'True'].indexOf(val) > -1
+        return [true, 1, '1', 'True'].indexOf(val) > -1;
     };
 
     $scope.getResolvers = function () {
@@ -510,7 +507,7 @@ myApp.controller("configController", function ($scope, $location,
         angular.forEach(realm.resolver, function (resolver, _keyreso) {
             $scope.selectedResolvers[resolver.name] = {selected: true,
                 priority: resolver.priority};
-        })
+        });
     };
 
     $scope.cancelEdit = function () {
@@ -546,7 +543,7 @@ myApp.controller("configController", function ($scope, $location,
             console.log(data);
             inform.add(gettext("System Config saved."),
                                 {type: "info"});
-        })
+        });
     };
     $scope.getSystemConfig = function () {
         ConfigFactory.getSystemConfig(function (data) {
@@ -560,7 +557,7 @@ myApp.controller("configController", function ($scope, $location,
             $scope.params.UiLoginDisplayHelpButton = $scope.isChecked($scope.params.UiLoginDisplayHelpButton);
             $scope.params.UiLoginDisplayRealmBox = $scope.isChecked($scope.params.UiLoginDisplayRealmBox);
             console.log($scope.params);
-        })
+        });
     };
 
     $scope.getSystemDocumentation = function () {
@@ -784,8 +781,7 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
                     {type: "danger", ttl: 10000});
             }
         });
-    }
-
+    };
 });
 
 myApp.controller("ScimResolverController", function ($scope, ConfigFactory,
@@ -827,8 +823,7 @@ myApp.controller("ScimResolverController", function ($scope, ConfigFactory,
                     {type: "danger", ttl: 10000});
             }
         });
-    }
-
+    };
 });
 
 myApp.controller("SqlResolverController", function ($scope, ConfigFactory,
@@ -899,6 +894,5 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory,
                     {type: "danger", ttl: 10000});
             }
         });
-    }
-
+    };
 });

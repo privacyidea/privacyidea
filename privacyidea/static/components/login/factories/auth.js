@@ -56,7 +56,7 @@ angular.module("privacyideaAuth", [])
                 console.log("checking right: " + action + ": " + res);
                 return res;
             }
-        }
+        };
     });
 
 //
@@ -82,5 +82,5 @@ angular.module('privacyideaAuth')
                 clearInterval(polls[name]);
                 delete polls[name];
             }
-        }
+        };
     }]);

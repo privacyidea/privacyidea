@@ -37,19 +37,19 @@ myApp.factory("MachineFactory", function (AuthFactory, $http, $state,
                     headers: {'Authorization': AuthFactory.getAuthToken() },
                     params: params
                 }).success(callback
-                ).error(error_func)
+                ).error(error_func);
             },
             getMachineTokens: function(params, callback) {
                 $http.get(machineUrl + "/token", {
                     headers: {'Authorization': AuthFactory.getAuthToken()},
                     params: params
             }).success(callback
-                ).error(error_func)
+                ).error(error_func);
             },
             attachTokenMachine: function(params, callback) {
                 $http.post(machineUrl + "/token", params, {
                     headers: {'Authorization': AuthFactory.getAuthToken()}
-                }).success(callback).error(error_func)
+                }).success(callback).error(error_func);
             },
             detachTokenMachine: function(params, callback) {
                 // /token/<serial>/<machineid>/<resolver>/<application>
@@ -57,19 +57,19 @@ myApp.factory("MachineFactory", function (AuthFactory, $http, $state,
                     params.machineid + "/" + params.resolver + "/" +
                     params.application,
                     { headers: {'Authorization': AuthFactory.getAuthToken()}
-                }).success(callback).error(error_func)
+                }).success(callback).error(error_func);
             },
             getApplicationDefinition: function(callback) {
                 $http.get(applicationUrl, {
                     headers: {'Authorization': AuthFactory.getAuthToken()}
             }).success(callback
-                ).error(error_func)
+                ).error(error_func);
             },
             saveOptions: function(params, callback) {
                 $http.post(machineUrl + "/tokenoption", params, {
                     headers: {'Authorization': AuthFactory.getAuthToken()}
-                }).success(callback).error(error_func)
+                }).success(callback).error(error_func);
             }
-        }
+        };
 
 });

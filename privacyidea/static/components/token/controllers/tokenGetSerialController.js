@@ -33,5 +33,5 @@ myApp.controller("tokenGetSerialController", function ($scope,
             $scope.serial = data.result.value.serial;
             $scope.newOtp = false;
         });
-    }
+    };
 });

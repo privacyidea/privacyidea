@@ -62,7 +62,7 @@ angular.module("privacyideaAuth")
                                 {
                                     type: "danger",
                                     ttl: 10000
-                                })
+                                });
                         } else {
                             console.log("Got response from U2F device.");
                             $http.post(authUrl, {
@@ -82,6 +82,6 @@ angular.module("privacyideaAuth")
                         }
                     });
                 }
-            }
+            };
         }]);
 

@@ -38,5 +38,5 @@ myApp.factory("ValidateFactory", function ($http, $state, $rootScope,
                 ).success(callback)
                 .error(error_func);
             }
-        }
+        };
         });

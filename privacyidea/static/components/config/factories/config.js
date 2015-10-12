@@ -44,7 +44,7 @@ myApp.factory("PolicyTemplateFactory", function($http, inform, gettext){
                                 {type: "danger", ttl:10000});
             });
         }
-    }
+    };
 });
 myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
                                          resolverUrl, realmUrl,
@@ -159,7 +159,7 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
         getAdminRealms: function(callback) {
             $http.get(realmUrl + "/superuser", {
                 headers: {'Authorization': AuthFactory.getAuthToken()}
-            }).success(callback).error(error_func)
+            }).success(callback).error(error_func);
         },
         setResolver: function (name, params, callback) {
             $http.post(resolverUrl + "/" + name, params,
@@ -245,7 +245,7 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
             }).success(callback).error(error_func);
         },
         loadSystemConfig: function(callback, key) {
-            if (!key) { key = ""};
+            if (!key) {key = "";}
             $http.get(systemUrl + "/" + key, {
                 headers: {'Authorization': AuthFactory.getAuthToken(),
                           'Content-Type': 'application/json'}

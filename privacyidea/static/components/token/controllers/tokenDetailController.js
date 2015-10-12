@@ -69,7 +69,7 @@ myApp.controller("tokenDetailController", function ($scope,
         $scope.editTokenRealm = true;
         angular.forEach($scope.token.realms, function (realmname, _index) {
             $scope.selectedRealms[realmname] = true;
-        })
+        });
     };
 
     $scope.cancelEditRealm = function () {
@@ -142,10 +142,10 @@ myApp.controller("tokenDetailController", function ($scope,
             $scope.get();
             if (data.result.value === true) {
                 inform.add(gettext("Successfully authenticated."),
-                    {type: "success", ttl: 10000})
+                    {type: "success", ttl: 10000});
             } else {
                 inform.add(data.detail.message,
-                    {type: "danger", ttl: 10000})
+                    {type: "danger", ttl: 10000});
             }
         });
     };
@@ -226,7 +226,7 @@ myApp.controller("tokenDetailController", function ($scope,
                         var start = ($scope.params.page - 1) * $scope.machinesPerPage;
                         var stop = start + $scope.machinesPerPage;
                         $scope.machinedata = machinelist.slice(start, stop);
-                    })
+                    });
         };
         // Change the pagination
         $scope.pageChanged = function () {

@@ -41,21 +41,21 @@ myApp.factory("AuditFactory", function (AuthFactory,
                     headers: {'Authorization': AuthFactory.getAuthToken()},
                     params: params
                 }).success(callback
-                ).error(error_func)
+                ).error(error_func);
             },
             download: function(params, filename, callback) {
                 $http.get(auditUrl + "/" + filename, {
                     headers: {'Authorization': AuthFactory.getAuthToken()},
                     params: params
                 }).success(callback
-                ).error(error_func)
+                ).error(error_func);
             },
             statistics: function(params, callback) {
                 $http.get(auditUrl + "/statistics", {
                     headers: {'Authorization': AuthFactory.getAuthToken()},
                     params: params
                 }).success(callback
-                ).error(error_func)
+                ).error(error_func);
             }
         }
     });
