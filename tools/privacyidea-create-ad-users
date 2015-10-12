@@ -1,48 +1,52 @@
 #!/usr/bin/python
-VERSION = '0.1'
-import os, sys
+# -*- coding: utf-8 -*-
+#
+# 2015-10-12 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Rewrite to LDAP3
+#
+VERSION = '0.2'
+
+import sys
 from getopt import getopt, GetoptError
-from subprocess import call
-import ldap
-import ldap.modlist as modlist
+import ldap3
 import getpass
 
+# Objectclass for OpenLDAP
+#OBJECT_CLASSES = ['top', "posixAccount", 'inetOrgPerson']
+# ObjectClass for AD
+OBJECT_CLASSES = ['top', "person", 'inetOrgPerson', "user"]
+
 def usage():
-    print  '''
+    print('''
     Parameter:
     -f <csv file>
     -h : help
     -u <ldap uri>
     -b <base, where to create the user>
     -d <Bind DN>
-    '''
+    ''')
 
 
-def create_user( l, base, keys, values):
+def create_user(l, base, keys, values):
 
-    dn = "%s=%s,%s"  % ( keys[0], values[0], base )
+    dn = "%s=%s,%s" % (keys[0], values[0], base)
     attrs = {}
-    attrs['objectclass'] = ['top', 'person', 'organizationalPerson','user']
     for x in range(1, len(keys)):
-        attrs[keys[x-1]] = values[x-1]    
-    
-    ldif = modlist.addModlist(attrs)
+        attrs[keys[x]] = values[x]
 
-    print "creating user %s with attrs %s" % (values, attrs)
-    l.add_s(dn, ldif)
-    #l.modify(dn, mods)
-
-
+    print("creating user %s" % dn)
+    r = l.add(dn, object_class=OBJECT_CLASSES, attributes=attrs)
+    if not r:
+        print("   Failed to create user with attributes %s" % attrs)
+        print(l.result)
 
 
 def main():
-
-    file = None
+    filename = None
     base = None
     uri = None
     bind = None
-    password = None
-    
+
     try:
         opts, args = getopt(sys.argv[1:], "f:u:b:d:", ["file="])
 
@@ -53,39 +57,42 @@ def main():
 
     for opt, arg in opts:
         if opt in ('-f', '--file'):
-            file = arg
-        elif opt in ('-b'):
+            filename = arg
+        elif opt in ('-b',):
             base = arg
-        elif opt in ('-d'):
+        elif opt in ('-d',):
             bind = arg
-        elif opt in ('-u'):
+        elif opt in ('-u',):
             uri = arg
         elif opt in ('-h', '--help'):
             usage()
             sys.exit(1)
 
-    if not file or not base or not uri or not bind:
+    if not filename or not base or not uri or not bind:
         usage()
         sys.exit(2)
     else:
         password = getpass.getpass("Please enter password for %s: " % bind)
         
         # read the first line
-        f = open(file, "r")
+        f = open(filename, "r")
         first_line = f.readline()
-        keys = [ x.strip() for x in first_line.split(',') ]
-        
-        l = ldap.initialize(uri)
-        l.simple_bind_s(bind, password)
+        keys = [x.strip() for x in first_line.split(',')]
+
+        l = ldap3.Connection(uri,
+                             user=bind,
+                             password=password,
+                             auto_bind=True,
+                             authentication=ldap3.SIMPLE,
+                             check_names=True,
+                             auto_referrals=False)
+        #l.open()
 
         for line in f:
-            values = [ v.strip() for v in line.split(',') ]
-            
+            values = [v.strip() for v in line.split(',')]
             create_user(l, base, keys, values)
         
-        l.unbind_s()
-
-        
+        l.unbind()
     
 
 if __name__ == '__main__':
