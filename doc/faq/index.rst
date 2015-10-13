@@ -187,3 +187,9 @@ You can create a similar second resolver by editing the exiting resolver and
 entering a new resolver name. This will save this modified resolver
 definition under this new name. Thus you have a resolver with the old name
 and another one with the new name.
+
+
+What drivers are available for MySQL or Maria DB?
+-------------------------------------------------
+
+Please read :ref:`mysqldb`.

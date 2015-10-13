@@ -11,6 +11,8 @@ privacyIDEA reads its configuration from different locations:
    2. then from the config file ``/etc/privacyidea/pi.cfg`` if it exists and then
    3. from the file specified in the environment variable ``PRIVACYIDEA_CONFIGFILE``.
 
+         export PRIVACYIDEA_CONFIGFILE=/your/config/file
+
 The configuration is overwritten and extended in each step. I.e. values define
 in ``privacyidea/config.py``
 that are not redefined in one of the other config files, stay the same.
@@ -40,10 +42,9 @@ The file should contain the following contents::
 .. note:: The config file is parsed as python code, so you can use variables to
    set the path and you need to take care for indentations.
 
-If you are using a config file other than ``/etc/privacyidea/pi.cfg``
-you need to set the environment variable::
-
-   export PRIVACYIDEA_CONFIGFILE=/your/config/file
+``SQLALCHEMY_DATABASE_URI`` defines the location of your database.
+You may want to use the MySQL database or Maria DB. There are two possible
+drivers, to connect to this database. Please read :ref:`mysqldb`.
 
 The ``SUPERUSER_REALM`` is a list of realms, in which the users get the role
 of an administrator.

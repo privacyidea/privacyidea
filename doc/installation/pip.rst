@@ -6,8 +6,19 @@ Python Package Index
 .. index:: pip install, virtual environment
 
 You can install privacyidea on usually any Linux distribution in a python
-virtual environment
-like this::
+virtual environment. This way you keep all privacyIDEA code in one defined
+subdirectory.
+
+You first need to install some development packages. E.g. on debian based
+distributions the packages are called
+
+* libjpeg-dev
+* libz-dev
+* python-dev
+* libffi-dev
+* libssl-dev
+
+Now you can install privacyIDEA like this::
 
   virtualenv /opt/privacyidea
 
@@ -42,6 +53,5 @@ Now you can run the server for your first test::
 Depending on the database you want to use, you may have to install additional packages.
 
 .. rubric:: Footnotes
-
 .. [#ppa] https://launchpad.net/~privacyidea
-.. [#simpleSAML]  https://github.com/privacyidea/privacyidea/tree/master/authmodules/simpleSAMLphp
+.. [#simpleSAML] https://github.com/privacyidea/privacyidea/tree/master/authmodules/simpleSAMLphp

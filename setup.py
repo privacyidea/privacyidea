@@ -56,7 +56,8 @@ install_requires = ["Flask>=0.10.1",
                     "qrcode>=5.1",
                     "requests>=2.7.0",
                     "sqlsoup>=0.9.0",
-		    "ecdsa>=0.13"
+                    "ecdsa>=0.13",
+                    "cryptography"
                     ]
 
 # For python 2.6 we need additional dependency importlib
