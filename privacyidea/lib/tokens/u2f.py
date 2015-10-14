@@ -279,7 +279,7 @@ def der_encode(signature_bin_asn):
     :param signature_bin_asn: RAW signature
     :return: DER encoded signature
     """
-    assert(len(signature_bin_asn), 64)
+    assert(len(signature_bin_asn) == 64)
     vr = signature_bin_asn[:32]
     b2 = 32
     if ord(vr[0]) >= 128:
