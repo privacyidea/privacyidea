@@ -29,9 +29,9 @@ create_files() {
         mkdir -p /var/log/privacyidea
         mkdir -p /var/lib/privacyidea
         touch /var/log/privacyidea/privacyidea.log
-        pi-manage create_enckey || true
-        pi-manage createdb || true
-        pi-manage create_audit_keys || true
+        pi-manage create_enckey || true > /dev/null
+        pi-manage createdb || true > /dev/null
+        pi-manage create_audit_keys || true > /dev/null
         chown -R $USERNAME /var/log/privacyidea
         chown -R $USERNAME /var/lib/privacyidea
         chown -R $USERNAME /etc/privacyidea
@@ -106,9 +106,9 @@ enable_apache() {
 
 update_db() {
 	# Set the version to the first PI 2.0 version
-	pi-manage db stamp 4f32a4e1bf33 -d /usr/lib/privacyidea/migrations
+	pi-manage db stamp 4f32a4e1bf33 -d /usr/lib/privacyidea/migrations > /dev/null
 	# Upgrade the database
-	pi-manage db upgrade -d /usr/lib/privacyidea/migrations
+	pi-manage db upgrade -d /usr/lib/privacyidea/migrations > /dev/null
 }
 
 case "$1" in
