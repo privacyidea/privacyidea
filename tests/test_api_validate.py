@@ -9,6 +9,7 @@ from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
                                     delete_privacyidea_config)
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    reset_token)
+from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy
 
 from privacyidea.lib.error import (ParameterError, UserError)
 import smtpmock
@@ -666,3 +667,38 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(result.get("value"), True)
 
         delete_privacyidea_config("AutoResync")
+
+    def test_17_auth_timelimit(self):
+        user = User("timelimituser", realm=self.realm2)
+        pin = "spass"
+        # create a token
+        init_token({"type": "spass",
+                    "pin": pin}, user=user)
+
+        # set policy for timelimit
+        set_policy(name="pol_time1",
+                   scope=SCOPE.AUTHZ,
+                   action="%s=2/20s" % ACTION.AUTHMAXSUCCESS)
+
+        for i in [1, 2]:
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "timelimituser",
+                                                     "realm": self.realm2,
+                                                     "pass": pin}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                result = json.loads(res.data).get("result")
+                self.assertEqual(result.get("value"), True)
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "timelimituser",
+                                                 "realm": self.realm2,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), False)
+
+        delete_policy("pol_time1")

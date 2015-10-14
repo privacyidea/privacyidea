@@ -217,6 +217,16 @@ class Audit(object):  # pragma: no cover
         """
         return Paginate()
 
+    def get_count(self, search_dict, timedelta=None, success=None):
+        """
+        Returns the number of found log entries.
+        E.g. used for checking the timelimit.
+
+        :param param: List of filter parameters
+        :return: number of found entries
+        """
+        return 0
+
     def csv_generator(self, param):
         """
         A generator that can be used to stream the audit log

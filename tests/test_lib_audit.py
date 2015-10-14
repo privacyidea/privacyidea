@@ -7,6 +7,7 @@ This tests the files
 from .base import MyTestCase
 from privacyidea.lib.audit import getAudit, search
 import datetime
+import time
 
 PUBLIC = "tests/testdata/public.pem"
 PRIVATE = "tests/testdata/private.pem"
@@ -103,6 +104,38 @@ class AuditTestCase(MyTestCase):
 
         audit_log = self.Audit.search({"serial": "oath*"})
         self.assertTrue(audit_log.total == 1, audit_log.total)
+
+    def test_02_get_count(self):
+        # Prepare some audit entries:
+        self.Audit.log({"action": "/validate/check",
+                        "success": True})
+        self.Audit.finalize_log()
+
+        self.Audit.log({"action": "/validate/check",
+                        "success": True})
+        self.Audit.finalize_log()
+
+        self.Audit.log({"action": "/validate/check",
+                        "success": False})
+        self.Audit.finalize_log()
+        time.sleep(2)
+
+        self.Audit.log({"action": "/validate/check",
+                        "success": True})
+        self.Audit.finalize_log()
+
+        # get 4 authentications
+        r = self.Audit.get_count({"action": "/validate/check"})
+        self.assertEqual(r, 4)
+
+        # get one failed authentication
+        r = self.Audit.get_count({"action": "/validate/check"}, success=False)
+        self.assertEqual(r, 1)
+
+        # get one authentication during the last second
+        r = self.Audit.get_count({"action": "/validate/check"}, success=True,
+                                 timedelta=datetime.timedelta(seconds=1))
+        self.assertEqual(r, 1)
 
     def test_03_lib_search(self):
         res = search(self.config, {"page": 1, "page_size": 10, "sortorder":

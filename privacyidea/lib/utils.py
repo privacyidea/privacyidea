@@ -9,6 +9,7 @@ import urllib
 from privacyidea.lib.crypto import urandom
 import string
 import re
+from datetime import timedelta
 
 def generate_otpkey(key_size=20):
     """
@@ -189,3 +190,32 @@ def get_data_from_params(params, exclude_params, config_description, module,
                         unicode(params))
 
     return data, types, desc
+
+
+def parse_timelimit(limit):
+    """
+    This parses a string that contains a timelimit in the format
+    2/5m or 1/3h, which means
+    two in five minutes and
+    one in three hours.
+
+    It returns a tuple the number and the timedelta.
+    :param limit: a timelimit
+    :type limit: basestring
+    :return: tuple of number and timedelta
+    """
+    # Strip and replace blanks
+    limit = limit.strip().replace(" ", "")
+    time_specifier = limit[-1].lower()
+    if time_specifier not in ["m", "s", "h"]:
+        raise Exception("Invalid time specifier")
+    l = limit[:-1].split("/")
+    count = int(l[0])
+    time = int(l[1])
+    td = timedelta(minutes=time)
+    if time_specifier == "s":
+        td = timedelta(seconds=time)
+    if time_specifier == "h":
+        td = timedelta(hours=time)
+
+    return count, td

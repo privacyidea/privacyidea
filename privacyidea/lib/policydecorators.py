@@ -39,6 +39,7 @@ from privacyidea.lib.error import PolicyError
 import functools
 from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import parse_timelimit
 
 log = logging.getLogger(__name__)
 
@@ -244,6 +245,57 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
 
     # If nothing else returned, we return the wrapped function
     return wrapped_function(user_object, passw, options)
+
+
+def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
+    """
+    This decorator checks the policy settings of ACTION.AUTHMAXSUCCESS.
+    If the authentication was successful, it checks, if the number of allowed
+    successful authentications is exceeded.
+
+    The wrapped function is usually token.check_user_pass, which takes the
+    arguments (user, passw, options={})
+
+    :param wrapped_function:
+    :param user_object:
+    :param passw:
+    :param options: Dict containing values for "g" and "clientip"
+    :return: Tuple of True/False and reply-dictionary
+    """
+    # First we call the wrapped function
+    res, reply_dict = wrapped_function(user_object, passw, options)
+
+    if res:
+        options = options or {}
+        g = options.get("g")
+        if g:
+            clientip = options.get("clientip")
+            policy_object = g.policy_object
+            max_success = policy_object.get_action_values(action=ACTION.AUTHMAXSUCCESS,
+                                                          scope=SCOPE.AUTHZ,
+                                                          realm=user_object.realm,
+                                                          user=user_object.login,
+                                                          client=clientip)
+            if len(max_success) > 1:
+                raise PolicyError("Contradicting policies for %s" % ACTION.AUTHMAXSUCCESS)
+
+            if len(max_success) == 1:
+                policy_count, tdelta = parse_timelimit(max_success[0])
+                # check the successful authentications for this user
+                succ_c = g.audit_object.get_count({"user": user_object.login,
+                                                   "realm": user_object.realm,
+                                                   "action":
+                                                       "%/validate/check"},
+                                                  success=True,
+                                                  timedelta=tdelta)
+                log.debug("Checking users timelimit %s: %s authentications" %
+                          (max_success[0], succ_c))
+                if succ_c >= policy_count:
+                    res = False
+                    reply_dict["message"] = "Only %s authentications per %s" \
+                                            % (policy_count, tdelta)
+
+    return res, reply_dict
 
 
 def login_mode(wrapped_function, *args, **kwds):

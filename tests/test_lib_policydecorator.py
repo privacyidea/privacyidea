@@ -15,13 +15,15 @@ from privacyidea.lib.policydecorators import (auth_otppin,
                                               auth_user_passthru,
                                               auth_user_has_no_token,
                                               login_mode, config_lost_token,
-                                              challenge_response_allowed)
+                                              challenge_response_allowed,
+                                              auth_user_timelimit)
 from privacyidea.lib.user import User
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.token import (init_token, remove_token, check_user_pass,
                                    get_tokens)
 from privacyidea.lib.error import UserError, PolicyError
+from privacyidea.lib.audit import getAudit
 
 
 def _check_policy_name(polname, policies):
@@ -359,3 +361,4 @@ class LibPolicyTestCase(MyTestCase):
         rv = token.is_challenge_request(pin, user=user, options=options)
         self.assertEqual(rv, True)
         delete_policy("pol_chal_resp_1")
+

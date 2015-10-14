@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 #
-#  2015-10-09 Cornelius Kölbel <cornelius.koelbel@netnights.it>
+#  2015-10-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add auth_max_success and auth_max_fail actions to
+#             scope authorization
+#  2015-10-09 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add token_page_size and user_page_size policy
 #  2015-09-06 Cornelius Kölbel <cornelius.koelbel@netkngihts.it>
 #             Add challenge_response authentication policy
@@ -128,6 +131,8 @@ class ACTION():
     ASSIGN = "assign"
     AUDIT = "auditlog"
     AUTHITEMS = "fetch_authentication_items"
+    AUTHMAXSUCCESS = "auth_max_success"
+    AUTHMAXFAIL = "auth_max_fail"
     AUTOASSIGN = "autoassignment"
     CACONNECTORREAD = "caconnectorread"
     CACONNECTORWRITE = "caconnectorwrite"
@@ -987,6 +992,20 @@ def get_static_policy_definitions(scope=None):
             #     }
         },
         SCOPE.AUTHZ: {
+            ACTION.AUTHMAXSUCCESS: {
+                'type': 'str',
+                'desc': _("You can specify how many successful authentication "
+                          "requests a user is allowed to do in a given time. "
+                          "Specify like 1/5s, 2/10m, 10/1h - s, m, h being "
+                          "second, minute and hour.")
+            },
+            ACTION.AUTHMAXFAIL: {
+                'type': 'str',
+                'desc': _("You can specify how many failed authentication "
+                          "requests a user is allowed to do in a given time. "
+                          "Specify like 1/5s, 2/10m, 10/1h - s, m, h being "
+                          "second, minute and hour.")
+            },
             ACTION.TOKENTYPE: {
                 'type': 'str',
                 'desc': _('The user will only be authenticated with this '

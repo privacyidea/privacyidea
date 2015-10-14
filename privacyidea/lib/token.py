@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2015-10-14 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Add timelimit to user auth.
 #  2015-08-31 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Add check_realm_pass for 4-eyes policy
 #  2015-03-20 Cornelius Kölbel, <cornelius@privacyidea.org>
@@ -72,6 +74,7 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_does_not_exist,
                                               auth_user_has_no_token,
                                               auth_user_passthru,
+                                              auth_user_timelimit,
                                               config_lost_token)
 
 log = logging.getLogger(__name__)
@@ -1737,6 +1740,7 @@ def check_serial_pass(serial, passw, options=None):
     return res, reply_dict
 
 
+@libpolicy(auth_user_timelimit)
 @libpolicy(auth_user_passthru)
 @libpolicy(auth_user_has_no_token)
 @libpolicy(auth_user_does_not_exist)
@@ -1744,7 +1748,7 @@ def check_serial_pass(serial, passw, options=None):
 def check_user_pass(user, passw, options=None):
     """
     This function checks the otp for a given user.
-    It is called by the API /validate/check and simplecheck
+    It is called by the API /validate/check
 
     If the OTP matches, True is returned and the otp counter is increased.
 
@@ -1770,6 +1774,7 @@ def check_user_pass(user, passw, options=None):
                                            options=options)
 
     return res, reply_dict
+
 
 @log_with(log)
 def check_token_list(tokenobject_list, passw, user=None, options=None):

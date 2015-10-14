@@ -126,3 +126,41 @@ The API key (Authorization token) which is generated is valid for 365 days.
 
 The authorization token has to be used as described in :ref:`rest_auth`.
 
+.. _policy_auth_max_success:
+
+auth_max_success
+~~~~~~~~~~~~~~~~
+
+type: string
+
+Here you can specify how many successful authentication requests a user is
+allowed to perform during a given time.
+If this value is exceeded, the authentication attempt is canceled.
+
+Specify the value like ``2/5m`` meaning 2 successful authentication requests
+per 5 minutes. If during the last 5 minutes 2 successful authentications were
+performed the authentication request is discarded. The used OTP value is
+invalidated.
+
+Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
+
+.. _policy_auth_max_fail:
+
+auth_max_fail
+~~~~~~~~~~~~~
+
+type: string
+
+Here you can specify how many failed authentication requests a user is
+allowed to perform during a given time.
+If this value is exceeded, the fail counter is increased.
+
+If this policy is not defined, the fail counter is increased immediately.
+
+Specify the value like ``2/1m`` meaning 2 successful authentication requests
+per minute. If during the last 5 minutes 2 successful authentications were
+performed the authentication request is discarded. The used OTP value is
+invalidated.
+
+Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
+

@@ -373,6 +373,22 @@ class Audit(AuditBase):
             string_list = ["'%s'" % x for x in audit_list]
             yield ",".join(string_list)+"\n"
 
+    def get_count(self, search_dict, timedelta=None, success=None):
+        # create filter condition
+        filter_condition = self._create_filter(search_dict)
+        conditions = [filter_condition]
+        if success is not None:
+            conditions.append(LogEntry.success == success)
+
+        if timedelta is not None:
+            conditions.append(LogEntry.date >= datetime.datetime.now() -
+                              timedelta)
+
+        filter_condition = and_(*conditions)
+        log_count = self.session.query(LogEntry).filter(filter_condition).count()
+
+        return log_count
+
     def search(self, search_dict, page_size=15, page=1, sortorder="asc"):
         """
         This function returns the audit log as a Pagination object.
