@@ -312,9 +312,18 @@
         </tr>
 
         <tr ng-hide="token.locked">
-            <td></td>
+            <td><input type="checkbox" ng-model="showPassword"
+                       id="showPassword"><label for="showPassword"
+                    translate> Show password</label></td>
             <td ng-hide="token.tokentype == 'registration'">
                 <input type="text" ng-model="testPassword"
+                       name="testPassword"
+                       ng-show="showPassword"
+                       class="form-control"
+                       placeholder="{{'Enter PIN and OTP to check the token.'
+                       | translate }}">
+                <input type="password" ng-model="testPassword"
+                       ng-hide="showPassword"
                        name="testPassword"
                        class="form-control"
                        placeholder="{{'Enter PIN and OTP to check the token.'
