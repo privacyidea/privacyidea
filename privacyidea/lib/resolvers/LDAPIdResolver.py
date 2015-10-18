@@ -67,6 +67,7 @@ class IdResolver (UserIdResolver):
         self.noreferrals = False
         self.certificate = ""
         self.resolverId = self.uri
+        self.scope = ldap3.SUBTREE
 
     def checkPass(self, uid, password):
         """
@@ -171,7 +172,7 @@ class IdResolver (UserIdResolver):
             filter = "(&%s(%s=%s))" % \
                 (self.searchfilter, self.uidtype, userId)
             self.l.search(search_base=self.basedn,
-                              search_scope=ldap3.SUBTREE,
+                              search_scope=self.scope,
                               search_filter=filter,
                               attributes=self.userinfo.values())
             r = self.l.response
@@ -213,14 +214,14 @@ class IdResolver (UserIdResolver):
         if self.uidtype.lower() == "dn":
             # encode utf8, so that also german ulauts work in the DN
             self.l.search(search_base=userId.encode("utf-8"),
-                          search_scope=ldap3.SUBTREE,
+                          search_scope=self.scope,
                           search_filter="(&" + self.searchfilter + ")",
                           attributes=self.userinfo.values())
         else:
             filter = "(&%s(%s=%s))" %\
                 (self.searchfilter, self.uidtype, userId)
             self.l.search(search_base=self.basedn,
-                              search_scope=ldap3.SUBTREE,
+                              search_scope=self.scope,
                               search_filter=filter,
                               attributes=self.userinfo.values())
 
@@ -283,7 +284,7 @@ class IdResolver (UserIdResolver):
             attributes.append(str(self.uidtype))
             
         self.l.search(search_base=self.basedn,
-                      search_scope=ldap3.SUBTREE,
+                      search_scope=self.scope,
                       search_filter=filter,
                       attributes=attributes)
 
@@ -318,7 +319,7 @@ class IdResolver (UserIdResolver):
         filter += ")"
             
         self.l.search(search_base=self.basedn,
-                      search_scope=ldap3.SUBTREE,
+                      search_scope=self.scope,
                       search_filter=filter,
                       attributes=attributes,
                       paged_size=self.sizelimit)
@@ -391,6 +392,7 @@ class IdResolver (UserIdResolver):
         self.uidtype = config.get("UIDTYPE", "DN")
         self.noreferrals = config.get("NOREFERRALS", False)
         self.certificate = config.get("CACERTIFICATE")
+        self.scope = config.get("SCOPE") or ldap3.SUBTREE
         self.resolverId = self.uri
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
         
@@ -531,7 +533,7 @@ class IdResolver (UserIdResolver):
                 attributes.append(str(uidtype))
             # search for users...
             l.search(search_base=param["LDAPBASE"],
-                     search_scope=ldap3.SUBTREE,
+                     search_scope=param.get("SCOPE") or ldap3.SUBTREE,
                      search_filter="(&" + param["LDAPSEARCHFILTER"] + ")",
                      attributes=attributes)
 

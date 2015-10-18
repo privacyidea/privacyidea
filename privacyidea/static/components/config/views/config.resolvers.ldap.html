@@ -31,13 +31,27 @@
         </div>
     </div>
     <div class="form-group">
-        <label for="basedn" class="col-sm-3 control-label" translate>Base DN</label>
+        <label for="basedn" class="col-sm-3 control-label"
+               translate>Base DN</label>
 
-        <div class="col-sm-9">
+        <div class="col-sm-4">
             <input name="basedn" class="form-control"
                    ng-model="params.LDAPBASE" required
                    placeholder="ou=users,dc=domain,dc=tld"/>
         </div>
+
+        <label for="ldapscope" class="col-sm-2 control-label"
+               translate>Scope</label>
+
+        <div class="col-sm-3">
+            <select class="form-control"
+                        ng-model="params.SCOPE"
+                        name="ldapscope"
+                        ng-options="select for select in scopes">
+            </select>
+        </div>
+
+
     </div>
     <div class="form-group">
         <label for="binddn" class="col-sm-3 control-label" translate>Bind DN</label>
