@@ -1122,6 +1122,8 @@ class PasswordHashTestCase(MyTestCase):
         r = ph.check_password("Hallo", "_xyFAfsLH.5Z.Q")
         self.assertTrue(r)
 
-
-
+        # Drupal passwords
+        r = ph.check_password("mohsen123",
+                              "$S$D98Bg3ANTUrjVwx073djifdH1KxbyzXQaPrmbpxGOu4VXFyMClRz")
+        self.assertTrue(r)
         # gensalt, hash_password

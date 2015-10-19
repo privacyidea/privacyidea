@@ -151,9 +151,14 @@ class PasswordHash:
             return outp
         if not isinstance(pw, str):
             pw = pw.encode('utf-8')
-        hx = hashlib.md5(salt + pw).digest()
+
+        hash_func = hashlib.md5
+        if setting.startswith('$S$'):
+            hash_func = hashlib.sha512
+
+        hx = hash_func(salt + pw).digest()
         while count:
-            hx = hashlib.md5(hx + pw).digest()
+            hx = hash_func(hx + pw).digest()
             count -= 1
         return setting[:12] + self.encode64(hx, 16)
 
@@ -340,7 +345,7 @@ class IdResolver (UserIdResolver):
         userinfo = self.getUserInfo(uid)
         
         database_pw = userinfo.get("password", "XXXXXXX")
-        if database_pw[:2] == "$P":
+        if database_pw[:2] in ["$P", "$S"]:
             # We have a phpass (wordpress) password
             PH = PasswordHash()
             res = PH.check_password(password, userinfo.get("password"))
