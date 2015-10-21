@@ -45,10 +45,24 @@ contains the trusted certificate authorities in PEM format.
 
 The default behaviour is to trigger an online authentication request.
 If the request was successful, the user is logged in.
-If the request was done with a token defined for offline authentication, than
+If the request was done with a token defined for offline authentication, then
 in addition all offline information is passed to the client and cached on the
 client so that the token can be used to authenticate without the privacyIDEA
 server available.
+
+try_first_pass
+~~~~~~~~~~~~~~
+
+Starting with version 2.8 privacyidea_pam supports *try_first_pass*.
+In this case the password that exists in the PAM stack will be sent to
+privacyIDEA. If this password is successfully validated, than the user is
+logged in without additional requests.
+If the password is not validated by privacyIDEA, the user is asked for an
+additional OTP value.
+
+.. note:: This can be used in conjunction with the :ref:`passthru_policy`
+   policy. In this case users with no tokens will be able to login with only
+   the password in the PAM stack.
 
 Read more about how to use PAM to do :ref:`openvpn`.
 

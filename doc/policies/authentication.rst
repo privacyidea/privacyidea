@@ -52,6 +52,7 @@ how the authentication should be processed:
    The user does not have to pass any fixed password.
    Authentication is only done via the OTP value.
 
+.. _passthru_policy:
 
 passthru
 ~~~~~~~~

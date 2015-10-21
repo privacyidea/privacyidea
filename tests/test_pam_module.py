@@ -68,6 +68,7 @@ class PAMH(object):
 
     PAM_AUTH_ERR = 0
     PAM_SUCCESS = 1
+    PAM_SYSTEM_ERR = 2
 
     exception = Exception
 
@@ -123,15 +124,17 @@ class PAMTestCase(MyTestCase):
         pamh = PAMH("cornelius", "test100001")
         flags = None
         argv = ["url=http://my.privacyidea.server",
-                "sqlfile=%s" % SQLFILE]
+                "sqlfile=%s" % SQLFILE,
+                "try_first_pass"]
         r = pam_sm_authenticate(pamh, flags, argv)
         self.assertEqual(r, PAMH.PAM_SUCCESS)
 
-        # Auhenticate the second time offline
+        # Authenticate the second time offline
         pamh = PAMH("cornelius", "test100002")
         flags = None
         argv = ["url=http://my.privacyidea.server",
-                "sqlfile=%s" % SQLFILE]
+                "sqlfile=%s" % SQLFILE,
+                "try_first_pass"]
         r = pam_sm_authenticate(pamh, flags, argv)
         self.assertEqual(r, PAMH.PAM_SUCCESS)
 
@@ -147,7 +150,8 @@ class PAMTestCase(MyTestCase):
         pamh = PAMH("cornelius", "test999999")
         flags = None
         argv = ["url=http://my.privacyidea.server",
-                "sqlfile=%s" % SQLFILE]
+                "sqlfile=%s" % SQLFILE,
+                "try_first_pass"]
         r = pam_sm_authenticate(pamh, flags, argv)
         self.assertTrue(r)
         # Now the offlne values are stored
@@ -157,7 +161,8 @@ class PAMTestCase(MyTestCase):
         pamh = PAMH("cornelius", "test100000")
         flags = None
         argv = ["url=http://my.privacyidea.server",
-                "sqlfile=%s" % SQLFILE]
+                "sqlfile=%s" % SQLFILE,
+                "try_first_pass"]
         r = pam_sm_authenticate(pamh, flags, argv)
         self.assertTrue(r)
 
@@ -183,7 +188,8 @@ class PAMTestCase(MyTestCase):
         pamh = PAMH("cornelius", "test100001")
         flags = None
         argv = ["url=http://my.privacyidea.server",
-                "sqlfile=%s" % SQLFILE]
+                "sqlfile=%s" % SQLFILE,
+                "try_first_pass"]
         r = pam_sm_authenticate(pamh, flags, argv)
         self.assertEqual(r, PAMH.PAM_SUCCESS)
 
@@ -191,7 +197,8 @@ class PAMTestCase(MyTestCase):
         pamh = PAMH("cornelius", "test100000")
         flags = None
         argv = ["url=http://my.privacyidea.server",
-                "sqlfile=%s" % SQLFILE]
+                "sqlfile=%s" % SQLFILE,
+                "try_first_pass"]
         r = pam_sm_authenticate(pamh, flags, argv)
         self.assertNotEqual(r, PAMH.PAM_SUCCESS)
 
@@ -199,6 +206,7 @@ class PAMTestCase(MyTestCase):
         pamh = PAMH("cornelius", "TEST100000")
         flags = None
         argv = ["url=http://my.privacyidea.server",
-                "sqlfile=%s" % SQLFILE]
+                "sqlfile=%s" % SQLFILE,
+                "try_first_pass"]
         r = pam_sm_authenticate(pamh, flags, argv)
         self.assertEqual(r, PAMH.PAM_SUCCESS)

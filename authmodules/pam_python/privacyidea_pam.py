@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+# 2015-10-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add support for try_first_pass
 # 2015-04-03 Cornelius Kölbel  <cornelius.koelbel@netknights.it>
 #            Use pbkdf2 to hash OTPs.
 # 2015-04-01 Cornelius Kölbel  <cornelius.koelbel@netknights.it>
@@ -55,79 +57,102 @@ def _get_config(argv):
     return config
 
 
-def pam_sm_authenticate(pamh, flags, argv):
-    config = _get_config(argv)
-    URL = config.get("url", "https://localhost")
-    sslverify = not config.get("nosslverify", False)
-    cacerts = config.get("cacerts")
-    # If we do verify SSL certificates and if a CA Cert Bundle file is
-    # provided, we set this.
-    if sslverify and cacerts:
-        sslverify = cacerts
-    realm = config.get("realm")
-    debug = config.get("debug")
-    sqlfile = config.get("sqlfile", "/etc/privacyidea/pam.sqlite")
-    prompt = config.get("prompt", "Your OTP")
-    rval = pamh.PAM_AUTH_ERR
-    syslog.openlog(facility=syslog.LOG_AUTH)
-    try:
-        user = pamh.get_user(None)
-        if pamh.authtok is None:
-            message = pamh.Message(pamh.PAM_PROMPT_ECHO_OFF, "%s: " % prompt)
-            response = pamh.conversation(message)
-            pamh.authtok = response.resp
+class Authenticator(object):
 
-        if debug:
-            syslog.syslog(syslog.LOG_DEBUG,
-                          "%s: user %s in realm %s" % (__name__, user,
-                                                       realm))
+    def __init__(self, pamh, config):
+        self.pamh = pamh
+        self.user = pamh.get_user(None)
+        self.URL = config.get("url", "https://localhost")
+        self. sslverify = not config.get("nosslverify", False)
+        cacerts = config.get("cacerts")
+        # If we do verify SSL certificates and if a CA Cert Bundle file is
+        # provided, we set this.
+        if self.sslverify and cacerts:
+            self.sslverify = cacerts
+        self.realm = config.get("realm")
+        self.debug = config.get("debug")
+        self.sqlfile = config.get("sqlfile", "/etc/privacyidea/pam.sqlite")
+
+    def authenticate(self, password):
+        rval = self.pamh.PAM_SYSTEM_ERR
         # First we try to authenticate against the sqlitedb
-        if check_offline_otp(user, pamh.authtok, sqlfile, window=10):
+        if check_offline_otp(self.user, password, self.sqlfile, window=10):
             syslog.syslog(syslog.LOG_DEBUG,
                           "%s: successfully authenticated against offline "
-                          "database %s" % (__name__, sqlfile))
-            rval = pamh.PAM_SUCCESS
+                          "database %s" % (__name__, self.sqlfile))
+            rval = self.pamh.PAM_SUCCESS
         else:
-            # If we do not successfully authenticate against the offline
-            # database, we do an online request.
-            # Now we have the password in pamh.authtok
-            data = {"user": user,
-                    "pass": pamh.authtok}
-            if realm:
-                data["realm"] = realm
-
-            response = requests.post(URL + "/validate/check", data=data,
-                                     verify=sslverify)
+            if self.debug:
+                syslog.syslog(syslog.LOG_DEBUG, "Authenticating %s against %s" %
+                              (self.user, self.URL))
+            data = {"user": self.user,
+                    "pass": password}
+            if self.realm:
+                data["realm"] = self.realm
+            response = requests.post(self.URL + "/validate/check", data=data,
+                                     verify=self.sslverify)
 
             try:
                 json_response = response.json()
                 syslog.syslog(syslog.LOG_DEBUG, "requests > 1.0")
-            except:
+            except Exception:
                 # requests < 1.0
                 json_response = response.json
                 syslog.syslog(syslog.LOG_DEBUG, "requests < 1.0")
 
             result = json_response.get("result")
             auth_item = json_response.get("auth_items")
-            serial = json_response.get("detail", {}).get("serial",
-                                                         "T%s" % time.time())
-            tokentype = json_response.get("detail", {}).get("type",
-                                                            "unknown")
-            if debug:
+            detail = json_response.get("detail") or {}
+            serial = detail.get("serial", "T%s" % time.time())
+            tokentype = detail.get("type", "unknown")
+            if self.debug:
                 syslog.syslog(syslog.LOG_DEBUG, "%s: result: %s" % (__name__,
                                                                     result))
 
             if result.get("status"):
                 if result.get("value"):
-                    rval = pamh.PAM_SUCCESS
-                    save_auth_item(sqlfile, user, serial, tokentype, auth_item)
+                    rval = self.pamh.PAM_SUCCESS
+                    save_auth_item(self.sqlfile, self.user, serial, tokentype,
+                                   auth_item)
                 else:
-                    rval = pamh.PAM_AUTH_ERR
+                    rval = self.pamh.PAM_AUTH_ERR
             else:
                 syslog.syslog(syslog.LOG_ERR,
                               "%s: %s" % (__name__,
                                           result.get("error").get("message")))
-                rval = pamh.PAM_SYSTEM_ERR
+
+        return rval
+
+
+def pam_sm_authenticate(pamh, flags, argv):
+    config = _get_config(argv)
+    debug = config.get("debug")
+    try_first_pass = config.get("try_first_pass")
+    prompt = config.get("prompt", "Your OTP")
+    rval = pamh.PAM_AUTH_ERR
+    syslog.openlog(facility=syslog.LOG_AUTH)
+
+    Auth = Authenticator(pamh, config)
+    try:
+        if pamh.authtok is None or not try_first_pass:
+            message = pamh.Message(pamh.PAM_PROMPT_ECHO_OFF, "%s: " % prompt)
+            response = pamh.conversation(message)
+            pamh.authtok = response.resp
+
+        if debug and try_first_pass:
+            syslog.syslog(syslog.LOG_DEBUG, "%s: running try_first_pass" %
+                          __name__)
+        rval = Auth.authenticate(pamh.authtok)
+
+        # If the first authentication did not succeed but we have
+        # try_first_pass, we ask again for a password:
+        if rval != pamh.PAM_SUCCESS and try_first_pass:
+            # Now we give it a second try:
+            message = pamh.Message(pamh.PAM_PROMPT_ECHO_OFF, "%s: " % prompt)
+            response = pamh.conversation(message)
+            pamh.authtok = response.resp
+
+            rval = Auth.authenticate(pamh.authtok)
 
     except Exception as exx:
         syslog.syslog(syslog.LOG_ERR, traceback.format_exc())
@@ -135,8 +160,7 @@ def pam_sm_authenticate(pamh, flags, argv):
         rval = pamh.PAM_AUTH_ERR
     except requests.exceptions.SSLError:
         syslog.syslog(syslog.LOG_CRIT, "%s: SSL Validation error. Get a valid "
-                                       "SSL "
-                                       "certificate for your privacyIDEA "
+                                       "SSL certificate for your privacyIDEA "
                                        "system. For testing you can use the "
                                        "options 'nosslverify'." % __name__)
     finally:
