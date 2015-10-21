@@ -140,7 +140,7 @@ class PasswordHash:
         outp = '*0'
         if setting.startswith(outp):
             outp = '*1'
-        if not setting.startswith('$P$') and not setting.startswith('$H$'):
+        if setting[0:3] not in ['$P$', '$H$', '$S$']:
             return outp
         count_log2 = self.itoa64.find(setting[3])
         if count_log2 < 7 or count_log2 > 30:
@@ -153,14 +153,20 @@ class PasswordHash:
             pw = pw.encode('utf-8')
 
         hash_func = hashlib.md5
+        encoding_len = 16
         if setting.startswith('$S$'):
             hash_func = hashlib.sha512
+            encoding_len = 33
 
         hx = hash_func(salt + pw).digest()
         while count:
             hx = hash_func(hx + pw).digest()
             count -= 1
-        return setting[:12] + self.encode64(hx, 16)
+        hashed_pw = self.encode64(hx, encoding_len)
+
+        if setting.startswith('$S$'):
+            hashed_pw = hashed_pw[:-1]
+        return setting[:12] + hashed_pw
 
     def gensalt_extended(self, inp):  # pragma: no cover
         count_log2 = min([self.iteration_count_log2 + 8, 24])
@@ -242,7 +248,7 @@ class PasswordHash:
         else:
             # portable hash
             hx = self.crypt_private(pw, stored_hash)
-        return hx == stored_hash
+        return stored_hash == hx
 
 
 class IdResolver (UserIdResolver):

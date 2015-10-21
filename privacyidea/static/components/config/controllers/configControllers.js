@@ -909,6 +909,12 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory,
         $scope.params.Map = '{ "userid" : "uid", "username": "username", "givenname" : "realName", "password" : "password", "email": "email" }';
     };
 
+    $scope.presetDrupal = function () {
+        $scope.params.Table = "user";
+        $scope.params.Map = '{"userid": "uid", "username": "name", "email"' +
+            ': "mail", "password": "pass" }';
+    };
+
     $scope.setSQLResolver = function () {
         ConfigFactory.setResolver($scope.resolvername, $scope.params, function (data) {
             $scope.set_result = data.result.value;

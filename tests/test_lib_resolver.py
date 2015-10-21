@@ -1126,4 +1126,16 @@ class PasswordHashTestCase(MyTestCase):
         r = ph.check_password("mohsen123",
                               "$S$D98Bg3ANTUrjVwx073djifdH1KxbyzXQaPrmbpxGOu4VXFyMClRz")
         self.assertTrue(r)
-        # gensalt, hash_password
+
+        r = ph.check_password("DevYubic",
+                              "$S$D3f83Mbqy.9SV8Ip1zo7nRauu/4HVFOXfEkfsq.8ryCdFV40DCLl")
+        self.assertTrue(r)
+
+        # blowfish crypt
+        # user http://www.passwordtool.hu/
+        r = ph.check_password("asdasdasd", "$2a$07$4MnpSZo6xAIT7PArFIcO7uc/dfkP60Nuq2KmIQH3rdjrcG9/Ef48.")
+        self.assertTrue(r)
+
+        # Wordpress password hash
+        r = ph.check_password("asdasdasd", "$P$BkFOEwjLEEQVVJqRp3wANZbH83ZnN6.")
+        self.assertTrue(r)
