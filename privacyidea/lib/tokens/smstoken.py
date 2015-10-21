@@ -232,28 +232,19 @@ class SmsTokenClass(HotpTokenClass):
         HotpTokenClass.update(self, param, reset_failcount)
 
     @log_with(log)
-    @challenge_response_allowed
     def is_challenge_request(self, passw, user=None, options=None):
         """
         check, if the request would start a challenge
 
-        if the passw contains only the pin, this request would
-        trigger a challenge
-
-        in this place as well the policy for a token is checked
+        We need to define the function again, to get rid of the
+        is_challenge_request-decorator of the HOTP-Token
 
         :param passw: password, which might be pin or pin+otp
-        :param user: The authenticating user
         :param options: dictionary of additional request parameters
 
         :return: returns true or false
         """
-        # Call the parents challenge request check
-        is_challenge = HotpTokenClass.is_challenge_request(self,
-                                                           passw, user,
-                                                           options)
-
-        return is_challenge
+        return self.check_pin(passw, user=user, options=options)
 
     @log_with(log)
     def create_challenge(self, transactionid=None, options=None):

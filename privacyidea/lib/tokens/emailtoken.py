@@ -190,13 +190,7 @@ class EmailTokenClass(HotpTokenClass):
 
         :return: returns true or false
         """
-        trigger_challenge = False
-        options = options or {}
-        pin_match = self.check_pin(passw, user=user, options=options)
-        if pin_match is True:
-            trigger_challenge = True
-
-        return trigger_challenge
+        return self.check_pin(passw, user=user, options=options)
 
     @log_with(log)
     def create_challenge(self, transactionid=None, options=None):
