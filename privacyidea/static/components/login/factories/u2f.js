@@ -38,10 +38,8 @@ angular.module("privacyideaAuth")
                             inform.add(u2fErrors[result.errorCode] + " / " + result.errorMessage,
                                 {type: "danger", ttl: 10000});
                         } else {
-                            $scope.click_wait = false;
                             // Send the necessary data to privacyIDEA
                             var params = {
-                                serial: $scope.serial,
                                 type: "u2f",
                                 regdata: result.registrationData,
                                 clientdata: result.clientData

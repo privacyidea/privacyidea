@@ -280,6 +280,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     // U2F
     $scope.register_u2f = function (registerRequest) {
         U2fFactory.register_request(registerRequest, function (params) {
+            params.serial = $scope.serial;
             TokenFactory.enroll($scope.newUser,
                 params, function (response) {
                     $scope.click_wait = false;
