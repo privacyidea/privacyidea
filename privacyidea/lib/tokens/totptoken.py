@@ -207,7 +207,8 @@ class TotpTokenClass(HotpTokenClass):
         return shift
 
     @log_with(log)
-    def check_otp_exist(self, otp, window=None, options=None, symetric=True):
+    def check_otp_exist(self, otp, window=None, options=None, symetric=True,
+                        inc_counter=True):
         """
         checks if the given OTP value is/are values of this very token at all.
         This is used to autoassign and to determine the serial number of
@@ -226,6 +227,11 @@ class TotpTokenClass(HotpTokenClass):
                            get_from_config("totp.timeStep") or 30)
         window = window or (self.get_sync_window() * timeStepping)
         res = self.check_otp(otp, window=window, options=options)
+
+        if inc_counter and res >= 0:
+            # As usually the counter is increased in lib.token.checkUserPass,
+            # we need to do this manually here:
+            self.inc_otp_counter(res)
         return res
 
     def _time2counter(self, T0, timeStepping=60):
