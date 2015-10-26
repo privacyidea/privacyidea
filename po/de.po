@@ -572,7 +572,7 @@ msgstr "Bearbeite Passwd Resolver {{ resolvername }}"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:3
 msgid "Edit Policy {{ existingPolicyname }}"
-msgstr "Richtline {{ existingPolicyname }} bearbeiten"
+msgstr "Richtlinie {{ existingPolicyname }} bearbeiten"
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:12
 #: privacyidea/static/components/config/views/config.resolvers.html:12
@@ -675,7 +675,7 @@ msgstr "Fehler beim Laden der Richtlinien-Vorlagen."
 msgid "Error fetching policy templates."
 msgstr "Fehler beim Laden der Richtlinien-Vorlagen."
 
-#: privacyidea/static/components/login/factories/u2f.js:79
+#: privacyidea/static/components/login/factories/u2f.js:77
 msgid "Error in U2F response."
 msgstr "Fehler in der U2F Antwort."
 

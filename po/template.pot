@@ -646,7 +646,7 @@ msgstr ""
 msgid "Error fetching policy templates."
 msgstr ""
 
-#: privacyidea/static/components/login/factories/u2f.js:79
+#: privacyidea/static/components/login/factories/u2f.js:77
 msgid "Error in U2F response."
 msgstr ""
 
