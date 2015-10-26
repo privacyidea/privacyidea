@@ -149,10 +149,6 @@ class ConfigTestCase(MyTestCase):
         self.assertTrue(types.get('privacyidea.lib.tokens.totptoken'
                                   '.TotpTokenClass') == "totp", types)
 
-        # At the start the tokentypes are not stored in the current_app.config
-        self.assertFalse("pi_token_types" in current_app.config,
-                         current_app.config)
-        # When the resolvers are determined, they are stored
         types = get_token_types()
         self.assertTrue("totp" in types, types)
         self.assertTrue("hotp" in types, types)
