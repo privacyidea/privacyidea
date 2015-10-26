@@ -99,3 +99,17 @@ default URL is a Github repository [#defaulturl]_.
    active after the user has logged out and in again.
 
 .. [#defaulurl] https://github.com/privacyidea/policy-templates/.
+
+
+.. _policy_default_tokentype:
+
+default_tokentype
+~~~~~~~~~~~~~~~~~
+
+.. index:: Default tokentype
+
+type: str
+
+You can define which is the default tokentype when enrolling a new token in
+the Web UI. This is the token, which will be selected, when entering the
+enrollment dialog.

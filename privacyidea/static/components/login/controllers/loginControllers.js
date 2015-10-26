@@ -185,6 +185,7 @@ angular.module("privacyideaApp")
             $scope.loggedInUser = AuthFactory.getUser();
             $scope.token_page_size = data.result.value.token_page_size;
             $scope.user_page_size = data.result.value.user_page_size;
+            $scope.default_tokentype = data.result.value.default_tokentype;
             timeout = data.result.value.logout_time;
             PolicyTemplateFactory.setUrl(data.result.value.policy_template_url);
             console.log(timeout);

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-10-26 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add default token type for enrollment
 #  2015-10-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add auth_max_success and auth_max_fail actions to
 #             scope authorization
@@ -104,7 +106,7 @@ from gettext import gettext as _
 
 import logging
 from ..models import (Policy, db)
-from privacyidea.lib.config import get_token_classes
+from privacyidea.lib.config import (get_token_classes, get_token_types)
 from privacyidea.lib.error import ParameterError, PolicyError
 log = logging.getLogger(__name__)
 
@@ -140,6 +142,7 @@ class ACTION():
     CHALLENGERESPONSE = "challenge_response"
     COPYTOKENPIN = "copytokenpin"
     COPYTOKENUSER = "copytokenuser"
+    DEFAULT_TOKENTYPE = "default_tokentype"
     DELETE = "delete"
     DISABLE = "disable"
     ENABLE = "enable"
@@ -1066,6 +1069,12 @@ def get_static_policy_definitions(scope=None):
                           "templates can be found.  (Default "
                           "https://raw.githubusercontent.com/privacyidea/"
                           "policy-templates/master/templates/)")
+            },
+            ACTION.DEFAULT_TOKENTYPE: {
+                'type': 'str',
+                'desc': _("This is the default token type in the token "
+                          "enrollment dialog."),
+                'value': get_token_types()
             }
         }
 
