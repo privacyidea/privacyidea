@@ -4,6 +4,8 @@
  * privacyidea authentication module for ownCloud
  * See https://www.privacyidea.org
  *
+ * 2015-10-26 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+ *            Use privacyIDEA realm
  * 2015-06-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
  *            initial writeup
  *

@@ -4,6 +4,9 @@
  * privacyidea authentication module for ownCloud
  * See https://www.privacyidea.org
  *
+ * 2015-10-26 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+ *            use \OCP\Util::writeLog
+ *            Add privacyIDEA realm
  * 2015-06-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
  *            initial writeup
  *            inspired by user_ldap and user_otp
@@ -154,8 +157,8 @@ class OC_User_PRIVACYIDEA extends OC_User_Backend
     {
         if (self::$_backends === null) {
             foreach ($usedBackends as $backend) {
-                OC_Log::write('user_privacyidea', 'registering backend  '
-                    . $backend, OC_Log::DEBUG);
+                \OCP\Util::writeLog('user_privacyidea', 'registering backend  '
+                    . $backend, \OCP\Util::DEBUG);
                 self::$_backends[$backend] = new $backend();
             }
         }
@@ -171,11 +174,11 @@ class OC_User_PRIVACYIDEA extends OC_User_Backend
         $allow_api = (\OCP\Config::getAppValue('privacyIDEA', 'allow_api') === "yes");
         $client_call = (basename($_SERVER['SCRIPT_NAME']) === 'remote.php');
 
-        OC_Log::write('user_privacyidea', 'API: '. $allow_api, OC_Log::DEBUG);
-        OC_Log::write('user_privacyidea', 'Client Call: '. $client_call, OC_Log::DEBUG);
+        \OCP\Util::writeLog('user_privacyidea', 'API: '. $allow_api, \OCP\Util::DEBUG);
+        \OCP\Util::writeLog('user_privacyidea', 'Client Call: '. $client_call, \OCP\Util::DEBUG);
 
         if (($client_call === true) && ($allow_api === true)) {
-            OC_Log::write('user_privacyidea', 'Authenticating with normal password', OC_Log::DEBUG);
+            \OCP\Util::writeLog('user_privacyidea', 'Authenticating with normal password', \OCP\Util::DEBUG);
             foreach (self::$_backends as $backendObj) {
                 $r = $backendObj->checkPassword($uid, $password);
                 if ($r) {
