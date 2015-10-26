@@ -31,6 +31,16 @@ class Helper
         return $result;
     }
 
+    public static function get_realm()
+    {
+        $appConfig = \OC::$server->getAppConfig();
+        $result = $appConfig->getValue('privacyIDEA',
+            'realm', '');
+        \OCP\Util::writeLog('user_privacyidea', "Getting result for realm: $result",
+            \OCP\Util::DEBUG);
+        return $result;
+    }
+
     public static function is_normal_login_allowed()
     {
         $appConfig = \OC::$server->getAppConfig();

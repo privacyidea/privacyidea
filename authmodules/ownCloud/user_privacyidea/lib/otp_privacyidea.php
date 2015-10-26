@@ -194,7 +194,8 @@ class OC_User_PRIVACYIDEA extends OC_User_Backend
             OCP\Util::writeLog('user_privacyidea', "calling " . $url . " for user " .
                 $uid . " (" . $sslcheck . ")",
                 OCP\Util::DEBUG);
-            $result = $this->checkOtp($url, $uid, $password, $sslcheck);
+            $realm = \OCP\Config::getAppValue('privacyIDEA', 'realm');
+            $result = $this->checkOtp($url, $uid, $password, $sslcheck, $realm);
             OCP\Util::writeLog('user_privacyidea', 'privacyidea returned ' . $result,
                 OCP\Util::INFO);
             if ($result) {
@@ -216,7 +217,7 @@ class OC_User_PRIVACYIDEA extends OC_User_Backend
     /**
      * Do the ajax call.
      */
-    public function checkOtp($url, $username, $password, $sslcheck)
+    public function checkOtp($url, $username, $password, $sslcheck, $realm)
     {
         $curl_instance = curl_init();
         $escPassword = urlencode($password);
@@ -225,6 +226,9 @@ class OC_User_PRIVACYIDEA extends OC_User_Backend
         curl_setopt($curl_instance, CURLOPT_URL, $url);
         curl_setopt($curl_instance, CURLOPT_POST, 3);
         $poststring = "user=$username&pass=$password";
+        if ($realm) {
+            $poststring = "$poststring&realm=$realm";
+        }
         curl_setopt($curl_instance, CURLOPT_POSTFIELDS, $poststring);
         curl_setopt($curl_instance, CURLOPT_HEADER, TRUE);
         curl_setopt($curl_instance, CURLOPT_RETURNTRANSFER, TRUE);

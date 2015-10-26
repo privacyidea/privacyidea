@@ -52,6 +52,12 @@
            name="privacyidea_url" id="privacyidea_url"
            value="<?php p($_['privacyidea_url']) ?>">
 
+    <label for="realm">
+        <?php p($l->t('Realm')); ?>
+    </label>
+    <input type="text"
+           name="realm" id="realm"
+           value="<?php p($_['realm']) ?>">
     <!--
 	<h3>Test connection</h3>
 	<label for="username">
