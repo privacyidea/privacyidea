@@ -92,14 +92,16 @@ class APITokenTestCase(MyTestCase):
                                            method='POST',
                                            data={"type": "hmac"},
                                            headers={'Authorization': self.at}):
-            self.assertRaises(TokenAdminError, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
         # missing parameter otpkey
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "hotp"},
                                            headers={'Authorization': self.at}):
-            self.assertRaises(ParameterError, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -241,7 +243,8 @@ class APITokenTestCase(MyTestCase):
                                                  "realm": self.realm1,
                                                  "serial": "S1"},
                                            headers={'Authorization': self.at}):
-            self.assertRaises(TokenAdminError, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
         # Now unassign the token
         with self.app.test_request_context('/token/unassign',
@@ -271,7 +274,8 @@ class APITokenTestCase(MyTestCase):
                                            method='POST',
                                            data={},
                                            headers={'Authorization': self.at}):
-            self.assertRaises(ParameterError, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
     def test_05_delete_token(self):
         self._create_temp_token("DToken")
@@ -302,7 +306,8 @@ class APITokenTestCase(MyTestCase):
                                            method='POST',
                                            data={},
                                            headers={'Authorization': self.at}):
-            self.assertRaises(ParameterError, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
         # disable token
         with self.app.test_request_context('/token/disable/EToken',
@@ -650,7 +655,8 @@ class APITokenTestCase(MyTestCase):
                                                   "file": (IMPORTFILE2,
                                                            "empty.oath")},
                                             headers={'Authorization': self.at}):
-            self.assertRaises(ParameterError, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
         # Try to load unknown file type
         with self.app.test_request_context('/token/load/import.oath',
@@ -659,7 +665,8 @@ class APITokenTestCase(MyTestCase):
                                                   "file": (IMPORTFILE,
                                                            "import.oath")},
                                             headers={'Authorization': self.at}):
-            self.assertRaises(TokenAdminError, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
     def test_12_copy_token(self):
         self._create_temp_token("FROM001")
@@ -728,7 +735,8 @@ class APITokenTestCase(MyTestCase):
         with self.app.test_request_context('/token/lost/LOST001',
                                             method="POST",
                                             headers={'Authorization': self.at}):
-            self.assertRaises(TokenAdminError, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
         # assign the token
         with self.app.test_request_context('/token/assign',
@@ -771,7 +779,8 @@ class APITokenTestCase(MyTestCase):
         with self.app.test_request_context('/token/getserial/162583',
                                            method="GET",
                                            headers={'Authorization': self.at}):
-            self.assertRaises(TokenAdminError, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
         init_token({"serial": "GETSERIAL2",
                     "otpkey": OTPKEY2})
@@ -919,4 +928,5 @@ class APITokenTestCase(MyTestCase):
                                            method='POST',
                                            data={},
                                            headers={'Authorization': self.at}):
-            self.assertRaises(Exception, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)

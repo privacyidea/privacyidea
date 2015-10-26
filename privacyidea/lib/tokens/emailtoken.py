@@ -242,7 +242,7 @@ class EmailTokenClass(HotpTokenClass):
                 info = ("The PIN was correct, but the "
                         "EMail could not be sent: %r" % e)
                 log.warning(info)
-                log.warning(traceback.format_exc(e))
+                log.debug("%s" % traceback.format_exc(e))
                 return_message = info
 
         return success, return_message, transactionid, attributes

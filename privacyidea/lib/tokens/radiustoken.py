@@ -260,7 +260,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
         except Exception as ex:  # pragma: no cover
             log.error("Error contacting radius Server: %r" % (ex))
-            log.error(traceback.format_exc())
+            log.debug("%s" % traceback.format_exc())
 
         return otp_count
 

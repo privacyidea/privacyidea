@@ -241,7 +241,7 @@ class IdResolver (UserIdResolver):
             success = True
         except Exception as exx:
             log.error("Failed to retrieve users: %s" % exx)
-            log.error(traceback.format_exc(exx))
+            log.debug("%s" % traceback.format_exc(exx))
             desc = "failed to retrieve users: %s" % exx
             
         return success, desc

@@ -145,7 +145,7 @@ class MotpTokenClass(TokenClass):
                                                                     width=250)
                                                   }
                 except Exception as ex:   # pragma: no cover
-                    log.error("%r" % (traceback.format_exc()))
+                    log.debug("%s" % traceback.format_exc())
                     log.error('failed to set motp url: %r' % ex)
                     
         return response_detail

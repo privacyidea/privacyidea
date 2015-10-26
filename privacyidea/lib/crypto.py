@@ -587,5 +587,5 @@ class Sign(object):
             r = RSAkey.verify(hashvalue, (signature,))
         except Exception:  # pragma: no cover
             log.error("Failed to verify signature: %r" % s)
-            log.error(traceback.format_exc())
+            log.debug("%s" % traceback.format_exc())
         return r

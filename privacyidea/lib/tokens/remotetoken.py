@@ -290,7 +290,7 @@ class RemoteTokenClass(TokenClass):
         except Exception as exx:  # pragma: no cover
             log.error("Error getting response from "
                       "remote Server (%r): %r" % (request_url, exx))
-            log.error(traceback.format_exc())
+            log.debug("%s" % traceback.format_exc())
 
         return otp_count
 

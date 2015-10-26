@@ -332,7 +332,7 @@ class IdResolver (UserIdResolver):
                 ret.append(user)
             except Exception as exx:  # pragma: no cover
                 log.error("Error during fetching LDAP objects: %r" % exx)
-                log.error("%r" % traceback.format_exc())
+                log.debug("%s" % traceback.format_exc())
         
         return ret
     

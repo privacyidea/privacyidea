@@ -88,8 +88,9 @@ class APIConfigTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             # "unknown" is an unknown Default Parameter. So a ParamterError
             # is raised.
-            self.assertRaises(ParameterError, self.app.full_dispatch_request)
-            
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+
     def test_04_set_policy(self):
         with self.app.test_request_context('/policy/pol1',
                                            data={'action': "enroll",
@@ -117,7 +118,8 @@ class APIConfigTestCase(MyTestCase):
                                            method='POST',
                                            headers={'Authorization': self.at}):
             # An invalid policy name raises an exception
-            self.assertRaises(Exception, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
         # setting policy with an empty name
         with self.app.test_request_context('/policy/enroll',
@@ -127,9 +129,9 @@ class APIConfigTestCase(MyTestCase):
                                            method='POST',
                                            headers={'Authorization': self.at}):
             # An invalid policy name raises an exception
-            self.assertRaises(Exception, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
-            
     def test_05_get_policy(self):
         with self.app.test_request_context('/policy/pol1',
                                            method='GET',
@@ -430,7 +432,8 @@ class APIConfigTestCase(MyTestCase):
                                             method='DELETE',
                                             headers={'Authorization': self.at}):
             # The resolver must not be deleted, since it is contained in a realm
-            self.assertRaises(ConfigAdminError, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
         # delete the realm
         with self.app.test_request_context('/realm/%s' % realmname,
@@ -557,7 +560,8 @@ class APIConfigTestCase(MyTestCase):
                                                            "policy_empty_file.cfg")),
                                            headers={'Authorization': self.at}):
 
-            self.assertRaises(ParameterError, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
     def test_12_test_check_policy(self):
         # test invalid policy name "check"
@@ -570,7 +574,8 @@ class APIConfigTestCase(MyTestCase):
                                                  "client": "172.16.0.0/16, "
                                                            "-172.16.1.1"},
                                            headers={'Authorization': self.at}):
-            self.assertRaises(Exception, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
         with self.app.test_request_context('/policy/pol1',
                                            method='POST',
@@ -760,7 +765,8 @@ class APIConfigTestCase(MyTestCase):
                                            data={"password": "xx"},
                                            method='POST',
                                            headers={'Authorization': self.at}):
-            self.assertRaises(HSMException, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
     def test_17_test_token_config(self):
         with self.app.test_request_context('/system/test/hotp',

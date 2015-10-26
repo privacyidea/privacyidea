@@ -229,7 +229,9 @@ class APISelfserviceTestCase(MyTestCase):
                                            method='POST',
                                            headers={'Authorization':
                                                         self.at_user}):
-            self.assertRaises(TokenAdminError, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+
 
     def test_05_user_can_disable_token(self):
         self.authenticate_selfserive_user()
@@ -336,8 +338,8 @@ class APISelfserviceTestCase(MyTestCase):
                                            method='POST',
                                            headers={'Authorization':
                                                         self.at_user}):
-            self.assertRaises(TokenAdminError, self.app.full_dispatch_request)
-
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
     def test_07_user_can_reset_failcount(self):
         self.authenticate_selfserive_user()

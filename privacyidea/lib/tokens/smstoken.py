@@ -354,7 +354,7 @@ class SmsTokenClass(HotpTokenClass):
             sms = get_sms_provider_class(SMSProvider, SMSProviderClass)()
         except Exception as exc:
             log.error("Failed to load SMSProvider: %r" % exc)
-            log.error(traceback.format_exc())
+            log.debug("%s" % traceback.format_exc())
             raise exc
 
         try:
@@ -365,7 +365,7 @@ class SmsTokenClass(HotpTokenClass):
             sms.load_config(config)
         except Exception as exc:
             log.error("Failed to load sms.providerConfig: %r" % exc)
-            log.error(traceback.format_exc())
+            log.debug("%s" % traceback.format_exc())
             raise Exception("Failed to load sms.providerConfig: %r" % exc)
 
         log.debug("submitMessage: %r, to phone %r" % (message, phone))

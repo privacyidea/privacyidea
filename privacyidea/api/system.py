@@ -57,7 +57,7 @@ from ..lib.config import (get_privacyidea_config,
                           get_from_config)
 from ..lib.policy import PolicyClass, ACTION
 from ..api.lib.prepolicy import prepolicy, check_base_action
-from ..lib.error import (ParameterError,
+from ..lib.error import (ParameterError, privacyIDEAError,
                          AuthError,
                          PolicyError)
 
@@ -195,6 +195,28 @@ def policy_error(error):
     return send_error(error.message), error.id
 
 
+@system_blueprint.app_errorhandler(privacyIDEAError)
+@realm_blueprint.app_errorhandler(privacyIDEAError)
+@defaultrealm_blueprint.app_errorhandler(privacyIDEAError)
+@resolver_blueprint.app_errorhandler(privacyIDEAError)
+@policy_blueprint.app_errorhandler(privacyIDEAError)
+@user_blueprint.app_errorhandler(privacyIDEAError)
+@token_blueprint.app_errorhandler(privacyIDEAError)
+@audit_blueprint.app_errorhandler(privacyIDEAError)
+@application_blueprint.app_errorhandler(privacyIDEAError)
+@postrequest(sign_response, request=request)
+def privacyidea_error(error):
+    """
+    This function is called when an privacyIDEAError occurs.
+    These are not that critical exceptions.
+    """
+    if "audit_object" in g:
+        g.audit_object.log({"info": unicode(error)})
+        g.audit_object.finalize_log()
+    return send_error(unicode(error), error_code=error.id), 400
+
+
+# other errors
 @system_blueprint.app_errorhandler(500)
 @realm_blueprint.app_errorhandler(500)
 @defaultrealm_blueprint.app_errorhandler(500)
@@ -208,7 +230,8 @@ def policy_error(error):
 def internal_error(error):
     """
     This function is called when an internal error (500) occurs.
-    This is each time an exception is thrown.
+    i.e. if a normal exception, that is not inherited from privacyIDEAError
+    occurs.
     """
     if "audit_object" in g:
         g.audit_object.log({"info": unicode(error)})

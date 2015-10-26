@@ -198,7 +198,7 @@ class HotpTokenClass(TokenClass):
                                                                     width=250)
                                                   }
                 except Exception as ex:  # pragma: no cover
-                    log.error("%r" % (traceback.format_exc()))
+                    log.error("%s" % (traceback.format_exc()))
                     log.error('failed to set oath or google url: %r' % ex)
                     
         return response_detail

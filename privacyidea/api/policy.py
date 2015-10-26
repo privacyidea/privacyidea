@@ -163,11 +163,11 @@ def set_policy_api(name=None):
     res = {}
     param = request.all_data
     if not re.match('^[a-zA-Z0-9_.]*$', name):
-        raise Exception(_("The name of the policy may only contain "
-                          "the characters a-zA-Z0-9_."))
+        raise ParameterError(_("The name of the policy may only contain "
+                               "the characters a-zA-Z0-9_."))
 
     if name.lower() == "check":
-        raise Exception(_("T'check' is an invalid policy name."))
+        raise ParameterError(_("T'check' is an invalid policy name."))
 
     action = getParam(param, "action", required)
     scope = getParam(param, "scope", required)

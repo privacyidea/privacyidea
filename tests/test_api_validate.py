@@ -60,20 +60,22 @@ class ValidateAPITestCase(MyTestCase):
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"pass": "pin287082"}):
-            self.assertRaises(ParameterError, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
         # test for missing parameter serial
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"pass": "pin287082"}):
-            self.assertRaises(ParameterError, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
         # test for missing parameter "pass"
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"serial": "123456"}):
-            self.assertRaises(ParameterError, self.app.full_dispatch_request)
-
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
     def test_03_check_user(self):
         # get the original counter
@@ -609,7 +611,8 @@ class ValidateAPITestCase(MyTestCase):
                                            data={"user":
                                                     "cornelius@"+self.realm2,
                                                  "pass": serial2}):
-            self.assertRaises(UserError, self.app.full_dispatch_request)
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
 
         set_privacyidea_config("splitAtSign", "1")
         with self.app.test_request_context('/validate/check',

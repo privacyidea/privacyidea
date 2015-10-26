@@ -205,10 +205,9 @@ class YubicoTokenClass(TokenClass):
                         # https://github.com/Yubico/yubikey-val/wiki/ValidationProtocolV20
                         log.warning("failed with %r" % result)
 
-
             except Exception as ex:
                 log.error("Error getting response from Yubico Cloud Server"
                           " (%r): %r" % (YUBICO_URL, ex))
-                log.error("%r" % traceback.format_exc())
+                log.debug("%s" % traceback.format_exc())
 
         return res

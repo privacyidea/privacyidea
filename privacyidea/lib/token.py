@@ -882,7 +882,7 @@ def init_token(param, user=None, tokenrealms=None):
         db_token.save()
     except Exception as e:  # pragma: no cover
         log.error('token create failed!')
-        log.error("%s" % (traceback.format_exc()))
+        log.debug("%s" % traceback.format_exc())
         raise TokenAdminError("token create failed %r" % e, id=1112)
 
     return tokenobject

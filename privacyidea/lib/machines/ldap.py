@@ -176,7 +176,7 @@ class LdapMachineResolver(BaseMachineResolver):
                                             ip=machine_ip))
             except Exception as exx:  # pragma: no cover
                 log.error("Error during fetching LDAP objects: %r" % exx)
-                log.error("%r" % traceback.format_exc())
+                log.debug("%s" % traceback.format_exc())
 
         return machines
 

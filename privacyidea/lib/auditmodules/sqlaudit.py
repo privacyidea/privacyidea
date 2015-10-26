@@ -251,7 +251,7 @@ class Audit(AuditBase):
         except Exception as exx:  # pragma: no cover
             log.error("exception %r" % exx)
             log.error("DATA: %s" % self.audit_data)
-            log.error("%s" % traceback.format_exc())
+            log.debug("%s" % traceback.format_exc())
             self.session.rollback()
 
         finally:
@@ -300,7 +300,7 @@ class Audit(AuditBase):
                 res = True
         except Exception as exx:  # pragma: no cover
             log.error("exception %r" % exx)
-            log.error("%s" % traceback.format_exc())
+            log.debug("%s" % traceback.format_exc())
             # self.session.rollback()
         finally:
             # self.session.close()
@@ -441,7 +441,7 @@ class Audit(AuditBase):
                                          
         except Exception as exx:  # pragma: no cover
             log.error("exception %r" % exx)
-            log.error("%s" % traceback.format_exc())
+            log.debug("%s" % traceback.format_exc())
             self.session.rollback()
         finally:
             self.session.close()
