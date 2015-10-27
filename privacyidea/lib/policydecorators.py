@@ -249,9 +249,12 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
 
 def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
     """
-    This decorator checks the policy settings of ACTION.AUTHMAXSUCCESS.
+    This decorator checks the policy settings of ACTION.AUTHMAXSUCCESS and
+    ACTION.AUTHMAXFAIL.
     If the authentication was successful, it checks, if the number of allowed
-    successful authentications is exceeded.
+    successful authentications is exceeded (AUTHMAXSUCCESS).
+
+    If the AUTHMAXFAIL is exceed it denies even a successful authentication.
 
     The wrapped function is usually token.check_user_pass, which takes the
     arguments (user, passw, options={})
@@ -265,19 +268,52 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
     # First we call the wrapped function
     res, reply_dict = wrapped_function(user_object, passw, options)
 
-    if res:
-        options = options or {}
-        g = options.get("g")
-        if g:
-            clientip = options.get("clientip")
-            policy_object = g.policy_object
-            max_success = policy_object.get_action_values(action=ACTION.AUTHMAXSUCCESS,
-                                                          scope=SCOPE.AUTHZ,
-                                                          realm=user_object.realm,
-                                                          user=user_object.login,
-                                                          client=clientip)
+    options = options or {}
+    g = options.get("g")
+    if g:
+
+        clientip = options.get("clientip")
+        policy_object = g.policy_object
+
+        max_success = policy_object.get_action_values(action=ACTION.AUTHMAXSUCCESS,
+                                                      scope=SCOPE.AUTHZ,
+                                                      realm=user_object.realm,
+                                                      user=user_object.login,
+                                                      client=clientip)
+        max_fail = policy_object.get_action_values(
+            action=ACTION.AUTHMAXFAIL,
+            scope=SCOPE.AUTHZ,
+            realm=user_object.realm,
+            user=user_object.login,
+            client=clientip)
+
+        # Check for maximum failed authentications
+        # Always - also in case of unsuccessful authentication
+        if len(max_fail) > 1:
+            raise PolicyError("Contradicting policies for %s" %
+                              ACTION.AUTHMAXFAIL)
+        if len(max_fail) == 1:
+            policy_count, tdelta = parse_timelimit(max_fail[0])
+            fail_c = g.audit_object.get_count({"user": user_object.login,
+                                               "realm": user_object.realm,
+                                               "action":
+                                                   "%/validate/check"},
+                                              success=False,
+                                              timedelta=tdelta)
+            log.debug("Checking users timelimit %s: %s "
+                      "failed authentications" %
+                      (max_fail[0], fail_c))
+            if fail_c >= policy_count:
+                res = False
+                reply_dict["message"] = ("Only %s failed authentications "
+                                         "per %s" % (policy_count, tdelta))
+
+        if res:
+            # Check for maximum successful authentications
+            # Only in case of a successful authentication
             if len(max_success) > 1:
-                raise PolicyError("Contradicting policies for %s" % ACTION.AUTHMAXSUCCESS)
+                raise PolicyError("Contradicting policies for %s" %
+                                  ACTION.AUTHMAXSUCCESS)
 
             if len(max_success) == 1:
                 policy_count, tdelta = parse_timelimit(max_success[0])
@@ -288,12 +324,14 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
                                                        "%/validate/check"},
                                                   success=True,
                                                   timedelta=tdelta)
-                log.debug("Checking users timelimit %s: %s authentications" %
+                log.debug("Checking users timelimit %s: %s "
+                          "succesful authentications" %
                           (max_success[0], succ_c))
                 if succ_c >= policy_count:
                     res = False
-                    reply_dict["message"] = "Only %s authentications per %s" \
-                                            % (policy_count, tdelta)
+                    reply_dict["message"] = ("Only %s successfull "
+                                             "authentications per %s"
+                                             % (policy_count, tdelta))
 
     return res, reply_dict
 

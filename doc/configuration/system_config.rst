@@ -88,6 +88,8 @@ separated list of IP addresses.
 Token default settings
 ......................
 
+.. _failcounter:
+
 Reset Fail Counter
 ~~~~~~~~~~~~~~~~~~
 ``DefaultResetFailCount`` will reset the failcounter of a token if this token was
