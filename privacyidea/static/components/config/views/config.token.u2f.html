@@ -17,7 +17,11 @@
 
     <input type="url"
            required
-           placeholder="http://pi.server.com"
+           placeholder="https://pi.server.com"
            class="form-control"
            ng-model="form['u2f.appId']" name="u2fAppId">
+    <div ng-hide="form['u2f.appId'].indexOf('https:') == 0" translate
+            class="alert alert-warning">
+        The AppID needs to start with "https".
+    </div>
 </div>

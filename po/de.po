@@ -1357,7 +1357,7 @@ msgstr ""
 msgid "Realm"
 msgstr "Realm "
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:242
+#: privacyidea/static/components/login/controllers/loginControllers.js:243
 msgid "Realm defrealm created."
 msgstr "Der Realm defrealm wurde erzeugt."
 
@@ -1710,6 +1710,10 @@ msgstr ""
 "Für die erfolgreiche Authentisierung mit einem Vier-Augen-Token werdenzwei "
 "oder mehr Benutzer benötigt. Sie können angeben, wieviele Token aus dem "
 "jeweiligen Realm zur Authentisierung benötigt werden."
+
+#: privacyidea/static/components/config/views/config.token.u2f.html:23
+msgid "The AppID needs to start with \"https\"."
+msgstr "Die AppID muss mit \"https\" beginnen."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:22
 msgid ""
@@ -2835,7 +2839,7 @@ msgstr "Telefon"
 msgid "privacyIDEA Single Page Web Client"
 msgstr "privacyIDEA Single Page Web Client"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:198
+#: privacyidea/static/components/login/controllers/loginControllers.js:199
 msgid "privacyIDEA UI supports hotkeys. Use '?' to get help."
 msgstr "Das privacyIDEA UI unterstützt Hotkeys. Benutzen Sie '?' für Hilfe."
 
