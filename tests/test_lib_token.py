@@ -1019,3 +1019,14 @@ class TokenTestCase(MyTestCase):
         # The remaining tokens are checked, but the pin does not match,
         # so we get "wrong otp pin"
         self.assertEqual(r[1].get("message"), "matching 1 tokens")
+
+    def test_46_init_with_validity_period(self):
+        token = init_token({"type": "hotp",
+                            "genkey": 1,
+                            "validity_period_start": "22/05/14 22:00",
+                            "validity_period_end": "23/10/14 23:00"})
+        self.assertEqual(token.type, "hotp")
+        start = token.get_tokeninfo("validity_period_start")
+        end = token.get_tokeninfo("validity_period_end")
+        self.assertEqual(start, "22/05/14 22:00")
+        self.assertEqual(end, "23/10/14 23:00")

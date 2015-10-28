@@ -846,9 +846,9 @@ def init_token(param, user=None, tokenrealms=None):
             log.error(msg)
             raise TokenAdminError("initToken failed: %s" % msg)
 
-    # if there is a realm as parameter, but no user, we assign the token to
-    # this realm.
-    if 'realm' in param and 'user' not in param:
+    # if there is a realm as parameter (and the realm is not empty), but no
+    # user, we assign the token to this realm.
+    if param.get("realm") and 'user' not in param:
         realms.append(param.get("realm"))
     # Assign the token to all tokenrealms
     if tokenrealms and isinstance(tokenrealms, list):
@@ -880,10 +880,19 @@ def init_token(param, user=None, tokenrealms=None):
     try:
         # Save the token to the database
         db_token.save()
+
     except Exception as e:  # pragma: no cover
         log.error('token create failed!')
         log.debug("%s" % traceback.format_exc())
         raise TokenAdminError("token create failed %r" % e, id=1112)
+
+    # Set the validity period
+    validity_period_start = param.get("validity_period_start")
+    validity_period_end = param.get("validity_period_end")
+    if validity_period_end:
+        set_validity_period_end(serial, user, validity_period_end)
+    if validity_period_start:
+        set_validity_period_start(serial, user, validity_period_start)
 
     return tokenobject
 

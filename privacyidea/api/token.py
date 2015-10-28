@@ -172,7 +172,9 @@ def init():
     :jsonparam type: the type of the token
     :jsonparam tokenrealm: additional realms, the token should be put into
     :jsonparam otplen: length of the OTP value
-    :jsonparam hashlib: used hashlib sha1 oder sha256
+    :jsonparam hashlib: used hashlib sha1, sha256 or sha512
+    :jsonparam validity_period_start: The beginning of the validity period
+    :jsonparam validity_period_end: The end of the validity period
 
     :return: a json result with a boolean "result": true
 

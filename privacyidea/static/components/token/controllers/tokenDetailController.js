@@ -241,23 +241,12 @@ myApp.controller("tokenDetailController", function ($scope,
     // ===========================================================
     // =============== Tokeninfo Date stuff ======================
     // ===========================================================
-    $scope.today = new Date();
 
-    $scope.openStart = function($event) {
+    $scope.openDate = function($event) {
         $event.preventDefault();
         $event.stopPropagation();
-        $scope.startOpened = true;
+        return true;
     };
 
-    $scope.openEnd = function($event) {
-        $event.preventDefault();
-        $event.stopPropagation();
-        $scope.endOpened = true;
-    };
-
-    $scope.dateOptions = {
-        formatYear: 'yy',
-        startingDay: 1
-    };
 
 });

@@ -339,6 +339,23 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                 //tabWindowId.location.href = response.headers('Location');
         });
     };
+
+    // ===========================================================
+    // ===============  Date stuff ===============================
+    // ===========================================================
+
+    $scope.openDate = function($event) {
+        $event.stopPropagation();
+        return true;
+    };
+
+    $scope.today = new Date();
+    $scope.dateOptions = {
+        formatYear: 'yy',
+        startingDay: 1
+    };
+
+
 });
 
 

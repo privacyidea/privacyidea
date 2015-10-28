@@ -135,7 +135,7 @@ msgstr "Benutzer zuweisen"
 msgid "Assign a new token {{ newTokenObject.serial }}"
 msgstr "Einen neuen Token {{ newTokenObject.serial }} zuweisen"
 
-#: privacyidea/static/components/token/views/token.enroll.html:21
+#: privacyidea/static/components/token/views/token.enroll.html:22
 msgid "Assign token to user"
 msgstr "Token einem Benutzer zuweisen"
 
@@ -167,7 +167,7 @@ msgstr "Audit"
 msgid "Authentication Server URI"
 msgstr "URI des Authentisierungsservers"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:151
+#: privacyidea/static/components/login/controllers/loginControllers.js:156
 msgid "Authentication failed."
 msgstr "Authentisierung fehlgeschlagen."
 
@@ -268,7 +268,7 @@ msgstr "Zertifikatsanforderung (PEM)"
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr "Zertifikate: x509 Zertifikate ausrollen."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:128
+#: privacyidea/static/components/login/controllers/loginControllers.js:129
 msgid ""
 "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr "Challenge-Response Anmeldung. Sie sind noch nicht fertig angemeldet."
@@ -624,15 +624,15 @@ msgstr "Aktivieren"
 msgid "Enroll New Token"
 msgstr "Neuen Token ausrollen"
 
-#: privacyidea/static/components/token/views/token.enroll.html:46
+#: privacyidea/static/components/token/views/token.enroll.html:94
 #: privacyidea/static/components/token/views/token.html:22
 msgid "Enroll Token"
 msgstr "Token ausrollen"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:34
+#: privacyidea/static/components/login/controllers/loginControllers.js:35
 #: privacyidea/static/components/token/controllers/tokenControllers.js:99
 #: privacyidea/static/components/token/views/token.enroll.html:1
-#: privacyidea/static/components/token/views/token.enroll.html:79
+#: privacyidea/static/components/token/views/token.enroll.html:127
 msgid "Enroll a new token"
 msgstr "Neuen Token ausrollen "
 
@@ -678,6 +678,10 @@ msgstr "Fehler beim Laden der Richtlinien-Vorlagen."
 #: privacyidea/static/components/login/factories/u2f.js:77
 msgid "Error in U2F response."
 msgstr "Fehler in der U2F Antwort."
+
+#: privacyidea/static/components/token/views/token.enroll.html:47
+msgid "Extended Attributes"
+msgstr "Erweiterte Attribute"
 
 #: privacyidea/static/components/token/views/token.details.html:69
 msgid "Fail counter"
@@ -959,7 +963,7 @@ msgstr "Lizenziert unter"
 msgid "Limit"
 msgstr "Begrenzung"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:42
+#: privacyidea/static/components/login/controllers/loginControllers.js:43
 msgid "List tokens"
 msgstr "Tokenliste anzeigen"
 
@@ -985,7 +989,7 @@ msgstr "Logbuch"
 msgid "Log In"
 msgstr "Anmelden"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:49
+#: privacyidea/static/components/login/controllers/loginControllers.js:50
 msgid "Log out"
 msgstr "Abmelden"
 
@@ -1156,7 +1160,7 @@ msgstr "OTP Schlüssel"
 msgid "OTP Length"
 msgstr "OTP-Länge"
 
-#: privacyidea/static/components/token/views/token.enroll.html:28
+#: privacyidea/static/components/token/views/token.enroll.html:29
 msgid "OTP PINs do not match!"
 msgstr "Die OTP-PINs sind nicht gleich!"
 
@@ -1230,7 +1234,7 @@ msgstr "ownCloud"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:14
 #: privacyidea/static/components/directives/views/directive.assignuser.html:23
-#: privacyidea/static/components/token/views/token.enroll.html:33
+#: privacyidea/static/components/token/views/token.enroll.html:34
 msgid "PIN"
 msgstr "PIN"
 
@@ -1357,7 +1361,7 @@ msgstr ""
 msgid "Realm"
 msgstr "Realm "
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:243
+#: privacyidea/static/components/login/controllers/loginControllers.js:248
 msgid "Realm defrealm created."
 msgstr "Der Realm defrealm wurde erzeugt."
 
@@ -1414,7 +1418,7 @@ msgstr "Remote Benutzer"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:22
 #: privacyidea/static/components/directives/views/directive.assignuser.html:31
-#: privacyidea/static/components/token/views/token.enroll.html:41
+#: privacyidea/static/components/token/views/token.enroll.html:42
 #: privacyidea/static/components/token/views/token.enroll.motp.html:43
 #: privacyidea/static/components/user/views/user.password.html:58
 msgid "Repeat password"
@@ -2176,7 +2180,7 @@ msgstr "Der Token ist bis   {{ lostResult.end_date }} gültig."
 msgid "The token was marked lost successfully."
 msgstr "Der Token wurde erfolgreich als verloren markiert."
 
-#: privacyidea/static/components/token/views/token.enroll.html:57
+#: privacyidea/static/components/token/views/token.enroll.html:105
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -2193,7 +2197,7 @@ msgstr ""
 "Benutzer <a ui-sref=\"user.details({username:newUser.user, realmname:newUser."
 "realm})\">{{ newUser.user }}</a> in Realm {{ newUser.realm }}ausgerollt."
 
-#: privacyidea/static/components/token/views/token.enroll.html:66
+#: privacyidea/static/components/token/views/token.enroll.html:114
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -2478,7 +2482,7 @@ msgstr "Typ"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:18
 #: privacyidea/static/components/directives/views/directive.assignuser.html:27
-#: privacyidea/static/components/token/views/token.enroll.html:37
+#: privacyidea/static/components/token/views/token.enroll.html:38
 #: privacyidea/static/components/token/views/token.enroll.motp.html:39
 #: privacyidea/static/components/user/views/user.password.html:54
 msgid "Type a password"
@@ -2608,12 +2612,14 @@ msgid "Validate Requests per users"
 msgstr "Validate-Requests pro Benutzer"
 
 #: privacyidea/static/components/token/views/token.details.html:176
+#: privacyidea/static/components/token/views/token.enroll.html:70
 msgid "Validity End"
-msgstr "Beginn Gültigkeit"
-
-#: privacyidea/static/components/token/views/token.details.html:156
-msgid "Validity Start"
 msgstr "Ende Gültigkeit"
+
+#: privacyidea/static/components/token/views/token.details.html:155
+#: privacyidea/static/components/token/views/token.enroll.html:49
+msgid "Validity Start"
+msgstr "Begin Gültigkeit"
 
 #: privacyidea/static/components/config/views/config.token.remote.html:13
 msgid "Verify SSL certificate"
@@ -2839,7 +2845,7 @@ msgstr "Telefon"
 msgid "privacyIDEA Single Page Web Client"
 msgstr "privacyIDEA Single Page Web Client"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:199
+#: privacyidea/static/components/login/controllers/loginControllers.js:204
 msgid "privacyIDEA UI supports hotkeys. Use '?' to get help."
 msgstr "Das privacyIDEA UI unterstützt Hotkeys. Benutzen Sie '?' für Hilfe."
 
