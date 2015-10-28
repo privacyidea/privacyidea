@@ -52,6 +52,15 @@
            name="privacyidea_url" id="privacyidea_url"
            value="<?php p($_['privacyidea_url']) ?>">
     <br/>
+
+    <label for="privacyidea_proxy">
+        <?php p($l->t('Address of proxy server')); ?>
+    </label>
+    <input type="text"
+           name="privacyidea_proxy" id="privacyidea_proxy"
+           value="<?php p($_['privacyidea_proxy']) ?>">
+    <br/>
+
     <label for="realm">
         <?php p($l->t('Realm')); ?>
     </label>
