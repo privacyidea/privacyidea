@@ -168,8 +168,8 @@ the signatureData and clientData returned by the U2F device in the *u2fResult*:
 
 """
 
-IMAGES = {"yubico": "/static/css/FIDO-U2F-Security-Key-444x444.png",
-          "plug-up": "/static/css/plugup.jpg"}
+IMAGES = {"yubico": "static/css/FIDO-U2F-Security-Key-444x444.png",
+          "plug-up": "static/css/plugup.jpg"}
 U2F_Version = "U2F_V2"
 
 log = logging.getLogger(__name__)
