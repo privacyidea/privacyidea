@@ -677,8 +677,6 @@ def set_api(serial=None):
                                        validity_period_start})
         res += set_validity_period_start(serial, user, validity_period_start)
 
-
-
     g.audit_object.log({"success": True})
     return send_result(res)
 

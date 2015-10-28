@@ -25,9 +25,10 @@ angular.module("privacyideaApp")
                                       authUrl, AuthFactory, $rootScope,
                                       $state, ConfigFactory, inform,
                                       PolicyTemplateFactory, gettext, hotkeys,
-                                      U2fFactory,
+                                      U2fFactory, instanceUrl,
                                       PollingAuthFactory) {
 
+    $scope.instanceUrl = instanceUrl;
     $scope.checkRight = AuthFactory.checkRight;
     hotkeys.add({
         combo: 'alt+e',
@@ -131,6 +132,10 @@ angular.module("privacyideaApp")
                 $scope.challenge_message = error.detail.message;
                 $scope.transactionid = error.detail["transaction_id"];
                 $scope.image = error.detail.attributes.img;
+                if ($scope.image.indexOf("data:image") == -1) {
+                    // In case of an Image link, we prepend the instanceUrl
+                    $scope.image = $scope.instanceUrl + "/" + $scope.image;
+                }
                 $scope.hideResponseInput = error.detail.attributes.hideResponseInput;
                 $scope.polling = error.detail.attributes.poll;
                 console.log($scope.polling);
