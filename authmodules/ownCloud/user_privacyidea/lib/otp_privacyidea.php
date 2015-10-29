@@ -229,7 +229,9 @@ class OC_User_PRIVACYIDEA extends OC_User_Backend
         $url = $url . '/validate/check';
         curl_setopt($curl_instance, CURLOPT_URL, $url);
         curl_setopt($curl_instance, CURLOPT_POST, 3);
-        curl_setopt($curl_instance, CURLOPT_PROXY, $proxy);
+        if ($proxy) {
+            curl_setopt($curl_instance, CURLOPT_PROXY, $proxy);
+        }
         curl_setopt($curl_instance, CURLOPT_USERAGENT,'OwnCloud-PrivacyIDEA');
 
         $poststring = "user=$username&pass=$password";

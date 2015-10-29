@@ -59,6 +59,12 @@
     <input type="text"
            name="privacyidea_proxy" id="privacyidea_proxy"
            value="<?php p($_['privacyidea_proxy']) ?>">
+           <p>
+           <em>
+           <?php p($l->t('If you need a proxy server to connect to
+           privacyIDEA, specify it like "https://your.proxy.server:8080"')); ?>
+           </em>
+           </p>
     <br/>
 
     <label for="realm">
@@ -67,6 +73,14 @@
     <input type="text"
            name="realm" id="realm"
            value="<?php p($_['realm']) ?>">
+           <p>
+           <em>
+           <?php p($l->t('Specify a realm, if the users are not located in
+           the default realm.'))
+           ; ?>
+           </em>
+           </p>
+
     <br/>
     <!--
 	<h3>Test connection</h3>

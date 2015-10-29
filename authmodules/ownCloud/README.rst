@@ -14,7 +14,7 @@ Configuration
 ``privacyIDEA URL``. this is the URL of the privacyIDEA server. It should be
 something like "https://your.own.server/".
 
-``Verify SSL certificate``. If this is checked, the SSL cerificate is
+``Verify SSL certificate``. If this is checked, the SSL certificate is
 verified if it is valid.
 
 ``User privacyIDEA to authenticate users``. If you enable this, users will be
