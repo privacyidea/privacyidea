@@ -1,19 +1,48 @@
 privacyIDEA
 ===========
 
-[![Build Status](https://travis-ci.org/privacyidea/privacyidea.svg?branch=master)](https://travis-ci.org/privacyidea/privacyidea)
-[![CircleCI](https://circleci.com/gh/privacyidea/privacyidea/tree/master.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/privacyidea/privacyidea)
-[![Coverage Status](https://img.shields.io/coveralls/privacyidea/privacyidea.svg)](https://coveralls.io/r/privacyidea/privacyidea)
-[![Downloads](https://img.shields.io/pypi/dm/privacyidea.svg)](https://pypi.python.org/pypi/privacyidea/)
-[![Latest Version](https://img.shields.io/pypi/v/privacyidea.svg)](https://pypi.python.org/pypi/privacyidea/)
-[![License](https://img.shields.io/github/license/privacyidea/privacyidea.svg)](https://pypi.python.org/pypi/privacyidea/)
-[![Documentation Status](https://readthedocs.org/projects/privacyidea/badge/?version=latest)](http://privacyidea.readthedocs.org/en/latest/)
-[![Code Climate](https://codeclimate.com/github/privacyidea/privacyidea/badges/gpa.svg)](https://codeclimate.com/github/privacyidea/privacyidea)
-[![Issue Stats](http://issuestats.com/github/privacyidea/privacyidea/badge/pr?style=flat)](http://issuestats.com/github/privacyidea/privacyidea)
-[![Issue Stats](http://issuestats.com/github/privacyidea/privacyidea/badge/issue?style=flat)](http://issuestats.com/github/privacyidea/privacyidea)
+.. image:: https://travis-ci.org/privacyidea/privacyidea.svg?branch=master
+    :alt: Build Status
+    :target: https://travis-ci.org/privacyidea/privacyidea
 
+.. image:: https://circleci.com/gh/privacyidea/privacyidea/tree/master.svg?style=shield&circle-token=:circle-token
+    :alt: CircleCI
+    :target: https://circleci.com/gh/privacyidea/privacyidea
+
+.. image:: https://img.shields.io/coveralls/privacyidea/privacyidea.svg
+    :alt: Coverage
+    :target: https://coveralls.io/r/privacyidea/privacyidea
+
+.. image:: https://img.shields.io/pypi/dm/privacyidea.svg
+    :alt: Downloads
+    :target: https://pypi.python.org/pypi/privacyidea/
+    
+.. image:: https://img.shields.io/pypi/v/privacyidea.svg
+    :alt: Latest Version
+    :target: https://pypi.python.org/pypi/privacyidea/
+    
+.. image:: https://img.shields.io/github/license/privacyidea/privacyidea.svg
+    :alt: License
+    :target: https://pypi.python.org/pypi/privacyidea/
+    
+.. image:: https://readthedocs.org/projects/privacyidea/badge/?version=latest
+    :alt: Documentation
+    :target: http://privacyidea.readthedocs.org/en/latest/
+
+.. image:: https://codeclimate.com/github/privacyidea/privacyidea/badges/gpa.svg
+    :alt: Code Climate
+    :target: https://codeclimate.com/github/privacyidea/privacyidea
+    
+.. image:: http://issuestats.com/github/privacyidea/privacyidea/badge/pr?style=flat
+    :alt: Issue stats
+    :target: http://issuestats.com/github/privacyidea/privacyidea
+
+.. image:: http://issuestats.com/github/privacyidea/privacyidea/badge/issue?style=flat
+    :alt: Issue stats
+    :target: http://issuestats.com/github/privacyidea/privacyidea
+    
 privacyIDEA is an open solution for strong two-factor authentication like 
-OTP tokens, SMS, Smartphones or SSH keys.
+OTP tokens, SMS, smartphones or SSH keys.
 Using privacyIDEA you can enhance your existing applications like local login 
 (PAM, Windows Credential Provider), 
 VPN, remote access, SSH connections, access to web sites or web portals with 
@@ -28,20 +57,20 @@ concerned. But privacyIDEA is completely licensed under the AGPLv3.
 
 It supports a wide variety of authentication devices like OTP tokens 
 (HMAC, HOTP, TOTP, OCRA, mOTP), Yubikey (HOTP, TOTP, AES), FIDO U2F devices 
-like Yubikey and Plug-Up, Smartphone
+like Yubikey and Plug-Up, smartphone
 Apps like Google Authenticator, FreeOTP, Token2  or TiQR,
 SMS, Email, SSH keys, x509 certificates 
 and Registration Codes for easy deployment.
 
-privacyIDEA is based on flask and sqlalchemy as the python backend. The
+privacyIDEA is based on Flask and SQLAlchemy as the python backend. The
 web UI is based on angularJS and bootstrap.
-A MachineToken design lets you assign tokens to machnies. Thus you can use
+A MachineToken design lets you assign tokens to machines. Thus you can use
 your Yubikey to unlock LUKS, assign SSH keys to SSH servers or use Offline OTP with PAM.
 
 Setup
 =====
 
-You can setup the system in a virtual environment:
+You can setup the system in a virtual environment::
     
     git clone https://github.com/privacyidea/privacyidea.git
     cd privacyidea
@@ -54,24 +83,25 @@ Read the install instructions at http://privacyidea.readthedocs.org.
 Running it
 ==========
 
-Create the database and encryption key:
+Create the database and encryption key::
 
     ./pi-manage createdb
     ./pi-manage create_enckey
 
-Create the key for the audit log:
+Create the key for the audit log::
 
     ./pi-manage create_audit_keys
 
-Create the first administrator:
+Create the first administrator::
 
-    ./pi-manage admin add <username> <email>
+    ./pi-manage admin add <username>
 
-Run it:
+Run it::
 
     ./pi-manage runserver
 
-Now you can connect to http://localhost:5000 with your browser and login as administrator.
+Now you can connect to http://localhost:5000 with your browser and login
+as administrator.
 
 Run in virtualenv
 =================
@@ -87,19 +117,21 @@ Run tests
 Code structure
 ==============
 
-The database models are defined in ``models.py`` and tested in tests/test_db_model.py.
+The database models are defined in ``models.py`` and tested in 
+tests/test_db_model.py.
 
 Based on the database models there are the libraries ``lib/config.py`` which is
 responsible for basic configuration in the database table ``config``.
 And the library ``lib/resolver.py`` which provides functions for the database
 table ``resolver``. This is tested in tests/test_lib_resolver.py.
 
-Based on the resolver there is the library ``lib/realm.py`` which provides functions
+Based on the resolver there is the library ``lib/realm.py`` which provides
+functions
 for the database table ``realm``. Several resolvers are combined into a realm.
 
 Based on the realm there is the library ``lib/user.py`` which provides functions 
-for users. There is no database table user, since users are dynamically read from
-the user sources like SQL, LDAP, SCIM or flat files.
+for users. There is no database table user, since users are dynamically read 
+from the user sources like SQL, LDAP, SCIM or flat files.
 
 Upgrading
 =========
@@ -109,4 +141,4 @@ for upgrade instructions.
 
 Versioning
 ==========
-privacyIDEA adheres to [Semantic Versioning](http://semver.org/).
+privacyIDEA adheres to `Semantic Versioning <http://semver.org/>`_.
