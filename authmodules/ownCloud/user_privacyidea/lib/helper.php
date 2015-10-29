@@ -41,6 +41,16 @@ class Helper
         return $result;
     }
 
+    public static function get_proxy()
+    {
+        $appConfig = \OC::$server->getAppConfig();
+        $result = $appConfig->getValue('privacyIDEA',
+            'privacyidea_proxy', '');
+        \OCP\Util::writeLog('user_privacyidea', "Getting result for proxy: $result",
+            \OCP\Util::DEBUG);
+        return $result;
+    }
+
     public static function is_normal_login_allowed()
     {
         $appConfig = \OC::$server->getAppConfig();

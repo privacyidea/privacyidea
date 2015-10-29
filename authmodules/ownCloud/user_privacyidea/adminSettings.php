@@ -41,9 +41,15 @@ $tmpl->assign('enable_privacyidea', $helper->is_privacyidea_enabled());
 $tmpl->assign('verify_ssl', $helper->is_ssl_check());
 $tmpl->assign('allow_normal_login', $helper->is_normal_login_allowed());
 $tmpl->assign('allow_api', $helper->is_api_allowed());
+
 $url = $helper->get_url();
 $tmpl->assign('privacyidea_url', $url);
+
 $realm = $helper->get_realm();
 $tmpl->assign('realm', $realm);
+
+$proxy = $helper->get_proxy();
+$tmpl->assign('privacyidea_proxy', $proxy);
+
 \OCP\Util::writeLog('user_privacyidea', "Setting URL: $url", OCP\Util::DEBUG);
 return $tmpl->fetchPage();

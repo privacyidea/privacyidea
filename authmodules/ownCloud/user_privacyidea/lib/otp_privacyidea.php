@@ -198,7 +198,8 @@ class OC_User_PRIVACYIDEA extends OC_User_Backend
                 $uid . " (" . $sslcheck . ")",
                 OCP\Util::DEBUG);
             $realm = \OCP\Config::getAppValue('privacyIDEA', 'realm');
-            $result = $this->checkOtp($url, $uid, $password, $sslcheck, $realm);
+            $proxy = \OCP\Config::getAppValue('privacyIDEA', 'privacyidea_proxy');
+            $result = $this->checkOtp($url, $uid, $password, $sslcheck, $realm, $proxy);
             OCP\Util::writeLog('user_privacyidea', 'privacyidea returned ' . $result,
                 OCP\Util::INFO);
             if ($result) {
@@ -220,7 +221,7 @@ class OC_User_PRIVACYIDEA extends OC_User_Backend
     /**
      * Do the ajax call.
      */
-    public function checkOtp($url, $username, $password, $sslcheck, $realm)
+    public function checkOtp($url, $username, $password, $sslcheck, $realm, $proxy)
     {
         $curl_instance = curl_init();
         $escPassword = urlencode($password);
@@ -228,6 +229,9 @@ class OC_User_PRIVACYIDEA extends OC_User_Backend
         $url = $url . '/validate/check';
         curl_setopt($curl_instance, CURLOPT_URL, $url);
         curl_setopt($curl_instance, CURLOPT_POST, 3);
+        curl_setopt($curl_instance, CURLOPT_PROXY, $proxy);
+        curl_setopt($curl_instance, CURLOPT_USERAGENT,'OwnCloud-PrivacyIDEA');
+
         $poststring = "user=$username&pass=$password";
         if ($realm) {
             $poststring = "$poststring&realm=$realm";
