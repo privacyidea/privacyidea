@@ -2309,6 +2309,10 @@ msgstr ""
 msgid "User Id"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.list.html:57
+msgid "User Store"
+msgstr ""
+
 #: privacyidea/static/components/user/controllers/userControllers.js:43
 msgid "User created."
 msgstr ""
@@ -2327,6 +2331,10 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.details.html:206
 msgid "User-Resolver"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.list.html:56
+msgid "UserId"
 msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.assignuser.html:14
@@ -2458,7 +2466,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:25
 #: privacyidea/static/components/token/views/token.list.html:32
-#: privacyidea/static/components/token/views/token.list.html:66
+#: privacyidea/static/components/token/views/token.list.html:68
 msgid "active"
 msgstr ""
 
@@ -2493,7 +2501,7 @@ msgid "description"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:28
-#: privacyidea/static/components/token/views/token.list.html:69
+#: privacyidea/static/components/token/views/token.list.html:71
 msgid "disabled"
 msgstr ""
 

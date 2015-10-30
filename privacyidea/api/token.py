@@ -308,6 +308,8 @@ def list_api():
     sdir = getParam(param, "sortdir", optional, default="asc")
     psize = int(getParam(param, "pagesize", optional, default=15))
     realm = getParam(param, "tokenrealm", optional)
+    userid = getParam(param, "userid", optional)
+    resolver = getParam(param, "resolver", optional)
     ufields = getParam(param, "user_fields", optional)
     output_format = getParam(param, "outform", optional)
     assigned = getParam(param, "assigned", optional)
@@ -333,7 +335,9 @@ def list_api():
                                  user=user, assigned=assigned, psize=psize,
                                  sortby=sort, sortdir=sdir,
                                  tokentype=tokentype,
-                                 description=description)
+                                 resolver=resolver,
+                                 description=description,
+                                 userid=userid)
     g.audit_object.log({"success": True})
     if output_format == "csv":
         return send_csv_result(tokens)

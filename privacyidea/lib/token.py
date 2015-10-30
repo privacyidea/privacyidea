@@ -117,7 +117,7 @@ def create_tokenclass_object(db_token):
 def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                         serial=None, active=None, resolver=None,
                         rollout_state=None, description=None, revoked=None,
-                        locked=None):
+                        locked=None, userid=None):
     """
     This function create the sql query for getting tokens. It is used by
     get_tokens and get_tokens_paginate.
@@ -167,9 +167,23 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                                           TokenRealm.token_id ==
                                           Token.id)).distinct()
 
-    if resolver is not None:
+    if resolver is not None and resolver.strip("*"):
         # filter for given resolver
-        sql_query = sql_query.filter(Token.resolver == resolver)
+        if "*" in resolver:
+            # match with "like"
+            sql_query = sql_query.filter(Token.resolver.like(resolver.replace(
+                "*", "%")))
+        else:
+            sql_query = sql_query.filter(Token.resolver == resolver)
+
+    if userid is not None and userid.strip("*"):
+        # filter for given userid
+        if "*" in userid:
+            # match with "like"
+            sql_query = sql_query.filter(Token.user_id.like(userid.replace(
+                "*", "%")))
+        else:
+            sql_query = sql_query.filter(Token.user_id == userid)
 
     if serial is not None and serial.strip("*"):
         # filter for serial
@@ -294,7 +308,7 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
 def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                 serial=None, active=None, resolver=None, rollout_state=None,
                 sortby=Token.serial, sortdir="asc", psize=15,
-                page=1, description=None):
+                page=1, description=None, userid=None):
     """
     This function is used to retrieve a token list, that can be displayed in
     the Web UI. It supports pagination.
@@ -305,11 +319,14 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     :param realm:
     :param assigned: Returns assigned (True) or not assigned (False) tokens
     :type assigned: bool
-    :param user: The user, whos token should be displayed
+    :param user: The user, whose token should be displayed
     :type user: User object
     :param serial:
     :param active:
-    :param resolver:
+    :param resolver: A resolver name, which may contain "*" for filtering.
+    :type resolver: basestring
+    :param userid: A userid, which may contain "*" for filtering.
+    :type userid: basestring
     :param rollout_state:
     :param sortby: Sort by a certain Token DB field. The default is
         Token.serial. If a string like "serial" is provided, we try to convert
@@ -329,7 +346,7 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                                 serial=serial, active=active,
                                 resolver=resolver,
                                 rollout_state=rollout_state,
-                                description=description)
+                                description=description, userid=userid)
 
     if type(sortby) in [str, unicode]:
         # convert the string to a Token column

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-10-30 Cornelius Kölbel <cornelius.koebel@netknights.it>
+#             Display user details in token list
 #  2015-10-26 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add default token type for enrollment
 #  2015-10-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -198,6 +200,7 @@ class ACTION():
     ADDUSER = "adduser"
     DELETEUSER = "deleteuser"
     UPDATEUSER = "updateuser"
+    USERDETAILS = "user_details"
     APIKEY = "api_key_required"
     SETHSM = "set_hsm_password"
 
@@ -1062,6 +1065,11 @@ def get_static_policy_definitions(scope=None):
                 'type': 'int',
                 'desc': _("Set how many users should be displayed in the user "
                           "view on one page.")
+            },
+            ACTION.USERDETAILS: {
+                'type': 'bool',
+                'desc': _("Whether the user ID and the resolver should be "
+                          "displayed in the token list.")
             },
             ACTION.POLICYTEMPLATEURL: {
                 'type': 'str',

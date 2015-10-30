@@ -2564,6 +2564,10 @@ msgstr "Benutzerfilter"
 msgid "User Id"
 msgstr "Benutzer ID"
 
+#: privacyidea/static/components/token/views/token.list.html:57
+msgid "User Store"
+msgstr "Benutzer Quelle"
+
 #: privacyidea/static/components/user/controllers/userControllers.js:43
 msgid "User created."
 msgstr "Benutzer angelegt."
@@ -2583,6 +2587,10 @@ msgstr "Benutzerrealm"
 #: privacyidea/static/components/config/views/config.policies.details.html:206
 msgid "User-Resolver"
 msgstr "Benutzer-Resolver"
+
+#: privacyidea/static/components/token/views/token.list.html:56
+msgid "UserId"
+msgstr "Benutzer ID"
 
 #: privacyidea/static/components/directives/views/directive.assignuser.html:14
 #: privacyidea/static/components/login/views/login.html:15
@@ -2725,7 +2733,7 @@ msgstr "Aktionsdetail"
 
 #: privacyidea/static/components/token/views/token.details.html:25
 #: privacyidea/static/components/token/views/token.list.html:32
-#: privacyidea/static/components/token/views/token.list.html:66
+#: privacyidea/static/components/token/views/token.list.html:68
 msgid "active"
 msgstr "aktiv"
 
@@ -2760,7 +2768,7 @@ msgid "description"
 msgstr "Beschreibung"
 
 #: privacyidea/static/components/token/views/token.details.html:28
-#: privacyidea/static/components/token/views/token.list.html:69
+#: privacyidea/static/components/token/views/token.list.html:71
 msgid "disabled"
 msgstr "deaktiviert"
 

@@ -370,6 +370,12 @@ def get_webui_settings(request, response):
             client=client,
             unique=True
         )
+        user_details_pol = policy_object.get_policies(
+            action=ACTION.USERDETAILS,
+            scope=SCOPE.WEBUI,
+            realm=realm,
+            client=client
+        )
         default_tokentype_pol = policy_object.get_action_values(
             action=ACTION.DEFAULT_TOKENTYPE,
             scope=SCOPE.WEBUI,
@@ -407,6 +413,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["user_page_size"] = user_page_size
         content["result"]["value"]["policy_template_url"] = policy_template_url
         content["result"]["value"]["default_tokentype"] = default_tokentype
+        content["result"]["value"]["user_details"] = len(user_details_pol) > 0
         response.data = json.dumps(content)
     return response
 
