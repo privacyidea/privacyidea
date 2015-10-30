@@ -7,7 +7,7 @@ Installation
 Simply copy the the ``privacyIDEA.pm`` into the ``Auth`` directory. Usually located at
 ``/opt/otrs/Kernel/System/Auth``.
 
-Konfiguration
+Configuration
 =============
 
 You need to activate the privacyIDEA authentication module and you
