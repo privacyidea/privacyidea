@@ -75,6 +75,7 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_has_no_token,
                                               auth_user_passthru,
                                               auth_user_timelimit,
+                                              auth_lastauth,
                                               config_lost_token)
 
 log = logging.getLogger(__name__)
@@ -1733,6 +1734,7 @@ def check_realm_pass(realm, passw, options=None):
 
 
 @log_with(log)
+@libpolicy(auth_lastauth)
 def check_serial_pass(serial, passw, options=None):
     """
     This function checks the otp for a given serial
@@ -1767,6 +1769,7 @@ def check_serial_pass(serial, passw, options=None):
 
 
 @libpolicy(auth_user_timelimit)
+@libpolicy(auth_lastauth)
 @libpolicy(auth_user_passthru)
 @libpolicy(auth_user_has_no_token)
 @libpolicy(auth_user_does_not_exist)
@@ -1934,6 +1937,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 tokenobject.inc_count_auth()
                 tokenobject.inc_count_auth_success()
                 reply_dict["message"] = "Found matching challenge"
+                reply_dict["serial"] = challenge_response_token_list[0].token.serial
                 tokenobject.challenge_janitor()
 
     elif len(challenge_request_token_list) > 0:

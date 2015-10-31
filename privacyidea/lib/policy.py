@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #
-#  2015-10-30 Cornelius Kölbel <cornelius.koebel@netknights.it>
+#  2015-10-31 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add last_auth policy.
+#  2015-10-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Display user details in token list
 #  2015-10-26 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add default token type for enrollment
@@ -151,6 +153,7 @@ class ACTION():
     ENCRYPTPIN = "encrypt_pin"
     GETSERIAL = "getserial"
     IMPORT = "importtokens"
+    LASTAUTH = "last_auth"
     LOGINMODE = "login_mode"
     LOGOUTTIME = "logout_time"
     LOSTTOKEN = 'losttoken'
@@ -1011,6 +1014,13 @@ def get_static_policy_definitions(scope=None):
                           "requests a user is allowed to do in a given time. "
                           "Specify like 1/5s, 2/10m, 10/1h - s, m, h being "
                           "second, minute and hour.")
+            },
+            ACTION.LASTAUTH: {
+                'type': 'str',
+                'desc': _("You can specify in which time frame the user needs "
+                          "to authenticate again with this token. If the user "
+                          "authenticates later, authentication will fail. "
+                          "Specify like 30h, 7d or 1y.")
             },
             ACTION.TOKENTYPE: {
                 'type': 'str',

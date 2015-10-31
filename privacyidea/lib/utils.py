@@ -192,6 +192,30 @@ def get_data_from_params(params, exclude_params, config_description, module,
     return data, types, desc
 
 
+def parse_timedelta(delta):
+    """
+    This parses a string that contains a time delta for the last_auth policy
+    in the format like
+    1h, 1d, 1y.
+
+    :param delta: The time delta
+    :type delta: basestring
+    :return: timedelta
+    """
+    delta = delta.strip().replace(" ", "")
+    time_specifier = delta[-1].lower()
+    if time_specifier not in ["h", "d", "y"]:
+        raise Exception("Invalid time specifier")
+    time = int(delta[:-1])
+    td = timedelta(hours=time)
+    if time_specifier == "d":
+        td = timedelta(days=time)
+    if time_specifier == "y":
+        td = timedelta(days=time*365)
+
+    return td
+
+
 def parse_timelimit(limit):
     """
     This parses a string that contains a timelimit in the format

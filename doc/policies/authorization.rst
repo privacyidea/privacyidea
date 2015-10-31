@@ -167,3 +167,16 @@ invalidated.
 
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
 
+last_auth
+~~~~~~~~~
+
+type: string
+
+You can define if an authentication should fail, if the token was not
+successfully used for a certain time.
+
+Specify a value like ``12h``, ``123d`` or ``2y`` to disallow authentication,
+if the token was not successfully used for 12 hours, 123 days or 2 years.
+
+The date of the last successful authentication is store in the `tokeninfo`
+field of a token and denoted in UTC.

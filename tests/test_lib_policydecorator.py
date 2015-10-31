@@ -16,14 +16,15 @@ from privacyidea.lib.policydecorators import (auth_otppin,
                                               auth_user_has_no_token,
                                               login_mode, config_lost_token,
                                               challenge_response_allowed,
-                                              auth_user_timelimit)
+                                              auth_user_timelimit,
+                                              auth_lastauth)
 from privacyidea.lib.user import User
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.token import (init_token, remove_token, check_user_pass,
                                    get_tokens)
 from privacyidea.lib.error import UserError, PolicyError
-from privacyidea.lib.audit import getAudit
+import datetime
 
 
 def _check_policy_name(polname, policies):
@@ -362,3 +363,43 @@ class LibPolicyTestCase(MyTestCase):
         self.assertEqual(rv, True)
         delete_policy("pol_chal_resp_1")
 
+    def test_10_auth_lastauth(self):
+        serial = "SPASSLASTAUTH"
+        pin = "secretpin"
+
+        def fake_auth_missing_serial(user, pin, options=None):
+            return True, {}
+
+        def fake_auth(user, pin, options):
+            return True, {"serial": serial}
+
+        user = User("cornelius", realm="r1")
+        init_token({"type": "spass",
+                    "pin": pin,
+                    "serial": serial}, user=user)
+
+        # set time limit policy
+        set_policy(name="pol_lastauth",
+                   scope=SCOPE.AUTHZ,
+                   action="%s=1d" % ACTION.LASTAUTH)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        options = {"g": g}
+
+        self.assertRaises(Exception, auth_lastauth, fake_auth_missing_serial,
+                          user, pin, options)
+
+        rv = auth_lastauth(fake_auth, user, pin, options)
+        self.assertEqual(rv[0], True)
+
+        token = get_tokens(serial=serial)[0]
+        # Set a very old last_auth
+        token.add_tokeninfo(ACTION.LASTAUTH,
+                            datetime.datetime.utcnow()-datetime.timedelta(days=2))
+        rv = auth_lastauth(fake_auth, user, pin, options)
+        self.assertEqual(rv[0], False)
+        self.assertTrue("The last successful authentication was" in
+                        rv[1].get("message"), rv[1])
+
+        remove_token(serial)
+        delete_policy("pol_lastauth")

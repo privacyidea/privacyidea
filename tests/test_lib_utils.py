@@ -3,7 +3,7 @@ This tests the file lib.utils
 """
 from .base import MyTestCase
 
-from privacyidea.lib.utils import (parse_timelimit)
+from privacyidea.lib.utils import (parse_timelimit, parse_timedelta)
 from datetime import timedelta
 
 
@@ -33,4 +33,18 @@ class UtilsTestCase(MyTestCase):
         # A non number raises an Exception
         self.assertRaises(Exception, parse_timelimit, "seven/12m")
 
+    def test_02_timedelta(self):
+        tdelta = parse_timedelta("123d")
+        self.assertEqual(tdelta, timedelta(days=123))
 
+        tdelta = parse_timedelta("31h")
+        self.assertEqual(tdelta, timedelta(hours=31))
+
+        tdelta = parse_timedelta(" 2y")
+        self.assertEqual(tdelta, timedelta(days=2*365))
+
+        # A missing time specifier raises an Exception
+        self.assertRaises(Exception, parse_timedelta, "7")
+
+        # A non number raises an Exception
+        self.assertRaises(Exception, parse_timedelta, "sevenm")

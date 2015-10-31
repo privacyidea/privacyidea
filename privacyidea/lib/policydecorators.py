@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-10-31 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Added time_limit and last_auth
 #  2015-03-15 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Add decorator for losttoken
 #  2015-02-06 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -35,11 +37,12 @@ policy decorators for the API (pre/post) are defined in api/lib/policy
 The functions of this module are tested in tests/test_lib_policy_decorator.py
 """
 import logging
-from privacyidea.lib.error import PolicyError
+from privacyidea.lib.error import PolicyError, privacyIDEAError
 import functools
 from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import parse_timelimit
+from privacyidea.lib.utils import parse_timelimit, parse_timedelta
+import datetime
 
 log = logging.getLogger(__name__)
 
@@ -249,8 +252,9 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
 
 def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
     """
-    This decorator checks the policy settings of ACTION.AUTHMAXSUCCESS and
-    ACTION.AUTHMAXFAIL.
+    This decorator checks the policy settings of
+    ACTION.AUTHMAXSUCCESS,
+    ACTION.AUTHMAXFAIL
     If the authentication was successful, it checks, if the number of allowed
     successful authentications is exceeded (AUTHMAXSUCCESS).
 
@@ -286,7 +290,6 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
             realm=user_object.realm,
             user=user_object.login,
             client=clientip)
-
         # Check for maximum failed authentications
         # Always - also in case of unsuccessful authentication
         if len(max_fail) > 1:
@@ -332,6 +335,92 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
                     reply_dict["message"] = ("Only %s successfull "
                                              "authentications per %s"
                                              % (policy_count, tdelta))
+
+    return res, reply_dict
+
+
+def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
+    """
+    This decorator checks the policy settings of ACTION.LASTAUTH
+    If the last authentication stored in tokeninfo last_auth_success of a
+    token is exceeded, the authentication is denied.
+
+    The wrapped function is usually token.check_user_pass, which takes the
+    arguments (user, passw, options={}) OR
+    token.check_serial_pass with the arguments (user, passw, options={})
+
+    :param wrapped_function: either check_user_pass or check_serial_pass
+    :param user_or_serial: either the User user_or_serial or a serial
+    :param passw:
+    :param options: Dict containing values for "g" and "clientip"
+    :return: Tuple of True/False and reply-dictionary
+    """
+    # First we call the wrapped function
+    res, reply_dict = wrapped_function(user_or_serial, passw, options)
+
+    options = options or {}
+    g = options.get("g")
+    if g and res:
+        clientip = options.get("clientip")
+        policy_object = g.policy_object
+
+        # in case of a serial:
+        realm = None
+        login = None
+        serial = user_or_serial
+        try:
+            # Assume we have a user
+            realm = user_or_serial.realm
+            login = user_or_serial.login
+            serial = reply_dict.get("serial")
+        except Exception:
+            # in case of a serial:
+            realm = None
+            login = None
+            serial = user_or_serial
+        if not serial:
+            raise privacyIDEAError("No serial in response!")
+
+        from privacyidea.lib.token import get_tokens
+        try:
+            token = get_tokens(serial=serial)[0]
+        except IndexError:
+            # In the special case of a registration token, the token does not
+            # exist anymore. So we immediately return
+            return res, reply_dict
+
+        last_auth = policy_object.get_action_values(
+            action=ACTION.LASTAUTH,
+            scope=SCOPE.AUTHZ,
+            realm=realm,
+            user=login,
+            client=clientip, unique=True)
+
+        if len(last_auth) == 1:
+            # The tdelta in the policy
+            tdelta = parse_timedelta(last_auth[0])
+
+            # The last successful authentication of the token
+            last_success_auth = token.get_tokeninfo(ACTION.LASTAUTH)
+            if last_success_auth:
+                log.debug("Compare the last successful authentication of "
+                          "token %s with policy "
+                          "tdelat %s: %s" % (serial, tdelta,
+                                             last_success_auth))
+                # convert string of last_success_auth
+                last_success_auth = datetime.datetime.strptime(
+                    last_success_auth, "%Y-%m-%d %H:%M:%S.%f")
+                # The last auth is to far in the past
+                if last_success_auth + tdelta < datetime.datetime.now():
+                    res = False
+                    log.debug("The last successful authentication is too old.")
+                    reply_dict["message"] = "The last successful " \
+                                            "authentication was %s. It is to " \
+                                            "long ago." % last_success_auth
+
+        # set the last successful authentication, if res still true
+        if res:
+            token.add_tokeninfo(ACTION.LASTAUTH, datetime.datetime.utcnow())
 
     return res, reply_dict
 
