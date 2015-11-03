@@ -283,7 +283,6 @@ class UserTestCase(MyTestCase):
         user.update_user_info({"givenname": "",
                                "username": "wordpressuser"})
 
-
     def test_14_create_delete_user(self):
         realm = "sqlrealm"
         resolver = "SQL1"
@@ -311,3 +310,6 @@ class UserTestCase(MyTestCase):
         r = user.delete()
         self.assertTrue(r)
 
+    def test_15_user_exist(self):
+        root = User("root", resolver=self.resolvername1, realm=self.realm1)
+        self.assertTrue(root.exist())

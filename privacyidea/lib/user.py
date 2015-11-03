@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2015-11-03   Cornelius Kölbel <cornelius@privacyidea.org>
+#               Add memberfunction "exist"
 #  2015-06-06   Cornelius Kölbel <cornelius@privacyidea.org>
 #               Add the possibility to update the user data.
 #  Nov 27, 2014 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -224,7 +226,20 @@ class User(object):
                             self.resolver)
         uid = y.getUserId(self.login)
         return uid, rtype, self.resolver
-       
+
+    def exist(self):
+        """
+        Check if the user object exists in the user store
+        :return: True or False
+        """
+        success = True
+        try:
+            _uid, _rtype, _resolver = self.get_user_identifiers()
+        except UserError:
+            log.debug("User %s does not exist." % self)
+            success = False
+        return success
+
     def get_user_info(self):
         """
         return the detailed information for the user
