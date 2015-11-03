@@ -6,7 +6,7 @@ This tests the files
 from .base import MyTestCase
 from privacyidea.lib.auth import (create_db_admin, verify_db_admin,
                                   list_db_admin, delete_db_admin,
-                                  check_webui_user)
+                                  check_webui_user, db_admin_exist)
 from privacyidea.lib.user import User
 from flask import current_app
 
@@ -22,6 +22,9 @@ class AuthTestCase(MyTestCase):
                         password="PSTwort")
         r = verify_db_admin("mytestadmin", "PSTwort")
         self.assertTrue(r)
+
+        self.assertTrue(db_admin_exist("mytestadmin"))
+        self.assertFalse(db_admin_exist("noKnownUser"))
 
         # This only prints to stdout!
         list_db_admin()

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+# 2015-11-03 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Add check if an admin user exists
 # 2014-12-15 Cornelius Kölbel, info@privacyidea.org
 #            Initial creation
 #
@@ -50,6 +52,16 @@ def verify_db_admin(username, password):
         success = passlib.hash.pbkdf2_sha512.verify(key + password, pw_dig)
 
     return success
+
+
+def db_admin_exist(username):
+    """
+    Checks if a local admin in the database exists
+
+    :param username: The username of the admin
+    :return: True, if exist
+    """
+    return bool(Admin.query.filter(Admin.username == username).first())
 
 
 def create_db_admin(app, username, email=None, password=None):
