@@ -390,7 +390,7 @@ myApp.controller("tokenImportController", function ($scope, $upload,
                 var file = files[i];
                 $upload.upload({
                     url: 'token/load/filename',
-                    headers: {'Authorization': AuthFactory.getAuthToken()},
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
                     fields: {type: $scope.form.type,
                             tokenrealms: $scope.form.realm},
                     file: file

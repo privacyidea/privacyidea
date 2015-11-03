@@ -34,21 +34,21 @@ myApp.factory("MachineFactory", function (AuthFactory, $http, $state,
         return {
             getMachines: function(params, callback) {
                 $http.get(machineUrl + "/", {
-                    headers: {'Authorization': AuthFactory.getAuthToken() },
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken() },
                     params: params
                 }).success(callback
                 ).error(error_func);
             },
             getMachineTokens: function(params, callback) {
                 $http.get(machineUrl + "/token", {
-                    headers: {'Authorization': AuthFactory.getAuthToken()},
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
                     params: params
             }).success(callback
                 ).error(error_func);
             },
             attachTokenMachine: function(params, callback) {
                 $http.post(machineUrl + "/token", params, {
-                    headers: {'Authorization': AuthFactory.getAuthToken()}
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).success(callback).error(error_func);
             },
             detachTokenMachine: function(params, callback) {
@@ -56,18 +56,18 @@ myApp.factory("MachineFactory", function (AuthFactory, $http, $state,
                 $http.delete(machineUrl + "/token/" + params.serial + "/" +
                     params.machineid + "/" + params.resolver + "/" +
                     params.application,
-                    { headers: {'Authorization': AuthFactory.getAuthToken()}
+                    { headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).success(callback).error(error_func);
             },
             getApplicationDefinition: function(callback) {
                 $http.get(applicationUrl, {
-                    headers: {'Authorization': AuthFactory.getAuthToken()}
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
             }).success(callback
                 ).error(error_func);
             },
             saveOptions: function(params, callback) {
                 $http.post(machineUrl + "/tokenoption", params, {
-                    headers: {'Authorization': AuthFactory.getAuthToken()}
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).success(callback).error(error_func);
             }
         };

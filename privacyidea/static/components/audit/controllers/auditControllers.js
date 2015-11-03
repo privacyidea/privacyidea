@@ -83,7 +83,7 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         var filename = "audit.csv";
         console.log("download audit log");
         $http.get("/audit/" + filename, {
-                    headers: {'Authorization': AuthFactory.getAuthToken()},
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
                 }).done(
             alert("Data received.")
         );

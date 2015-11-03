@@ -599,7 +599,9 @@ def api_key_required(request=None, action=None):
     if len(action) > 0:
         # check if we were passed a correct JWT
         # Get the Authorization token from the header
-        auth_token = request.headers.get('Authorization', None)
+        auth_token = request.headers.get('PI-Authorization', None)
+        if not auth_token:
+            auth_token = request.headers.get('Authorization', None)
         try:
             r = jwt.decode(auth_token, current_app.secret_key)
             g.logged_in_user = {"username": r.get("username", ""),

@@ -8,6 +8,8 @@
     <div ui-view class="slide"></div>
 </div>
 
+<input type=hidden id=REMOTE_USER value="{{ remote_user }}">
+
 {% raw %}
 <div class="navbar navbar-inverse navbar-fixed-bottom">
     <div class="container">
@@ -15,7 +17,7 @@
             class="navbar-text pull-left">
             privacyIDEA
             {{ privacyideaVersionNumber }}
-        </a>
+        </a>	
         <a class="navbar-btn btn btn-success pull-right"
            href="https://netknights.it/leistungen/support/"
            target="_external">

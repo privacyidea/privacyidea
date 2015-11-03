@@ -104,7 +104,7 @@ myApp.directive('assignUser', function($http, userUrl, AuthFactory, instanceUrl)
                 method: 'GET',
                 url: userUrl + "?username=*" + $viewValue + "*" +
                     "&realm=" + scope.newUserObject.realm,
-                headers: {'Authorization': auth_token}
+                headers: {'PI-Authorization': auth_token}
             }).then(function ($response) {
                 return $response.data.result.value.map(function (item) {
                     scope.newUserObject.email = item.email;
@@ -138,7 +138,7 @@ myApp.directive('assignToken', function($http, tokenUrl,
             return $http({
                 method: 'GET',
                 url: tokenUrl,
-                headers: {'Authorization': auth_token},
+                headers: {'PI-Authorization': auth_token},
                 params: {assigned: "False",
                 serial: "*" + $viewValue + "*"}
             }).then(function ($response) {
@@ -170,7 +170,7 @@ myApp.directive('attachToken', function($http, tokenUrl,
             return $http({
                 method: 'GET',
                 url: tokenUrl,
-                headers: {'Authorization': auth_token},
+                headers: {'PI-Authorization': auth_token},
                 params: {serial: "*" + $viewValue + "*"}
             }).then(function ($response) {
                 return $response.data.result.value.tokens.map(function (item) {
@@ -199,7 +199,7 @@ myApp.directive('attachMachine', function($http, machineUrl,
             return $http({
                 method: 'GET',
                 url: machineUrl,
-                headers: {'Authorization': auth_token},
+                headers: {'PI-Authorization': auth_token},
                 params: {any: $viewValue}
             }).then(function ($response) {
                 console.log($response.data.result.value);
@@ -296,7 +296,7 @@ myApp.directive('csvDownload', function(AuthFactory, $http, instanceUrl) {
                 $scope.$emit('download-start');
                 console.log("Download start.");
                 $http.get($attrs.url, {
-                    headers: {'Authorization': AuthFactory.getAuthToken()}
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {
                     console.log("Downloaded.");
                     $scope.$emit('downloaded', response.data);

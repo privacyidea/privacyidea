@@ -90,20 +90,20 @@ angular.module("TokenModule", ["privacyideaAuth"])
         return {
             getTokens: function (callback, params) {
                 $http.get(tokenUrl + "/", {
-                    headers: {'Authorization': AuthFactory.getAuthToken()},
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
                     params: params
                 }).success(callback
                 ).error(error_func);
             },
             getTokenForSerial: function (serial, callback) {
                 $http.get(tokenUrl + "/?serial=" + serial, {
-                    headers: {'Authorization': AuthFactory.getAuthToken()}
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).success(callback
                 ).error(error_func);
             },
             getTokenForUser: function (params, callback) {
                 $http.get(tokenUrl + "/", {
-                    headers: {'Authorization': AuthFactory.getAuthToken()},
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
                     params: params
                 }).success(callback
                 ).error(error_func);
@@ -111,41 +111,41 @@ angular.module("TokenModule", ["privacyideaAuth"])
             unassign: function (serial, callback) {
                 $http.post(tokenUrl + "/unassign", {"serial": serial},
                     {
-                        headers: {'Authorization': AuthFactory.getAuthToken()}
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).success(callback
                 ).error(error_func);
             },
             disable: function (serial, callback) {
                 $http.post(tokenUrl + "/disable", {"serial": serial},
                     {
-                        headers: {'Authorization': AuthFactory.getAuthToken()}
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).success(callback
                 ).error(error_func);
             },
             enable: function (serial, callback) {
                 $http.post(tokenUrl + "/enable", {"serial": serial},
                     {
-                        headers: {'Authorization': AuthFactory.getAuthToken()}
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).success(callback
                 ).error(error_func);
             },
             revoke: function(serial, callback) {
                 $http.post(tokenUrl + "/revoke", {"serial": serial},
                     {
-                        headers: {'Authorization': AuthFactory.getAuthToken()}
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).success(callback
                 ).error(error_func);
             },
             lost: function(serial, callback) {
                 $http.post(tokenUrl + "/lost/" + serial, {},
                     {
-                        headers: {'Authorization': AuthFactory.getAuthToken()}
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).success(callback
                 ).error(error_func);
             },
             getserial: function(otp, params, callback) {
                 $http.get(tokenUrl + "/getserial/" + otp, {
-                    headers: {'Authorization': AuthFactory.getAuthToken()},
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
                     params: params
                 }).success(callback
                 ).error(error_func);
@@ -153,7 +153,7 @@ angular.module("TokenModule", ["privacyideaAuth"])
             reset: function (serial, callback) {
                 $http.post(tokenUrl + "/reset", {"serial": serial},
                     {
-                        headers: {'Authorization': AuthFactory.getAuthToken()}
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).success(callback
                 ).error(error_func);
             },
@@ -162,7 +162,7 @@ angular.module("TokenModule", ["privacyideaAuth"])
                 data[key] = value;
                 $http.post(tokenUrl + "/setpin/" + serial, data,
                     {
-                        headers: {'Authorization': AuthFactory.getAuthToken()}
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).success(callback
                 ).error(error_func);
             },
@@ -171,21 +171,21 @@ angular.module("TokenModule", ["privacyideaAuth"])
                 data[key] = value;
                 $http.post(tokenUrl + "/set/" + serial, data,
                     {
-                        headers: {'Authorization': AuthFactory.getAuthToken()}
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).success(callback
                 ).error(error_func);
             },
             set_dict: function (serial, params, callback) {
                 $http.post(tokenUrl + "/set/" + serial, params,
                     {
-                        headers: {'Authorization': AuthFactory.getAuthToken()}
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).success(callback
                 ).error(error_func);
             },
             setrealm: function (serial, realms, callback) {
                 $http.post(tokenUrl + "/realm/" + serial, {realms: realms},
                     {
-                        headers: {'Authorization': AuthFactory.getAuthToken()}
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).success(callback
                 ).error(error_func);
             },
@@ -195,7 +195,7 @@ angular.module("TokenModule", ["privacyideaAuth"])
                  we need to convert it.
                  */
                 $http.post(tokenUrl + "/assign", params,
-                    {headers: {'Authorization': AuthFactory.getAuthToken()}}).success(callback
+                    {headers: {'PI-Authorization': AuthFactory.getAuthToken()}}).success(callback
                 ).error(error_func);
             },
             enroll: function (userObject, formdata, callback) {
@@ -212,27 +212,27 @@ angular.module("TokenModule", ["privacyideaAuth"])
                     params.realm = userObject.realm;
                 }
                 $http.post(tokenUrl + "/init", params,
-                    {headers: {'Authorization': AuthFactory.getAuthToken()}}
+                    {headers: {'PI-Authorization': AuthFactory.getAuthToken()}}
                 ).success(callback
                 ).error(error_func);
             },
             delete: function (serial, callback) {
                 $http.delete(tokenUrl + "/" + serial,
                     {
-                        headers: {'Authorization': AuthFactory.getAuthToken()}
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).success(callback
                 ).error(error_func);
             },
             resync: function (params, callback) {
                 $http.post(tokenUrl + "/resync", params,
                     {
-                        headers: {'Authorization': AuthFactory.getAuthToken()}
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).success(callback
                 ).error(error_func);
             },
             getEnrollTokens: function(callback) {
                 $http.get(authUrl + "/rights",  {
-                    headers: {'Authorization': AuthFactory.getAuthToken()}
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).success(callback).error(error_func);
             }
         };

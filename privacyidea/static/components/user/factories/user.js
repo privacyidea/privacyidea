@@ -39,7 +39,7 @@ myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope,
                 canceller.resolve();
                 canceller = $q.defer();
                 $http.get(userUrl + "/", {
-                    headers: {'Authorization': AuthFactory.getAuthToken() },
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken() },
                     params: params,
                     timeout: canceller.promise
                 }).success(callback
@@ -49,12 +49,12 @@ myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope,
                 params.resolver = resolver;
                 params.user = params.username;
                 $http.put(userUrl, params,
-                    {headers: {'Authorization': AuthFactory.getAuthToken()}
+                    {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).success(callback).error(error_func);
             },
             deleteUser: function(resolver, username, callback) {
                 $http.delete(userUrl + "/" + resolver + "/" + username,
-                    {headers: {'Authorization': AuthFactory.getAuthToken()}
+                    {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).success(callback).error(error_func);
             },
             createUser: function(resolver, User, callback) {
@@ -62,7 +62,7 @@ myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope,
                 params.user = User.username;
                 params.resolver = resolver;
                 $http.post(userUrl + '/', params,
-                    {headers: {'Authorization': AuthFactory.getAuthToken()}
+                    {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).success(callback).error(error_func);
             }
         };

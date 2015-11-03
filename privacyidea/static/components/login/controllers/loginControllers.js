@@ -30,6 +30,12 @@ angular.module("privacyideaApp")
 
     $scope.instanceUrl = instanceUrl;
     $scope.checkRight = AuthFactory.checkRight;
+    var obj = angular.element(document.querySelector("#REMOTE_USER"));
+    $scope.remoteUser = obj.val();
+    if (!$scope.remoteUser) {
+        $scope.loginWithCredentials = true;
+    }
+
     hotkeys.add({
         combo: 'alt+e',
         description: gettext('Enroll a new token'),
@@ -97,12 +103,18 @@ angular.module("privacyideaApp")
     */
 
     // This holds the user object, the username, the password and the token.
-    $scope.login = {username: "", password: ""};
+    // If we have a REMOTE_USER, we preset it.
+    $scope.login = {username: $scope.remoteUser, password: ""};
     $scope.transactionid = "";
     AuthFactory.setUser();
 
     $scope.authenticate_first = function() {
         $scope.transactionid = "";
+        $scope.authenticate();
+    };
+
+    $scope.authenticate_remote_user = function () {
+        $scope.login = {username: $scope.remoteUser, password: ""};
         $scope.authenticate();
     };
 

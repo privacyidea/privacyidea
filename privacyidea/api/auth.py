@@ -44,12 +44,11 @@ from lib.utils import (send_result, get_all_params,
                        verify_auth_token)
 from ..lib.crypto import geturandom, init_hsm
 from ..lib.error import AuthError
-from ..lib.auth import verify_db_admin
+from ..lib.auth import verify_db_admin, db_admin_exist
 import jwt
 from functools import wraps
 from datetime import (datetime,
                       timedelta)
-from lib.utils import getParam
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import check_webui_user, ROLE
 from privacyidea.lib.user import User
@@ -57,6 +56,9 @@ from privacyidea.lib.user import split_user
 from privacyidea.lib.policy import PolicyClass, SCOPE
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.api.lib.postpolicy import postpolicy, get_webui_settings
+import logging
+
+log = logging.getLogger(__name__)
 
 
 jwtauth = Blueprint('jwtauth', __name__)
@@ -160,14 +162,15 @@ def get_auth_token():
 
     g.audit_object.log({"user": username})
 
-    realm = ""
     secret = current_app.secret_key
+    superuser_realms = current_app.config.get("SUPERUSER_REALM", [])
     # This is the default role for the logged in user.
     # The role privileges may be risen to "admin"
     role = ROLE.USER
     # The way the user authenticated. This could be
     # "password" = The admin user DB or the user store
     # "pi" = The admin or the user is authenticated against privacyIDEA
+    # "remote_user" = authenticated by webserver
     authtype = "password"
     if username is None:
         raise AuthError("Authentication failure",
@@ -176,7 +179,35 @@ def get_auth_token():
     # Verify the password
     admin_auth = False
     user_auth = False
-    if verify_db_admin(username, password):
+
+    loginname, realm = split_user(username)
+    realm = realm or get_default_realm()
+    user_obj = User(loginname, realm)
+    details = None
+
+    if request.environ.get("REMOTE_USER") == username:
+        # Authenticated by the Web Server
+        # Check if the username exists
+        # 1. in local admins
+        # 2. in a realm
+        # 2a. is an admin realm
+        authtype = "remote_user "
+        if db_admin_exist(username):
+            role = ROLE.ADMIN
+            admin_auth = True
+            g.audit_object.log({"success": True,
+                                "user": "",
+                                "administrator": username,
+                                "info": "internal admin"})
+        else:
+            # check, if the user exists
+            if user_obj.exist():
+                user_auth = True
+                if user_obj.realm in superuser_realms:
+                    role = ROLE.ADMIN
+                    admin_auth = True
+
+    elif verify_db_admin(username, password):
         role = ROLE.ADMIN
         admin_auth = True
         g.audit_object.log({"success": True,
@@ -187,26 +218,16 @@ def get_auth_token():
     else:
         # The user could not be identified against the admin database,
         # so we do the rest of the check
-        username, realm = split_user(username)
-        realm = realm or get_default_realm()
-        user_obj = User(username, realm)
         options = {"g": g,
                    "clientip": request.remote_addr}
         for key, value in request.all_data.items():
             if value and key not in ["g", "clientip"]:
                 options[key] = value
-        superuser_realms = current_app.config.get("SUPERUSER_REALM", [])
         user_auth, role, details = check_webui_user(user_obj,
                                                     password,
                                                     options=options,
                                                     superuser_realms=
                                                     superuser_realms)
-        # The details with the transaction_id are raised with the AuthError
-        details = details or {}
-        # log it
-        if user_auth:
-            g.audit_object.log({"success": True})
-
         if role == ROLE.ADMIN:
             g.audit_object.log({"user": "",
                                 "administrator": username})
@@ -214,7 +235,9 @@ def get_auth_token():
     if not admin_auth and not user_auth:
         raise AuthError("Authentication failure",
                         "Wrong credentials", status=401,
-                        details=details)
+                        details=details or {})
+    else:
+        g.audit_object.log({"success": True})
 
     # If the HSM is not ready, we need to create the nonce in another way!
     hsm = init_hsm()
@@ -228,10 +251,10 @@ def get_auth_token():
     # Add the role to the JWT, so that we can verify it internally
     # Add the authtype to the JWT, so that we could use it for access
     # definitions
-    rights = g.policy_object.ui_get_rights(role, realm, username,
+    rights = g.policy_object.ui_get_rights(role, realm, loginname,
                                            request.remote_addr)
 
-    token = jwt.encode({"username": username,
+    token = jwt.encode({"username": loginname,
                         "realm": realm,
                         "nonce": nonce,
                         "role": role,
@@ -244,7 +267,7 @@ def get_auth_token():
     # based on this (only show selfservice, not the admin part)
     return send_result({"token": token,
                         "role": role,
-                        "username": username,
+                        "username": loginname,
                         "realm": realm,
                         "rights": rights})
 
@@ -277,13 +300,15 @@ def check_auth_token(required_role=None):
     
     You need to pass an authentication header:
     
-        Authorization: <token>
+        PI-Authorization: <token>
         
     You can do this using httpie like this:
     
         http -j POST http://localhost:5000/system/getConfig Authorization:ewrt
     """
-    auth_token = request.headers.get('Authorization', None)
+    auth_token = request.headers.get('PI-Authorization', None)
+    if not auth_token:
+        auth_token = request.headers.get('Authorization', None)
     r = verify_auth_token(auth_token, required_role)
     g.logged_in_user = {"username": r.get("username"),
                         "realm": r.get("realm"),
