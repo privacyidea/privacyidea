@@ -386,6 +386,10 @@ myApp.controller("tokenConfigController", function ($scope, $location,
             $scope.form['sms.Provider'] = $scope.form['sms.Provider'] || $scope.defaultSMSProvider;
             // Email
             $scope.form['email.password.type'] = "password";
+            // We need to convert the values to bools - otherwise we have
+            // problems when unchecking a checked checkbox
+            $scope.form['email.tls'] = $scope.isChecked($scope.form['email.tls']);
+            $scope.form['remote.verify_ssl_certificate'] = $scope.isChecked($scope.form['remote.verify_ssl_certificate']);
         });
     };
 
@@ -586,6 +590,7 @@ myApp.controller("configController", function ($scope, $location,
             $scope.params.AutoResync = $scope.isChecked($scope.params.AutoResync);
             $scope.params.UiLoginDisplayHelpButton = $scope.isChecked($scope.params.UiLoginDisplayHelpButton);
             $scope.params.UiLoginDisplayRealmBox = $scope.isChecked($scope.params.UiLoginDisplayRealmBox);
+
             console.log($scope.params);
         });
     };

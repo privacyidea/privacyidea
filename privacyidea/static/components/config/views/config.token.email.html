@@ -59,7 +59,7 @@
 <div class="form-group">
     <input type="checkbox"
            ng-model="form['email.tls']"
-           ng-checked="form['email.tls'] == '1'"
+           ng-checked="isChecked(form['email.tls'])"
            name="mailtls"
            id="mailtls">
     <label for="mailtls" translate>Use TLS</label>
