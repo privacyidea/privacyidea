@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+# 2015-11-04 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add REMOTE_USER check
 # 2015-04-03 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add logout time to response
 # 2014-12-15 Cornelius Kölbel, info@privacyidea.org
@@ -53,9 +55,10 @@ from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import check_webui_user, ROLE
 from privacyidea.lib.user import User
 from privacyidea.lib.user import split_user
-from privacyidea.lib.policy import PolicyClass, SCOPE
+from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.api.lib.postpolicy import postpolicy, get_webui_settings
+from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 import logging
 
 log = logging.getLogger(__name__)
@@ -185,7 +188,8 @@ def get_auth_token():
     user_obj = User(loginname, realm)
     details = None
 
-    if request.environ.get("REMOTE_USER") == username:
+    # Check if the remote user is allowed
+    if (request.remote_user == username) and is_remote_user_allowed(request):
         # Authenticated by the Web Server
         # Check if the username exists
         # 1. in local admins

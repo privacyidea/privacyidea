@@ -181,6 +181,7 @@ class ACTION():
     POLICYDELETE = "policydelete"
     POLICYWRITE = "policywrite"
     POLICYTEMPLATEURL = "policy_template_url"
+    REMOTE_USER = "remote_user"
     RESET = "reset"
     RESOLVERDELETE = "resolverdelete"
     RESOLVERWRITE = "resolverwrite"
@@ -213,6 +214,12 @@ class LOGINMODE():
     USERSTORE = "userstore"
     PRIVACYIDEA = "privacyIDEA"
     DISABLE = "disable"
+
+
+class REMOTE_USER():
+    __doc__ = """The list of possible values for the remote_user policy."""
+    DISABLE = "disable"
+    ACTIVE = "allowed"
 
 
 class ACTIONVALUE():
@@ -1060,6 +1067,13 @@ def get_static_policy_definitions(scope=None):
                     'to the Web UI. Defaults to "userstore"'),
                 'value': [LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA,
                           LOGINMODE.DISABLE],
+            },
+            ACTION.REMOTE_USER: {
+                'type': 'str',
+                'value': [REMOTE_USER.ACTIVE, REMOTE_USER.DISABLE],
+                'desc': _('The REMOTE_USER set by the webserver can be used '
+                          'to login to privacyIDEA or it will be ignored. '
+                          'Defaults to "disable".')
             },
             ACTION.LOGOUTTIME: {
                 'type': 'int',

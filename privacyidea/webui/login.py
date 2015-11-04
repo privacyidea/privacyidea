@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2015-11-04 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Add REMOTE_USER check
 # 2014-12-22 Cornelius Kölbel, <cornelius@privacyidea.org>
 #
 # This code is free software; you can redistribute it and/or
@@ -25,6 +27,7 @@ Other html code is dynamically loaded via angularJS and located in
 __author__ = "Cornelius Kölbel, <cornelius@privacyidea.org>"
 
 from flask import (Blueprint, render_template, request)
+from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 
 login_blueprint = Blueprint('login_blueprint', __name__)
 
@@ -38,8 +41,10 @@ def single_page_application():
     backend_url = ""
 
     browser_lang = request.accept_languages.best_match(["en", "de"])
-    # TODO: check if login with REMOTE_USER is allowed.
-    remote_user = request.environ.get("REMOTE_USER")
+    # check if login with REMOTE_USER is allowed.
+    remote_user = ""
+    if is_remote_user_allowed(request):
+        remote_user = request.remote_user
     return render_template("index.html", instance=instance,
                            backendUrl=backend_url,
                            browser_lang=browser_lang,

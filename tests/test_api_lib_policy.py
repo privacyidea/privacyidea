@@ -7,7 +7,7 @@ import json
 from .base import (MyTestCase, PWFILE)
 
 from privacyidea.lib.policy import (set_policy, delete_policy,
-                                    PolicyClass, SCOPE, ACTION,
+                                    PolicyClass, SCOPE, ACTION, REMOTE_USER,
                                     AUTOASSIGNVALUE)
 from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_base_action, check_token_init,
@@ -16,7 +16,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            init_tokenlabel, init_random_pin,
                                            encrypt_pin, check_otp_pin,
                                            check_external, api_key_required,
-                                           mangle)
+                                           mangle, is_remote_user_allowed)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             no_detail_on_success,
                                             no_detail_on_fail, autoassign,
@@ -649,6 +649,40 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # finally delete policy
         delete_policy("mangle1")
         delete_policy("mangle2")
+
+    def test_13_remote_user(self):
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        env["REMOTE_USER"] = "admin"
+        req = Request(env)
+
+        # A user, for whom the login via REMOTE_USER is allowed.
+        set_policy(name="ruser",
+                   scope=SCOPE.WEBUI,
+                   action="%s=%s" % (ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
+        g.policy_object = PolicyClass()
+
+        r = is_remote_user_allowed(req)
+        self.assertEqual(r, [REMOTE_USER.ACTIVE])
+
+        # Login for the REMOTE_USER is not allowed.
+        # Only allowed for user "super", but REMOTE_USER=admin
+        set_policy(name="ruser",
+                   scope=SCOPE.WEBUI,
+                   action="%s=%s" % (ACTION.REMOTE_USER, REMOTE_USER.ACTIVE),
+                   user="super")
+        g.policy_object = PolicyClass()
+
+        r = is_remote_user_allowed(req)
+        self.assertEqual(r, [])
+
+        delete_policy("ruser")
 
 
 class PostPolicyDecoratorTestCase(MyTestCase):

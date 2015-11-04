@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-11-04 Cornelius Kölbel <cornelius.koelbel@netknights.i>
+#             Add check for REMOTE_USER
 #  2015-04-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add hook for external decorator for init and assign
 #  2015-02-06 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -35,8 +37,9 @@ import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.error import PolicyError
 from flask import g, current_app
-from privacyidea.lib.policy import SCOPE, ACTION
-from privacyidea.lib.user import get_user_from_param
+from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass
+from privacyidea.lib.user import (get_user_from_param, get_default_realm,
+                                  split_user)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token)
 from privacyidea.lib.utils import generate_password
 from privacyidea.lib.auth import ROLE
@@ -634,3 +637,32 @@ def mock_fail(req, action):
     this exception accordingly.
     """
     raise Exception("This is an Exception in an external check function")
+
+
+def is_remote_user_allowed(req):
+    """
+    Checks if the REMOTE_USER server variable is allowed to be used.
+
+    .. note:: This is not used as a decorator!
+
+    :param req: The flask request, containing the remote user and the client IP
+    :return:
+    """
+    res = False
+    if req.remote_user:
+        loginname, realm = split_user(req.remote_user)
+        realm = realm or get_default_realm()
+
+        # Check if the remote user is allowed
+        client_ip = req.remote_addr
+        if "policy_object" not in g:
+            g.policy_object = PolicyClass()
+        ruser_active = g.policy_object.get_action_values(ACTION.REMOTE_USER,
+                                                         scope=SCOPE.WEBUI,
+                                                         user=loginname,
+                                                         realm=realm,
+                                                         client=client_ip)
+
+        res = ruser_active
+
+    return res

@@ -44,6 +44,23 @@ realms can not login to the UI anymore.
    the web UI either for certain IP addresses (``client``) or for users in
    certain realms.
 
+
+remote_user
+~~~~~~~~~~~
+
+.. index:: remote_user
+
+type: string
+
+This policy defines, if the login to the privacyIDEA using the web servers
+integrated authentication (like basic authentication or digest
+authentication) should be allowed.
+
+Possible values are "disable" and "allowed".
+
+.. note:: The policy *login_mode* and *remote_user* work independent of each
+   other. I.e. you can disable *login_mode* and allow *remote_user*.
+
 logout_time
 ~~~~~~~~~~~
 
