@@ -6,6 +6,7 @@ from .base import MyTestCase
 import json
 from privacyidea.lib.token import init_token, get_tokens
 from privacyidea.lib.machine import attach_token
+from privacyidea.lib.policy import (set_policy, delete_policy, ACTION, SCOPE)
 
 HOSTSFILE = "tests/testdata/hosts"
 
@@ -206,7 +207,6 @@ class APIMachinesTestCase(MyTestCase):
         token_obj = get_tokens(serial=serial)[0]
         self.assertEqual(len(token_obj.token.machine_list), 0)
 
-
     def test_10_auth_items_ssh(self):
         # create an SSH token
         token_obj = init_token({"serial": self.serial2, "type": "sshkey",
@@ -231,6 +231,48 @@ class APIMachinesTestCase(MyTestCase):
             sshkey = result["value"].get("ssh")[0].get("sshkey")
             self.assertTrue(sshkey.startswith("ssh-rsa"), sshkey)
 
+        # fetch the auth_items for user testuser
+        with self.app.test_request_context(
+                '/machine/authitem/ssh?hostname=gandalf&user=testuser',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result["status"], True)
+            sshkey = result["value"].get("ssh")[0].get("sshkey")
+            self.assertTrue(sshkey.startswith("ssh-rsa"), sshkey)
+
+        # fetch auth_items for testuser, but with mangle policy
+        # Remove everything that sounds like "SOMETHING\" in front of
+        # the username
+        set_policy(name="mangle1", scope=SCOPE.AUTH,
+                   action="%s=user/.*\\\\(.*)/\\1/" % ACTION.MANGLE)
+        with self.app.test_request_context(
+                '/machine/authitem/ssh?hostname=gandalf&user=DOMAIN\\testuser',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result["status"], True)
+            sshkey = result["value"].get("ssh")[0].get("sshkey")
+            self.assertTrue(sshkey.startswith("ssh-rsa"), sshkey)
+        delete_policy("mangle1")
+
+        # Now that the policy is deleted, we will not get the auth_items
+        # anymore, since the username is not mangled.
+        with self.app.test_request_context(
+                '/machine/authitem/ssh?hostname=gandalf&user=DOMAIN\\testuser',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result["status"], True)
+            sshkeys = result["value"].get("ssh")
+            # No user DOMAIN\\testuser and no SSH keys
+            self.assertFalse(sshkeys)
 
         # fetch the auth_items on machine gandalf for all applications
         with self.app.test_request_context(

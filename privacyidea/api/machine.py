@@ -28,7 +28,7 @@ from flask import (Blueprint,
                    request)
 from lib.utils import (getParam,
                        send_result)
-from ..api.lib.prepolicy import prepolicy, check_base_action
+from ..api.lib.prepolicy import prepolicy, check_base_action, mangle
 from ..lib.policy import ACTION
 
 from flask import (g)
@@ -307,6 +307,7 @@ def set_option_api():
 
 @machine_blueprint.route('/authitem', methods=['GET'])
 @machine_blueprint.route('/authitem/<application>', methods=['GET'])
+@prepolicy(mangle, request=request)
 @prepolicy(check_base_action, request, ACTION.AUTHITEMS)
 def get_auth_items_api(application=None):
     """
