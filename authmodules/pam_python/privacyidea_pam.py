@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+# 2015-11-06 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Avoid SQL injections.
 # 2015-10-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add support for try_first_pass
 # 2015-04-03 Cornelius Kölbel  <cornelius.koelbel@netknights.it>
@@ -92,13 +94,10 @@ class Authenticator(object):
             response = requests.post(self.URL + "/validate/check", data=data,
                                      verify=self.sslverify)
 
-            try:
-                json_response = response.json()
+            json_response = response.json
+            if callable(json_response):
                 syslog.syslog(syslog.LOG_DEBUG, "requests > 1.0")
-            except Exception:
-                # requests < 1.0
-                json_response = response.json
-                syslog.syslog(syslog.LOG_DEBUG, "requests < 1.0")
+                json_response = json_response()
 
             result = json_response.get("result")
             auth_item = json_response.get("auth_items")
@@ -129,13 +128,15 @@ def pam_sm_authenticate(pamh, flags, argv):
     debug = config.get("debug")
     try_first_pass = config.get("try_first_pass")
     prompt = config.get("prompt", "Your OTP")
+    if prompt[-1] != ":":
+        prompt += ":"
     rval = pamh.PAM_AUTH_ERR
     syslog.openlog(facility=syslog.LOG_AUTH)
 
     Auth = Authenticator(pamh, config)
     try:
         if pamh.authtok is None or not try_first_pass:
-            message = pamh.Message(pamh.PAM_PROMPT_ECHO_OFF, "%s: " % prompt)
+            message = pamh.Message(pamh.PAM_PROMPT_ECHO_OFF, "%s " % prompt)
             response = pamh.conversation(message)
             pamh.authtok = response.resp
 
@@ -148,7 +149,7 @@ def pam_sm_authenticate(pamh, flags, argv):
         # try_first_pass, we ask again for a password:
         if rval != pamh.PAM_SUCCESS and try_first_pass:
             # Now we give it a second try:
-            message = pamh.Message(pamh.PAM_PROMPT_ECHO_OFF, "%s: " % prompt)
+            message = pamh.Message(pamh.PAM_PROMPT_ECHO_OFF, "%s " % prompt)
             response = pamh.conversation(message)
             pamh.authtok = response.resp
 
@@ -203,16 +204,15 @@ def check_offline_otp(user, otp, sqlfile, window=10):
     _create_table(c)
     # get all possible serial/tokens for a user
     serials = []
-    for row in c.execute("SELECT serial, user FROM authitems WHERE user='%s'"
-                         "GROUP by serial" % user):
+    for row in c.execute("SELECT serial, user FROM authitems WHERE user=?"
+                         "GROUP by serial", (user,)):
         serials.append(row[0])
 
     for serial in serials:
         for row in c.execute("SELECT counter, user, otp, serial FROM authitems "
-                             "WHERE user='%s' "
-                             "and serial='%s' "
-                             "ORDER by counter LIMIT %s"
-                             % (user, serial, window)):
+                             "WHERE user=? and serial=? ORDER by counter "
+                             "LIMIT ?",
+                             (user, serial, window)):
             hash_value = row[2]
             if passlib.hash.pbkdf2_sha512.verify(otp, hash_value):
                 res = True
@@ -222,8 +222,8 @@ def check_offline_otp(user, otp, sqlfile, window=10):
 
     # We found a matching password, so we remove the old entries
     if res:
-        c.execute("DELETE from authitems WHERE counter <= %i and serial = "
-                  "'%s'" % (matching_counter, matching_serial))
+        c.execute("DELETE from authitems WHERE counter <= ? and serial = ?",
+                  (matching_counter, matching_serial))
         conn.commit()
     conn.close()
     return res
@@ -260,11 +260,9 @@ def save_auth_item(sqlfile, user, serial, tokentype, authitem):
         tokenowner = offline.get("username")
         for counter, otphash in offline.get("response").iteritems():
             # Insert the OTP hash
-            c.execute("INSERT INTO authitems "
-                      "(counter, user, serial, tokenowner, otp) "
-                      "VALUES "
-                      "('%s','%s','%s', '%s', '%s')"
-                      % (counter, user, serial, tokenowner, otphash))
+            c.execute("INSERT INTO authitems (counter, user, serial,"
+                      "tokenowner, otp) VALUES (?,?,?,?,?)",
+                      (counter, user, serial, tokenowner, otphash))
 
     # Save (commit) the changes
     conn.commit()
