@@ -1,10 +1,9 @@
 [submodule "adminclient"]
 	path = adminclient
-	url = git@github.com:privacyidea/privacyideaadm.git
+	url = https://github.com/privacyidea/privacyideaadm.git
 [submodule "authmodules/simpleSAMLphp"]
 	path = authmodules/simpleSAMLphp
-	url = git@github.com:privacyidea/simplesamlphp-module-privacyidea.git
-
+	url = https://github.com/privacyidea/simplesamlphp-module-privacyidea.git
 [submodule "authmodules/pam_python"]
 	path = authmodules/pam_python
-	url = git@github.com:privacyidea/pam_python.git
+	url = https://github.com/privacyidea/pam_python.git
