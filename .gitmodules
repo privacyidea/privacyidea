@@ -7,3 +7,6 @@
 [submodule "authmodules/pam_python"]
 	path = authmodules/pam_python
 	url = https://github.com/privacyidea/pam_python.git
+[submodule "authmodules/FreeRADIUS"]
+	path = authmodules/FreeRADIUS
+	url = https://github.com/privacyidea/FreeRADIUS.git
