@@ -386,9 +386,6 @@ class LibPolicyTestCase(MyTestCase):
         g.policy_object = PolicyClass()
         options = {"g": g}
 
-        self.assertRaises(Exception, auth_lastauth, fake_auth_missing_serial,
-                          user, pin, options)
-
         rv = auth_lastauth(fake_auth, user, pin, options)
         self.assertEqual(rv[0], True)
 

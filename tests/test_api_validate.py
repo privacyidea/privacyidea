@@ -126,7 +126,7 @@ class ValidateAPITestCase(MyTestCase):
                                            method='GET',
                                            query_string=urlencode(
                                                     {"user": "cornelius",
-                                                    "pass": "pin287082"})):
+                                                     "pass": "pin287082"})):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
@@ -745,3 +745,32 @@ class ValidateAPITestCase(MyTestCase):
 
         delete_policy("pol_time1")
         remove_token(token.token.serial)
+
+    def test_19_validate_passthru(self):
+        # user passthru, realm: self.realm2, passwd: pthru
+        set_policy(name="pthru", scope=SCOPE.AUTH, action=ACTION.PASSTHRU)
+
+        # Passthru with GET request
+        with self.app.test_request_context(
+                '/validate/check',
+                method='GET',
+                query_string=urlencode({"user": "passthru",
+                                        "realm": self.realm2,
+                                        "pass": "pthru"})):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+
+        # Passthru with POST Request
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "passthru",
+                                                 "realm": self.realm2,
+                                                 "pass": "pthru"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+
+        delete_policy("pthru")

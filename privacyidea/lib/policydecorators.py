@@ -225,6 +225,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
     :param options: Dict containing values for "g" and "clientip"
     :return: Tuple of True/False and reply-dictionary
     """
+
     from privacyidea.lib.token import get_tokens
     options = options or {}
     g = options.get("g")
@@ -378,49 +379,50 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
             realm = None
             login = None
             serial = user_or_serial
-        if not serial:
-            raise privacyIDEAError("No serial in response!")
 
-        from privacyidea.lib.token import get_tokens
-        try:
-            token = get_tokens(serial=serial)[0]
-        except IndexError:
-            # In the special case of a registration token, the token does not
-            # exist anymore. So we immediately return
-            return res, reply_dict
+        # In case of a passthru policy we have no serial in the response
+        # So we may only continue, if we have a serial.
+        if serial:
+            from privacyidea.lib.token import get_tokens
+            try:
+                token = get_tokens(serial=serial)[0]
+            except IndexError:
+                # In the special case of a registration token, the token does not
+                # exist anymore. So we immediately return
+                return res, reply_dict
 
-        last_auth = policy_object.get_action_values(
-            action=ACTION.LASTAUTH,
-            scope=SCOPE.AUTHZ,
-            realm=realm,
-            user=login,
-            client=clientip, unique=True)
+            last_auth = policy_object.get_action_values(
+                action=ACTION.LASTAUTH,
+                scope=SCOPE.AUTHZ,
+                realm=realm,
+                user=login,
+                client=clientip, unique=True)
 
-        if len(last_auth) == 1:
-            # The tdelta in the policy
-            tdelta = parse_timedelta(last_auth[0])
+            if len(last_auth) == 1:
+                # The tdelta in the policy
+                tdelta = parse_timedelta(last_auth[0])
 
-            # The last successful authentication of the token
-            last_success_auth = token.get_tokeninfo(ACTION.LASTAUTH)
-            if last_success_auth:
-                log.debug("Compare the last successful authentication of "
-                          "token %s with policy "
-                          "tdelat %s: %s" % (serial, tdelta,
-                                             last_success_auth))
-                # convert string of last_success_auth
-                last_success_auth = datetime.datetime.strptime(
-                    last_success_auth, "%Y-%m-%d %H:%M:%S.%f")
-                # The last auth is to far in the past
-                if last_success_auth + tdelta < datetime.datetime.now():
-                    res = False
-                    log.debug("The last successful authentication is too old.")
-                    reply_dict["message"] = "The last successful " \
-                                            "authentication was %s. It is to " \
-                                            "long ago." % last_success_auth
+                # The last successful authentication of the token
+                last_success_auth = token.get_tokeninfo(ACTION.LASTAUTH)
+                if last_success_auth:
+                    log.debug("Compare the last successful authentication of "
+                              "token %s with policy "
+                              "tdelat %s: %s" % (serial, tdelta,
+                                                 last_success_auth))
+                    # convert string of last_success_auth
+                    last_success_auth = datetime.datetime.strptime(
+                        last_success_auth, "%Y-%m-%d %H:%M:%S.%f")
+                    # The last auth is to far in the past
+                    if last_success_auth + tdelta < datetime.datetime.now():
+                        res = False
+                        log.debug("The last successful authentication is too old.")
+                        reply_dict["message"] = "The last successful " \
+                                                "authentication was %s. It is to " \
+                                                "long ago." % last_success_auth
 
-        # set the last successful authentication, if res still true
-        if res:
-            token.add_tokeninfo(ACTION.LASTAUTH, datetime.datetime.utcnow())
+            # set the last successful authentication, if res still true
+            if res:
+                token.add_tokeninfo(ACTION.LASTAUTH, datetime.datetime.utcnow())
 
     return res, reply_dict
 
