@@ -159,7 +159,7 @@ msgstr "An eine neue Maschine anhängen"
 msgid "Attribute mapping"
 msgstr "Attributszuordnung"
 
-#: privacyidea/static/templates/menu.html:52
+#: privacyidea/static/templates/menu.html:56
 msgid "Audit"
 msgstr "Audit"
 
@@ -327,7 +327,7 @@ msgstr "Die Client-Konfiguration wird nicht unterstützt."
 msgid "Close"
 msgstr "Schließen"
 
-#: privacyidea/static/templates/menu.html:44
+#: privacyidea/static/templates/menu.html:48
 msgid "Config"
 msgstr "Konfiguration"
 
@@ -997,7 +997,7 @@ msgstr "Anmelden"
 msgid "Log out"
 msgstr "Abmelden"
 
-#: privacyidea/static/templates/menu.html:57
+#: privacyidea/static/templates/menu.html:61
 msgid "Login"
 msgstr "Anmelden"
 
@@ -1011,11 +1011,9 @@ msgstr "Als {{ remoteUser }} anmelden"
 msgid "Login with credentials"
 msgstr "Als anderer Benutzer anmelden"
 
-#: privacyidea/static/templates/menu.html:64
-msgid ""
-"Logout\n"
-"                        {{ loggedInUser.username }} @{{ loggedInUser.realm }}"
-msgstr "{{ loggedInUser.username }} @{{ loggedInUser.realm }} Abmelden"
+#: privacyidea/static/templates/menu.html:78
+msgid "Logout"
+msgstr "Abmelden"
 
 #: privacyidea/static/components/token/views/token.html:51
 msgid "Lost Token"
@@ -1040,7 +1038,7 @@ msgid "Machine Resolver"
 msgstr "Maschinen-Resolver"
 
 #: privacyidea/static/components/config/views/config.html:35
-#: privacyidea/static/templates/menu.html:38
+#: privacyidea/static/templates/menu.html:41
 msgid "Machines"
 msgstr "Maschinen"
 
@@ -1481,10 +1479,6 @@ msgstr " Token resynchronisieren"
 msgid "Revoke"
 msgstr "Widerrufen"
 
-#: privacyidea/static/templates/menu.html:68
-msgid "Role"
-msgstr "Rolle"
-
 #: privacyidea/static/components/token/controllers/tokenControllers.js:110
 msgid "Roll the token"
 msgstr "Token ausrollen"
@@ -1677,8 +1671,8 @@ msgstr "System"
 msgid "System Config"
 msgstr "Systemkonfiguration"
 
-#: privacyidea/static/components/config/controllers/configControllers.js:401
-#: privacyidea/static/components/config/controllers/configControllers.js:574
+#: privacyidea/static/components/config/controllers/configControllers.js:405
+#: privacyidea/static/components/config/controllers/configControllers.js:578
 msgid "System Config saved."
 msgstr "Systemkonfiguration gespeichert."
 
@@ -2566,7 +2560,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.details.html:223
 #: privacyidea/static/components/config/views/config.policies.list.html:10
-#: privacyidea/static/templates/menu.html:32
+#: privacyidea/static/templates/menu.html:34
 msgid "User"
 msgstr "Benutzer "
 
@@ -2617,7 +2611,7 @@ msgid "Username"
 msgstr "Benutzer"
 
 #: privacyidea/static/components/config/views/config.html:42
-#: privacyidea/static/templates/menu.html:26
+#: privacyidea/static/templates/menu.html:27
 msgid "Users"
 msgstr "Benutzer"
 
@@ -2722,7 +2716,7 @@ msgstr ""
 "Drücken des blinkenden Knopfes oder durch neu Einstecken des Tokens.  Dies "
 "hängt von dem konkreten Tokentyp an."
 
-#: privacyidea/static/templates/menu.html:78
+#: privacyidea/static/templates/menu.html:93
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr "Sie werden nach {{ myCountdown }} Sekunden abgemeldet."
 
@@ -2998,6 +2992,15 @@ msgstr "Fenster"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."
+
+#~ msgid ""
+#~ "Logout\n"
+#~ "                        {{ loggedInUser.username }} @{{ loggedInUser."
+#~ "realm }}"
+#~ msgstr "{{ loggedInUser.username }} @{{ loggedInUser.realm }} Abmelden"
+
+#~ msgid "Role"
+#~ msgstr "Rolle"
 
 #~ msgid "Error enrolling U2F token. ErrorCode :"
 #~ msgstr "Fehler beim Ausrollen des U2F Tokens. FehlerCode:"

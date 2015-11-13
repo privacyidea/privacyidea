@@ -149,7 +149,7 @@ msgstr ""
 msgid "Attribute mapping"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:52
+#: privacyidea/static/templates/menu.html:56
 msgid "Audit"
 msgstr ""
 
@@ -303,7 +303,7 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:44
+#: privacyidea/static/templates/menu.html:48
 msgid "Config"
 msgstr ""
 
@@ -930,7 +930,7 @@ msgstr ""
 msgid "Log out"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:57
+#: privacyidea/static/templates/menu.html:61
 msgid "Login"
 msgstr ""
 
@@ -944,10 +944,8 @@ msgstr ""
 msgid "Login with credentials"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:64
-msgid ""
-"Logout\n"
-"                        {{ loggedInUser.username }} @{{ loggedInUser.realm }}"
+#: privacyidea/static/templates/menu.html:78
+msgid "Logout"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.html:51
@@ -973,7 +971,7 @@ msgid "Machine Resolver"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.html:35
-#: privacyidea/static/templates/menu.html:38
+#: privacyidea/static/templates/menu.html:41
 msgid "Machines"
 msgstr ""
 
@@ -1405,10 +1403,6 @@ msgstr ""
 msgid "Revoke"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:68
-msgid "Role"
-msgstr ""
-
 #: privacyidea/static/components/token/controllers/tokenControllers.js:110
 msgid "Roll the token"
 msgstr ""
@@ -1600,8 +1594,8 @@ msgstr ""
 msgid "System Config"
 msgstr ""
 
-#: privacyidea/static/components/config/controllers/configControllers.js:401
-#: privacyidea/static/components/config/controllers/configControllers.js:574
+#: privacyidea/static/components/config/controllers/configControllers.js:405
+#: privacyidea/static/components/config/controllers/configControllers.js:578
 msgid "System Config saved."
 msgstr ""
 
@@ -2310,7 +2304,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.details.html:223
 #: privacyidea/static/components/config/views/config.policies.list.html:10
-#: privacyidea/static/templates/menu.html:32
+#: privacyidea/static/templates/menu.html:34
 msgid "User"
 msgstr ""
 
@@ -2361,7 +2355,7 @@ msgid "Username"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.html:42
-#: privacyidea/static/templates/menu.html:26
+#: privacyidea/static/templates/menu.html:27
 msgid "Users"
 msgstr ""
 
@@ -2452,7 +2446,7 @@ msgid ""
 "                    token model."
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:78
+#: privacyidea/static/templates/menu.html:93
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr ""
 

@@ -17,25 +17,29 @@
                     <a ui-sref="token.list">
                     <span class="glyphicon glyphicon-phone"
                           aria-hidden="true"></span>
-                        <translate>Tokens</translate></a></li>
+                        <translate>Tokens</translate>
+                    </a></li>
                 <li ng-class="{active: $state.includes('user')}"
                     ng-show="loggedInUser.role == 'admin'">
                     <a ui-sref="user.list">
                     <span class="glyphicon glyphicon-user"
                           aria-hidden="true"></span>
-                        <translate>Users</translate></a></li>
+                        <translate>Users</translate>
+                    </a></li>
                 <li ng-class="{active: $state.includes('user')}"
                     ng-show="loggedInUser.role == 'user'">
                     <a ui-sref="user.password">
                     <span class="glyphicon glyphicon-user"
                           aria-hidden="true"></span>
-                        <translate>User</translate></a></li>
+                        <translate>User</translate>
+                    </a></li>
                 <li ng-class="{active: $state.includes('machine')}"
                     ng-show="loggedInUser.role == 'admin'">
                     <a ui-sref="machine.list">
                     <span class="glyphicon glyphicon-tasks"
                           aria-hidden="true"></span>
-                        <translate>Machines</translate></a></li>
+                        <translate>Machines</translate>
+                    </a></li>
                 <li ng-class="{active: $state.includes('config')}"
                     ng-show="loggedInUser.role == 'admin'">
                     <a ui-sref="config.system">
@@ -55,18 +59,27 @@
             </ul>
             <ul class="nav navbar-nav navbar-right">
                 <li><a ui-sref="login" ng-hide="loggedInUser.username" translate
-                        >Login</a>
+                >Login</a>
                 </li>
                 <li>
-                    <button ng-show="loggedInUser.username"
-                            ng-click="logout()"
-                            class="btn btn-sm btn-warning">
-                        <translate>Logout
-                        {{ loggedInUser.username }} @{{ loggedInUser.realm }}
-                        </translate>
-                        <br>
-                    (<translate>Role</translate>: {{ loggedInUser.role }})
-                    </button>
+                    <div class="btn-group" ng-show="loggedInUser.username">
+                        <button type="button" class="btn btn-warning">
+                            {{ loggedInUser.username }}
+                            @{{ loggedInUser.realm }}
+                            ({{ loggedInUser.role }})
+                        </button>
+                        <button type="button"
+                                class="btn btn-warning dropdown-toggle"
+                                data-toggle="dropdown" aria-haspopup="true"
+                                aria-expanded="false">
+                            <span class="caret"></span>
+                            <span class="sr-only">Toggle Dropdown</span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li ng-click="logout()">
+                                <a href="#" translate>Logout</a></li>
+                        </ul>
+                    </div>
                 </li>
             </ul>
         </div>
@@ -76,5 +89,5 @@
 <div inform class="inform-fixed inform-shadow"></div>
 
 <div class="alert alert-warning" ng-show="logoutWarning" translate>
-	You will be logged out in {{ myCountdown }} second(s).
+    You will be logged out in {{ myCountdown }} second(s).
 </div>
