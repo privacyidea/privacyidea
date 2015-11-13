@@ -26,8 +26,10 @@ Other html code is dynamically loaded via angularJS and located in
 """
 __author__ = "Cornelius Kölbel, <cornelius@privacyidea.org>"
 
-from flask import (Blueprint, render_template, request)
+from flask import (Blueprint, render_template, request, current_app)
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
+
+DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
 
 login_blueprint = Blueprint('login_blueprint', __name__)
 
@@ -40,6 +42,9 @@ def single_page_application():
     # The backend URL should come from the configuration of the system.
     backend_url = ""
 
+    # The default theme. We can change this later
+    theme = current_app.config.get("PI_CSS", DEFAULT_THEME)
+
     browser_lang = request.accept_languages.best_match(["en", "de"])
     # check if login with REMOTE_USER is allowed.
     remote_user = ""
@@ -48,5 +53,6 @@ def single_page_application():
     return render_template("index.html", instance=instance,
                            backendUrl=backend_url,
                            browser_lang=browser_lang,
-                           remote_user=remote_user)
+                           remote_user=remote_user,
+                           theme=theme)
 

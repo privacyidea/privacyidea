@@ -37,6 +37,7 @@ The file should contain the following contents::
    # PI_LOGFILE = '....'
    # PI_LOGLEVEL = 20
    # PI_INIT_CHECK_HOOK = 'your.module.function'
+   # PI_CSS = '/location/of/theme.css'
 
 
 .. note:: The config file is parsed as python code, so you can use variables to
@@ -58,3 +59,24 @@ request being handled.
 There are three config entries, that can be used to define the logging. These
 are ``PI_LOGLEVEL``, ``PI_LOGFILE``, ``PI_LOGCONFIG``. These are described in
 :ref:`debug_log`.
+
+.. _themes:
+
+Themes
+------
+
+.. index:: themes, CSS
+
+You can create your own CSS file to adapt the look and feel of the Web UI.
+The default CSS is the bootstrap CSS theme. Using ``PI_CSS`` you can specify
+the URL of your own CSS file.
+The default CSS file url is */static/contrib/css/bootstrap-theme.css*.
+The file in the file system is located at *privacyidea/static/contrib/css*.
+You might add a directory *privacyidea/static/custom/css/* and add your CSS
+file there.
+
+A good stating point might be the themes at http://bootswatch.com.
+
+.. note:: If you add your own CSS file, the file *bootstrap-theme.css* will
+   not be loaded anymore. So you might start with a copy of the original file.
+
