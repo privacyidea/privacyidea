@@ -12,11 +12,17 @@ down_revision = '2551ee982544'
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.exc import OperationalError
 
 
 def upgrade():
     try:
         op.add_column('policy', sa.Column('condition', sa.Integer(), nullable=False))
+    except OperationalError as exx:
+        if exx.orig.message.startswith("duplicate column name"):
+            print("Good. Column condition already exists.")
+        else:
+            print(exx)
     except Exception as exx:
         print ("Could not add column 'condition' to table 'policy'")
         print (exx)

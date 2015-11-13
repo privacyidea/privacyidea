@@ -12,6 +12,7 @@ down_revision = 'e5cbeb7c177'
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.exc import OperationalError
 
 
 def upgrade():
@@ -19,6 +20,11 @@ def upgrade():
         op.add_column('policy', sa.Column('adminrealm',
                                           sa.Unicode(length=256),
                                           nullable=True))
+    except OperationalError as exx:
+        if exx.orig.message.startswith("duplicate column name"):
+            print("Good. Column adminrealm already exists.")
+        else:
+            print(exx)
     except Exception as exx:
         print("Could not add the column 'adminrealm' to table policy")
         print(exx)

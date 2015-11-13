@@ -12,12 +12,18 @@ down_revision = '2181294eed0b'
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.exc import OperationalError
 
 
 def upgrade():
     try:
         op.add_column('resolverrealm', sa.Column('priority', sa.Integer(),
                                                  nullable=True))
+    except OperationalError as exx:
+        if exx.orig.message.startswith("duplicate column name"):
+            print("Good. Column priority already exists.")
+        else:
+            print(exx)
     except Exception as exx:
         print ("Could not add column 'priority' to table 'resolverrealm'")
         print (exx)

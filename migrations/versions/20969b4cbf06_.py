@@ -12,6 +12,7 @@ down_revision = '4d9178fa8336'
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.exc import OperationalError
 
 
 def upgrade():
@@ -19,6 +20,11 @@ def upgrade():
         op.add_column('token', sa.Column('revoked', sa.Boolean(),
                                          nullable=False,
                                          default=False))
+    except OperationalError as exx:
+        if exx.orig.message.startswith("duplicate column name"):
+            print("Good. Column revoked already exists.")
+        else:
+            print(exx)
     except Exception as exx:
         print ("Could not add column 'revoked' to table 'token'")
         print (exx)
@@ -27,6 +33,11 @@ def upgrade():
         op.add_column('token', sa.Column('locked', sa.Boolean(),
                                          nullable=False,
                                          default=False))
+    except OperationalError as exx:
+        if exx.orig.message.startswith("duplicate column name"):
+            print("Good. Column locked already exists.")
+        else:
+            print(exx)
     except Exception as exx:
         print ("Could not add column 'locked' to table 'token'")
         print (exx)
