@@ -327,6 +327,10 @@ msgstr "Die Client-Konfiguration wird nicht unterstützt."
 msgid "Close"
 msgstr "Schließen"
 
+#: privacyidea/static/templates/menu.html:82
+msgid "Community"
+msgstr "Community"
+
 #: privacyidea/static/templates/menu.html:48
 msgid "Config"
 msgstr "Konfiguration"
@@ -1011,7 +1015,7 @@ msgstr "Als {{ remoteUser }} anmelden"
 msgid "Login with credentials"
 msgstr "Als anderer Benutzer anmelden"
 
-#: privacyidea/static/templates/menu.html:78
+#: privacyidea/static/templates/menu.html:89
 msgid "Logout"
 msgstr "Abmelden"
 
@@ -1210,6 +1214,7 @@ msgstr ""
 "wird?"
 
 #: privacyidea/static/templates/index.html:34
+#: privacyidea/static/templates/menu.html:79
 msgid "Online Documentation"
 msgstr "Online Dokumentation"
 
@@ -1644,6 +1649,7 @@ msgid "Successfully authenticated."
 msgstr "Erfolgreich authentisiert."
 
 #: privacyidea/static/templates/index.html:24
+#: privacyidea/static/templates/menu.html:84
 msgid "Support"
 msgstr "Support"
 
@@ -2716,7 +2722,7 @@ msgstr ""
 "Drücken des blinkenden Knopfes oder durch neu Einstecken des Tokens.  Dies "
 "hängt von dem konkreten Tokentyp an."
 
-#: privacyidea/static/templates/menu.html:93
+#: privacyidea/static/templates/menu.html:100
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr "Sie werden nach {{ myCountdown }} Sekunden abgemeldet."
 
@@ -2992,6 +2998,9 @@ msgstr "Fenster"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."
+
+#~ msgid "Google Group"
+#~ msgstr "Google Gruppe / Mailing Liste"
 
 #~ msgid ""
 #~ "Logout\n"

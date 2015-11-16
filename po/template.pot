@@ -303,6 +303,10 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
+#: privacyidea/static/templates/menu.html:82
+msgid "Community"
+msgstr ""
+
 #: privacyidea/static/templates/menu.html:48
 msgid "Config"
 msgstr ""
@@ -944,7 +948,7 @@ msgstr ""
 msgid "Login with credentials"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:78
+#: privacyidea/static/templates/menu.html:89
 msgid "Logout"
 msgstr ""
 
@@ -1140,6 +1144,7 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/templates/index.html:34
+#: privacyidea/static/templates/menu.html:79
 msgid "Online Documentation"
 msgstr ""
 
@@ -1567,6 +1572,7 @@ msgid "Successfully authenticated."
 msgstr ""
 
 #: privacyidea/static/templates/index.html:24
+#: privacyidea/static/templates/menu.html:84
 msgid "Support"
 msgstr ""
 
@@ -2446,7 +2452,7 @@ msgid ""
 "                    token model."
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:93
+#: privacyidea/static/templates/menu.html:100
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr ""
 
