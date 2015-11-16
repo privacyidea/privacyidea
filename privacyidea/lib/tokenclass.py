@@ -281,7 +281,7 @@ class TokenClass(object):
         :type counter: int
         :param window: a counter window
         :type counter: int
-        :param options: additional token specific otpions
+        :param options: additional token specific options
         :type options: dict
         :return: counter of the matching OTP value.
         :rtype: int

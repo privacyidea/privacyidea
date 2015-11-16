@@ -223,7 +223,5 @@ class MotpTokenClass(TokenClass):
         if res != -1:
             # on success, we have to save the last attempt
             self.set_otp_count(res)
-            # and we reset the fail counter
-            self.reset()
 
         return res

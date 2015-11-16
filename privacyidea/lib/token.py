@@ -1920,6 +1920,13 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
             else:
                 # The token is active and the auth counters are ok.
                 res = True
+                # reset the failcounter
+                try:
+                    token_obj.reset()
+                except Exception:
+                    # In some cases (Registration Token) the token does not
+                    # exist anymore. So this would bail an exception!
+                    pass
         if len(valid_token_list) == 1:
             # If only one token was found, we add the serial number and token
             #  type

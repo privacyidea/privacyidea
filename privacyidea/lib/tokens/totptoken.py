@@ -339,8 +339,6 @@ class TotpTokenClass(HotpTokenClass):
         if res != -1:
             # on success, we have to save the last attempt
             self.set_otp_count(res)
-            # and we reset the fail counter
-            self.reset()
             # We could also store it temporarily
             # self.auth_details["matched_otp_counter"] = res
 

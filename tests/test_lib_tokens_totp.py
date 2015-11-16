@@ -45,8 +45,8 @@ class TOTPTokenTestCase(MyTestCase):
     
     def test_00_create_user_realm(self):
         rid = save_resolver({"resolver": self.resolvername1,
-                               "type": "passwdresolver",
-                               "fileName": PWFILE})
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
         self.assertTrue(rid > 0, rid)
                
         (added, failed) = set_realm(self.realm1,
@@ -445,7 +445,6 @@ class TOTPTokenTestCase(MyTestCase):
                       "timeWindow": 180,
                       "timeStep": 30
                       })
-
 
     def test_18_challenges(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

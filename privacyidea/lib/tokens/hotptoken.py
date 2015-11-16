@@ -324,8 +324,6 @@ class HotpTokenClass(TokenClass):
             self.set_otp_count(res + 1)
             # We could also store it temporarily
             # self.auth_details["matched_otp_counter"] = res
-            # and we reset the fail counter
-            self.reset()
 
         return res
 

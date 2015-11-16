@@ -13,6 +13,7 @@ gettokensoftype
 getToken....
 """
 PWFILE = "tests/testdata/passwords"
+OTPKEY = "3132333435363738393031323334353637383930"
 
 from .base import MyTestCase
 from privacyidea.lib.user import (User)
@@ -1030,3 +1031,80 @@ class TokenTestCase(MyTestCase):
         end = token.get_tokeninfo("validity_period_end")
         self.assertEqual(start, "22/05/14 22:00")
         self.assertEqual(end, "23/10/14 23:00")
+
+
+class TokenFailCounterTestCase(MyTestCase):
+    """
+    Test the lib.token on an interface level
+    """
+
+    def test_00_create_realms(self):
+        self.setUp_user_realms()
+
+    def test_01_failcounter_max_hotp(self):
+        # Check if we can not authenticate with a token that has the maximum
+        # failcounter
+        user = User(login="cornelius", realm=self.realm1)
+        token = init_token({"serial": "test47", "pin": "test47",
+                            "type": "hotp", "otpkey": OTPKEY},
+                           user=user)
+
+        """                        Truncated
+           Count    Hexadecimal    Decimal        HOTP
+           0        4c93cf18       1284755224     755224
+           1        41397eea       1094287082     287082
+           2         82fef30        137359152     359152
+           3        66ef7655       1726969429     969429
+           4        61c5938a       1640338314     338314
+           5        33c083d4        868254676     254676
+           6        7256c032       1918287922     287922
+           7         4e5b397         82162583     162583
+           8        2823443f        673399871     399871
+           9        2679dc69        645520489     520489
+           10                                     403154
+           11                                     481090
+           12                                     868912
+           13                                     736127
+        """
+        res, reply = check_user_pass(user, "test47287082")
+        self.assertTrue(res)
+        # Set the failcounter to maximum failcount
+        token.set_failcount(10)
+        # Authentication must fail, since the failcounter is reached
+        res, reply = check_user_pass(user, "test47359152")
+        self.assertFalse(res)
+        self.assertEqual(reply.get("message"), "matching 1 tokens, "
+                                               "Failcounter exceeded")
+
+        remove_token("test47")
+
+    def test_02_failcounter_max_totp(self):
+        # Check if we can not authenticate with a token that has the maximum
+        # failcounter
+        user = User(login="cornelius", realm=self.realm1)
+        pin = "testTOTP"
+        token = init_token({"serial": pin, "pin": pin,
+                            "type": "totp", "otpkey": OTPKEY},
+                           user=user)
+        """
+        47251644    942826
+        47251645    063321
+        47251646    306773
+        47251647    722053
+        47251648    032819
+        47251649    705493
+        47251650    589836
+        """
+        res, reply = check_user_pass(user, pin + "942826",
+                                     options={"initTime": 47251644 * 30})
+        self.assertTrue(res)
+        # Set the failcounter to maximum failcount
+        token.set_failcount(10)
+        # Authentication must fail, since the failcounter is reached
+        res, reply = check_user_pass(user, pin + "032819",
+                                     options={"initTime": 47251648 * 30})
+        self.assertFalse(res)
+        self.assertEqual(reply.get("message"), "matching 1 tokens, "
+                                               "Failcounter exceeded")
+
+        remove_token(pin)
