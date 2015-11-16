@@ -1108,3 +1108,31 @@ class TokenFailCounterTestCase(MyTestCase):
                                                "Failcounter exceeded")
 
         remove_token(pin)
+
+    def test_03_inc_failcounter_of_all_tokens(self):
+        # If a user has more than one token and authenticates with wrong OTP
+        # PIN, the failcounter on all tokens should be increased
+        user = User(login="cornelius", realm=self.realm1)
+        pin1 = "pin1"
+        pin2 = "pin2"
+        token1 = init_token({"serial": pin1, "pin": pin1,
+                             "type": "hotp", "genkey": 1}, user=user)
+        token2 = init_token({"serial": pin2, "pin": pin2,
+                             "type": "hotp", "genkey": 1}, user=user)
+
+        # Authenticate with pin1 will increase first failcounter
+        res, reply = check_user_pass(user, pin1 + "000000")
+        self.assertEqual(res, False)
+        self.assertEqual(reply.get("message"), "wrong otp value")
+
+        self.assertEqual(token1.token.failcount, 1)
+        self.assertEqual(token2.token.failcount, 0)
+
+        # Authenticate with a wrong PIN will increase all failcounters
+        res, reply = check_user_pass(user, "XXX" + "000000")
+        self.assertEqual(res, False)
+        self.assertEqual(reply.get("message"), "wrong otp pin")
+
+        self.assertEqual(token1.token.failcount, 2)
+        self.assertEqual(token2.token.failcount, 1)
+
