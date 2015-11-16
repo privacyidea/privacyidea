@@ -60,13 +60,13 @@ def get_privacyidea_config():
 #@cache.memoize(1)
 def get_from_config(key=None, default=None):
     """
-    :param Key: A key to retrieve
-    :type Key: string
-    :param default: The default value, if the Config does not exist in the DB
+    :param key: A key to retrieve
+    :type key: string
+    :param default: The default value, if it does not exist in the database
     :return: If key is None, then a dictionary is returned. I a certain key
               is given a string/bool is returned.
     """
-    rvalue = ""
+    default_true_keys = ["PrependPin", "splitAtSign", "IncFailCountOnFalsePin"]
     if key:
         q = Config.query.filter_by(Key=key).first()
         if q:
@@ -74,7 +74,10 @@ def get_from_config(key=None, default=None):
             if q.Type == "password":
                 rvalue = decryptPassword(rvalue)
         else:
-            rvalue = default
+            if key in default_true_keys:
+                rvalue = "True"
+            else:
+                rvalue = default
     else:
         rvalue = {}
         q = Config.query.all()
@@ -83,6 +86,9 @@ def get_from_config(key=None, default=None):
             if entry.Type == "password":
                 value = decryptPassword(value)
             rvalue[entry.Key] = value
+        for tkey in default_true_keys:
+            if tkey not in rvalue:
+                rvalue[tkey] = "True"
 
     return rvalue
 
@@ -669,14 +675,8 @@ def get_inc_fail_count_on_false_pin():
     :rtype: bool
     """
     r = get_from_config(key="IncFailCountOnFalsePin")
-    if r is None:
-        # The default is True, but we need to set it in the database on the
-        # first occurrence
-        set_privacyidea_config("IncFailCountOnFalsePin", True)
-        r = True
-    if not isinstance(r, bool):
-        # if it is a string we convert it
-        r = r.lower() == "true"
+    # The values are strings, so we need to compare:
+    r = (r.lower() == "true" or r == "1")
     return r
 
 
@@ -688,12 +688,7 @@ def get_prepend_pin():
     :return: True or False
     :rtype: bool
     """
-    r = get_from_config(key="PrependPin", default="true")
-    if r is None:
-        # The default is True, but we need to set it in the database on the
-        # first occurrence
-        set_privacyidea_config("PrependPin", True)
-        r = True
+    r = get_from_config(key="PrependPin")
     # The values are strings, so we need to compare:
     r = (r.lower() == "true" or r == "1")
     return r
