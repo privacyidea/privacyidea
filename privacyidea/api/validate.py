@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2015-11-19 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Add support for transaction_id to saml_check
 # 2015-06-17 Cornelius Kölbel <cornelius@privacyidea.org>
 #            Add policy decorator for API key requirement
 # 2014-12-08 Cornelius Kölbel, <cornelius@privacyidea.org>
@@ -243,6 +245,11 @@ def samlcheck():
     password = getParam(request.all_data, "pass", required)
     options = {"g": g,
                "clientip": request.remote_addr}
+    # Add all params to the options
+    for key, value in request.all_data.items():
+            if value and key not in ["g", "clientip"]:
+                options[key] = value
+
     auth, details = check_user_pass(user, password, options=options)
     ui = user.get_user_info()
     result_obj = {"auth": auth,
