@@ -361,6 +361,7 @@ class ValidateAPITestCase(MyTestCase):
 
     def test_10_saml_check(self):
         # test successful authentication
+        set_privacyidea_config("ReturnSamlAttributes", "0")
         with self.app.test_request_context('/validate/samlcheck',
                                            method='POST',
                                            data={"user": "cornelius",
