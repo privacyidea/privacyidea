@@ -66,7 +66,8 @@ def get_from_config(key=None, default=None):
     :return: If key is None, then a dictionary is returned. I a certain key
               is given a string/bool is returned.
     """
-    default_true_keys = ["PrependPin", "splitAtSign", "IncFailCountOnFalsePin"]
+    default_true_keys = ["PrependPin", "splitAtSign",
+                         "IncFailCountOnFalsePin", "ReturnSamlAttributes"]
     if key:
         q = Config.query.filter_by(Key=key).first()
         if q:
@@ -703,3 +704,7 @@ def set_prepend_pin(prepend=True):
     set_privacyidea_config("PrependPin", prepend)
 
 
+def return_saml_attributes():
+    r = get_from_config(key="ReturnSamlAttributes", default="true")
+    r = (r.lower() == "true" or r == "1")
+    return r

@@ -372,6 +372,22 @@ class ValidateAPITestCase(MyTestCase):
             value = result.get("value")
             attributes = value.get("attributes")
             self.assertEqual(value.get("auth"), True)
+            # No SAML return attributes
+            self.assertEqual(attributes.get("email"), None)
+
+        set_privacyidea_config("ReturnSamlAttributes", "1")
+
+        with self.app.test_request_context('/validate/samlcheck',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "pin254676"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            value = result.get("value")
+            attributes = value.get("attributes")
+            self.assertEqual(value.get("auth"), True)
             self.assertEqual(attributes.get("email"),
                              "user@localhost.localdomain")
             self.assertEqual(attributes.get("givenname"), "Cornelius")

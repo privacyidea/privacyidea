@@ -58,6 +58,7 @@ from ..lib.decorators import (check_user_or_serial_in_request)
 from lib.utils import required
 from privacyidea.lib.token import (check_user_pass, check_serial_pass)
 from privacyidea.api.lib.utils import get_all_params
+from privacyidea.lib.config import return_saml_attributes
 from privacyidea.lib.audit import getAudit
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle)
@@ -253,16 +254,17 @@ def samlcheck():
     auth, details = check_user_pass(user, password, options=options)
     ui = user.get_user_info()
     result_obj = {"auth": auth,
-                  "attributes": {"username": ui.get("username"),
-                                 "realm": user.realm,
-                                 "resolver": user.resolver,
-                                 "email": ui.get("email"),
-                                 "surname": ui.get("surname"),
-                                 "givenname": ui.get("givenname"),
-                                 "mobile": ui.get("mobile"),
-                                 "phone": ui.get("phone")
-                                 }
-                  }
+                  "attributes": {}}
+    if return_saml_attributes():
+        result_obj["attributes"] = {"username": ui.get("username"),
+                                    "realm": user.realm,
+                                    "resolver": user.resolver,
+                                    "email": ui.get("email"),
+                                    "surname": ui.get("surname"),
+                                    "givenname": ui.get("givenname"),
+                                    "mobile": ui.get("mobile"),
+                                    "phone": ui.get("phone")
+                                    }
 
     g.audit_object.log({"info": details.get("message"),
                         "success": auth,

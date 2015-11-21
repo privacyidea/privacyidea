@@ -34,6 +34,10 @@ SAML Attributes
 additional SAML attributes should be returned.
 Usually an authentication response only returns *true* or *false*.
 
+
+FailCounterIncOnFalsePin
+~~~~~~~~~~~~~~~~~~~~~~~~
+
 If during authentication the given PIN matches a token but the OTP value is
 wrong the failcounter of
 the tokens for which the PIN matches, is increased.
