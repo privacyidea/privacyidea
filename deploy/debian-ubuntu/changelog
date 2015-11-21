@@ -1,9 +1,10 @@
-python-privacyidea (2.8~dev5-1trusty) trusty; urgency=low
+python-privacyidea (2.8~dev6-1trusty) trusty; urgency=low
 
   * start new version
+  * Add Challenge Response support to SAML
+  * Add U2F support to SAML
 
-
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 06 Nov 2015 09:00:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Sat, 21 Nov 2015 10:00:00 +0200
 
 python-privacyidea (2.7-1trusty) trusty; urgency=low
 
