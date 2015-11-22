@@ -1946,6 +1946,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 reply_dict["message"] = "Found matching challenge"
                 reply_dict["serial"] = challenge_response_token_list[0].token.serial
                 tokenobject.challenge_janitor()
+                # Reset the fail counter of the challenge response token
+                tokenobject.reset()
 
     elif len(challenge_request_token_list) > 0:
         # A challenge token was found.

@@ -423,6 +423,8 @@ class ValidateAPITestCase(MyTestCase):
         token = HotpTokenClass(db_token)
         token.set_user(User("cornelius", self.realm1))
         token.set_pin(pin)
+        # Set the failcounter
+        token.set_failcount(5)
         # create the challenge by authenticating with the OTP PIN
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -435,6 +437,7 @@ class ValidateAPITestCase(MyTestCase):
             self.assertFalse(result.get("value"))
             self.assertEqual(detail.get("message"), "please enter otp: ")
             transaction_id = detail.get("transaction_id")
+        self.assertEqual(token.get_failcount(), 5)
 
         # send the OTP value
         with self.app.test_request_context('/validate/check',
@@ -449,6 +452,7 @@ class ValidateAPITestCase(MyTestCase):
             detail = json.loads(res.data).get("detail")
             self.assertTrue(result.get("value"))
 
+        self.assertEqual(token.get_failcount(), 0)
         # delete the token
         remove_token(serial=serial)
 
