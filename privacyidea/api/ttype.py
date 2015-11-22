@@ -52,6 +52,7 @@ log = logging.getLogger(__name__)
 
 ttype_blueprint = Blueprint('ttype_blueprint', __name__)
 
+
 @ttype_blueprint.before_request
 def before_request():
     """
@@ -101,7 +102,7 @@ def token(ttype=None):
     :return: Token Type dependent
     """
     tokenc = get_token_class(ttype)
-    res = tokenc.api_endpoint(request.all_data)
+    res = tokenc.api_endpoint(request, g)
     serial = getParam(request.all_data, "serial")
     user = get_user_from_param(request.all_data)
     g.audit_object.log({"success": 1,

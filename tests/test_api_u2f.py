@@ -6,6 +6,8 @@ from privacyidea.lib.user import User
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.tokens.u2f import (sign_challenge, check_response,
                                         url_encode)
+from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
+from privacyidea.lib.tokens.u2ftoken import U2FACTION
 
 PWFILE = "tests/testdata/passwords"
 IMPORTFILE = "tests/testdata/import.oath"
@@ -151,3 +153,20 @@ class APIU2fTestCase(MyTestCase):
             self.assertEqual(res.status_code, 200)
             data = json.loads(res.data)
             self.assertTrue("trustedFacets" in data)
+
+        set_policy(name="facet1", scope=SCOPE.AUTH,
+                   action="%s=host1 host2 host3" % U2FACTION.FACETS)
+
+        with self.app.test_request_context('/ttype/u2f',
+                                           method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            data = json.loads(res.data)
+            self.assertTrue("trustedFacets" in data)
+            facets = data["trustedFacets"][0]
+            ids = facets["ids"]
+            self.assertTrue("https://host1" in ids)
+            self.assertTrue("https://host2" in ids)
+            self.assertTrue("https://host3" in ids)
+
+        delete_policy("facet1")

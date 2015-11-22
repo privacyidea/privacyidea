@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-11-22 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Adding dynamic facet list
+#
 #  http://www.privacyidea.org
 #  2015-09-21 Initial writeup.
 #             Cornelius Kölbel <cornelius@privacyidea.org>
@@ -447,19 +450,28 @@ class U2fTokenClass(TokenClass):
         return ret
 
     @classmethod
-    def api_endpoint(cls, params):
+    def api_endpoint(cls, request, g):
         """
         This provides a function to be plugged into the API endpoint
         /ttype/u2f
 
         The u2f token can return the facet list at this URL.
 
-        :param params: The Request Parameters which can be handled with getParam
-        :return: JSON response
+        :param request: The Flask request
+        :param g: The Flask global object g
+        :return: Flask Response or text
         """
-        # TODO: Needs to be implemented and read from token config or policies.
         app_id = get_from_config("u2f.appId").strip("/")
-        facet_list = [app_id]
+
+        # Read the facets from the policies
+        pol_facets = g.policy_object.get_action_values(U2FACTION.FACETS,
+                                                       scope=SCOPE.AUTH,
+                                                       client=request.remote_addr)
+        facet_list = ["https://%s" % x for x in pol_facets]
+        facet_list.append(app_id)
+
+        log.debug("Sending facets lists for appId %s: %s" % (app_id,
+                                                             facet_list))
         res = {"trustedFacets": [{"version": {"major": 1,
                                               "minor": 0},
                                   "ids": facet_list
@@ -467,3 +479,5 @@ class U2fTokenClass(TokenClass):
                                  ]
                }
         return "json", res
+
+

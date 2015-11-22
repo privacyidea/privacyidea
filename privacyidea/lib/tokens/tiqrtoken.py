@@ -222,15 +222,17 @@ class TiqrTokenClass(TokenClass):
         return response_detail
 
     @classmethod
-    def api_endpoint(cls, params):
+    def api_endpoint(cls, request, g):
         """
         This provides a function to be plugged into the API endpoint
         /ttype/<tokentype> which is defined in api/ttype.py
         See :ref:`rest_ttype`.
 
-        :param params: The Request Parameters which can be handled with getParam
-        :return: Flask Response
+        :param request: The Flask request
+        :param g: The Flask global object g
+        :return: Flask Response or text
         """
+        params = request.all_data
         action = getParam(params, "action", optional) or \
                  API_ACTIONS.AUTHENTICATION
         if action not in API_ACTIONS.ALLOWED_ACTIONS:

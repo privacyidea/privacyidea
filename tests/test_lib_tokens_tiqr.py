@@ -12,6 +12,8 @@ import re
 import binascii
 from urllib import urlencode
 import json
+from flask import Request, g
+from werkzeug.test import EnvironBuilder
 
 
 class OCRASuiteTestCase(MyTestCase):
@@ -360,31 +362,43 @@ class TiQRTokenTestCase(MyTestCase):
         session = m.group(1)
 
         # test meta data
-        r = TiqrTokenClass.api_endpoint({"action": "metadata",
-                                         "session": session,
-                                         "serial": serial})
+        builder = EnvironBuilder(method='POST',
+                                 data={},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+        req.all_data = {"action": "metadata",
+                        "session": session,
+                        "serial": serial}
+
+        r = TiqrTokenClass.api_endpoint(req, g)
 
         self.assertEqual(r[0], "json")
         self.assertTrue("identity" in r[1], r[1])
         self.assertTrue("service" in r[1], r[1])
 
         # Test invalid action
+        req.all_data = {"action": "unknown"}
         self.assertRaises(Exception,
-                          TiqrTokenClass.api_endpoint, {"action": "unknown"})
+                          TiqrTokenClass.api_endpoint, req, g)
 
         # test enrollment with invalid session
+        req.all_data = {"action": "enrollment",
+                        "serial": serial,
+                        "session": "123",
+                        "secret": KEY20}
+
         self.assertRaises(ParameterError,
-                          TiqrTokenClass.api_endpoint,
-                          {"action": "enrollment",
-                           "serial": serial,
-                           "session": "123",
-                           "secret": KEY20})
+                          TiqrTokenClass.api_endpoint, req, g)
 
         # test enrollment with valid session
-        r = TiqrTokenClass.api_endpoint({"action": "enrollment",
-                                         "serial": serial,
-                                         "session": session,
-                                         "secret": KEY20})
+        req.all_data = {"action": "enrollment",
+                        "serial": serial,
+                        "session": session,
+                        "secret": KEY20}
+        r = TiqrTokenClass.api_endpoint(req, g)
         self.assertEqual(r[0], "text")
         self.assertEqual(r[1], "OK")
 
@@ -421,30 +435,30 @@ class TiQRTokenTestCase(MyTestCase):
         response = ocra_object.get_response(challenge)
 
         # First, send a wrong response
-        r = TiqrTokenClass.api_endpoint({"response": "12345",
-                                         "userId": "cornelius_%s" %
-                                                   self.realm1,
-                                         "sessionKey": session,
-                                         "operation": "login"})
+        req.all_data = {"response": "12345",
+                        "userId": "cornelius_%s" % self.realm1,
+                        "sessionKey": session,
+                        "operation": "login"}
+        r = TiqrTokenClass.api_endpoint(req, g)
         self.assertEqual(r[0], "text")
         self.assertEqual(r[1], "INVALID_RESPONSE")
 
         # Send the correct response
-        r = TiqrTokenClass.api_endpoint({"response": response,
-                                         "userId": "cornelius_%s" %
-                                                   self.realm1,
-                                         "sessionKey": session,
-                                         "operation": "login"})
+        req.all_data = {"response": response,
+                        "userId": "cornelius_%s" % self.realm1,
+                        "sessionKey": session,
+                        "operation": "login"}
+        r = TiqrTokenClass.api_endpoint(req, g)
         self.assertEqual(r[0], "text")
         self.assertEqual(r[1], "OK")
 
         # Send the same response a second time would not work
         # since the Challenge is marked as answered
-        r = TiqrTokenClass.api_endpoint({"response": response,
-                                         "userId": "cornelius_%s" %
-                                                   self.realm1,
-                                         "sessionKey": session,
-                                         "operation": "login"})
+        req.all_data = {"response": response,
+                        "userId": "cornelius_%s" % self.realm1,
+                        "sessionKey": session,
+                        "operation": "login"}
+        r = TiqrTokenClass.api_endpoint(req, g)
         self.assertEqual(r[0], "text")
         self.assertEqual(r[1], "INVALID_CHALLENGE")
 
