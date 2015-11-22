@@ -1649,6 +1649,10 @@ msgid ""
 "    realms need to be present to perform a successful authentication."
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.token.u2f.html:27
+msgid "The AppID must not end with a \"/\"."
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.token.u2f.html:23
 msgid "The AppID needs to start with \"https\"."
 msgstr ""

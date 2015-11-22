@@ -89,6 +89,7 @@ def after_request(response):
     response.headers['Cache-Control'] = 'no-cache'
     return response
 
+
 @log_with(log)
 @ttype_blueprint.route('/<ttype>', methods=['POST', 'GET'])
 def token(ttype=None):

@@ -24,4 +24,8 @@
             class="alert alert-warning">
         The AppID needs to start with "https".
     </div>
+    <div ng-show="form['u2f.appId'][form['u2f.appId'].length-1] == '/'"
+         class="alert alert-warning" translate>
+        The AppID must not end with a "/".
+    </div>
 </div>

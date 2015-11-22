@@ -280,7 +280,7 @@ class U2fTokenClass(TokenClass):
         response_detail = {}
         if self.init_step == 1:
             # This is the first step of the init request
-            app_id = get_from_config("u2f.appId")
+            app_id = get_from_config("u2f.appId").strip("/")
             from privacyidea.lib.error import TokenAdminError
             if not app_id:
                 raise TokenAdminError(_("You need to define the appId in the "
@@ -446,7 +446,7 @@ class U2fTokenClass(TokenClass):
         :return: JSON response
         """
         # TODO: Needs to be implemented and read from token config or policies.
-        app_id = get_from_config("u2f.appId")
+        app_id = get_from_config("u2f.appId").strip("/")
         facet_list = [app_id]
         res = {"trustedFacets": [{"version": {"major": 1,
                                               "minor": 0},
