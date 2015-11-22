@@ -21,6 +21,8 @@ At the moment the following tokentypes are supported:
   `RFC6238 <https://tools.ietf.org/html/rfc6238>`_.
 * mOTP - time based One Time Password tokens for mobile phones based on an
   a `public Algorithm <http://motp.sourceforge.net>`_.
+* :ref:`email_token` - A token that sends the OTP value to the EMail address of
+  the user.
 * :ref:`four_eyes` - Meta token that can be used to create a
   `Two Man Rule <https://en.wikipedia.org/wiki/Two-man_rule>`_.
 * password - A password token used for :ref:`lost_token` scenario.
@@ -37,15 +39,16 @@ At the moment the following tokentypes are supported:
   a RADIUS server.
 * :ref:`sms` - A token that sends the OTP value to the mobile phone of the
   user.
-* :ref:`email_token` - A token that sends the OTP value to the EMail address of
-  the user.
+* :ref:`tiqr` - A Smartphone token that can be used to login by only scanning
+  a QR code.
+* :ref:`u2f` - A U2F device as specified by the FIDO Alliance. This is a USB
+  device to be used for challenge response authentication.
 * :ref:`yubico` - A Yubikey hardware that authenticates against the Yubico
   Cloud service.
 * :ref:`yubikey` - A Yubikey hardware initialized in the AES mode, that
   authenticates against privacyIDEA.
 * Daplug - A hardware OTP token similar to the Yubikey.
-* :ref:`tiqr` - A Smartphone token that can be used to login by only scanning
-  a QR code.
+
 
 The Tokentypes:
 

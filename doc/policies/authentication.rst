@@ -219,4 +219,22 @@ be used during authentication. The list is separated by whitespaces like
 .. note:: The TiQR token does not need this setting, since it always works with
    challenge response.
 
+.. _policy_u2f_facets:
+
+u2f_facets
+~~~~~~~~~~
+
+type: string
+
+This is a white space separated list of domain names, that are trusted to
+also use a U2F device that was registered with privacyIDEA.
+
+You need to specify a list of FQDNs without the https scheme like:
+
+*"host1.example.com host2.exmaple.com firewall.example.com"*
+
+For more information on configuring U2F see :ref:`u2f_otp_token`.
+
+
 .. [#pythonre] https://docs.python.org/2/library/re.html
+

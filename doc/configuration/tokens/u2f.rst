@@ -23,6 +23,9 @@ The device is identified and assigned to the user.
 .. note:: As the key pair is only generated virtually, you can register one
    physical device for several users.
 
+For configuring privacyIDEA for the use of U2F token, please see
+:ref:`u2f_otp_token`.
+
 For further details and for information how to add this to your application you
 can see the code documentation at
 :ref:`code_u2f_token`.

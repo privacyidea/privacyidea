@@ -46,6 +46,9 @@ button tokens. The C100 is an :ref:`hotp_token` token and the C200 a
 tokens are initialized at the factory and you get a seed file, that you need
 to import to privacyIDEA.
 
+**U2F**. The Yubikey and the Daplug token are known U2F devices to work well
+with privacyIDEA. See :ref:`u2f`.
+
 Smartphone Apps
 ~~~~~~~~~~~~~~~
 
