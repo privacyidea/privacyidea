@@ -48,6 +48,34 @@ For further details and for information how to add U2F to your application you
 can see the code documentation at
 :ref:`code_u2f_token`.
 
+Workflow
+~~~~~~~~
+
+You can use a U2F token on privacyIDEA and other hosts in the same Domain. To
+do so you need to do the following steps:
+
+1. Configure the AppId to reflect your privacyIDEA server:
+
+      https://pi.your-network.com/ttype/u2f
+
+   Add the path */ttype/u2f* is crucial. Otherwise privacyIDEA will not
+   return the trusted facets.
+
+2. Define a policy with the list of trusted facets. (see
+   :ref:`policy_u2f_facets`). Add the FQDNs of the hosts to the policy:
+
+      saml.your-network.com otherapp.your-network.com vpn.your-network.com
+
+   .. note:: The privacyIDEA plugin for simpleSAMLphp supports U2F with
+      privacyIDEA starting with version 2.8.
+
+3. Now register a U2F token on https://pi.your-network.com. Due to the trusted
+   facets you will also be able to use this U2F token on the other hosts.
+
+4. Now got to https://saml.your-network.com and you will be able to authenticate
+   with the very U2F token without any further registering.
+
+
 
 .. rubric:: Footnotes
 
