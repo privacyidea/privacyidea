@@ -31,6 +31,7 @@ from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
                                         parse_registration_data, url_encode,
                                         parse_response_data, check_response)
 from privacyidea.lib.error import ValidateError
+from privacyidea.lib.policy import SCOPE
 import base64
 import binascii
 import json
@@ -178,6 +179,10 @@ required = False
 _ = gettext.gettext
 
 
+class U2FACTION():
+    FACETS = "u2f_facets"
+
+
 class U2fTokenClass(TokenClass):
     """
     The U2F Token implementation.
@@ -222,7 +227,14 @@ class U2fTokenClass(TokenClass):
                'user':  ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {},
+               'policy': {
+                   SCOPE.AUTH: {
+                       U2FACTION.FACETS: {
+                           'type': 'str',
+                           'desc': _("This is a list of FQDN hostnames "
+                                     "trusting the registered U2F tokens.")}
+                   }
+               }
                }
 
         if key is not None and key in res:
