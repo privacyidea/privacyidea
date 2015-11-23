@@ -310,6 +310,23 @@ def createdb():
 
 
 @manager.command
+def dropdb(dropit=None):
+    """
+    This drops all the privacyIDEA database tables (except audit table).
+    Use with caution! All data will be lost!
+
+    For safety reason you need to pass
+        --dropit==yes
+    Otherwise the command will not drop anything.
+    """
+    if dropit == "yes":
+        print("Dropping all database tables!")
+        db.drop_all()
+    else:
+        print("Not dropping anything!")
+
+
+@manager.command
 def validate(user, password, realm=None, client=None):
     """
     Do an authentication request
