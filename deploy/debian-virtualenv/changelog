@@ -1,8 +1,28 @@
-privacyidea-venv (2.8~dev1-1) wheezy; urgency=low
+privacyidea-venv (2.8~dev7-1) wheezy; urgency=low
 
-  * Start new version
+  Features
+  * Improve U2F support with trusted facets
+  * Add Challenge Response and U2F support to SAML
+  * Add Web UI theming
+  * Add possibility to use REMOTE_USER for authentication at Web UI
+  * Fuzzy Authentication: restrict time since last authentication
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 08 Oct 2015 19:00:00 +0200
+  Enhancements
+  * Allow mangle policy when fetching ssh keys
+  * Add realm support to ownCloud plugin
+  * Support Drupal passwords in SQL resolver
+  * Add validity period to token enrollment
+  * Set default enrollment token type in Web UI
+  * Add scope to LDAP resolver
+
+  Fixes
+  * Fix failcounter reset for challenge response tokens
+  * Fix confusing DB errors (column exist) during installation
+  * Fix email token TLS checkbox saving
+  * Fix TOTP testing in Web UI
+  * Fix SMS config loading in Web UI
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 23 Nov 2015 10:00:00 +0200
 
 privacyidea-venv (2.7-1) wheezy; urgency=low
 

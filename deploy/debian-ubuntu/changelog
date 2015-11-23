@@ -1,5 +1,26 @@
 python-privacyidea (2.8~dev7-1trusty) trusty; urgency=low
 
+  Features
+  * Improve U2F support with trusted facets
+  * Add Challenge Response and U2F support to SAML
+  * Add Web UI theming
+  * Add possibility to use REMOTE_USER for authentication at Web UI
+  * Fuzzy Authentication: restrict time since last authentication
+
+  Enhancements
+  * Allow mangle policy when fetching ssh keys
+  * Add realm support to ownCloud plugin
+  * Support Drupal passwords in SQL resolver
+  * Add validity period to token enrollment
+  * Set default enrollment token type in Web UI
+  * Add scope to LDAP resolver
+
+  Fixes
+  * Fix failcounter reset for challenge response tokens
+  * Fix confusing DB errors (column exist) during installation
+  * Fix email token TLS checkbox saving
+  * Fix TOTP testing in Web UI
+  * Fix SMS config loading in Web UI
   * start new version
   * Add Challenge Response support to SAML
   * Add U2F support to SAML
