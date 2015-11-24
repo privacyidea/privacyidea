@@ -13,10 +13,69 @@ from privacyidea.lib.user import User
 from privacyidea.models import Token
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.api.lib.postpolicy import DEFAULT_POLICY_TEMPLATE_URL
-from privacyidea.lib.policy import ACTION, SCOPE, set_policy
+from privacyidea.lib.policy import ACTION, SCOPE, set_policy, delete_policy
 
 
 PWFILE = "tests/testdata/passwords"
+
+
+class APIAuthTestCase(MyTestCase):
+    """
+    This tests some side functionalities of the /auth API.
+    """
+
+    def test_00_missing_username(self):
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+
+    def test_01_get_rights(self):
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("status"), res.data)
+            # In self.at_user we store the user token
+            self.at_admin = result.get("value").get("token")
+            # check that this is a user
+            role = result.get("value").get("role")
+            self.assertTrue(role == "admin", result)
+
+        with self.app.test_request_context('/auth/rights',
+                                           method='GET',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"},
+                                           headers={'Authorization':
+                                                        self.at_admin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue("4eyes" in result.get("value"))
+            self.assertTrue("hotp" in result.get("value"))
+            self.assertTrue(result.get("status"), res.data)
+
+    def test_02_REMOTE_USER(self):
+        # Allow remote user
+        set_policy(name="remote", scope=SCOPE.WEBUI, action="%s=allowed" %
+                                                            ACTION.REMOTE_USER)
+
+        with self.app.test_request_context('/auth', method='POST',
+                                           data={"username": "testadmin"},
+                                           environ_base={"REMOTE_USER":
+                                                             "testadmin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue("token" in result.get("value"))
+            self.assertTrue("username" in result.get("value"))
+            self.assertTrue(result.get("status"), res.data)
+
+        delete_policy("remote")
 
 
 class APISelfserviceTestCase(MyTestCase):

@@ -15,6 +15,7 @@ from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
 from privacyidea.lib.resolvers.SQLIdResolver import PasswordHash
+from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 
 from privacyidea.lib.resolver import (save_resolver,
                                       delete_resolver,
@@ -827,6 +828,24 @@ class LDAPResolverTestCase(MyTestCase):
                              "info": "this is located on another LDAP"}])
 
         self.assertEqual(len(r), 2)
+
+
+class BaseResolverTestCase(MyTestCase):
+
+    def test_00_basefunctions(self):
+        resolver = UserIdResolver()
+        r = resolver.add_user({"name": "tester"})
+        self.assertEqual(r, None)
+
+        r = resolver.delete_user("hans")
+        self.assertEqual(r, None)
+
+        r = resolver.update_user(1, {"surname": "schmidt"})
+        self.assertEqual(r, None)
+
+        r = UserIdResolver.testconnection({})
+        self.assertEqual(r[0], False)
+        self.assertEqual(r[1], "Not implemented")
 
 
 class ResolverTestCase(MyTestCase):

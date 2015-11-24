@@ -62,12 +62,6 @@ class UserIdResolver(object):
     id = "baseid"
     updateable = False
 
-    def __init(self):
-        """
-        init - usual bootstrap hook
-        """
-        self.name = "UserIdResolver"
-
     def close(self):
         """
         Hook to close down the resolver after one request
