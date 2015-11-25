@@ -64,6 +64,7 @@ class APIAuthTestCase(MyTestCase):
         set_policy(name="remote", scope=SCOPE.WEBUI, action="%s=allowed" %
                                                             ACTION.REMOTE_USER)
 
+        # Admin remote user
         with self.app.test_request_context('/auth', method='POST',
                                            data={"username": "testadmin"},
                                            environ_base={"REMOTE_USER":
@@ -73,6 +74,42 @@ class APIAuthTestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             self.assertTrue("token" in result.get("value"))
             self.assertTrue("username" in result.get("value"))
+            self.assertEqual(result.get("value").get("role"), "admin")
+            self.assertTrue(result.get("status"), res.data)
+
+        self.setUp_user_realms()
+        # User "cornelius" from the default realm as normale user
+        with self.app.test_request_context('/auth', method='POST',
+                                           data={"username": "cornelius"},
+                                           environ_base={"REMOTE_USER":
+                                                             "cornelius"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue("token" in result.get("value"))
+            self.assertTrue("username" in result.get("value"))
+            self.assertEqual(result.get("value").get("role"), "user")
+            self.assertTrue(result.get("status"), res.data)
+
+        # Define the superuser_realm: "adminrealm"
+        (added, failed) = set_realm("adminrealm",
+                                    [self.resolvername1])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+
+        # user cornelius is a member of the superuser_realm...
+        with self.app.test_request_context('/auth', method='POST',
+                                           data={"username":
+                                                     "cornelius@adminrealm"},
+                                           environ_base={"REMOTE_USER":
+                                                     "cornelius@adminrealm"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue("token" in result.get("value"))
+            self.assertTrue("username" in result.get("value"))
+            # ...and will have the role admin
+            self.assertEqual(result.get("value").get("role"), "admin")
             self.assertTrue(result.get("status"), res.data)
 
         delete_policy("remote")
