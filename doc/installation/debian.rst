@@ -93,7 +93,7 @@ encryption key and the audit keys::
 
 Now you can create the first administrator::
 
-   pi-manage admin add administrator email@domain.tld
+   pi-manage admin add administrator
 
 The system is set up. You now only need to configure the Apache2 webserver.
 
