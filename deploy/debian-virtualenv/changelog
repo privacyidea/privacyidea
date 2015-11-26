@@ -1,4 +1,4 @@
-privacyidea-venv (2.8~dev7-1) wheezy; urgency=low
+privacyidea-venv (2.8-1) wheezy; urgency=low
 
   Features
   * Improve U2F support with trusted facets
@@ -22,7 +22,7 @@ privacyidea-venv (2.8~dev7-1) wheezy; urgency=low
   * Fix TOTP testing in Web UI
   * Fix SMS config loading in Web UI
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 23 Nov 2015 10:00:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 26 Nov 2015 23:30:00 +0200
 
 privacyidea-venv (2.7-1) wheezy; urgency=low
 
