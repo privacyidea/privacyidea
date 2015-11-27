@@ -272,8 +272,75 @@ configure Apache2 like this::
 
 .. warning:: As redis per default is accessible by every user on the machine,
    you need to use this plugin with caution! Every user on the machine can
-   access the redis database to read the passwords of the users. This way the
-   fix password component of the user will get exposed!
+   access the redis database to read the passwords of the users. The cached
+   credentials are stored as pbkdf2+sha512 hash.
+
+.. _nginx_plugin:
+
+NGINX
+-----
+
+The NGINX plugin uses the internal scripting language ``lua`` of the NGINX
+webserver and ``redis`` as caching backend to provide basic authentication
+against privacyIDEA.
+
+On Ubuntu 14.04 LTS or Debian Jessi 8 you can easyly install the module
+by installing the following packages::
+
+    nginx-extras lua-nginx-redis lua-cjson redis-server
+
+You can retrieve the nginx plugin here: [#nginxPlugin]_
+
+To activate the OTP authentication on a "Location" you need to include the
+``lua`` script that basically verifies the given credentials against the
+caching backend. New authentications will be send to a different (internal)
+location via subrequest which points to the privacyIDEA authentication backend
+(via proxy_pass).
+
+For the basic configuration you need to include the following lines to your
+``location`` block
+
+    location / {
+        # additional plugin configuration goes here #
+        access_by_lua_file 'privacyidea.lua';
+    }
+    location /privacyidea-validate-check {
+        internal;
+        proxy_pass https://privacyidea/validate/check;
+    }
+
+You can customize the authentication plugin by setting some of the following
+variables in the secured ``location`` block::
+
+    # redis host:port
+    # set $privacyidea_redis_host "127.0.0.1";
+    set $privacyidea_redis_post 6379;
+
+    # how long are accepted authentication allowed to be cached
+    # if expired, the user has to reauthenticate
+    set $privacyidea_ttl 900;
+
+    # privacyIDEA realm. leave empty == default
+    set $privacyidea_realm 'somerealm'; # (optional)
+
+    # pointer to the internal validation proxy pass
+    set $privacyidea_uri "/privacyidea-validate-check";
+
+    # the http realm presented to the user
+    set $privacyidea_http_realm "Secure zone (use PIN + OTP)";
+
+.. note:: Basic Authentication sends the base64 encoded password on each
+   request. So the browser will send the same one time password with each
+   reqeust. Thus the authentication module needs to cache the password as the
+   successful authentication. Redis is used for caching the password similar
+   to the Apache2 plugin.
+
+.. warning:: As redis per default is accessible by every user on the machine,
+   you need to use this plugin with caution! Every user on the machine can
+   access the redis database to read the passwords of the users. The cached
+   credentials are stored as SHA1_HMAC hash. If you prefer a stronger hashing
+   method feel free to extend the given ``password_hash/verify`` functions
+   using additional lua libraries (for example by using ``lua-resty-string``).
 
 ownCloud
 --------
@@ -314,3 +381,4 @@ Dokuwiki, Wordpress, Contao and Django at [#cornelinuxGithub]_.
 .. [#simpleSAML] https://github.com/privacyidea/simplesamlphp-module-privacyidea
 .. [#privacyideaGithub] https://github.com/privacyidea/privacyidea/tree/master/authmodules
 .. [#cornelinuxGithub] https://github.com/cornelinux?tab=repositories
+.. [#nginxPlugin] https://github.com/dhoffend/lua-nginx-privacyidea
