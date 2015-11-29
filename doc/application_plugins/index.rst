@@ -293,7 +293,7 @@ You can retrieve the nginx plugin here: [#nginxPlugin]_
 
 To activate the OTP authentication on a "Location" you need to include the
 ``lua`` script that basically verifies the given credentials against the
-caching backend. New authentications will be send to a different (internal)
+caching backend. New authentications will be sent to a different (internal)
 location via subrequest which points to the privacyIDEA authentication backend
 (via proxy_pass).
 
