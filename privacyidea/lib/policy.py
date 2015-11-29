@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-11-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add getchallenges policy
 #  2015-10-31 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add last_auth policy.
 #  2015-10-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -144,6 +146,7 @@ class ACTION():
     CACONNECTORWRITE = "caconnectorwrite"
     CACONNECTORDELETE = "caconnectordelete"
     CHALLENGERESPONSE = "challenge_response"
+    GETCHALLENGES = "getchallenges"
     COPYTOKENPIN = "copytokenpin"
     COPYTOKENUSER = "copytokenuser"
     DEFAULT_TOKENTYPE = "default_tokentype"
@@ -819,7 +822,10 @@ def get_static_policy_definitions(scope=None):
                                           "object in a userstore.")},
             ACTION.SETHSM: {'type': 'bool',
                             'desc': _("Admin is allowed to set the password "
-                                      "of the HSM/Security Module.")}
+                                      "of the HSM/Security Module.")},
+            ACTION.GETCHALLENGES: {'type': 'bool',
+                                   'desc': _("Admin is allowed to retrieve "
+                                             "the list of active challenges.")}
         },
         # 'gettoken': {
         #     'max_count_dpw': {'type': 'int',

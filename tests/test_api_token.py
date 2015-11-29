@@ -1,11 +1,12 @@
 from .base import MyTestCase
 import json
 import os
-from privacyidea.lib.error import (TokenAdminError, ParameterError)
+from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, ACTION
 from privacyidea.lib.token import get_tokens, init_token
 from privacyidea.lib.user import User
 from privacyidea.lib.caconnector import save_caconnector
 from urllib import urlencode
+from privacyidea.lib.token import check_serial_pass
 
 PWFILE = "tests/testdata/passwords"
 IMPORTFILE = "tests/testdata/import.oath"
@@ -930,3 +931,51 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
+
+    def test_19_get_challenges(self):
+        set_policy("chalresp", scope=SCOPE.AUTHZ,
+        action="%s=hotp" % ACTION.CHALLENGERESPONSE)
+        token = init_token({"genkey": 1, "serial": "CHAL1", "pin": "pin"})
+        serial = token.token.serial
+        r = check_serial_pass(serial, "pin")
+        # The OTP PIN is correct
+        self.assertEqual(r[0], False)
+        self.assertEqual(r[1].get("message"), "please enter otp: ")
+        transaction_id = r[1].get("transaction_id")
+
+        with self.app.test_request_context('/token/challenges/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            self.assertEqual(value.get("count"), 1)
+            challenges = value.get("challenges")
+            self.assertEqual(challenges[0].get("transaction_id"),
+                             transaction_id)
+
+        # There is one challenge for token CHAL1
+        with self.app.test_request_context('/token/challenges/CHAL1',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            self.assertEqual(value.get("count"), 1)
+            challenges = value.get("challenges")
+            self.assertEqual(challenges[0].get("transaction_id"),
+                             transaction_id)
+
+        # There is no challenge for token CHAL2
+        with self.app.test_request_context('/token/challenges/CHAL2',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            self.assertEqual(value.get("count"), 0)
+
+        delete_policy("chalresp")

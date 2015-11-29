@@ -3,6 +3,10 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2015-11-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add the endpoint for retrieving challenges
+# 2015-11-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add an endpoint to get the challenges of a token
 # 2015-05-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add setting validity period
 #
@@ -61,6 +65,7 @@ from flask import request, g
 from privacyidea.lib.audit import getAudit
 from flask import current_app
 from privacyidea.lib.policy import PolicyClass, ACTION
+from privacyidea.lib.challenge import get_challenges_paginate
 from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            check_token_init, check_token_upload,
                                            check_max_token_user,
@@ -265,6 +270,25 @@ def init():
     #    return sendResult(response, ret, opt=response_detail)
 
     return send_result(True, details=response_details)
+
+
+@token_blueprint.route('/challenges/', methods=['GET'])
+@token_blueprint.route('/challenges/<serial>', methods=['GET'])
+@prepolicy(check_base_action, request, action=ACTION.GETCHALLENGES)
+@log_with(log)
+@admin_required
+def get_challenges_api(serial=None):
+    """
+    This endpoint returns the active challenges in the database or returns
+    the challenges for a single token by its serial number
+
+    :query serial: The optional serial number of the token for which the
+        challenges should be returned
+    :return: json
+    """
+    challenges = get_challenges_paginate(serial=serial)
+    g.audit_object.log({"success": True})
+    return send_result(challenges)
 
 
 @token_blueprint.route('/', methods=['GET'])
