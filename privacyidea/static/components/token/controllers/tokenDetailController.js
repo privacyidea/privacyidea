@@ -18,8 +18,19 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.machinesPerPage = 5;
     $scope.params = {page: 1};
     $scope.form = {options: {}};
+    $scope.testTokenPlaceholder = gettext('Enter PIN and OTP to check the' +
+        ' token.');
+    ConfigFactory.getSystemConfig(function(data) {
+        prepend = data.result.value.PrependPin;
+        console.log(prepend);
+        if (!$scope.isChecked(prepend)) {
+            $scope.testTokenPlaceholder = gettext('Enter OTP + PIN to' +
+                ' check the token.');
+        }
+    });
     // scroll to the top of the page
     document.body.scrollTop = document.documentElement.scrollTop = 0;
+
 
     // define functions
     $scope.get = function () {

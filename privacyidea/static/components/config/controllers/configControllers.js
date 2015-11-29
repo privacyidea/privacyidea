@@ -457,11 +457,6 @@ myApp.controller("configController", function ($scope, $location,
     // TODO: This information needs to be fetched from the server
     $scope.availableCAConnectorTypes = ['local'];
 
-    $scope.isChecked = function (val) {
-        // check if val is set
-        return [true, 1, '1', 'True'].indexOf(val) > -1;
-    };
-
     $scope.getResolvers = function () {
         ConfigFactory.getResolvers(function (data) {
             $scope.resolvers = data.result.value;

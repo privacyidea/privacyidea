@@ -101,6 +101,12 @@ angular.module("privacyideaApp")
         $scope.logoutWarning = false;
     });
     */
+                                
+    // helper function
+    $scope.isChecked = function (val) {
+        // check if val is set
+        return [true, 1, '1', 'True'].indexOf(val) > -1;
+    };
 
     // This holds the user object, the username, the password and the token.
     // If we have a REMOTE_USER, we preset it.
