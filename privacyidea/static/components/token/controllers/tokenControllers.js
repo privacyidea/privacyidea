@@ -362,7 +362,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
 
 
 myApp.controller("tokenImportController", function ($scope, $upload,
-                                                    AuthFactory,
+                                                    AuthFactory, tokenUrl,
                                                     ConfigFactory, inform) {
     $scope.formInit = {
         fileTypes: ["OATH CSV", "Yubikey CSV", "pskc"]
@@ -389,7 +389,7 @@ myApp.controller("tokenImportController", function ($scope, $upload,
             for (var i = 0; i < files.length; i++) {
                 var file = files[i];
                 $upload.upload({
-                    url: 'token/load/filename',
+                    url: tokenUrl + '/load/filename',
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()},
                     fields: {type: $scope.form.type,
                             tokenrealms: $scope.form.realm},
