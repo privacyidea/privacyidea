@@ -1,3 +1,9 @@
+python-privacyidea (2.9~dev1-1trusty) trusty; urgency=low
+
+  * Set development version number
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Sun, 29 Nov 2015 08:30:00 +0200
+
 python-privacyidea (2.8-1trusty) trusty; urgency=low
 
   Features
