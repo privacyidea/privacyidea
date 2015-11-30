@@ -75,7 +75,7 @@ myApp.directive("piSortBy", function(){
                 } else {
                     element.addClass("sortUp");
                 }
-                scope.getTokens();
+                scope.get();
             });
         }
     };

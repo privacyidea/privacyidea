@@ -84,10 +84,10 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     sql_query = _create_challenge_query(serial=serial,
                                         transaction_id=transaction_id)
 
-    #if type(sortby) in [str, unicode]:
-    #    # convert the string to a Token column
-    #    cols = Token.__table__.columns
-    #    sortby = cols.get(sortby)
+    if type(sortby) in [str, unicode]:
+        # convert the string to a Challenge column
+        cols = Challenge.__table__.columns
+        sortby = cols.get(sortby)
 
     if sortdir == "desc":
         sql_query = sql_query.order_by(sortby.desc())

@@ -284,9 +284,19 @@ def get_challenges_api(serial=None):
 
     :query serial: The optional serial number of the token for which the
         challenges should be returned
+    :query sortby: sort the output by column
+    :query sortdir: asc/desc
+    :query page: request a certain page
+    :query pagesize: limit the number of returned tokens
     :return: json
     """
-    challenges = get_challenges_paginate(serial=serial)
+    param = request.all_data
+    page = int(getParam(param, "page", optional, default=1))
+    sort = getParam(param, "sortby", optional, default="timestamp")
+    sdir = getParam(param, "sortdir", optional, default="asc")
+    psize = int(getParam(param, "pagesize", optional, default=15))
+    challenges = get_challenges_paginate(serial=serial, sortby=sort,
+                                         sortdir=sdir, page=page, psize=psize)
     g.audit_object.log({"success": True})
     return send_result(challenges)
 

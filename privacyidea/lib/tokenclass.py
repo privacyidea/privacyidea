@@ -1222,9 +1222,14 @@ class TokenClass(object):
                         #  successful result and delete the challenge object.
                         challengeobject.delete()
                         break
+                    else:
+                        # increase the received_count
+                        challengeobject.set_otp_status()
 
+        self.challenge_janitor()
         return otp_counter
 
+    @classmethod
     def challenge_janitor(self):
         """
         Just clean up all challenges, for which the expiration has expired.
@@ -1272,6 +1277,7 @@ class TokenClass(object):
                                  session=options.get("session"),
                                  validitytime=validity)
         db_challenge.save()
+        self.challenge_janitor()
         return True, message, db_challenge.transaction_id, attributes
 
     def get_as_dict(self):

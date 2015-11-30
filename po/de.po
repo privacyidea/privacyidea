@@ -92,7 +92,7 @@ msgstr "Alle Realms"
 msgid "All Resolvers"
 msgstr "Alle Resolver"
 
-#: privacyidea/static/components/token/views/token.html:8
+#: privacyidea/static/components/token/views/token.html:11
 msgid "All tokens"
 msgstr "Alle Token"
 
@@ -120,7 +120,7 @@ msgid "Assgined User"
 msgstr "Benutzer zuweisen"
 
 #: privacyidea/static/components/token/views/token.assign.html:12
-#: privacyidea/static/components/token/views/token.html:31
+#: privacyidea/static/components/token/views/token.html:33
 #: privacyidea/static/components/user/views/user.details.html:178
 msgid "Assign Token"
 msgstr "Token zuweisen"
@@ -629,7 +629,7 @@ msgid "Enroll New Token"
 msgstr "Neuen Token ausrollen"
 
 #: privacyidea/static/components/token/views/token.enroll.html:94
-#: privacyidea/static/components/token/views/token.html:22
+#: privacyidea/static/components/token/views/token.html:24
 msgid "Enroll Token"
 msgstr "Token ausrollen"
 
@@ -689,6 +689,10 @@ msgstr "Fehler beim Laden der Richtlinien-Vorlagen."
 msgid "Error in U2F response."
 msgstr "Fehler in der U2F Antwort."
 
+#: privacyidea/static/components/token/views/token.challenges.html:43
+msgid "Expiration"
+msgstr "Gültig bis"
+
 #: privacyidea/static/components/token/views/token.enroll.html:47
 msgid "Extended Attributes"
 msgstr "Erweiterte Attribute"
@@ -715,6 +719,7 @@ msgstr "Dateiname"
 #: privacyidea/static/components/audit/views/audit.log.html:15
 #: privacyidea/static/components/machine/views/machine.details.html:43
 #: privacyidea/static/components/machine/views/machine.list.html:5
+#: privacyidea/static/components/token/views/token.challenges.html:10
 #: privacyidea/static/components/token/views/token.details.html:424
 #: privacyidea/static/components/token/views/token.list.html:6
 msgid "First"
@@ -779,7 +784,7 @@ msgstr "Zertifikatsanforderung erzeugen"
 msgid "Generate the Key Pair on the Server"
 msgstr "Das Schlüsselpaar auf dem Server erzeugen"
 
-#: privacyidea/static/components/token/views/token.html:61
+#: privacyidea/static/components/token/views/token.html:72
 msgid "Get Serial"
 msgstr "Seriennummer bestimmen"
 
@@ -925,7 +930,7 @@ msgstr ""
 "Gehäuse werden Sie eine Seriennummer finden. Geben Sie hier bitte diese "
 "Seriennummer ein und denken Sie sich eine PIN aus."
 
-#: privacyidea/static/components/token/views/token.html:40
+#: privacyidea/static/components/token/views/token.html:42
 msgid "Import Tokens"
 msgstr "Token importieren"
 
@@ -950,6 +955,7 @@ msgstr "Info"
 #: privacyidea/static/components/audit/views/audit.log.html:14
 #: privacyidea/static/components/machine/views/machine.details.html:42
 #: privacyidea/static/components/machine/views/machine.list.html:4
+#: privacyidea/static/components/token/views/token.challenges.html:9
 #: privacyidea/static/components/token/views/token.details.html:423
 #: privacyidea/static/components/token/views/token.list.html:5
 msgid "Last"
@@ -972,6 +978,10 @@ msgstr "Lizenziert unter"
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:133
 msgid "Limit"
 msgstr "Begrenzung"
+
+#: privacyidea/static/components/token/views/token.html:51
+msgid "List Challenges"
+msgstr "Challenges anzeigen"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:49
 msgid "List tokens"
@@ -1022,7 +1032,7 @@ msgstr "Als anderer Benutzer anmelden"
 msgid "Logout"
 msgstr "Abmelden"
 
-#: privacyidea/static/components/token/views/token.html:51
+#: privacyidea/static/components/token/views/token.html:62
 msgid "Lost Token"
 msgstr "Verlorener Token"
 
@@ -1129,6 +1139,7 @@ msgstr "Neuer {{ resolvertype }}"
 #: privacyidea/static/components/audit/views/audit.log.html:13
 #: privacyidea/static/components/machine/views/machine.details.html:41
 #: privacyidea/static/components/machine/views/machine.list.html:3
+#: privacyidea/static/components/token/views/token.challenges.html:8
 #: privacyidea/static/components/token/views/token.details.html:422
 #: privacyidea/static/components/token/views/token.list.html:4
 msgid "Next"
@@ -1327,6 +1338,7 @@ msgstr "OpenLDAP vorbelegen"
 #: privacyidea/static/components/audit/views/audit.log.html:12
 #: privacyidea/static/components/machine/views/machine.details.html:40
 #: privacyidea/static/components/machine/views/machine.list.html:2
+#: privacyidea/static/components/token/views/token.challenges.html:7
 #: privacyidea/static/components/token/views/token.details.html:421
 #: privacyidea/static/components/token/views/token.list.html:3
 msgid "Previous"
@@ -1392,6 +1404,10 @@ msgstr "Realmname"
 #: privacyidea/static/components/config/views/config.html:49
 msgid "Realms"
 msgstr "Realms"
+
+#: privacyidea/static/components/token/views/token.challenges.html:50
+msgid "Received"
+msgstr "Empfangen"
 
 #: privacyidea/static/components/config/views/config.token.email.html:69
 msgid "Recipient for testing"
@@ -2497,6 +2513,14 @@ msgstr "Token und Applikationen zur Maschine {{ machineid }}"
 msgid "Tokens for user {{ username }}"
 msgstr "Token des Benutzers {{ username }}"
 
+#: privacyidea/static/components/token/views/token.challenges.html:1
+msgid "Total Challenges:"
+msgstr "Alle Challenges:"
+
+#: privacyidea/static/components/token/views/token.challenges.html:36
+msgid "Transaction ID"
+msgstr "Transaktions-ID"
+
 #: privacyidea/static/components/token/views/token.details.html:10
 msgid "Type"
 msgstr "Typ"
@@ -2912,6 +2936,7 @@ msgid "revoked"
 msgstr "widerrufen"
 
 #: privacyidea/static/components/audit/views/audit.log.html:38
+#: privacyidea/static/components/token/views/token.challenges.html:28
 #: privacyidea/static/components/token/views/token.list.html:16
 #: privacyidea/static/components/user/views/user.details.html:125
 msgid "serial"
@@ -2961,11 +2986,15 @@ msgstr "Erfolg"
 msgid "surname"
 msgstr "Nachname"
 
+#: privacyidea/static/components/token/views/token.challenges.html:22
+msgid "timestamp"
+msgstr "Zeitstempel"
+
 #: privacyidea/static/components/audit/views/audit.log.html:42
 msgid "token type"
 msgstr "Tokentyp"
 
-#: privacyidea/static/components/token/views/token.html:66
+#: privacyidea/static/components/token/views/token.html:77
 msgid "total tokens: {{ tokendata.count }}"
 msgstr "Tokenanzahl: {{ tokendata.count }}"
 

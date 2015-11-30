@@ -1127,6 +1127,7 @@ class Challenge(MethodsMixin, db.Model):
         descr['otp_received'] = self.received_count > 0
         descr['received_count'] = self.received_count
         descr['otp_valid'] = self.otp_valid
+        descr['expiration'] = self.expiration
         return descr
 
     def __unicode__(self):

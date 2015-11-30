@@ -82,7 +82,7 @@ msgstr ""
 msgid "All Resolvers"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.html:8
+#: privacyidea/static/components/token/views/token.html:11
 msgid "All tokens"
 msgstr ""
 
@@ -110,7 +110,7 @@ msgid "Assgined User"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.assign.html:12
-#: privacyidea/static/components/token/views/token.html:31
+#: privacyidea/static/components/token/views/token.html:33
 #: privacyidea/static/components/user/views/user.details.html:178
 msgid "Assign Token"
 msgstr ""
@@ -601,7 +601,7 @@ msgid "Enroll New Token"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.html:94
-#: privacyidea/static/components/token/views/token.html:22
+#: privacyidea/static/components/token/views/token.html:24
 msgid "Enroll Token"
 msgstr ""
 
@@ -659,6 +659,10 @@ msgstr ""
 msgid "Error in U2F response."
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.challenges.html:43
+msgid "Expiration"
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.enroll.html:47
 msgid "Extended Attributes"
 msgstr ""
@@ -685,6 +689,7 @@ msgstr ""
 #: privacyidea/static/components/audit/views/audit.log.html:15
 #: privacyidea/static/components/machine/views/machine.details.html:43
 #: privacyidea/static/components/machine/views/machine.list.html:5
+#: privacyidea/static/components/token/views/token.challenges.html:10
 #: privacyidea/static/components/token/views/token.details.html:424
 #: privacyidea/static/components/token/views/token.list.html:6
 msgid "First"
@@ -740,7 +745,7 @@ msgstr ""
 msgid "Generate the Key Pair on the Server"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.html:61
+#: privacyidea/static/components/token/views/token.html:72
 msgid "Get Serial"
 msgstr ""
 
@@ -860,7 +865,7 @@ msgid ""
 "    token. Please enter this serial number and make up a token pin."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.html:40
+#: privacyidea/static/components/token/views/token.html:42
 msgid "Import Tokens"
 msgstr ""
 
@@ -885,6 +890,7 @@ msgstr ""
 #: privacyidea/static/components/audit/views/audit.log.html:14
 #: privacyidea/static/components/machine/views/machine.details.html:42
 #: privacyidea/static/components/machine/views/machine.list.html:4
+#: privacyidea/static/components/token/views/token.challenges.html:9
 #: privacyidea/static/components/token/views/token.details.html:423
 #: privacyidea/static/components/token/views/token.list.html:5
 msgid "Last"
@@ -904,6 +910,10 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:133
 msgid "Limit"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.html:51
+msgid "List Challenges"
 msgstr ""
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:49
@@ -955,7 +965,7 @@ msgstr ""
 msgid "Logout"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.html:51
+#: privacyidea/static/components/token/views/token.html:62
 msgid "Lost Token"
 msgstr ""
 
@@ -1062,6 +1072,7 @@ msgstr ""
 #: privacyidea/static/components/audit/views/audit.log.html:13
 #: privacyidea/static/components/machine/views/machine.details.html:41
 #: privacyidea/static/components/machine/views/machine.list.html:3
+#: privacyidea/static/components/token/views/token.challenges.html:8
 #: privacyidea/static/components/token/views/token.details.html:422
 #: privacyidea/static/components/token/views/token.list.html:4
 msgid "Next"
@@ -1255,6 +1266,7 @@ msgstr ""
 #: privacyidea/static/components/audit/views/audit.log.html:12
 #: privacyidea/static/components/machine/views/machine.details.html:40
 #: privacyidea/static/components/machine/views/machine.list.html:2
+#: privacyidea/static/components/token/views/token.challenges.html:7
 #: privacyidea/static/components/token/views/token.details.html:421
 #: privacyidea/static/components/token/views/token.list.html:3
 msgid "Previous"
@@ -1317,6 +1329,10 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.html:49
 msgid "Realms"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.challenges.html:50
+msgid "Received"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.email.html:69
@@ -2246,6 +2262,14 @@ msgstr ""
 msgid "Tokens for user {{ username }}"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.challenges.html:1
+msgid "Total Challenges:"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.challenges.html:36
+msgid "Transaction ID"
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.details.html:10
 msgid "Type"
 msgstr ""
@@ -2640,6 +2664,7 @@ msgid "revoked"
 msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.log.html:38
+#: privacyidea/static/components/token/views/token.challenges.html:28
 #: privacyidea/static/components/token/views/token.list.html:16
 #: privacyidea/static/components/user/views/user.details.html:125
 msgid "serial"
@@ -2689,11 +2714,15 @@ msgstr ""
 msgid "surname"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.challenges.html:22
+msgid "timestamp"
+msgstr ""
+
 #: privacyidea/static/components/audit/views/audit.log.html:42
 msgid "token type"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.html:66
+#: privacyidea/static/components/token/views/token.html:77
 msgid "total tokens: {{ tokendata.count }}"
 msgstr ""
 

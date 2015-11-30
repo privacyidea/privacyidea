@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2015-11-30 Cornelius Kölbel <cornelius@privacyidea.org>
+ *     Add method to retrieve challenges
  * 2015-01-11 Cornelius Kölbel, <cornelius@privacyidea.org>
  *
  * This code is free software; you can redistribute it and/or
@@ -232,6 +234,12 @@ angular.module("TokenModule", ["privacyideaAuth"])
             },
             getEnrollTokens: function(callback) {
                 $http.get(authUrl + "/rights",  {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).success(callback).error(error_func);
+            },
+            getChallenges: function(callback, serial, params) {
+                $http.get(tokenUrl + "/challenges/" + serial, {
+                    params: params,
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).success(callback).error(error_func);
             }

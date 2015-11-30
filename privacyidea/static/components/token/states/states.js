@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2015-11-30 Cornelius Kölbel <cornelus@privacyidea.org>
+ *     Add view for challenges
  * 2015-01-11 Cornelius Kölbel, <cornelius@privacyidea.org>
  *
  * This code is free software; you can redistribute it and/or
@@ -67,5 +69,10 @@ angular.module('privacyideaApp.tokenStates', ['ui.router']).config(
                     url: "/import",
                     templateUrl: tokenpath + "token.import.html",
                     controller: "tokenImportController"
+                })
+                .state('token.challenges', {
+                    url: "/challenges",
+                    templateUrl: tokenpath + "token.challenges.html",
+                    controller: "tokenChallengesController"
                 });
         }]);

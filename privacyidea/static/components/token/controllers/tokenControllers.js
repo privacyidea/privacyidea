@@ -33,11 +33,11 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
     // Change the pagination
     $scope.pageChanged = function () {
         console.log('Page changed to: ' + $scope.params.page);
-        $scope.getTokens();
+        $scope.get();
     };
 
     // This function fills $scope.tokendata
-    $scope.getTokens = function () {
+    $scope.get = function () {
         $scope.params.serial = "*" + ($scope.serialFilter || "") + "*";
         $scope.params.type = "*" + ($scope.typeFilter || "") + "*";
         $scope.params.description = "*" + ($scope.descriptionFilter || "") + "*";
@@ -55,7 +55,7 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
         }, $scope.params);
     };
 
-    $scope.getTokens();
+    $scope.get();
 
     /*
      * Functions to check and to create a default realm. At the moment this is
