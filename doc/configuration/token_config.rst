@@ -15,12 +15,14 @@ Supported Tokentypes
 
 At the moment the following tokentypes are supported:
 
-* :ref:`hotp_token` - event base One Time Password tokens based on
+* :ref:`hotp_token` - event based One Time Password tokens based on
   `RFC4225 <https://tools.ietf.org/html/rfc4226>`_.
 * :ref:`totp_token` - time based One Time Password tokens based on
   `RFC6238 <https://tools.ietf.org/html/rfc6238>`_.
 * mOTP - time based One Time Password tokens for mobile phones based on an
   a `public Algorithm <http://motp.sourceforge.net>`_.
+* :ref:`paper_token` - event based One Time Password tokens that get
+  you list of one time passwords on a sheet of paper.
 * :ref:`email_token` - A token that sends the OTP value to the EMail address of
   the user.
 * :ref:`four_eyes` - Meta token that can be used to create a
