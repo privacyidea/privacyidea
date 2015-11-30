@@ -1,15 +1,9 @@
 # -*- coding: utf-8 -*-
 #
-#  privacyIDEA is a fork of LinOTP
-#  License:  AGPLv3
-#  contact:  http://www.privacyidea.org
+#  (c) 2015 Cornelius Kölbel - cornelius@privacyidea.org
 #
-#  2014-12-03 Cornelius Kölbel <cornelius@privacyidea.org>
-#             rewrite for migration to flask.
-#             assure 100% code coverage
-#  2014-10-03 Cornelius Kölbel <cornelius@privacyidea.org>
-#             Code cleanup
-#  2014-05-08 Cornelius Kölbel
+#  2015-11-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             initial write
 #
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  LSE

@@ -466,6 +466,7 @@ def get_token_list():
     module_list.add("privacyidea.lib.tokens.foureyestoken")
     module_list.add("privacyidea.lib.tokens.tiqrtoken")
     module_list.add("privacyidea.lib.tokens.u2ftoken")
+    module_list.add("privacyidea.lib.tokens.papertoken")
 
     #module_list.add(".tokens.tagespassworttoken")
     #module_list.add(".tokens.vascotoken")
