@@ -1,0 +1,46 @@
+<div class="row">
+    <div class="col-sm-12">
+        <accordion close-others="oneAtATime">
+            <accordion-group heading="{{ 'The OTP values'|translate }}">
+                <div class="table-responsive" id="paperOtpTable">
+                    <table class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th translate>#</th>
+                                <th>OTP</th>
+                                <th translate>#</th>
+                                <th>OTP</th>
+                                <th translate>#</th>
+                                <th>OTP</th>
+                                <th translate>#</th>
+                                <th>OTP</th>
+                                <th translate>#</th>
+                                <th>OTP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="(key, otp) in enrolledToken.otps"
+                                ng-if="$index % 5 == 0">
+                                <td>{{ $index }}</td>
+                                <td>{{ enrolledToken.otps[$index] }}</td>
+                                <td>{{ $index+1 }}</td>
+                                <td>{{ enrolledToken.otps[$index+1] }}</td>
+                                <td>{{ $index+2 }}</td>
+                                <td>{{ enrolledToken.otps[$index+2] }}</td>
+                                <td>{{ $index+3 }}</td>
+                                <td>{{ enrolledToken.otps[$index+3] }}</td>
+                                <td>{{ $index+4 }}</td>
+                                <td>{{ enrolledToken.otps[$index+4] }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </accordion-group>
+        </accordion>
+    </div>
+</div>
+<button class="btn-default btn"
+    ng-click="printOtp()">
+    <span class="glyphicon glyphicon-print"></span>
+    <translate>Print the OTP list</translate>
+</button>

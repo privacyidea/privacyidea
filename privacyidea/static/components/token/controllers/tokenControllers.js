@@ -155,14 +155,15 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                 " log in."),
             "tiqr": gettext("TiQR: Authenticate with Smartphone by scanning" +
                 " a QR code."),
-            "u2f": gettext("U2F: Universal 2nd Factor hardware token.")},
+            "u2f": gettext("U2F: Universal 2nd Factor hardware token."),
+            "paper": gettext("PAPER: OTP values on a sheet of paper.")},
         timesteps: [30, 60],
         otplens: [6, 8],
         hashlibs: ["sha1", "sha256", "sha512"]
     };
 
     // These token need to PIN
-    // TODO: THis is also contained in the tokentype class!
+    // TODO: This is also contained in the tokentype class!
     $scope.changeTokenType = function() {
         console.log("Token Type Changed.");
         if (["sshkey", "certificate"].indexOf($scope.form.type) >= 0) {
@@ -340,6 +341,26 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                 tabWindowId.document.write(response.data);
                 //tabWindowId.location.href = response.headers('Location');
         });
+    };
+
+    // print the paper token
+    $scope.printOtp = function () {
+        var serial = $scope.enrolledToken.serial;
+        var mywindow = window.open('', 'printing div', 'height=400,width=600');
+        mywindow.document.write('<html><head><title>'+serial+'</title>');
+        mywindow.document.write('<link' +
+            ' href="/static/contrib/css/bootstrap.css" rel="stylesheet">');
+        mywindow.document.write('<link' +
+            ' href="/static/contrib/css/bootstrap-theme.css"' +
+            ' rel="stylesheet"/>');
+        mywindow.document.write('</head><body><h1>'+serial+'</h1>');
+        mywindow.document.write($('#paperOtpTable').html());
+        mywindow.document.write('</body></html>');
+        mywindow.document.close(); // necessary for IE >= 10
+        mywindow.focus(); // necessary for IE >= 10
+        mywindow.print();
+        mywindow.close();
+        return true;
     };
 
     // ===========================================================
