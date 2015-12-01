@@ -85,8 +85,8 @@ class User(object):
     
     def __init__(self, login="", realm="", resolver=""):
         self.login = login or ""
-        self.realm = realm or ""
-        self.resolver = resolver or ""
+        self.realm = realm.lower() or ""
+        self.resolver = resolver.lower() or ""
         if not self.resolver:
             # set the resolver implicitly!
             self.get_resolvers()
