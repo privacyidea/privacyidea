@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 #
 #  privacyIDEA is a fork of LinOTP
+#
+#  2015-12-01 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Add yubico validation protocol
 #  2014-12-15 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Adapt during flask migration
 #  2014-05-08 Cornelius Kölbel
@@ -40,6 +43,8 @@ from privacyidea.lib.utils import modhex_decode
 from privacyidea.lib.utils import checksum
 import binascii
 from privacyidea.lib.decorators import check_token_locked
+from privacyidea.api.lib.utils import getParam
+
 
 optional = True
 required = False
@@ -244,6 +249,37 @@ class YubikeyTokenClass(TokenClass):
 
         return res
 
+    @classmethod
+    def api_endpoint(cls, request, g):
+        """
+        This provides a function to be plugged into the API endpoint
+        /ttype/yubikey which is defined in api/ttype.py
+
+        Do the yubico validation request according to
+        https://developers.yubico.com/yubikey-val/Validation_Protocol_V2.0.html
+
+        :param request: The Flask request
+        :param g: The Flask global object g
+        :return: Flask Response or text
+
+        Required query parameters
+
+        :query id: The id of the client to identify the correct shared secret
+        :query otp: The OTP from the yubikey in the yubikey mode
+        :query nonce: 16-40 bytes of random data
+
+        Optional parameters h, timestamp, sl, timeout are not supported at the
+        moment.
+        """
+        id = getParam(request.all_data, "id", required)
+        otp = getParam(request.all_data, "otp", required)
+        nonce = getParam(request.all_data, "nonce", required)
+        options = {"g": g,
+                   "clientip": request.remote_addr}
+
+        res, opt = check_yubikey_pass(otp)
+        return "text", ""
+
 
 @log_with(log)
 def check_yubikey_pass(passw):
@@ -311,3 +347,4 @@ def check_yubikey_pass(passw):
     #        opt['serial'] = serial
 
     return res, opt
+

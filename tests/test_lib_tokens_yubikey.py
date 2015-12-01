@@ -8,6 +8,8 @@ from .base import MyTestCase
 from privacyidea.lib.tokens.yubikeytoken import (YubikeyTokenClass,
                                                  check_yubikey_pass)
 from privacyidea.models import (Token)
+from flask import Response, Request, g, current_app
+from werkzeug.test import EnvironBuilder
 
 
 class YubikeyTokenTestCase(MyTestCase):
@@ -140,6 +142,19 @@ class YubikeyTokenTestCase(MyTestCase):
         # check failcounter
         self.assertEqual(db_token.failcount, 5)
         token.set_failcount(old_failcounter)
+
+    def test_10_api_endpoint(self):
+        # Check_yubikey_pass only works without pin!
+        builder = EnvironBuilder(method='GET',
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+        req.all_data = {'id': "shared secret",
+                        "otp": self.further_otps[3],
+                        "nonce": "random data"}
+        t, resp = YubikeyTokenClass.api_endpoint(req, g)
 
     def test_98_wrong_tokenid(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
