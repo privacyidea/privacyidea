@@ -1032,6 +1032,19 @@ class TokenTestCase(MyTestCase):
         self.assertEqual(start, "22/05/14 22:00")
         self.assertEqual(end, "23/10/14 23:00")
 
+    def test_47_use_yubikey_and_hotp(self):
+        # fix problem https://github.com/privacyidea/privacyidea/issues/279
+        user = User("cornelius", self.realm1)
+        token = init_token({"type": "hotp",
+                            "otpkey": self.otpkey,
+                            "pin": "pin47"}, user)
+        token = init_token({"type": "yubikey",
+                            "otpkey": self.otpkey,
+                            "pin": "pin47"}, user)
+        r = check_user_pass(user, "pin47888888")
+        self.assertEqual(r[0], False)
+        self.assertEqual(r[1].get('message'), "wrong otp value")
+
 
 class TokenFailCounterTestCase(MyTestCase):
     """

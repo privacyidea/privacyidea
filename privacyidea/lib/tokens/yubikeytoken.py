@@ -188,7 +188,12 @@ class YubikeyTokenClass(TokenClass):
 
         # TODO: We can also check the PREFIX! At the moment, we do not use it!
 
-        otp_bin = modhex_decode(yubi_otp)
+        try:
+            otp_bin = modhex_decode(yubi_otp)
+        except KeyError:
+            # The OTP value is no yubikey aes otp value and can not be decoded
+            return -4
+
         msg_bin = secret.aes_decrypt(otp_bin)
         msg_hex = binascii.hexlify(msg_bin)
 
