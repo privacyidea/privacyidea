@@ -32,6 +32,10 @@ privacyIDEA
 .. image:: https://codeclimate.com/github/privacyidea/privacyidea/badges/gpa.svg
     :alt: Code Climate
     :target: https://codeclimate.com/github/privacyidea/privacyidea
+
+.. image:: https://api.codacy.com/project/badge/grade/d58934978e1a4bcca325f2912ea386ff
+    :alt: Codacy Badge
+    :target: https://www.codacy.com/app/cornelius-koelbel/privacyidea
     
 .. image:: http://issuestats.com/github/privacyidea/privacyidea/badge/pr?style=flat
     :alt: Issue stats
