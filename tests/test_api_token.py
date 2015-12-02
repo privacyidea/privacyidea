@@ -528,6 +528,26 @@ class APITokenTestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             self.assertTrue(result.get("value") == 2, result)
 
+        # set a pin
+        with self.app.test_request_context('/token/setpin/PToken',
+                                            method="POST",
+                                            data={"otppin": "test"},
+                                            headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value") == 1, result)
+
+        # set an empty pin
+        with self.app.test_request_context('/token/setpin/PToken',
+                                            method="POST",
+                                            data={"otppin": ""},
+                                            headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value") == 1, result)
+
     def test_09_set_token_attributes(self):
         self._create_temp_token("SET001")
         # Set some things

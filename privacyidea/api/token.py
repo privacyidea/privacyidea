@@ -575,15 +575,15 @@ def setpin_api(serial=None):
     encrypt_pin = getParam(request.all_data, "encryptpin")
 
     res = 0
-    if userpin:
+    if userpin is not None:
         g.audit_object.add_to_log({'action_detail': "userpin, "})
         res += set_pin_user(serial, userpin, user=user)
 
-    if sopin:
+    if sopin is not None:
         g.audit_object.add_to_log({'action_detail': "sopin, "})
         res += set_pin_so(serial, sopin, user=user)
 
-    if otppin:
+    if otppin is not None:
         g.audit_object.add_to_log({'action_detail': "otppin, "})
         res += set_pin(serial, otppin, user=user, encrypt_pin=encrypt_pin)
 
