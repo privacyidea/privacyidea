@@ -214,6 +214,8 @@ def get_auth_token():
     elif verify_db_admin(username, password):
         role = ROLE.ADMIN
         admin_auth = True
+        # This admin is not in the default realm!
+        realm = ""
         g.audit_object.log({"success": True,
                             "user": "",
                             "administrator": username,
