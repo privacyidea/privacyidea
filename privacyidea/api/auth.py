@@ -185,7 +185,6 @@ def get_auth_token():
 
     loginname, realm = split_user(username)
     realm = realm or get_default_realm()
-    user_obj = User(loginname, realm)
     details = None
 
     # Check if the remote user is allowed
@@ -205,6 +204,7 @@ def get_auth_token():
                                 "info": "internal admin"})
         else:
             # check, if the user exists
+            user_obj = User(loginname, realm)
             if user_obj.exist():
                 user_auth = True
                 if user_obj.realm in superuser_realms:
@@ -227,6 +227,7 @@ def get_auth_token():
         for key, value in request.all_data.items():
             if value and key not in ["g", "clientip"]:
                 options[key] = value
+        user_obj = User(loginname, realm)
         user_auth, role, details = check_webui_user(user_obj,
                                                     password,
                                                     options=options,
