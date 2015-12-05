@@ -295,6 +295,7 @@ class IdResolver (UserIdResolver):
         self.session = None
         self.pool_size = 10
         self.pool_timeout = 120
+        self.engine = None
         return
 
     def getSearchFields(self):
@@ -566,11 +567,20 @@ class IdResolver (UserIdResolver):
                   'Database': self.database}
         self.connect_string = self._create_connect_string(params)
         log.info("using the connect string %s" % self.connect_string)
-        self.engine = create_engine(self.connect_string,
-                                    encoding=self.encoding,
-                                    convert_unicode=False,
-                                    pool_size=self.pool_size,
-                                    pool_timeout=self.pool_timeout)
+        try:
+            log.debug("using pool_size=%s and pool_timeout=%s" % (
+                      self.pool_size, self.pool_timeout))
+            self.engine = create_engine(self.connect_string,
+                                        encoding=self.encoding,
+                                        convert_unicode=False,
+                                        pool_size=self.pool_size,
+                                        pool_timeout=self.pool_timeout)
+        except TypeError:
+            # The DB Engine/Poolclass might not support the pool_size.
+            log.debug("connecting without pool_size.")
+            self.engine = create_engine(self.connect_string,
+                                        encoding=self.encoding,
+                                        convert_unicode=False)
         # create a configured "Session" class
         Session = sessionmaker(bind=self.engine)
 
