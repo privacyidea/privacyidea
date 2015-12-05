@@ -21,7 +21,7 @@ def upgrade():
                                          nullable=False,
                                          default=False))
     except OperationalError as exx:
-        if exx.orig.message.startswith("duplicate column name"):
+        if exx.orig.message.lower().startswith("duplicate column name"):
             print("Good. Column revoked already exists.")
         else:
             print(exx)
@@ -34,7 +34,7 @@ def upgrade():
                                          nullable=False,
                                          default=False))
     except OperationalError as exx:
-        if exx.orig.message.startswith("duplicate column name"):
+        if exx.orig.message.lower().startswith("duplicate column name"):
             print("Good. Column locked already exists.")
         else:
             print(exx)

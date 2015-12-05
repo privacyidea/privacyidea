@@ -21,7 +21,7 @@ def upgrade():
                                           sa.Unicode(length=256),
                                           nullable=True))
     except OperationalError as exx:
-        if exx.orig.message.startswith("duplicate column name"):
+        if exx.orig.message.lower().startswith("duplicate column name"):
             print("Good. Column adminrealm already exists.")
         else:
             print(exx)

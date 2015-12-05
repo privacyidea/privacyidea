@@ -19,7 +19,7 @@ def upgrade():
     try:
         op.add_column('tokeninfo', sa.Column('Type', sa.Unicode(length=100), nullable=True))
     except OperationalError as exx:
-        if exx.orig.message.startswith("duplicate column name"):
+        if exx.orig.message.lower().startswith("duplicate column name"):
             print("Good. Column tokeninfo already exists.")
         else:
             print(exx)

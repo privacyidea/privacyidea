@@ -20,7 +20,7 @@ def upgrade():
         op.add_column('resolverrealm', sa.Column('priority', sa.Integer(),
                                                  nullable=True))
     except OperationalError as exx:
-        if exx.orig.message.startswith("duplicate column name"):
+        if exx.orig.message.lower().startswith("duplicate column name"):
             print("Good. Column priority already exists.")
         else:
             print(exx)
