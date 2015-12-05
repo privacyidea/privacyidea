@@ -51,6 +51,7 @@ The code is tested in tests/test_lib_tokens_email
 import logging
 import smtplib
 import traceback
+import datetime
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
@@ -386,10 +387,12 @@ class EmailTokenClass(HotpTokenClass):
     def _send_email(cls, mailserver, subject, message, mail_from, recipient,
                     username=None, password=None, port=25, email_tls=False):
         # Upper layer will catch exceptions
+        date = datetime.datetime.utcnow().strftime("%c")
         body = """From: %s
-subject: %s
+Subject: %s
+Date: %s
 
-%s""" % (mail_from, subject, message)
+%s""" % (mail_from, subject, date, message)
 
         mail = smtplib.SMTP(mailserver, port=int(port))
         mail.ehlo()
