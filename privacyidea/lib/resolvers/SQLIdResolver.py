@@ -293,6 +293,8 @@ class IdResolver (UserIdResolver):
         self.conParams = ""
         self.connect_string = ""
         self.session = None
+        self.pool_size = 10
+        self.pool_timeout = 120
         return
 
     def getSearchFields(self):
@@ -551,6 +553,8 @@ class IdResolver (UserIdResolver):
         self.where = config.get('Where', "")
         self.encoding = str(config.get('Encoding') or "latin1")
         self.conParams = config.get('conParams', "")
+        self.pool_size = int(config.get('poolSize') or 5)
+        self.pool_timeout = int(config.get('poolTimeout') or 10)
         
         # create the connectstring like
         params = {'Port': self.port,
@@ -564,7 +568,9 @@ class IdResolver (UserIdResolver):
         log.info("using the connect string %s" % self.connect_string)
         self.engine = create_engine(self.connect_string,
                                     encoding=self.encoding,
-                                    convert_unicode=False)
+                                    convert_unicode=False,
+                                    pool_size=self.pool_size,
+                                    pool_timeout=self.pool_timeout)
         # create a configured "Session" class
         Session = sessionmaker(bind=self.engine)
 

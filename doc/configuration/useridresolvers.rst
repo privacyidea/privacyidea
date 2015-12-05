@@ -180,6 +180,11 @@ which privayIDEA attribute. The known attributes are:
 You can add an additional ``Where statement`` if you do not want to use
 all users from the table.
 
+The ``poolSize`` and ``poolTimeout`` determine the pooling behaviour. The
+``poolSize`` (default 5) determine how many connections are kept open in the
+pool. The ``poolTimeout`` (default 10) specifies how long the application
+waits to get a connection from the pool.
+
 .. note:: The ``Additional connection parameters``
    refer to the SQLAlchemy connection but are not used at the moment.
 

@@ -4,6 +4,14 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Project-Id-Version: \n"
 
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:11
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:13
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:15
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:17
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:9
+msgid "#"
+msgstr ""
+
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:8
 msgid "45% Complete"
 msgstr ""
@@ -1193,6 +1201,10 @@ msgstr ""
 msgid "Owncloud"
 msgstr ""
 
+#: privacyidea/static/components/token/controllers/tokenControllers.js:159
+msgid "PAPER: OTP values on a sheet of paper."
+msgstr ""
+
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:14
 #: privacyidea/static/components/directives/views/directive.assignuser.html:23
 #: privacyidea/static/components/token/views/token.enroll.html:34
@@ -1243,6 +1255,14 @@ msgstr ""
 msgid "Policy Templates"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:187
+msgid "Pool size"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:198
+msgid "Pool timeout"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:46
 #: privacyidea/static/components/config/views/config.token.email.html:17
 msgid "Port"
@@ -1270,6 +1290,10 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:421
 #: privacyidea/static/components/token/views/token.list.html:3
 msgid "Previous"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:45
+msgid "Print the OTP list"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.import.html:79
@@ -1465,7 +1489,7 @@ msgstr ""
 msgid "Save Options"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:201
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:223
 msgid "Save Resolver"
 msgstr ""
 
@@ -1649,7 +1673,7 @@ msgstr ""
 msgid "Test SCIM Resolver"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:197
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:219
 msgid "Test SQL Resolver"
 msgstr ""
 
@@ -1731,6 +1755,17 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enrolled.motp.html:8
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:7
 msgid "The OTP key"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:4
+msgid "The OTP values"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.paper.html:1
+msgid ""
+"The Paper token will let you print a list of OTP values.\n"
+"    These OTP values can be used to authenticate. You need to use on value\n"
+"    after the other."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:46

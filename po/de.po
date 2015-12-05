@@ -11,6 +11,14 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 1.5.4\n"
 
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:11
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:13
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:15
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:17
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:9
+msgid "#"
+msgstr ""
+
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:8
 msgid "45% Complete"
 msgstr "45% abgeschlossen"
@@ -1263,6 +1271,10 @@ msgstr "Überschreibe den authorisierenden Client"
 msgid "Owncloud"
 msgstr "ownCloud"
 
+#: privacyidea/static/components/token/controllers/tokenControllers.js:159
+msgid "PAPER: OTP values on a sheet of paper."
+msgstr "PAPER: OTP Liste auf einem Stück Papier"
+
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:14
 #: privacyidea/static/components/directives/views/directive.assignuser.html:23
 #: privacyidea/static/components/token/views/token.enroll.html:34
@@ -1313,6 +1325,14 @@ msgstr "Richtlinienname"
 msgid "Policy Templates"
 msgstr "Vorlagen für Richtlinien"
 
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:187
+msgid "Pool size"
+msgstr "Pool-Größe"
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:198
+msgid "Pool timeout"
+msgstr "Pool-Timeout"
+
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:46
 #: privacyidea/static/components/config/views/config.token.email.html:17
 msgid "Port"
@@ -1343,6 +1363,10 @@ msgstr "OpenLDAP vorbelegen"
 #: privacyidea/static/components/token/views/token.list.html:3
 msgid "Previous"
 msgstr "Zurück"
+
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:45
+msgid "Print the OTP list"
+msgstr "OTP Liste drucken"
 
 #: privacyidea/static/components/token/views/token.import.html:79
 msgid "Progress: {{ progressPercentage }}%"
@@ -1542,7 +1566,7 @@ msgstr "Speichern"
 msgid "Save Options"
 msgstr "Optionen speichern"
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:201
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:223
 msgid "Save Resolver"
 msgstr "Resolver speichern"
 
@@ -1726,7 +1750,7 @@ msgstr "LDAP Resolver testen"
 msgid "Test SCIM Resolver"
 msgstr "SCIM Resolver testen"
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:197
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:219
 msgid "Test SQL Resolver"
 msgstr "SQL Resolver testen"
 
@@ -1831,6 +1855,20 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:7
 msgid "The OTP key"
 msgstr "Der OTP-Schlüssel"
+
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:4
+msgid "The OTP values"
+msgstr "OTP-Werte"
+
+#: privacyidea/static/components/token/views/token.enroll.paper.html:1
+msgid ""
+"The Paper token will let you print a list of OTP values.\n"
+"    These OTP values can be used to authenticate. You need to use on value\n"
+"    after the other."
+msgstr ""
+"Der Paper Token ist eine ausgedruckte Liste mit OTP-Werten.Mit diesen OTP-"
+"Werten kann sich der Benutzer authentisieren. Er streicht dann die Werte aus "
+"der Liste,nachdem er sie benutzt hat."
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:46
 msgid "The RADIUS server may include the port number."
