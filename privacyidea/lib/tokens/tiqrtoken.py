@@ -309,7 +309,7 @@ class TiqrTokenClass(TokenClass):
                 else:
                     raise ParameterError("Invalid Session")
 
-            return "text", res
+            return "plain", res
         elif action == API_ACTIONS.AUTHENTICATION:
             res = "FAIL"
             userId = getParam(params, "userId", required)
@@ -340,7 +340,7 @@ class TiqrTokenClass(TokenClass):
 
             cleanup_challenges()
 
-            return "text", res
+            return "plain", res
 
     @log_with(log)
     def is_challenge_request(self, passw, user=None, options=None):

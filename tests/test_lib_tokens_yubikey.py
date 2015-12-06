@@ -5,8 +5,8 @@ This test file tests the lib.tokens.yubikeytoken
 PWFILE = "tests/testdata/passwords"
 
 from .base import MyTestCase
-from privacyidea.lib.tokens.yubikeytoken import (YubikeyTokenClass,
-                                                 check_yubikey_pass)
+from privacyidea.lib.tokens.yubikeytoken import (YubikeyTokenClass)
+from privacyidea.lib.token import init_token
 from privacyidea.models import (Token)
 from flask import Response, Request, g, current_app
 from werkzeug.test import EnvironBuilder
@@ -94,7 +94,7 @@ class YubikeyTokenTestCase(MyTestCase):
         token = YubikeyTokenClass(db_token)
         token.set_pin("")
         token.save()
-        r, opt = check_yubikey_pass(self.further_otps[1])
+        r, opt = YubikeyTokenClass.check_yubikey_pass(self.further_otps[1])
         self.assertTrue(r)
         self.assertTrue(opt.get("message") == "matching 1 tokens", opt)
 
@@ -102,7 +102,7 @@ class YubikeyTokenTestCase(MyTestCase):
         self.assertEqual(db_token.failcount, 0)
 
         # the same otp value must not be usable again
-        r, opt = check_yubikey_pass(self.further_otps[1])
+        r, opt = YubikeyTokenClass.check_yubikey_pass(self.further_otps[1])
         self.assertFalse(r)
         self.assertTrue(opt.get("message") == "wrong otp value", opt)
 
@@ -110,14 +110,14 @@ class YubikeyTokenTestCase(MyTestCase):
         self.assertEqual(db_token.failcount, 1)
 
         # check an otp value, that does not match a token
-        r, opt = check_yubikey_pass("fcebeeejedecebegfcniufvgv"
-                                    "jturjgvinhebbbertjnihit")
+        r, opt = YubikeyTokenClass.check_yubikey_pass(
+            "fcebeeejedecebegfcniufvgvjturjgvinhebbbertjnihit")
         self.assertFalse(r)
         self.assertTrue(opt.get("action_detail") ==
                         "The serial UBAM@1382015 could not be found!", opt)
 
         # check for an invalid OTP
-        r, opt = check_yubikey_pass(self.further_otps[0])
+        r, opt = YubikeyTokenClass.check_yubikey_pass(self.further_otps[0])
         self.assertFalse(r)
         self.assertTrue(opt.get("message") == "wrong otp value", opt)
 
@@ -135,7 +135,7 @@ class YubikeyTokenTestCase(MyTestCase):
         token.set_failcount(5)
         # Failcount equals maxfail, so an authentication with a valid OTP
         # will fail
-        r, opt = check_yubikey_pass(self.further_otps[2])
+        r, opt = YubikeyTokenClass.check_yubikey_pass(self.further_otps[2])
         self.assertFalse(r)
         self.assertTrue(opt.get("message") == "matching 1 tokens, "
                                               "Failcounter exceeded", opt)
@@ -143,18 +143,45 @@ class YubikeyTokenTestCase(MyTestCase):
         self.assertEqual(db_token.failcount, 5)
         token.set_failcount(old_failcounter)
 
+    def test_09_api_signature(self):
+        api_key = "LqeG/IZscF1f7/oGQBqNnGY7MLk="
+        data = {"otp": "ececegecejeeedehfftnecrrfcfibfbklhvetghgrvtjdtvv",
+                "nonce": "blablafoo",
+                "timestamp": "time"}
+        h = YubikeyTokenClass._api_signature(data, api_key)
+        self.assertEqual(h, "InGUM9l0cgfOzEAb0C1LgMktycU=")
+
     def test_10_api_endpoint(self):
-        # Check_yubikey_pass only works without pin!
+        fixed = "ebedeeefegeheiej"
+        otpkey = "cc17a4d77eaed96e9d14b5c87a02e718"
+        uid = "000000000000"
+        otps = ["ebedeeefegeheiejtjtrutblehenfjljrirgdihrfuetljtt",
+                "ebedeeefegeheiejlekvlrlkrcluvctenlnnjfknrhgtjned",
+                "ebedeeefegeheiejktudedbktcnbuntrhdueikggtrugckij",
+                "ebedeeefegeheiejjvjncbnffdrvjcvrbgdfufjgndfetieu",
+                "ebedeeefegeheiejdruibhvlvktcgfjiruhltketifnitbuk"
+        ]
+
+        token = init_token({"type": "yubikey",
+                            "otpkey": otpkey,
+                            "otplen": len(otps[0]),
+                            "serial": "UBAM12345678_1"})
+
         builder = EnvironBuilder(method='GET',
                                  headers={})
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
         req = Request(env)
-        req.all_data = {'id': "shared secret",
-                        "otp": self.further_otps[3],
-                        "nonce": "random data"}
-        t, resp = YubikeyTokenClass.api_endpoint(req, g)
+        nonce = "random nonce"
+        apiid = "test_key_id"
+        req.all_data = {'id': apiid,
+                        "otp": otps[0],
+                        "nonce": nonce}
+        text_type, result = YubikeyTokenClass.api_endpoint(req, g)
+        self.assertEqual(text_type, "plain")
+        self.assertTrue("status=OK" in result, result)
+        self.assertTrue("nonce=%s" % nonce in result, result)
 
     def test_98_wrong_tokenid(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()

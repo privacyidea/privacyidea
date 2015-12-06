@@ -44,7 +44,10 @@ from privacyidea.lib.utils import checksum
 import binascii
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.api.lib.utils import getParam
-
+import datetime
+import base64
+import hmac
+from hashlib import sha1
 
 optional = True
 required = False
@@ -240,7 +243,7 @@ class YubikeyTokenClass(TokenClass):
 
 
         # TODO: We also could check the timestamp
-        # - the timestamp. see http://www.yubico.com/wp-content/uploads/2013/04/YubiKey-Manual-v3_1.pdf
+        # see http://www.yubico.com/wp-content/uploads/2013/04/YubiKey-Manual-v3_1.pdf
         log.debug('compare counter to database counter: %r' % self.token.count)
         if count_int >= self.token.count:
             res = count_int
@@ -250,12 +253,47 @@ class YubikeyTokenClass(TokenClass):
         return res
 
     @classmethod
+    def _get_api_key(cls, apiId):
+        """
+        Return the symmetric key for the given apiId.
+
+        :param apiId: The base64 encoded API ID
+        :return: the base64 encoded API Key or None
+        """
+        # TODO: from the ID we need to determine the API key
+        api_key = None
+        if apiId == "test_key_id":
+            api_key = "LqeG/IZscF1f7/oGQBqNnGY7MLk="
+        return api_key
+
+    @classmethod
+    def _api_signature(cls, data, api_key):
+        """
+        Get a dictionary "data", sort the dictionary by the keys
+        and sign it HMAC-SHA1 with the api_key
+        :param data: dictionary
+        :param api_key: base64 encoded API key
+        :return: base64 encoded signature
+        """
+        keys = sorted(data.keys())
+        data_string = ""
+        for key in keys:
+            data_string += "%s=%s&" % (key, data.get(key))
+        data_string.strip("&")
+        api_key_bin = base64.b64decode(api_key)
+        # generate the signature
+        h = hmac.new(api_key_bin, data_string, sha1).digest()
+        h_b64 = base64.b64encode(h)
+        return h_b64
+
+    @classmethod
     def api_endpoint(cls, request, g):
         """
         This provides a function to be plugged into the API endpoint
         /ttype/yubikey which is defined in api/ttype.py
 
-        Do the yubico validation request according to
+        The endpoint /ttype/yubikey is used for the Yubico validate request
+        according to
         https://developers.yubico.com/yubikey-val/Validation_Protocol_V2.0.html
 
         :param request: The Flask request
@@ -271,80 +309,87 @@ class YubikeyTokenClass(TokenClass):
         Optional parameters h, timestamp, sl, timeout are not supported at the
         moment.
         """
-        id = getParam(request.all_data, "id", required)
-        otp = getParam(request.all_data, "otp", required)
-        nonce = getParam(request.all_data, "nonce", required)
-        options = {"g": g,
-                   "clientip": request.remote_addr}
+        # TODO: If the request contains a signature (h) we verify the signature
+        id = getParam(request.all_data, "id")
+        otp = getParam(request.all_data, "otp")
+        nonce = getParam(request.all_data, "nonce")
+        status = "MISSING_PARAMETER"
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ%f")
+        data = {'otp': otp,
+                'nonce': nonce,
+                'status': status,
+                'timestamp': timestamp}
 
-        res, opt = check_yubikey_pass(otp)
-        return "text", ""
+        api_key = cls._get_api_key(id)
+        if api_key is None:
+            data['status'] = "NO_SUCH_CLIENT"
+            data['h'] = ""
+        elif otp and id and nonce:
+            options = {"g": g,
+                       "clientip": request.remote_addr}
+            res, opt = cls.check_yubikey_pass(otp)
+            if res:
+                data['status'] = "OK"
+            else:
+                data['status'] = "BAD_OTP"
 
+            data["h"] = cls._api_signature(data, api_key)
+        response = """nonce={nonce}
+otp={otp}
+status={status}
+timestamp={timestamp}
+h={h}
+""".format(**data)
 
-@log_with(log)
-def check_yubikey_pass(passw):
-    """
-    This only works without a PIN!
+        return "plain", response
 
-    This checks the output of a yubikey in AES mode without providing
-    the serial number.
-    The first 12 (of 44) or 16 of 48) characters are the tokenid, which is
-    stored in the tokeninfo.
+    @classmethod
+    def check_yubikey_pass(cls, passw):
+        """
+        if the Token has set a PIN the user must also enter the PIN for
+        authentication!
 
-    :param passw: The password that consist of the static yubikey prefix and
-        the otp
-    :type passw: string
+        This checks the output of a yubikey in AES mode without providing
+        the serial number.
+        The first 12 (of 44) or 16 of 48) characters are the tokenid, which is
+        stored in the tokeninfo.
 
-    :return: True/False and the User-Object of the token owner
-    :rtype: dict
-    """
-    opt = {}
-    res = False
+        :param passw: The password that consist of the static yubikey prefix and
+            the otp
+        :type passw: string
 
-    token_list = []
+        :return: True/False and the User-Object of the token owner
+        :rtype: dict
+        """
+        opt = {}
+        res = False
 
-    # strip the yubico OTP and the PIN
-    modhex_serial = passw[:-32][-16:]
-    try:
-        serialnum = "UBAM" + modhex_decode(modhex_serial)
-    except TypeError as exx:  # pragma: no cover
-        log.error("Failed to convert serialnumber: %r" % exx)
+        token_list = []
+
+        # strip the yubico OTP and the PIN
+        modhex_serial = passw[:-32][-16:]
+        try:
+            serialnum = "UBAM" + modhex_decode(modhex_serial)
+        except TypeError as exx:  # pragma: no cover
+            log.error("Failed to convert serialnumber: %r" % exx)
+            return res, opt
+
+        # build list of possible yubikey tokens
+        serials = [serialnum]
+        for i in range(1, 3):
+            serials.append("%s_%s" % (serialnum, i))
+
+        from privacyidea.lib.token import get_tokens
+        from privacyidea.lib.token import check_token_list
+        for serial in serials:
+            tokenobject_list = get_tokens(serial=serial)
+            token_list.extend(tokenobject_list)
+
+        if len(token_list) == 0:
+            opt['action_detail'] = ("The serial %s could not be found!" %
+                                    serialnum)
+            return res, opt
+
+        (res, opt) = check_token_list(token_list, passw)
         return res, opt
-
-    # build list of possible yubikey tokens
-    serials = [serialnum]
-    for i in range(1, 3):
-        serials.append("%s_%s" % (serialnum, i))
-
-    from privacyidea.lib.token import get_tokens
-    from privacyidea.lib.token import check_token_list
-    for serial in serials:
-        tokenobject_list = get_tokens(serial=serial)
-        token_list.extend(tokenobject_list)
-
-    if len(token_list) == 0:
-        opt['action_detail'] = ("The serial %s could not be found!" % serialnum)
-        return res, opt
-
-    # FIXME if the Token has set a PIN and the User does not want
-    # to enter the PIN
-    # for authentication, we need to do something different here...
-    # and avoid PIN checking in __checkToken.
-    # We could pass an "option" to __checkToken.
-    (res, opt) = check_token_list(token_list, passw)
-
-    # Now we need to get the user
-    # TODO: Migration
-    #if res is not False and 'serial' in c.audit:
-    #    serial = c.audit.get('serial', None)
-    #    if serial is not None:
-    #        user = getTokenOwner(serial)
-    #        c.audit['user'] = user.login
-    #        c.audit['realm'] = user.realm
-    #        opt = {}
-    #        opt['user'] = user.login
-    #        opt['realm'] = user.realm
-    #        opt['serial'] = serial
-
-    return res, opt
 
