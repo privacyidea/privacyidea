@@ -9,6 +9,7 @@ PWFILE = "tests/testdata/passwords"
 POLICYFILE = "tests/testdata/policy.cfg"
 POLICYEMPTY = "tests/testdata/policy_empty_file.cfg"
 
+
 class APIConfigTestCase(MyTestCase):
 
     def test_00_get_empty_config(self):
@@ -779,3 +780,30 @@ class APIConfigTestCase(MyTestCase):
             value = result.get("value")
             self.assertEqual(value, False)
             self.assertEqual(details.get("message"), "Not implemented")
+
+    def test_18_test_random(self):
+        with self.app.test_request_context('/system/random?len=32',
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            # hex encoded value
+            self.assertEqual(len(value), 64)
+            # This is hex, we can unhexlify
+            import binascii
+            binascii.unhexlify(value)
+
+        with self.app.test_request_context('/system/random?len=32&encode=b64',
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            # hex encoded value
+            self.assertEqual(len(value), 44)
+            # This is base64. We can decode
+            import base64
+            base64.b64decode(value)
