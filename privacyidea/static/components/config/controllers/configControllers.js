@@ -408,6 +408,22 @@ myApp.controller("tokenConfigController", function ($scope, $location,
         });
     };
 
+    $scope.yubikeyAppIdDelete = function(appid) {
+          ConfigFactory.delSystemConfig(appid, function(data) {
+              if (data.result.status === true) {
+                  inform.add(gettext("System entry deleted."),
+                                {type: "info"});
+                  $scope.loadSystemConfig();
+                }
+          });
+    };
+
+    $scope.yubikeyCreateNewKey = function() {
+        //$scope.newAppId = Math.floor((Math.random() * 1000000) + 1);
+        apikey = Math.floor((Math.random() * 1000000) + 1);
+        $scope.form['yubikey.appid.' + $scope.newAppId] = apikey;
+    };
+
     $scope.sendTestEmail = function() {
         ConfigFactory.testTokenConfig("email", $scope.form, function(data) {
            if (data.result.value === true) {

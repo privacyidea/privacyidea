@@ -244,6 +244,12 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
                           'Content-Type': 'application/json'}
             }).success(callback).error(error_func);
         },
+        delSystemConfig: function(key, callback) {
+            $http.delete(systemUrl + "/" + key, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
         testTokenConfig: function(tokentype, params, callback) {
             $http.post(systemUrl + "/test/" + tokentype, params, {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken(),
