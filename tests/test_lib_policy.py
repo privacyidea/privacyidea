@@ -449,7 +449,7 @@ class PolicyTestCase(MyTestCase):
                           "realm": "realm1"}
         # Without policies, the admin gets all
         rights = P.ui_get_rights(SCOPE.ADMIN, "realm1", "admin")
-        self.assertEqual(len(rights), 37)
+        self.assertEqual(len(rights), 38)
 
         # An admin may only enroll Yubikeys
         set_policy(name="tokenEnroll", scope=SCOPE.ADMIN,

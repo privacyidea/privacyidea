@@ -30,9 +30,19 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 __doc__ = """
-This module provides the functionality for the Yubikey AES mode.
+This token type provides the functionality for the Yubikey AES mode.
 
-It is tested in tests/test_lib_tokens_yubikey.py
+You can authenticate the Yubikeys in AES mode against the normal
+validate/check API.
+In addition you can also use the Yubico Validation Protocol to authenticate
+the Yubikey managed by privacyIDEA. To use the Yubico Validation Protocol you
+need to use the endpoint /ttype/yubikey.
+
+Using the Yubico Validation Protocol you can run the
+`Yubico PAM module <https://github.com/Yubico/yubico-pam>`_ with privacyIDEA
+as the backend server.
+
+This code is tested in tests/test_lib_tokens_yubikey.py
 """
 
 import logging
