@@ -10,6 +10,7 @@ from privacyidea.lib.token import init_token
 from privacyidea.models import (Token)
 from flask import Response, Request, g, current_app
 from werkzeug.test import EnvironBuilder
+from privacyidea.lib.config import set_privacyidea_config
 
 
 class YubikeyTokenTestCase(MyTestCase):
@@ -174,7 +175,9 @@ class YubikeyTokenTestCase(MyTestCase):
         env["REMOTE_ADDR"] = "10.0.0.1"
         req = Request(env)
         nonce = "random nonce"
-        apiid = "test_key_id"
+        apiid = "hallo"
+        apikey = "1YMEbMZijD3DzL21UfKGnOOI13c="
+        set_privacyidea_config("yubikey.appid.%s" % apiid, apikey)
         req.all_data = {'id': apiid,
                         "otp": otps[0],
                         "nonce": nonce}

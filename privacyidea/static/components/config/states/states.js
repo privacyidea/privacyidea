@@ -142,7 +142,8 @@ angular.module('privacyideaApp.configStates', ['ui.router']).config(
                 })
                 .state('config.tokens', {
                     url: "/tokens/{tokentype:.*}",
-                    templateUrl: configpath + "config.tokens.html"
+                    templateUrl: configpath + "config.tokens.html",
+                    controller: "tokenConfigController"
                 })
 //                .state('config.machines', {
 //                    url: "/machines",

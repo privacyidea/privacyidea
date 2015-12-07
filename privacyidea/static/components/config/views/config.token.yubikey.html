@@ -21,34 +21,35 @@
             </tr>
             </thead>
             <tbody>
-            <tr ng-repeat="(appid, value) in form"
-                ng-if="appid.indexOf('yubikey.appid.') == 0">
-                <td>{{ appid }}</td>
+            <tr ng-repeat="(ApiId, value) in form"
+                ng-if="ApiId.indexOf('yubikey.apiid.') == 0">
+                <td>{{ ApiId }}</td>
                 <td>{{ value }}</td>
                 <td>
                     <button class="btn btn-danger" translate
-                        ng-click="yubikeyAppIdDelete(appid)">
+                        ng-click="yubikeyAppIdDelete(ApiId)">
                         Delete
                     </button>
                 </td>
             </tr>
             <tr>
-                <td><input type="text" required class="form-control"
-           placeholder="{{ 'Client ID'|translate }}"
-           ng-model="newAppId"
-           name="yubikeyApiId"></td>
-                <td><input type="text"
-           required
-           class="form-control"
-           placeholder="{{ 'API Key'|translate }}"
-           ng-model="form['yubikey.appid.'+newAppId]" name="yubikeyApiKey">
+                <td><input type="text" required
+                           class="form-control"
+                           placeholder="{{ 'Client ID'|translate }}"
+                           ng-model="newApiId"
+                           name="yubikeyApiId"></td>
+                <td><input type="text" required
+                           class="form-control"
+                           placeholder="{{ 'API Key'|translate }}"
+                           ng-model="form['yubikey.apiid.'+newApiId]"
+                           name="yubikeyApiKey">
                 </td>
                 <td>
                     <button class="btn btn-default"
-        ng-click="yubikeyCreateNewKey()">
-        <span class="glyphicon glyphicon-refresh"></span>
-        <translate>Create new API key</translate>
-    </button>
+                            ng-click="yubikeyCreateNewKey(newApiId)">
+                        <span class="glyphicon glyphicon-refresh"></span>
+                        <translate>Create new API key</translate>
+                    </button>
                 </td>
             </tr>
             </tbody>

@@ -48,6 +48,7 @@ import datetime
 import base64
 import hmac
 from hashlib import sha1
+from privacyidea.lib.config import get_from_config
 
 optional = True
 required = False
@@ -202,7 +203,8 @@ class YubikeyTokenClass(TokenClass):
 
         # The checksum is a CRC-16 (16-bit ISO 13239 1st complement) that
         # occupies the last 2 bytes of the decrypted OTP value. Calculating the
-        # CRC-16 checksum of the whole decrypted OTP should give a fixed residual
+        # CRC-16 checksum of the whole decrypted OTP should give a fixed
+        # residual
         # of 0xf0b8 (see Yubikey-Manual - Chapter 6: Implementation details).
         log.debug("calculated checksum (61624): %r" % checksum(msg_hex))
         if checksum(msg_hex) != 0xf0b8:  # pragma: no cover
@@ -253,17 +255,14 @@ class YubikeyTokenClass(TokenClass):
         return res
 
     @classmethod
-    def _get_api_key(cls, apiId):
+    def _get_api_key(cls, api_id):
         """
         Return the symmetric key for the given apiId.
 
         :param apiId: The base64 encoded API ID
         :return: the base64 encoded API Key or None
         """
-        # TODO: from the ID we need to determine the API key
-        api_key = None
-        if apiId == "test_key_id":
-            api_key = "LqeG/IZscF1f7/oGQBqNnGY7MLk="
+        api_key = get_from_config("yubikey.apiid.%s" % api_id)
         return api_key
 
     @classmethod

@@ -408,8 +408,8 @@ myApp.controller("tokenConfigController", function ($scope, $location,
         });
     };
 
-    $scope.yubikeyAppIdDelete = function(appid) {
-          ConfigFactory.delSystemConfig(appid, function(data) {
+    $scope.yubikeyAppIdDelete = function(apiId) {
+          ConfigFactory.delSystemConfig(apiId, function(data) {
               if (data.result.status === true) {
                   inform.add(gettext("System entry deleted."),
                                 {type: "info"});
@@ -418,10 +418,10 @@ myApp.controller("tokenConfigController", function ($scope, $location,
           });
     };
 
-    $scope.yubikeyCreateNewKey = function() {
-        //$scope.newAppId = Math.floor((Math.random() * 1000000) + 1);
-        apikey = Math.floor((Math.random() * 1000000) + 1);
-        $scope.form['yubikey.appid.' + $scope.newAppId] = apikey;
+    $scope.yubikeyCreateNewKey = function(apiId) {
+        ConfigFactory.getRandom(20, "b64", function(data){
+            $scope.form['yubikey.apiid.' + apiId] = data.result.value;
+        });
     };
 
     $scope.sendTestEmail = function() {
