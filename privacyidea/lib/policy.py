@@ -155,6 +155,7 @@ class ACTION():
     ENABLE = "enable"
     ENCRYPTPIN = "encrypt_pin"
     GETSERIAL = "getserial"
+    GETRANDOM = "getrandom"
     IMPORT = "importtokens"
     LASTAUTH = "last_auth"
     LOGINMODE = "login_mode"
@@ -727,6 +728,9 @@ def get_static_policy_definitions(scope=None):
                                'desc': _('Admin is allowed to retrieve a serial'
                                          ' for a given OTP value.'),
                                "group": "tools"},
+            ACTION.GETRANDOM: {'type': 'bool',
+                               'desc': _('Admin is allowed to retrieve '
+                                         'random keys from privacyIDEA.')},
             # 'checkserial': {'type': 'bool',
             #                 'desc': _('Admin is allowed to check if a serial '
             #                           'is unique'),

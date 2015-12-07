@@ -553,7 +553,7 @@ class TokenInfo(MethodsMixin, db.Model):
     for "timeStep" and "timeWindow", which are stored in the
     column "Key" and "Value".
 
-    The tokeninfo is reference by the foraign key to the "token" table.
+    The tokeninfo is reference by the foreign key to the "token" table.
     """
     __tablename__ = 'tokeninfo'
     id = db.Column(db.Integer, primary_key=True)
@@ -616,7 +616,7 @@ class Admin(db.Model):
     :param password: The password of the admin (stored using PBKDF2,
        salt and pepper)
     :type password: basestring
-    :param email: The email address of the admin (not used at the momemt)
+    :param email: The email address of the admin (not used at the moment)
     :type email: basestring
     """
     __tablename__ = "admin"

@@ -111,6 +111,6 @@ def token(ttype=None):
                         "tokentype": ttype})
     if res[0] == "json":
         return jsonify(res[1])
-    elif res[0] == "text":
-        return Response(res[1])
+    elif res[0] in ["html", "plain"]:
+        return Response(res[1], mimetype="text/%s" % res[0])
 

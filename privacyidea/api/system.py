@@ -87,6 +87,10 @@ from .application import application_blueprint
 from .caconnector import caconnector_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from privacyidea.lib.error import HSMException
+from privacyidea.lib.crypto import geturandom
+import base64
+import binascii
+
 
 log = logging.getLogger(__name__)
 
@@ -446,6 +450,37 @@ def get_security_module():
     HSM = current_app.config["pi_hsm"]
     is_ready = HSM.get("obj").is_ready
     res = {"is_ready": is_ready}
+    g.audit_object.log({'success': res})
+    return send_result(res)
+
+
+@system_blueprint.route('/random', methods=['GET'])
+@prepolicy(check_base_action, request, action=ACTION.GETRANDOM)
+@log_with(log)
+@admin_required
+def rand():
+    """
+    This endpoint can be used to retrieve random keys from privacyIDEA.
+    In certain cases the client might need random data to initialize tokens
+    on the client side. E.g. the command line client when initializing the
+    yubikey or the WebUI when creating Client API keys for the yubikey.
+
+    In this case, privacyIDEA can created the random data/keys.
+
+    :queryparam len: The length of a symmetric key (byte)
+    :queryparam encode: The type of encoding. Can be "hex" or "b64".
+
+    :return: key material
+    """
+    length = int(getParam(request.all_data, "len") or 20)
+    encode = getParam(request.all_data, "encode")
+
+    r = geturandom(length=length)
+    if encode == "b64":
+        res = base64.b64encode(r)
+    else:
+        res = binascii.hexlify(r)
+
     g.audit_object.log({'success': res})
     return send_result(res)
 

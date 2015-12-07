@@ -399,7 +399,7 @@ class TiQRTokenTestCase(MyTestCase):
                         "session": session,
                         "secret": KEY20}
         r = TiqrTokenClass.api_endpoint(req, g)
-        self.assertEqual(r[0], "text")
+        self.assertEqual(r[0], "plain")
         self.assertEqual(r[1], "OK")
 
         # test authentication endpoint
@@ -440,7 +440,7 @@ class TiQRTokenTestCase(MyTestCase):
                         "sessionKey": session,
                         "operation": "login"}
         r = TiqrTokenClass.api_endpoint(req, g)
-        self.assertEqual(r[0], "text")
+        self.assertEqual(r[0], "plain")
         self.assertEqual(r[1], "INVALID_RESPONSE")
 
         # Send the correct response
@@ -449,7 +449,7 @@ class TiQRTokenTestCase(MyTestCase):
                         "sessionKey": session,
                         "operation": "login"}
         r = TiqrTokenClass.api_endpoint(req, g)
-        self.assertEqual(r[0], "text")
+        self.assertEqual(r[0], "plain")
         self.assertEqual(r[1], "OK")
 
         # Send the same response a second time would not work
@@ -459,7 +459,7 @@ class TiQRTokenTestCase(MyTestCase):
                         "sessionKey": session,
                         "operation": "login"}
         r = TiqrTokenClass.api_endpoint(req, g)
-        self.assertEqual(r[0], "text")
+        self.assertEqual(r[0], "plain")
         self.assertEqual(r[1], "INVALID_CHALLENGE")
 
         # Finally we check the OTP status:

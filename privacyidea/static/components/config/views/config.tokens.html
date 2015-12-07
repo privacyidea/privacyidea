@@ -44,6 +44,10 @@
                     ng-class="{ active: tokentype == 'yubico'}">
                     <a ui-sref="config.tokens({tokentype: 'yubico'})">Yubico</a>
                 </li>
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'yubikey'}">
+                    <a ui-sref="config.tokens({tokentype: 'yubikey'})">Yubikey</a>
+                </li>
             </ul>
         </div>
 
