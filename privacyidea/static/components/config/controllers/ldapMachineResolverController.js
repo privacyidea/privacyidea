@@ -20,7 +20,7 @@
  */
 
 myApp.controller("ldapMachineResolverController", function ($scope,
-                                                      ConfigFactory,
+                                                      ConfigFactory, inform,
                                                       $state, $stateParams) {
     $scope.params = {
         type: 'ldap',
@@ -60,11 +60,13 @@ myApp.controller("ldapMachineResolverController", function ($scope,
 
     $scope.testResolver = function () {
         ConfigFactory.testMachineResolver($scope.params, function (data) {
-            $scope.result = {
-                result: data.result.value,
-                description: data.detail.description
-            };
-            $scope.showResult = true;
+            if (data.result.value === true) {
+                inform.add(data.detail.description,
+                    {type: "success", ttl: 10000});
+            } else {
+                inform.add(data.detail.description,
+                    {type: "danger", ttl: 10000});
+            }
         });
     };
 

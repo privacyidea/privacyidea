@@ -58,15 +58,13 @@ class LdapMachineResolver(BaseMachineResolver):
 
     def _bind(self):
         if not self.i_am_bound:
-            server = ldap3.Server(self.server, port=self.port,
-                                  use_ssl=self.ssl,
-                                  connect_timeout=self.timeout)
+            server_pool = IdResolver.get_serverpool(self.uri, self.timeout)
             self.l = IdResolver.create_connection(authtype=self.authtype,
-                                                  server=server,
+                                                  server=server_pool,
                                                   user=self.binddn,
                                                   password=self.bindpw,
                                                   auto_referrals=not
-                                                 self.noreferrals)
+                                                  self.noreferrals)
             self.l.open()
             if not self.l.bind():
                 raise Exception("Wrong credentials")
@@ -223,7 +221,6 @@ class LdapMachineResolver(BaseMachineResolver):
         self.uri = config.get("LDAPURI")
         if self.uri is None:
             raise MachineResolverError("LDAPURI is missing!")
-        (self.server, self.port, self.ssl) = IdResolver.split_uri(self.uri)
         self.basedn = config.get("LDAPBASE")
         if self.basedn is None:
             raise MachineResolverError("LDAPBASE is missing!")
@@ -272,15 +269,13 @@ class LdapMachineResolver(BaseMachineResolver):
         """
         success = False
         try:
-            (host, port, ssl) = IdResolver.split_uri(params.get("LDAPURI"))
-            server = ldap3.Server(host, port=port,
-                                  use_ssl=ssl,
-                                  connect_timeout=float(params.get("TIMEOUT",
-                                                                  5)))
+            server_pool = IdResolver.get_serverpool(params.get("LDAPURI"),
+                                                    float(params.get(
+                                                        "TIMEOUT", 5)))
             l = IdResolver.create_connection(authtype=\
                                                  params.get("AUTHTYPE",
                                                             AUTHTYPE.SIMPLE),
-                                             server=server,
+                                             server=server_pool,
                                              user=params.get("BINDDN"),
                                              password=params.get("BINDPW"),
                                              auto_referrals=not params.get(

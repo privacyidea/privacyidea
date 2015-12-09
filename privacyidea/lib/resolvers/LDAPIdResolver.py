@@ -515,7 +515,7 @@ class IdResolver (UserIdResolver):
         uidtype = param.get("UIDTYPE")
         try:
             server_pool = cls.get_serverpool(param.get("LDAPURI"),
-                                              float(param.get("TIMEOUT", 5)))
+                                             float(param.get("TIMEOUT", 5)))
             l = cls.create_connection(authtype=param.get("AUTHTYPE",
                                                           AUTHTYPE.SIMPLE),
                                        server=server_pool,
