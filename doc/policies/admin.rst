@@ -210,6 +210,32 @@ If the ``getserial`` action is defined, the administrator is
 allowed to calculate the token serial number for a given OTP
 value.
 
+
+getrandom
+~~~~~~~~~
+
+type: bool
+
+.. index:: getrandom
+
+The ``getrandom`` action allows the administrator to retrieve random
+keys from the endpoint *getrandom*. This is an endpoint in :ref:`rest_system`.
+
+*getrandom* can be used by the client, if the client has no reliable random
+number generator. Creating API keys for the Yubico Validation Protocol uses
+this endpoint.
+
+getchallenges
+~~~~~~~~~~~~~
+
+type: bool
+
+.. index:: getchallenges
+
+This policy allows the administrator to retrieve a list of active challenges
+of a challenge response tokens. The administrator can view these challenges
+in the web UI.
+
 .. _lost_token:
 
 losttoken
