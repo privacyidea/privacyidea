@@ -402,9 +402,9 @@ def set_default():
     return send_result(result)
 
 
-@log_with(log)
 @system_blueprint.route('/<key>', methods=['DELETE'])
 @prepolicy(check_base_action, request, ACTION.SYSTEMDELETE)
+@log_with(log)
 def delete_config(key=None):
     """
     delete a configuration key
@@ -421,9 +421,9 @@ def delete_config(key=None):
     return send_result(res)
 
 
-@log_with
 @system_blueprint.route('/hsm', methods=['POST'])
 @prepolicy(check_base_action, request, ACTION.SETHSM)
+@log_with(log)
 def set_security_module():
     """
     Set the password for the security module
@@ -440,8 +440,8 @@ def set_security_module():
     return send_result(res)
 
 
-@log_with
 @system_blueprint.route('/hsm', methods=['GET'])
+@log_with(log)
 def get_security_module():
     """
     Get the status of the security module.
