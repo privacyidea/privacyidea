@@ -32,9 +32,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import traceback
-import hashlib
 from base64 import (b64decode,
                     b64encode)
+import os
+import time
+import hashlib
+import crypt
+from privacyidea.lib.crypto import urandom, geturandom
 import binascii
 
 log = logging.getLogger(__name__)
@@ -54,12 +58,6 @@ if SQLSOUP_LOADED is False:  # pragma: no cover
     except ImportError:
         log.error("SQLSoup could not be loaded!")
         pass
-
-import os
-import time
-import hashlib
-import crypt
-from privacyidea.lib.crypto import urandom, geturandom
 
 try:
     import bcrypt

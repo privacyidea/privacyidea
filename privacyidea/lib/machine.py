@@ -34,10 +34,6 @@ from privacyidea.models import (MachineToken, db, MachineTokenOptions,
                                 MachineResolver, get_token_id,
                                 get_machineresolver_id,
                                 get_machinetoken_id)
-from privacyidea.lib.token import get_tokens
-from privacyidea.lib.token import get_token_type
-from privacyidea.lib.applications import get_auth_item
-from privacyidea.lib.applications import is_application_allow_bulk_call
 from netaddr import IPAddress
 from sqlalchemy import and_
 import logging

@@ -55,7 +55,6 @@ from ..lib.config import (get_privacyidea_config,
                           set_privacyidea_config,
                           delete_privacyidea_config,
                           get_from_config)
-from ..lib.policy import PolicyClass, ACTION
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.error import (ParameterError, privacyIDEAError,
                          AuthError,
@@ -72,7 +71,7 @@ import re
 import socket
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.realm import get_realms
-from privacyidea.lib.policy import PolicyClass
+from privacyidea.lib.policy import PolicyClass, ACTION
 from privacyidea.lib.auth import get_db_admins
 from .resolver import resolver_blueprint
 from .policy import policy_blueprint
