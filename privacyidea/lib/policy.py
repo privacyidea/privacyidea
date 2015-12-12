@@ -634,16 +634,15 @@ def import_policies(file_contents):
     """
     policies = ConfigObj(file_contents.split('\n'), encoding="UTF-8")
     res = 0
-    for policy_name in policies.keys():
+    for policy_name, policy in policies.iteritems():
         ret = set_policy(name=policy_name,
-                         action=eval(policies[policy_name].get("action")),
-                         scope=policies[policy_name].get("scope"),
-                         realm=eval(policies[policy_name].get("realm", "[]")),
-                         user=eval(policies[policy_name].get("user", "[]")),
-                         resolver=eval(policies[policy_name].get("resolver",
-                                                                 "[]")),
-                         client=eval(policies[policy_name].get("client", "[]")),
-                         time=policies[policy_name].get("time", "")
+                         action=eval(policy.get("action")),
+                         scope=policy.get("scope"),
+                         realm=eval(policy.get("realm", "[]")),
+                         user=eval(policy.get("user", "[]")),
+                         resolver=eval(policy.get("resolver", "[]")),
+                         client=eval(policy.get("client", "[]")),
+                         time=policy.get("time", "")
                          )
         if ret > 0:
             log.debug("import policy %s: %s" % (policy_name, ret))
@@ -719,7 +718,6 @@ def get_static_policy_definitions(scope=None):
             # 'checkstatus': {'type': 'bool',
             #                 'desc' : _('Admin is allowed to check the
             # status of a challenge'
-            #                            ' resonse token.'),
             #                 "group": "tools"},
             ACTION.TOKENREALMS: {'type': 'bool',
                                  'desc': _('Admin is allowed to manage the '

@@ -24,6 +24,8 @@ from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PWResolver
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from flask import current_app
+import importlib
+
 
 class ConfigTestCase(MyTestCase):
     """
@@ -72,8 +74,8 @@ class ConfigTestCase(MyTestCase):
         # check modules
         mlist = get_resolver_module_list()
         mod_name = "privacyidea.lib.resolvers.PasswdIdResolver"
-        exec("import %s" % mod_name)
-        module = eval(mod_name)
+        module = importlib.import_module(mod_name)
+
         self.assertTrue(module in mlist, mlist)
 
         # At the beginning the resolver classes are not cached.
@@ -119,8 +121,7 @@ class ConfigTestCase(MyTestCase):
         # check modules
         mlist = get_token_module_list()
         mod_name = "privacyidea.lib.tokens.totptoken"
-        exec("import %s" % mod_name)
-        module = eval(mod_name)
+        module = importlib.import_module(mod_name)
         self.assertTrue(module in mlist, mlist)
 
 #        r = get_resolver_classes()

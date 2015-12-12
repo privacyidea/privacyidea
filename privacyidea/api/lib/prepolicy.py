@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #
-#  2015-11-04 Cornelius Kölbel <cornelius.koelbel@netknights.i>
+#  2915-12-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Change eval to importlib
+#  2015-11-04 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add check for REMOTE_USER
 #  2015-04-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add hook for external decorator for init and assign
@@ -46,6 +48,7 @@ from privacyidea.lib.auth import ROLE
 import functools
 import jwt
 import re
+import importlib
 
 optional = True
 required = False
@@ -562,18 +565,19 @@ def check_external(request=None, action="init"):
     :return: either True or an Exception is raised
     """
     function_name = None
+    module = None
     try:
         module_func = current_app.config.get("PI_INIT_CHECK_HOOK")
         if module_func:
             module_name = ".".join(module_func.split(".")[:-1])
-            exec("import %s" % module_name)
+            module = importlib.import_module(module_name)
             function_name = module_func.split(".")[-1]
     except Exception as exx:
         log.error("Error importing external check function: %s" % exx)
 
     # Import of function was successful
     if function_name:
-        external_func = getattr(eval(module_name), function_name)
+        external_func = getattr(module, function_name)
         external_func(request, action)
     return True
 

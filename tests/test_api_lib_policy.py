@@ -550,19 +550,19 @@ class PrePolicyDecoratorTestCase(MyTestCase):
                         "user": "cornelius",
                         "realm": "home"}
 
-        # Check succes on no definition
+        # Check success on no definition
         r = check_external(req)
         self.assertTrue(r)
 
         # Check success with external function
         current_app.config["PI_INIT_CHECK_HOOK"] = \
-            "prepolicy.mock_success"
+            "privacyidea.api.lib.prepolicy.mock_success"
         r = check_external(req)
         self.assertTrue(r)
 
         # Check exception with external function
         current_app.config["PI_INIT_CHECK_HOOK"] = \
-            "prepolicy.mock_fail"
+            "privacyidea.api.lib.prepolicy.mock_fail"
         self.assertRaises(Exception, check_external, req)
 
     def test_11_api_key_required(self):

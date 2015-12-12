@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-12-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Change eval to importlib
 #  2015-04-23 Cornelius Kölbel <cornelius.koelbel@netknigts.it>
 #             Add CA Connector functions
 #
@@ -30,9 +32,7 @@ The code is tested in tests/test_lib_config
 """
 
 import logging
-import sys
 import inspect
-from importlib import import_module
 from flask import current_app
 
 from .log import log_with
@@ -44,6 +44,7 @@ from .resolvers.UserIdResolver import UserIdResolver
 from .machines.base import BaseMachineResolver
 from .caconnectors.localca import BaseCAConnector
 from datetime import datetime
+import importlib
 
 log = logging.getLogger(__name__)
 
@@ -515,8 +516,7 @@ def get_token_module_list():
         #else:
         try:
             log.debug("import module: %s" % mod_name)
-            exec("import %s" % mod_name)
-            module = eval(mod_name)
+            module = importlib.import_module(mod_name)
             modules.append(module)
         except Exception as exx:  # pragma: no cover
             module = None
