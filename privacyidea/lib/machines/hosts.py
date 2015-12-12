@@ -142,8 +142,8 @@ class HostsMachineResolver(BaseMachineResolver):
             raise MachineResolverError("filename is missing!")
 
     @classmethod
-    def get_config_description(self):
-        description = {self.type: {"config": {"filename": "string"}}}
+    def get_config_description(cls):
+        description = {cls.type: {"config": {"filename": "string"}}}
         return description
 
 

@@ -1230,7 +1230,7 @@ class TokenClass(object):
         return otp_counter
 
     @classmethod
-    def challenge_janitor(self):
+    def challenge_janitor(cls):
         """
         Just clean up all challenges, for which the expiration has expired.
 

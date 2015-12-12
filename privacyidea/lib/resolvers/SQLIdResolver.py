@@ -614,7 +614,7 @@ class IdResolver (UserIdResolver):
         return IdResolver.getResolverClassDescriptor()
 
     @classmethod
-    def _create_connect_string(self, param):
+    def _create_connect_string(cls, param):
         """
         create the connectstring
         

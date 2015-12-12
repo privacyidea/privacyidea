@@ -113,8 +113,8 @@ class BaseMachineResolver(object):
             self.load_config(config)
 
     @classmethod
-    def get_type(self):
-        return self.type
+    def get_type(cls):
+        return cls.type
 
     def get_machines(self, machine_id=None, hostname=None, ip=None, any=None,
                      substring=False):

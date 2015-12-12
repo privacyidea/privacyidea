@@ -248,7 +248,7 @@ class UserIdResolver(object):
         return None
 
     @classmethod
-    def testconnection(self, param):
+    def testconnection(cls, param):
         """
         This function lets you test if the parameters can be used to create a
         working resolver.
