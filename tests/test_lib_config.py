@@ -66,10 +66,10 @@ class ConfigTestCase(MyTestCase):
 
     def test_01_resolver(self):
         r = get_resolver_list()
-        self.assertTrue("resolvers.PasswdIdResolver" in r, r)
-        self.assertTrue("resolvers.LDAPIdResolver" in r, r)
-        self.assertTrue("resolvers.SCIMIdResolver" in r, r)
-        self.assertTrue("resolvers.SQLIdResolver" in r, r)
+        self.assertTrue("privacyidea.lib.resolvers.PasswdIdResolver" in r, r)
+        self.assertTrue("privacyidea.lib.resolvers.LDAPIdResolver" in r, r)
+        self.assertTrue("privacyidea.lib.resolvers.SCIMIdResolver" in r, r)
+        self.assertTrue("privacyidea.lib.resolvers.SQLIdResolver" in r, r)
 
         # check modules
         mlist = get_resolver_module_list()
