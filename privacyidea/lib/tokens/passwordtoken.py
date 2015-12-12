@@ -37,7 +37,7 @@ class PasswordTokenClass(TokenClass):
     This Token can be used for a scenario like losttoken
     """
 
-    class _secretPassword(object):
+    class SecretPassword(object):
 
         def __init__(self, secObj):
             self.secretObject = secObj
@@ -105,7 +105,6 @@ class PasswordTokenClass(TokenClass):
                 ret = res
         return ret
 
-
     def update(self, param):
         """
         This method is called during the initialization process.
@@ -131,7 +130,7 @@ class PasswordTokenClass(TokenClass):
         :result: None
         """
         secretHOtp = self.token.get_otpkey()
-        sp = PasswordTokenClass._secretPassword(secretHOtp)
+        sp = PasswordTokenClass.SecretPassword(secretHOtp)
         pw_len = len(sp.get_password())
         TokenClass.set_otplen(self, pw_len)
         return
@@ -148,7 +147,7 @@ class PasswordTokenClass(TokenClass):
         :rtype: int
         """
         secretHOtp = self.token.get_otpkey()
-        sp = PasswordTokenClass._secretPassword(secretHOtp)
+        sp = PasswordTokenClass.SecretPassword(secretHOtp)
         res = sp.check_password(anOtpVal)
 
         return res

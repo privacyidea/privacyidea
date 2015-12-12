@@ -190,7 +190,7 @@ class DefaultSecurityModule(SecurityModule):
 
     def _get_secret(self, slot_id=0, password=None):
         """
-        internal function, which accesses reads the key from the defined
+        internal function, which reads the key from the defined
         slot in the file. It also caches the encryption key to the dictionary
         self.secrets.
 
