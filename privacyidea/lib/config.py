@@ -546,8 +546,7 @@ def get_resolver_module_list():
 
         try:
             log.debug("import module: %s" % mod_name)
-            exec("import %s" % mod_name)
-            module = eval(mod_name)
+            module = importlib.import_module(mod_name)
 
         except Exception as exx:  # pragma: no cover
             module = None
@@ -576,8 +575,7 @@ def get_caconnector_module_list():
         class_name = mod_name.split(".")[-1:]
         try:
             log.debug("import module: %s" % mod_name)
-            exec("import %s" % mod_name)
-            module = eval(mod_name)
+            module = importlib.import_module(mod_name)
 
         except Exception as exx:  # pragma: no cover
             module = None
@@ -608,8 +606,7 @@ def get_machine_resolver_module_list():
         try:
             module_name = ".".join(class_name.split(".")[:-1])
             log.debug("import module: %s" % module_name)
-            exec("import %s" % module_name)
-            module = eval(module_name)
+            module = importlib.import_module(module_name)
 
         except Exception as exx:  # pragma: no cover
             module = None
