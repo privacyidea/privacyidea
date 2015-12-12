@@ -397,10 +397,10 @@ def get_resolver_list():
     """
     module_list = set()
 
-    module_list.add("resolvers.PasswdIdResolver")
-    module_list.add("resolvers.LDAPIdResolver")
-    module_list.add("resolvers.SCIMIdResolver")
-    module_list.add("resolvers.SQLIdResolver")
+    module_list.add("privacyidea.lib.resolvers.PasswdIdResolver")
+    module_list.add("privacyidea.lib.resolvers.LDAPIdResolver")
+    module_list.add("privacyidea.lib.resolvers.SCIMIdResolver")
+    module_list.add("privacyidea.lib.resolvers.SQLIdResolver")
 
     # Dynamic Resolver modules
     # TODO: Migration
@@ -434,8 +434,8 @@ def get_machine_resolver_class_list():
     # TODO: We should read all classes inherited by BaseMachineResolver under
     # machines/
     # Otherwise we need to add a line here for each new MachineResolver.
-    class_list.append("machines.hosts.HostsMachineResolver")
-    class_list.append("machines.ldap.LdapMachineResolver")
+    class_list.append("privacyidea.lib.machines.hosts.HostsMachineResolver")
+    class_list.append("privacyidea.lib.machines.ldap.LdapMachineResolver")
     return class_list
 
 
@@ -567,7 +567,7 @@ def get_caconnector_module_list():
     :return: list of CA connector modules
     """
     module_list = set()
-    module_list.add("caconnectors.localca.LocalCAConnector")
+    module_list.add("privacyidea.lib.caconnectors.localca.LocalCAConnector")
 
     modules = []
     for mod_name in module_list:
