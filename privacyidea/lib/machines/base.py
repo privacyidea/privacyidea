@@ -160,7 +160,7 @@ class BaseMachineResolver(object):
         return None
 
     @classmethod
-    def get_config_description(self):
+    def get_config_description(cls):
         """
         Returns a description what config values are expected and allowed.
 
