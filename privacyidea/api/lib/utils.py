@@ -253,7 +253,7 @@ def get_priority_from_param(param):
     return priority
 
 
-def verify_auth_token(auth_token, required_role=["admin", "user"]):
+def verify_auth_token(auth_token, required_role=None):
     """
     Check if a given auth token is valid.
 
@@ -263,6 +263,8 @@ def verify_auth_token(auth_token, required_role=["admin", "user"]):
     :param required_role: list of "user" and "admin"
     :return: dict with authtype, realm, rights, role, username, exp, nonce
     """
+    if required_role is None:
+        required_role = ["admin", "user"]
     if auth_token is None:
         raise AuthError("Authentication failure",
                         "missing Authorization header",

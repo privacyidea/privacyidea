@@ -214,7 +214,7 @@ def detach_token(serial, application, hostname=None, machine_id=None,
 
 
 def add_option(machinetoken_id=None, machine_id=None, resolver_name=None,
-               hostname=None, serial=None, application=None, options={}):
+               hostname=None, serial=None, application=None, options=None):
     """
     Add options to the machine token definition.
     You can either specify machinetoken_id or
@@ -227,6 +227,8 @@ def add_option(machinetoken_id=None, machine_id=None, resolver_name=None,
     :param serial: the serial number of the token
     :param application: the application
     """
+    if options is None:
+        options = {}
     if not machinetoken_id:
         machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
                                                          resolver_name)

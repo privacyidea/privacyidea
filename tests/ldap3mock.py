@@ -90,7 +90,9 @@ class CallList(Sequence, Sized):
 
 class Connection(object):
 
-    def __init__(self, directory=[]):
+    def __init__(self, directory=None):
+        if directory is None:
+                directory = []
         import copy
         self.directory = copy.deepcopy(directory)
         self.bound = False
@@ -155,7 +157,9 @@ class Ldap3Mock(object):
     def reset(self):
         self._calls.reset()
 
-    def setLDAPDirectory(self, directory=[]):
+    def setLDAPDirectory(self, directory=None):
+        if directory is None:
+                directory = []
         self.directory = directory
 
     @property

@@ -181,7 +181,7 @@ def delete_realm(realmname):
 
 
 @log_with(log)
-def set_realm(realm, resolvers=[], priority=None):
+def set_realm(realm, resolvers=None, priority=None):
     """
     It takes a list of resolvers and adds these to the realm.
     If the realm does not exist, it is created.
@@ -197,6 +197,8 @@ def set_realm(realm, resolvers=[], priority=None):
     :return: tuple of lists of added resolvers and resolvers, that could
              not be added
     """
+    if resolvers is None:
+        resolvers = []
     added = []
     failed = []
     priority = priority or {}

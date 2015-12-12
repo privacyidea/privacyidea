@@ -99,8 +99,10 @@ class SmtpMock(object):
         self._request_data = {}
         self._calls.reset()
 
-    def setdata(self, response={}, authenticated=True,
+    def setdata(self, response=None, authenticated=True,
                 config=None, exception=False):
+        if response is None:
+                response = {}
         config = config or {}
         self.exception = exception
         self._request_data = {
