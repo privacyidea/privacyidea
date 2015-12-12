@@ -98,7 +98,7 @@ class PasswordTokenClass(TokenClass):
                }
         # I don't think we need to define the lost token policies here...
 
-        if key is not None and res.has_key(key):
+        if key is not None and key in res:
             ret = res.get(key)
         else:
             if ret == 'all':

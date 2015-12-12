@@ -105,7 +105,7 @@ class RadiusTokenClass(RemoteTokenClass):
                'policy': {},
                }
 
-        if key is not None and res.has_key(key):
+        if key is not None and key in res:
             ret = res.get(key)
         else:
             if ret == 'all':
