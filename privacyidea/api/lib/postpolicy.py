@@ -191,12 +191,11 @@ def check_tokentype(request, response):
     allowed_tokentypes = policy_object.get_action_values("tokentype",
                                                  scope=SCOPE.AUTHZ,
                                                  client=request.remote_addr)
-    if tokentype and len(allowed_tokentypes) > 0:
-        if tokentype not in allowed_tokentypes:
-            g.audit_object.log({"success": False,
-                                'action_detail': "Tokentype not allowed for "
-                                                 "authentication"})
-            raise PolicyError("Tokentype not allowed for authentication!")
+    if tokentype and allowed_tokentypes and tokentype not in allowed_tokentypes:
+        g.audit_object.log({"success": False,
+                            'action_detail': "Tokentype not allowed for "
+                                             "authentication"})
+        raise PolicyError("Tokentype not allowed for authentication!")
     return response
 
 
@@ -221,7 +220,7 @@ def check_serial(request, response):
                                                     client=request.remote_addr)
 
     # If we can compare a serial and if we do serial matching!
-    if serial and len(allowed_serials) > 0:
+    if serial and allowed_serials:
         serial_matches = False
         for allowed_serial in allowed_serials:
             if re.search(allowed_serial, serial):
@@ -254,12 +253,11 @@ def no_detail_on_success(request, response):
                                            client=request.remote_addr,
                                            active=True)
 
-    if len(detailPol):
+    if detailPol and content.get("result", {}).get("value"):
         # The policy was set, we need to strip the details, if the
         # authentication was successful. (value=true)
-        if content.get("result", {}).get("value"):
-            del content["detail"]
-            response.data = json.dumps(content)
+        del content["detail"]
+        response.data = json.dumps(content)
 
     return response
 
@@ -284,12 +282,11 @@ def no_detail_on_fail(request, response):
                                            client=request.remote_addr,
                                            active=True)
 
-    if len(detailPol):
+    if detailPol and content.get("result", {}).get("value") is False:
         # The policy was set, we need to strip the details, if the
         # authentication was successful. (value=true)
-        if content.get("result", {}).get("value") is False:
-            del content["detail"]
-            response.data = json.dumps(content)
+        del content["detail"]
+        response.data = json.dumps(content)
 
     return response
 
@@ -319,7 +316,7 @@ def offline_info(request, response):
                 auth_items = get_auth_items(hostname=hostname, ip=client_ip,
                                             serial=serial, application="offline",
                                             challenge=request.all_data.get("pass"))
-                if len(auth_items) > 0:
+                if auth_items:
                     content["auth_items"] = auth_items
                     response.data = json.dumps(content)
             except Exception as exx:

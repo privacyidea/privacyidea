@@ -334,7 +334,7 @@ class Token(MethodsMixin, db.Model):
                     res = True
             else:
                 log.debug("we got a hashed PIN!")
-                if len(self.pin_hash) > 0:
+                if self.pin_hash:
                     mypHash = self.get_hashed_pin(pin)
                 else:
                     mypHash = pin

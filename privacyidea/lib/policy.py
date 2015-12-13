@@ -310,7 +310,7 @@ class PolicyClass(object):
                     value_excluded = False
                     # iterate through the list of values:
                     for value in policy.get(searchkey):
-                        if len(value) and value[0] in ["!", "-"] and \
+                        if value and value[0] in ["!", "-"] and \
                                         searchvalue == value[1:]:
                             value_excluded = True
                         elif value in [searchvalue, "*"]:
@@ -492,7 +492,7 @@ class PolicyClass(object):
                 enroll_types[tokenclass.get_class_type()] = \
                     tokenclass.get_class_info("description")
 
-        if len(pols) > 0:
+        if pols:
             # admin policies or user policies are set, so we need to
             # test, which tokens are allowed to be enrolled for this user
             for tokentype in enroll_types.keys():
@@ -608,7 +608,7 @@ def export_policies(policies):
     :rtype: string
     """
     file_contents = ""
-    if len(policies) > 0:
+    if policies:
         for policy in policies:
             file_contents += "[%s]\n" % policy.get("name")
             for key, value in policy.items():

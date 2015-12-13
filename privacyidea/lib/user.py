@@ -124,7 +124,7 @@ class User(object):
                 loginname = unicode(self.login.encode(ENCODING))
 
             conf = ''
-            if self.resolver is not None and len(self.resolver) > 0:
+            if self.resolver is not None and self.resolver:
                 conf = '.%s' % (unicode(self.resolver))
             ret = '<%s%s@%s>' % (loginname, conf, unicode(self.realm))
 
@@ -637,7 +637,7 @@ def get_user_info(userid, resolvername):
     :rtype: dict
     """
     userInfo = {}
-    if len(userid) > 0:
+    if userid:
         y = get_resolver_object(resolvername)
         userInfo = y.getUserInfo(userid)
     return userInfo
@@ -655,7 +655,7 @@ def get_username(userid, resolvername):
     :rtype: string
     """
     username = ""
-    if len(userid) > 0:
+    if userid:
         y = get_resolver_object(resolvername)
         if y:
             username = y.getUsername(userid)

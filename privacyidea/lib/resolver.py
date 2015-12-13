@@ -222,7 +222,7 @@ def delete_resolver(resolvername):
 
     reso = Resolver.query.filter_by(name=resolvername).first()
     if reso:
-        if len(reso.realm_list) > 0:
+        if reso.realm_list:
             # The resolver is still contained in a realm! We must not delete it
             realmname = reso.realm_list[0].realm.name
             raise ConfigAdminError("The resolver %r is still contained in "

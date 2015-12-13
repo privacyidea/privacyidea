@@ -263,9 +263,9 @@ class RemoteTokenClass(TokenClass):
 
         if len(remotePath) == 0:
             remotePath = "/validate/check"
-        if len(remoteSerial) > 0:
+        if remoteSerial:
             params['serial'] = remoteSerial
-        elif len(remoteUser) > 0:
+        elif remoteUser:
             params['user'] = remoteUser
             params['realm'] = remoteRealm
             params['resolver'] = remoteResolver

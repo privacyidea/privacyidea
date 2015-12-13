@@ -189,17 +189,15 @@ def check_otp_pin(request=None, action=None):
                                                        client=request.remote_addr,
                                                        unique=True)
 
-        if len(pol_minlen) == 1:
+        if len(pol_minlen) == 1 and len(pin) < int(pol_minlen[0]):
             # check the minimum length requirement
-            if len(pin) < int(pol_minlen[0]):
-                raise PolicyError("The minimum OTP PIN length is %s" %
-                                  pol_minlen[0])
+            raise PolicyError("The minimum OTP PIN length is %s" %
+                              pol_minlen[0])
 
-        if len(pol_maxlen) == 1:
+        if len(pol_maxlen) == 1 and len(pin) > int(pol_maxlen[0]):
             # check the maximum length requirement
-            if len(pin) > int(pol_maxlen[0]):
-                raise PolicyError("The maximum OTP PIN length is %s" %
-                                  pol_minlen[0])
+            raise PolicyError("The maximum OTP PIN length is %s" %
+                              pol_minlen[0])
 
         if len(pol_contents) == 1:
             # check the contents requirement
@@ -247,7 +245,7 @@ def encrypt_pin(request=None, action=None):
                                           client=request.remote_addr,
                                           active=True)
 
-    if len(pin_pols) > 0:
+    if pin_pols:
         request.all_data["encryptpin"] = "True"
     else:
         if "encryptpin" in request.all_data:
@@ -308,7 +306,7 @@ def check_max_token_user(request=None, action=None):
                                                      realm=user_object.realm,
                                                      user=user_object.login,
                                                      client=request.remote_addr)
-        if len(limit_list) > 0:
+        if limit_list:
             # we need to check how many tokens the user already has assigned!
             tokenobject_list = get_tokens(user=user_object)
             already_assigned_tokens = len(tokenobject_list)
@@ -348,7 +346,7 @@ def check_max_token_realm(request=None, action=None):
                                                      scope=SCOPE.ENROLL,
                                                      realm=realm,
                                                      client=request.remote_addr)
-        if len(limit_list) > 0:
+        if limit_list:
             # we need to check how many tokens the user already has assigned!
             tokenobject_list = get_tokens(realm=realm)
             already_assigned_tokens = len(tokenobject_list)
@@ -472,7 +470,7 @@ def check_base_action(request=None, action=None):
     realm = params.get("realm")
     if params.get("serial") and not realm:
         realms = get_realms_of_token(params.get("serial"))
-        if len(realms) > 0:
+        if realms:
             realm = realms[0]
         else:
             realm = None
@@ -485,7 +483,7 @@ def check_base_action(request=None, action=None):
                                         active=True)
     action_at_all = policy_object.get_policies(scope=scope,
                                                active=True)
-    if len(action_at_all) and len(action) == 0:
+    if action_at_all and len(action) == 0:
         raise PolicyError(ERROR.get(role))
     return True
 
@@ -510,7 +508,7 @@ def check_token_upload(request=None, action=None):
                                         adminrealm=admin_realm,
                                         active=True)
     action_at_all = policy_object.get_policies(scope=SCOPE.ADMIN, active=True)
-    if len(action_at_all) and len(action) == 0:
+    if action_at_all and len(action) == 0:
         raise PolicyError("Admin actions are defined, but you are not allowed"
                           " to upload token files.")
     return True
@@ -548,7 +546,7 @@ def check_token_init(request=None, action=None):
                                         adminrealm=admin_realm,
                                         active=True)
     action_at_all = policy_object.get_policies(scope=scope, active=True)
-    if len(action_at_all) and len(action) == 0:
+    if action_at_all and len(action) == 0:
         raise PolicyError(ERROR.get(role))
     return True
 
@@ -603,7 +601,7 @@ def api_key_required(request=None, action=None):
                                         client=request.remote_addr,
                                         active=True)
     # Do we have a policy?
-    if len(action) > 0:
+    if action:
         # check if we were passed a correct JWT
         # Get the Authorization token from the header
         auth_token = request.headers.get('PI-Authorization', None)

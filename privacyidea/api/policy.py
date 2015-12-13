@@ -476,7 +476,7 @@ def check_policy_api():
     policies = P.get_policies(user=user, realm=realm, resolver=resolver,
                               scope=scope, action=action, client=client,
                               active=True)
-    if len(policies) > 0:
+    if policies:
         res["allowed"] = True
         res["policy"] = policies
         policy_names = []

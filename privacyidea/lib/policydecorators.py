@@ -163,7 +163,7 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
                                                    realm=user_object.realm,
                                                    user=user_object.login,
                                                    client=clientip, active=True)
-        if len(pass_no_token) > 0:
+        if pass_no_token:
             # Now we need to check, if the user really has no token.
             tokencount = get_tokens(user=user_object, count=True)
             if tokencount == 0:
@@ -201,7 +201,7 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw,
                                                   user=user_object.login,
                                                   client=clientip,
                                                   active=True)
-        if len(pass_no_user) > 0:
+        if pass_no_user:
             return True, {"message": "The user does not exist, but is "
                                      "accepted due to policy '%s'." %
                                      pass_no_user[0].get("name")}
@@ -237,15 +237,14 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                                                realm=user_object.realm,
                                                user=user_object.login,
                                                client=clientip, active=True)
-        if len(pass_thru) > 0:
+        if pass_thru and get_tokens(user=user_object, count=True) == 0:
             # If the user has NO Token, authenticate against the user store
-            if get_tokens(user=user_object, count=True) == 0:
-                # Now we need to check the userstore password
-                if user_object.check_password(passw):
-                    return True, {"message": "The user authenticated against his "
-                                             "userstore according to "
-                                             "policy '%s'." %
-                                             pass_thru[0].get("name")}
+            # Now we need to check the userstore password
+            if user_object.check_password(passw):
+                return True, {"message": "The user authenticated against his "
+                                         "userstore according to "
+                                         "policy '%s'." %
+                                         pass_thru[0].get("name")}
 
     # If nothing else returned, we return the wrapped function
     return wrapped_function(user_object, passw, options)

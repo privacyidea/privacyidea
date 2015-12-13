@@ -435,7 +435,7 @@ def check_serial(serial):
     new_serial = serial
 
     i = 0
-    while len(get_tokens(serial=new_serial)) > 0:
+    while get_tokens(serial=new_serial):
         # as long as we find a token, modify the serial:
         i += 1
         result = False
@@ -518,10 +518,9 @@ def get_token_owner(serial):
 
     tokenobject_list = get_tokens(serial=serial)
 
-    if len(tokenobject_list) > 0:
-        if token_has_owner(serial):
-            tokenobject = tokenobject_list[0]
-            user = tokenobject.get_user()
+    if tokenobject_list and token_has_owner(serial):
+        tokenobject = tokenobject_list[0]
+        user = tokenobject.get_user()
 
     return user
 
@@ -596,15 +595,14 @@ def get_all_token_users():
 
     for tokenobject in tokenobject_list:
         user_info = {}
-        if len(tokenobject.token.user_id) > 0 and len(
-                tokenobject.token.resolver) > 0:
+        if tokenobject.token.user_id and tokenobject.token.resolver:
             user_info = get_user_info(tokenobject.token.user_id,
                                       tokenobject.token.resolver)
 
-        if len(tokenobject.token.user_id) > 0 and len(user_info) == 0:
+        if tokenobject.token.user_id and len(user_info) == 0:
             user_info['username'] = u'/:no user info:/'
 
-        if len(user_info) > 0:
+        if user_info:
             tokens[tokenobject.token.serial] = user_info
 
     return tokens
@@ -716,7 +714,7 @@ def get_token_by_otp(token_list, otp="", window=10):
 
     if len(result_list) == 1:
         result_token = result_list[0]
-    elif len(result_list) > 1:
+    elif result_list:
         raise TokenAdminError('multiple tokens are matching this OTP value!',
                               id=1200)
 
@@ -998,7 +996,7 @@ def set_defaults(serial):
     :return: None
     """
     tokenobject_list = get_tokens(serial=serial)
-    if len(tokenobject_list) > 0:
+    if tokenobject_list:
         db_token = tokenobject_list[0].token
         db_token.otplen = int(get_from_config("DefaultOtpLen", 6))
         db_token.count_window = int(get_from_config("DefaultCountWindow", 15))
@@ -1899,7 +1897,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
     Then the authentication with the valid tokens was successful and the
     <count> of the valid tokens need to be increased to the new count.
     """
-    if len(valid_token_list) > 0:
+    if valid_token_list:
         # One ore more successfully authenticating tokens found
         # We need to return success
         message_list = ["matching %i tokens" % len(valid_token_list)]
@@ -1934,7 +1932,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
             reply_dict["type"] = valid_token_list[0].token.tokentype
         reply_dict["message"] = ", ".join(message_list)
 
-    elif len(challenge_response_token_list) > 0:
+    elif challenge_response_token_list:
         # A challenge token was found.
         for tokenobject in challenge_response_token_list:
             if tokenobject.check_challenge_response(passw=passw,
@@ -1949,7 +1947,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 # Reset the fail counter of the challenge response token
                 tokenobject.reset()
 
-    elif len(challenge_request_token_list) > 0:
+    elif challenge_request_token_list:
         # A challenge token was found.
         if len(challenge_request_token_list) == 1:
             # One token that can create challenge
@@ -1965,7 +1963,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
             reply_dict["message"] = "Multiple tokens to create a challenge " \
                                     "found!"
 
-    elif len(pin_matching_token_list) > 0:
+    elif pin_matching_token_list:
         # We did not find a valid token and no challenge.
         # But there are tokens, with a matching pin.
         # So we increase the failcounter. Return failure.
@@ -1986,7 +1984,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 reply_dict["serial"] = pin_matching_token_list[0].token.serial
                 reply_dict["type"] = pin_matching_token_list[0].token.tokentype
 
-    elif len(invalid_token_list) > 0:
+    elif invalid_token_list:
         # There were only tokens, that did not match the OTP value and
         # not even the PIN.
         # Depending of IncFailCountOnFalsePin, we increase the failcounter.

@@ -249,7 +249,7 @@ def get_caconnector_type(connector_name):
     """
     c_type = None
     connector_list = get_caconnector_list(filter_caconnector_name=connector_name)
-    if len(connector_list) > 0:
+    if connector_list:
         c_type = connector_list[0].get("type")
     return c_type
 

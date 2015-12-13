@@ -101,9 +101,9 @@ class IdResolver (UserIdResolver):
         ret['username'] = user.get("userName", {})
         ret['givenname'] = user.get("name", {}).get("givenName", "")
         ret['surname'] = user.get("name", {}).get("familyName", "")
-        if len(user.get("phoneNumbers", {})) > 0:
+        if user.get("phoneNumbers", {}):
             ret['phone'] = user.get("phoneNumbers")[0].get("value")
-        if len(user.get("emails", {})) > 0:
+        if user.get("emails", {}):
             ret['email'] = user.get("emails")[0].get("value")
         return ret
 
