@@ -152,7 +152,6 @@ class Audit(AuditBase):
             metadata.create_all(self.engine)
         except OperationalError as exx:  # pragma: no cover
             log.info("%r" % exx)
-            pass
 
     def _create_filter(self, param):
         """
@@ -172,10 +171,10 @@ class Audit(AuditBase):
                         else:
                             conditions.append(getattr(LogEntry, search_key) ==
                                               search_value)
-                    except:
+                    except Exception as exx:
                         # The search_key was no search key but some
                         # bullshit stuff in the param
-                        pass
+                        log.debug("Not a valid searchkey: %s" % exx)
         # Combine them with or to a BooleanClauseList
         filter_condition = and_(*conditions)
         return filter_condition
@@ -412,7 +411,8 @@ class Audit(AuditBase):
                 paging_object.auditdata.append(self.audit_entry_to_dict(le))
                 le = auditIter.next()
         except StopIteration:
-            pass
+            log.debug("Interation stopped.")
+
         return paging_object
         
     def search_query(self, search_dict, page_size=15, page=1, sortorder="asc",

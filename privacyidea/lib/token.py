@@ -1924,7 +1924,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 except Exception:
                     # In some cases (Registration Token) the token does not
                     # exist anymore. So this would bail an exception!
-                    pass
+                    log.debug("registration token does not exist anymore and "
+                              "cannot be resetted.")
         if len(valid_token_list) == 1:
             # If only one token was found, we add the serial number and token
             #  type

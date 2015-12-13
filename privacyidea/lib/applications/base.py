@@ -165,8 +165,7 @@ def get_application_types():
                 name = mod.MachineApplication.application_name
                 options = mod.MachineApplication.get_options()
                 ret[name] = {"options": options}
-            except Exception:
-                pass
-
+            except Exception as exx:
+                log.info("Can not get application type: %s" % exx)
 
     return ret

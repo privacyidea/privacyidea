@@ -391,8 +391,8 @@ def parsePSKCdata(xml_data,
         key = key_package.key
         try:
             token["description"] = key_package.deviceinfo.manufacturer.string
-        except:
-            pass
+        except Exception as exx:
+            log.debug("Can not get manufacturer string %s" % exx)
         serial = key["id"]
         algo = key["algorithm"]
         token["type"] = algo[-4:].lower()

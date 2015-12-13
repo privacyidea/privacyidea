@@ -49,15 +49,15 @@ try:
     from sqlsoup import SQLSoup
     SQLSOUP_LOADED = True
 except ImportError:  # pragma: no cover
-    pass
+    log.debug("SQLSoup could not be loaded!")
 
 if SQLSOUP_LOADED is False:  # pragma: no cover
     try:
         from sqlalchemy.ext.sqlsoup import SQLSoup
+        log.debug("SQLSoup loaded from SQLAlchemy.")
         SQLSOUP_LOADED = True
     except ImportError:
-        log.error("SQLSoup could not be loaded!")
-        pass
+        log.error("SQLSoup could not be loaded from SQLAlchemy!")
 
 try:
     import bcrypt
@@ -93,8 +93,8 @@ class PasswordHash(object):
         outp = ''
         try:
             outp = os.urandom(count)
-        except:  # pragma: no cover
-            pass
+        except Exception as exx:  # pragma: no cover
+            log.debug("problem getting os.urandom: %s" % exx)
         if len(outp) < count:  # pragma: no cover
             outp = ''
             rem = count
@@ -336,7 +336,7 @@ class IdResolver (UserIdResolver):
             hr = hashfunc(password)
             hr.update(salt)
             return digest == hr.digest()
-        
+        97
         def _check_sha(pw_hash, password):
             b64_db_password = pw_hash[5:]
             hr = hashlib.sha1(password).digest()

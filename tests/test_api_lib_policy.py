@@ -866,7 +866,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         try:
             unassign_token(None, user=user_obj)
         except Exception:
-            pass
+            print("no need to unassign token")
 
         # The request with an OTP value and a PIN of a user, who has not
         # token assigned
@@ -923,7 +923,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         try:
             unassign_token(None, user=user_obj)
         except Exception:
-            pass
+            print("no need to unassign token")
 
         # The request with an OTP value and a PIN of a user, who has not
         # token assigned

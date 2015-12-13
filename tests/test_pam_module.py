@@ -90,7 +90,7 @@ class PAMTestCase(MyTestCase):
             c.execute("DROP table authitems")
             conn.commit()
         except:
-            pass
+            print("No need to drop table authitems.")
         conn.close()
         MyTestCase.setUpClass()
 

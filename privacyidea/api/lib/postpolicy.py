@@ -163,7 +163,7 @@ def sign_response(request, response):
     except ValueError:
         # The response.data is no JSON (but CSV or policy export)
         # We do no signing in this case.
-        pass
+        log.info("We only sign JSON response data.")
 
     if response_is_tuple:
         resp = (response_object, response_value)

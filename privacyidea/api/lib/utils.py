@@ -45,22 +45,22 @@ required = False
 
 
 def get_version_number():
-    '''
+    """
     returns the privacyidea version
-    '''
+    """
     version = "unknown"
     try:
         version = pkg_resources.get_distribution("privacyidea").version
     except:
-        pass
+        log.info("We are not able to determine the privacyidea version number.")
     return version
 
 
 def get_version():
-    '''
+    """
     This returns the version, that is displayed in the WebUI and
     self service portal.
-    '''
+    """
     version = get_version_number()
     return "privacyIDEA %s" % version
 
