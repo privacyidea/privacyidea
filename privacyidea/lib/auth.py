@@ -28,7 +28,7 @@ from privacyidea.lib.token import check_user_pass
 from privacyidea.lib.policydecorators import libpolicy, login_mode
 
 
-class ROLE():
+class ROLE(object):
     ADMIN = "admin"
     USER = "user"
     VALIDATE = "validate"

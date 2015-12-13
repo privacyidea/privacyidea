@@ -65,7 +65,7 @@ log = logging.getLogger(__name__)
 TEST_SUCCESSFUL = "Successfully sent email. Please check your inbox."
 
 
-class EMAILACTION():
+class EMAILACTION(object):
     EMAILTEXT = "emailtext"
     EMAILSUBJECT = "emailsubject"
     EMAILAUTO = "emailautosend"

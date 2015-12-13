@@ -120,7 +120,7 @@ optional = True
 required = False
 
 
-class SCOPE():
+class SCOPE(object):
     __doc__ = """This is the list of the allowed scopes that can be used in
     policy definitions.
     """
@@ -134,7 +134,7 @@ class SCOPE():
     WEBUI = "webui"
 
 
-class ACTION():
+class ACTION(object):
     __doc__ = """This is the list of usual actions."""
     ASSIGN = "assign"
     AUDIT = "auditlog"
@@ -213,20 +213,20 @@ class ACTION():
     SETHSM = "set_hsm_password"
 
 
-class LOGINMODE():
+class LOGINMODE(object):
     __doc__ = """This is the list of possible values for the login mode."""
     USERSTORE = "userstore"
     PRIVACYIDEA = "privacyIDEA"
     DISABLE = "disable"
 
 
-class REMOTE_USER():
+class REMOTE_USER(object):
     __doc__ = """The list of possible values for the remote_user policy."""
     DISABLE = "disable"
     ACTIVE = "allowed"
 
 
-class ACTIONVALUE():
+class ACTIONVALUE(object):
     __doc__ = """This is a list of usual action values for e.g. policy
     action-values like otppin."""
     TOKENPIN = "tokenpin"
@@ -235,7 +235,7 @@ class ACTIONVALUE():
     NONE = "none"
 
 
-class AUTOASSIGNVALUE():
+class AUTOASSIGNVALUE(object):
     __doc__ = """This is the possible values for autoassign"""
     USERSTORE = "userstore"
     NONE = "any_pin"

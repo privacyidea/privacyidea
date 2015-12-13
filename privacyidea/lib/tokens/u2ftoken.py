@@ -182,7 +182,7 @@ required = False
 _ = gettext.gettext
 
 
-class U2FACTION():
+class U2FACTION(object):
     FACETS = "u2f_facets"
 
 

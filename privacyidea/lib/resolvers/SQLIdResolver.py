@@ -73,7 +73,7 @@ else:  # pragma: no cover
     _pid = urandom.randint(0, 100000)
 
 
-class PasswordHash:
+class PasswordHash(object):
 
     def __init__(self, iteration_count_log2=8, portable_hashes=True,
                  algorithm=''):

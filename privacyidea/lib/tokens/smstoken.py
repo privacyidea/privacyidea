@@ -65,7 +65,7 @@ keylen = {'sha1': 20,
           'sha512': 64}
 
 
-class SMSACTION():
+class SMSACTION(object):
     SMSTEXT = "smstext"
     SMSAUTO = "smsautosend"
 

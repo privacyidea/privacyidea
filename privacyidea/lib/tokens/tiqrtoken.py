@@ -100,7 +100,7 @@ _ = gettext.gettext
 OCRA_DEFAULT_SUITE = "OCRA-1:HOTP-SHA1-6:QN10"
 
 
-class API_ACTIONS():
+class API_ACTIONS(object):
     METADATA = "metadata"
     ENROLLMENT = "enrollment"
     AUTHENTICATION = "authentication"

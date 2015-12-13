@@ -11,7 +11,7 @@ from privacyidea.lib.auth import create_db_admin
 PWFILE = "tests/testdata/passwords"
 
 
-class FakeFlaskG():
+class FakeFlaskG(object):
     policy_object = None
 
 

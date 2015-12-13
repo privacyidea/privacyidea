@@ -81,7 +81,7 @@ TOKEN_KEY = 2
 VALUE_KEY = 3
 
 
-class SecretObj:
+class SecretObj(object):
     def __init__(self, val, iv, preserve=True):
         self.val = val
         self.iv = iv

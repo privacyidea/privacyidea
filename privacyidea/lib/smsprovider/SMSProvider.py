@@ -28,6 +28,7 @@ and returns an instance.
 The code is tested in tests/test_lib_smsprovider
 """
 
+
 class SMSError(Exception):
     def __init__(self, error_id, description):
         Exception.__init__(self)
@@ -45,7 +46,7 @@ class SMSError(Exception):
         return ret
 
 
-class ISMSProvider:
+class ISMSProvider(object):
     """ the SMS Provider Interface - BaseClass """
     def __init__(self):
         self.config = {}

@@ -47,7 +47,7 @@ pver = float(int(ma) + int(mi) * 0.1)
 log = logging.getLogger(__name__)
 
 
-class HmacOtp():
+class HmacOtp(object):
 
     def __init__(self, secObj=None, counter=0, digits=6, hashfunc=sha1):
         self.secretObj = secObj

@@ -3,7 +3,8 @@ import logging
 basedir = os.path.abspath(os.path.dirname(__file__))
 basedir = "/".join(basedir.split("/")[:-1]) + "/"
 
-class Config:
+
+class Config(object):
     SECRET_KEY = os.environ.get('SECRET_KEY')
     # SQL_ALCHEMY_DATABASE_URI = "mysql://privacyidea:XmbSrlqy5d4IS08zjz"
     # "GG5HTt40Cpf5@localhost/privacyidea"
