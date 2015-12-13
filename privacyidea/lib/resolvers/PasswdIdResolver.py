@@ -430,7 +430,7 @@ class IdResolver (UserIdResolver):
             except:  # pragma: no cover
                 return ret
 
-            if (cUserId <= ihVal and cUserId >= ilVal):
+            if ilVal <= cUserId <= ihVal:
                 ret = True
         else:
             try:
@@ -439,23 +439,23 @@ class IdResolver (UserIdResolver):
                 return ret
 
             if op == "=":
-                if (cUserId == ival):
+                if cUserId == ival:
                     ret = True
 
             elif op == ">":
-                if (cUserId > ival):
+                if cUserId > ival:
                     ret = True
 
             elif op == ">=":
-                if (cUserId >= ival):
+                if cUserId >= ival:
                     ret = True
 
             elif op == "<":
-                if (cUserId < ival):
+                if cUserId < ival:
                     ret = True
 
             elif op == "<=":
-                if (cUserId <= ival):
+                if cUserId <= ival:
                     ret = True
 
         return ret
