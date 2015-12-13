@@ -399,7 +399,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
-        req.all_data = {"realm": "somerealm",
+        req.all_data = {
                         "user": "cornelius",
                         "realm": "home"}
         init_tokenlabel(req)
@@ -431,7 +431,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
-        req.all_data = {"realm": "somerealm",
+        req.all_data = {
                         "user": "cornelius",
                         "realm": "home"}
         init_random_pin(req)
@@ -460,7 +460,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
-        req.all_data = {"realm": "somerealm",
+        req.all_data = {
                         "user": "cornelius",
                         "realm": "home"}
         encrypt_pin(req)
@@ -489,27 +489,27 @@ class PrePolicyDecoratorTestCase(MyTestCase):
                                                  ACTION.OTPPINCONTENTS, "cn"))
         g.policy_object = PolicyClass()
 
-        req.all_data = {"realm": "somerealm",
+        req.all_data = {
                         "user": "cornelius",
                         "realm": "home"}
         # The minimum OTP length is 4
         self.assertRaises(PolicyError, check_otp_pin, req)
 
-        req.all_data = {"realm": "somerealm",
+        req.all_data = {
                         "user": "cornelius",
                         "realm": "home",
                         "pin": "12345566890012"}
         # Fail maximum OTP length
         self.assertRaises(PolicyError, check_otp_pin, req)
 
-        req.all_data = {"realm": "somerealm",
+        req.all_data = {
                         "user": "cornelius",
                         "realm": "home",
                         "pin": "123456"}
         # Good OTP length, but missing character A-Z
         self.assertRaises(PolicyError, check_otp_pin, req)
 
-        req.all_data = {"realm": "somerealm",
+        req.all_data = {
                         "user": "cornelius",
                         "realm": "home",
                         "pin": "abc123"}
@@ -546,7 +546,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         req = Request(env)
         g.policy_object = PolicyClass()
-        req.all_data = {"realm": "somerealm",
+        req.all_data = {
                         "user": "cornelius",
                         "realm": "home"}
 
