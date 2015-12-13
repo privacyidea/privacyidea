@@ -70,8 +70,8 @@ policy_blueprint = Blueprint('policy_blueprint', __name__)
 # POLICY functions
 #
 
-@log_with(log)
 @policy_blueprint.route('/enable/<name>', methods=['POST'])
+@log_with(log)
 @prepolicy(check_base_action, request, ACTION.POLICYWRITE)
 def enable_policy_api(name):
     """
@@ -85,8 +85,8 @@ def enable_policy_api(name):
     return send_result(p)
 
 
-@log_with(log)
 @policy_blueprint.route('/disable/<name>', methods=['POST'])
+@log_with(log)
 @prepolicy(check_base_action, request, ACTION.POLICYWRITE)
 def disable_policy_api(name):
     """
@@ -100,8 +100,8 @@ def disable_policy_api(name):
     return send_result(p)
 
 
-@log_with(log)
 @policy_blueprint.route('/<name>', methods=['POST'])
+@log_with(log)
 @prepolicy(check_base_action, request, ACTION.POLICYWRITE)
 def set_policy_api(name=None):
     """
@@ -192,10 +192,10 @@ def set_policy_api(name=None):
     return send_result(res)
 
 
-@log_with(log)
 @policy_blueprint.route('/', methods=['GET'])
 @policy_blueprint.route('/<name>', methods=['GET'])
 @policy_blueprint.route('/export/<export>', methods=['GET'])
+@log_with(log)
 def get_policy(name=None, export=None):
     """
     this function is used to retrieve the policies that you
@@ -282,9 +282,8 @@ def get_policy(name=None, export=None):
     return ret
 
 
-
-@log_with(log)
 @policy_blueprint.route('/<name>', methods=['DELETE'])
+@log_with(log)
 @prepolicy(check_base_action, request, ACTION.POLICYDELETE)
 def delete_policy_api(name=None):
     """
@@ -330,8 +329,8 @@ def delete_policy_api(name=None):
     return send_result(ret)
 
 
-@log_with(log)
 @policy_blueprint.route('/import/<filename>', methods=['POST'])
+@log_with(log)
 @prepolicy(check_base_action, request, ACTION.POLICYWRITE)
 def import_policy_api(filename=None):
     """
@@ -402,8 +401,8 @@ def import_policy_api(filename=None):
     return send_result(policy_num)
 
 
-@log_with(log)
 @policy_blueprint.route('/check', methods=['GET'])
+@log_with(log)
 def check_policy_api():
     """
     This function checks, if the given parameters would match a defined policy
@@ -495,9 +494,9 @@ def check_policy_api():
     return send_result(res)
 
 
-@log_with(log)
 @policy_blueprint.route('/defs', methods=['GET'])
 @policy_blueprint.route('/defs/<scope>', methods=['GET'])
+@log_with(log)
 def get_policy_defs(scope=None):
     """
     This is a helper function that returns the POSSIBLE policy
