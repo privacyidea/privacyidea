@@ -112,8 +112,8 @@ class TiqrTokenClass(TokenClass):
     The TiQR Token implementation.
     """
 
-    @classmethod
-    def get_class_type(cls):
+    @staticmethod
+    def get_class_type():
         """
         Returns the internal token type identifier
         :return: tiqr
@@ -121,8 +121,8 @@ class TiqrTokenClass(TokenClass):
         """
         return "tiqr"
 
-    @classmethod
-    def get_class_prefix(cls):
+    @staticmethod
+    def get_class_prefix():
         """
         Return the prefix, that is used as a prefix for the serial numbers.
         :return: TiQR
@@ -130,9 +130,9 @@ class TiqrTokenClass(TokenClass):
         """
         return "TiQR"
 
-    @classmethod
+    @staticmethod
     @log_with(log)
-    def get_class_info(cls, key=None, ret='all'):
+    def get_class_info(key=None, ret='all'):
         """
         returns a subtree of the token definition
 
@@ -221,8 +221,8 @@ class TiqrTokenClass(TokenClass):
 
         return response_detail
 
-    @classmethod
-    def api_endpoint(cls, request, g):
+    @staticmethod
+    def api_endpoint(request, g):
         """
         This provides a function to be plugged into the API endpoint
         /ttype/<tokentype> which is defined in api/ttype.py

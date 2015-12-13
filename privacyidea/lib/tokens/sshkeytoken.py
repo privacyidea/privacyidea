@@ -58,17 +58,17 @@ class SSHkeyTokenClass(TokenClass):
         TokenClass.__init__(self, db_token)
         self.set_type(u"sshkey")
 
-    @classmethod
-    def get_class_type(cls):
+    @staticmethod
+    def get_class_type():
         return "sshkey"
 
-    @classmethod
-    def get_class_prefix(cls):
+    @staticmethod
+    def get_class_prefix():
         return "SSHK"
 
-    @classmethod
+    @staticmethod
     @log_with(log)
-    def get_class_info(cls, key=None, ret='all'):
+    def get_class_info(key=None, ret='all'):
         """
         returns a subtree of the token definition
 

@@ -191,8 +191,8 @@ class U2fTokenClass(TokenClass):
     The U2F Token implementation.
     """
 
-    @classmethod
-    def get_class_type(cls):
+    @staticmethod
+    def get_class_type():
         """
         Returns the internal token type identifier
         :return: u2f
@@ -200,8 +200,8 @@ class U2fTokenClass(TokenClass):
         """
         return "u2f"
 
-    @classmethod
-    def get_class_prefix(cls):
+    @staticmethod
+    def get_class_prefix():
         """
         Return the prefix, that is used as a prefix for the serial numbers.
         :return: U2F
@@ -209,9 +209,9 @@ class U2fTokenClass(TokenClass):
         """
         return "U2F"
 
-    @classmethod
+    @staticmethod
     @log_with(log)
-    def get_class_info(cls, key=None, ret='all'):
+    def get_class_info(key=None, ret='all'):
         """
         returns a subtree of the token definition
 
@@ -449,8 +449,8 @@ class U2fTokenClass(TokenClass):
 
         return ret
 
-    @classmethod
-    def api_endpoint(cls, request, g):
+    @staticmethod
+    def api_endpoint(request, g):
         """
         This provides a function to be plugged into the API endpoint
         /ttype/u2f

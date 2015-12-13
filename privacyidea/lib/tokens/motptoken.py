@@ -59,16 +59,16 @@ _ = gettext.gettext
 
 class MotpTokenClass(TokenClass):
 
-    @classmethod
-    def get_class_type(cls):
+    @staticmethod
+    def get_class_type():
         return "motp"
 
-    @classmethod
-    def get_class_prefix(cls):
+    @staticmethod
+    def get_class_prefix():
         return "PIMO"
 
-    @classmethod
-    def get_class_info(cls, key=None, ret='all'):
+    @staticmethod
+    def get_class_info(key=None, ret='all'):
         """
         returns a subtree of the token definition
         Is used by lib.token.get_token_info

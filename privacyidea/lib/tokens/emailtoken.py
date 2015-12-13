@@ -94,19 +94,19 @@ class EmailTokenClass(HotpTokenClass):
     def _email_address(self, value):
         self.add_tokeninfo(self.EMAIL_ADDRESS_KEY, value)
 
-    @classmethod
-    def get_class_type(cls):
+    @staticmethod
+    def get_class_type():
         """
         return the generic token class identifier
         """
         return "email"
 
-    @classmethod
-    def get_class_prefix(cls):
+    @staticmethod
+    def get_class_prefix():
         return "PIEM"
 
-    @classmethod
-    def get_class_info(cls, key=None, ret='all'):
+    @staticmethod
+    def get_class_info(key=None, ret='all'):
         """
         returns all or a subtree of the token definition
 
@@ -383,8 +383,8 @@ class EmailTokenClass(HotpTokenClass):
                                 password=password, port=port,
                                 email_tls=email_tls)
 
-    @classmethod
-    def _send_email(cls, mailserver, subject, message, mail_from, recipient,
+    @staticmethod
+    def _send_email(mailserver, subject, message, mail_from, recipient,
                     username=None, password=None, port=25, email_tls=False):
         # Upper layer will catch exceptions
         date = datetime.datetime.utcnow().strftime("%c")

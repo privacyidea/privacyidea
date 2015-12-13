@@ -84,17 +84,17 @@ class DaplugTokenClass(HotpTokenClass):
     daplug token class implementation
     """
 
-    @classmethod
-    def get_class_type(cls):
+    @staticmethod
+    def get_class_type():
         return "daplug"
 
-    @classmethod
-    def get_class_prefix(cls):
+    @staticmethod
+    def get_class_prefix():
         return "DPLG"
 
-    @classmethod
+    @staticmethod
     @log_with(log)
-    def get_class_info(cls, key=None, ret='all'):
+    def get_class_info(key=None, ret='all'):
         """
         returns a subtree of the token definition
 

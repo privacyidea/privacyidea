@@ -68,15 +68,15 @@ class UserIdResolver(object):
         """
         return
 
-    @classmethod
-    def getResolverClassType(cls):
+    @staticmethod
+    def getResolverClassType():
         """
         provide the resolver type for registration
         """
         return 'UserIdResolver'
 
-    @classmethod
-    def getResolverType(cls):
+    @staticmethod
+    def getResolverType():
         """
         getResolverType - return the type of the resolver
 
@@ -247,8 +247,8 @@ class UserIdResolver(object):
         attributes = attributes or {}
         return None
 
-    @classmethod
-    def testconnection(cls, param):
+    @staticmethod
+    def testconnection(param):
         """
         This function lets you test if the parameters can be used to create a
         working resolver.

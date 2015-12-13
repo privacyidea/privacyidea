@@ -154,19 +154,19 @@ class SmsTokenClass(HotpTokenClass):
         self.mode = ['challenge']
         self.hKeyRequired = True
 
-    @classmethod
-    def get_class_type(cls):
+    @staticmethod
+    def get_class_type():
         """
         return the generic token class identifier
         """
         return "sms"
 
-    @classmethod
-    def get_class_prefix(cls):
+    @staticmethod
+    def get_class_prefix():
         return "PISM"
 
-    @classmethod
-    def get_class_info(cls, key=None, ret='all'):
+    @staticmethod
+    def get_class_info(key=None, ret='all'):
         """
         returns all or a subtree of the token definition
 

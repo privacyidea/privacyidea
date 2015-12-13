@@ -58,17 +58,17 @@ class SpassTokenClass(TokenClass):
         self.set_type(u"spass")
         self.mode = ['authenticate']
 
-    @classmethod
-    def get_class_type(cls):
+    @staticmethod
+    def get_class_type():
         return "spass"
 
-    @classmethod
-    def get_class_prefix(cls):
+    @staticmethod
+    def get_class_prefix():
         return "PISP"
 
-    @classmethod
+    @staticmethod
     @log_with(log)
-    def get_class_info(cls, key=None, ret='all'):
+    def get_class_info(key=None, ret='all'):
         """
         returns a subtree of the token definition
         Is used by lib.token.get_token_info

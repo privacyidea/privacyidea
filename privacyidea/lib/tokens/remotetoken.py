@@ -78,23 +78,23 @@ class RemoteTokenClass(TokenClass):
         self.set_type(u"remote")
         self.mode = ['authenticate', 'challenge']
 
-    @classmethod
-    def get_class_type(cls):
+    @staticmethod
+    def get_class_type():
         """
         return the class type identifier
         """
         return "remote"
 
-    @classmethod
-    def get_class_prefix(cls):
+    @staticmethod
+    def get_class_prefix():
         """
         return the token type prefix
         """
         return "PIRE"
 
-    @classmethod
+    @staticmethod
     @log_with(log)
-    def get_class_info(cls, key=None, ret='all'):
+    def get_class_info(key=None, ret='all'):
         """
         :param key: subsection identifier
         :type key: string

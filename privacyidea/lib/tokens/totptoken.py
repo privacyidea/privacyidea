@@ -69,8 +69,8 @@ class TotpTokenClass(HotpTokenClass):
         self.hKeyRequired = True
 
     
-    @classmethod
-    def get_class_type(cls):
+    @staticmethod
+    def get_class_type():
         """
         return the token type shortname
 
@@ -79,17 +79,17 @@ class TotpTokenClass(HotpTokenClass):
         """
         return "totp"
 
-    @classmethod
-    def get_class_prefix(cls):
+    @staticmethod
+    def get_class_prefix():
         """
         Return the prefix, that is used as a prefix for the serial numbers.
         :return: TOTP
         """
         return "TOTP"
 
-    @classmethod
+    @staticmethod
     @log_with(log)
-    def get_class_info(cls, key=None, ret='all'):
+    def get_class_info(key=None, ret='all'):
         """
         returns a subtree of the token definition
 

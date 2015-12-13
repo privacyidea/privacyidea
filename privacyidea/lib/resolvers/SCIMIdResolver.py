@@ -160,15 +160,15 @@ class IdResolver (UserIdResolver):
         """
         return self.auth_server
 
-    @classmethod
-    def getResolverClassType(cls):
+    @staticmethod
+    def getResolverClassType():
         return 'scimresolver'
 
     def getResolverDescriptor(self):
         return IdResolver.getResolverClassDescriptor()
 
-    @classmethod
-    def getResolverType(cls):
+    @staticmethod
+    def getResolverType():
         return IdResolver.getResolverClassType()
 
     @classmethod
@@ -246,8 +246,8 @@ class IdResolver (UserIdResolver):
             
         return success, desc
 
-    @classmethod
-    def _search_users(cls, resource_server, access_token, params=None):
+    @staticmethod
+    def _search_users(resource_server, access_token, params=None):
         """
         :param params: Additional http parameters added to the URL
         :type params: dictionary
@@ -265,8 +265,8 @@ class IdResolver (UserIdResolver):
 
         return j_content
     
-    @classmethod
-    def _get_user(cls, resource_server, access_token, userid):
+    @staticmethod
+    def _get_user(resource_server, access_token, userid):
         """
         Get a User from the SCIM service
 
@@ -291,8 +291,8 @@ class IdResolver (UserIdResolver):
 
         return j_content
 
-    @classmethod
-    def get_access_token(cls, server=None, client=None, secret=None):
+    @staticmethod
+    def get_access_token(server=None, client=None, secret=None):
 
         auth = base64.encodestring(client + ':' + secret)
 

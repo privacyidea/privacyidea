@@ -368,10 +368,10 @@ class urandom(object):
 
     precision = 12
 
-    @classmethod
-    def random(cls):
+    @staticmethod
+    def random():
         """
-        get random float value betwee 0.0 and 1.0
+        get random float value between 0.0 and 1.0
 
         :return: float value
         """
@@ -392,12 +392,12 @@ class urandom(object):
 
         return randf
 
-    @classmethod
-    def uniform(cls, start, end=None):
+    @staticmethod
+    def uniform(start, end=None):
         """
         get a floating value between start and end
 
-        :param start: start floafing value
+        :param start: start floating value
         :param end: end floating value
         :return: floating value between start and end
         """
@@ -421,8 +421,8 @@ class urandom(object):
 
         return res
 
-    @classmethod
-    def randint(cls, start, end=None):
+    @staticmethod
+    def randint(start, end=None):
         """
         get random integer in between of start and end
 
@@ -445,8 +445,8 @@ class urandom(object):
 
         return ret
 
-    @classmethod
-    def choice(cls, array):
+    @staticmethod
+    def choice(array):
         '''
         get one out of an array
 
@@ -457,8 +457,8 @@ class urandom(object):
         idx = urandom.randint(0, size)
         return array[idx]
 
-    @classmethod
-    def randrange(cls, start, stop=None, step=1):
+    @staticmethod
+    def randrange(start, stop=None, step=1):
         """
         get one out of a range of values
 

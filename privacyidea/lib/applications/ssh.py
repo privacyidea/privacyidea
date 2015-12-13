@@ -44,9 +44,8 @@ class MachineApplication(MachineApplicationBase):
     '''
     allow_bulk_call = True
 
-    @classmethod
-    def get_authentication_item(cls,
-                                token_type,
+    @staticmethod
+    def get_authentication_item(token_type,
                                 serial,
                                 challenge=None, options=None,
                                 filter_param=None):
@@ -91,8 +90,8 @@ class MachineApplication(MachineApplicationBase):
 
         return ret
 
-    @classmethod
-    def get_options(cls):
+    @staticmethod
+    def get_options():
         """
         returns a dictionary with a list of required and optional options
         """

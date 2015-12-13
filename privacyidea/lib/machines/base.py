@@ -159,8 +159,8 @@ class BaseMachineResolver(object):
         """
         return None
 
-    @classmethod
-    def get_config_description(cls):
+    @staticmethod
+    def get_config_description():
         """
         Returns a description what config values are expected and allowed.
 
@@ -168,8 +168,8 @@ class BaseMachineResolver(object):
         """
         return {}
 
-    @classmethod
-    def testconnection(cls, params):
+    @staticmethod
+    def testconnection(params):
         """
         This method can test if the passed parameters would create a working
         machine resolver.

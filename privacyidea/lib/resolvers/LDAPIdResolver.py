@@ -140,8 +140,8 @@ class IdResolver (UserIdResolver):
 
         return new_list
 
-    @classmethod
-    def _get_uid(cls, entry, uidtype):
+    @staticmethod
+    def _get_uid(entry, uidtype):
         uid = None
         if uidtype.lower() == "dn":
            uid = entry.get("dn")
@@ -344,15 +344,15 @@ class IdResolver (UserIdResolver):
         """
         return self.uri
 
-    @classmethod
-    def getResolverClassType(cls):
+    @staticmethod
+    def getResolverClassType():
         return 'ldapresolver'
 
     def getResolverDescriptor(self):
         return IdResolver.getResolverClassDescriptor()
 
-    @classmethod
-    def getResolverType(cls):
+    @staticmethod
+    def getResolverType():
         return IdResolver.getResolverClassType()
     
     def loadConfig(self, config):
@@ -398,8 +398,8 @@ class IdResolver (UserIdResolver):
         
         return self
 
-    @classmethod
-    def split_uri(cls, uri):
+    @staticmethod
+    def split_uri(uri):
         """
         Splits LDAP URIs like:
         * ldap://server
@@ -559,8 +559,8 @@ class IdResolver (UserIdResolver):
         
         return success, desc
 
-    @classmethod
-    def create_connection(cls, authtype=None, server=None, user=None,
+    @staticmethod
+    def create_connection(authtype=None, server=None, user=None,
                           password=None, auto_bind=False,
                           client_strategy=ldap3.SYNC,
                           check_names=True,

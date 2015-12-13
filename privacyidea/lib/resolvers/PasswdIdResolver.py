@@ -85,15 +85,15 @@ class IdResolver (UserIdResolver):
           "email": 4,
           }
 
-    @classmethod
-    def setup(cls, config=None, cache_dir=None):
-        '''
+    @staticmethod
+    def setup(config=None, cache_dir=None):
+        """
         this setup hook is triggered, when the server
         starts to serve the first request
 
         :param config: the privacyidea config
         :type  config: the privacyidea config dict
-        '''
+        """
         log.info("Setting up the PasswdResolver")
         return
 
@@ -468,8 +468,8 @@ class IdResolver (UserIdResolver):
         """
         return self.fileName
 
-    @classmethod
-    def getResolverClassType(cls):
+    @staticmethod
+    def getResolverClassType():
         return 'passwdresolver'
 
     def getResolverType(self):
@@ -493,7 +493,6 @@ class IdResolver (UserIdResolver):
 
     def getResolverDescriptor(self):
         return IdResolver.getResolverClassDescriptor()
-
 
     def loadConfig(self, config):
         """ loadConfig(configDict)

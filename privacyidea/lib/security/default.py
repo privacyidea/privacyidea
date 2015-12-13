@@ -273,8 +273,8 @@ class DefaultSecurityModule(SecurityModule):
         return self.is_ready
 
     # the real interfaces: random, encrypt, decrypt
-    @classmethod
-    def random(cls, length=32):
+    @staticmethod
+    def random(length=32):
         """
         Create and return random bytes.
 
@@ -321,8 +321,8 @@ class DefaultSecurityModule(SecurityModule):
             del key
         return res
 
-    @classmethod
-    def password_encrypt(cls, text, password):
+    @staticmethod
+    def password_encrypt(text, password):
         """
         Encrypt the given text with the password.
         A key is derived from the password and used to encrypt the text in
@@ -347,8 +347,8 @@ class DefaultSecurityModule(SecurityModule):
         cipher_hex = binascii.hexlify(cipher)
         return "%s:%s" % (iv_hex, cipher_hex)
 
-    @classmethod
-    def password_decrypt(cls, data, password):
+    @staticmethod
+    def password_decrypt(data, password):
         """
         Decrypt the given data with the password.
         A key is derived from the password. The data is hexlified data, the IV

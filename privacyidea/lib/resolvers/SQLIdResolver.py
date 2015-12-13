@@ -263,8 +263,8 @@ class IdResolver (UserIdResolver):
 
     updateable = True
 
-    @classmethod
-    def setup(cls, config=None, cache_dir=None):
+    @staticmethod
+    def setup(config=None, cache_dir=None):
         """
         this setup hook is triggered, when the server
         starts to serve the first request
@@ -299,8 +299,8 @@ class IdResolver (UserIdResolver):
     def getSearchFields(self):
         return self.searchFields
 
-    @classmethod
-    def _append_where_filter(cls, conditions, table, where):
+    @staticmethod
+    def _append_where_filter(conditions, table, where):
         """
         Append contents of WHERE statement to the list of filter conditions
         :param conditions: filter conditions
@@ -522,12 +522,12 @@ class IdResolver (UserIdResolver):
         """
         return "sql." + self.resolverId
 
-    @classmethod
-    def getResolverClassType(cls):
+    @staticmethod
+    def getResolverClassType():
         return 'sqlresolver'
 
-    @classmethod
-    def getResolverType(cls):
+    @staticmethod
+    def getResolverType():
         return IdResolver.getResolverClassType()
     
     def loadConfig(self, config):
@@ -613,8 +613,8 @@ class IdResolver (UserIdResolver):
     def getResolverDescriptor(self):
         return IdResolver.getResolverClassDescriptor()
 
-    @classmethod
-    def _create_connect_string(cls, param):
+    @staticmethod
+    def _create_connect_string(param):
         """
         create the connectstring
         

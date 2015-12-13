@@ -77,8 +77,8 @@ class LdapMachineResolver(BaseMachineResolver):
             uid = entry.get(self.id_attribute)
         return uid
 
-    @classmethod
-    def _create_ldap_filter(cls, search_filter,
+    @staticmethod
+    def _create_ldap_filter(search_filter,
                             id_attribute, machine_id,
                             hostname_attribute, hostname,
                             ip_attribute, ip, substring=False, any=False):
@@ -259,8 +259,8 @@ class LdapMachineResolver(BaseMachineResolver):
         return description
 
 
-    @classmethod
-    def testconnection(cls, params):
+    @staticmethod
+    def testconnection(params):
         """
         Test if the given filename exists.
 

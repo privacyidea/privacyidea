@@ -90,23 +90,23 @@ class FourEyesTokenClass(TokenClass):
         # We can not do challenge response
         self.mode = ['authenticate']
 
-    @classmethod
-    def get_class_type(cls):
+    @staticmethod
+    def get_class_type():
         """
         return the class type identifier
         """
         return "4eyes"
 
-    @classmethod
-    def get_class_prefix(cls):
+    @staticmethod
+    def get_class_prefix():
         """
         return the token type prefix
         """
         return "PI4E"
 
-    @classmethod
+    @staticmethod
     @log_with(log)
-    def get_class_info(cls, key=None, ret='all'):
+    def get_class_info(key=None, ret='all'):
         """
         returns a subtree of the token definition
 
@@ -136,8 +136,8 @@ class FourEyesTokenClass(TokenClass):
                 ret = res
         return ret
 
-    @classmethod
-    def realms_dict_to_string(cls, realms):
+    @staticmethod
+    def realms_dict_to_string(realms):
         """
         This function converts the realms - if it is a dictionary - to a string.
 
@@ -162,8 +162,8 @@ class FourEyesTokenClass(TokenClass):
 
         return realms_string
 
-    @classmethod
-    def convert_realms(cls, realms):
+    @staticmethod
+    def convert_realms(realms):
         """
         This function converts the realms as given by the API parameter to a
         dictionary.

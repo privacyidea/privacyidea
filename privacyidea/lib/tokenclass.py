@@ -116,16 +116,16 @@ class TokenClass(object):
         self.type = tokentype
         self.token.tokentype = tokentype
 
-    @classmethod
-    def get_class_type(cls):
+    @staticmethod
+    def get_class_type():
         return None
 
-    @classmethod
-    def get_class_info(cls, key=None, ret='all'):
+    @staticmethod
+    def get_class_info(key=None, ret='all'):
         return {}
 
-    @classmethod
-    def get_class_prefix(cls):
+    @staticmethod
+    def get_class_prefix():
         return "UNK"
 
     def get_type(self):
@@ -670,8 +670,8 @@ class TokenClass(object):
     # hashlib algorithms:
     # http://www.doughellmann.com/PyMOTW/hashlib/index.html#module-hashlib
 
-    @classmethod
-    def get_hashlib(cls, hLibStr):
+    @staticmethod
+    def get_hashlib(hLibStr):
         """
         Returns a hashlib function for a given string
         :param hLibStr: the hashlib
@@ -1229,8 +1229,8 @@ class TokenClass(object):
         self.challenge_janitor()
         return otp_counter
 
-    @classmethod
-    def challenge_janitor(cls):
+    @staticmethod
+    def challenge_janitor():
         """
         Just clean up all challenges, for which the expiration has expired.
 
@@ -1308,8 +1308,8 @@ class TokenClass(object):
         return "json", {}
         # or return "text", "OK"
 
-    @classmethod
-    def test_config(cls, params=None):
+    @staticmethod
+    def test_config(params=None):
         """
         This method is used to test the token config. Some tokens require some
         special token configuration like the SMS-Token or the Email-Token.

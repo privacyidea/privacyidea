@@ -102,8 +102,8 @@ class LocalCAConnector(BaseCAConnector):
         self.cakey = self.config.get("cakey")
         self.cacert = self.config.get("cacert")
 
-    @classmethod
-    def _filename_from_x509(cls, x509_name, file_extension="pem"):
+    @staticmethod
+    def _filename_from_x509(x509_name, file_extension="pem"):
         """
         return a filename from the subject from an x509 object
         :param x509_name: The X509Name object

@@ -146,9 +146,8 @@ class HostsMachineResolver(BaseMachineResolver):
         description = {cls.type: {"config": {"filename": "string"}}}
         return description
 
-
-    @classmethod
-    def testconnection(cls, params):
+    @staticmethod
+    def testconnection(params):
         """
         Test if the given filename exists.
 

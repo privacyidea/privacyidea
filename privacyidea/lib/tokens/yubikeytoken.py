@@ -78,17 +78,17 @@ class YubikeyTokenClass(TokenClass):
         self.hKeyRequired = True
 
 
-    @classmethod
-    def get_class_type(cls):
+    @staticmethod
+    def get_class_type():
         return "yubikey"
 
-    @classmethod
-    def get_class_prefix(cls):
+    @staticmethod
+    def get_class_prefix():
         return "UBAM"
 
-    @classmethod
+    @staticmethod
     @log_with(log)
-    def get_class_info(cls, key=None, ret='all'):
+    def get_class_info(key=None, ret='all'):
         """
         returns a subtree of the token definition
 
@@ -269,8 +269,8 @@ class YubikeyTokenClass(TokenClass):
 
         return res
 
-    @classmethod
-    def _get_api_key(cls, api_id):
+    @staticmethod
+    def _get_api_key(api_id):
         """
         Return the symmetric key for the given apiId.
 
@@ -280,8 +280,8 @@ class YubikeyTokenClass(TokenClass):
         api_key = get_from_config("yubikey.apiid.%s" % api_id)
         return api_key
 
-    @classmethod
-    def _api_signature(cls, data, api_key):
+    @staticmethod
+    def _api_signature(data, api_key):
         """
         Get a dictionary "data", sort the dictionary by the keys
         and sign it HMAC-SHA1 with the api_key
@@ -357,8 +357,8 @@ h={h}
 
         return "plain", response
 
-    @classmethod
-    def check_yubikey_pass(cls, passw):
+    @staticmethod
+    def check_yubikey_pass(passw):
         """
         if the Token has set a PIN the user must also enter the PIN for
         authentication!

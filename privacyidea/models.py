@@ -1039,9 +1039,8 @@ class Challenge(MethodsMixin, db.Model):
         self.otp_valid = False
         self.expiration = datetime.now() + timedelta(seconds=validitytime)
 
-
-    @classmethod
-    def create_transaction_id(cls, length=20):
+    @staticmethod
+    def create_transaction_id(length=20):
         return get_rand_digit_str(length)
 
     def is_valid(self):
