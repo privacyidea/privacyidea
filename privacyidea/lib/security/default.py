@@ -191,7 +191,8 @@ class DefaultSecurityModule(SecurityModule):
     def _get_secret(self, slot_id=0, password=None):
         """
         internal function, which reads the key from the defined
-        slot in the file. It also caches the encryption key to the dictionary
+        slot in the file. It al499
+        so caches the encryption key to the dictionary
         self.secrets.
 
         If the file is encrypted, the encryption key is decrypted with the
@@ -496,7 +497,7 @@ class DefaultSecurityModule(SecurityModule):
         # split at ":"
         pos = crypt_value.find(':')
         bIV = crypt_value[:pos]
-        bData = crypt_value[pos + 1:len(crypt_value)]
+        bData = crypt_value[pos + 1:]
 
         iv = binascii.unhexlify(bIV)
         data = binascii.unhexlify(bData)
