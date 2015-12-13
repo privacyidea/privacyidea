@@ -231,8 +231,8 @@ def get_all_params(param, body):
         json_data = json.loads(body)
         for k, v in json_data.items():
             return_param[k] = v
-    except Exception:
-        pass
+    except Exception as exx:
+        log.debug("Can not get param: %s" % exx)
 
     return return_param
 
