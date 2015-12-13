@@ -128,52 +128,50 @@ class IdResolver (UserIdResolver):
 
         log.info('loading users from file %s from within %r' % (self.fileName,
                                                                 os.getcwd()))
-        fileHandle = open(self.fileName, "r")
+        with open(self.fileName, "r") as fileHandle:
+            ID = self.sF["userid"]
+            NAME = self.sF["username"]
+            PASS = self.sF["cryptpass"]
+            DESCRIPTION = self.sF["description"]
 
-        ID = self.sF["userid"]
-        NAME = self.sF["username"]
-        PASS = self.sF["cryptpass"]
-        DESCRIPTION = self.sF["description"]
+            for line in fileHandle:
+                line = line.strip()
+                if len(line) == 0:
+                    continue
 
-        for line in fileHandle:
-            line = line.strip()
-            if len(line) == 0:
-                continue
+                fields = line.split(":", 7)
+                self.nameDict["%s" % fields[NAME]] = fields[ID]
 
-            fields = line.split(":", 7)
-            self.nameDict["%s" % fields[NAME]] = fields[ID]
+                # for speed reason - build a revers lookup
+                self.reversDict[fields[ID]] = "%s" % fields[NAME]
 
-            # for speed reason - build a revers lookup
-            self.reversDict[fields[ID]] = "%s" % fields[NAME]
+                # for full info store the line
+                self.descDict[fields[ID]] = fields
 
-            # for full info store the line
-            self.descDict[fields[ID]] = fields
+                # store the crypted password
+                self.passDict[fields[ID]] = fields[PASS]
 
-            # store the crypted password
-            self.passDict[fields[ID]] = fields[PASS]
+                # store surname, givenname and phones
+                descriptions = fields[DESCRIPTION].split(",")
+                name = descriptions[0]
+                names = name.split(' ', 1)
+                self.givennameDict[fields[ID]] = names[0]
+                self.surnameDict[fields[ID]] = ""
+                self.officePhoneDict[fields[ID]] = ""
+                self.homePhoneDict[fields[ID]] = ""
+                self.emailDict[fields[ID]] = ""
+                if len(names) >= 2:
+                    self.surnameDict[fields[ID]] = names[1]
+                if len(descriptions) >= 4:
+                    self.officePhoneDict[fields[ID]] = descriptions[2]
+                    self.homePhoneDict[fields[ID]] = descriptions[3]
+                if len(descriptions) >= 5:
+                    for field in descriptions[4:]:
+                        # very basic e-mail regex
+                        email_match = re.search('.+@.+\..+', field)
+                        if email_match:
+                            self.emailDict[fields[ID]] = email_match.group(0)
 
-            # store surname, givenname and phones
-            descriptions = fields[DESCRIPTION].split(",")
-            name = descriptions[0]
-            names = name.split(' ', 1)
-            self.givennameDict[fields[ID]] = names[0]
-            self.surnameDict[fields[ID]] = ""
-            self.officePhoneDict[fields[ID]] = ""
-            self.homePhoneDict[fields[ID]] = ""
-            self.emailDict[fields[ID]] = ""
-            if len(names) >= 2:
-                self.surnameDict[fields[ID]] = names[1]
-            if len(descriptions) >= 4:
-                self.officePhoneDict[fields[ID]] = descriptions[2]
-                self.homePhoneDict[fields[ID]] = descriptions[3]
-            if len(descriptions) >= 5:
-                for field in descriptions[4:]:
-                    # very basic e-mail regex
-                    email_match = re.search('.+@.+\..+', field)
-                    if email_match:
-                        self.emailDict[fields[ID]] = email_match.group(0)
-
-        fileHandle.close()
 
     def checkPass(self, uid, password):
         """

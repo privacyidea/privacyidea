@@ -174,9 +174,8 @@ class LocalCAConnector(BaseCAConnector):
         csr_filename = csr_filename.replace(" ", "_")
         certificate_filename = certificate_filename.replace(" ", "_")
         # dump the file
-        f = open(csrdir + "/" + csr_filename, "w")
-        f.write(csr)
-        f.close()
+        with open(csrdir + "/" + csr_filename, "w") as f:
+            f.write(csr)
 
         if spkac:
             cmd = CA_SIGN_SPKAC.format(cakey=self.cakey, cacert=self.cacert,

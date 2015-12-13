@@ -173,9 +173,9 @@ class DefaultSecurityModule(SecurityModule):
             raise HSMException("no secret file defined: PI_ENCFILE!")
 
         # We determine, if the file is encrypted.
-        f = open(config.get("file"))
-        cipher = f.read()
-        f.close()
+        with open(config.get("file")) as f:
+            cipher = f.read()
+
         if len(cipher) > 100:
             config["crypted"] = True
 
@@ -216,9 +216,9 @@ class DefaultSecurityModule(SecurityModule):
             password = password or PASSWORD
             # Read all keys, decrypt them and return the key for
             # the slot id
-            f = open(self.secFile)
-            cipher = f.read()
-            f.close()
+            with open(self.secFile) as f:
+                cipher = f.read()
+
             try:
                 keys = self.password_decrypt(cipher, password)
             except UnicodeDecodeError as e:
@@ -228,10 +228,10 @@ class DefaultSecurityModule(SecurityModule):
 
         else:
             # Only read the key with the slot_id
-            f = open(self.secFile)
-            for _i in range(0, slot_id + 1):
-                secret = f.read(32)
-            f.close()
+            with open(self.secFile) as f:
+                for _i in range(0, slot_id + 1):
+                    secret = f.read(32)
+
             if secret == "":
                 raise HSMException("No secret key defined for index: %s !\n"
                                    "Please extend your %s"" !"
