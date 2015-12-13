@@ -198,9 +198,8 @@ class LocalCAConnector(BaseCAConnector):
             # Some error occurred
             raise CAError(error)
 
-        f = open(certificatedir + "/" + certificate_filename, "r")
-        certificate = f.read()
-        f.close()
+        with open(certificatedir + "/" + certificate_filename, "r") as f:
+            certificate = f.read()
 
         # We return the cert_obj.
         if spkac:
