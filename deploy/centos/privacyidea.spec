@@ -57,14 +57,12 @@ rm -rf $RPM_BUILD_ROOT
 #%files -f INSTALLED_FILES
 %files
 %(config) /etc/privacyidea/*
-#/usr/lib/python2.7/site-packages/privacyidea/*
-#/usr/bin/*
-#/usr/lib/privacyidea/authmodules/FreeRADIUS/*
-#/usr/lib/privacyidea/authmodules/OTRS/*
-#/usr/lib/python2.7/site-packages/privacyIDEA-*-info/*
-#/usr/share/man/man1/*
-/usr/*
-/etc/*
+/usr/lib/python2.7/site-packages/privacyidea/*
+/usr/bin/*
+/usr/lib/privacyidea/*
+/usr/lib/python2.7/site-packages/authmodules/*
+/usr/lib/python2.7/site-packages/privacyIDEA-*-info/*
+/usr/share/man/man1/*
 %defattr(-,root,root)
 
 %post
