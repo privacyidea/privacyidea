@@ -6,6 +6,7 @@ info:
 	@echo "make pypi         - upload package to pypi"
 	@echo "make debianzie    - prepare the debian build environment in DEBUILD"
 	@echo "make builddeb     - build .deb file locally on ubuntu 14.04LTS!"
+	@echo "make centos       - build .rpm file to be used with CentOS 7"
 	@echo "make jessie	 - build .deb file for Debian Jessie"
 	@echo "make venvdeb      - build .deb file, that contains the whole setup in a virtualenv."
 	@echo "make linitian     - run lintian on debian package"
@@ -56,25 +57,24 @@ doc-man:
 doc-html:
 	(cd doc; make html)
 
-redhat:
+centos:
 	make clean
 	mkdir RHBUILD
 	mkdir -p RHBUILD/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 	# create tarball
 	mkdir -p RHBUILD/SOURCES/privacyidea-${VERSION}
-	rsync -a --exclude=".*" --exclude="privacyIDEA.egg-info" --exclude="RHBUILD" --exclude="debian" --exclude="dist" --exclude="build" . RHBUILD/SOURCES/privacyidea-${VERSION} || true
-	touch    RHBUILD/SOURCES/privacyidea-${VERSION}/PRIVACYIDEA_PACKAGE
+	rsync -a --exclude=".*" --exclude="privacyIDEA.egg-info" --exclude="RHBUILD" --exclude="debian" --exclude="dist" --exclude="build" \
+                --exclude="tests" . RHBUILD/SOURCES/privacyidea-${VERSION} || true
 	# We are using the same config file as in debia an replace it in setup.py
-	cp config/debian/privacyidea.ini RHBUILD/SOURCES/privacyidea-${VERSION}/config/
-	sed s/"privacyidea.ini.example"/"privacyidea.ini"/g setup.py > RHBUILD/SOURCES/privacyidea-${VERSION}/setup.py
+	cp deploy/centos/pi.cfg RHBUILD/SOURCES/privacyidea-${VERSION}/deploy/centos/
 	# pack the modified source
 	(cd RHBUILD/SOURCES/; tar -zcf privacyidea-${VERSION}.tar.gz privacyidea-${VERSION})
 	rm -fr RHBUILD/SOURCES/privacyidea-${VERSION}
 	# copy spec file
-	cp config/redhat/privacyidea.spec RHBUILD/SPECS
+	cp deploy/centos/privacyidea.spec RHBUILD/SPECS
 	# build it
 	rpmbuild --define "_topdir $(CURDIR)/RHBUILD" -ba RHBUILD/SPECS/privacyidea.spec
-	
+
 
 debianize:
 	make clean
