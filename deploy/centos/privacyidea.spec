@@ -10,7 +10,7 @@ Release: %{release}
 Group: System/Authentication
 Prefix: /usr
 Provides: privacyidea
-Requires: python-flask-migrate python-qrcode python-netaddr python-flask python-flask-sqlalchemy python-pyrad python-yaml python-configobj python-beautifulsoup4 python-pandas python-matplotlib python-ecdsa python-pyjwt
+Requires: python-flask-migrate python-qrcode python-netaddr python-flask python-flask-sqlalchemy python-pyrad python-yaml python-configobj python-beautifulsoup4 python-pandas python-matplotlib python-ecdsa python-pyjwt python-six python-crypto
 Source0: %{name}-%{version}.tar.gz
 License: AGPL v3
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
