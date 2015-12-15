@@ -355,7 +355,7 @@ myApp.controller("tokenConfigController", function ($scope, $location,
                                                     $rootScope, $state,
                                                     $stateParams,
                                                     ConfigFactory,instanceUrl,
-                                                    inform, gettext) {
+                                                    inform, gettextCatalog) {
     $scope.defaultSMSProvider = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider";
     $scope.tokentype = $stateParams.tokentype || "hotp";
     $scope.form = {};
@@ -402,7 +402,7 @@ myApp.controller("tokenConfigController", function ($scope, $location,
         });
         ConfigFactory.saveSystemConfig(save_params, function (data) {
             if (data.result.status === true) {
-                inform.add(gettext("System Config saved."),
+                inform.add(gettextCatalog.getSring("System Config saved."),
                                 {type: "info"});
             }
         });
@@ -411,7 +411,7 @@ myApp.controller("tokenConfigController", function ($scope, $location,
     $scope.yubikeyAppIdDelete = function(apiId) {
           ConfigFactory.delSystemConfig(apiId, function(data) {
               if (data.result.status === true) {
-                  inform.add(gettext("System entry deleted."),
+                  inform.add(gettextCatalog.getString("System entry deleted."),
                                 {type: "info"});
                   $scope.loadSystemConfig();
                 }
@@ -427,7 +427,8 @@ myApp.controller("tokenConfigController", function ($scope, $location,
     $scope.sendTestEmail = function() {
         ConfigFactory.testTokenConfig("email", $scope.form, function(data) {
            if (data.result.value === true) {
-               inform.add(gettext(data.detail.message), {type: "info"});
+               inform.add(gettextCatalog.getString(data.detail.message),
+                   {type: "info"});
            }
         });
     };
@@ -437,7 +438,7 @@ myApp.controller("tokenConfigController", function ($scope, $location,
 myApp.controller("configController", function ($scope, $location,
                                                $rootScope, $state,
                                                ConfigFactory, instanceUrl,
-                                               inform, gettext) {
+                                               inform, gettextCatalog) {
     $scope.instanceUrl = instanceUrl;
     $scope.params = {};
     // go to the system view by default
@@ -586,7 +587,7 @@ myApp.controller("configController", function ($scope, $location,
         ConfigFactory.saveSystemConfig($scope.params, function (data) {
             console.log($scope.params);
             console.log(data);
-            inform.add(gettext("System Config saved."),
+            inform.add(gettextCatalog.getString("System Config saved."),
                                 {type: "info"});
         });
     };
@@ -758,7 +759,8 @@ myApp.controller("machineResolverController", function ($scope,
 });
 
 myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $state,
-                                                     $stateParams, inform, gettext) {
+                                                     $stateParams, inform,
+                                                     gettextCatalog) {
     /*
      BINDDN, BINDPW, LDAPURI, TIMEOUT, LDAPBASE, LOGINNAMEATTRIBUTE,
      LDAPSEARCHFILTER,
@@ -836,7 +838,7 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
 
 myApp.controller("ScimResolverController", function ($scope, ConfigFactory,
                                                      $state, $stateParams,
-                                                     inform, gettext) {
+                                                     inform, gettextCatalog) {
     /*
      Authserver, Resourceserver, Client, Secret
      */
@@ -878,7 +880,7 @@ myApp.controller("ScimResolverController", function ($scope, ConfigFactory,
 
 myApp.controller("SqlResolverController", function ($scope, ConfigFactory,
                                                     $state, $stateParams,
-                                                    inform, gettext) {
+                                                    inform, gettextCatalog) {
     /*
 
      */

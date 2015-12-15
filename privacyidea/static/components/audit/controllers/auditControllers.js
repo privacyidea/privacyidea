@@ -23,8 +23,7 @@
 myApp.controller("auditController", function (AuditFactory, $scope,
                                               $stateParams, $http,
                                               AuthFactory, instanceUrl,
-                                              $location, gettext,
-                                              gettextCatalog) {
+                                              $location, gettextCatalog) {
     $scope.params = {sortorder: "desc",
                      page_size: 10,
                      page: 1};

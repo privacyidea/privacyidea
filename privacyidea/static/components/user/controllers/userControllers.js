@@ -21,7 +21,8 @@
 angular.module("privacyideaApp")
     .controller("userAddController", function ($scope, userUrl, $state,
                                                $location, ConfigFactory,
-                                               UserFactory, inform, gettext){
+                                               UserFactory, inform,
+                                               gettextCatalog){
 
         $scope.formInit = {};
         ConfigFactory.getEditableResolvers(function (data){
@@ -40,7 +41,7 @@ angular.module("privacyideaApp")
             UserFactory.createUser($scope.resolvername, $scope.User,
                 function (data) {
                     console.log(data.result);
-                    inform.add(gettext("User created."),
+                    inform.add(gettextCatalog.getString("User created."),
                                 {type: "info"});
 
                     // reload the users
@@ -53,7 +54,7 @@ angular.module("privacyideaApp")
 angular.module("privacyideaApp")
     .controller("userPasswordController", function ($scope, userUrl,
                                                     UserFactory, inform,
-                                                    gettext) {
+                                                    gettextCatalog) {
 
         // The user can fetch his own information.
         $scope.getUserDetails = function () {
@@ -70,7 +71,7 @@ angular.module("privacyideaApp")
             UserFactory.updateUser($scope.User.resolver,
                 {username: $scope.User.username,
                  password: $scope.User.password}, function (data) {
-                    inform.add(gettext("Password set successfully."),
+                    inform.add(gettextCatalog.getString("Password set successfully."),
                                {type: "info"});
                     $scope.User.password = "";
                     $scope.password2 = "";
@@ -84,7 +85,7 @@ angular.module("privacyideaApp")
                                                    $rootScope, TokenFactory,
                                                    UserFactory, $state,
                                                    instanceUrl,  $location,
-                                                   inform, gettext) {
+                                                   inform, gettextCatalog) {
         $scope.tokensPerPage = 5;
         $scope.newToken = {"serial": "", pin: ""};
         $scope.params = {page: 1};
@@ -125,7 +126,8 @@ angular.module("privacyideaApp")
             UserFactory.updateUser($scope.resolvername, $scope.User,
             function (data) {
                 if (data.result.value==true) {
-                    inform.add(gettext("User updated successfully."),
+                    inform.add(gettextCatalog.getString("User updated " +
+                        "successfully."),
                                 {type: "info"});
                     // we also need to update the user list
                     $scope._getUsers();
@@ -140,7 +142,8 @@ angular.module("privacyideaApp")
             UserFactory.deleteUser($scope.resolvername, $scope.User.username,
             function (data) {
                 if (data.result.value==true) {
-                    inform.add(gettext("User deleted successfully."),
+                    inform.add(gettextCatalog.getString("User deleted " +
+                        "successfully."),
                                 {type: "info"});
                     $scope._getUsers();
                     $location.path("/user/list");

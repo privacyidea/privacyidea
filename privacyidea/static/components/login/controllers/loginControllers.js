@@ -24,7 +24,8 @@ angular.module("privacyideaApp")
                                       $scope, $http, $location,
                                       authUrl, AuthFactory, $rootScope,
                                       $state, ConfigFactory, inform,
-                                      PolicyTemplateFactory, gettext, hotkeys,
+                                      PolicyTemplateFactory, gettextCatalog,
+                                      hotkeys,
                                       U2fFactory, instanceUrl,
                                       PollingAuthFactory) {
 
@@ -38,7 +39,7 @@ angular.module("privacyideaApp")
 
     hotkeys.add({
         combo: 'alt+e',
-        description: gettext('Enroll a new token'),
+        description: gettextCatalog.getString('Enroll a new token'),
         callback: function(event, hotkey) {
             event.preventDefault();
             $state.go('token.enroll');
@@ -46,14 +47,14 @@ angular.module("privacyideaApp")
     });
     hotkeys.add({
         combo: 'alt+l',
-        description: gettext("List tokens"),
+        description: gettextCatalog.getString("List tokens"),
         callback: function() {
             $state.go('token.list');
         }
     });
     hotkeys.add({
         combo: 'alt+q',
-        description: gettext('Log out'),
+        description: gettextCatalog.getString('Log out'),
         callback: function() {
             $scope.logout();
         }
@@ -144,7 +145,8 @@ angular.module("privacyideaApp")
             // have a challenge response and we need to go to the state response
             if (error.detail && error.detail.transaction_id) {
                 $state.go("response");
-                inform.add(gettext("Challenge Response Authentication. You" +
+                inform.add(gettextCatalog.getString("Challenge Response " +
+                    "Authentication. You" +
                     " are not completely authenticated, yet."),
                     {type: "warning", ttl:5000});
                 $scope.challenge_message = error.detail.message;
@@ -171,7 +173,8 @@ angular.module("privacyideaApp")
                 // This can show an attacker, if a username exists.
 				// But this can also be due to a problem like
 				// "HSM not ready".
-                inform.add(gettext("Authentication failed. ") + error.result.error.message,
+                inform.add(gettextCatalog.getString("Authentication failed. ")
+                    + error.result.error.message,
                 {type: "danger", ttl: 10000});
             }
         }).then(function () {
@@ -220,7 +223,8 @@ angular.module("privacyideaApp")
             $location.path("/token");
             // clear old error messages
             inform.clear();
-            inform.add(gettext("privacyIDEA UI supports hotkeys. Use '?' to" +
+            inform.add(gettextCatalog.getString("privacyIDEA UI supports " +
+                "hotkeys. Use '?' to" +
                     " get help."), {type: "info", ttl: 10000});
             $scope.transactionid = "";
     };
@@ -264,7 +268,8 @@ angular.module("privacyideaApp")
                     ConfigFactory.setRealm("defrealm",
                         realm_params, function (data) {
                             if (data.result.value) {
-                                inform.add(gettext("Realm defrealm created."),
+                                inform.add(gettextCatalog.getString("Realm " +
+                                    "defrealm created."),
                                 {type: "info"});
 
                             }

@@ -20,15 +20,15 @@
  */
 
 angular.module("privacyideaAuth")
-    .factory("U2fFactory", ['inform', '$http', 'authUrl', 'gettext',
-        function (inform, $http, authUrl, gettext) {
-            var u2fErrors = [gettext("OK"),
-                gettext("Other Error"),
-                gettext("Bad U2F Request"),
-                gettext("Client Configuration is not supported."),
-                gettext("The client device can not be used for this type of" +
+    .factory("U2fFactory", ['inform', '$http', 'authUrl', 'gettextCatalog',
+        function (inform, $http, authUrl, gettextCatalog) {
+            var u2fErrors = [gettextCatalog.getString("OK"),
+                gettextCatalog.getString("Other Error"),
+                gettextCatalog.getString("Bad U2F Request"),
+                gettextCatalog.getString("Client Configuration is not supported."),
+                gettextCatalog.getString("The client device can not be used for this type of" +
                     " request."),
-                gettext("Timeout while waiting for signing response.")];
+                gettextCatalog.getString("Timeout while waiting for signing response.")];
 
             return {
                 register_request: function (registerRequest, callback) {
@@ -74,7 +74,7 @@ angular.module("privacyideaAuth")
                             }).success(function (data) {
                                 login_callback(data);
                             }).error(function (data) {
-                                inform.add(gettext("Error in U2F response."),
+                                inform.add(gettextCatalog.getString("Error in U2F response."),
                                     {type: "danger", ttl: 10000});
                             });
                         }

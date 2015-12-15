@@ -20,7 +20,8 @@
  */
 myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
                                               $scope, $location, AuthFactory,
-                                              $rootScope, gettext, hotkeys) {
+                                              $rootScope, gettextCatalog,
+                                              hotkeys) {
     $scope.params = {page: 1, sortdir: "asc"};
     $scope.reverse = false;
     $scope.loggedInUser = AuthFactory.getUser();
@@ -93,12 +94,13 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                                                     $stateParams, AuthFactory,
                                                     UserFactory, $state,
                                                     ConfigFactory, instanceUrl,
-                                                    $http, hotkeys, gettext,
+                                                    $http, hotkeys,
+                                                    gettextCatalog,
                                                     inform, U2fFactory) {
 
     hotkeys.bindTo($scope).add({
         combo: 'alt+e',
-        description: gettext('Enroll a new token'),
+        description: gettextCatalog.getString('Enroll a new token'),
         callback: function (event, hotkey) {
             event.preventDefault();
             $state.go('token.enroll');
@@ -107,7 +109,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     });
     hotkeys.bindTo($scope).add({
         combo: 'alt+r',
-        description: gettext('Roll the token'),
+        description: gettextCatalog.getString('Roll the token'),
         callback: function () {
             $scope.enrollToken();
         }
@@ -132,31 +134,31 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     };
 
     $scope.formInit = {
-        tokenTypes: {"hotp": gettext("HOTP: event based One Time Passwords"),
-            "totp": gettext("TOTP: time based One Time Passwords"),
-            "spass": gettext("SPass: Simple Pass token. Static passwords"),
-            "motp": gettext("mOTP: classical mobile One Time Passwords"),
-            "sshkey": gettext("SSH Public Key: The public SSH key"),
-            "yubikey": gettext("Yubikey AES mode: One Time Passwords with" +
+        tokenTypes: {"hotp": gettextCatalog.getString("HOTP: event based One Time Passwords"),
+            "totp": gettextCatalog.getString("TOTP: time based One Time Passwords"),
+            "spass": gettextCatalog.getString("SPass: Simple Pass token. Static passwords"),
+            "motp": gettextCatalog.getString("mOTP: classical mobile One Time Passwords"),
+            "sshkey": gettextCatalog.getString("SSH Public Key: The public SSH key"),
+            "yubikey": gettextCatalog.getString("Yubikey AES mode: One Time Passwords with" +
                 " Yubikey"),
-            "remote": gettext("Remote Token: Forward authentication request" +
+            "remote": gettextCatalog.getString("Remote Token: Forward authentication request" +
                 " to another server"),
-            "yubico": gettext("Yubikey Cloud mode: Forward authentication" +
+            "yubico": gettextCatalog.getString("Yubikey Cloud mode: Forward authentication" +
                 " request to YubiCloud"),
-            "radius": gettext("RADIUS: Forward authentication request to a" +
+            "radius": gettextCatalog.getString("RADIUS: Forward authentication request to a" +
                 " RADIUS server"),
-            "email": gettext("EMail: Send a One Time Password to the users email" +
+            "email": gettextCatalog.getString("EMail: Send a One Time Password to the users email" +
                 " address."),
-            "sms": gettext("SMS: Send a One Time Password to the users" +
+            "sms": gettextCatalog.getString("SMS: Send a One Time Password to the users" +
                 " mobile phone."),
-            "certificate": gettext("Certificate: Enroll an x509 Certificate" +
+            "certificate": gettextCatalog.getString("Certificate: Enroll an x509 Certificate" +
                 " Token."),
-            "4eyes": gettext("Four Eyes: Two or more users are required to" +
+            "4eyes": gettextCatalog.getString("Four Eyes: Two or more users are required to" +
                 " log in."),
-            "tiqr": gettext("TiQR: Authenticate with Smartphone by scanning" +
+            "tiqr": gettextCatalog.getString("TiQR: Authenticate with Smartphone by scanning" +
                 " a QR code."),
-            "u2f": gettext("U2F: Universal 2nd Factor hardware token."),
-            "paper": gettext("PAPER: OTP values on a sheet of paper.")},
+            "u2f": gettextCatalog.getString("U2F: Universal 2nd Factor hardware token."),
+            "paper": gettextCatalog.getString("PAPER: OTP values on a sheet of paper.")},
         timesteps: [30, 60],
         otplens: [6, 8],
         hashlibs: ["sha1", "sha256", "sha512"]

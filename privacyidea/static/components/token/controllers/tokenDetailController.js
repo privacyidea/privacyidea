@@ -7,7 +7,7 @@ myApp.controller("tokenDetailController", function ($scope,
                                                     AuthFactory,
                                                     ConfigFactory,
                                                     MachineFactory, inform,
-                                                    gettext) {
+                                                    gettextCatalog) {
     $scope.tokenSerial = $stateParams.tokenSerial;
     // This is the parents object
     $scope.selectedToken.serial = $scope.tokenSerial;
@@ -18,13 +18,13 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.machinesPerPage = 5;
     $scope.params = {page: 1};
     $scope.form = {options: {}};
-    $scope.testTokenPlaceholder = gettext('Enter PIN and OTP to check the' +
+    $scope.testTokenPlaceholder = gettextCatalog.getString('Enter PIN and OTP to check the' +
         ' token.');
     ConfigFactory.getSystemConfig(function(data) {
         prepend = data.result.value.PrependPin;
         console.log(prepend);
         if (!$scope.isChecked(prepend)) {
-            $scope.testTokenPlaceholder = gettext('Enter OTP + PIN to' +
+            $scope.testTokenPlaceholder = gettextCatalog.getString('Enter OTP + PIN to' +
                 ' check the token.');
         }
     });
@@ -133,10 +133,10 @@ myApp.controller("tokenDetailController", function ($scope,
             $scope.otp1 = "";
             $scope.otp2 = "";
             if (data.result.value === true) {
-                inform.add(gettext("Token resync successful."),
+                inform.add(gettextCatalog.getString("Token resync successful."),
                                 {type: "info", ttl: 10000});
             } else {
-                inform.add(gettext("Token resync failed."),
+                inform.add(gettextCatalog.getString("Token resync failed."),
                                 {type: "danger", ttl: 10000});
             }
             $scope.get();
@@ -152,7 +152,7 @@ myApp.controller("tokenDetailController", function ($scope,
             // refresh the token data
             $scope.get();
             if (data.result.value === true) {
-                inform.add(gettext("Successfully authenticated."),
+                inform.add(gettextCatalog.getString("Successfully authenticated."),
                     {type: "success", ttl: 10000});
             } else {
                 inform.add(data.detail.message,
