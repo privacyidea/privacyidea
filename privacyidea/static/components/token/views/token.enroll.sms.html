@@ -14,8 +14,14 @@
     <input type="text"
            autofocus
            class="form-control"
-           placeholder="{{ 'Users phone number...'|translate }}"
            ng-model="form.phone" name="phone" />
+    <div>
+        <button class="btn btn-default btn-xs" ng-repeat="phone in phone_list"
+                ng-click="form.phone = phone;">
+            <span class="glyphicon glyphicon-phone"></span>
+            {{ phone }}
+        </button>
+    </div>
     <label for="description" translate>Description</label>
     <input type="text" class="form-control"
             placeholder="{{ 'Some nice words...'|translate }}"

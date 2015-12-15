@@ -210,7 +210,14 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                 function(data) {
                     userObject = data.result.value[0];
                     $scope.form.email = userObject.email;
-                    $scope.form.phone = userObject.mobile;
+                    if (typeof userObject.mobile === "string") {
+                        $scope.form.phone = userObject.mobile;
+                    } else {
+                        $scope.phone_list = userObject.mobile;
+                        if ($scope.phone_list.length === 1) {
+                            $scope.form.phone = $scope.phone_list[0];
+                        }
+                    }
             });
         }
     } else if (AuthFactory.getRole() == 'user') {
