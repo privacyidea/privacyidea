@@ -23,14 +23,15 @@
 myApp.controller("auditController", function (AuditFactory, $scope,
                                               $stateParams, $http,
                                               AuthFactory, instanceUrl,
-                                              $location) {
+                                              $location, gettext,
+                                              gettextCatalog) {
     $scope.params = {sortorder: "desc",
                      page_size: 10,
                      page: 1};
     $scope.instanceUrl = instanceUrl;
-
     $scope.statsTime = {7: "Last Week",
         28: "Last 4 Weeks"};
+    $scope.dateFormat = gettextCatalog.getString("M/d/yy HH:mm:ss");
 
     if ($location.path() === "/audit") {
         $location.path("/audit/log");

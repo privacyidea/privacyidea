@@ -34,6 +34,8 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:25
 #: privacyidea/static/components/config/views/config.token.yubico.html:29
+#: privacyidea/static/components/config/views/config.token.yubikey.html:20
+#: privacyidea/static/components/config/views/config.token.yubikey.html:43
 msgid "API Key"
 msgstr "API-Schlüssel"
 
@@ -331,6 +333,11 @@ msgstr "Client "
 msgid "Client Configuration is not supported."
 msgstr "Die Client-Konfiguration wird nicht unterstützt."
 
+#: privacyidea/static/components/config/views/config.token.yubikey.html:19
+#: privacyidea/static/components/config/views/config.token.yubikey.html:38
+msgid "Client ID"
+msgstr "Client ID"
+
 #: privacyidea/static/components/dialogs/views/dialog.about.html:48
 msgid "Close"
 msgstr "Schließen"
@@ -408,6 +415,10 @@ msgstr "Erzeuge einen neuen Hosts Maschinen Resolver"
 msgid "Create default realm"
 msgstr "Standard-Realm anlegen"
 
+#: privacyidea/static/components/config/views/config.token.yubikey.html:51
+msgid "Create new API key"
+msgstr "Erzeuge einen neuen API Schlüssel"
+
 #: privacyidea/static/components/config/views/config.policies.html:12
 msgid "Create new Policy"
 msgstr "Erzeuge einen neue Richtlinie"
@@ -464,6 +475,7 @@ msgstr "Standard Zeitfenster"
 #: privacyidea/static/components/config/views/config.policies.list.html:53
 #: privacyidea/static/components/config/views/config.realms.list.html:64
 #: privacyidea/static/components/config/views/config.resolvers.list.html:24
+#: privacyidea/static/components/config/views/config.token.yubikey.html:29
 #: privacyidea/static/components/token/views/token.details.html:16
 msgid "Delete"
 msgstr "Löschen"
@@ -1044,6 +1056,11 @@ msgstr "Abmelden"
 msgid "Lost Token"
 msgstr "Verlorener Token"
 
+#: privacyidea/static/components/audit/controllers/auditControllers.js:34
+#, fuzzy
+msgid "M/d/yy HH:mm:ss"
+msgstr "d.M.yy HH:mm:ss"
+
 #: privacyidea/static/components/directives/views/directive.attachmachine.html:5
 msgid "Machine"
 msgstr "Maschine"
@@ -1557,7 +1574,7 @@ msgid "SSH public Key"
 msgstr "Öffentlicher SSH Schlüssel"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:71
-#: privacyidea/static/components/config/views/config.tokens.html:60
+#: privacyidea/static/components/config/views/config.tokens.html:64
 msgid "Save"
 msgstr "Speichern"
 
@@ -1584,7 +1601,7 @@ msgstr "Realms speichern"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:102
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:39
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:166
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:158
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:189
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:38
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:86
@@ -1721,9 +1738,13 @@ msgid "System Config"
 msgstr "Systemkonfiguration"
 
 #: privacyidea/static/components/config/controllers/configControllers.js:405
-#: privacyidea/static/components/config/controllers/configControllers.js:573
+#: privacyidea/static/components/config/controllers/configControllers.js:589
 msgid "System Config saved."
 msgstr "Systemkonfiguration gespeichert."
+
+#: privacyidea/static/components/config/controllers/configControllers.js:414
+msgid "System entry deleted."
+msgstr "Systemeinstellung gelöscht."
 
 #: privacyidea/static/components/config/views/config.token.totp.html:1
 msgid "TOTP Token settings"
@@ -1741,7 +1762,7 @@ msgstr "Tabelle"
 msgid "Take action on your token"
 msgstr "Bestätigen Sie mit Ihrem Token"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:162
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:154
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:184
 msgid "Test LDAP Resolver"
 msgstr "LDAP Resolver testen"
@@ -2038,12 +2059,12 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.token.yubico.html:2
 msgid ""
 "The Yubico Token is a Yubikey that is registered with the YubiCloud\n"
-"    service. The Yubikey emits a 44 charater one time password. The first "
+"    service. The Yubikey emits a 44 character one time password. The first "
 "12\n"
 "    characters are a unique ID which is used to bind the device to the user."
 msgstr ""
-"Der Yubico Token ist ein Yubikey der in der YubiCloud registriert ist.Der "
-"Yubikey erzeugt ein 44 Zeichen langes Passwort. Die ersten 12 Zeichensind "
+"Der Yubico Token ist ein Yubikey der in der YubiCloud registriert ist. Der "
+"Yubikey erzeugt ein 44 Zeichen langes Passwort. Die ersten 12 Zeichen sind "
 "eine eindeutige ID, welche verwendet wird, um den Token dem Benutzer "
 "zuzuordnen."
 
@@ -2060,6 +2081,24 @@ msgstr ""
 "Tool ykpersonalize initialisieren. Fügen Sie den geheimen Schlüssel hier "
 "ein. Außerdem können Sie auswählen, ob der Yubikey eine UID mit ausgibt. "
 "Diese kann entweder 12 oder 16 Zeichen lang sein."
+
+#: privacyidea/static/components/config/views/config.token.yubikey.html:7
+msgid ""
+"The authentication request can be handled by the default privacyIDEA\n"
+"    <a href=\"http://privacyidea.readthedocs.org/en/latest/modules/api/"
+"validate.html\">\n"
+"        validate API</a> but can also be handled by the\n"
+"    <a href=\"http://privacyidea.readthedocs.org/en/latest/modules/lib/"
+"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
+"YubikeyTokenClass.api_endpoint\">\n"
+"        Yubico Validation Protocol</a>."
+msgstr ""
+"Die Authentifizierung kann von der normalen   <a href=\"http://privacyidea."
+"readthedocs.org/en/latest/modules/api/validate.html\">privacyIDEA API</a> "
+"aber auch vom <a href=\"http://privacyidea.readthedocs.org/en/latest/modules/"
+"lib/tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
+"YubikeyTokenClass.api_endpoint\">Yubico Validation Protokoll</a> "
+"durchgeführt werden."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
 msgid ""
@@ -2366,6 +2405,14 @@ msgid ""
 msgstr ""
 "Dies ist eine Single Page Applikation, die als Frontend für das privacyIDEA "
 "Authentisierungsbackend dient."
+
+#: privacyidea/static/components/config/views/config.token.yubikey.html:2
+msgid ""
+"This is a Yubikey in the Yubico Mode authenticated against privacyIDEA.\n"
+"    The Yubikey emits a 44 character on time password."
+msgstr ""
+"Dies ist der Yubikey im Yubico Mode. Die Authentifizierung erfolgt durch "
+"privacyIDEA.   Der Yubikey gibt ein 44-stelliges Einmalpasswort aus."
 
 #: privacyidea/static/components/token/views/token.import.html:51
 msgid ""
@@ -2817,6 +2864,10 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:14
 msgid "Yubikey Identifier"
 msgstr "Yubikey ID"
+
+#: privacyidea/static/components/config/views/config.token.yubikey.html:1
+msgid "Yubikey Token settings"
+msgstr "Yubikey Token Einstellungen"
 
 #: privacyidea/static/components/audit/views/audit.log.html:26
 msgid "action"

@@ -64,7 +64,7 @@
             <tbody>
             <tr ng-repeat="audit in auditdata.auditdata">
                 <td>{{ audit.number }}</td>
-                <td>{{ audit.date | date:'medium' }}</td>
+                <td>{{ audit.date | date:dateFormat }}</td>
                 <td>{{ audit.action }}</td>
                 <td><span status-class="{{ audit.success }}">
                 {{ audit.success }}
