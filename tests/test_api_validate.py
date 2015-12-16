@@ -795,3 +795,51 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(result.get("value"), True)
 
         delete_policy("pthru")
+
+    def test_20_questionnaire(self):
+        pin = "pin"
+        serial = "QUST1234"
+        questions = {"frage1": "antwort1",
+                     "frage2": "antwort2",
+                     "frage3": "antwort3"}
+        j_questions = json.dumps(questions)
+
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "question",
+                                                 "pin": pin,
+                                                 "serial": serial,
+                                                 "questions": j_questions},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            self.assertEqual(value, True)
+
+        # Start a challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertFalse(result.get("value"))
+            detail = json.loads(res.data).get("detail")
+            transaction_id = detail.get("transaction_id")
+            question = detail.get("message")
+            self.assertTrue(question in questions)
+
+        # Respond to the challenge
+        answer = questions[question]
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "transaction_id":
+                                                     transaction_id,
+                                                 "pass": answer}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
