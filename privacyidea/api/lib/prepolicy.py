@@ -260,7 +260,11 @@ def init_tokenlabel(request=None, action=None):
     It adds the tokenlabel definition to the params like this:
     params : { "tokenlabel": "<u>@<r>" }
 
-    It uses the policy SCOPE.ENROLL, ACTION.TOKENLABEL to set the tokenlabel
+    In addtion it adds the tokenissuer to the params like this:
+    params : { "tokenissuer": "privacyIDEA instance" }
+
+    It uses the policy SCOPE.ENROLL, ACTION.TOKENLABEL and ACTION.TOKENISSUER
+    to set the tokenlabel and tokenissuer
     of Smartphone tokens during enrollment and this fill the details of the
     response.
     """
@@ -278,6 +282,15 @@ def init_tokenlabel(request=None, action=None):
     if len(label_pols) == 1:
         # The policy was set, so we need to set the tokenlabel in the request.
         request.all_data["tokenlabel"] = label_pols[0]
+
+    issuer_pols = policy_object.get_action_values(action=ACTION.TOKENISSUER,
+                                                  scope=SCOPE.ENROLL,
+                                                  user=user_object.login,
+                                                  realm=user_object.realm,
+                                                  client=request.remote_addr,
+                                                  unique=True)
+    if len(issuer_pols) == 1:
+        request.all_data["tokenissuer"] = issuer_pols[0]
 
     return True
 

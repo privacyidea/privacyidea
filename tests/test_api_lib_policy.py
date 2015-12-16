@@ -396,6 +396,9 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         set_policy(name="pol1",
                    scope=SCOPE.ENROLL,
                    action="%s=%s" % (ACTION.TOKENLABEL, "<u>@<r>"))
+        set_policy(name="pol2",
+                   scope=SCOPE.ENROLL,
+                   action="%s=%s" % (ACTION.TOKENISSUER, "myPI"))
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -406,8 +409,11 @@ class PrePolicyDecoratorTestCase(MyTestCase):
 
         # Check, if the tokenlabel was added
         self.assertEqual(req.all_data.get("tokenlabel"), "<u>@<r>")
+        # Check, if the tokenissuer was added
+        self.assertEqual(req.all_data.get("tokenissuer"), "myPI")
         # finally delete policy
         delete_policy("pol1")
+        delete_policy("pol2")
 
     def test_07_set_random_pin(self):
         g.logged_in_user = {"username": "admin1",

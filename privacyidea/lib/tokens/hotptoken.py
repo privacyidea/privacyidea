@@ -160,6 +160,7 @@ class HotpTokenClass(TokenClass):
         response_detail = TokenClass.get_init_detail(self, params, user)
         params = params or {}
         tokenlabel = params.get("tokenlabel", "<s>")
+        tokenissuer = params.get("tokenissuer", "privacyIDEA")
         # If the init_details contain an OTP key the OTP key
         # should be displayed as an enrollment URL
         otpkey = self.init_details.get('otpkey')
@@ -175,7 +176,8 @@ class HotpTokenClass(TokenClass):
                                         tokenlabel=tokenlabel,
                                         hash_algo=params.get("hashlib",
                                                              "sha1"),
-                                        digits=params.get("otplen", 6))
+                                        digits=params.get("otplen", 6),
+                                        issuer=tokenissuer)
                     response_detail["googleurl"] = {"description":
                                                     _("URL for google "
                                                       "Authenticator"),

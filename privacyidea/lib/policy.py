@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-12-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add tokenissuer policy
 #  2015-11-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add getchallenges policy
 #  2015-10-31 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -198,6 +200,7 @@ class ACTION(object):
     SYSTEMDELETE = "configdelete"
     SYSTEMWRITE = "configwrite"
     CONFIGDOCUMENTATION = "system_documentation"
+    TOKENISSUER = "tokenissuer"
     TOKENLABEL = "tokenlabel"
     TOKENPAGESIZE = "token_page_size"
     TOKENREALMS = "tokenrealms"
@@ -947,6 +950,11 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("Set label for a new enrolled Google Authenticator. "
                           "Possible tags are <u> (user), <r> ("
                           "realm), <s> (serial).")},
+            ACTION.TOKENISSUER: {
+                'type': 'str',
+                'desc': _("This is the issuer label for new enrolled Google "
+                          "Authenticators.")
+            },
             ACTION.AUTOASSIGN: {
                 'type': 'str',
                 'value': [AUTOASSIGNVALUE.NONE, AUTOASSIGNVALUE.USERSTORE],

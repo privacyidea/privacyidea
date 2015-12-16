@@ -41,6 +41,18 @@ Limit the maximum number of tokens per user in this realm.
    unlimited tokens assigned.
 
 
+tokenissuer
+~~~~~~~~~~~
+
+type: string
+
+This sets the issuer label for a newly enrolled Google Authenticator.
+This policy takes a fixed string, to add additional information about the
+issuer of the soft token.
+
+.. note:: A good idea is to set this to the instance name of your privacyIDEA
+   installation.
+
 tokenlabel
 ~~~~~~~~~~
 
