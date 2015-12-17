@@ -447,7 +447,7 @@ def autoassign(request, response):
             autoassign_values = list(set(autoassign_values))
             if len(autoassign_values) > 1:
                 raise PolicyError("Contradicting Autoassign policies.")
-            if len(autoassign_values) >= 1:
+            if autoassign_values:
                 # check if the user has no token
                 if get_tokens(user=user_obj, count=True) == 0:
                     # Check is the token would match

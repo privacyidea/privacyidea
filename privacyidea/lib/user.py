@@ -215,7 +215,7 @@ class User(object):
         """
         if not self.resolver:
             self.get_resolvers()
-        if len(self.resolver) == 0:
+        if not self.resolver:
             # The resolver list is empty
             raise UserError("The user can not be found in any resolver in "
                             "this realm!")
@@ -335,7 +335,7 @@ class User(object):
                 else:
                     log.info("user %r failed to authenticate." % self)
 
-            elif len(res) == 0:
+            elif not res:
                 log.error("The user %r exists in NO resolver." % self)
         except UserError as e:  # pragma: no cover
             log.error("Error while trying to verify the username: %r" % e)
@@ -403,7 +403,7 @@ class User(object):
                     else:  # pragma: no cover
                         log.info("user %r failed to update." % self)
 
-            elif len(res) == 0:  # pragma: no cover
+            elif not res:  # pragma: no cover
                 log.error("The user %r exists in NO resolver." % self)
         except UserError as exx:  # pragma: no cover
             log.error("Error while trying to verify the username: %s" % exx)
@@ -438,7 +438,7 @@ class User(object):
                     else:  # pragma: no cover
                         log.info("user %r failed to update." % self)
 
-            elif len(res) == 0:  # pragma: no cover
+            elif not res:  # pragma: no cover
                 log.error("The user %r exists in NO resolver." % self)
         except UserError as exx:  # pragma: no cover
             log.error("Error while trying to verify the username: %r" % exx)

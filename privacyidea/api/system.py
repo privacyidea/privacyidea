@@ -393,7 +393,7 @@ def set_default():
             g.audit_object.log({"success": True})
             g.audit_object.add_to_log({"info": "%s=%s, " % (k, value)})
 
-    if len(result) == 0:
+    if not result:
         log.warning("Failed saving config. Could not find any "
                     "known parameter. %s"
                     % description)

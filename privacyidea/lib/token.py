@@ -623,7 +623,7 @@ def get_otp(serial, current_time=None):
     """
     tokenobject_list = get_tokens(serial=serial)
 
-    if len(tokenobject_list) == 0:
+    if not tokenobject_list:
         log.warning("there is no token with serial %r" % serial)
         return -1, "", "", ""
 
@@ -657,7 +657,7 @@ def get_multi_otp(serial, count=0, epoch_start=0, epoch_end=0,
     """
     ret = {"result": False}
     tokenobject_list = get_tokens(serial=serial)
-    if len(tokenobject_list) == 0:
+    if not tokenobject_list:
         log.warning("there is no token with serial %r" % serial)
         ret["error"] = "No token with serial %s found." % serial
 
@@ -1028,7 +1028,7 @@ def assign_token(serial, user, pin=None, encrypt_pin=False):
     """
     tokenobject_list = get_tokens(serial=serial)
 
-    if len(tokenobject_list) == 0:
+    if not tokenobject_list:
         log.warning("no tokens found with serial: %r" % serial)
         raise TokenAdminError("no token found!", id=1102)
 
@@ -1071,7 +1071,7 @@ def unassign_token(serial, user=None):
     """
     tokenobject_list = get_tokens(serial=serial, user=user)
 
-    if len(tokenobject_list) == 0:
+    if not tokenobject_list:
         log.warning("no tokens found with serial: %r" % serial)
         raise TokenAdminError("no token found!", id=1102)
 
@@ -1721,7 +1721,7 @@ def check_realm_pass(realm, passw, options=None):
     # only active tokens. He would not guess that the given OTP value is that
     #  of an inactive token.
     tokenobject_list = get_tokens(realm=realm, assigned=True, active=True)
-    if len(tokenobject_list) == 0:
+    if not tokenobject_list:
         res = False
         reply_dict["message"] = "There is no active and assigned token in " \
                                 "this realm"
@@ -1753,7 +1753,7 @@ def check_serial_pass(serial, passw, options=None):
     """
     reply_dict = {}
     tokenobject_list = get_tokens(serial=serial)
-    if len(tokenobject_list) == 0:
+    if not tokenobject_list:
         # The serial does not exist
         res = False
         reply_dict["message"] = "The token with this serial does not exist"
@@ -1790,7 +1790,7 @@ def check_user_pass(user, passw, options=None):
     """
     tokenobject_list = get_tokens(user=user)
     reply_dict = {}
-    if len(tokenobject_list) == 0:
+    if not tokenobject_list:
         # The user has no tokens assigned
         res = False
         reply_dict["message"] = "The user has no tokens assigned"

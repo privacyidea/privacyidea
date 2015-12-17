@@ -320,10 +320,10 @@ class PolicyClass(object):
                             value_found = True
                     if value_found and not value_excluded:
                         new_policies.append(policy)
-                # We also find the policies with no desctinct information
+                # We also find the policies with no distinct information
                 # about the request value
                 for policy in reduced_policies:
-                    if len(policy.get(searchkey)) == 0:
+                    if not policy.get(searchkey):
                         new_policies.append(policy)
                 reduced_policies = new_policies
 
@@ -358,7 +358,7 @@ class PolicyClass(object):
             # If there is a policy without any client, we also add it to the
             # accepted list.
             for policy in reduced_policies:
-                if len(policy.get("client")) == 0:
+                if not policy.get("client"):
                     new_policies.append(policy)
             reduced_policies = new_policies
 
@@ -447,7 +447,7 @@ class PolicyClass(object):
                     rights.append(action)
         # check if we have policies at all:
         pols = self.get_policies(scope=scope, active=True)
-        if len(pols) == 0:
+        if not pols:
             # We do not have any policies in this scope, so we return all
             # possible actions in this scope.
             log.debug("No policies defined, so we set all rights.")
@@ -506,7 +506,7 @@ class PolicyClass(object):
                                              active=True,
                                              action="enroll"+tokentype.upper(),
                                              adminrealm=admin_realm)
-                if len(typepols) == 0:
+                if not typepols:
                     # If there is no policy allowing the enrollment of this
                     # tokentype, it is deleted.
                     del(enroll_types[tokentype])
@@ -879,7 +879,8 @@ def get_static_policy_definitions(scope=None):
                            'desc': _('The user is allowed to reset the '
                                      'failcounter of his tokens.')},
             ACTION.SETPIN: {'type': 'bool',
-                            "desc": _("The user is allowed to set the OTP PIN "
+                            "desc": _("The u32ser is allowed to set the OTP "
+                                      "PIN "
                                       "of his tokens.")},
             ACTION.OTPPINMAXLEN: {'type': 'int',
                                   'value': range(0, 32),

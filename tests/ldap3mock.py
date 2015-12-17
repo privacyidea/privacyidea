@@ -112,7 +112,7 @@ class Connection(object):
         condition = {}
         # (&(cn=*)(cn=bob)) -> (cn=*)(cn=bob)
         search_filter = search_filter[2:-1]
-        while len(search_filter) > 0:
+        while search_filter:
             pos = search_filter.find(')')+1
             cur = search_filter[0:pos]
             cur = cur[1:-1]

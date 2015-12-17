@@ -399,7 +399,7 @@ h={h}
             tokenobject_list = get_tokens(serial=serial)
             token_list.extend(tokenobject_list)
 
-        if len(token_list) == 0:
+        if not token_list:
             opt['action_detail'] = ("The serial %s could not be found!" %
                                     serialnum)
             return res, opt

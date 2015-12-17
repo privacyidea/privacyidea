@@ -925,7 +925,7 @@ def lost_api(serial=None):
     userobj = get_user_from_param(request.all_data)
     if userobj:
         toks = get_tokens(serial=serial, user=userobj)
-        if len(toks) == 0:
+        if not toks:
             raise TokenAdminError("The user %s does not own the token %s" % (
                 userobj, serial))
 

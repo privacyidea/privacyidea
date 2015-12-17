@@ -245,7 +245,7 @@ class TiqrTokenClass(TokenClass):
             # The user identifier is displayed in the App
             # We need to set the user ID
             tokens = get_tokens(serial=serial)
-            if len(tokens) == 0:  # pragma: no cover
+            if not tokens:  # pragma: no cover
                 raise ParameterError("No token with serial %s" % serial)
             user_identifier, user_displayname = tokens[0].get_user_displayname()
 

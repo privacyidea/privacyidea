@@ -136,7 +136,8 @@ class IdResolver (UserIdResolver):
 
             for line in fileHandle:
                 line = line.strip()
-                if len(line) == 0:
+                if not line:
+                    # continue on an empty line
                     continue
 
                 fields = line.split(":", 7)

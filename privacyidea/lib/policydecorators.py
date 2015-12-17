@@ -456,7 +456,7 @@ def login_mode(wrapped_function, *args, **kwds):
                                                           user=user_object.login,
                                                           client=clientip)
 
-        if len(login_mode_list) > 0:
+        if login_mode_list:
             # There is a login mode policy
             # reduce the list:
             login_mode_list = list(set(login_mode_list))
@@ -520,7 +520,7 @@ def auth_otppin(wrapped_function, *args, **kwds):
                                                       realm=user_object.realm,
                                                       user=user_object.login,
                                                       client=clientip)
-        if len(otppin_list) > 0:
+        if otppin_list:
             # There is an otppin policy
             # reduce the list:
             otppin_list = list(set(otppin_list))
@@ -597,7 +597,7 @@ def config_lost_token(wrapped_function, *args, **kwds):
                 user=username,
                 client=clientip)
 
-            if len(contents_list) > 0:
+            if contents_list:
                 contents_list = list(set(contents_list))
                 if len(contents_list) > 1:  # pragma: no cover
                     # We can not decide how to handle the request, so we raise an
@@ -606,7 +606,7 @@ def config_lost_token(wrapped_function, *args, **kwds):
                                       "action %s" % ACTION.LOSTTOKENPWCONTENTS)
                 kwds["contents"] = contents_list[0]
 
-            if len(validity_list) > 0:
+            if validity_list:
                 validity_list = list(set(validity_list))
                 if len(validity_list) > 1:  # pragma: no cover
                     # We can not decide how to handle the request, so we raise an
@@ -615,7 +615,7 @@ def config_lost_token(wrapped_function, *args, **kwds):
                                       "action %s" % ACTION.LOSTTOKENVALID)
                 kwds["validity"] = int(validity_list[0])
 
-            if len(pw_len_list) > 0:
+            if pw_len_list:
                 pw_len_list = list(set(pw_len_list))
                 if len(pw_len_list) > 1:  # pragma: no cover
                     # We can not decide how to handle the request, so we raise an

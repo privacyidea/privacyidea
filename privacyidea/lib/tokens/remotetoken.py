@@ -261,8 +261,7 @@ class RemoteTokenClass(TokenClass):
                   (len(otpval), remoteServer, remoteSerial, remoteUser))
         params = {}
 
-        if len(remotePath) == 0:
-            remotePath = "/validate/check"
+        remotePath = remotePath or "/validate/check"
         if remoteSerial:
             params['serial'] = remoteSerial
         elif remoteUser:
