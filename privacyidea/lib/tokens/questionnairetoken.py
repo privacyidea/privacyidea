@@ -46,6 +46,14 @@ DEFAULT_NUM_ANSWERS = 5
 
 class QuestionnaireTokenClass(TokenClass):
 
+    """
+    This is a Questionnaire Token. The token stores a list of questions and
+    answers in the tokeninfo database table. The answers are encrypted.
+    During authentication a random answer is selected and presented as
+    challenge.
+    The user has to remember and pass the right answer.
+    """
+
     @staticmethod
     def get_class_type():
         """

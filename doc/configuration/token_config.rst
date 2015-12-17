@@ -23,6 +23,10 @@ At the moment the following tokentypes are supported:
   a `public Algorithm <http://motp.sourceforge.net>`_.
 * :ref:`paper_token` - event based One Time Password tokens that get
   you list of one time passwords on a sheet of paper.
+* :ref:`questionnaire_token` - A token that contains a list of answered
+  questions. During authentication a random question is presented as
+  challenge from the list of answered questions is presented. The user must
+  give the right answer.
 * :ref:`email_token` - A token that sends the OTP value to the EMail address of
   the user.
 * :ref:`four_eyes` - Meta token that can be used to create a

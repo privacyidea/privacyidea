@@ -33,6 +33,12 @@ log = logging.getLogger(__name__)
 
 class PaperTokenClass(HotpTokenClass):
 
+    """
+    The Paper Token allows to print out the next e.g. 100 OTP values.
+    This sheet of paper can be used to authenticate and strike out the used
+    OTP values.
+    """
+
     @log_with(log)
     def __init__(self, db_token):
         """
