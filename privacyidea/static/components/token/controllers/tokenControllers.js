@@ -123,6 +123,9 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     $scope.U2FToken = {};
     // System default values for enrollment
     $scope.systemDefault = {};
+    // questions for questionnaire token
+    $scope.questions = [];
+    $scope.num_questions = 5;
     // These are values that are also sent to the backend!
     $scope.form = {
         timeStep: 30,
@@ -335,6 +338,14 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                     $scope.form[entry] = systemDefault[entry];
                 }
             });
+            // Now add the questions
+            angular.forEach(systemDefault, function(value, key) {
+                if (key.indexOf("question.question.") === 0) {
+                    $scope.questions.push(value);
+                }
+            });
+            $scope.num_answers = systemDefault["question.num_answers"];
+            console.log($scope.questions);
             console.log($scope.form);
         });
     }

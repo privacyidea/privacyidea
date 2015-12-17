@@ -10,6 +10,7 @@ from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    reset_token)
 from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy
+from privacyidea.lib.error import TokenAdminError
 
 import smtpmock
 
@@ -804,6 +805,17 @@ class ValidateAPITestCase(MyTestCase):
                      "frage3": "antwort3"}
         j_questions = json.dumps(questions)
 
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "question",
+                                                 "pin": pin,
+                                                 "serial": serial,
+                                                 "questions": j_questions},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+
+        set_privacyidea_config("question.num_answers", 2)
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "question",

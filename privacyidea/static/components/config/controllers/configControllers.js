@@ -361,6 +361,7 @@ myApp.controller("tokenConfigController", function ($scope, $location,
     $scope.form = {};
     $scope.original_params = {};
     $scope.instanceUrl = instanceUrl;
+    $scope.nextQuestion = 0;
     $scope.formInit = {
         totpSteps: ["30", "60"],
         hashlibs: ["sha1", "sha256", "sha512"],
@@ -390,6 +391,15 @@ myApp.controller("tokenConfigController", function ($scope, $location,
             // problems when unchecking a checked checkbox
             $scope.form['email.tls'] = $scope.isChecked($scope.form['email.tls']);
             $scope.form['remote.verify_ssl_certificate'] = $scope.isChecked($scope.form['remote.verify_ssl_certificate']);
+            angular.forEach($scope.form, function(value, key){
+                if (key.indexOf('question.question.') === 0) {
+                    counter = key.split('.')[2];
+                    if (counter >= $scope.nextQuestion) {
+                        $scope.nextQuestion += 1;
+                    }
+
+                }
+            });
         });
     };
 
@@ -402,13 +412,13 @@ myApp.controller("tokenConfigController", function ($scope, $location,
         });
         ConfigFactory.saveSystemConfig(save_params, function (data) {
             if (data.result.status === true) {
-                inform.add(gettextCatalog.getSring("System Config saved."),
+                inform.add(gettextCatalog.getString("System Config saved."),
                                 {type: "info"});
             }
         });
     };
 
-    $scope.yubikeyAppIdDelete = function(apiId) {
+    $scope.deleteSystemEntry = function(apiId) {
           ConfigFactory.delSystemConfig(apiId, function(data) {
               if (data.result.status === true) {
                   inform.add(gettextCatalog.getString("System entry deleted."),
@@ -422,6 +432,11 @@ myApp.controller("tokenConfigController", function ($scope, $location,
         ConfigFactory.getRandom(20, "b64", function(data){
             $scope.form['yubikey.apiid.' + apiId] = data.result.value;
         });
+    };
+
+    $scope.addQuestion = function() {
+        $scope.saveTokenConfig();
+        $scope.nextQuestion += 1;
     };
 
     $scope.sendTestEmail = function() {

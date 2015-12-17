@@ -6,6 +6,7 @@ This depends on lib.tokenclass
 from .base import MyTestCase
 from privacyidea.lib.tokens.questionnairetoken import QuestionnaireTokenClass
 from privacyidea.lib.token import init_token
+from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.models import Token
 import json
 
@@ -25,6 +26,7 @@ class QuestionnaireTokenTestCase(MyTestCase):
         self.setUp_user_realms()
 
     def test_01_create_token(self):
+        set_privacyidea_config("question.num_answers", 3)
         token = init_token({"type": "question",
                             "pin": self.pin,
                             "serial": self.serial1,

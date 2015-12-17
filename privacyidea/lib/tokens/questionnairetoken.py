@@ -28,6 +28,7 @@ from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
+from privacyidea.lib.error import TokenAdminError
 import logging
 from privacyidea.models import Challenge
 from privacyidea.lib.challenge import get_challenges
@@ -40,6 +41,7 @@ _ = gettext.gettext
 log = logging.getLogger(__name__)
 optional = True
 required = False
+DEFAULT_NUM_ANSWERS = 5
 
 
 class QuestionnaireTokenClass(TokenClass):
@@ -115,7 +117,17 @@ class QuestionnaireTokenClass(TokenClass):
         :return: None
         """
         j_questions = getParam(param, "questions", required)
-        questions = json.loads(j_questions)
+        try:
+            # If we have a string, we load the json format
+            questions = json.loads(j_questions)
+        except TypeError:
+            # Obviously we have a dict...
+            questions = j_questions
+        num_answers = get_from_config("question.num_answers",
+                                      DEFAULT_NUM_ANSWERS)
+        if len(questions) < int(num_answers):
+            raise TokenAdminError(_("You need to provide at least %s "
+                                    "answers.") % num_answers)
         # Save all questions and answers and encrypt them
         for question, answer in questions.iteritems():
             self.add_tokeninfo(question, answer, value_type="password")

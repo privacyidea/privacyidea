@@ -41,6 +41,11 @@
                     <a ui-sref="config.tokens({tokentype: 'email'})">EMail</a>
                 </li>
                 <li role="presentation"
+                    ng-class="{ active: tokentype == 'question'}">
+                    <a ui-sref="config.tokens({tokentype: 'question'})
+                    " translate>Questionnaire</a>
+                </li>
+                <li role="presentation"
                     ng-class="{ active: tokentype == 'yubico'}">
                     <a ui-sref="config.tokens({tokentype: 'yubico'})">Yubico</a>
                 </li>
