@@ -1,8 +1,8 @@
-python-privacyidea (2.9~dev1-1) wheezy; urgency=low
+python-privacyidea (2.9~dev2-1) wheezy; urgency=low
 
   * Set development version number
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Sun, 29 Nov 2015 08:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Sat, 19 Dec 2015 00:50:00 +0200
 
 
 
