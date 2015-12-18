@@ -74,7 +74,6 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            encrypt_pin, check_otp_pin,
                                            check_external)
 from privacyidea.api.auth import admin_required
-from ..lib.error import ParameterError
 
 
 token_blueprint = Blueprint('token_blueprint', __name__)
