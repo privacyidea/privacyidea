@@ -143,3 +143,25 @@ If you activate debug log level you will see the submitted SMS and the response
 content from the Sipgate gateway.
 
 
+SMTP provider
+~~~~~~~~~~~~~
+
+The SMTP provider sends an email to an email gateway. This is a specified,
+fixed mail address.
+
+The mail should contain the phone number and the OTP value. The email gateway
+will send the OTP via SMS to the given phone number.
+
+The SMTP provider needs to be configured like this::
+
+   {"MAILSERVER": "localhost:25",
+    "MAILTO": "recp@example.com",
+    "MAILSENDER": "pi@example.com",
+    "MAILUSER": "username",
+    "MAILPASSWORD": "sosecret"}
+
+The default *SUBJECT* is set to *<phone>* and the default *BODY* to *<otp>*.
+You may change the *SUBJECT* and the *BODY* accordingly.
+
+Optional parameters are *MAILUSER* and *MAILPASSWORD* if the mailserver to
+send the email needs authentication.
