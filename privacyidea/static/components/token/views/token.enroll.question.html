@@ -10,8 +10,8 @@
 </p>
 
 <div class="form-group" ng-repeat="question in questions">
-    <label for="">{{ question }}</label>
+    <label>{{ question }}</label>
     <input type="text"
            class="form-control"
-           ng-model="form.questions[question]" name="radiusServer">
+           ng-model="form.questions[question]">
 </div>

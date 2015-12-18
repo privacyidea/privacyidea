@@ -622,3 +622,7 @@ class TokenBaseTestCase(MyTestCase):
         r = TokenClass.test_config()
         self.assertEqual(r[0], False)
         self.assertEqual(r[1], "Not implemented")
+
+    def test_33_get_setting_type(self):
+        r = TokenClass.get_setting_type("something")
+        self.assertEqual(r, "")

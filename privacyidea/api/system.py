@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2015-12-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Remove the complete before and after logic
 # 2015-10-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add a call for testing token config
 # 2015-09-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -46,21 +48,14 @@ from .lib.utils import (getParam,
                         getLowerParams,
                         optional,
                         required,
-                        send_result,
-                        send_error,
-                        get_all_params)
+                        send_result)
 from ..lib.log import log_with
-from ..lib.config import (get_privacyidea_config,
-                          get_token_class,
+from ..lib.config import (get_token_class,
                           set_privacyidea_config,
                           delete_privacyidea_config,
                           get_from_config)
 from ..api.lib.prepolicy import prepolicy, check_base_action
-from ..lib.error import (ParameterError, privacyIDEAError,
-                         AuthError,
-                         PolicyError)
-
-from ..lib.audit import getAudit
+from ..lib.error import ParameterError
 
 from .auth import admin_required
 from flask import (g, current_app, render_template)
@@ -73,18 +68,6 @@ from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.policy import PolicyClass, ACTION
 from privacyidea.lib.auth import get_db_admins
-from .resolver import resolver_blueprint
-from .policy import policy_blueprint
-from .realm import realm_blueprint
-from .realm import defaultrealm_blueprint
-from .user import user_blueprint
-from .token import token_blueprint
-from .audit import audit_blueprint
-from .machineresolver import machineresolver_blueprint
-from .machine import machine_blueprint
-from .application import application_blueprint
-from .caconnector import caconnector_blueprint
-from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.crypto import geturandom
 import base64
@@ -97,153 +80,9 @@ log = logging.getLogger(__name__)
 system_blueprint = Blueprint('system_blueprint', __name__)
 
 
-@system_blueprint.before_request
-@resolver_blueprint.before_request
-@machineresolver_blueprint.before_request
-@machine_blueprint.before_request
-@realm_blueprint.before_request
-@defaultrealm_blueprint.before_request
-@policy_blueprint.before_request
-@application_blueprint.before_request
-@admin_required
-def before_request():
-    """
-    This is executed before the request
-    It is checked, if a user of role admin is logged in.
-
-    Checks for either user OR admin are performed in api/token.py.
-    """
-    # remove session from param and gather all parameters, either
-    # from the Form data or from JSON in the request body.
-    request.all_data = get_all_params(request.values, request.data)
-    # Already get some typical parameters to log
-    serial = getParam(request.all_data, "serial")
-    realm = getParam(request.all_data, "realm")
-
-    g.policy_object = PolicyClass()
-    g.audit_object = getAudit(current_app.config)
-    g.audit_object.log({"success": False,
-                        "serial": serial,
-                        "realm": "%s" % realm,
-                        "client": request.remote_addr,
-                        "client_user_agent": request.user_agent.browser,
-                        "privacyidea_server": request.host,
-                        "action": "%s %s" % (request.method, request.url_rule),
-                        "administrator": g.logged_in_user.get("username"),
-                        "action_detail": "",
-                        "info": ""})
-
-
-@system_blueprint.after_request
-@resolver_blueprint.after_request
-@realm_blueprint.after_request
-@defaultrealm_blueprint.after_request
-@policy_blueprint.after_request
-@user_blueprint.after_request
-@token_blueprint.after_request
-@audit_blueprint.after_request
-@application_blueprint.after_request
-@machine_blueprint.after_request
-@machineresolver_blueprint.after_request
-@caconnector_blueprint.after_request
-@postrequest(sign_response, request=request)
-def after_request(response):
-    """
-    This function is called after a request
-    :return: The response
-    """
-    # In certain error cases the before_request was not handled
-    # completely so that we do not have an audit_object
-    if "audit_object" in g:
-        g.audit_object.finalize_log()
-
-    # No caching!
-    response.headers['Cache-Control'] = 'no-cache'
-    return response
-
-
-@system_blueprint.errorhandler(AuthError)
-@realm_blueprint.app_errorhandler(AuthError)
-@defaultrealm_blueprint.app_errorhandler(AuthError)
-@resolver_blueprint.app_errorhandler(AuthError)
-@policy_blueprint.app_errorhandler(AuthError)
-@user_blueprint.app_errorhandler(AuthError)
-@token_blueprint.app_errorhandler(AuthError)
-@audit_blueprint.app_errorhandler(AuthError)
-@application_blueprint.app_errorhandler(AuthError)
-@postrequest(sign_response, request=request)
-def auth_error(error):
-    if "audit_object" in g:
-        g.audit_object.log({"info": error.description})
-        g.audit_object.finalize_log()
-    return send_error(error.description,
-                      error_code=-401,
-                      details=error.details), error.status_code
-
-
-@system_blueprint.errorhandler(PolicyError)
-@realm_blueprint.app_errorhandler(PolicyError)
-@defaultrealm_blueprint.app_errorhandler(PolicyError)
-@resolver_blueprint.app_errorhandler(PolicyError)
-@policy_blueprint.app_errorhandler(PolicyError)
-@user_blueprint.app_errorhandler(PolicyError)
-@token_blueprint.app_errorhandler(PolicyError)
-@audit_blueprint.app_errorhandler(PolicyError)
-@application_blueprint.app_errorhandler(PolicyError)
-@postrequest(sign_response, request=request)
-def policy_error(error):
-    if "audit_object" in g:
-        g.audit_object.log({"info": error.message})
-        g.audit_object.finalize_log()
-    return send_error(error.message), error.id
-
-
-@system_blueprint.app_errorhandler(privacyIDEAError)
-@realm_blueprint.app_errorhandler(privacyIDEAError)
-@defaultrealm_blueprint.app_errorhandler(privacyIDEAError)
-@resolver_blueprint.app_errorhandler(privacyIDEAError)
-@policy_blueprint.app_errorhandler(privacyIDEAError)
-@user_blueprint.app_errorhandler(privacyIDEAError)
-@token_blueprint.app_errorhandler(privacyIDEAError)
-@audit_blueprint.app_errorhandler(privacyIDEAError)
-@application_blueprint.app_errorhandler(privacyIDEAError)
-@postrequest(sign_response, request=request)
-def privacyidea_error(error):
-    """
-    This function is called when an privacyIDEAError occurs.
-    These are not that critical exceptions.
-    """
-    if "audit_object" in g:
-        g.audit_object.log({"info": unicode(error)})
-        g.audit_object.finalize_log()
-    return send_error(unicode(error), error_code=error.id), 400
-
-
-# other errors
-@system_blueprint.app_errorhandler(500)
-@realm_blueprint.app_errorhandler(500)
-@defaultrealm_blueprint.app_errorhandler(500)
-@resolver_blueprint.app_errorhandler(500)
-@policy_blueprint.app_errorhandler(500)
-@user_blueprint.app_errorhandler(500)
-@token_blueprint.app_errorhandler(500)
-@audit_blueprint.app_errorhandler(500)
-@application_blueprint.app_errorhandler(500)
-@postrequest(sign_response, request=request)
-def internal_error(error):
-    """
-    This function is called when an internal error (500) occurs.
-    i.e. if a normal exception, that is not inherited from privacyIDEAError
-    occurs.
-    """
-    if "audit_object" in g:
-        g.audit_object.log({"info": unicode(error)})
-        g.audit_object.finalize_log()
-    return send_error(unicode(error), error_code=-500), 500
-
-
 @system_blueprint.route('/documentation', methods=['GET'])
 @prepolicy(check_base_action, request, ACTION.CONFIGDOCUMENTATION)
+@admin_required
 def get_config_documentation():
     """
     returns an restructured text document, that describes the complete
@@ -278,14 +117,18 @@ def get_config(key=None):
     This endpoint either returns all config entries or only the value of the
     one config key.
 
+    This endpoint can be called by the administrator but also by the normal
+    user, so that the normal user gets necessary information about the system
+    config
+
     :param key: The key to return.
     :return: A json response or a single value, when queried with a key.
     :rtype: json or scalar
     """
     if not key:
-        result = get_from_config()
+        result = get_from_config(role=g.logged_in_user.get("role"))
     else:
-        result = get_from_config(key)
+        result = get_from_config(key, role=g.logged_in_user.get("role"))
 
     g.audit_object.log({"success": True,
                         "info": key})
@@ -294,6 +137,7 @@ def get_config(key=None):
 
 @system_blueprint.route('/setConfig', methods=['POST'])
 @prepolicy(check_base_action, request, ACTION.SYSTEMWRITE)
+@admin_required
 def set_config():
     """
     set a configuration key or a set of configuration entries
@@ -358,6 +202,7 @@ def set_config():
 
 @system_blueprint.route('/setDefault', methods=['POST'])
 @prepolicy(check_base_action, request, ACTION.SYSTEMWRITE)
+@admin_required
 def set_default():
     """
     define default settings for tokens. These default settings
@@ -405,6 +250,7 @@ def set_default():
 @system_blueprint.route('/<key>', methods=['DELETE'])
 @prepolicy(check_base_action, request, ACTION.SYSTEMDELETE)
 @log_with(log)
+@admin_required
 def delete_config(key=None):
     """
     delete a configuration key
@@ -424,6 +270,7 @@ def delete_config(key=None):
 @system_blueprint.route('/hsm', methods=['POST'])
 @prepolicy(check_base_action, request, ACTION.SETHSM)
 @log_with(log)
+@admin_required
 def set_security_module():
     """
     Set the password for the security module
@@ -442,6 +289,7 @@ def set_security_module():
 
 @system_blueprint.route('/hsm', methods=['GET'])
 @log_with(log)
+@admin_required
 def get_security_module():
     """
     Get the status of the security module.

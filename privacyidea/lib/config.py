@@ -59,21 +59,32 @@ def get_privacyidea_config():
 
 @log_with(log)
 #@cache.memoize(1)
-def get_from_config(key=None, default=None):
+def get_from_config(key=None, default=None, role="admin"):
     """
     :param key: A key to retrieve
     :type key: string
     :param default: The default value, if it does not exist in the database
+    :param role: The role which wants to retrieve the system config. Can be
+        "admin" or "public". If "public", only values with type="public"
+        are returned.
+    :type role: string
     :return: If key is None, then a dictionary is returned. I a certain key
-              is given a string/bool is returned.
+        is given a string/bool is returned.
     """
     default_true_keys = ["PrependPin", "splitAtSign",
                          "IncFailCountOnFalsePin", "ReturnSamlAttributes"]
+    sql_query = Config.query
+    if role != "admin":
+        # set the filter to get only public infos!
+        # We could match for "public", but matching for not "admin" seems to
+        # be safer
+        sql_query = sql_query.filter_by(Type="public")
+
     if key:
-        q = Config.query.filter_by(Key=key).first()
-        if q:
-            rvalue = q.Value
-            if q.Type == "password":
+        sql_query = sql_query.filter_by(Key=key).first()
+        if sql_query:
+            rvalue = sql_query.Value
+            if sql_query.Type == "password":
                 rvalue = decryptPassword(rvalue)
         else:
             if key in default_true_keys:
@@ -82,15 +93,16 @@ def get_from_config(key=None, default=None):
                 rvalue = default
     else:
         rvalue = {}
-        q = Config.query.all()
-        for entry in q:
+        sql_query.all()
+        for entry in sql_query:
             value = entry.Value
             if entry.Type == "password":
                 value = decryptPassword(value)
             rvalue[entry.Key] = value
-        for tkey in default_true_keys:
-            if tkey not in rvalue:
-                rvalue[tkey] = "True"
+        if role == "admin":
+            for tkey in default_true_keys:
+                if tkey not in rvalue:
+                    rvalue[tkey] = "True"
 
     return rvalue
 
@@ -621,12 +633,25 @@ def get_machine_resolver_module_list():
 
 
 def set_privacyidea_config(key, value, typ="", desc=""):
+    """
+    Set a config value and writes it to the Config database table.
+    Can by of type "password" or "public". "password" gets encrypted.
+    """
+    if not typ:
+        # check if this is a token specific config and if it should be public
+        try:
+            token_type = key.split(".")[0]
+            tclass = get_token_class(token_type)
+            typ = tclass.get_setting_type(key)
+        except Exception:
+            log.debug("This seems to be no token specific setting")
+
     ret = 0
-    # We need to check, if the value already exist
-    q1 = Config.query.filter_by(Key=key).count()
     if typ == "password":
         # store value in encrypted way
         value = encryptPassword(value)
+    # We need to check, if the value already exist
+    q1 = Config.query.filter_by(Key=key).count()
     if q1 > 0:
         # The value already exist, we need to update
         data = {'Value': value}

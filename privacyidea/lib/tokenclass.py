@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2015-12-18 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Add get_setting_type
 #  2015-10-12 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Add testconfig classmethod
 #  2015-09-07 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -1324,3 +1326,18 @@ class TokenClass(object):
         :rtype: tuple
         """
         return False, "Not implemented"
+
+    @staticmethod
+    def get_setting_type(key):
+        """
+        This function returns the type of the token specific config/setting.
+        This way a tokenclass can define settings, that can be "public" or a
+        "password". If this setting is written to the database, the type of
+        the setting is set automatically in set_privacyidea_config
+
+        The key name needs to start with the token type.
+
+        :param key: The token specific setting key
+        :return: A string like "public"
+        """
+        return ""

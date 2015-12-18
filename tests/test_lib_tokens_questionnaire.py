@@ -67,3 +67,7 @@ class QuestionnaireTokenTestCase(MyTestCase):
                                            options={"transaction_id":
                                                         transactionid})
         self.assertEqual(r, 1)
+
+    def test_03_get_setting_type(self):
+        r = QuestionnaireTokenClass.get_setting_type("question.question.1")
+        self.assertEqual(r, "public")

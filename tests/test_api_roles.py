@@ -185,12 +185,49 @@ class APISelfserviceTestCase(MyTestCase):
 
         delete_realm("adminrealm")
 
+    def test_02_user_allowed_to_get_config(self):
+        self.authenticate_selfserive_user()
+        # The user is allowed to get the system config
+        with self.app.test_request_context('/system/',
+                                           method='GET',
+                                           headers={'Authorization':
+                                                        self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
 
     def test_02_user_not_allowed(self):
         self.authenticate_selfserive_user()
-        # The user is not allowed to read system information
-        with self.app.test_request_context('/system/',
+        # The user is not allowed to write system information
+        with self.app.test_request_context('/system/setConfig',
+                                           method='POST',
+                                           headers={'Authorization':
+                                                        self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+
+        with self.app.test_request_context('/system/setDefault',
+                                           method='POST',
+                                           headers={'Authorization':
+                                                        self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+
+        with self.app.test_request_context('/system/documentation',
                                            method='GET',
+                                           headers={'Authorization':
+                                                        self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+
+        with self.app.test_request_context('/system/hsm',
+                                           method='GET',
+                                           headers={'Authorization':
+                                                        self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+
+        with self.app.test_request_context('/system/hsm',
+                                           method='POST',
                                            headers={'Authorization':
                                                         self.at_user}):
             res = self.app.full_dispatch_request()

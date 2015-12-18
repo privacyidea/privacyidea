@@ -281,3 +281,15 @@ class QuestionnaireTokenClass(TokenClass):
 
         self.challenge_janitor()
         return otp_counter
+
+    @staticmethod
+    def get_setting_type(key):
+        """
+        The setting type of questions is public, so that the user can also
+        read the questions.
+
+        :param key: The key of the setting
+        :return: "public" string
+        """
+        if key.startswith("question.question."):
+            return "public"

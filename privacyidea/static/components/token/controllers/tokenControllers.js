@@ -320,35 +320,34 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     $scope.getCAConnectors();
 
     // If the user is admin, he can read the config.
-    if ($scope.loggedInUser.role == "admin") {
-        ConfigFactory.loadSystemConfig(function (data) {
-            /* Default config values like
-                radius.server, radius.secret...
-             are stored in systemDefault and $scope.form
-             */
-            var systemDefault = data.result.value;
-            console.log("SystemDefault");
-            console.log(systemDefault);
-            // TODO: The entries should be handled automatically.
-            var entries = ["radius.server", "radius.secret", "remote.server",
-                "totp.hashlib", "hotp.hashlib", "email.mailserver",
-                "email.mailfrom", "sms.provider", "yubico.id", "tiqr.regServer"];
-            entries.forEach(function(entry) {
-                if (!$scope.form[entry]) {
-                    $scope.form[entry] = systemDefault[entry];
-                }
-            });
-            // Now add the questions
-            angular.forEach(systemDefault, function(value, key) {
-                if (key.indexOf("question.question.") === 0) {
-                    $scope.questions.push(value);
-                }
-            });
-            $scope.num_answers = systemDefault["question.num_answers"];
-            console.log($scope.questions);
-            console.log($scope.form);
+    ConfigFactory.loadSystemConfig(function (data) {
+        /* Default config values like
+            radius.server, radius.secret...
+         are stored in systemDefault and $scope.form
+         */
+        var systemDefault = data.result.value;
+        console.log("system default config");
+        console.log(systemDefault);
+        // TODO: The entries should be handled automatically.
+        var entries = ["radius.server", "radius.secret", "remote.server",
+            "totp.hashlib", "hotp.hashlib", "email.mailserver",
+            "email.mailfrom", "sms.provider", "yubico.id", "tiqr.regServer"];
+        entries.forEach(function(entry) {
+            if (!$scope.form[entry]) {
+                // preset the UI
+                $scope.form[entry] = systemDefault[entry];
+            }
         });
-    }
+        // Now add the questions
+        angular.forEach(systemDefault, function(value, key) {
+            if (key.indexOf("question.question.") === 0) {
+                $scope.questions.push(value);
+            }
+        });
+        $scope.num_answers = systemDefault["question.num_answers"];
+        console.log($scope.questions);
+        console.log($scope.form);
+    });
 
     // open the window to generate the key pair
     $scope.openCertificateWindow = function () {

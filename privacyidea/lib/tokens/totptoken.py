@@ -613,3 +613,10 @@ class TotpTokenClass(HotpTokenClass):
             ret = True
             
         return ret, error, otp_dict
+
+    @staticmethod
+    def get_setting_type(key):
+        settings = {"totp.hashlib": "public",
+                    "totp.timeStep": "public",
+                    "totp.timeWindow": "public"}
+        return settings.get(key, "")

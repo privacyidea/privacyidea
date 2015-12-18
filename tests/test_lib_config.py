@@ -201,3 +201,30 @@ class ConfigTestCase(MyTestCase):
         self.assertTrue("hosts" in types.values(), types.values())
         self.assertTrue("privacyidea.lib.machines.hosts.HostsMachineResolver"
                         in classes.keys(), classes)
+
+    def test_06_public_and_admin(self):
+        # This tests the new public available config
+        set_privacyidea_config("publicInfo1", "info1", typ="public")
+        set_privacyidea_config("publicInfo2", "info2", typ="public")
+        set_privacyidea_config("secretInfo1", "info1")
+
+        # Get administrators info
+        a = get_from_config()
+        self.assertTrue("secretInfo1" in a)
+        self.assertTrue("publicInfo1" in a)
+        a = get_from_config("publicInfo1")
+        self.assertEqual(a, "info1")
+        a = get_from_config("secretInfo1")
+        self.assertEqual(a, "info1")
+
+        # Get public info as user
+        a = get_from_config()
+        self.assertTrue("publicInfo1" in a)
+        a = get_from_config("publicInfo1")
+        self.assertEqual(a, "info1")
+
+        # Not able to get private info as user
+        a = get_from_config(role="public")
+        self.assertTrue("secretInfo1" not in a)
+        a = get_from_config("secretInfo1", role="public")
+        self.assertEqual(a, None)

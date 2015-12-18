@@ -708,3 +708,9 @@ class TOTPTokenTestCase(MyTestCase):
         token = TotpTokenClass(db_token)
         r = token.check_otp("67062674", options={"initTime": 1111111111})
         self.assertTrue(r)
+
+    def test_26_get_setting_type(self):
+        r = TotpTokenClass.get_setting_type("totp.hashlib")
+        self.assertEqual(r, "public")
+        r = TotpTokenClass.get_setting_type("totp.blabla")
+        self.assertEqual(r, "")

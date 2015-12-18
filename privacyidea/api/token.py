@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2015-12-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Move the complete before and after logic
 # 2015-11-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add the endpoint for retrieving challenges
 # 2015-11-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -41,7 +43,7 @@
 from flask import Blueprint
 from ..lib.log import log_with
 from lib.utils import (optional,
-                       send_result,
+                       send_result, send_error,
                        send_csv_result, required, get_all_params)
 from ..lib.user import get_user_from_param
 from ..lib.token import (init_token, get_tokens_paginate, assign_token,
@@ -62,9 +64,7 @@ from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
 import logging
 from lib.utils import getParam
 from flask import request, g
-from privacyidea.lib.audit import getAudit
-from flask import current_app
-from privacyidea.lib.policy import PolicyClass, ACTION
+from privacyidea.lib.policy import ACTION
 from privacyidea.lib.challenge import get_challenges_paginate
 from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            check_token_init, check_token_upload,
@@ -73,10 +73,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            init_tokenlabel, init_random_pin,
                                            encrypt_pin, check_otp_pin,
                                            check_external)
-from privacyidea.api.auth import (user_required, admin_required)
-from privacyidea.api.audit import audit_blueprint
-from privacyidea.api.user import user_blueprint
-from .caconnector import caconnector_blueprint
+from privacyidea.api.auth import admin_required
+from ..lib.error import ParameterError
 
 
 token_blueprint = Blueprint('token_blueprint', __name__)
@@ -93,62 +91,6 @@ Some API calls are only allowed to be accessed by adminitrators.
 
 To see how to authenticate read :ref:`rest_auth`.
 """
-
-@token_blueprint.before_request
-@audit_blueprint.before_request
-@user_blueprint.before_request
-@caconnector_blueprint.before_request
-@user_required
-def before_request():
-    """
-    This is executed before the request.
-
-    user_required checks if there is a logged in admin or user
-
-    The checks for ONLY admin are preformed in api/system.py
-    """
-    # remove session from param and gather all parameters, either
-    # from the Form data or from JSON in the request body.
-    request.all_data = get_all_params(request.values, request.data)
-
-    g.policy_object = PolicyClass()
-    g.audit_object = getAudit(current_app.config)
-    # Already get some typical parameters to log
-    serial = getParam(request.all_data, "serial")
-    realm = getParam(request.all_data, "realm")
-    # log it
-    g.audit_object.log({"success": False,
-                        "serial": serial,
-                        "realm": realm,
-                        "client": request.remote_addr,
-                        "client_user_agent": request.user_agent.browser,
-                        "privacyidea_server": request.host,
-                        "action": "%s %s" % (request.method, request.url_rule),
-                        "action_detail": "",
-                        "info": ""})
-
-    if g.logged_in_user.get("role") == "user":
-        # A user is calling this API
-        # In case the token API is called by the user and not by the admin we
-        #  need to restrict the token view.
-        CurrentUser = get_user_from_param({"user":
-                                               g.logged_in_user.get(
-                                                   "username"),
-                                           "realm": g.logged_in_user.get(
-                                               "realm")})
-        request.all_data["user"] = CurrentUser.login
-        request.all_data["resolver"] = CurrentUser.resolver
-        request.all_data["realm"] = CurrentUser.realm
-        g.audit_object.log({"user": CurrentUser.login,
-                            "realm": CurrentUser.realm})
-    else:
-        # An administrator is calling this API
-        g.audit_object.log({"administrator": g.logged_in_user.get("username")})
-        # TODO: Check is there are realm specific admin policies, so that the
-        # admin is only allowed to act on certain realms
-        # If now realm is specified, we need to add "filterrealms".
-        # If the admin tries to view realms, he is not allowed to, we need to
-        #  raise an exception.
 
 
 @token_blueprint.route('/init', methods=['POST'])

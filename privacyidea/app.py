@@ -25,6 +25,7 @@ import logging
 import logging.config
 import sys
 from flask import Flask
+import privacyidea.api.before_after
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.api.token import token_blueprint
 from privacyidea.api.system import system_blueprint

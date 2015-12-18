@@ -405,6 +405,7 @@ myApp.controller("tokenConfigController", function ($scope, $location,
 
     $scope.saveTokenConfig = function () {
         // only save parameters, that have changed!
+        console.log($scope.form);
         var save_params = {};
         angular.forEach($scope.form, function (value, key) {
             if (value != $scope.original_params[key])
@@ -611,6 +612,7 @@ myApp.controller("configController", function ($scope, $location,
             console.log(data);
             $scope.params = data.result.value;
             $scope.params.PrependPin = $scope.isChecked($scope.params.PrependPin);
+            $scope.params['PrependPin.type'] = "public";
             $scope.params.splitAtSign = $scope.isChecked($scope.params.splitAtSign);
             $scope.params.IncFailCountOnFalsePin = $scope.isChecked($scope.params.IncFailCountOnFalsePin);
             $scope.params.ReturnSamlAttributes = $scope.isChecked($scope.params.ReturnSamlAttributes);
