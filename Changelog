@@ -1,7 +1,24 @@
-Version 2.9, ..........
+Version 2.9, 2015-12-xx
 
   Features
-  * Add Web UI view to display the active challenges
+  * New token type: Security questions or questionnaire token.
+  * New token type: Paper token. OTP values printed on a piece of paper.
+  * Yubico Validation API: The yubikey tokens can authenticate via
+    /ttype/yubikey which follows the Yubico Validation Protocol.
+
+  Enhancements
+  * Add Web UI view to display the active challenges.
+  * The issuer for the Google Authenticator app can be configured.
+  * The LDAP machine resolver uses an LDAP server pool.
+  * The LDAP user resolver returns a list of mobile numbers.
+
+  Fixes
+  * The test email for the email token now has a sent date.
+  * Fix problem when using encrypted encryption key.
+  * Fix upper case problem when logging in to web UI
+    with REMOTE_USER.
+  * Fix allow set an empty PIN in the web UI.
+  * Fix import of token file in Web UI.
 
 Version 2.8, 2015-11-26
 
