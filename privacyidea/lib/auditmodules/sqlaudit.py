@@ -153,7 +153,8 @@ class Audit(AuditBase):
         except OperationalError as exx:  # pragma: no cover
             log.info("%r" % exx)
 
-    def _create_filter(self, param):
+    @staticmethod
+    def _create_filter(param):
         """
         create a filter condition for the logentry
         """
@@ -306,8 +307,9 @@ class Audit(AuditBase):
             pass
             
         return res
-    
-    def _log_to_string(self, le):
+
+    @staticmethod
+    def _log_to_string(le):
         """
         This function creates a string from the logentry so
         that this string can be signed.
@@ -332,8 +334,9 @@ class Audit(AuditBase):
                                                   le.loglevel,
                                                   le.clearance_level)
         return s
-        
-    def _get_logentry_attribute(self, key):
+
+    @staticmethod
+    def _get_logentry_attribute(key):
         """
         This function returns the LogEntry attribute for the given key value
         """

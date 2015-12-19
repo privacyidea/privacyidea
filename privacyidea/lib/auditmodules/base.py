@@ -121,7 +121,6 @@ class Audit(object):  # pragma: no cover
         """
         self.audit_data['action_detail'] = "tokennum = %s" % str(count)
 
-
     @log_with(log)
     def read_keys(self, pub, priv):
         """
@@ -197,12 +196,12 @@ class Audit(object):  # pragma: no cover
         """
         pass
 
-    def set(self):
-        """
-        This function could be used to set certain things like the signing key.
-        But maybe it should only be read from privacyidea.ini?
-        """
-        pass
+#    def set(self):
+#        """
+#        This function could be used to set certain things like the signing key.
+#        But maybe it should only be read from pi.cfg?
+#        """
+#        pass
 
     def search(self, param, display_error=True, rp_dict=None):
         """
