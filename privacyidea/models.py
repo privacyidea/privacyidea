@@ -1196,7 +1196,8 @@ class Policy(db.Model):
         self.time = time
         self.condition = condition
 
-    def _split_string(self, value):
+    @staticmethod
+    def _split_string(value):
         """
         Split the value at the "," and returns an array.
         If value is empty, it returns an empty array.

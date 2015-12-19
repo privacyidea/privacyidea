@@ -499,7 +499,8 @@ class HotpTokenClass(TokenClass):
         log.debug("end. resync was successful: ret: %r" % (ret))
         return ret
 
-    def get_sync_timeout(self):
+    @staticmethod
+    def get_sync_timeout():
         """
         get the token sync timeout value
 

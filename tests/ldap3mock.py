@@ -100,7 +100,8 @@ class Connection(object):
     def set_directory(self, directory):
         self.directory = directory
 
-    def open(self):
+    @staticmethod
+    def open():
         return
 
     def bind(self):

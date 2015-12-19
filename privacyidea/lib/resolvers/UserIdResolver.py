@@ -101,7 +101,8 @@ class UserIdResolver(object):
         descriptor['config'] = {}
         return {typ: descriptor}
 
-    def getResolverDescriptor(self):
+    @staticmethod
+    def getResolverDescriptor():
         """
         return the descriptor of the resolver, which is
         - the class name and

@@ -109,7 +109,8 @@ class SpassTokenClass(TokenClass):
 
         TokenClass.update(self, param)
 
-    def is_challenge_request(self, passw, user, options=None):
+    @staticmethod
+    def is_challenge_request(passw, user, options=None):
         """
         The spass token does not support challenge response
         :param passw:
@@ -119,7 +120,8 @@ class SpassTokenClass(TokenClass):
         """
         return False  # pragma: no cover
 
-    def is_challenge_response(self, passw, user, options=None, challenges=None):
+    @staticmethod
+    def is_challenge_response(passw, user, options=None, challenges=None):
         return False  # pragma: no cover
 
     @check_token_locked

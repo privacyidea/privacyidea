@@ -149,10 +149,12 @@ class SmtpMock(object):
         self.esmtp_features = {}
         return None
 
-    def _on_debuglevel(self, SMTP_instance, level):
+    @staticmethod
+    def _on_debuglevel(SMTP_instance, level):
         return None
 
-    def _on_quit(self, SMTP_instance):
+    @staticmethod
+    def _on_quit(SMTP_instance):
         return None
 
     def _on_starttls(self, SMTP_instance):

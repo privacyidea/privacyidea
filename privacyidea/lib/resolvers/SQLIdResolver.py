@@ -610,7 +610,8 @@ class IdResolver (UserIdResolver):
                                 'conParams': 'string'}
         return {typ: descriptor}
 
-    def getResolverDescriptor(self):
+    @staticmethod
+    def getResolverDescriptor():
         return IdResolver.getResolverClassDescriptor()
 
     @staticmethod

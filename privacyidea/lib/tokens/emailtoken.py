@@ -276,7 +276,8 @@ class EmailTokenClass(HotpTokenClass):
                 log.debug("AutoEmail: %s" % message)
         return ret
 
-    def _get_email_text_or_subject(self, options,
+    @staticmethod
+    def _get_email_text_or_subject(options,
                                    action=EMAILACTION.EMAILTEXT,
                                    default="<otp>"):
         """
@@ -315,7 +316,8 @@ class EmailTokenClass(HotpTokenClass):
 
         return message
 
-    def _get_auto_email(self, options):
+    @staticmethod
+    def _get_auto_email(options):
         """
         This returns the AUTOEMAIL setting.
 

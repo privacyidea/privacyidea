@@ -84,7 +84,8 @@ class IdResolver (UserIdResolver):
 
         return ret
 
-    def _fill_user_schema_1_0(self, user):
+    @staticmethod
+    def _fill_user_schema_1_0(user):
         # We assume the schema:
         # "schemas": ["urn:scim:schemas:core:1.0"]
 
@@ -164,7 +165,8 @@ class IdResolver (UserIdResolver):
     def getResolverClassType():
         return 'scimresolver'
 
-    def getResolverDescriptor(self):
+    @staticmethod
+    def getResolverDescriptor():
         return IdResolver.getResolverClassDescriptor()
 
     @staticmethod

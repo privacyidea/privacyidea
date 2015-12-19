@@ -82,14 +82,14 @@ class PAMH(object):
 
 class PAMTestCase(MyTestCase):
 
-    @classmethod
-    def setUpClass(cls):
+    @staticmethod
+    def setUpClass():
         conn = sqlite3.connect(SQLFILE)
         c = conn.cursor()
         try:
             c.execute("DROP table authitems")
             conn.commit()
-        except:
+        except Exception:
             print("No need to drop table authitems.")
         conn.close()
         MyTestCase.setUpClass()

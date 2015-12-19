@@ -123,7 +123,7 @@ class IdResolver (UserIdResolver):
         Empty lines are ignored.
         """
 
-        if (self.fileName == ""):
+        if self.fileName == "":
             self.fileName = "/etc/passwd"
 
         log.info('loading users from file %s from within %r' % (self.fileName,
@@ -351,7 +351,8 @@ class IdResolver (UserIdResolver):
         ret = self._stringMatch(email, pattern)
         return ret
 
-    def _stringMatch(self, cString, cPattern):
+    @staticmethod
+    def _stringMatch(cString, cPattern):
         """
         internal function to match strings.
 
@@ -473,7 +474,8 @@ class IdResolver (UserIdResolver):
     def getResolverClassType():
         return 'passwdresolver'
 
-    def getResolverType(self):
+    @staticmethod
+    def getResolverType():
         return IdResolver.getResolverClassType()
 
     @classmethod
@@ -492,7 +494,8 @@ class IdResolver (UserIdResolver):
         descriptor['config'] = {'fileName': 'string'}
         return {typ: descriptor}
 
-    def getResolverDescriptor(self):
+    @staticmethod
+    def getResolverDescriptor():
         return IdResolver.getResolverClassDescriptor()
 
     def loadConfig(self, config):

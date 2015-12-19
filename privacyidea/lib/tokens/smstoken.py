@@ -372,8 +372,9 @@ class SmsTokenClass(HotpTokenClass):
         ret = sms.submit_message(phone, message)
         return ret, message
 
+    @staticmethod
     @log_with(log)
-    def _get_sms_provider(self):
+    def _get_sms_provider():
         """
         get the SMS Provider class definition
 
@@ -386,8 +387,9 @@ class SmsTokenClass(HotpTokenClass):
         (SMSProvider, SMSProviderClass) = smsProvider.rsplit(".", 1)
         return SMSProvider, SMSProviderClass
 
+    @staticmethod
     @log_with(log)
-    def _get_sms_provider_config(self):
+    def _get_sms_provider_config():
         """
         load the defined sms provider config definition
 
@@ -398,8 +400,9 @@ class SmsTokenClass(HotpTokenClass):
         config = loads(tConfig)
         return config
 
+    @staticmethod
     @log_with(log)
-    def _get_sms_timeout(self):
+    def _get_sms_timeout():
         """
         get the challenge time is in the specified range
 
@@ -414,7 +417,8 @@ class SmsTokenClass(HotpTokenClass):
             timeout = 5 * 60
         return timeout
 
-    def _get_sms_text(self, options):
+    @staticmethod
+    def _get_sms_text(options):
         """
         This returns the SMSTEXT from the policy "smstext"
 
@@ -448,7 +452,8 @@ class SmsTokenClass(HotpTokenClass):
 
         return message
 
-    def _get_auto_sms(self, options):
+    @staticmethod
+    def _get_auto_sms(options):
         """
         This returns the AUTOSMS setting.
 

@@ -228,23 +228,27 @@ class TotpTokenClass(HotpTokenClass):
             self.inc_otp_counter(res)
         return res
 
-    def _time2counter(self, T0, timeStepping=60):
+    @staticmethod
+    def _time2counter(T0, timeStepping=60):
         rnd = 0.5
         counter = int((T0 / timeStepping) + rnd)
         return counter
 
-    def _counter2time(self, counter, timeStepping=60):
+    @staticmethod
+    def _counter2time(counter, timeStepping=60):
         rnd = 0.5
         T0 = (float(counter) - rnd) * int(timeStepping)
         return T0
 
-    def _getTimeFromCounter(self, counter, timeStepping=30, rnd=1):
+    @staticmethod
+    def _getTimeFromCounter(counter, timeStepping=30, rnd=1):
         idate = int(counter - rnd) * timeStepping
         ddate = datetime.datetime.fromtimestamp(idate / 1.0)
         return ddate
 
+    @staticmethod
     @log_with(log)
-    def _time2float(self, curTime):
+    def _time2float(curTime):
         """
         convert a datetime object or an datetime sting into a
         float

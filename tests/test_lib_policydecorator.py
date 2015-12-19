@@ -43,7 +43,8 @@ class LibPolicyTestCase(MyTestCase):
     """
     Test all the internal libpolicy decorators
     """
-    def fake_check_otp(self, dummy, pin, user=None, options=None):
+    @staticmethod
+    def fake_check_otp(dummy, pin, user=None, options=None):
         return pin == "FAKE"
 
     def test_01_otppin(self):

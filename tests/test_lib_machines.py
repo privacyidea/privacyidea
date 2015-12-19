@@ -112,7 +112,8 @@ class MachineResolverTestCase(MyTestCase):
         self.assertTrue(isinstance(reso_obj, HostsMachineResolver))
         self.assertEqual(reso_obj.type, "hosts")
 
-    def test_05_pretest(self):
+    @staticmethod
+    def test_05_pretest():
         (result, desc) = pretestresolver("hosts", {"filename": "/dev/null"})
 
     def test_06_get_all_machines(self):
