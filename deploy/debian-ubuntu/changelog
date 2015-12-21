@@ -1,8 +1,26 @@
-python-privacyidea (2.9~dev2-1trusty) trusty; urgency=low
+python-privacyidea (2.9-1trusty) trusty; urgency=low
 
-  * Set development version number
+  Features
+  * New token type: Security questions or questionnaire token.
+  * New token type: Paper token. OTP values printed on a piece of paper.
+  * Yubico Validation API: The yubikey tokens can authenticate via
+    /ttype/yubikey which follows the Yubico Validation Protocol.
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Sat, 19 Dec 2015 00:50:00 +0200
+  Enhancements
+  * Add Web UI view to display the active challenges.
+  * The issuer for the Google Authenticator app can be configured.
+  * The LDAP machine resolver uses an LDAP server pool.
+  * The LDAP user resolver returns a list of mobile numbers.
+
+  Fixes
+  * The test email for the email token now has a sent date.
+  * Fix problem when using encrypted encryption key.
+  * Fix upper case problem when logging in to web UI
+    with REMOTE_USER.
+  * Fix allow set an empty PIN in the web UI.
+  * Fix import of token file in Web UI.
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 21 Dec 2015 18:00:00 +0200
 
 python-privacyidea (2.8-1trusty) trusty; urgency=low
 
