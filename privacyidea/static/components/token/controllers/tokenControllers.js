@@ -20,6 +20,7 @@
  */
 myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
                                               $scope, $location, AuthFactory,
+                                              instanceUrl,
                                               $rootScope, gettextCatalog,
                                               hotkeys) {
     $scope.params = {page: 1, sortdir: "asc"};
@@ -365,13 +366,23 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     // print the paper token
     $scope.printOtp = function () {
         var serial = $scope.enrolledToken.serial;
-        var mywindow = window.open('', 'printing div', 'height=400,width=600');
+        var mywindow = window.open('', 'otpPrintingWindow', 'height=400,width=600');
+        var link1 = '<link' +
+            ' href="' + instanceUrl +
+            '/static/contrib/css/bootstrap.css" rel="stylesheet">';
+        var link2 = '<link' +
+            ' href="' + instanceUrl +
+            '/static/contrib/css/bootstrap-theme.css"' +
+            ' rel="stylesheet">';
+
+        console.log(link1);
+        console.log(link2);
         mywindow.document.write('<html><head><title>'+serial+'</title>');
-        mywindow.document.write('<link' +
-            ' href="/static/contrib/css/bootstrap.css" rel="stylesheet">');
-        mywindow.document.write('<link' +
-            ' href="/static/contrib/css/bootstrap-theme.css"' +
-            ' rel="stylesheet"/>');
+        /*
+        TODO: In certain cases (https/instance) the links lead to blank pages!
+        mywindow.document.write(link1);
+        mywindow.document.write(link2);
+        */
         mywindow.document.write('</head><body><h1>'+serial+'</h1>');
         mywindow.document.write($('#paperOtpTable').html());
         mywindow.document.write('</body></html>');
