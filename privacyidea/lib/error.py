@@ -108,6 +108,11 @@ class ValidateError(privacyIDEAError):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
+class RegistrationError(privacyIDEAError):
+    def __init__(self, description="registraion error!", id=10):
+        privacyIDEAError.__init__(self, description=description, id=id)
+
+
 class TokenAdminError(privacyIDEAError):
     def __init__(self, description="token admin error!", id=10):
         privacyIDEAError.__init__(self, description=description, id=id)

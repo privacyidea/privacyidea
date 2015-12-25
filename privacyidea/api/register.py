@@ -28,25 +28,16 @@ register.
 The methods are tested in the file tests/test_api_register.py
 """
 from flask import (Blueprint, request, g, current_app)
-from privacyidea.lib.user import get_user_from_param
 from lib.utils import send_result, getParam
-from ..lib.decorators import (check_user_or_serial_in_request)
 from lib.utils import required
-from privacyidea.lib.token import (check_user_pass, check_serial_pass)
-from privacyidea.api.lib.utils import get_all_params
-from privacyidea.lib.config import return_saml_attributes
-from privacyidea.lib.audit import getAudit
-from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
-                                           api_key_required, mangle)
-from privacyidea.api.lib.postpolicy import (postpolicy,
-                                            check_tokentype, check_serial,
-                                            no_detail_on_fail,
-                                            no_detail_on_success, autoassign,
-                                            offline_info)
-from privacyidea.lib.policy import PolicyClass
 import logging
-from privacyidea.api.lib.postpolicy import postrequest, sign_response
-from privacyidea.api.auth import jwtauth
+from privacyidea.lib.policy import ACTION, SCOPE
+from privacyidea.lib.user import create_user
+from privacyidea.lib.user import User
+from privacyidea.lib.token import init_token
+from privacyidea.lib.realm import get_default_realm
+from privacyidea.lib.error import RegistrationError
+
 
 log = logging.getLogger(__name__)
 
@@ -104,11 +95,39 @@ def register_post():
     result = False
     details = {}
 
-    # TODO: Do something
-    # 1. determine, in which resolver the user should be created
-    # 2. create the user (check if the user exists)
+    # 1. determine, in which resolver/realm the user should be created
+    realm = g.policy_object.get_action_values(ACTION.REALM,
+                                              scope=SCOPE.REGISTER,
+                                              unique=True)
+    if not realm:
+        # No policy for realm, so we use the default realm
+        realm = get_default_realm
+    else:
+        # we use the first realm in the list
+        realm = realm[0]
+    resolvername = g.policy_object.get_action_values(ACTION.RESOLVER,
+                                                     scope=SCOPE.REGISTER,
+                                                     unique=True)
+    resolvername = resolvername[0]
+    # Check if the user exists
+    user = User(username, realm=realm, resolver=resolvername)
+    if user.exist():
+        raise RegistrationError("The username is already registered!")
+    # Create user
+    uid = create_user(resolvername, {"username": username,
+                                     "email": email,
+                                     "phone": phone,
+                                     "mobile": mobile,
+                                     "surname": surname,
+                                     "givenname": givenname,
+                                     "password": password})
+
     # 3. create a registration token for this user
+    user = User(username, realm=realm, resolver=resolvername)
+    token = init_token({"type": "registration"}, user=user)
     # 4. send the registration token to the users email
+    # TODO: send the registration key
+    registration_key = token.init_details.get("otpkey")
     g.audit_object.log({"info": details.get("message"),
                         "success": result})
     return send_result(result, details=details)

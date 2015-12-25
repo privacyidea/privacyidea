@@ -74,7 +74,7 @@ class SQLResolverTestCase(MyTestCase):
         #  add_user) we delete them here.
         y = SQLResolver()
         y.loadConfig(self.parameters)
-        for username in ["achmed", "achmed2"]:
+        for username in ["achmed", "achmed2", "corneliusReg"]:
             uid = True
             while uid:
                 uid = y.getUserId(username)
@@ -175,7 +175,7 @@ class SQLResolverTestCase(MyTestCase):
     def test_03_testconnection(self):
         y = SQLResolver()
         result = y.testconnection(self.parameters)
-        self.assertTrue(result[0] == 6, result)
+        self.assertEqual(result[0], 6)
         self.assertTrue('Found 6 users.' in result[1])
 
     def test_05_add_user_update_delete(self):

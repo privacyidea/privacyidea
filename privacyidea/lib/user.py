@@ -234,9 +234,13 @@ class User(object):
         """
         success = True
         try:
-            _uid, _rtype, _resolver = self.get_user_identifiers()
+            uid, _rtype, _resolver = self.get_user_identifiers()
         except UserError:
             log.debug("User %s does not exist." % self)
+            success = False
+        if not uid:
+            # The SQL resolver does not raise an exception but returns an
+            # empty UID.
             success = False
         return success
 
