@@ -1,4 +1,12 @@
+python-privacyidea (2.10~dev1-1trusty) trusty; urgency=low
+
+  Fixes
+  * Fix special characters in LDAP password 
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 24 Dec 2015 14:55:00 +0200
+
 python-privacyidea (2.9-1trusty) trusty; urgency=low
+
 
   Features
   * New token type: Security questions or questionnaire token.

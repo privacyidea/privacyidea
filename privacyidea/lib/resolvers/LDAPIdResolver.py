@@ -91,6 +91,14 @@ class IdResolver (UserIdResolver):
 
         server_pool = self.get_serverpool(self.uri, self.timeout)
         try:
+            # If the password exists in unicode we encode it to utf-8
+            password = password.encode("utf-8")
+        except UnicodeDecodeError as exx:
+            # In case the password is already an encoded string, we fail to
+            # encode it again...
+            log.debug("Failed to convert password: %s" % type(password))
+
+        try:
             log.debug("Authtype: %s" % self.authtype)
             log.debug("user    : %s" % bind_user)
             # Whatever happens. If we have an empty bind_user, we must break

@@ -15,7 +15,7 @@ info:
 	@echo "make ppa-dev      - upload to launchpad development repo"
 	
 #VERSION=1.3~dev5
-SHORT_VERSION=2.9
+SHORT_VERSION=2.10~dev1
 VERSION_JESSIE=${SHORT_VERSION}
 VERSION=${SHORT_VERSION}
 SERIES="trusty precise vivid"

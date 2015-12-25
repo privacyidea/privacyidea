@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This test file tests the lib.resolver and all
 the resolvers under it:
@@ -38,7 +39,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "givenName": "Robert",
                                 "email": "bob@example.com",
                                 "mobile": "123456",
-                                'userPassword': 'bobpw',
+                                'userPassword': 'bobpwééé',
                                 'oid': "3"}},
                 {"dn": 'cn=manager,ou=example,o=test',
                  "attributes": {'cn': 'manager',
@@ -501,7 +502,7 @@ class LDAPResolverTestCase(MyTestCase):
         username = y.getUsername(user_id)
         self.assertTrue(username == "bob", username)
 
-        res = y.checkPass(user_id, "bobpw")
+        res = y.checkPass(user_id, u"bobpwééé")
         self.assertTrue(res)
 
         res = y.checkPass(user_id, "wrong pw")
@@ -555,7 +556,7 @@ class LDAPResolverTestCase(MyTestCase):
         username = y.getUsername(user_id)
         self.assertTrue(username == "bob@example.com", username)
 
-        res = y.checkPass(user_id, "bobpw")
+        res = y.checkPass(user_id, "bobpwééé")
         self.assertTrue(res)
 
         res = y.checkPass(user_id, "wrong pw")
@@ -598,7 +599,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue("config" in rdesc.get("ldapresolver"), rdesc)
         self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
 
-        res = y.checkPass("bob", "bobpw")
+        res = y.checkPass("bob", "bobpwééé")
         self.assertFalse(res)
 
     @ldap3mock.activate
@@ -648,7 +649,7 @@ class LDAPResolverTestCase(MyTestCase):
         username = y.getUsername(user_id)
         self.assertTrue(username == "bob", username)
 
-        res = y.checkPass(user_id, "bobpw")
+        res = y.checkPass(user_id, "bobpwééé")
         self.assertTrue(res)
 
         res = y.checkPass(user_id, "wrong pw")
