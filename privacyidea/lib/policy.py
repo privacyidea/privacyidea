@@ -134,6 +134,7 @@ class SCOPE(object):
     ENROLL = "enrollment"
     GETTOKEN = "gettoken"
     WEBUI = "webui"
+    REGISTER = "register"
 
 
 class ACTION(object):
@@ -187,10 +188,12 @@ class ACTION(object):
     POLICYDELETE = "policydelete"
     POLICYWRITE = "policywrite"
     POLICYTEMPLATEURL = "policy_template_url"
+    REALM = "realm"
     REMOTE_USER = "remote_user"
     RESET = "reset"
     RESOLVERDELETE = "resolverdelete"
     RESOLVERWRITE = "resolverwrite"
+    RESOLVER = "resolver"
     RESYNC = "resync"
     REVOKE = "revoke"
     SET = "set"
@@ -668,6 +671,14 @@ def get_static_policy_definitions(scope=None):
     """
 
     pol = {
+        SCOPE.REGISTER: {
+            ACTION.RESOLVER: {'type': 'str',
+                              'desc': _('Define in which resolver the user '
+                                        'should be registered.')},
+            ACTION.REALM: {'type': 'str',
+                           'desc': _('Define in which realm the user should '
+                                     'be registered.')}
+        },
         SCOPE.ADMIN: {
             ACTION.ENABLE: {'type': 'bool',
                             'desc': _('Admin is allowed to enable tokens.')},

@@ -322,7 +322,7 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:82
+#: privacyidea/static/templates/menu.html:87
 msgid "Community"
 msgstr ""
 
@@ -606,6 +606,8 @@ msgstr ""
 msgid "Edit user store"
 msgstr ""
 
+#: privacyidea/static/components/register/views/register.html:34
+#: privacyidea/static/components/register/views/register.html:37
 #: privacyidea/static/components/user/views/user.add.html:51
 #: privacyidea/static/components/user/views/user.details.html:57
 #: privacyidea/static/components/user/views/user.password.html:28
@@ -786,6 +788,8 @@ msgstr ""
 msgid "Get System Documentation"
 msgstr ""
 
+#: privacyidea/static/components/register/views/register.html:28
+#: privacyidea/static/components/register/views/register.html:31
 #: privacyidea/static/components/user/views/user.add.html:34
 #: privacyidea/static/components/user/views/user.details.html:29
 #: privacyidea/static/components/user/views/user.password.html:11
@@ -837,6 +841,10 @@ msgstr ""
 msgid ""
 "Here you can upload a csv file for your Yubikey token.\n"
 "            The file is supposed to contain one token per line."
+msgstr ""
+
+#: privacyidea/static/components/register/views/register.html:6
+msgid "Here you may register a new user account"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.details.html:55
@@ -972,7 +980,7 @@ msgstr ""
 msgid "Log out"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:61
+#: privacyidea/static/templates/menu.html:66
 msgid "Login"
 msgstr ""
 
@@ -986,7 +994,7 @@ msgstr ""
 msgid "Login with credentials"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:89
+#: privacyidea/static/templates/menu.html:94
 msgid "Logout"
 msgstr ""
 
@@ -1071,6 +1079,8 @@ msgstr ""
 msgid "Microsoft Internet Explorer is not supported."
 msgstr ""
 
+#: privacyidea/static/components/register/views/register.html:40
+#: privacyidea/static/components/register/views/register.html:43
 #: privacyidea/static/components/user/views/user.add.html:62
 #: privacyidea/static/components/user/views/user.details.html:75
 #: privacyidea/static/components/user/views/user.password.html:40
@@ -1191,7 +1201,7 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/templates/index.html:34
-#: privacyidea/static/templates/menu.html:79
+#: privacyidea/static/templates/menu.html:84
 msgid "Online Documentation"
 msgstr ""
 
@@ -1239,6 +1249,9 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:77
 #: privacyidea/static/components/login/views/login.html:48
 #: privacyidea/static/components/login/views/login.html:52
+#: privacyidea/static/components/register/views/register.html:52
+#: privacyidea/static/components/register/views/register.html:57
+#: privacyidea/static/components/register/views/register.html:62
 #: privacyidea/static/components/user/views/user.add.html:67
 #: privacyidea/static/components/user/views/user.details.html:83
 #: privacyidea/static/components/user/views/user.password.html:50
@@ -1253,6 +1266,8 @@ msgstr ""
 msgid "Paste the ssh PUBLIC key"
 msgstr ""
 
+#: privacyidea/static/components/register/views/register.html:46
+#: privacyidea/static/components/register/views/register.html:49
 #: privacyidea/static/components/user/views/user.add.html:57
 #: privacyidea/static/components/user/views/user.details.html:67
 #: privacyidea/static/components/user/views/user.password.html:35
@@ -1410,6 +1425,12 @@ msgstr ""
 #: privacyidea/static/components/audit/views/audit.log.html:6
 #: privacyidea/static/components/audit/views/audit.stats.html:4
 msgid "Refresh"
+msgstr ""
+
+#: privacyidea/static/components/register/views/register.html:14
+#: privacyidea/static/components/register/views/register.html:65
+#: privacyidea/static/templates/menu.html:62
+msgid "Register"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enrolled.registration.html:2
@@ -1659,10 +1680,12 @@ msgid "Successfully authenticated."
 msgstr ""
 
 #: privacyidea/static/templates/index.html:24
-#: privacyidea/static/templates/menu.html:84
+#: privacyidea/static/templates/menu.html:89
 msgid "Support"
 msgstr ""
 
+#: privacyidea/static/components/register/views/register.html:22
+#: privacyidea/static/components/register/views/register.html:25
 #: privacyidea/static/components/user/views/user.add.html:39
 #: privacyidea/static/components/user/views/user.details.html:38
 #: privacyidea/static/components/user/views/user.password.html:16
@@ -2036,7 +2059,7 @@ msgid ""
 "                        service itself</a>."
 msgstr ""
 
-#: privacyidea/static/app.js:100
+#: privacyidea/static/app.js:102
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
 msgstr ""
 
@@ -2478,6 +2501,10 @@ msgstr ""
 msgid "User Store"
 msgstr ""
 
+#: privacyidea/static/components/register/controllers/registerControllers.js:15
+msgid "User account created. An Email has been sent to you."
+msgstr ""
+
 #: privacyidea/static/components/user/controllers/userControllers.js:44
 msgid "User created."
 msgstr ""
@@ -2505,6 +2532,8 @@ msgstr ""
 #: privacyidea/static/components/directives/views/directive.assignuser.html:14
 #: privacyidea/static/components/login/views/login.html:42
 #: privacyidea/static/components/login/views/login.html:45
+#: privacyidea/static/components/register/views/register.html:16
+#: privacyidea/static/components/register/views/register.html:19
 #: privacyidea/static/components/token/views/token.details.html:350
 #: privacyidea/static/components/user/views/user.add.html:28
 #: privacyidea/static/components/user/views/user.details.html:24
@@ -2600,7 +2629,7 @@ msgid ""
 "                    token model."
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:100
+#: privacyidea/static/templates/menu.html:105
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr ""
 
