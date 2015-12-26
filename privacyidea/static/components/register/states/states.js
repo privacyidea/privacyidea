@@ -2,7 +2,7 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
- * 2015-01-11 Cornelius Kölbel, <cornelius@privacyidea.org>
+ * 2015-12-25 Cornelius Kölbel, <cornelius@privacyidea.org>
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,7 +19,7 @@
  *
  */
 
-angular.module('privacyideaApp.loginStates', ['ui.router']).config(
+angular.module('privacyideaApp.registerStates', ['ui.router']).config(
     ['$stateProvider',
         function ($stateProvider) {
             // get the instance, the pathname part
@@ -27,22 +27,11 @@ angular.module('privacyideaApp.loginStates', ['ui.router']).config(
             if (instance === "/") {
                instance = "";
             }
-            var loginpath = instance + "/static/components/login/views/";
+            var registerpath = instance + "/static/components/register/views/";
             $stateProvider
-                .state('offline', {
-                    url: "/offline",
-                    templateUrl: loginpath + "offline.html"
-                }).state('login', {
-                    url: "/login",
-                    templateUrl: loginpath + "login.html"
-                }).state('initial_login', {
-                    // This is the state, when no login path is specified
-                    url: "",
-                    templateUrl: loginpath + "login.html"
-                }).state('response', {
-                    // This is the state, when the login is performed via
-                    // challenge response.
-                    url: "/response",
-                    templateUrl: loginpath + "enter-response.html"
+                .state('register', {
+                    url: "/register",
+                    templateUrl: registerpath + "register.html",
+                    controller: "registerController"
                 });
         }]);

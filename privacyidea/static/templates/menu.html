@@ -58,8 +58,13 @@
                 </li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
-                <li><a ui-sref="login" ng-hide="loggedInUser.username" translate
-                >Login</a>
+                <li ng-class="{active: $state.includes('register')}">
+                    <a ui-sref="register" ng-hide="loggedInUser.username"
+                       translate>Register</a>
+                </li>
+                <li ng-class="{active: $state.includes('login')}">
+                    <a ui-sref="login" ng-hide="loggedInUser.username"
+                       translate>Login</a>
                 </li>
                 <li>
                     <div class="btn-group" ng-show="loggedInUser.username">

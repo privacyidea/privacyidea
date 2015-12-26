@@ -27,6 +27,7 @@ myApp = angular.module("privacyideaApp",
         'privacyideaApp.tokenStates',
         'privacyideaApp.userStates',
         'privacyideaApp.machineStates',
+        'privacyideaApp.registerStates',
         'privacyideaApp.loginStates',
         'isteven-multi-select', 'angularFileUpload',
         'inform', 'gettext', 'cfp.hotkeys']);
@@ -62,6 +63,7 @@ myApp.constant("validateUrl", backendUrl + instance + "/validate");
 myApp.constant("systemUrl", backendUrl + instance + "/system");
 myApp.constant("auditUrl", backendUrl + instance + "/audit");
 myApp.constant("policyUrl", backendUrl + instance + "/policy");
+myApp.constant("registerUrl", backendUrl + instance + "/register");
 myApp.constant("CAConnectorUrl", backendUrl + instance + "/caconnector");
 myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
         function ($rootScope, $state, $stateParams, gettextCatalog) {

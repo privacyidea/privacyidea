@@ -108,6 +108,8 @@ def register_post():
     resolvername = g.policy_object.get_action_values(ACTION.RESOLVER,
                                                      scope=SCOPE.REGISTER,
                                                      unique=True)
+    if not resolvername:
+        raise RegistrationError("No resolver specified to register in!")
     resolvername = resolvername[0]
     # Check if the user exists
     user = User(username, realm=realm, resolver=resolvername)
