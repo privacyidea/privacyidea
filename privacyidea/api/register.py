@@ -46,6 +46,24 @@ register_blueprint = Blueprint('register_blueprint', __name__)
 
 # The before and after methods are the same as in the validate endpoint
 
+@register_blueprint.route('', methods=['GET'])
+def register_status():
+    """
+    This endpoint returns the information if registration is allowed or not.
+    This is used by the UI to either display the registration button or not.
+
+    :return: JSON with value=True or value=False
+    """
+    resolvername = g.policy_object.get_action_values(ACTION.RESOLVER,
+                                                     scope=SCOPE.REGISTER,
+                                                     unique=True)
+
+    result = bool(resolvername)
+    g.audit_object.log({"info": result,
+                        "success": True})
+    return send_result(result)
+
+
 @register_blueprint.route('', methods=['POST'])
 def register_post():
     """
@@ -87,13 +105,11 @@ def register_post():
     phone = getParam(request.all_data, "phone")
     options = {"g": g,
                "clientip": request.remote_addr}
+    g.audit_object.log({"info": username})
     # Add all params to the options
     for key, value in request.all_data.items():
             if value and key not in ["g", "clientip"]:
                 options[key] = value
-
-    result = False
-    details = {}
 
     # 1. determine, in which resolver/realm the user should be created
     realm = g.policy_object.get_action_values(ACTION.REALM,
@@ -130,6 +146,5 @@ def register_post():
     # 4. send the registration token to the users email
     # TODO: send the registration key
     registration_key = token.init_details.get("otpkey")
-    g.audit_object.log({"info": details.get("message"),
-                        "success": result})
-    return send_result(result, details=details)
+    g.audit_object.log({"success": True})
+    return send_result(True)

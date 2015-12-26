@@ -58,7 +58,8 @@
                 </li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
-                <li ng-class="{active: $state.includes('register')}">
+                <li ng-class="{active: $state.includes('register')}"
+                    ng-show="registrationAllowed">
                     <a ui-sref="register" ng-hide="loggedInUser.username"
                        translate>Register</a>
                 </li>

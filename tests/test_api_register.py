@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
-from urllib import urlencode
-import json
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
-from privacyidea.lib.policy import set_policy
 from .base import MyTestCase
-from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy
+from privacyidea.lib.policy import SCOPE, ACTION, set_policy
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
+import json
 
 
 class RegisterTestCase(MyTestCase):
@@ -87,6 +85,14 @@ class RegisterTestCase(MyTestCase):
                                                      "cornelius@privacyidea.org"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
+
+        # get the register status
+        with self.app.test_request_context('/register',
+                                           method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertEqual(data.get("result").get("value"), True)
 
     def test_99_delete_users(self):
         self.test_00_delete_users()

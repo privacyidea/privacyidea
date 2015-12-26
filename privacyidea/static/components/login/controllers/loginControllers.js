@@ -25,7 +25,7 @@ angular.module("privacyideaApp")
                                       authUrl, AuthFactory, $rootScope,
                                       $state, ConfigFactory, inform,
                                       PolicyTemplateFactory, gettextCatalog,
-                                      hotkeys,
+                                      hotkeys, RegisterFactory,
                                       U2fFactory, instanceUrl,
                                       PollingAuthFactory) {
 
@@ -36,6 +36,12 @@ angular.module("privacyideaApp")
     if (!$scope.remoteUser) {
         $scope.loginWithCredentials = true;
     }
+
+    // Check if registration is allowed
+    $scope.registrationAllowed = false;
+    RegisterFactory.status(function (data) {
+        $scope.registrationAllowed = data.result.value;
+    });
 
     hotkeys.add({
         combo: 'alt+e',

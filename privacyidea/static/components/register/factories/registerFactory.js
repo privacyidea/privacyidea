@@ -19,6 +19,9 @@ myApp.factory("RegisterFactory", function ($http, $state, $rootScope,
             $http.post(registerUrl, params, {}
             ).success(callback
             ).error(error_func);
+        },
+        status: function (callback) {
+            $http.get(registerUrl).success(callback).error(error_func);
         }
     };
 });
