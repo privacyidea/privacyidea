@@ -46,6 +46,7 @@ from .application import application_blueprint
 from .caconnector import caconnector_blueprint
 from .token import token_blueprint
 from .system import system_blueprint
+from .smtpserver import smtpserver_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from ..lib.error import (privacyIDEAError,
                          AuthError,
@@ -71,6 +72,7 @@ def before_user_request():
 @defaultrealm_blueprint.before_request
 @policy_blueprint.before_request
 @application_blueprint.before_request
+@smtpserver_blueprint.before_request
 @admin_required
 def before_admin_request():
     before_request()
@@ -140,6 +142,7 @@ def before_request():
 @machine_blueprint.after_request
 @machineresolver_blueprint.after_request
 @caconnector_blueprint.after_request
+@smtpserver_blueprint.after_request
 @postrequest(sign_response, request=request)
 def after_request(response):
     """
@@ -165,6 +168,7 @@ def after_request(response):
 @token_blueprint.app_errorhandler(AuthError)
 @audit_blueprint.app_errorhandler(AuthError)
 @application_blueprint.app_errorhandler(AuthError)
+@smtpserver_blueprint.app_errorhandler(AuthError)
 @postrequest(sign_response, request=request)
 def auth_error(error):
     if "audit_object" in g:
@@ -184,6 +188,7 @@ def auth_error(error):
 @token_blueprint.app_errorhandler(PolicyError)
 @audit_blueprint.app_errorhandler(PolicyError)
 @application_blueprint.app_errorhandler(PolicyError)
+@smtpserver_blueprint.app_errorhandler(PolicyError)
 @postrequest(sign_response, request=request)
 def policy_error(error):
     if "audit_object" in g:
@@ -201,6 +206,7 @@ def policy_error(error):
 @token_blueprint.app_errorhandler(privacyIDEAError)
 @audit_blueprint.app_errorhandler(privacyIDEAError)
 @application_blueprint.app_errorhandler(privacyIDEAError)
+@smtpserver_blueprint.app_errorhandler(privacyIDEAError)
 @postrequest(sign_response, request=request)
 def privacyidea_error(error):
     """
@@ -223,6 +229,7 @@ def privacyidea_error(error):
 @token_blueprint.app_errorhandler(500)
 @audit_blueprint.app_errorhandler(500)
 @application_blueprint.app_errorhandler(500)
+@smtpserver_blueprint.app_errorhandler(500)
 @postrequest(sign_response, request=request)
 def internal_error(error):
     """

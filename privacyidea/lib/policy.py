@@ -217,6 +217,7 @@ class ACTION(object):
     USERDETAILS = "user_details"
     APIKEY = "api_key_required"
     SETHSM = "set_hsm_password"
+    SMTPSERVERWRITE = "smtpserver_write"
 
 
 class LOGINMODE(object):
@@ -841,7 +842,11 @@ def get_static_policy_definitions(scope=None):
                                       "of the HSM/Security Module.")},
             ACTION.GETCHALLENGES: {'type': 'bool',
                                    'desc': _("Admin is allowed to retrieve "
-                                             "the list of active challenges.")}
+                                             "the list of active challenges.")},
+            ACTION.SMTPSERVERWRITE: {'type': 'bool',
+                                     'desc': _("Admin is allowed to write new "
+                                               "SMTP server definitions.")}
+
         },
         # 'gettoken': {
         #     'max_count_dpw': {'type': 'int',

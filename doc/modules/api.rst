@@ -27,4 +27,5 @@ Now you can take a look at the several REST endpoints.
    api/machines
    api/application
    api/ttype
+   api/smtpserver
 

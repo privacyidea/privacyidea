@@ -23,6 +23,7 @@ import logging
 from privacyidea.lib.log import log_with
 import datetime
 import smtplib
+from privacyidea.lib.error import ConfigAdminError
 __doc__ = """
 This is the library for creating, listing and deleting SMTPServer objects in
 the Database.
@@ -89,6 +90,22 @@ Date: %s
 
 
 @log_with(log)
+def get_smtpserver(identifier):
+    """
+    This returns the SMTP Server object of the SMTP Server definition
+    "identifier".
+    In case the identifier does not exist, an exception is raised.
+
+    :param identifier: The name of the SMTP server definition
+    :return: A SMTP Server Object
+    """
+    server_list = get_smtpservers(identifier=identifier)
+    if not server_list:
+        raise ConfigAdminError("The specified SMTP server configuration does "
+                               "not exist.")
+    return server_list[0]
+
+@log_with(log)
 def get_smtpservers(identifier=None, server=None):
     """
     This returns a list of all smtpservers matching the criterion.
@@ -118,7 +135,7 @@ def get_smtpservers(identifier=None, server=None):
 
 @log_with(log)
 def add_smtpserver(identifier, server, port=25, username="", password="",
-                    sender="", description=""):
+                    sender="", description="", tls=False):
     """
     This adds an smtp server to the smtp server database table.
 
@@ -135,7 +152,7 @@ def add_smtpserver(identifier, server, port=25, username="", password="",
     cryptedPassword = encryptPassword(password)
     r = SMTPServerDB(identifier=identifier, server=server, port=port,
                      username=username, password=cryptedPassword, sender=sender,
-                     description=description).save()
+                     description=description, tls=tls).save()
     return r
 
 @log_with(log)

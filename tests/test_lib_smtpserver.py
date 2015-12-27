@@ -2,8 +2,9 @@
 This test file tests the lib/smtpserver.py
 """
 from .base import MyTestCase
+from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.smtpserver import (get_smtpservers, add_smtpserver,
-                                        delete_smtpserver, SMTPServer)
+                                        delete_smtpserver, get_smtpserver)
 import smtpmock
 
 
@@ -34,7 +35,7 @@ class SMTPServerTestCase(MyTestCase):
         r = add_smtpserver(identifier="myserver", server="1.2.3.4")
         self.assertTrue(r > 0)
 
-        server = get_smtpservers(identifier="myserver")[0]
+        server = get_smtpserver("myserver")
         smtpmock.setdata(response={"recp@example.com": (200, "OK")})
         r = server.send_email(["recp@example.com"], "Hallo", "Body")
 
@@ -46,3 +47,6 @@ class SMTPServerTestCase(MyTestCase):
         self.assertTrue(r > 0)
         server_list = get_smtpservers(identifier="myserver")
         self.assertTrue(server_list[0].config.server, "100.2.3.4")
+
+    def test_04_missing_configuration(self):
+        self.assertRaises(ConfigAdminError, get_smtpserver, "notExisting")
