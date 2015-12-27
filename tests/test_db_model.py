@@ -8,7 +8,7 @@ from privacyidea.models import (Token,
                                 Policy,
                                 Challenge, MachineResolver,
                                 MachineResolverConfig, MachineToken, Admin,
-                                CAConnector, CAConnectorConfig)
+                                CAConnector, CAConnectorConfig, SMTPServer)
 from .base import MyTestCase
 
 
@@ -470,3 +470,27 @@ class TokenModelTestCase(MyTestCase):
 
         self.assertTrue(t2info.get("key1.type") == "password",
                         t2info)
+
+    def test_17_add_and_delete_smtpserver(self):
+        s1 = SMTPServer(identifier="myserver", server="1.2.3.4")
+        s1.save()
+        s2 = SMTPServer.query.filter_by(identifier="myserver").first()
+        self.assertTrue(s2.server, "1.2.3.4")
+
+        # Update the server
+        r = SMTPServer(identifier="myserver", server="100.2.3.4",
+                       username="user", password="password", tls=True,
+                       description="test", port=123).save()
+        modified_server = SMTPServer.query.filter_by(
+            identifier="myserver").first()
+
+        self.assertEqual(modified_server.server, "100.2.3.4")
+        self.assertEqual(modified_server.username, "user")
+
+        # Delete the server
+        s2.delete()
+        # Try to find the server
+        s2 = SMTPServer.query.filter_by(identifier="myserver").first()
+        # The server does not exist anymore
+        self.assertEqual(s2, None)
+

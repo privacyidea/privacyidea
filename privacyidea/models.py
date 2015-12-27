@@ -1595,3 +1595,54 @@ def get_machinetoken_id(machine_id, resolver_name, serial, application):
         ret = mt.id
     return ret
 
+
+class SMTPServer(MethodsMixin, db.Model):
+    """
+    This table can store configurations for SMTP servers.
+    Each entry represents an SMTP server.
+    EMail Token, SMS SMTP Gateways or Notifications like PIN handlers are
+    supposed to use a reference to to a server definition.
+    Each Machine Resolver can have multiple configuration entries.
+    The config entries are referenced by the id of the machine resolver
+    """
+    __tablename__ = 'smtpserver'
+    id = db.Column(db.Integer, primary_key=True)
+    # This is a name to refer to
+    identifier = db.Column(db.Unicode(255), nullable=False)
+    # This is the FQDN or the IP address
+    server = db.Column(db.Unicode(255), nullable=False)
+    port = db.Column(db.Integer, default=25)
+    username = db.Column(db.Unicode(255), default="")
+    password = db.Column(db.Unicode(255), default="")
+    sender = db.Column(db.Unicode(255), default="")
+    tls = db.Column(db.Boolean, default=False)
+    description = db.Column(db.Unicode(2000), default=u'')
+
+    def save(self):
+        smtp = SMTPServer.query.filter(SMTPServer.identifier ==
+                                       self.identifier).first()
+        if smtp is None:
+            # create a new one
+            db.session.add(self)
+            db.session.commit()
+            ret = self.id
+        else:
+            # update
+            values = {"server": self.server}
+            if self.port is not None:
+                values["port"] = self.port
+            if self.username is not None:
+                values["username"] = self.username
+            if self.password is not None:
+                values["password"] = self.password
+            if self.sender is not None:
+                values["sender"] = self.sender
+            if self.tls is not None:
+                values["tls"] = self.tls
+            if self.description is not None:
+                values["description"] = self.description
+            SMTPServer.query.filter(SMTPServer.identifier ==
+                                    self.identifier).update(values)
+            ret = smtp.id
+        db.session.commit()
+        return ret
