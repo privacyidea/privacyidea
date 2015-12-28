@@ -5,6 +5,8 @@ from .base import MyTestCase
 from privacyidea.lib.policy import SCOPE, ACTION, set_policy
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 import json
+from privacyidea.lib.smtpserver import add_smtpserver
+import smtpmock
 
 
 class RegisterTestCase(MyTestCase):
@@ -27,17 +29,20 @@ class RegisterTestCase(MyTestCase):
                     "mobile": "mobile"}'
     }
 
-    username = "corneliusReg"
+    usernames = ["corneliusReg", "corneliusRegFail"]
 
     def test_00_delete_users(self):
         # If the test failed and some users are still in the database (from
         #  add_user) we delete them here.
         y = SQLResolver()
         y.loadConfig(self.parameters)
-        uid = y.getUserId(self.username)
-        y.delete_user(uid)
+        for username in self.usernames:
+            uid = y.getUserId(username)
+            y.delete_user(uid)
 
+    @smtpmock.activate
     def test_01_register_user(self):
+        smtpmock.setdata(response={"cornelius@privacyidea.or": (200, "OK")})
         # create resolver and realm
         param = self.parameters
         param["resolver"] = "register"
@@ -62,7 +67,25 @@ class RegisterTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
 
-        # Register
+        # Register fails, missing SMTP config
+        with self.app.test_request_context('/register',
+                                           method='POST',
+                                           data={"username": "corneliusRegFail",
+                                                 "surname": "Kölbel",
+                                                 "givenname": "Cornelius",
+                                                 "password": "cammerah",
+                                                 "email":
+                                                     "cornelius@privacyidea.org"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            data = json.loads(res.data)
+            self.assertEqual(data.get("result").get("error").get("message"),
+                         u'ERR10: No SMTP server configuration specified!')
+
+        # Set SMTP config and policy
+        add_smtpserver("myserver", "1.2.3.4", sender="pi@localhost")
+        set_policy("pol3", scope=SCOPE.REGISTER,
+                   action="%s=myserver" % ACTION.EMAILCONFIG)
         with self.app.test_request_context('/register',
                                            method='POST',
                                            data={"username": "corneliusReg",
