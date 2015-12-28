@@ -18,7 +18,6 @@ from sqlalchemy.exc import OperationalError
 def upgrade():
     try:
         op.add_column('token', sa.Column('revoked', sa.Boolean(),
-                                         nullable=False,
                                          default=False))
     except OperationalError as exx:
         if exx.orig.message.lower().startswith("duplicate column name"):
@@ -31,7 +30,6 @@ def upgrade():
 
     try:
         op.add_column('token', sa.Column('locked', sa.Boolean(),
-                                         nullable=False,
                                          default=False))
     except OperationalError as exx:
         if exx.orig.message.lower().startswith("duplicate column name"):

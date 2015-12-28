@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from .base import MyTestCase
 import json
+import smtpmock
 
 
 class SMTPServerTestCase(MyTestCase):
@@ -67,3 +68,25 @@ class SMTPServerTestCase(MyTestCase):
             data = json.loads(res.data)
             server_list = data.get("result").get("value")
             self.assertEqual(len(server_list), 0)
+
+    @smtpmock.activate
+    def test_02_send_test_email(self):
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")})
+
+        with self.app.test_request_context('/smtpserver/send_test_email',
+                                           method='POST',
+                                           data={"identifier": "someServer",
+                                                 "username": "cornelius",
+                                                 "password": "secret",
+                                                 "port": "123",
+                                                 "server": "1.2.3.4",
+                                                 "sender": "privacyidea@local",
+                                                 "recipient":
+                                                     "recp@example.com",
+                                                 "description": "myServer"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertEqual(data.get("result").get("value"), True)
+

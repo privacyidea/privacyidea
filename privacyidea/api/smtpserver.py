@@ -32,21 +32,16 @@ from flask import (Blueprint,
                    request, current_app)
 from lib.utils import (getParam,
                        required,
-                       send_result, get_priority_from_param)
+                       send_result)
 from ..lib.log import log_with
-from ..lib.realm import get_realms
-
-from ..lib.realm import (set_default_realm,
-                         get_default_realm,
-                         set_realm,
-                         delete_realm)
 from ..lib.policy import ACTION
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from flask import g
 from gettext import gettext as _
 import logging
-from privacyidea.lib.smtpserver import (add_smtpserver, get_smtpserver,
+from privacyidea.lib.smtpserver import (add_smtpserver, SMTPServer,
                                         get_smtpservers, delete_smtpserver)
+from privacyidea.models import SMTPServer as SMTPServerDB
 
 log = logging.getLogger(__name__)
 
@@ -116,6 +111,37 @@ def delete_server(identifier=None):
     :param identifier: The unique name of the SMTP server definition
     """
     r = delete_smtpserver(identifier)
+
+    g.audit_object.log({'success': r > 0,
+                        'info':  r})
+    return send_result(r > 0)
+
+
+@log_with(log)
+@smtpserver_blueprint.route('/send_test_email', methods=['POST'])
+@prepolicy(check_base_action, request, ACTION.SMTPSERVERWRITE)
+def test():
+    """
+    Test the email configuration
+    :return:
+    """
+    param = request.all_data
+    identifier = getParam(param, "identifier", required)
+    server = getParam(param, "server", required)
+    port = int(getParam(param, "port", default=25))
+    username = getParam(param, "username", default="")
+    password = getParam(param, "password", default="")
+    sender = getParam(param, "sender", default="")
+    tls = bool(getParam(param, "tls"))
+    recipient = getParam(param, "recipient", required)
+
+    s = SMTPServerDB(identifier=identifier, server=server, port=port,
+                     username=username, password=password, sender=sender,
+                     tls=tls)
+    r = SMTPServer.test_email(s, recipient,
+                              "Test Email from privacyIDEA",
+                              "This is a test email from privacyIDEA. "
+                              "The configuration %s is working." % identifier)
 
     g.audit_object.log({'success': r > 0,
                         'info':  r})

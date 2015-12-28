@@ -113,10 +113,8 @@ class Token(MethodsMixin, db.Model):
                        nullable=False,
                        default=True)
     revoked = db.Column(db.Boolean(),
-                        nullable=False,
                         default=False)
     locked = db.Column(db.Boolean(),
-                       nullable=False,
                        default=False)
     failcount = db.Column(db.Integer(),
                           default=0)

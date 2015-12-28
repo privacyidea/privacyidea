@@ -51,9 +51,15 @@ class SMTPServer(object):
         self.config = dbSMTPServer
 
     def send_email(self, recipient, subject, body, sender=None):
+        return self.test_email(self.config, recipient, subject, body, sender)
+
+    @staticmethod
+    def test_email(config, recipient, subject, body, sender=None):
         """
         Sends an email via the SMTP Database Object
 
+        :param config: The email configuration
+        :type config: SMTPServer Database Model
         :param recipient: The recipients of the email
         :type recipient: list
         :param subject: The subject of the email
@@ -67,7 +73,7 @@ class SMTPServer(object):
         :return: A dictionary of recipients and tuples like
             {"recp@destination.com": (200, 'OK')}
         """
-        mail_from = sender or self.config.sender
+        mail_from = sender or config.sender
         date = datetime.datetime.utcnow().strftime("%c")
         body = """From: %s
 Subject: %s
@@ -75,15 +81,15 @@ Date: %s
 
 %s""" % (mail_from, subject, date, body)
 
-        mail = smtplib.SMTP(self.config.server, port=int(self.config.port))
+        mail = smtplib.SMTP(config.server, port=int(config.port))
         mail.ehlo()
         # Start TLS if required
-        if self.config.tls:
+        if config.tls:
             mail.starttls()
         # Authenticate, if a username is given.
-        if self.config.username:
-            password = decryptPassword(self.config.password)
-            mail.login(self.config.username, password)
+        if config.username:
+            password = decryptPassword(config.password)
+            mail.login(config.username, password)
         r = mail.sendmail(mail_from, recipient, body)
         mail.quit()
         return r

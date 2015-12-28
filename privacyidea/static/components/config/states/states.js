@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2015-12-18 Cornelius Kölbel <cornelius@privacyidea.org>
+ *     Add state for SMTP Servers
  * 2015-01-11 Cornelius Kölbel, <cornelius@privacyidea.org>
  *
  * This code is free software; you can redistribute it and/or
@@ -156,5 +158,21 @@ angular.module('privacyideaApp.configStates', ['ui.router']).config(
                 .state('config.realms.list', {
                     url: "/list",
                     templateUrl: configpath + "config.realms.list.html"
-                });
+                })
+                .state('config.smtp', {
+                    url: "/smtp",
+                    templateUrl: configpath + "config.smtp.html",
+                    controller: "smtpServerController"
+                })
+                .state('config.smtp.list', {
+                    url: "/list",
+                    templateUrl: configpath + "config.smtp.list.html",
+                    controller: "smtpServerController"
+                })
+                .state('config.smtp.edit', {
+                    url: "/edit/{identifier:.*}",
+                    templateUrl: configpath + "config.smtp.edit.html",
+                    controller: "smtpServerController"
+                })
+            ;
         }]);

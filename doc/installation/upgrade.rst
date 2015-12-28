@@ -3,6 +3,20 @@
 Upgrading
 ---------
 
+Upgrade to privacyIDEA 2.10
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In privacyIDEA 2.10 SMTP servers were added. SMTP servers can be used for
+notifications, registration and also for Email token and SMS token.
+
+SMTP servers need a new database table "smtpserver".
+
+You need to update the database models::
+
+   pi-manage db stamp 4f32a4e1bf33 -d path/to/migrations
+   pi-manage db upgrade -d path/to/migrations
+
+
 Upgrade From privacyIDEA 2.x to 2.3
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

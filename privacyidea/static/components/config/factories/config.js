@@ -51,7 +51,7 @@ myApp.factory("PolicyTemplateFactory", function($http, inform, gettextCatalog){
 myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
                                          resolverUrl, realmUrl,
                                          machineResolverUrl,
-                                         policyUrl,
+                                         policyUrl, smtpServerUrl,
                                          defaultRealmUrl, systemUrl,
                                          CAConnectorUrl, inform) {
     /**
@@ -274,6 +274,32 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
         },
         getSystemConfig: function(callback) {
             $http.get(systemUrl + "/", {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
+        getSmtp: function(callback, identifier) {
+            if (!identifier) {identifier = "";}
+            $http.get(smtpServerUrl + "/" + identifier, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
+        delSmtp: function(identifier, callback) {
+            $http.delete(smtpServerUrl + "/" + identifier, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
+        addSmtp: function(params, callback) {
+            var identifier = params["identifier"];
+            $http.post(smtpServerUrl + "/" + identifier, params, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
+        testSmtp: function(params, callback) {
+            $http.post(smtpServerUrl + "/send_test_email", params, {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken(),
                           'Content-Type': 'application/json'}
             }).success(callback).error(error_func);

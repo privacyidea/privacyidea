@@ -1,0 +1,23 @@
+<div class="row">
+    <div class="col-lg-3">
+        <div class="pa-sidebar panel">
+            <ul class="nav nav-pills nav-stacked">
+                <li role="presentation"
+                    ng-class="{ active: $state.includes('config.smtp.list')}">
+                    <a ui-sref="config.smtp.list"
+                            translate>List SMTP server definitions</a></li>
+                <li role="presentation"
+                    >
+                    <a ui-sref="config.smtp.edit" translate>
+                        New SMTP server
+                    </a>
+
+                </li>
+            </ul>
+        </div>
+
+    </div>
+    <div ui-view class="col-lg-9 slide panel">
+    </div>
+</div>
+

@@ -18,6 +18,13 @@
                             ui-sref="config.sysdoc"><span
                             class="glyphicon glyphicon-download"></span>
                         <translate>Get System Documentation</translate></a></li>
+                    <li role="presentation"
+                        ng-class="{ active: $state.includes('config.smtp')}">
+                        <a ui-sref="config.smtp">
+                            <span class="glyphicon glyphicon-envelope"></span>
+                            <translate>SMTP servers</translate>
+                        </a>
+                    </li>
             </ul>
         </div>
     </div>
