@@ -48,9 +48,9 @@ log = logging.getLogger(__name__)
 smtpserver_blueprint = Blueprint('smtpserver_blueprint', __name__)
 
 
-@log_with(log)
 @smtpserver_blueprint.route('/<identifier>', methods=['POST'])
 @prepolicy(check_base_action, request, ACTION.SMTPSERVERWRITE)
+@log_with(log)
 def create(identifier=None):
     """
     This call creates or updates an SMTP server definition.
@@ -81,8 +81,8 @@ def create(identifier=None):
     return send_result(r > 0)
 
 
-@log_with(log)
 @smtpserver_blueprint.route('/', methods=['GET'])
+@log_with(log)
 def list_smtpservers():
     """
     This call gets the list of SMTP server definitions
@@ -101,9 +101,9 @@ def list_smtpservers():
     return send_result(res)
 
 
-@log_with(log)
 @smtpserver_blueprint.route('/<identifier>', methods=['DELETE'])
 @prepolicy(check_base_action, request, ACTION.SMTPSERVERWRITE)
+@log_with(log)
 def delete_server(identifier=None):
     """
     This call deletes the specified SMTP server configuration
@@ -117,9 +117,9 @@ def delete_server(identifier=None):
     return send_result(r > 0)
 
 
-@log_with(log)
 @smtpserver_blueprint.route('/send_test_email', methods=['POST'])
 @prepolicy(check_base_action, request, ACTION.SMTPSERVERWRITE)
+@log_with(log)
 def test():
     """
     Test the email configuration
