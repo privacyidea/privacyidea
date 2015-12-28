@@ -287,8 +287,6 @@ delete an existing user from the user store.
 copytokenuser
 ~~~~~~~~~~~~~
 
-**(TODO)** Not yet migrated.
-
 type: bool
 
 If the ``copytokenuser`` action is defined, the administrator is
@@ -301,8 +299,6 @@ should be able to perform this task manually.
 copytokenpin
 ~~~~~~~~~~~~
 
-**(TODO)** Not yet migrated.
-
 type: bool
 
 If the ``copytokenpin`` action is defined, the administrator is
@@ -313,13 +309,10 @@ This functionality is also used during the lost token process.
 But you only need to define this action, if the administrator
 should be able to perform this task manually.
 
-getotp
-~~~~~~
-
-**(TODO)** Not yet migrated.
+smtpserver_write
+~~~~~~~~~~~~~~~~
 
 type: bool
 
-If the ``getserial`` action is defined, the administrator is
-allowed to retrieve OTP values for a given token.
-
+To be able to define new :ref:`smtpserver` or delete existing ones, the
+administrator needs this rights ``smtpserver_write``.

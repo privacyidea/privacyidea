@@ -16,4 +16,5 @@ It also contains a shortcut to the policy tab (see :ref:`policies`).
    system_config
    token_config
    caconnectors
+   smtpserver_config
    privacyidea-setup

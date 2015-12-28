@@ -22,7 +22,7 @@ privacyIDEA knows the scopes:
    webui
    audit
    gettoken
-   ocra **(TODO)**: not migrated, yet.
+   register
 
 You can define as many policies as you wish to.
 The logic of the policies in the scopes is additive.
