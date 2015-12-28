@@ -193,6 +193,7 @@ class ACTION(object):
     POLICYTEMPLATEURL = "policy_template_url"
     REALM = "realm"
     REMOTE_USER = "remote_user"
+    REQUIREDEMAIL = "requiredemail"
     RESET = "reset"
     RESOLVERDELETE = "resolverdelete"
     RESOLVERWRITE = "resolverwrite"
@@ -416,8 +417,9 @@ class PolicyClass(object):
             else:
                 action_values.extend(action_dict.get(action, "").split())
 
+        # reduce the entries to unique entries
+        action_values = list(set(action_values))
         if unique:
-            action_values = list(set(action_values))
             if len(action_values) > 1:
                 raise PolicyError("There are conflicting %s"
                                   " definitions!" % action)
@@ -685,7 +687,12 @@ def get_static_policy_definitions(scope=None):
             ACTION.EMAILCONFIG: {'type': 'str',
                                  'desc': _('The SMTP server configuration, '
                                            'that should be used to send the '
-                                           'registration email.')}
+                                           'registration email.')},
+            ACTION.REQUIREDEMAIL: {'type': 'str',
+                                   'desc': _('Only users with this email '
+                                             'address are allowed to '
+                                             'register. This is a regular '
+                                             'expression.')}
         },
         SCOPE.ADMIN: {
             ACTION.ENABLE: {'type': 'bool',

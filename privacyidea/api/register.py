@@ -39,6 +39,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.token import init_token
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.error import RegistrationError
+from privacyidea.api.lib.prepolicy import required_email, prepolicy
 
 
 log = logging.getLogger(__name__)
@@ -67,6 +68,7 @@ def register_status():
 
 
 @register_blueprint.route('', methods=['POST'])
+@prepolicy(required_email, request=request)
 def register_post():
     """
     Register a new user in the realm/userresolver. To do so, the user

@@ -16,7 +16,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            init_tokenlabel, init_random_pin,
                                            encrypt_pin, check_otp_pin,
                                            check_external, api_key_required,
-                                           mangle, is_remote_user_allowed)
+                                           mangle, is_remote_user_allowed,
+                                           required_email)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             no_detail_on_success,
                                             no_detail_on_fail, autoassign,
@@ -27,7 +28,7 @@ from privacyidea.lib.user import User
 
 from flask import Response, Request, g, current_app
 from werkzeug.test import EnvironBuilder
-from privacyidea.lib.error import PolicyError
+from privacyidea.lib.error import PolicyError, RegistrationError
 from privacyidea.lib.machineresolver import save_resolver
 from privacyidea.lib.machine import attach_token
 from privacyidea.lib.auth import ROLE
@@ -689,6 +690,41 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         self.assertEqual(r, [])
 
         delete_policy("ruser")
+
+    def test_14_required_email(self):
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+        # Set a mangle policy to change the username
+        # and only use the last 4 characters of the username
+        set_policy(name="email1",
+                   scope=SCOPE.REGISTER,
+                   action="%s=/.*@mydomain\..*" % ACTION.REQUIREDEMAIL)
+        g.policy_object = PolicyClass()
+        # request, that matches the policy
+        req.all_data = {"email": "user@mydomain.net"}
+        # This emails is allowed
+        r = required_email(req)
+        self.assertTrue(r)
+
+        # This email is not allowed
+        req.all_data = {"email": "user@otherdomain.net"}
+        # This emails is allowed
+        self.assertRaises(RegistrationError, required_email, req)
+
+        delete_policy("email1")
+        g.policy_object = PolicyClass()
+        # Without a policy, this email can register
+        req.all_data = {"email": "user@otherdomain.net"}
+        # This emails is allowed
+        r = required_email(req)
+        self.assertTrue(r)
 
 
 class PostPolicyDecoratorTestCase(MyTestCase):

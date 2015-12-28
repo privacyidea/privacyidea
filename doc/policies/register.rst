@@ -84,3 +84,26 @@ registration process.
 
 .. note:: If there is no *smtpconfig* or set to a wrong identifier, the user
    will get no notification email.
+
+.. _policy_requiredemail:
+
+requiredemail
+~~~~~~~~~~~~~
+
+type: string
+
+This is a regular expression according to [#pythonre]_.
+
+Only email addresses matching this regular expression are allowed to register.
+
+**Example**: If you want to authenticate the user only by the OTP value, no
+matter what OTP PIN he enters, a policy might look like this::
+
+   action: requiredemail=/.*@mydomain\..*/
+
+This will allow all email addresses from the domains *mydomain.com*,
+*mydomain.net*
+etc...
+
+
+.. [#pythonre] https://docs.python.org/2/library/re.html

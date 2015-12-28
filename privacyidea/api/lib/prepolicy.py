@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #
-#  2915-12-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#  2015-12-28 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add ACTION.REQUIREDEMAIL
+#  2015-12-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Change eval to importlib
 #  2015-11-04 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add check for REMOTE_USER
@@ -37,7 +39,7 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 """
 import logging
 log = logging.getLogger(__name__)
-from privacyidea.lib.error import PolicyError
+from privacyidea.lib.error import PolicyError, RegistrationError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
@@ -45,6 +47,7 @@ from privacyidea.lib.user import (get_user_from_param, get_default_realm,
 from privacyidea.lib.token import (get_tokens, get_realms_of_token)
 from privacyidea.lib.utils import generate_password
 from privacyidea.lib.auth import ROLE
+from privacyidea.api.lib.utils import getParam
 import functools
 import jwt
 import re
@@ -409,6 +412,38 @@ def set_realm(request=None, action=None):
     elif len(new_realm) == 1:
         # There is one specific realm, which we set in the request
         request.all_data["realm"] = new_realm[0]
+
+    return True
+
+
+def required_email(request=None, action=None):
+    """
+    This precondition checks if the "email" parameter matches the regular
+    expression in the policy scope=register, action=requiredemail.
+    See :ref:`policy_requiredemail`.
+
+    Check ACTION.REQUIREDEMAIL
+
+    This decorator should wrap POST /register
+
+    :param request: The Request Object
+    :param action: An optional Action
+    :return: Modifies the request paramters or raises an Exception
+    """
+    email = getParam(request.all_data, "email")
+    email_found = False
+    email_pols = g.policy_object.\
+        get_action_values(ACTION.REQUIREDEMAIL, scope=SCOPE.REGISTER,
+                          client=request.remote_addr)
+    if email and email_pols:
+        for email_pol in email_pols:
+            # The policy is only "/regularexpr/".
+            search = email_pol.strip("/")
+            if re.findall(search, email):
+                email_found = True
+        if not email_found:
+            raise RegistrationError("This email address is not allowed to "
+                                    "register!")
 
     return True
 
