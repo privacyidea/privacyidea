@@ -404,8 +404,6 @@ def set_realm(request=None, action=None):
                                                 scope=SCOPE.AUTHZ,
                                                 realm=realm,
                                                 client=request.remote_addr)
-    # reduce the entries to unique entries
-    new_realm = list(set(new_realm))
     if len(new_realm) > 1:
         raise PolicyError("I do not know, to which realm I should set the "
                           "new realm. Conflicting policies exist.")
@@ -474,8 +472,6 @@ def mangle(request=None, action=None):
                                                   realm=user_object.realm,
                                                   user=user_object.login,
                                                   client=request.remote_addr)
-    # reduce the entries to unique entries
-    mangle_pols = list(set(mangle_pols))
     # We can have several mangle policies! One for user, one for realm and
     # one for pass. So we do no checking here.
     for mangle_pol_action in mangle_pols:

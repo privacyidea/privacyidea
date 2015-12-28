@@ -458,8 +458,6 @@ def login_mode(wrapped_function, *args, **kwds):
 
         if login_mode_list:
             # There is a login mode policy
-            # reduce the list:
-            login_mode_list = list(set(login_mode_list))
             if len(login_mode_list) > 1:  # pragma: no cover
                 # We can not decide how to handle the request, so we raise an
                 # exception
@@ -522,8 +520,6 @@ def auth_otppin(wrapped_function, *args, **kwds):
                                                       client=clientip)
         if otppin_list:
             # There is an otppin policy
-            # reduce the list:
-            otppin_list = list(set(otppin_list))
             if len(otppin_list) > 1:
                 # We can not decide how to handle the request, so we raise an
                 # exception
@@ -598,7 +594,6 @@ def config_lost_token(wrapped_function, *args, **kwds):
                 client=clientip)
 
             if contents_list:
-                contents_list = list(set(contents_list))
                 if len(contents_list) > 1:  # pragma: no cover
                     # We can not decide how to handle the request, so we raise an
                     # exception
@@ -607,7 +602,6 @@ def config_lost_token(wrapped_function, *args, **kwds):
                 kwds["contents"] = contents_list[0]
 
             if validity_list:
-                validity_list = list(set(validity_list))
                 if len(validity_list) > 1:  # pragma: no cover
                     # We can not decide how to handle the request, so we raise an
                     # exception
@@ -616,7 +610,6 @@ def config_lost_token(wrapped_function, *args, **kwds):
                 kwds["validity"] = int(validity_list[0])
 
             if pw_len_list:
-                pw_len_list = list(set(pw_len_list))
                 if len(pw_len_list) > 1:  # pragma: no cover
                     # We can not decide how to handle the request, so we raise an
                     # exception

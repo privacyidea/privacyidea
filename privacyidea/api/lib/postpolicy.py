@@ -444,7 +444,6 @@ def autoassign(request, response):
                                   realm=user_obj.realm,
                                   client=request.remote_addr)
 
-            autoassign_values = list(set(autoassign_values))
             if len(autoassign_values) > 1:
                 raise PolicyError("Contradicting Autoassign policies.")
             if autoassign_values:
