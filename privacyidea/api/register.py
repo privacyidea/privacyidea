@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) Cornelius Kölbel, privacyidea.org
 #
+# 2015-12-28 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Add sending of email via smtp config
 # 2015-12-23 Cornelius Kölbel <cornelius@privacyidea.org>
 #            Add this register endpoint for new users to create a new user
 #            account.
@@ -144,7 +146,19 @@ def register_post():
     user = User(username, realm=realm, resolver=resolvername)
     token = init_token({"type": "registration"}, user=user)
     # 4. send the registration token to the users email
-    # TODO: send the registration key
+    smtpconfig = g.policy_object.get_action_values(ACTION.EMAILCONFIG,
+                                                   scope=SCOPE.REGISTER,
+                                                   unique=True)
+    if not smtpconfig:
+        raise RegistrationError("No SMTP server configuration specified!")
+    smtpconfig = smtpconfig[0]
     registration_key = token.init_details.get("otpkey")
+    # Send the registration key via email
+    from privacyidea.lib.smtpserver import get_smtpserver
+    smtp_server = get_smtpserver(smtpconfig)
+    r = smtp_server.send_email(email, "Your privacyIDEA registration",
+                               "Your registration token is %s" % registration_key)
+    log.debug("Registration email sent: %s" % r)
+
     g.audit_object.log({"success": True})
     return send_result(True)

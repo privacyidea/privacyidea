@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-12-28 Cornelius Kölbel <cornelius.koelbel@netkngihts.it>
+#             Add registration policy
 #  2015-12-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add tokenissuer policy
 #  2015-11-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -155,6 +157,7 @@ class ACTION(object):
     DEFAULT_TOKENTYPE = "default_tokentype"
     DELETE = "delete"
     DISABLE = "disable"
+    EMAILCONFIG = "smtpconfig"
     ENABLE = "enable"
     ENCRYPTPIN = "encrypt_pin"
     GETSERIAL = "getserial"
@@ -678,7 +681,11 @@ def get_static_policy_definitions(scope=None):
                                         'should be registered.')},
             ACTION.REALM: {'type': 'str',
                            'desc': _('Define in which realm the user should '
-                                     'be registered.')}
+                                     'be registered.')},
+            ACTION.EMAILCONFIG: {'type': 'str',
+                                 'desc': _('The SMTP server configuration, '
+                                           'that should be used to send the '
+                                           'registration email.')}
         },
         SCOPE.ADMIN: {
             ACTION.ENABLE: {'type': 'bool',
