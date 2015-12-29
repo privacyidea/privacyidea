@@ -475,6 +475,10 @@ msgstr ""
 msgid "Delete user"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.token.email.html:7
+msgid "Deprecated configuration"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.smtp.edit.html:88
 #: privacyidea/static/components/config/views/config.smtp.list.html:9
 #: privacyidea/static/components/token/views/token.details.html:118
@@ -1067,20 +1071,16 @@ msgstr ""
 msgid "Machines this token is attached to"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.email.html:40
+#: privacyidea/static/components/config/views/config.token.email.html:30
 msgid "Mail Sender Address"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.email.html:8
+#: privacyidea/static/components/config/views/config.token.email.html:18
 msgid "Mail Server"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.email.html:24
+#: privacyidea/static/components/config/views/config.token.email.html:26
 msgid "Mail User"
-msgstr ""
-
-#: privacyidea/static/components/config/views/config.token.email.html:32
-msgid "Mail User Password"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:144
@@ -1132,6 +1132,10 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.smtp.html:11
 msgid "New SMTP server"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.email.html:41
+msgid "New configuration"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.html:26
@@ -1224,7 +1228,7 @@ msgid ""
 "                    newly enrolled tokens"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.email.html:49
+#: privacyidea/static/components/config/views/config.token.email.html:54
 msgid "OTP validity time"
 msgstr ""
 
@@ -1348,7 +1352,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:46
 #: privacyidea/static/components/config/views/config.smtp.edit.html:37
-#: privacyidea/static/components/config/views/config.token.email.html:17
+#: privacyidea/static/components/config/views/config.token.email.html:22
 msgid "Port"
 msgstr ""
 
@@ -1459,7 +1463,6 @@ msgid "Received"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:109
-#: privacyidea/static/components/config/views/config.token.email.html:69
 msgid "Recipient for testing"
 msgstr ""
 
@@ -1577,6 +1580,10 @@ msgstr ""
 msgid "SMTP Config saved."
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.token.email.html:43
+msgid "SMTP server configuration"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.system.html:25
 msgid "SMTP servers"
 msgstr ""
@@ -1655,12 +1662,17 @@ msgstr ""
 msgid "Select Realm"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.token.email.html:44
+msgid ""
+"Select a predefined\n"
+"        <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.import.html:71
 msgid "Select file and import"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:116
-#: privacyidea/static/components/config/views/config.token.email.html:76
 msgid "Send Test Email"
 msgstr ""
 
@@ -1773,7 +1785,7 @@ msgid "System Config"
 msgstr ""
 
 #: privacyidea/static/components/config/controllers/configControllers.js:416
-#: privacyidea/static/components/config/controllers/configControllers.js:606
+#: privacyidea/static/components/config/controllers/configControllers.js:616
 msgid "System Config saved."
 msgstr ""
 
@@ -2202,7 +2214,7 @@ msgid ""
 "            displayed to you to be scanned with the Token2 app."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.email.html:50
+#: privacyidea/static/components/config/views/config.token.email.html:55
 msgid ""
 "The time in seconds for which the sent OTP value is valid for\n"
 "        authentication."
@@ -2377,6 +2389,10 @@ msgstr ""
 msgid ""
 "This must be a valid FQDN with also a valid top level domain -\n"
 "        otherwise you might receive a U2F Error 2 (Bad Request)."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.email.html:13
+msgid "This view will be removed in version 2.11."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:21
@@ -2556,7 +2572,7 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:104
-#: privacyidea/static/components/config/views/config.token.email.html:65
+#: privacyidea/static/components/config/views/config.token.email.html:34
 msgid "Use TLS"
 msgstr ""
 
