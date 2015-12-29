@@ -440,15 +440,25 @@ myApp.controller("tokenConfigController", function ($scope, $location,
         $scope.nextQuestion += 1;
     };
 
+    /* DEPRECATED: Testing is done in SMTP server config
     $scope.sendTestEmail = function() {
-        ConfigFactory.testTokenConfig("email", $scope.form, function(data) {
+            ConfigFactory.testTokenConfig("email", $scope.form, function(data) {
            if (data.result.value === true) {
                inform.add(gettextCatalog.getString(data.detail.message),
                    {type: "info"});
            }
         });
     };
-
+    */
+    // Email/SMTP part
+    $scope.getSmtpIdentifiers = function() {
+        ConfigFactory.getSmtp(function(data){
+            console.log("SMTP Identifiers");
+            console.log(data.result.value);
+            $scope.smtpIdentifiers = data.result.value;
+        });
+    };
+    $scope.getSmtpIdentifiers();
     $scope.loadSystemConfig();
 });
 myApp.controller("configController", function ($scope, $location,

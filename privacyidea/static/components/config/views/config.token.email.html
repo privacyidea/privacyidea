@@ -4,47 +4,52 @@
     the given email address, when the correct OTP PIN was presented by the user.
 </p>
 
-<div class="form-group">
-    <label for="mailServer" translate>Mail Server</label>
-    <input type="text"
-           required
-           class="form-control"
-           placeholder="your.mailserver.net"
-           ng-model="form['email.mailserver']" name="mailserver">
+<h3 translate>Deprecated configuration</h3>
+<p class="help-block">The deprecated configuration was used till privacyIDEA
+    version 2.9. Starting with version 2.10 you can select an SMTP
+    configuration by its identifier.
+    <a ui-sref="config.smtp">SMTP server configuration</a>
+</p>
+<p class="bg-danger" translate>This view will be removed in version 2.11.</p>
+<div>
+    <table class="table table-bordered table-responsive table-striped">
+        <tbody>
+            <tr>
+                <td translate>Mail Server</td>
+                <td>{{ form['email.mailserver'] }}</td>
+            </tr>
+            <tr>
+                <td translate>Port</td>
+                <td>{{ form['email.port'] }}</td>
+            </tr>
+            <tr>
+                <td translate>Mail User</td>
+                <td>{{ form['email.username'] }}</td>
+            </tr>
+            <tr>
+                <td translate>Mail Sender Address</td>
+                <td>{{ form['email.mailfrom'] }}</td>
+            </tr>
+            <tr>
+                <td translate>Use TLS</td>
+                <td>{{ form['email.tls'] }}</td>
+            </tr>
+        </tbody>
+    </table>
 </div>
 
+<h3 translate>New configuration</h3>
 <div class="form-group">
-    <label for="mailport" translate>Port</label>
-    <input type="text"
-           class="form-control"
-           ng-model="form['email.port']" name="mailport">
+    <label for="idenfifier" translate>SMTP server configuration</label>
+    <p class="help-block" translate>Select a predefined
+        <a ui-sref="config.smtp">SMTP server configuration</a>.</p>
+    <select class="form-control"
+            ng-model="form['email.identifier']"
+            name="identifier"
+            ng-options="identifier as identifier for (identifier, config) in
+            smtpIdentifiers">
+    </select>
 </div>
-
-<div class="form-group">
-    <label for="mailuser" translate>Mail User</label>
-    <input type="text"
-           class="form-control"
-           placeholder="Username if required"
-           ng-model="form['email.username']" name="mailuser">
-</div>
-
-<div class="form-group">
-    <label for="mailpassword" translate>Mail User Password</label>
-    <input type="password"
-           class="form-control"
-           placeholder="topSecret"
-           ng-model="form['email.password']" name="mailpassword">
-</div>
-
-<div class="form-group">
-    <label for="mailfrom" translate>Mail Sender Address</label>
-    <input type="email"
-           required
-           class="form-control"
-           placeholder="privacyidea@localhost"
-           ng-model="form['email.mailfrom']" name="mailfrom">
-</div>
-
 <div class="form-group">
     <label for="mailvalid" translate>OTP validity time</label>
     <p class="help-block" translate>
@@ -56,27 +61,3 @@
            ng-model="form['email.validtime']" name="mailvalid">
 </div>
 
-<div class="form-group">
-    <input type="checkbox"
-           ng-model="form['email.tls']"
-           ng-checked="isChecked(form['email.tls'])"
-           name="mailtls"
-           id="mailtls">
-    <label for="mailtls" translate>Use TLS</label>
-</div>
-
-<div class="form-group">
-    <label for="recipient" translate>Recipient for testing</label>
-    <div >
-    <div class="col-sm-8">
-        <input type="text" class="form-control" class="col"
-               ng-model="form['email.recipient']" name="recipient">
-    </div>
-    <div class="col-sm-4">
-        <button class="btn btn-default" translate
-                ng-click="sendTestEmail()">
-            Send Test Email
-        </button>
-    </div>
-        </div>
-</div>
