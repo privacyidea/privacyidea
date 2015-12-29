@@ -42,7 +42,7 @@ class RegisterTestCase(MyTestCase):
 
     @smtpmock.activate
     def test_01_register_user(self):
-        smtpmock.setdata(response={"cornelius@privacyidea.or": (200, "OK")})
+        smtpmock.setdata(response={"cornelius@privacyidea.org": (200, "OK")})
         # create resolver and realm
         param = self.parameters
         param["resolver"] = "register"

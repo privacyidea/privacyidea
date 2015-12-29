@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2015-12-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Use privacyidea.lib.smtpserver instead of smtplib
 #  2015-10-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add test config function
 #  2015-04-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -35,6 +37,15 @@ values via SMTP.
 The following config entries are used:
 
  * email.validtime
+ * email.identifier
+
+The identifier points to a system wide SMTP server configuration.
+See :ref:`rest_smtpserver`.
+
+The system wide SMTP server configuration was introduced in version 2.10.
+In privacyIDEA up to version 2.9 the following config entries were used:
+
+ * email.validtime
  * email.mailserver
  * email.port
  * email.username
@@ -49,9 +60,7 @@ The code is tested in tests/test_lib_tokens_email
 """
 
 import logging
-import smtplib
 import traceback
-import datetime
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
@@ -60,6 +69,8 @@ from privacyidea.lib.log import log_with
 from gettext import gettext as _
 from privacyidea.models import Challenge
 from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.smtpserver import send_email_data, send_email_identifier
+
 
 log = logging.getLogger(__name__)
 TEST_SUCCESSFUL = "Successfully sent email. Please check your inbox."
@@ -373,41 +384,21 @@ class EmailTokenClass(HotpTokenClass):
 
         log.debug("sending Email to %s " % recipient)
 
-        mailserver = get_from_config("email.mailserver", "localhost")
-        port = int(get_from_config("email.port", 25))
-        username = get_from_config("email.username")
-        password = get_from_config("email.password")
-        mail_from = get_from_config("email.mailfrom", "privacyidea@localhost")
-        email_tls = get_from_config("email.tls")
-
-        return self._send_email(mailserver, subject, message, mail_from,
-                                recipient, username=username,
-                                password=password, port=port,
-                                email_tls=email_tls)
-
-    @staticmethod
-    def _send_email(mailserver, subject, message, mail_from, recipient,
-                    username=None, password=None, port=25, email_tls=False):
-        # Upper layer will catch exceptions
-        date = datetime.datetime.utcnow().strftime("%c")
-        body = """From: %s
-Subject: %s
-Date: %s
-
-%s""" % (mail_from, subject, date, message)
-
-        mail = smtplib.SMTP(mailserver, port=int(port))
-        mail.ehlo()
-        # Start TLS if required
-        if email_tls:
-            mail.starttls()
-        # Authenticate, if a username is given.
-        if username:
-            mail.login(username, password)
-        r = mail.sendmail(mail_from, recipient, body)
-        mail.quit()
-        ret = True
-
+        identifier = get_from_config("email.identifier")
+        if identifier:
+            # New way to send email
+            ret = send_email_identifier(identifier, recipient, subject, message)
+        else:
+            # old way to send email / DEPRECATED
+            mailserver = get_from_config("email.mailserver", "localhost")
+            port = int(get_from_config("email.port", 25))
+            username = get_from_config("email.username")
+            password = get_from_config("email.password")
+            mail_from = get_from_config("email.mailfrom", "privacyidea@localhost")
+            email_tls = get_from_config("email.tls")
+            ret = send_email_data(mailserver, subject, message, mail_from,
+                                  recipient, username, password, port,
+                                  email_tls)
         return ret, message
 
     @classmethod
@@ -421,12 +412,12 @@ Date: %s
         username = getParam(params, "email.username")
         port = getParam(params, "email.port", default=25)
         email_tls = getParam(params, "email.tls", default=False)
-        r = cls._send_email(mailserver, subject, message, mail_from,
+        r = send_email_data(mailserver, subject, message, mail_from,
                             recipient, username=username,
                             password=password, port=port, email_tls=email_tls)
 
         description = "Could not send email."
-        if r[0]:
+        if r:
             description = TEST_SUCCESSFUL
 
-        return r[0], description
+        return r, description

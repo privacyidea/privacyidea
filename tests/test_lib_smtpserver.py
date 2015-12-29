@@ -38,8 +38,13 @@ class SMTPServerTestCase(MyTestCase):
         server = get_smtpserver("myserver")
         smtpmock.setdata(response={"recp@example.com": (200, "OK")})
         r = server.send_email(["recp@example.com"], "Hallo", "Body")
+        self.assertEqual(r, True)
 
-        self.assertEqual(r.get("recp@example.com"), (200, 'OK'))
+        smtpmock.setdata(response={"recp@example.com": (550,
+                                                        "Message rejected")})
+        r = server.send_email(["recp@example.com"], "Hallo", "Body")
+        self.assertEqual(r, False)
+
         delete_smtpserver("myserver")
 
     def test_03_updateserver(self):

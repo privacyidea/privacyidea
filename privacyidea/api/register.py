@@ -40,6 +40,7 @@ from privacyidea.lib.token import init_token
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.error import RegistrationError
 from privacyidea.api.lib.prepolicy import required_email, prepolicy
+from privacyidea.lib.smtpserver import get_smtpserver, send_email_identifier
 
 
 log = logging.getLogger(__name__)
@@ -148,19 +149,19 @@ def register_post():
     user = User(username, realm=realm, resolver=resolvername)
     token = init_token({"type": "registration"}, user=user)
     # 4. send the registration token to the users email
+    registration_key = token.init_details.get("otpkey")
     smtpconfig = g.policy_object.get_action_values(ACTION.EMAILCONFIG,
                                                    scope=SCOPE.REGISTER,
                                                    unique=True)
     if not smtpconfig:
         raise RegistrationError("No SMTP server configuration specified!")
     smtpconfig = smtpconfig[0]
-    registration_key = token.init_details.get("otpkey")
     # Send the registration key via email
-    from privacyidea.lib.smtpserver import get_smtpserver
-    smtp_server = get_smtpserver(smtpconfig)
-    r = smtp_server.send_email(email, "Your privacyIDEA registration",
-                               "Your registration token is %s" % registration_key)
-    log.debug("Registration email sent: %s" % r)
+    r = send_email_identifier(smtpconfig, email,
+                              "Your privacyIDEA registration",
+                              "Your registration token is %s" %
+                              registration_key)
+    log.debug("Registration email sent to %s" % email)
 
-    g.audit_object.log({"success": True})
-    return send_result(True)
+    g.audit_object.log({"success": r})
+    return send_result(r)

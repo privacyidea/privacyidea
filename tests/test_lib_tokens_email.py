@@ -314,7 +314,7 @@ class EmailTokenTestCase(MyTestCase):
 
     @smtpmock.activate
     def test_18_challenge_request(self):
-        smtpmock.setdata(response={})
+        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, 'OK')})
         transactionid = "123456098712"
         set_privacyidea_config("email.mailserver", "localhost")
         set_privacyidea_config("email.username", "user")
@@ -344,7 +344,7 @@ class EmailTokenTestCase(MyTestCase):
         P = PolicyClass()
         g.policy_object = P
         options = {"g": g}
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")})
+        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, "OK")})
         transactionid = "123456098713"
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = EmailTokenClass(db_token)
@@ -382,7 +382,7 @@ class EmailTokenTestCase(MyTestCase):
     @smtpmock.activate
     def test_21_test_email_config(self):
         from privacyidea.lib.tokens.emailtoken import TEST_SUCCESSFUL
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")})
+        smtpmock.setdata(response={"user@example.com": (200, "OK")})
         r = EmailTokenClass.test_config({"email.mailserver": "mail.example.com",
                                          "email.mailfrom": "pi@example.com",
                                          "email.recipient": "user@example.com"})
