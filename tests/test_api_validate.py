@@ -502,7 +502,7 @@ class ValidateAPITestCase(MyTestCase):
 
     @smtpmock.activate
     def test_13_challenge_response_email(self):
-        smtpmock.setdata(response={})
+        smtpmock.setdata(response={"hans@dampf.com": (200, 'OK')})
         # set a chalresp policy for Email
         with self.app.test_request_context('/policy/pol_chal_resp',
                                            data={'action':
