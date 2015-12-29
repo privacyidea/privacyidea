@@ -31,17 +31,15 @@ address, subject and body this gateway will trigger the sending of the SMS.
 
 The code is tested in tests/test_lib_smsprovider
 """
-
 from privacyidea.lib.smsprovider.SMSProvider import ISMSProvider, SMSError
-
+from privacyidea.lib.smtpserver import send_email_identifier, send_email_data
 import string
-import smtplib
-
 import logging
 log = logging.getLogger(__name__)
 
 PHONE_TAG = "<phone>"
 MSG_TAG = "<otp>"
+
 
 class SmtpSMSProvider(ISMSProvider):
 
@@ -53,56 +51,34 @@ class SmtpSMSProvider(ISMSProvider):
 
         In case of a failure an exception is raised
         """
+        identifier = self.config.get("IDENTIFIER")
         server = self.config.get("MAILSERVER")
-        fromaddr = self.config.get("MAILSENDER")
-        toaddr = self.config.get("MAILTO")
-
-        if not (server and fromaddr and toaddr):
-            log.error("incomplete config: %s. MAILSERVER, MAILSENDER "
-                      "and MAILTO needed." % self.config)
-            raise SMSError(-1, "Incomplete SMS config.")
-
+        sender = self.config.get("MAILSENDER")
+        recipient = self.config.get("MAILTO")
         subject = self.config.get("SUBJECT", PHONE_TAG)
         body = self.config.get("BODY", MSG_TAG)
 
-        # optional
-        user = self.config.get("MAILUSER")
-        password = self.config.get("MAILPASSWORD")
+        if not (server and recipient and sender) and not (identifier and \
+                recipient):
+            log.error("incomplete config: %s. MAILTO and (IDENTIFIER or "
+                      "MAILSERVER and MAILSENDER) needed" % self.config)
+            raise SMSError(-1, "Incomplete SMS config.")
 
-        log.debug("submitting message %s to %s" % (message, phone))
-
-        toaddr = string.replace(toaddr, PHONE_TAG, phone)
+        log.debug("submitting message %s to %s" % (body, phone))
+        recipient = string.replace(recipient, PHONE_TAG, phone)
         subject = string.replace(subject, PHONE_TAG, phone)
         subject = string.replace(subject, MSG_TAG, message)
         body = string.replace(body, PHONE_TAG, phone)
         body = string.replace(body, MSG_TAG, message)
 
-        msg = ("From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s"
-               % (fromaddr,
-                  toaddr,
-                  subject,
-                  body))
-
-        try:
-            serv = smtplib.SMTP(server)
-            serv.set_debuglevel(1)
-            if user:
-                log.debug("authenticating to mailserver, "
-                          "user: %s, pass: %s" % (user, password))
-                serv.login(user, password)
-            # returns a dictionary of replies for all recients, that failed
-            senders = serv.sendmail(fromaddr, toaddr, msg)
-            failed_recepients = senders.get(toaddr)
-            serv.quit()
-        except Exception as e:
-            log.error("An error occurred during sending of the email: %s" %
-                      str(e))
-            raise Exception(e)
-
-        if failed_recepients:
-            log.error("some error occurred for recipient "
-                      "%s: %s" % (toaddr, failed_recepients[0]))
-            raise SMSError(failed_recepients[0],
-                           "Failed to deliver SMS to SMTP Gateway.")
+        if identifier:
+            r = send_email_identifier(identifier, recipient, subject, body)
+        else:
+            username = self.config.get("MAILUSER")
+            password = self.config.get("MAILPASSWORD")
+            r = send_email_data(server, subject, body, sender, recipient,
+                                username, password)
+        if not r:
+            raise SMSError(500, "Failed to deliver SMS to SMTP Gateway.")
 
         return True

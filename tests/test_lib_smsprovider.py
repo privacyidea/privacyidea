@@ -13,6 +13,7 @@ from privacyidea.lib.smsprovider.SipgateSMSProvider import URL
 from privacyidea.lib.smsprovider.SmtpSMSProvider import SmtpSMSProvider
 from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      get_sms_provider_class)
+from privacyidea.lib.smtpserver import add_smtpserver
 import responses
 import smtpmock
 
@@ -73,6 +74,9 @@ class SmtpSMSTestCase(MyTestCase):
                    "MAILUSER": "username",
                    "MAILPASSWORD": "sosecret"}
 
+    identifier_config = {"MAILTO": "recp@example.com",
+                         "IDENTIFIER": "myServer"}
+
     def setUp(self):
         self.missing_provider = SmtpSMSProvider()
         self.missing_provider.load_config(self.missing_config)
@@ -86,13 +90,16 @@ class SmtpSMSTestCase(MyTestCase):
         self.auth_provider = SmtpSMSProvider()
         self.auth_provider.load_config(self.auth_config)
 
+        self.identifier_provider = SmtpSMSProvider()
+        self.identifier_provider.load_config(self.identifier_config)
+
     def test_01_missing_config(self):
         self.assertRaises(SMSError, self.missing_provider.submit_message,
                           "1234356", "Hello")
 
     @smtpmock.activate
     def test_02_simple_config_success(self):
-        smtpmock.setdata(response={})
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")})
         r = self.simple_provider.submit_message("123456", "Hello")
         self.assertRaises(r)
 
@@ -109,8 +116,9 @@ class SmtpSMSTestCase(MyTestCase):
 
     @smtpmock.activate
     def test_05_auth_config_success(self):
-        smtpmock.setdata(response={})
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")})
         r = self.auth_provider.submit_message("123456", "Hello")
+        self.assertTrue(r)
 
     @smtpmock.activate
     def test_06_auth_config_fail(self):
@@ -119,6 +127,14 @@ class SmtpSMSTestCase(MyTestCase):
                          config=self.auth_config)
         self.assertRaises(SMSError, self.auth_provider.submit_message,
                           "123456", "Hello")
+
+    @smtpmock.activate
+    def test_07_identifier_config_success(self):
+        r = add_smtpserver("myServer", "1.2.3.4", sender="mail@pi.org")
+        self.assertTrue(r > 0)
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")})
+        r = self.identifier_provider.submit_message("123456", "Halo")
+        self.assertTrue(r)
 
 
 class SipgateSMSTestCase(MyTestCase):

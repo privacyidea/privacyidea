@@ -152,7 +152,7 @@ fixed mail address.
 The mail should contain the phone number and the OTP value. The email gateway
 will send the OTP via SMS to the given phone number.
 
-The SMTP provider needs to be configured like this::
+Up to version 2.9 the SMTP provider needs to be configured like this::
 
    {"MAILSERVER": "localhost:25",
     "MAILTO": "recp@example.com",
@@ -160,8 +160,18 @@ The SMTP provider needs to be configured like this::
     "MAILUSER": "username",
     "MAILPASSWORD": "sosecret"}
 
+Optional parameters are *MAILUSER* and *MAILPASSWORD* if the mailserver to
+send the email needs authentication.
+
+This configuration is *DEPRECATED*.
+
+Starting with privacyIDEA 2.10 you can use the system wide :ref:`smtpserver`.
+The configuration looks like this::
+
+   {"MAILTO": "recp@example.com",
+    "IDENTIFIER": "name-of-smtp-config"}
+
 The default *SUBJECT* is set to *<phone>* and the default *BODY* to *<otp>*.
 You may change the *SUBJECT* and the *BODY* accordingly.
 
-Optional parameters are *MAILUSER* and *MAILPASSWORD* if the mailserver to
-send the email needs authentication.
+

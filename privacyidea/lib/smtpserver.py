@@ -197,7 +197,7 @@ def get_smtpservers(identifier=None, server=None):
 
 @log_with(log)
 def add_smtpserver(identifier, server, port=25, username="", password="",
-                    sender="", description="", tls=False):
+                   sender="", description="", tls=False):
     """
     This adds an smtp server to the smtp server database table.
 
