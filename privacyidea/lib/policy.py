@@ -681,19 +681,21 @@ def get_static_policy_definitions(scope=None):
     description.
     :rtype: dict
     """
+    resolvers = get_resolver_list().keys()
+    realms = get_realms().keys()
+    smtpconfigs = [server.config.identifier for server in get_smtpservers()]
     pol = {
         SCOPE.REGISTER: {
             ACTION.RESOLVER: {'type': 'str',
-                              'value': get_resolver_list().keys(),
+                              'value': resolvers,
                               'desc': _('Define in which resolver the user '
                                         'should be registered.')},
             ACTION.REALM: {'type': 'str',
-                           'value': get_realms().keys(),
+                           'value': realms,
                            'desc': _('Define in which realm the user should '
                                      'be registered.')},
             ACTION.EMAILCONFIG: {'type': 'str',
-                                 'value': [server.config.identifier for
-                                           server in get_smtpservers()],
+                                 'value': smtpconfigs,
                                  'desc': _('The SMTP server configuration, '
                                            'that should be used to send the '
                                            'registration email.')},
@@ -1099,6 +1101,7 @@ def get_static_policy_definitions(scope=None):
                           'number of the token matches this regexp.')},
             ACTION.SETREALM: {
                 'type': 'str',
+                'value': realms,
                 'desc': _('The Realm of the user is set to this very realm. '
                           'This is important if the user is not contained in '
                           'the default realm and can not pass his realm.')},
