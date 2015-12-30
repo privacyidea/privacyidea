@@ -113,14 +113,6 @@ type: bool
 
 The user is allowed to set the mOTP PIN of mOTP tokens.
 
-getotp
-~~~~~~
-
-**(TODO)**: not yet migrated.
-
-type: bool
-
-The user is allowed to retrieve OTP values from a token.
 
 otp_pin_maxlength
 ~~~~~~~~~~~~~~~~~
@@ -239,16 +231,6 @@ type: bool
 This action allows the user to view and search the audit log
 for actions with his own tokens.
 
-getserial
-~~~~~~~~~
-
-**(TODO)**: not yet migrated.
-
-type: bool
-
-This action allows the user to search for the serial number
-of an unassigned token by entering an OTP value.
-
 updateuser
 ~~~~~~~~~~
 
@@ -275,3 +257,17 @@ A locked token can not be modified anymore. It can only be deleted.
 
 Certain token types like *certificate* may define special actions when
 revoking a token.
+
+
+password_reset
+~~~~~~~~~~~~~~
+
+.. index:: reset password, password reset
+
+type: bool
+
+Introduced in version 2.10.
+
+If the user is located in an editable user store, this policy can define, if
+the user is allowed to perform a password reset. During the password reset an
+email with a link to reset the password is sent to the user.

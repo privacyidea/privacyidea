@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #
-#  2015-12-28 Cornelius Kölbel <cornelius.koelbel@netkngihts.it>
+#  2015-12-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add password reset policy
+#  2015-12-28 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add registration policy
 #  2015-12-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add tokenissuer policy
@@ -118,6 +120,9 @@ import logging
 from ..models import (Policy, db)
 from privacyidea.lib.config import (get_token_classes, get_token_types)
 from privacyidea.lib.error import ParameterError, PolicyError
+from privacyidea.lib.realm import get_realms
+from privacyidea.lib.resolver import get_resolver_list
+from privacyidea.lib.smtpserver import get_smtpservers
 log = logging.getLogger(__name__)
 
 optional = True
@@ -187,6 +192,7 @@ class ACTION(object):
     PASSNOTOKEN = "passOnNoToken"
     PASSNOUSER = "passOnNoUser"
     PASSTHRU = "passthru"
+    PASSWORDRESET = "password_reset"
     PINHANDLING = "pinhandling"
     POLICYDELETE = "policydelete"
     POLICYWRITE = "policywrite"
@@ -675,16 +681,19 @@ def get_static_policy_definitions(scope=None):
     description.
     :rtype: dict
     """
-
     pol = {
         SCOPE.REGISTER: {
             ACTION.RESOLVER: {'type': 'str',
+                              'value': get_resolver_list().keys(),
                               'desc': _('Define in which resolver the user '
                                         'should be registered.')},
             ACTION.REALM: {'type': 'str',
+                           'value': get_realms().keys(),
                            'desc': _('Define in which realm the user should '
                                      'be registered.')},
             ACTION.EMAILCONFIG: {'type': 'str',
+                                 'value': [server.config.identifier for
+                                           server in get_smtpservers()],
                                  'desc': _('The SMTP server configuration, '
                                            'that should be used to send the '
                                            'registration email.')},
@@ -903,13 +912,13 @@ def get_static_policy_definitions(scope=None):
             ACTION.RESYNC: {'type': 'bool',
                             "desc": _("The user is allowed to resyncronize his "
                                       "tokens.")},
-            ACTION.REVOKE: {'tpye': 'bool',
+            ACTION.REVOKE: {'type': 'bool',
                             'desc': _("The user is allowed to revoke a token")},
             ACTION.RESET: {'type': 'bool',
                            'desc': _('The user is allowed to reset the '
                                      'failcounter of his tokens.')},
             ACTION.SETPIN: {'type': 'bool',
-                            "desc": _("The u32ser is allowed to set the OTP "
+                            "desc": _("The user is allowed to set the OTP "
                                       "PIN "
                                       "of his tokens.")},
             ACTION.OTPPINMAXLEN: {'type': 'int',
@@ -949,7 +958,11 @@ def get_static_policy_definitions(scope=None):
             ACTION.UPDATEUSER: {'type': 'bool',
                                 'desc': _("The user is allowed to update his "
                                           "own user information, like changing "
-                                          "his password.")}
+                                          "his password.")},
+            ACTION.PASSWORDRESET: {'type': 'bool',
+                                   'desc': _("The user is allowed to do a "
+                                             "password reset in an editable "
+                                             "UserIdResolver.")}
             # 'getserial': {
             #     'type': 'bool',
             #     'desc': _('Allow the user to search an unassigned token by

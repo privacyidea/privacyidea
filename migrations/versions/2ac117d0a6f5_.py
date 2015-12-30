@@ -1,4 +1,4 @@
-"""Add the DB table SMTPServer
+"""Add the DB table SMTPServer in version 2.10
 
 Revision ID: 2ac117d0a6f5
 Revises: 20969b4cbf06
