@@ -149,7 +149,8 @@ class TokenClass(object):
         # set the tokenrealm
         self.set_realms([user.realm])
 
-    def get_user(self):
+    @property
+    def user(self):
         """
         return the user (owner) of a token
         If the token has no owner assigned, we return None
@@ -177,8 +178,8 @@ class TokenClass(object):
 
         :return: tuple
         """
-        user_object = self.get_user()
-        user_info = user_object.get_user_info()
+        user_object = self.user
+        user_info = user_object.info
         user_identifier = "%s_%s" % (user_object.login, user_object.realm)
         user_displayname = "%s %s" % (user_info.get("givenname", "."),
                                       user_info.get("surname", "."))
@@ -1050,9 +1051,10 @@ class TokenClass(object):
 
     def get_init_detail(self, params=None, user=None):
         """
-        to complete the token normalisation, the response of the initialiastion
+        to complete the token initialization, the response of the initialisation
         should be build by this token specific method.
-        
+        This method is called from api/token after the token is enrolled
+
         get_init_detail returns additional information after an admin/init
         like the QR code of an HOTP/TOTP token.
         Can be anything else.

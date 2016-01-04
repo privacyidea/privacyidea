@@ -74,9 +74,9 @@ class MachineApplication(MachineApplicationBase):
                     # We return the username if the token is assigned to a
                     # user, so that this username could be used to save
                     # the ssh key accordingly
-                    user_object = toks[0].get_user()
+                    user_object = toks[0].user
                     if user_object:
-                        uInfo = user_object.get_user_info()
+                        uInfo = user_object.info
                         if "username" in uInfo:
                             ret["username"] = uInfo.get("username")
                     # ret["info"] = uInfo

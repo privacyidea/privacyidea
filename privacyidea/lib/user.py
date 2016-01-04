@@ -244,7 +244,8 @@ class User(object):
             success = False
         return success
 
-    def get_user_info(self):
+    @property
+    def info(self):
         """
         return the detailed information for the user
 
@@ -267,7 +268,7 @@ class User(object):
     
         :returns: list with phone numbers of this user object
         """
-        userinfo = self.get_user_info()
+        userinfo = self.info
         if phone_type in userinfo:
             log.debug("got user phone %r of type %r"
                       % (userinfo[phone_type], phone_type))

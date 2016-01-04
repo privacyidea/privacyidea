@@ -270,12 +270,12 @@ class UserTestCase(MyTestCase):
         self.assertEqual(len(added), 1)
 
         user = User(login="wordpressuser", realm=realm)
-        uinfo = user.get_user_info()
+        uinfo = user.info
         self.assertEqual(uinfo.get("givenname", ""), "")
 
         user.update_user_info({"givenname": "wordy",
                                "username": "WordpressUser"})
-        uinfo = user.get_user_info()
+        uinfo = user.info
         self.assertEqual(uinfo.get("givenname"), "wordy")
 
         self.assertEqual(user.login, "WordpressUser")

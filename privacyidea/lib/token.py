@@ -379,7 +379,7 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
             token_dict["username"] = ""
             token_dict["user_realm"] = ""
             try:
-                userobject = tokenobject.get_user()
+                userobject = tokenobject.user
                 if userobject:
                     token_dict["username"] = userobject.login
                     token_dict["user_realm"] = userobject.realm
@@ -520,7 +520,7 @@ def get_token_owner(serial):
 
     if tokenobject_list and token_has_owner(serial):
         tokenobject = tokenobject_list[0]
-        user = tokenobject.get_user()
+        user = tokenobject.user
 
     return user
 
@@ -886,12 +886,12 @@ def init_token(param, user=None, tokenrealms=None):
         # which later might be overwritten by the tokenobject.update(param)
         tokenobject.set_defaults()
 
-    upd_params = param
-    tokenobject.update(upd_params)
-
     # Set the user of the token
     if user is not None and user.login != "":
         tokenobject.set_user(user)
+
+    upd_params = param
+    tokenobject.update(upd_params)
 
     try:
         # Save the token to the database
@@ -1035,7 +1035,7 @@ def assign_token(serial, user, pin=None, encrypt_pin=False):
     tokenobject = tokenobject_list[0]
 
     # Check if the token already belongs to another user
-    old_user = tokenobject.get_user()
+    old_user = tokenobject.user
     if old_user:
         log.warning("token already assigned to user: %r" % old_user)
         raise TokenAdminError("Token already assigned to user %r" %
@@ -1760,7 +1760,7 @@ def check_serial_pass(serial, passw, options=None):
     else:
         tokenobject = tokenobject_list[0]
         res, reply_dict = check_token_list(tokenobject_list, passw,
-                                           user=tokenobject.get_user(),
+                                           user=tokenobject.user,
                                            options=options)
 
     return res, reply_dict
@@ -1797,7 +1797,7 @@ def check_user_pass(user, passw, options=None):
     else:
         tokenobject = tokenobject_list[0]
         res, reply_dict = check_token_list(tokenobject_list, passw,
-                                           user=tokenobject.get_user(),
+                                           user=tokenobject.user,
                                            options=options)
 
     return res, reply_dict
@@ -1844,7 +1844,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                  'weight': 0}
 
         log.debug("Found user with loginId %r: %r" % (
-                  tokenobject.get_user(), tokenobject.get_serial()))
+                  tokenobject.user, tokenobject.get_serial()))
 
         if tokenobject.is_challenge_response(passw, user=user, options=options):
             # This is a challenge response

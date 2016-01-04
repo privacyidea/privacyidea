@@ -1,58 +1,67 @@
 """
-This test file tests the lib.tokens.passwordtoken
+This test file tests the lib.tokens.recoverytoken
 This depends on lib.tokenclass
 """
 
 from .base import MyTestCase
-from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
+from privacyidea.lib.tokens.recoverytoken import RecoveryTokenClass
 from privacyidea.models import Token
+from privacyidea.lib.token import init_token
+from privacyidea.lib.user import User
 
 
-class RegistrationTokenTestCase(MyTestCase):
+class RecoveryTokenTestCase(MyTestCase):
     serial1 = "ser1"
 
+
     # set_user, get_user, reset, set_user_identifiers
+
+    def test_00_init_users(self):
+        self.setUp_user_realms()
     
     def test_01_create_token(self):
-        db_token = Token(self.serial1, tokentype="registration")
-        db_token.save()
-        token = RegistrationTokenClass(db_token)
-        token.update({})
-        self.assertTrue(token.token.serial == self.serial1, token)
-        self.assertTrue(token.token.tokentype == "registration",
+        token = init_token({"type": "recovery",
+                            "serial": self.serial1},
+                           user=User("cornelius", self.realm1))
+        self.assertTrue(token.token.tokentype == "recovery",
                         token.token.tokentype)
-        self.assertTrue(token.type == "registration", token)
+        self.assertTrue(token.type == "recovery", token)
         class_prefix = token.get_class_prefix()
-        self.assertTrue(class_prefix == "REG", class_prefix)
-        self.assertTrue(token.get_class_type() == "registration", token)
+        self.assertTrue(class_prefix == "REC", class_prefix)
+        self.assertTrue(token.get_class_type() == "recovery", token)
 
     def test_02_class_methods(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
-        token = RegistrationTokenClass(db_token)
+        token = RecoveryTokenClass(db_token)
 
         info = token.get_class_info()
-        self.assertTrue(info.get("title") == "Registration Code Token", info)
+        self.assertEqual(info.get("title"), "Password Recovery Token")
 
         info = token.get_class_info("title")
-        self.assertTrue(info == "Registration Code Token", info)
+        self.assertEqual(info, "Password Recovery Token")
 
-    def test_03_check_password(self):
+    def test_03_check_recoverycode(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
-        token = RegistrationTokenClass(db_token)
+        token = RecoveryTokenClass(db_token)
 
         r = token.check_otp("wrong pw")
         self.assertTrue(r == -1, r)
 
         detail = token.get_init_detail()
-        r = token.check_otp(detail.get("registrationcode"))
-        self.assertTrue(r == 0, r)
+        recoverycode = detail.get("registrationcode")
+        r = token.check_otp(recoverycode)
+        print(recoverycode)
+        self.assertEqual(r, -1)
 
-        # check if the token sill exists after check_otp
-        db_token = Token.query.filter(Token.serial == self.serial1).first()
-        self.assertNotEqual(db_token, None)
-
-        # check if the token is deleted after inc_success
-        token.inc_count_auth_success()
+        # Check recovery code
+        r = token.check_recovery_code(recoverycode)
+        self.assertEqual(r, 0)
+        # check if the token is deleted
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         self.assertEqual(db_token, None)
 
+    def test_04_create_recovery(self):
+        user = User("cornelius", realm=self.realm1)
+        token = init_token({"type": "recovery"},
+                           user=user)
+        self.assertEqual(token.token.tokentype, "recovery")

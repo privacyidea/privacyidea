@@ -502,7 +502,7 @@ def auth_otppin(wrapped_function, *args, **kwds):
         if not user_object:
             # No user in the parameters, so we need to determine the owner of
             #  the token
-            user_object = token.get_user()
+            user_object = token.user
             realms = token.get_realms()
             if not user_object and len(realms):
                 # if the token has not owner, we take a realm.
@@ -567,7 +567,7 @@ def config_lost_token(wrapped_function, *args, **kwds):
         if len(toks) == 1:
             username = None
             realm = None
-            user_object = toks[0].get_user()
+            user_object = toks[0].user
             if user_object:
                 username = user_object.login
                 realm = user_object.realm

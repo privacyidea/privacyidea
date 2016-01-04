@@ -98,9 +98,9 @@ class MachineApplication(MachineApplicationBase):
                 token_obj.add_tokeninfo(key="offline_counter",
                                         value=count)
                 ret["response"] = otps
-                user_object = token_obj.get_user()
+                user_object = token_obj.user
                 if user_object:
-                    uInfo = user_object.get_user_info()
+                    uInfo = user_object.info
                     if "username" in uInfo:
                         ret["username"] = uInfo.get("username")
 

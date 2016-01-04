@@ -85,7 +85,7 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertTrue(token.token.user_id == "1000",
                         token.token.user_id)
 
-        user_object = token.get_user()
+        user_object = token.user
         self.assertTrue(user_object.login == "cornelius",
                         user_object)
         self.assertTrue(user_object.resolver == self.resolvername1,

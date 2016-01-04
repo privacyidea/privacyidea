@@ -258,7 +258,7 @@ def samlcheck():
                 options[key] = value
 
     auth, details = check_user_pass(user, password, options=options)
-    ui = user.get_user_info()
+    ui = user.info
     result_obj = {"auth": auth,
                   "attributes": {}}
     if return_saml_attributes():
