@@ -72,6 +72,7 @@ import logging
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from privacyidea.api.auth import jwtauth
 from privacyidea.api.register import register_blueprint
+from privacyidea.api.recover import recover_blueprint
 
 log = logging.getLogger(__name__)
 
@@ -80,6 +81,7 @@ validate_blueprint = Blueprint('validate_blueprint', __name__)
 
 @validate_blueprint.before_request
 @register_blueprint.before_request
+@recover_blueprint.before_request
 def before_request():
     """
     This is executed before the request
@@ -102,6 +104,7 @@ def before_request():
 
 @validate_blueprint.after_request
 @register_blueprint.after_request
+@recover_blueprint.after_request
 @jwtauth.after_request
 @postrequest(sign_response, request=request)
 def after_request(response):

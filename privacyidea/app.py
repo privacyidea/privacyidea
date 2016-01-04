@@ -45,6 +45,7 @@ from privacyidea.api.machineresolver import machineresolver_blueprint
 from privacyidea.api.machine import machine_blueprint
 from privacyidea.api.ttype import ttype_blueprint
 from privacyidea.api.smtpserver import smtpserver_blueprint
+from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
 from privacyidea.config import config
 from privacyidea.models import db
@@ -146,6 +147,7 @@ def create_app(config_name="development",
     app.register_blueprint(ttype_blueprint, url_prefix='/ttype')
     app.register_blueprint(register_blueprint, url_prefix='/register')
     app.register_blueprint(smtpserver_blueprint, url_prefix='/smtpserver')
+    app.register_blueprint(recover_blueprint, url_prefix='/recover')
     db.init_app(app)
     migrate = Migrate(app, db)
 
