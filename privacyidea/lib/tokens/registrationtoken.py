@@ -116,7 +116,7 @@ class RegistrationTokenClass(PasswordTokenClass):
         """
         res = {'type': 'registration',
                'title': 'Registration Code Token',
-               'description': ('Registration: A token that create a '
+               'description': ('Registration: A token that creates a '
                                'registration code that '
                                'can be used as a second factor once.'),
                'init': {},

@@ -347,7 +347,7 @@ msgstr ""
 msgid "Count Window"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:141
+#: privacyidea/static/components/config/views/config.system.html:156
 msgid ""
 "Count Window of\n"
 "                    newly enrolled tokens"
@@ -1091,7 +1091,7 @@ msgstr ""
 msgid "Mark the token to be lost"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:154
+#: privacyidea/static/components/config/views/config.system.html:169
 msgid ""
 "Max Failcount of\n"
 "                    newly enrolled tokens"
@@ -1222,7 +1222,7 @@ msgstr ""
 msgid "OTP length"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:127
+#: privacyidea/static/components/config/views/config.system.html:142
 msgid ""
 "OTP length of\n"
 "                    newly enrolled tokens"
@@ -1584,6 +1584,10 @@ msgstr ""
 msgid "SMTP server configuration"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.system.html:125
+msgid "SMTP server for password recovery"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.system.html:25
 msgid "SMTP servers"
 msgstr ""
@@ -1618,7 +1622,7 @@ msgstr ""
 msgid "Save SMTP server"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:220
+#: privacyidea/static/components/config/views/config.system.html:235
 msgid "Save System Config"
 msgstr ""
 
@@ -1660,6 +1664,12 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.html:23
 msgid "Select Realm"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:134
+msgid ""
+"Select a predefined\n"
+"                    <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.email.html:44
@@ -1770,7 +1780,7 @@ msgstr ""
 msgid "Sync Window"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:166
+#: privacyidea/static/components/config/views/config.system.html:181
 msgid ""
 "Sync Window of\n"
 "                    newly enrolled tokens"
@@ -1785,7 +1795,7 @@ msgid "System Config"
 msgstr ""
 
 #: privacyidea/static/components/config/controllers/configControllers.js:416
-#: privacyidea/static/components/config/controllers/configControllers.js:616
+#: privacyidea/static/components/config/controllers/configControllers.js:619
 msgid "System Config saved."
 msgstr ""
 
@@ -2087,7 +2097,7 @@ msgstr ""
 msgid "The certificate was enrolled successfully."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:179
+#: privacyidea/static/components/config/views/config.system.html:194
 msgid "The challenge validity time"
 msgstr ""
 

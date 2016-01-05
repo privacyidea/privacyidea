@@ -371,7 +371,7 @@ msgstr "Zähler"
 msgid "Count Window"
 msgstr "Zählerfenster"
 
-#: privacyidea/static/components/config/views/config.system.html:141
+#: privacyidea/static/components/config/views/config.system.html:156
 msgid ""
 "Count Window of\n"
 "                    newly enrolled tokens"
@@ -1160,7 +1160,7 @@ msgstr "Zuordnung"
 msgid "Mark the token to be lost"
 msgstr "Den Token als verloren markieren"
 
-#: privacyidea/static/components/config/views/config.system.html:154
+#: privacyidea/static/components/config/views/config.system.html:169
 msgid ""
 "Max Failcount of\n"
 "                    newly enrolled tokens"
@@ -1291,7 +1291,7 @@ msgstr "OTP-Wert"
 msgid "OTP length"
 msgstr "OTP-Länge "
 
-#: privacyidea/static/components/config/views/config.system.html:127
+#: privacyidea/static/components/config/views/config.system.html:142
 msgid ""
 "OTP length of\n"
 "                    newly enrolled tokens"
@@ -1664,6 +1664,10 @@ msgstr "SMTP Konfiguration erfolgreich gespeichert."
 msgid "SMTP server configuration"
 msgstr "SMTP Server Konfiguration"
 
+#: privacyidea/static/components/config/views/config.system.html:125
+msgid "SMTP server for password recovery"
+msgstr "SMTP Server für die Passwort-Wiederherstellung"
+
 #: privacyidea/static/components/config/views/config.system.html:25
 msgid "SMTP servers"
 msgstr "SMTP Server"
@@ -1698,7 +1702,7 @@ msgstr "Resolver speichern"
 msgid "Save SMTP server"
 msgstr "SMTP Server speichern"
 
-#: privacyidea/static/components/config/views/config.system.html:220
+#: privacyidea/static/components/config/views/config.system.html:235
 msgid "Save System Config"
 msgstr "Systemkonfiguration speichern"
 
@@ -1741,6 +1745,15 @@ msgstr "Secret"
 #: privacyidea/static/components/user/views/user.html:23
 msgid "Select Realm"
 msgstr "Realm auswählen"
+
+#: privacyidea/static/components/config/views/config.system.html:134
+msgid ""
+"Select a predefined\n"
+"                    <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
+msgstr ""
+"Wählen Sie eine bestehende \n"
+"                                <a ui-sref=\"config.smtp\">SMTP Server "
+"Konfiguration</a>."
 
 #: privacyidea/static/components/config/views/config.token.email.html:44
 msgid ""
@@ -1852,7 +1865,7 @@ msgstr "Nachname"
 msgid "Sync Window"
 msgstr "Sync-Fenster"
 
-#: privacyidea/static/components/config/views/config.system.html:166
+#: privacyidea/static/components/config/views/config.system.html:181
 msgid ""
 "Sync Window of\n"
 "                    newly enrolled tokens"
@@ -1867,7 +1880,7 @@ msgid "System Config"
 msgstr "Systemkonfiguration"
 
 #: privacyidea/static/components/config/controllers/configControllers.js:416
-#: privacyidea/static/components/config/controllers/configControllers.js:616
+#: privacyidea/static/components/config/controllers/configControllers.js:619
 msgid "System Config saved."
 msgstr "Systemkonfiguration gespeichert."
 
@@ -2264,7 +2277,7 @@ msgstr ""
 msgid "The certificate was enrolled successfully."
 msgstr "Das Zertifikat wurde erfolgreich ausgestellt."
 
-#: privacyidea/static/components/config/views/config.system.html:179
+#: privacyidea/static/components/config/views/config.system.html:194
 msgid "The challenge validity time"
 msgstr "Die Gültigkeitszeit der Challenge"
 

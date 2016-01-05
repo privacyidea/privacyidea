@@ -8,6 +8,10 @@ from privacyidea.lib.tokens.recoverytoken import RecoveryTokenClass
 from privacyidea.models import Token
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
+import smtpmock
+from privacyidea.lib.error import privacyIDEAError
+from privacyidea.lib.smtpserver import add_smtpserver
+from privacyidea.lib.config import set_privacyidea_config
 
 
 class RecoveryTokenTestCase(MyTestCase):
@@ -18,8 +22,20 @@ class RecoveryTokenTestCase(MyTestCase):
 
     def test_00_init_users(self):
         self.setUp_user_realms()
-    
+
+    @smtpmock.activate
     def test_01_create_token(self):
+        smtpmock.setdata(response={"user@localhost.localdomain": (200, "OK")})
+
+        # missing configuration
+        self.assertRaises(privacyIDEAError, init_token,
+                          {"type": "recovery", "serial": self.serial1},
+                          user=User("cornelius", self.realm1))
+
+        # recover password with "recovery.identifier"
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4")
+        self.assertTrue(r > 0)
+        set_privacyidea_config("recovery.identifier", "myserver")
         token = init_token({"type": "recovery",
                             "serial": self.serial1},
                            user=User("cornelius", self.realm1))
@@ -59,9 +75,3 @@ class RecoveryTokenTestCase(MyTestCase):
         # check if the token is deleted
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         self.assertEqual(db_token, None)
-
-    def test_04_create_recovery(self):
-        user = User("cornelius", realm=self.realm1)
-        token = init_token({"type": "recovery"},
-                           user=user)
-        self.assertEqual(token.token.tokentype, "recovery")

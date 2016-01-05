@@ -14,7 +14,6 @@ from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
 import datetime
 import smtpmock
-from smtplib import SMTPException
 
 
 class EmailTokenTestCase(MyTestCase):

@@ -34,6 +34,9 @@ from privacyidea.lib.utils import generate_password
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import UserError
 from privacyidea.lib.smtpserver import send_email_identifier
+from privacyidea.lib.error import privacyIDEAError, ConfigAdminError
+from privacyidea.lib.config import get_from_config
+
 
 optional = True
 required = False
@@ -112,6 +115,7 @@ class RecoveryTokenClass(RegistrationTokenClass):
             del param["genkey"]
         param["otpkey"] = generate_password(size=self.otp_len)
         super(PasswordTokenClass, self).update(param)
+        # Now send the email
         email = param.get("email")
         if not self.user:
             raise UserError("User required for recovery token.")
@@ -119,13 +123,17 @@ class RecoveryTokenClass(RegistrationTokenClass):
         if email and email.lower() != user_email.lower():
             raise UserError("The email does not match the users email.")
 
-        # TODO: send email
-        #smtp_identifier = ""
-        #r = send_email_identifier(smtp_identifier, user_email,
-        #                          "Your password reset",
-        #                          param["otpkey"])
-        #if not r:
-        #    log.error("Failed to send email.")
+        identifier = get_from_config("recovery.identifier")
+        if identifier:
+            # send email
+            r = send_email_identifier(identifier, user_email,
+                                      "Your password reset",
+                                      param["otpkey"])
+            if not r:
+                raise privacyIDEAError("Failed to send email. %s" % r)
+        else:
+            raise ConfigAdminError("Missing configuration "
+                                   "recovery.identifier.")
 
     @log_with(log, log_entry=False)
     @check_token_locked

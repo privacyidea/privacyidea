@@ -121,6 +121,21 @@
             </div>
         </div>
 
+        <div class="form-group">
+            <label for="recovery.idenfifier"
+                   class="col-sm-4 control-label" translate>
+                SMTP server for password recovery</label>
+            <div class="col-sm-8">
+                <select class="form-control"
+                    ng-model="params['recovery.identifier']"
+                    name="recovery.identifier"
+                    ng-options="identifier as identifier for (identifier, config) in smtpIdentifiers">
+                </select>
+                    <p class="help-block" translate>Select a predefined
+                    <a ui-sref="config.smtp">SMTP server configuration</a>.</p>
+                </div>
+        </div>
+
         <div class="well col-sm-12">
 
             <div class="form-group">

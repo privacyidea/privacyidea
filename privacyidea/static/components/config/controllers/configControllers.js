@@ -450,14 +450,7 @@ myApp.controller("tokenConfigController", function ($scope, $location,
         });
     };
     */
-    // Email/SMTP part
-    $scope.getSmtpIdentifiers = function() {
-        ConfigFactory.getSmtp(function(data){
-            console.log("SMTP Identifiers");
-            console.log(data.result.value);
-            $scope.smtpIdentifiers = data.result.value;
-        });
-    };
+
     $scope.getSmtpIdentifiers();
     $scope.loadSystemConfig();
 });
@@ -503,6 +496,15 @@ myApp.controller("configController", function ($scope, $location,
     $scope.getResolvers = function () {
         ConfigFactory.getResolvers(function (data) {
             $scope.resolvers = data.result.value;
+        });
+    };
+
+    // Email/SMTP part
+    $scope.getSmtpIdentifiers = function() {
+        ConfigFactory.getSmtp(function(data){
+            console.log("SMTP Identifiers");
+            console.log(data.result.value);
+            $scope.smtpIdentifiers = data.result.value;
         });
     };
 
@@ -596,6 +598,7 @@ myApp.controller("configController", function ($scope, $location,
     $scope.getRealms();
     $scope.getResolvers();
     $scope.selectedResolvers = {};
+    $scope.getSmtpIdentifiers();
 
     $scope.testResolver = function () {
         ConfigFactory.testResolver($scope.params, function (data) {
