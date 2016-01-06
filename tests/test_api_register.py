@@ -7,11 +7,12 @@ from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 import json
 from privacyidea.lib.smtpserver import add_smtpserver
 import smtpmock
+from privacyidea.lib.config import set_privacyidea_config
 
 
 class RegisterTestCase(MyTestCase):
     """
-    test the api.validate endpoints
+    test the api.register and api.recover endpoints
     """
     parameters = {'Driver': 'sqlite',
                   'Server': '/tests/testdata/',
@@ -116,6 +117,38 @@ class RegisterTestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             data = json.loads(res.data)
             self.assertEqual(data.get("result").get("value"), True)
+
+    @smtpmock.activate
+    def test_02_reset_password(self):
+        smtpmock.setdata(response={"cornelius@privacyidea.org": (200, "OK")})
+        set_privacyidea_config("recovery.identifier", "myserver")
+        with self.app.test_request_context('/recover',
+                                           method='POST',
+                                           data={"user": "corneliusReg",
+                                                 "realm": "register",
+                                                 "email":
+                                                     "cornelius@privacyidea.org"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res.data)
+            data = json.loads(res.data)
+            self.assertEqual(data.get("result").get("value"), True)
+
+    def test_03_set_new_password(self):
+        # Get the recovery code
+        from privacyidea.lib.token import get_tokens
+        from privacyidea.lib.user import User
+        tokenobjects = get_tokens(tokentype="recovery",
+                            user=User("corneliusReg", "register"))
+        self.assertTrue(len(tokenobjects), 1)
+
+        tokenobject = tokenobjects[0]
+        secretHOtp = tokenobject.token.get_otpkey()
+        recoverycode = secretHOtp.getKey()
+        self.assertEqual(len(recoverycode), 24)
+        # Use the recoverycode to set a new password
+
+        # test the new password
+
 
     def test_99_delete_users(self):
         self.test_00_delete_users()

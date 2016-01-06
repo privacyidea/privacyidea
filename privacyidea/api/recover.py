@@ -23,11 +23,12 @@
 __doc__ = """This module provides the REST API for th password recovery for a
 user managed in privacyIDEA.
 
-The methods are tested in the file tests/test_api_recover.py
+The methods are also tested in the file tests/test_api_register.py
 """
 from flask import (Blueprint, request, g, current_app)
 from lib.utils import send_result, getParam
 from lib.utils import required
+from privacyidea.lib.user import get_user_from_param
 import logging
 from privacyidea.lib.policy import ACTION, SCOPE
 from privacyidea.lib.user import create_user
@@ -46,26 +47,33 @@ recover_blueprint = Blueprint('recover_blueprint', __name__)
 
 # The before and after methods are the same as in the validate endpoint
 
-@recover_blueprint.route('', methods=['GET'])
-def get_revocer_code():
+@recover_blueprint.route('', methods=['POST'])
+def get_recover_code():
     """
     This method requests a recover code for a user. The recover code it sent
     via email to the user.
 
+    :queryparam user: username of the user
+    :queryparam realm: realm of the user
+    :queryparam email: email of the user
     :return: JSON with value=True or value=False
     """
     param = request.all_data
-    username = getParam(param, "username", required)
+    user = get_user_from_param(param, required)
     email = getParam(param, "email", required)
+    # create recoverytoken for the user.
+    from privacyidea.lib.token import init_token
+    token = init_token({"type": "recovery"}, user=user)
+    log.debug("Created recovery token %s for user %s" % (token, user))
     result = True
     return send_result(result)
 
 
-@recover_blueprint.route('', methods=['POST'])
+@recover_blueprint.route('reset', methods=['POST'])
 def reset_password():
     """
     reset the password with a given recovery code.
-    The recovery code was sent by get_revocer_code and is bound to a certain
+    The recovery code was sent by get_recover_code and is bound to a certain
     user.
 
     :jsonparam recovercode: The recoverycode sent the the user
@@ -74,6 +82,8 @@ def reset_password():
     :return: a json result with a boolean "result": true
     """
     r = True
+    user = get_user_from_param(request.all_data, required)
     recovercode = getParam(request.all_data, "recovercode", required)
     password = getParam(request.all_data, "password", required)
+
     return send_result(r)

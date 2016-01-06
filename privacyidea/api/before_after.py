@@ -47,6 +47,8 @@ from .caconnector import caconnector_blueprint
 from .token import token_blueprint
 from .system import system_blueprint
 from .smtpserver import smtpserver_blueprint
+from .recover import recover_blueprint
+from .register import register_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from ..lib.error import (privacyIDEAError,
                          AuthError,
@@ -189,6 +191,8 @@ def auth_error(error):
 @audit_blueprint.app_errorhandler(PolicyError)
 @application_blueprint.app_errorhandler(PolicyError)
 @smtpserver_blueprint.app_errorhandler(PolicyError)
+@register_blueprint.app_errorhandler(PolicyError)
+@recover_blueprint.app_errorhandler(PolicyError)
 @postrequest(sign_response, request=request)
 def policy_error(error):
     if "audit_object" in g:
@@ -207,6 +211,8 @@ def policy_error(error):
 @audit_blueprint.app_errorhandler(privacyIDEAError)
 @application_blueprint.app_errorhandler(privacyIDEAError)
 @smtpserver_blueprint.app_errorhandler(privacyIDEAError)
+@register_blueprint.app_errorhandler(privacyIDEAError)
+@recover_blueprint.app_errorhandler(privacyIDEAError)
 @postrequest(sign_response, request=request)
 def privacyidea_error(error):
     """
@@ -230,6 +236,8 @@ def privacyidea_error(error):
 @audit_blueprint.app_errorhandler(500)
 @application_blueprint.app_errorhandler(500)
 @smtpserver_blueprint.app_errorhandler(500)
+@register_blueprint.app_errorhandler(500)
+@recover_blueprint.app_errorhandler(500)
 @postrequest(sign_response, request=request)
 def internal_error(error):
     """

@@ -621,6 +621,8 @@ msgstr ""
 msgid "Edit user store"
 msgstr ""
 
+#: privacyidea/static/components/recovery/views/recovery.html:28
+#: privacyidea/static/components/recovery/views/recovery.html:32
 #: privacyidea/static/components/register/views/register.html:48
 #: privacyidea/static/components/register/views/register.html:52
 #: privacyidea/static/components/user/views/user.add.html:51
@@ -923,6 +925,10 @@ msgstr ""
 msgid ""
 "If you enrolling the Yubikey in HOTP mode, you should use the\n"
 "            PSKC file format in the newer version of the Yubikey GUI."
+msgstr ""
+
+#: privacyidea/static/components/recovery/views/recovery.html:6
+msgid "If you forgot your password, you may set a new one."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.assign.html:3
@@ -1519,6 +1525,12 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:22
 msgid "Required Realms"
+msgstr ""
+
+#: privacyidea/static/components/login/views/login.html:61
+#: privacyidea/static/components/recovery/views/recovery.html:14
+#: privacyidea/static/components/recovery/views/recovery.html:38
+msgid "Reset Password"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:77
@@ -2642,6 +2654,8 @@ msgstr ""
 #: privacyidea/static/components/directives/views/directive.assignuser.html:14
 #: privacyidea/static/components/login/views/login.html:42
 #: privacyidea/static/components/login/views/login.html:46
+#: privacyidea/static/components/recovery/views/recovery.html:18
+#: privacyidea/static/components/recovery/views/recovery.html:22
 #: privacyidea/static/components/register/views/register.html:18
 #: privacyidea/static/components/register/views/register.html:22
 #: privacyidea/static/components/token/views/token.details.html:350
