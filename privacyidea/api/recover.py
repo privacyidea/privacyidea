@@ -32,14 +32,8 @@ from privacyidea.lib.user import get_user_from_param
 import logging
 from privacyidea.lib.passwordreset import (create_recoverycode,
                                            check_recoverycode)
-from privacyidea.lib.policy import ACTION, SCOPE
-from privacyidea.lib.user import create_user
-from privacyidea.lib.user import User
-from privacyidea.lib.token import init_token
-from privacyidea.lib.realm import get_default_realm
-from privacyidea.lib.error import RegistrationError
-from privacyidea.api.lib.prepolicy import required_email, prepolicy
-from privacyidea.lib.smtpserver import get_smtpserver, send_email_identifier
+from privacyidea.lib.policy import ACTION
+from privacyidea.api.lib.prepolicy import prepolicy, check_anonymous_user
 
 
 log = logging.getLogger(__name__)
@@ -50,6 +44,7 @@ recover_blueprint = Blueprint('recover_blueprint', __name__)
 # The before and after methods are the same as in the validate endpoint
 
 @recover_blueprint.route('', methods=['POST'])
+@prepolicy(check_anonymous_user, request, action=ACTION.PASSWORDRESET)
 def get_recover_code():
     """
     This method requests a recover code for a user. The recover code it sent
@@ -70,6 +65,7 @@ def get_recover_code():
 
 
 @recover_blueprint.route('/reset', methods=['POST'])
+@prepolicy(check_anonymous_user, request, action=ACTION.PASSWORDRESET)
 def reset_password():
     """
     reset the password with a given recovery code.

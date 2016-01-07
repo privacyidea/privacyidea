@@ -487,12 +487,48 @@ def mangle(request=None, action=None):
     return True
 
 
-def check_base_action(request=None, action=None):
+def check_anonymous_user(request=None, action=None):
+    """
+    This decorator function takes the request and verifies the given action
+    for the SCOPE USER without an authenticated user but the user from the
+    parameters.
+
+    This is used with password_reset
+
+    :param request:
+    :param action:
+    :return: True otherwise raises an Exception
+    """
+    ERROR = "User actions are defined, but this action is not allowed!"
+    params = request.all_data
+    policy_object = g.policy_object
+    scope = SCOPE.USER
+    user_obj = get_user_from_param(params)
+    username = user_obj.login
+    realm = user_obj.realm
+
+    action = policy_object.get_policies(action=action,
+                                        user=username,
+                                        realm=realm,
+                                        scope=scope,
+                                        client=request.remote_addr,
+                                        adminrealm=None,
+                                        active=True)
+    action_at_all = policy_object.get_policies(scope=scope,
+                                               active=True)
+    if action_at_all and len(action) == 0:
+        raise PolicyError(ERROR)
+    return True
+
+
+def check_base_action(request=None, action=None, anonymous=False):
     """
     This decorator function takes the request and verifies the given action
     for the SCOPE ADMIN or USER.
-    :param req:
+    :param request:
     :param action:
+    :param anonymous: If set to True, the user data is taken from the request
+        parameters.
     :return: True otherwise raises an Exception
     """
     ERROR = {"user": "User actions are defined, but this action is not "
@@ -505,13 +541,14 @@ def check_base_action(request=None, action=None):
     role = g.logged_in_user.get("role")
     scope = SCOPE.ADMIN
     admin_realm = g.logged_in_user.get("realm")
+    realm = params.get("realm")
+
     if role == "user":
         scope = SCOPE.USER
         # Reset the admin realm
         admin_realm = None
 
     # get the realm by the serial:
-    realm = params.get("realm")
     if params.get("serial") and not realm:
         realms = get_realms_of_token(params.get("serial"))
         if realms:

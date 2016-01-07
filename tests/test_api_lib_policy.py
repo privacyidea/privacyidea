@@ -12,6 +12,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy,
 from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_base_action, check_token_init,
                                            check_max_token_user,
+                                           check_anonymous_user,
                                            check_max_token_realm, set_realm,
                                            init_tokenlabel, init_random_pin,
                                            encrypt_pin, check_otp_pin,
@@ -725,6 +726,35 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # This emails is allowed
         r = required_email(req)
         self.assertTrue(r)
+
+    def test_15_reset_password(self):
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius",
+                                       "realm": self.realm1},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+        # Set a mangle policy to change the username
+        # and only use the last 4 characters of the username
+        set_policy(name="recover",
+                   scope=SCOPE.USER,
+                   action="%s" % ACTION.RESYNC)
+        g.policy_object = PolicyClass()
+        req.all_data = {"user": "cornelius", "realm": self.realm1}
+        # There is a user policy without password reset, so an exception is
+        # raised
+        self.assertRaises(PolicyError, check_anonymous_user, req,
+                          ACTION.PASSWORDRESET)
+
+        # The password reset is allowed
+        set_policy(name="recover",
+                   scope=SCOPE.USER,
+                   action="%s" % ACTION.PASSWORDRESET)
+        g.policy_object = PolicyClass()
+        r = check_anonymous_user(req, ACTION.PASSWORDRESET)
+        self.assertEqual(r, True)
 
 
 class PostPolicyDecoratorTestCase(MyTestCase):
