@@ -25,6 +25,8 @@ from privacyidea.lib.error import UserError, privacyIDEAError, ConfigAdminError
 from privacyidea.lib.smtpserver import send_email_identifier
 from privacyidea.lib.utils import generate_password
 from privacyidea.lib.config import get_from_config
+from privacyidea.lib.resolver import get_resolver_list
+from privacyidea.lib.policy import PolicyClass, ACTION, SCOPE
 from sqlalchemy import and_
 from datetime import datetime
 
@@ -114,3 +116,23 @@ def check_recoverycode(user, recoverycode):
             log.debug("%s used password recoverycode deleted." % r)
 
     return recoverycode_valid
+
+
+@log_with(log)
+def is_password_reset():
+    """
+    Check if password reset is allowed.
+
+    We need to check, if a user policy with password_reset exists AND if an
+    editable resolver exists. Otherwise password_reset does not make any sense.
+
+    :return: True or False
+    """
+    rlist = get_resolver_list(editable=True)
+    Policy = PolicyClass()
+    policy_at_all = Policy.get_policies(scope=SCOPE.USER)
+    policy_reset_wp = Policy.get_policies(scope=SCOPE.USER,
+                                          action=ACTION.PASSWORDRESET)
+    pwrest = policy_at_all and policy_reset_wp or not policy_at_all
+
+    return bool(rlist and pwrest)

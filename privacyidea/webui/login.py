@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2016-01-07 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Add password reset
 # 2015-11-04 Cornelius Kölbel <cornelius@privacyidea.org>
 #            Add REMOTE_USER check
 # 2014-12-22 Cornelius Kölbel, <cornelius@privacyidea.org>
@@ -28,6 +30,7 @@ __author__ = "Cornelius Kölbel, <cornelius@privacyidea.org>"
 
 from flask import (Blueprint, render_template, request, current_app)
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
+from privacyidea.lib.passwordreset import is_password_reset
 
 DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
 
@@ -50,9 +53,11 @@ def single_page_application():
     remote_user = ""
     if is_remote_user_allowed(request):
         remote_user = request.remote_user
+    password_reset = is_password_reset()
     return render_template("index.html", instance=instance,
                            backendUrl=backend_url,
                            browser_lang=browser_lang,
                            remote_user=remote_user,
-                           theme=theme)
+                           theme=theme,
+                           password_reset=password_reset)
 

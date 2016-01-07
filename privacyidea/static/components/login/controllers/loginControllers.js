@@ -36,6 +36,10 @@ angular.module("privacyideaApp")
     if (!$scope.remoteUser) {
         $scope.loginWithCredentials = true;
     }
+    var obj = angular.element(document.querySelector("#PASSWORD_RESET"));
+    $scope.passwordReset = obj.val();
+    console.log("Password reset");
+    console.log($scope.passwordReset);
 
     // Check if registration is allowed
     $scope.registrationAllowed = false;

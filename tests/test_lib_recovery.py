@@ -2,20 +2,37 @@
 This test file tests the lib/passwordreset.py
 """
 from .base import MyTestCase
-from privacyidea.lib.error import ConfigAdminError
-from privacyidea.lib.smtpserver import (get_smtpservers, add_smtpserver,
-                                        delete_smtpserver, get_smtpserver)
+from privacyidea.lib.smtpserver import add_smtpserver
 import smtpmock
 from privacyidea.lib.error import privacyIDEAError
 from privacyidea.lib.passwordreset import (create_recoverycode,
-                                           check_recoverycode)
+                                           check_recoverycode,
+                                           is_password_reset)
 from privacyidea.lib.config import set_privacyidea_config
-from privacyidea.lib.user import User, UserError
+from privacyidea.lib.user import User
+from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.realm import set_realm
+from privacyidea.lib.policy import ACTION, SCOPE, set_policy
 
 
 class RecoveryTestCase(MyTestCase):
     serial1 = "ser1"
 
+    parameters = {'Driver': 'sqlite',
+                  'Server': '/tests/testdata/',
+                  'Database': "testuser.sqlite",
+                  'Table': 'users',
+                  'Encoding': 'utf8',
+                  'Editable': True,
+                  'Map': '{ "username": "username", \
+                    "userid" : "id", \
+                    "email" : "email", \
+                    "surname" : "name", \
+                    "givenname" : "givenname", \
+                    "password" : "password", \
+                    "phone": "phone", \
+                    "mobile": "mobile"}'
+    }
 
     # set_user, get_user, reset, set_user_identifiers
 
@@ -50,4 +67,30 @@ class RecoveryTestCase(MyTestCase):
 
         # The recovery code is not valid a second time
         r = check_recoverycode(user, recoverycode)
+        self.assertEqual(r, False)
+
+    def test_03_is_password_reset(self):
+        # create resolver and realm
+        param = self.parameters
+        param["resolver"] = "register"
+        param["type"] = "sqlresolver"
+        r = save_resolver(param)
+        self. assertTrue(r > 0)
+
+        added, failed = set_realm("register", resolvers=["register"])
+        self.assertTrue(added > 0)
+        self.assertEqual(len(failed), 0)
+
+        # No user policy at all
+        r = is_password_reset()
+        self.assertEqual(r, True)
+
+        # create policy
+        set_policy(name="pwrest", scope=SCOPE.USER, action=ACTION.PASSWORDRESET)
+        r = is_password_reset()
+        self.assertEqual(r, True)
+
+        # create policy that does not allow password_reset
+        set_policy(name="pwrest", scope=SCOPE.USER, action=ACTION.DELETE)
+        r = is_password_reset()
         self.assertEqual(r, False)

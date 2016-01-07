@@ -112,6 +112,10 @@ msgstr ""
 msgid "An Attribute that contains the IP address."
 msgstr ""
 
+#: privacyidea/static/components/recovery/controllers/recoveryControllers.js:17
+msgid "An Email to reset the password has been sent to you."
+msgstr ""
+
 #: privacyidea/static/components/machine/views/machine.details.html:127
 #: privacyidea/static/components/machine/views/machine.details.html:51
 #: privacyidea/static/components/token/views/token.details.html:436
@@ -171,7 +175,7 @@ msgstr ""
 msgid "Authentication Server URI"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:182
+#: privacyidea/static/components/login/controllers/loginControllers.js:186
 msgid "Authentication failed."
 msgstr ""
 
@@ -267,7 +271,7 @@ msgstr ""
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:154
+#: privacyidea/static/components/login/controllers/loginControllers.js:158
 msgid "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr ""
 
@@ -649,7 +653,7 @@ msgstr ""
 msgid "Enroll Token"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:48
+#: privacyidea/static/components/login/controllers/loginControllers.js:52
 #: privacyidea/static/components/token/controllers/tokenControllers.js:104
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:127
@@ -993,7 +997,7 @@ msgstr ""
 msgid "List SMTP server definitions"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:56
+#: privacyidea/static/components/login/controllers/loginControllers.js:60
 msgid "List tokens"
 msgstr ""
 
@@ -1020,7 +1024,7 @@ msgstr ""
 msgid "Log In"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:63
+#: privacyidea/static/components/login/controllers/loginControllers.js:67
 msgid "Log out"
 msgstr ""
 
@@ -1248,7 +1252,7 @@ msgid ""
 "          default realm for you from the machines /etc/passwd?"
 msgstr ""
 
-#: privacyidea/static/templates/index.html:34
+#: privacyidea/static/templates/index.html:35
 #: privacyidea/static/templates/menu.html:85
 msgid "Online Documentation"
 msgstr ""
@@ -1452,7 +1456,7 @@ msgstr ""
 msgid "Realm"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:277
+#: privacyidea/static/components/login/controllers/loginControllers.js:281
 msgid "Realm defrealm created."
 msgstr ""
 
@@ -1775,7 +1779,7 @@ msgstr ""
 msgid "Successfully authenticated."
 msgstr ""
 
-#: privacyidea/static/templates/index.html:24
+#: privacyidea/static/templates/index.html:25
 #: privacyidea/static/templates/menu.html:90
 msgid "Support"
 msgstr ""
@@ -2163,7 +2167,7 @@ msgid ""
 "                        service itself</a>."
 msgstr ""
 
-#: privacyidea/static/app.js:103
+#: privacyidea/static/app.js:105
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
 msgstr ""
 
@@ -2916,7 +2920,7 @@ msgstr ""
 msgid "privacyIDEA Single Page Web Client"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:232
+#: privacyidea/static/components/login/controllers/loginControllers.js:236
 msgid "privacyIDEA UI supports hotkeys. Use '?' to get help."
 msgstr ""
 
