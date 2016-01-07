@@ -30,6 +30,8 @@ from lib.utils import send_result, getParam
 from lib.utils import required
 from privacyidea.lib.user import get_user_from_param
 import logging
+from privacyidea.lib.passwordreset import (create_recoverycode,
+                                           check_recoverycode)
 from privacyidea.lib.policy import ACTION, SCOPE
 from privacyidea.lib.user import create_user
 from privacyidea.lib.user import User
@@ -59,31 +61,33 @@ def get_recover_code():
     :return: JSON with value=True or value=False
     """
     param = request.all_data
-    user = get_user_from_param(param, required)
+    user_obj = get_user_from_param(param, required)
     email = getParam(param, "email", required)
-    # create recoverytoken for the user.
-    from privacyidea.lib.token import init_token
-    token = init_token({"type": "recovery"}, user=user)
-    log.debug("Created recovery token %s for user %s" % (token, user))
-    result = True
-    return send_result(result)
+    r = create_recoverycode(user_obj, email)
+    g.audit_object.log({"success": r,
+                        "info": "%s" % user_obj})
+    return send_result(r)
 
 
-@recover_blueprint.route('reset', methods=['POST'])
+@recover_blueprint.route('/reset', methods=['POST'])
 def reset_password():
     """
     reset the password with a given recovery code.
     The recovery code was sent by get_recover_code and is bound to a certain
     user.
 
-    :jsonparam recovercode: The recoverycode sent the the user
+    :jsonparam recoverycode: The recoverycode sent the the user
     :jsonparam password: The new password of the user
 
     :return: a json result with a boolean "result": true
     """
-    r = True
-    user = get_user_from_param(request.all_data, required)
-    recovercode = getParam(request.all_data, "recovercode", required)
+    r = False
+    user_obj = get_user_from_param(request.all_data, required)
+    recoverycode = getParam(request.all_data, "recoverycode", required)
     password = getParam(request.all_data, "password", required)
-
+    if check_recoverycode(user_obj, recoverycode):
+        # set password
+        r = user_obj.update_user_info({"password": password})
+        g.audit_object.log({"success": r,
+                            "info": "%s" % user_obj})
     return send_result(r)

@@ -8,6 +8,8 @@ import json
 from privacyidea.lib.smtpserver import add_smtpserver
 import smtpmock
 from privacyidea.lib.config import set_privacyidea_config
+from privacyidea.lib.passwordreset import create_recoverycode
+from privacyidea.lib.user import User
 
 
 class RegisterTestCase(MyTestCase):
@@ -133,19 +135,38 @@ class RegisterTestCase(MyTestCase):
             data = json.loads(res.data)
             self.assertEqual(data.get("result").get("value"), True)
 
+    @smtpmock.activate
     def test_03_set_new_password(self):
+        smtpmock.setdata(response={"cornelius@privacyidea.org": (200, "OK")})
         # Get the recovery code
-        from privacyidea.lib.token import get_tokens
-        from privacyidea.lib.user import User
-        tokenobjects = get_tokens(tokentype="recovery",
-                            user=User("corneliusReg", "register"))
-        self.assertTrue(len(tokenobjects), 1)
-
-        tokenobject = tokenobjects[0]
-        secretHOtp = tokenobject.token.get_otpkey()
-        recoverycode = secretHOtp.getKey()
-        self.assertEqual(len(recoverycode), 24)
+        recoverycode = "reccode"
+        new_password = "topsecret"
+        user = User("corneliusReg", "register")
+        r = create_recoverycode(user, recoverycode=recoverycode)
+        self.assertEqual(r, True)
         # Use the recoverycode to set a new password
+        with self.app.test_request_context('/recover/reset',
+                                           method='POST',
+                                           data={"user": "corneliusReg",
+                                                 "realm": "register",
+                                                 "recoverycode": recoverycode,
+                                                 "password": new_password}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res.data)
+            data = json.loads(res.data)
+            self.assertEqual(data.get("result").get("value"), True)
+
+        # send an invalid recoverycode
+        with self.app.test_request_context('/recover/reset',
+                                           method='POST',
+                                           data={"user": "corneliusReg",
+                                                 "realm": "register",
+                                                 "recoverycode": "asdf",
+                                                 "password": new_password}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res.data)
+            data = json.loads(res.data)
+            self.assertEqual(data.get("result").get("value"), False)
 
         # test the new password
 

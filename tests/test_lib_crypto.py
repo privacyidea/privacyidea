@@ -7,11 +7,13 @@ from .base import MyTestCase
 from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     decryptPassword, urandom,
                                     get_rand_digit_str, geturandom,
-                                    get_alphanum_str)
+                                    get_alphanum_str,
+                                    hash_with_pepper, verify_with_pepper)
 from privacyidea.lib.security.default import (SecurityModule,
                                               DefaultSecurityModule)
 
 from flask import current_app
+
 
 class SecurityModuleTestCase(MyTestCase):
     """
@@ -188,3 +190,14 @@ class RandomTestCase(MyTestCase):
     def test_05_get_alphanum_str(self):
         r = get_alphanum_str(20)
         self.assertEqual(len(r), 20)
+
+    def test_06_hash_pepper(self):
+        h = hash_with_pepper("superPassword")
+        self.assertTrue("$pbkdf2"in h, h)
+        self.assertTrue("$10023"in h, h)
+
+        r = verify_with_pepper(h, "superPassword")
+        self.assertEqual(r, True)
+
+        r = verify_with_pepper(h, "super Password")
+        self.assertEqual(r, False)

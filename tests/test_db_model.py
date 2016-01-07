@@ -8,8 +8,11 @@ from privacyidea.models import (Token,
                                 Policy,
                                 Challenge, MachineResolver,
                                 MachineResolverConfig, MachineToken, Admin,
-                                CAConnector, CAConnectorConfig, SMTPServer)
+                                CAConnector, CAConnectorConfig, SMTPServer,
+                                PasswordReset)
 from .base import MyTestCase
+from datetime import datetime
+from datetime import timedelta
 
 
 class TokenModelTestCase(MyTestCase):
@@ -494,3 +497,11 @@ class TokenModelTestCase(MyTestCase):
         # The server does not exist anymore
         self.assertEqual(s2, None)
 
+    def test_18_add_and_delete_password_reset(self):
+        p1 = PasswordReset("recoverycode", "cornelius",
+                           "realm", expiration=datetime.now() + timedelta(
+                seconds=120))
+        p1.save()
+        p2 = PasswordReset.query.filter_by(username="cornelius",
+                                           realm="realm").first()
+        self.assertTrue(p2.recoverycode, "recoverycode")

@@ -43,6 +43,7 @@ from flask import current_app
 from Crypto.Hash import SHA as SHA1
 from Crypto.Hash import SHA256 as HashFunc
 from Crypto.Cipher import AES
+import passlib.hash
 import sys
 import traceback
 from Crypto.PublicKey import RSA
@@ -242,6 +243,28 @@ def hash(val, seed, algo=None):
     m.update(val.encode('utf-8'))
     m.update(seed)
     return m.digest()
+
+
+def hash_with_pepper(password, rounds=10023, salt_size=10):
+    """
+    Hash function to hash with salt and pepper. The pepper is read from
+    "PI_PEPPER" from pi.cfg.
+
+    Is used with admins and passwordReset
+
+    :return: Hash string
+    """
+    key = current_app.config.get("PI_PEPPER", "missing")
+    pw_dig = passlib.hash.pbkdf2_sha512.encrypt(key + password, rounds=rounds,
+                                                salt_size=salt_size)
+    return pw_dig
+
+
+def verify_with_pepper(passwordhash, password):
+    # get the password pepper
+    key = current_app.config.get("PI_PEPPER", "missing")
+    success = passlib.hash.pbkdf2_sha512.verify(key + password, passwordhash)
+    return success
 
 
 def init_hsm():

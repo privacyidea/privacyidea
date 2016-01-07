@@ -1004,7 +1004,46 @@ class TokenRealm(MethodsMixin, db.Model):
         ret = self.id
         return ret
 
-    
+
+class PasswordReset(MethodsMixin, db.Model):
+    """
+    Table for handling password resets.
+    This table stores the recoverycodes sent to a given user
+
+    The application should save the HASH of the recovery code. Just like the
+    password for the Admins the appliaction shall salt and pepper the hash of
+    the recoverycode. A database admin will not be able to inject a rogue
+    recovery code.
+
+    A user can get several recoverycodes.
+    A recovery code has a validity period
+
+    Optional: The email to which the recoverycode was sent, can be stored.
+    """
+    __tablename__ = "passwordreset"
+    id = db.Column(db.Integer(), primary_key=True, nullable=False)
+    recoverycode = db.Column(db.Unicode(255), nullable=False)
+    username = db.Column(db.Unicode(64), nullable=False, index=True)
+    realm = db.Column(db.Unicode(64), nullable=False, index=True)
+    resolver = db.Column(db.Unicode(64))
+    email = db.Column(db.Unicode(255))
+    timestamp = db.Column(db.DateTime, default=datetime.now())
+    expiration = db.Column(db.DateTime)
+
+    @log_with(log)
+    def __init__(self, recoverycode, username, realm, resolver="", email=None,
+                 timestamp=None, expiration=None, expiration_seconds=3600):
+        # The default expiration time is 60 minutes
+        self.recoverycode = recoverycode
+        self.username = username
+        self.realm = realm
+        self.resolver = resolver
+        self.email = email
+        self.timestamp = timestamp or datetime.now()
+        self.expiration = expiration or datetime.now() + \
+                                        timedelta(seconds=expiration_seconds)
+
+
 class Challenge(MethodsMixin, db.Model):
     """
     Table for handling of the generic challenges.

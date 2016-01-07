@@ -22,10 +22,10 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from privacyidea.models import Admin
-import passlib.hash
 from flask import current_app
 from privacyidea.lib.token import check_user_pass
 from privacyidea.lib.policydecorators import libpolicy, login_mode
+from privacyidea.lib.crypto import hash_with_pepper, verify_with_pepper
 
 
 class ROLE(object):
@@ -46,10 +46,7 @@ def verify_db_admin(username, password):
     success = False
     qa = Admin.query.filter(Admin.username == username).first()
     if qa:
-        pw_dig = qa.password
-        # get the password pepper
-        key = current_app.config.get("PI_PEPPER", "missing")
-        success = passlib.hash.pbkdf2_sha512.verify(key + password, pw_dig)
+        success = verify_with_pepper(qa.password, password)
 
     return success
 
@@ -67,10 +64,7 @@ def db_admin_exist(username):
 def create_db_admin(app, username, email=None, password=None):
     pw_dig = None
     if password:
-        key = app.config.get("PI_PEPPER", "missing")
-        pw_dig = passlib.hash.pbkdf2_sha512.encrypt(key + password,
-                                                    rounds=10023,
-                                                    salt_size=10)
+        pw_dig = hash_with_pepper(password)
     user = Admin(email=email, username=username, password=pw_dig)
     user.save()
 
