@@ -15,13 +15,15 @@ myApp.factory("RecoveryFactory", function ($http, $state, $rootScope,
     };
 
     return {
-        reset: function (params, callback) {
-            $http.get(recoveryUrl, params, {}
+        recover: function (params, callback) {
+            // THis sends the recovery code to reset the password
+            $http.post(recoveryUrl, params, {}
             ).success(callback
             ).error(error_func);
         },
-        status: function (callback) {
-            $http.get(recoveryUrl, params, {}).success(callback).error(error_func);
+        reset: function (params, callback) {
+            $http.post(recoveryUrl + "/reset", params, {}
+            ).success(callback).error(error_func);
         }
     };
 });

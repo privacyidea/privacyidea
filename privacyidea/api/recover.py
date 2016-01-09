@@ -58,7 +58,7 @@ def get_recover_code():
     param = request.all_data
     user_obj = get_user_from_param(param, required)
     email = getParam(param, "email", required)
-    r = create_recoverycode(user_obj, email)
+    r = create_recoverycode(user_obj, email, base_url=request.base_url)
     g.audit_object.log({"success": r,
                         "info": "%s" % user_obj})
     return send_result(r)

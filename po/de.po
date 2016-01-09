@@ -122,7 +122,7 @@ msgstr "Ein Attribut oder DN zur Identifizierung der Maschine"
 msgid "An Attribute that contains the IP address."
 msgstr "Ein Attribut, das die IP-Adresse der Maschine enthält"
 
-#: privacyidea/static/components/recovery/controllers/recoveryControllers.js:17
+#: privacyidea/static/components/recovery/controllers/recoveryControllers.js:19
 msgid "An Email to reset the password has been sent to you."
 msgstr "Eine Email wurde an Sie gesendet, um Ihr Passwort zurückzusetzen."
 
@@ -681,7 +681,7 @@ msgstr "Neuen Token ausrollen"
 msgid "Enroll Token"
 msgstr "Token ausrollen"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:52
+#: privacyidea/static/components/login/controllers/loginControllers.js:51
 #: privacyidea/static/components/token/controllers/tokenControllers.js:104
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:127
@@ -758,6 +758,10 @@ msgstr "Fehlgeschlagene Authentisierungen pro Token"
 #: privacyidea/static/components/audit/views/audit.stats.html:56
 msgid "Failed authentication requests per user"
 msgstr "Fehlgeschlagene Authentisierungen pro Benutzer"
+
+#: privacyidea/static/components/recovery/controllers/recoveryControllers.js:31
+msgid "Failed to reset your password."
+msgstr "Zurücksetzen des Passworts fehlgeschlagen."
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:27
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:25
@@ -1067,7 +1071,7 @@ msgstr "Challenges anzeigen"
 msgid "List SMTP server definitions"
 msgstr "Alle SMTP Server anzeigen"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:60
+#: privacyidea/static/components/login/controllers/loginControllers.js:59
 msgid "List tokens"
 msgstr "Tokenliste anzeigen"
 
@@ -1094,7 +1098,7 @@ msgstr "Logbuch"
 msgid "Log In"
 msgstr "Anmelden"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:67
+#: privacyidea/static/components/login/controllers/loginControllers.js:66
 msgid "Log out"
 msgstr "Abmelden"
 
@@ -1325,7 +1329,7 @@ msgstr ""
 "Datei /etc/passwd dieser Maschine automatisch ein Standard Realm erzeugt "
 "wird?"
 
-#: privacyidea/static/templates/index.html:35
+#: privacyidea/static/templates/index.html:36
 #: privacyidea/static/templates/menu.html:85
 msgid "Online Documentation"
 msgstr "Online Dokumentation"
@@ -1375,6 +1379,7 @@ msgstr "PIN"
 #: privacyidea/static/components/config/views/config.smtp.edit.html:78
 #: privacyidea/static/components/login/views/login.html:49
 #: privacyidea/static/components/login/views/login.html:53
+#: privacyidea/static/components/recovery/views/recovery.reset.html:9
 #: privacyidea/static/components/register/views/register.html:74
 #: privacyidea/static/components/register/views/register.html:79
 #: privacyidea/static/components/register/views/register.html:84
@@ -1601,6 +1606,7 @@ msgstr "Remote Benutzer"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:22
 #: privacyidea/static/components/directives/views/directive.assignuser.html:31
+#: privacyidea/static/components/recovery/views/recovery.reset.html:19
 #: privacyidea/static/components/token/views/token.enroll.html:42
 #: privacyidea/static/components/token/views/token.enroll.motp.html:43
 #: privacyidea/static/components/user/views/user.password.html:58
@@ -1613,13 +1619,17 @@ msgstr "Erforderliche Realms"
 
 #: privacyidea/static/components/login/views/login.html:61
 #: privacyidea/static/components/recovery/views/recovery.html:14
-#: privacyidea/static/components/recovery/views/recovery.html:38
+#: privacyidea/static/components/recovery/views/recovery.reset.html:23
 msgid "Reset Password"
 msgstr "Passwort zurücksetzen"
 
 #: privacyidea/static/components/token/views/token.details.html:77
 msgid "Reset fail counter"
 msgstr "Fehlerzähler zurücksetzen"
+
+#: privacyidea/static/components/recovery/views/recovery.reset.html:5
+msgid "Reset your Password"
+msgstr "Ihr Passwort zurücksetzen"
 
 #: privacyidea/static/components/config/views/config.policies.list.html:11
 #: privacyidea/static/components/token/views/token.details.html:371
@@ -1784,6 +1794,10 @@ msgstr ""
 msgid "Select file and import"
 msgstr "Datei auswählen und importieren"
 
+#: privacyidea/static/components/recovery/views/recovery.html:38
+msgid "Send Reset Code"
+msgstr "Reset-Code senden"
+
 #: privacyidea/static/components/config/views/config.smtp.edit.html:116
 msgid "Send Test Email"
 msgstr "Sende Test-Email"
@@ -1865,7 +1879,7 @@ msgstr "Statistik"
 msgid "Successfully authenticated."
 msgstr "Erfolgreich authentisiert."
 
-#: privacyidea/static/templates/index.html:25
+#: privacyidea/static/templates/index.html:26
 #: privacyidea/static/templates/menu.html:90
 msgid "Support"
 msgstr "Support"
@@ -2037,6 +2051,15 @@ msgstr ""
 "und einer App wie dem Google Authenticator oder FreeOTP vom QR-Code "
 "einscannen. So können Sie das Smartphone zu einem Authentisierungs-Token "
 "umwandeln."
+
+#: privacyidea/static/components/login/views/login.html:71
+msgid ""
+"The HSM is not ready. privacyIDEA can not work properly. Please start\n"
+"        the HSM and reload this page."
+msgstr ""
+"Das Security Modul ist nicht bereit. privacyIDEA wird nicht wie erwartet "
+"funktionieren, da es verschlüsselte Daten nicht entschlüsseln kann.    Bitte "
+"starten Sie das Security Modul und laden Sie diese Seite neu."
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:7
 #: privacyidea/static/components/token/views/token.enrolled.motp.html:8
@@ -2833,6 +2856,7 @@ msgstr "Typ"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:18
 #: privacyidea/static/components/directives/views/directive.assignuser.html:27
+#: privacyidea/static/components/recovery/views/recovery.reset.html:14
 #: privacyidea/static/components/token/views/token.enroll.html:38
 #: privacyidea/static/components/token/views/token.enroll.motp.html:39
 #: privacyidea/static/components/user/views/user.password.html:54
@@ -3076,6 +3100,10 @@ msgstr "Sie werden nach {{ myCountdown }} Sekunden abgemeldet."
 #: privacyidea/static/components/user/views/user.password.html:2
 msgid "Your details"
 msgstr "Ihr Profil"
+
+#: privacyidea/static/components/recovery/controllers/recoveryControllers.js:28
+msgid "Your password has been reset successfully."
+msgstr "Ihr Passwort wurde erfolgreich zurückgesetzt."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:1
 msgid "Yubico Token settings"
@@ -3353,9 +3381,6 @@ msgstr "Fenster"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."
-
-#~ msgid "Mail User Password"
-#~ msgstr "Passwort des Mailbenutzers"
 
 #~ msgid "Users phone number..."
 #~ msgstr "Telefonnummer des Benutzers"

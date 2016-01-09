@@ -43,10 +43,17 @@ This module is tested in tests/test_lib_passwordreset.py
 
 log = logging.getLogger(__name__)
 
+BODY = """Someone requested to reset the password within privacyIDEA.
+
+To reset your user password please visit the link
+
+%s/reset/%s@%s/%s
+"""
+
 
 @log_with(log)
 def create_recoverycode(user, email=None, expiration_seconds=3600,
-                        recoverycode=None):
+                        recoverycode=None, base_url=""):
     """
     Create and send a password recovery code
 
@@ -56,6 +63,8 @@ def create_recoverycode(user, email=None, expiration_seconds=3600,
     :param recoverycode: Only used for testing purpose
     :return: bool
     """
+    base_url = base_url.strip("recover")
+    base_url += "#"
     recoverycode = recoverycode or generate_password(size=24)
     hash_code = hash_with_pepper(recoverycode)
     # send this recoverycode
@@ -77,7 +86,9 @@ def create_recoverycode(user, email=None, expiration_seconds=3600,
         # send email
         r = send_email_identifier(identifier, user_email,
                                   "Your password reset",
-                                  recoverycode)
+                                  BODY % (base_url,
+                                          user.login, user.realm,
+                                          recoverycode))
         if not r:
             raise privacyIDEAError("Failed to send email. %s" % r)
     else:
@@ -129,10 +140,14 @@ def is_password_reset():
     :return: True or False
     """
     rlist = get_resolver_list(editable=True)
+    log.debug("Number of editable resolvers: %s" % len(rlist))
     Policy = PolicyClass()
-    policy_at_all = Policy.get_policies(scope=SCOPE.USER)
-    policy_reset_wp = Policy.get_policies(scope=SCOPE.USER,
+    policy_at_all = Policy.get_policies(scope=SCOPE.USER, active=True)
+    log.debug("Policy at all: %s" % policy_at_all)
+    policy_reset_pw = Policy.get_policies(scope=SCOPE.USER,
                                           action=ACTION.PASSWORDRESET)
-    pwrest = policy_at_all and policy_reset_wp or not policy_at_all
+    log.debug("Password reset policy: %s" % policy_reset_pw)
+    pwreset = (policy_at_all and policy_reset_pw) or not policy_at_all
+    log.debug("Password reset allowed via policy: %s" % pwreset)
 
-    return bool(rlist and pwrest)
+    return bool(rlist and pwreset)

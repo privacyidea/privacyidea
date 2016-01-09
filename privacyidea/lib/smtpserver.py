@@ -90,19 +90,20 @@ Date: %s
             password = decryptPassword(config.password)
             mail.login(config.username, password)
         r = mail.sendmail(mail_from, recipient, body)
-        mail.quit()
+        log.info("Mail sent: %s" % r)
         # r is a dictionary like {"recp@destination.com": (200, 'OK')}
         # we change this to True or False
         if type(recipient) != list:
             recipient = [recipient]
         success = True
         for one_recipient in recipient:
-            res_id, res_text = r.get(one_recipient)
+            res_id, res_text = r.get(one_recipient, (200, "OK"))
             if res_id != 200 and res_text != "OK":
                 success = False
                 log.error("Failed to send email to %s: %s, %s" % (recipient,
                                                                   res_id,
                                                                   res_text))
+        mail.quit()
         return success
 
 

@@ -12,6 +12,8 @@ The ways described here to install privacyIDEA are
 
 If you want to upgrade from a privacyIDEA 1.5 installation please read :ref:`upgrade`.
 
+privacyIDEA needs python 2.7 to run properly!
+
 .. toctree::
    :maxdepth: 1
 

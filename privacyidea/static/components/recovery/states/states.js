@@ -33,5 +33,10 @@ angular.module('privacyideaApp.recoveryStates', ['ui.router']).config(
                     url: "/recovery",
                     templateUrl: recoverypath + "recovery.html",
                     controller: "recoveryController"
+                })
+                .state('reset', {
+                    url: "/reset/{user:.*}/{recoverycode:.*}",
+                    templateUrl: recoverypath + "recovery.reset.html",
+                    controller: "recoveryController"
                 });
         }]);

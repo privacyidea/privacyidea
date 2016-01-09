@@ -18,7 +18,7 @@
                 <label for="username" translate>Username</label>
                 <input name="username" id="loginname"
                        class="form-control"
-                       ng-model="newUser.username" required
+                       ng-model="newUser.user" required
                        placeholder="{{ 'Username'|translate }}"
                        autofocus/>
                     </div>
@@ -35,10 +35,10 @@
 
 
                 <div class="text-center">
-                    <button ng-click="resetPassword()"
+                    <button ng-click="sendRecoveryCode()"
                             ng-disabled="formRecovery.$invalid"
                             class="btn btn-primary btn-block"
-                            translate>Reset Password
+                            translate>Send Reset Code
                     </button>
                 </div>
 

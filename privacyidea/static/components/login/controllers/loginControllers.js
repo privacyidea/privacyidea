@@ -76,6 +76,7 @@ angular.module("privacyideaApp")
             console.log("we changed the state from " + from + " to " + to);
             console.log(from);
             console.log(fromParams);
+            console.log(to);
             $rootScope.previousState = {
                 state: from.name,
                 params: fromParams

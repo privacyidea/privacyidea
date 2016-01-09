@@ -9,6 +9,8 @@ You can install privacyidea on usually any Linux distribution in a python
 virtual environment. This way you keep all privacyIDEA code in one defined
 subdirectory.
 
+.. note:: privacyIDEA depends on python 2.7 to run properly.
+
 You first need to install some development packages. E.g. on debian based
 distributions the packages are called
 
