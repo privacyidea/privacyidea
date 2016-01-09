@@ -19,13 +19,14 @@ def to_utf8(password):
     :type password: unicode
     :return: a utf8 encoded password
     """
-    try:
-        # If the password exists in unicode we encode it to utf-8
-        password = password.encode(ENCODING)
-    except UnicodeDecodeError as exx:
-        # In case the password is already an encoded string, we fail to
-        # encode it again...
-        log.debug("Failed to convert password: %s" % type(password))
+    if password:
+        try:
+            # If the password exists in unicode we encode it to utf-8
+            password = password.encode(ENCODING)
+        except UnicodeDecodeError as exx:
+            # In case the password is already an encoded string, we fail to
+            # encode it again...
+            log.debug("Failed to convert password: %s" % type(password))
     return password
 
 
