@@ -38,6 +38,7 @@ import traceback
 
 from UserIdResolver import UserIdResolver
 from gettext import gettext as _
+from privacyidea.lib.utils import to_utf8
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
@@ -90,13 +91,7 @@ class IdResolver (UserIdResolver):
             bind_user = self._getDN(uid)
 
         server_pool = self.get_serverpool(self.uri, self.timeout)
-        try:
-            # If the password exists in unicode we encode it to utf-8
-            password = password.encode("utf-8")
-        except UnicodeDecodeError as exx:
-            # In case the password is already an encoded string, we fail to
-            # encode it again...
-            log.debug("Failed to convert password: %s" % type(password))
+        password = to_utf8(password)
 
         try:
             log.debug("Authtype: %s" % self.authtype)
@@ -221,7 +216,7 @@ class IdResolver (UserIdResolver):
         
         if self.uidtype.lower() == "dn":
             # encode utf8, so that also german ulauts work in the DN
-            self.l.search(search_base=userId.encode("utf-8"),
+            self.l.search(search_base=to_utf8(userId),
                           search_scope=self.scope,
                           search_filter="(&" + self.searchfilter + ")",
                           attributes=self.userinfo.values())
@@ -530,7 +525,7 @@ class IdResolver (UserIdResolver):
                                                           AUTHTYPE.SIMPLE),
                                        server=server_pool,
                                        user=param.get("BINDDN"),
-                                       password=param.get("BINDPW"),
+                                       password=to_utf8(param.get("BINDPW")),
                                        auto_referrals=not param.get(
                                            "NOREFERRALS"))
             l.open()
@@ -585,7 +580,7 @@ class IdResolver (UserIdResolver):
                 authentication = ldap3.SIMPLE
             l = ldap3.Connection(server,
                                  user=user,
-                                 password=password,
+                                 password=to_utf8(password),
                                  auto_bind=auto_bind,
                                  client_strategy=client_strategy,
                                  authentication=authentication,
@@ -596,7 +591,7 @@ class IdResolver (UserIdResolver):
                 authentication = ldap3.NTLM
             l = ldap3.Connection(server,
                                  user=user,
-                                 password=password,
+                                 password=to_utf8(password),
                                  auto_bind=auto_bind,
                                  client_strategy=client_strategy,
                                  authentication=authentication,

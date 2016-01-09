@@ -2,14 +2,32 @@ from .log import log_with
 import logging
 log = logging.getLogger(__name__)
 import binascii
-from .crypto import geturandom
 import qrcode
 import StringIO
 import urllib
-from privacyidea.lib.crypto import urandom
+from privacyidea.lib.crypto import urandom, geturandom
 import string
 import re
 from datetime import timedelta
+ENCODING = "utf-8"
+
+
+def to_utf8(password):
+    """
+    Convert a password to utf8
+    :param password: A password that should be converted to utf8
+    :type password: unicode
+    :return: a utf8 encoded password
+    """
+    try:
+        # If the password exists in unicode we encode it to utf-8
+        password = password.encode(ENCODING)
+    except UnicodeDecodeError as exx:
+        # In case the password is already an encoded string, we fail to
+        # encode it again...
+        log.debug("Failed to convert password: %s" % type(password))
+    return password
+
 
 def generate_otpkey(key_size=20):
     """

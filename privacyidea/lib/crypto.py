@@ -293,9 +293,10 @@ def _get_hsm():
 
 @log_with(log, log_entry=False)
 def encryptPassword(password):
+    from privacyidea.lib.utils import to_utf8
     hsm = _get_hsm()
     try:
-        ret = hsm.encrypt_password(password)
+        ret = hsm.encrypt_password(to_utf8(password))
     except Exception as exx:  # pragma: no cover
         log.warning(exx)
         ret = "FAILED TO ENCRYPT PASSWORD!"
