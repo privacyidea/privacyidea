@@ -28,7 +28,8 @@ The HOTP token is an event based token. You can paste a secret key or
            placeholder="Enter OTP key..."
            ng-model="form.otpkey" name="otpkey">
 </div>
-<div class="form-group">
+<div class="form-group"
+    ng-hide="checkRight('hotp_otplen')">
     <label for="otplen" translate>OTP length</label>
     <select class="form-control"
             id="otplen"
@@ -40,7 +41,8 @@ The HOTP token is an event based token. You can paste a secret key or
     </p>
 </div>
 
-<div class="form-group">
+<div class="form-group"
+    ng-hide="checkRight('hotp_hashlib')">
     <label for="hashlib" translate>Hash algorithm</label>
     <select class="form-control"
             id="hashlib"

@@ -116,13 +116,13 @@ class HotpTokenClass(TokenClass):
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {'user': {'hotp_hashlib': {'type': 'int',
-                                                           'value': ["sha1",
+               'policy': {'user': {'hotp_hashlib': {'type': 'str',
+                                                            'value': ["sha1",
                                                                      "sha256",
                                                                      "sha512"],
-                                                           'desc': desc_self1
+                                                            'desc': desc_self1
                                                            },
-                                          'hotp_otplen': {'type': 'int',
+                                   'hotp_otplen': {'type': 'int',
                                                           'value': [6, 8],
                                                           'desc': desc_self2
                                                           },

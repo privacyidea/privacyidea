@@ -123,7 +123,7 @@ class TotpTokenClass(HotpTokenClass):
                                                             'the timebased OTP'
                                                             ' token.'
                                                             },
-                                          'totp_hashlib': {'type': 'int',
+                                          'totp_hashlib': {'type': 'str',
                                                            'value': ["sha1",
                                                                      "sha256",
                                                                      "sha512"],
@@ -133,6 +133,11 @@ class TotpTokenClass(HotpTokenClass):
                                                            ' (1) or sha2-256 '
                                                            '(2).'
                                                            },
+                                   'totp_otplen': {'type': 'int',
+                                                   'value': [6, 8],
+                                                   'desc': "Specify the OTP "
+                                                           "length to be used."
+                                                          },
                                           },
                           },
                }
