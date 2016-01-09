@@ -250,16 +250,16 @@ def get_auth_token():
     hsm = init_hsm()
     if hsm.is_ready:
         nonce = geturandom(hex=True)
+        # Add the role to the JWT, so that we can verify it internally
+        # Add the authtype to the JWT, so that we could use it for access
+        # definitions
+        rights = g.policy_object.ui_get_rights(role, realm, loginname,
+                                               request.remote_addr)
     else:
         import os
         import binascii
         nonce = binascii.hexlify(os.urandom(20))
-
-    # Add the role to the JWT, so that we can verify it internally
-    # Add the authtype to the JWT, so that we could use it for access
-    # definitions
-    rights = g.policy_object.ui_get_rights(role, realm, loginname,
-                                           request.remote_addr)
+        rights = []
 
     token = jwt.encode({"username": loginname,
                         "realm": realm,

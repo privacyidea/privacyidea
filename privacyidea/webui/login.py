@@ -31,6 +31,7 @@ __author__ = "Cornelius Kölbel, <cornelius@privacyidea.org>"
 from flask import (Blueprint, render_template, request, current_app)
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.lib.passwordreset import is_password_reset
+from privacyidea.lib.error import HSMException
 
 DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
 
@@ -51,13 +52,20 @@ def single_page_application():
     browser_lang = request.accept_languages.best_match(["en", "de"])
     # check if login with REMOTE_USER is allowed.
     remote_user = ""
-    if is_remote_user_allowed(request):
-        remote_user = request.remote_user
-    password_reset = is_password_reset()
+    password_reset = False
+    try:
+        if is_remote_user_allowed(request):
+            remote_user = request.remote_user
+        password_reset = is_password_reset()
+        hsm_ready = True
+    except HSMException:
+        hsm_ready = False
+
     return render_template("index.html", instance=instance,
                            backendUrl=backend_url,
                            browser_lang=browser_lang,
                            remote_user=remote_user,
                            theme=theme,
-                           password_reset=password_reset)
+                           password_reset=password_reset,
+                           hsm_ready=hsm_ready)
 

@@ -1,4 +1,4 @@
-<div class="well">
+<div class="well" ng-show="hsmReady === 'True'">
 
     <div class="container" ng-show="!loginWithCredentials">
         <form name="formRemoteUserLogin" class="form-signin" role="form">
@@ -64,5 +64,12 @@
 
             </form>
         </div>
+    </div>
+</div>
+
+<div class="well" ng-show="hsmReady === 'False'">
+    <div class="alert alert-danger" role="alert" translate>
+        The HSM is not ready. privacyIDEA can not work properly. Please start
+        the HSM and reload this page.
     </div>
 </div>
