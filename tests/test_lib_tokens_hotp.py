@@ -538,13 +538,9 @@ class HOTPTokenTestCase(MyTestCase):
         token = HotpTokenClass(db_token)
         ti = token.get_class_info()
         self.assertTrue(ti.get("type") == "hotp", ti)
-        self.assertTrue("config" in ti, ti)
         self.assertTrue("policy" in ti, ti)
         self.assertTrue("title" in ti, ti)
         self.assertTrue("user" in ti, ti)
-        config = token.get_class_info("config")
-        self.assertTrue("page" in config, config)
-        self.assertTrue("title" in config, config)
 
     def test_22_autosync(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

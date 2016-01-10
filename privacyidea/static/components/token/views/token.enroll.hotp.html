@@ -7,9 +7,11 @@ The HOTP token is an event based token. You can paste a secret key or
 
 <h4 translate>Token data</h4>
 <div class="form-group">
-    <input type="checkbox" ng-model="form.genkey"
-           name="generate" id="generate">
-    <label for="generate" translate>Generate OTP Key on the Server</label>
+    <div ng-hide="checkRight('hotp_force_server_generate')">
+        <input type="checkbox" ng-model="form.genkey"
+               name="generate" id="generate">
+        <label for="generate" translate>Generate OTP Key on the Server</label>
+    </div>
 
     <div ng-show="form.genkey">
         <p class="help-block" translate>

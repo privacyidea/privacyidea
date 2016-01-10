@@ -40,6 +40,8 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.decorators import check_token_locked
+import gettext
+_ = gettext.gettext
 
 optional = True
 required = False
@@ -102,42 +104,29 @@ class TotpTokenClass(HotpTokenClass):
         """
         res = {'type': 'totp',
                'title': 'HMAC Time Token',
-               'description': ('TOTP: Time based One Time Passwords.'),
-               'init': {'page': {'html': 'totptoken.mako',
-                                 'scope': 'enroll', },
-                        'title': {'html': 'totptoken.mako',
-                                  'scope': 'enroll.title', },
-                        },
-               'config': {'page': {'html': 'totptoken.mako',
-                                   'scope': 'config', },
-                          'title': {'html': 'totptoken.mako',
-                                    'scope': 'config.title'},
-                          },
+               'description': _('TOTP: Time based One Time Passwords.'),
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {'user': {'totp_timestep': {'type': 'int',
-                                                            'value': [30, 60],
-                                                            'desc': 'Specify '
-                                                            'the time step of '
-                                                            'the timebased OTP'
-                                                            ' token.'
-                                                            },
-                                          'totp_hashlib': {'type': 'str',
-                                                           'value': ["sha1",
-                                                                     "sha256",
-                                                                     "sha512"],
-                                                           'desc': 'Specify '
-                                                           'the hashlib to be '
-                                                           'used. Can be sha1'
-                                                           ' (1) or sha2-256 '
-                                                           '(2).'
-                                                           },
-                                   'totp_otplen': {'type': 'int',
-                                                   'value': [6, 8],
-                                                   'desc': "Specify the OTP "
-                                                           "length to be used."
-                                                          },
+               'policy': {'user': {
+                   'totp_timestep': {'type': 'int',
+                                     'value': [30, 60],
+                                     'desc': 'Specify the time step of '
+                                             'the timebased OTP token.'},
+                   'totp_hashlib': {'type': 'str',
+                                    'value': ["sha1",
+                                              "sha256",
+                                              "sha512"],
+                                    'desc': 'Specify the hashlib to be used. '
+                                            'Can be SHA1, SHA256 or SHA512.'},
+                   'totp_otplen': {'type': 'int',
+                                   'value': [6, 8],
+                                   'desc': "Specify the OTP length to be "
+                                           "used."},
+                   'totp_force_server_generate': {'type': 'bool',
+                                                  'desc': _("Force the key to "
+                                                            "be generated on "
+                                                            "the server.")}
                                           },
                           },
                }

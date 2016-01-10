@@ -102,32 +102,25 @@ class HotpTokenClass(TokenClass):
         desc_self2 = _('Specify the otplen to be used. Can be 6 or 8 digits.')
         res = {'type': 'hotp',
                'title': 'HOTP Event Token',
-               'description': ('HOTP: Event based One Time Passwords.'),
-               'init': {'page': {'html': 'hotptoken.mako',
-                                 'scope': 'enroll', },
-                        'title': {'html': 'hotptoken.mako',
-                                  'scope': 'enroll.title', },
-                        },
-               'config': {'page': {'html': 'hotptoken.mako',
-                                   'scope': 'config', },
-                          'title': {'html': 'hotptoken.mako',
-                                    'scope': 'config.title', },
-                          },
+               'description': _('HOTP: Event based One Time Passwords.'),
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {'user': {'hotp_hashlib': {'type': 'str',
-                                                            'value': ["sha1",
-                                                                     "sha256",
-                                                                     "sha512"],
-                                                            'desc': desc_self1
-                                                           },
-                                   'hotp_otplen': {'type': 'int',
-                                                          'value': [6, 8],
-                                                          'desc': desc_self2
-                                                          },
-                                          }
-                          }
+               'policy': {'user': {
+                   'hotp_hashlib': {'type': 'str',
+                                    'value': ["sha1",
+                                              "sha256",
+                                              "sha512"],
+                                    'desc': desc_self1},
+                   'hotp_otplen': {'type': 'int',
+                                   'value': [6, 8],
+                                   'desc': desc_self2},
+                   'hotp_force_server_generate': {'type': 'bool',
+                                                  'desc': _("Force the key to "
+                                                            "be generated on "
+                                                            "the server.")}
+               }
+               }
                }
 
         if key is not None and key in res:
