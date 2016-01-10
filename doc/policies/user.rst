@@ -185,44 +185,6 @@ and it must not contain any other characters.
    and ``privacyideaPolicy.pin_s``.
    (**Not migrated, yet**)
 
-activateQR
-~~~~~~~~~~
-
-**(TODO)**: not yet migrated.
-
-type: bool
-
-The user is allowed to enroll a QR token.
-
-max_count_dpw
-~~~~~~~~~~~~~
-
-**(TODO)**: not yet migrated.
-
-type: integer
-
-This works together with the ``getotp`` action. This is the maximum
-number of OTP values the user may retrieve from DPW tokens.
-
-max_count_hotp
-~~~~~~~~~~~~~~
-
-**(TODO)**: not yet migrated.
-
-type: integer
-
-This works together with the ``getotp`` action. This is the maximum
-number of OTP values the user may retrieve from HOTP tokens.
-
-max_count_totp
-~~~~~~~~~~~~~~
-
-**(TODO)**: not yet migrated.
-
-type: integer
-
-This works together with the ``getotp`` action. This is the maximum
-number of OTP values the user may retrieve from TOTP tokens.
 
 auditlog
 ~~~~~~~~

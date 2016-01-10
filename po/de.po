@@ -692,7 +692,7 @@ msgstr "Neuen Token ausrollen "
 msgid "Enter OTP + PIN to check the token."
 msgstr "OTP und PIN eingeben, um den Token zu prüfen."
 
-#: privacyidea/static/components/token/views/token.enroll.totp.html:29
+#: privacyidea/static/components/token/views/token.enroll.totp.html:31
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:42
 msgid "Enter OTP key..."
 msgstr "OTP Schlüssel eingeben..."
@@ -822,9 +822,9 @@ msgstr ""
 msgid "Four Eyes: Two or more users are required to log in."
 msgstr "Vier-Augen: Zwei oder mehr Benutzer werden für den Login benötigt."
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:12
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:13
 #: privacyidea/static/components/token/views/token.enroll.motp.html:11
-#: privacyidea/static/components/token/views/token.enroll.totp.html:13
+#: privacyidea/static/components/token/views/token.enroll.totp.html:14
 msgid "Generate OTP Key on the Server"
 msgstr "OTP Schlüssel auf dem Server erzeugen"
 
@@ -868,8 +868,8 @@ msgstr "HOTP Token Einstellungen"
 msgid "HOTP: event based One Time Passwords"
 msgstr "HOTP: Ereignisbasiertes Einmal-Passwort"
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:44
-#: privacyidea/static/components/token/views/token.enroll.totp.html:53
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:48
+#: privacyidea/static/components/token/views/token.enroll.totp.html:58
 msgid "Hash algorithm"
 msgstr "Hash Algorithmus"
 
@@ -1280,9 +1280,9 @@ msgstr "OCRA Suite"
 msgid "OK"
 msgstr "OK"
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:24
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:26
 #: privacyidea/static/components/token/views/token.enroll.motp.html:23
-#: privacyidea/static/components/token/views/token.enroll.totp.html:25
+#: privacyidea/static/components/token/views/token.enroll.totp.html:27
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:37
 msgid "OTP Key"
 msgstr "OTP Schlüssel"
@@ -1300,8 +1300,8 @@ msgstr "Die OTP-PINs sind nicht gleich!"
 msgid "OTP Value"
 msgstr "OTP-Wert"
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:32
-#: privacyidea/static/components/token/views/token.enroll.totp.html:33
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:35
+#: privacyidea/static/components/token/views/token.enroll.totp.html:36
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:47
 msgid "OTP length"
 msgstr "OTP-Länge "
@@ -2017,13 +2017,13 @@ msgstr ""
 msgid "The Enrollment URL"
 msgstr "Registrierungs-URL"
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:38
-#: privacyidea/static/components/token/views/token.enroll.totp.html:39
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:41
+#: privacyidea/static/components/token/views/token.enroll.totp.html:42
 msgid "The Google Authenticator only supports an OTP length of 6."
 msgstr "Der Google Authenticator unterstützt lediglich OTP Länge 6."
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:50
-#: privacyidea/static/components/token/views/token.enroll.totp.html:59
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:54
+#: privacyidea/static/components/token/views/token.enroll.totp.html:64
 msgid "The Google Authenticator only supports the SHA1 algorithm."
 msgstr "Der Google Authenticator unterstützt lediglich den SHA1 Algorithmus."
 
@@ -2454,8 +2454,8 @@ msgstr ""
 "details({tokenSerial:lostResult.serial})\">\n"
 "        {{ lostResult.serial }}</a>."
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:15
-#: privacyidea/static/components/token/views/token.enroll.totp.html:16
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:17
+#: privacyidea/static/components/token/views/token.enroll.totp.html:18
 msgid ""
 "The server will create the OTP key\n"
 "            and a QR Code\n"
@@ -2772,7 +2772,7 @@ msgstr "Time-out (Sekunden)"
 msgid "Timeout while waiting for signing response."
 msgstr "Timeout. Warte vergeblich auf die Antwort."
 
-#: privacyidea/static/components/token/views/token.enroll.totp.html:44
+#: privacyidea/static/components/token/views/token.enroll.totp.html:48
 msgid "Timestep"
 msgstr "Zeitschritt"
 

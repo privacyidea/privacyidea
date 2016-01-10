@@ -664,7 +664,7 @@ msgstr ""
 msgid "Enter OTP + PIN to check the token."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.totp.html:29
+#: privacyidea/static/components/token/views/token.enroll.totp.html:31
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:42
 msgid "Enter OTP key..."
 msgstr ""
@@ -783,9 +783,9 @@ msgstr ""
 msgid "Four Eyes: Two or more users are required to log in."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:12
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:13
 #: privacyidea/static/components/token/views/token.enroll.motp.html:11
-#: privacyidea/static/components/token/views/token.enroll.totp.html:13
+#: privacyidea/static/components/token/views/token.enroll.totp.html:14
 msgid "Generate OTP Key on the Server"
 msgstr ""
 
@@ -829,8 +829,8 @@ msgstr ""
 msgid "HOTP: event based One Time Passwords"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:44
-#: privacyidea/static/components/token/views/token.enroll.totp.html:53
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:48
+#: privacyidea/static/components/token/views/token.enroll.totp.html:58
 msgid "Hash algorithm"
 msgstr ""
 
@@ -1210,9 +1210,9 @@ msgstr ""
 msgid "OK"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:24
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:26
 #: privacyidea/static/components/token/views/token.enroll.motp.html:23
-#: privacyidea/static/components/token/views/token.enroll.totp.html:25
+#: privacyidea/static/components/token/views/token.enroll.totp.html:27
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:37
 msgid "OTP Key"
 msgstr ""
@@ -1230,8 +1230,8 @@ msgstr ""
 msgid "OTP Value"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:32
-#: privacyidea/static/components/token/views/token.enroll.totp.html:33
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:35
+#: privacyidea/static/components/token/views/token.enroll.totp.html:36
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:47
 msgid "OTP length"
 msgstr ""
@@ -1919,13 +1919,13 @@ msgstr ""
 msgid "The Enrollment URL"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:38
-#: privacyidea/static/components/token/views/token.enroll.totp.html:39
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:41
+#: privacyidea/static/components/token/views/token.enroll.totp.html:42
 msgid "The Google Authenticator only supports an OTP length of 6."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:50
-#: privacyidea/static/components/token/views/token.enroll.totp.html:59
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:54
+#: privacyidea/static/components/token/views/token.enroll.totp.html:64
 msgid "The Google Authenticator only supports the SHA1 algorithm."
 msgstr ""
 
@@ -2234,8 +2234,8 @@ msgid ""
 "        {{ lostResult.serial }}</a>."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:15
-#: privacyidea/static/components/token/views/token.enroll.totp.html:16
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:17
+#: privacyidea/static/components/token/views/token.enroll.totp.html:18
 msgid ""
 "The server will create the OTP key\n"
 "            and a QR Code\n"
@@ -2484,7 +2484,7 @@ msgstr ""
 msgid "Timeout while waiting for signing response."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.totp.html:44
+#: privacyidea/static/components/token/views/token.enroll.totp.html:48
 msgid "Timestep"
 msgstr ""
 
