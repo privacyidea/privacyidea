@@ -12,7 +12,7 @@ down_revision = '20969b4cbf06'
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import (OperationalError, ProgrammingError, InternalError)
 
 
 def upgrade():
@@ -29,11 +29,14 @@ def upgrade():
         sa.Column('description', sa.Unicode(length=2000), nullable=True),
         sa.PrimaryKeyConstraint('id')
         )
-    except OperationalError as exx:
+    except (OperationalError, ProgrammingError, InternalError) as exx:
         if exx.orig.message.lower().startswith("duplicate column name"):
             print("Good. Column smtpserver already exists.")
         else:
             print(exx)
+    except Exception as exx:
+        print ("Could not add table 'smtpserver'")
+        print (exx)
 
 
 def downgrade():

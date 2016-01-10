@@ -24,6 +24,7 @@ target_metadata = current_app.extensions['migrate'].db.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
+
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
 
@@ -42,6 +43,7 @@ def run_migrations_offline():
     with context.begin_transaction():
         context.run_migrations()
 
+
 def run_migrations_online():
     """Run migrations in 'online' mode.
 
@@ -49,10 +51,21 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
-    engine = engine_from_config(
-                config.get_section(config.config_ini_section),
-                prefix='sqlalchemy.',
-                poolclass=pool.NullPool)
+    # FIX for Postgres updates
+    url = config.get_section(config.config_ini_section).get("sqlalchemy.url")
+    driver = url.split(":")[0]
+
+    if driver == "postgresql+psycopg2":
+        engine = engine_from_config(
+                    config.get_section(config.config_ini_section),
+                    prefix='sqlalchemy.',
+                    isolation_level="AUTOCOMMIT",
+                    poolclass=pool.NullPool)
+    else:
+        engine = engine_from_config(
+                    config.get_section(config.config_ini_section),
+                    prefix='sqlalchemy.',
+                    poolclass=pool.NullPool)
 
     connection = engine.connect()
     context.configure(
@@ -67,7 +80,9 @@ def run_migrations_online():
         connection.close()
 
 if context.is_offline_mode():
+    print("Running offline")
     run_migrations_offline()
 else:
+    print("Running online")
     run_migrations_online()
 

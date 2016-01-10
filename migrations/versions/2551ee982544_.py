@@ -12,17 +12,20 @@ down_revision = '4f32a4e1bf33'
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, ProgrammingError, InternalError
 
 
 def upgrade():
     try:
-        op.add_column('tokeninfo', sa.Column('Type', sa.Unicode(length=100), nullable=True))
-    except OperationalError as exx:
+        op.add_column('tokeninfo', sa.Column('Type', sa.Unicode(length=100),
+                                             nullable=True))
+    except (OperationalError, ProgrammingError, InternalError) as exx:
         if exx.orig.message.lower().startswith("duplicate column name"):
             print("Good. Column tokeninfo already exists.")
         else:
+            print("Column already exists")
             print(exx)
+
     except Exception as exx:
         print("Could not add the column 'Type' to table tokeninfo")
         print (exx)

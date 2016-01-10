@@ -1649,9 +1649,9 @@ class SMTPServer(MethodsMixin, db.Model):
     # This is the FQDN or the IP address
     server = db.Column(db.Unicode(255), nullable=False)
     port = db.Column(db.Integer, default=25)
-    username = db.Column(db.Unicode(255), default="")
-    password = db.Column(db.Unicode(255), default="")
-    sender = db.Column(db.Unicode(255), default="")
+    username = db.Column(db.Unicode(255), default=u"")
+    password = db.Column(db.Unicode(255), default=u"")
+    sender = db.Column(db.Unicode(255), default=u"")
     tls = db.Column(db.Boolean, default=False)
     description = db.Column(db.Unicode(2000), default=u'')
 
