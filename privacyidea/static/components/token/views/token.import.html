@@ -9,6 +9,13 @@
             >
     </select>
 
+    <div ng-show="form.type==='aladdin-xml'">
+        <p class="help-block" translate>
+            Here you can upload an XML file from Aladdin or SafeNet as it was
+            used with Aladdin TMS or SafeNet SAM.
+        </p>
+    </div>
+
     <div ng-show="form.type==='OATH CSV'">
         <p class="help-block" translate>
             Here you can upload a csv file for your OATH token.
@@ -19,16 +26,16 @@
             For HOTP and TOTP tokens:
         </p>
 
-        <p class="help-block" translate>
-            serial number, seed, type, otplen, timeStep
+        <p class="help-block col-md-offset-1">
+            <em translate>serial number, seed, type, otplen, timeStep</em>
         </p>
 
         <p class="help-block" translate>
             For OCRA tokens:
         </p>
 
-        <p class="help-block" translate>
-            serial number, seed, type, ocrasuite
+        <p class="help-block col-md-offset-1">
+            <em translate>serial number, seed, type, ocrasuite</em>
         </p>
 
         <p class="help-block" translate>

@@ -416,7 +416,7 @@ myApp.controller("tokenImportController", function ($scope, $upload,
                                                     AuthFactory, tokenUrl,
                                                     ConfigFactory, inform) {
     $scope.formInit = {
-        fileTypes: ["OATH CSV", "Yubikey CSV", "pskc"]
+        fileTypes: ["aladdin-xml", "OATH CSV", "Yubikey CSV", "pskc"]
     };
     // These are values that are also sent to the backend!
     $scope.form = {

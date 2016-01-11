@@ -785,11 +785,11 @@ msgstr ""
 "Damit Email-Token richtig funktionieren, müssen Sie die   <a ui-sref="
 "\"config.tokens({tokentype:'email'})\">Email Token Konfiguration</a> setzen."
 
-#: privacyidea/static/components/token/views/token.import.html:18
+#: privacyidea/static/components/token/views/token.import.html:25
 msgid "For HOTP and TOTP tokens:"
 msgstr "Für HOTP und TOTP Token:"
 
-#: privacyidea/static/components/token/views/token.import.html:26
+#: privacyidea/static/components/token/views/token.import.html:33
 msgid "For OCRA tokens:"
 msgstr "Für OCRA Token:"
 
@@ -904,7 +904,7 @@ msgstr ""
 "Hier können Sie auswählen, wieviele Token aus dem jeweiligen Realm nötig "
 "sind, um einen erfolgreiche Authentifizierung durchzuführen."
 
-#: privacyidea/static/components/token/views/token.import.html:13
+#: privacyidea/static/components/token/views/token.import.html:20
 msgid ""
 "Here you can upload a csv file for your OATH token.\n"
 "            The file is supposed to contain one token per line."
@@ -912,13 +912,21 @@ msgstr ""
 "Hier können Sie eine CSV-Datei mit OATH Token hochladen. Diese Datei enthält "
 "einen Token pro Zeile."
 
-#: privacyidea/static/components/token/views/token.import.html:40
+#: privacyidea/static/components/token/views/token.import.html:47
 msgid ""
 "Here you can upload a csv file for your Yubikey token.\n"
 "            The file is supposed to contain one token per line."
 msgstr ""
 "Hier können Sie eine CSV-Datei mit Yubikey Token hochladen. Diese Datei "
 "enthält einen Token pro Zeile."
+
+#: privacyidea/static/components/token/views/token.import.html:13
+msgid ""
+"Here you can upload an XML file from Aladdin or SafeNet as it was\n"
+"            used with Aladdin TMS or SafeNet SAM."
+msgstr ""
+"Hier können Sie eine XML-Datei hochladen. Dies ist eine XML-Datei, wie Sie "
+"im Aladdin TMS bzw.      im SafeNet SAM verwendet wurde."
 
 #: privacyidea/static/components/register/views/register.html:6
 msgid "Here you may register a new user account"
@@ -989,7 +997,7 @@ msgstr ""
 "Wenn Sie den Namen der Richtlinie ändern, wird eine neue Richtlinie mit "
 "diesem Namen erzeugt. Die Richtlinie mit dem alten Namen bleibt erhalten."
 
-#: privacyidea/static/components/token/views/token.import.html:44
+#: privacyidea/static/components/token/views/token.import.html:51
 msgid ""
 "If you enrolling the Yubikey in HOTP mode, you should use the\n"
 "            PSKC file format in the newer version of the Yubikey GUI."
@@ -1475,7 +1483,7 @@ msgstr "Zurück"
 msgid "Print the OTP list"
 msgstr "OTP Liste drucken"
 
-#: privacyidea/static/components/token/views/token.import.html:79
+#: privacyidea/static/components/token/views/token.import.html:86
 msgid "Progress: {{ progressPercentage }}%"
 msgstr "Fortschritt: {{ progressPercentage }}%"
 
@@ -1790,7 +1798,7 @@ msgstr ""
 "Wählen Sie eine bestehende <a ui-sref=\"config.smtp\">SMTP Server "
 "Konfiguration</a>."
 
-#: privacyidea/static/components/token/views/token.import.html:71
+#: privacyidea/static/components/token/views/token.import.html:78
 msgid "Select file and import"
 msgstr "Datei auswählen und importieren"
 
@@ -2633,7 +2641,7 @@ msgstr ""
 "Dies ist der Yubikey im Yubico Mode. Die Authentifizierung erfolgt durch "
 "privacyIDEA.   Der Yubikey gibt ein 44-stelliges Einmalpasswort aus."
 
-#: privacyidea/static/components/token/views/token.import.html:51
+#: privacyidea/static/components/token/views/token.import.html:58
 msgid ""
 "This is an RFC6030 OATH compliant PSKC file.\n"
 "            At the moment only unencrypted PSKC files are supported.\n"
@@ -2895,11 +2903,11 @@ msgstr "Zertifikat hochladen"
 msgid "Upload Request"
 msgstr "Zertifikatsanforderung hochladen"
 
-#: privacyidea/static/components/token/views/token.import.html:82
+#: privacyidea/static/components/token/views/token.import.html:89
 msgid "Uploaded File: {{ uploadedFile }}"
 msgstr "Hochgeladene Datei: {{ uploadedFile }}"
 
-#: privacyidea/static/components/token/views/token.import.html:85
+#: privacyidea/static/components/token/views/token.import.html:92
 msgid "Uploaded Tokens: {{ uploadedTokens }}"
 msgstr "Hochgeladene Token: {{ uploadedTokens }}"
 
@@ -3054,7 +3062,7 @@ msgstr ""
 "    <b>{{ remoteUser }}</b> authentifiziert.\n"
 "   Sie können sich ohne weitere Authentisierung an privacyIDEA anmelden."
 
-#: privacyidea/static/components/token/views/token.import.html:59
+#: privacyidea/static/components/token/views/token.import.html:66
 msgid ""
 "You can choose a realm to which the tokens should be imported.\n"
 "            You can also change the realms of each token later."
@@ -3289,11 +3297,11 @@ msgstr "widerrufen"
 msgid "serial"
 msgstr "Seriennummer"
 
-#: privacyidea/static/components/token/views/token.import.html:30
+#: privacyidea/static/components/token/views/token.import.html:38
 msgid "serial number, seed, type, ocrasuite"
 msgstr "Seriennummer, OTP-Schlüssel, Typ, OCRA-Suite"
 
-#: privacyidea/static/components/token/views/token.import.html:22
+#: privacyidea/static/components/token/views/token.import.html:30
 msgid "serial number, seed, type, otplen, timeStep"
 msgstr "Seriennummer, OTP-Schlüssel, Typ, OTP-Länge, Zeitschritt"
 
@@ -3357,7 +3365,7 @@ msgstr "Benutzeranzahl: {{ usercount }}"
 msgid "type"
 msgstr "Typ"
 
-#: privacyidea/static/components/token/views/token.import.html:34
+#: privacyidea/static/components/token/views/token.import.html:41
 msgid ""
 "type (default hotp), otplen (default 6), timeStep (default 30) and\n"
 "            ocrasuite are optional."

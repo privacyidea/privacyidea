@@ -1,0 +1,67 @@
+        <Tokens>
+        <Token serial="00040008CFA5">
+        <CaseModel>5</CaseModel>
+        <Model>101</Model>
+        <ProductionDate>02/19/2009</ProductionDate>
+        <ProductName>Safeword Alpine</ProductName>
+        <Applications>
+        <Application ConnectorID="{ab1397d2-ddb6-4705-b66e-9f83f322deb9}">
+        <Seed>123412354</Seed>
+        <MovingFactor>1</MovingFactor>
+        </Application>
+        </Applications>
+        </Token>
+
+        <Token serial="00040008CFA52">
+        <CaseModel>5</CaseModel>
+        <Model>101</Model>
+        <ProductionDate>02/19/2009</ProductionDate>
+        <ProductName>Safeword Alpine</ProductName>
+        <Applications>
+        <Application ConnectorID="{ab1397d2-ddb6-4705-b66e-9f83f322deb9}">
+        <Seed>123456</Seed>
+        <MovingFactor>1</MovingFactor>
+        </Application>
+        </Applications>
+        </Token>
+
+        <Token info="token without serial">
+        <CaseModel>5</CaseModel>
+        <Model>101</Model>
+        <ProductionDate>02/19/2009</ProductionDate>
+        <ProductName>Safeword Alpine</ProductName>
+        <Applications>
+        <Application ConnectorID="{ab1397d2-ddb6-4705-b66e-9f83f322deb9}">
+        <Seed>123456</Seed>
+        <MovingFactor>1</MovingFactor>
+        </Application>
+        </Applications>
+        </Token>
+
+        <Token serial="token_without_seed">
+        <CaseModel>5</CaseModel>
+        <Model>101</Model>
+        <ProductionDate>02/19/2009</ProductionDate>
+        <ProductName>Safeword Alpine</ProductName>
+        <Applications>
+        <Application ConnectorID="{ab1397d2-ddb6-4705-b66e-9f83f322deb9}">
+        <MovingFactor>1</MovingFactor>
+        </Application>
+        </Applications>
+        </Token>
+
+        <Token serial="sha256">
+        <CaseModel>5</CaseModel>
+        <Model>101</Model>
+        <ProductionDate>02/19/2009</ProductionDate>
+        <ProductName>Safeword Alpine</ProductName>
+        <Applications>
+        <Application ConnectorID="{ab1397d2-ddb6-4705-b66e-9f83f322deb9}">
+        <seed>1234567890123456789012345678901234567890123456789012345678901234
+        </seed>
+        <MovingFactor>1</MovingFactor>
+        </Application>
+        </Applications>
+        </Token>
+
+        </Tokens>
