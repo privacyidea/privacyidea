@@ -1,0 +1,13 @@
+--- control	2016-01-12 21:57:02.510959191 +0100
++++ control.new	2016-01-12 21:58:42.910964191 +0100
+@@ -6,8 +6,8 @@
+ Standards-Version: 3.9.1
+ 
+ 
+-
+ Package: python-pyjwt
++Provides: python-jwt
+ Architecture: all
+ Depends: ${misc:Depends}, ${python:Depends}
+ Description: JSON Web Token implementation in Python
+
