@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 #
-#    privacyIDEA is a fork of LinOTP
-#    May 28, 2014 Cornelius Kölbel
 #    E-mail: info@privacyidea.org
 #    Contact: www.privacyidea.org
 #
+#    2016-01-13 Cornelius Kölbel <cornelius@privacyidea.org>
+#               omit data object in GET request
+#               omit params in POST request
+#
+#    privacyIDEA is a fork of LinOTP
+#    May 28, 2014 Cornelius Kölbel
 #    2015-01-30 Rewrite for migration to flask
 #               Cornelius Kölbel <cornelius@privacyidea.org>
 #
@@ -83,14 +87,18 @@ class HttpSMSProvider(ISMSProvider):
 
         # url, parameter, username, password, method
         requestor = requests.get
+        params = parameter
+        data = {}
         if method == "POST":
             requestor = requests.post
+            params = {}
+            data = parameter
 
         log.debug("issuing request with parameters %s and method %s and "
                   "authentication %s to url %s." % (parameter, method,
                                                     basic_auth, url))
-        r = requestor(url, params=parameter,
-                      data=parameter,
+        r = requestor(url, params=params,
+                      data=data,
                       verify=ssl_verify,
                       auth=basic_auth,
                       proxies=proxies)
@@ -129,7 +137,7 @@ class HttpSMSProvider(ISMSProvider):
         ret = False
         if "RETURN_SUCCESS" in self.config:
             success = self.config.get("RETURN_SUCCESS")
-            if reply[:len(success)] == success:
+            if reply.startswith(success):
                 log.debug("sending sms success")
                 ret = True
             else:
