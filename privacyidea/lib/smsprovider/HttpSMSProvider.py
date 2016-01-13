@@ -137,7 +137,7 @@ class HttpSMSProvider(ISMSProvider):
         ret = False
         if "RETURN_SUCCESS" in self.config:
             success = self.config.get("RETURN_SUCCESS")
-            if reply.startswith(success):
+            if success in reply:
                 log.debug("sending sms success")
                 ret = True
             else:
