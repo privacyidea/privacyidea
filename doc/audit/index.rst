@@ -42,7 +42,7 @@ You may also want to run the cron job with reduced rights. I.e. a user who
 has no read access to the original pi.cfg file, since this job does not need
 read access to the SECRET or PEPPER in the pi.cfg file.
 
-So you can simply specify a confgi file with only the content::
+So you can simply specify a config file with only the content::
 
    PI_AUDIT_SQL_URI = <your database uri>
 

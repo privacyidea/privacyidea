@@ -1,7 +1,7 @@
 .. _pimanage:
 
 The pi-manage Script
-=======================
+====================
 
 .. index:: pi-manage
 

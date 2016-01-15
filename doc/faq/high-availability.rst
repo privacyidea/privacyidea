@@ -1,11 +1,20 @@
-.. _ha_setups:
+How can I setup HA (High Availability) with privacyIDEA?
+--------------------------------------------------------
 
-HA setups
----------
+.. index:: HA
 
 privacyIDEA does not track any state internally. All information is kept in
 the database. Thus you can configure several privacyIDEA instances against one
 DBMS [#dbms]_ and have the DBMS do the high availability.
+
+.. note:: The passwords and OTP key material in the database is encrypted
+   using the *encKey*. Thus it is possible to put the database onto a DBMS
+   that is controlled by another database administrator in another department.
+
+.. _ha_setups:
+
+HA setups
+.........
 
 When running HA you need to assure to configure the *pi.cfg* file on all
 privacyIDEA instances accordingly. You might need to adapt the
@@ -42,7 +51,6 @@ configure the MySQL servers to run in a master-master-replication.
 servers.
 
 There are some good howtos out there like [#mastermasterhowto]_.
-
 
 .. rubric:: Footnotes
 
