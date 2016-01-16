@@ -381,11 +381,10 @@ def aes_decrypt(key, iv, cipherdata, mode=AES.MODE_CBC):
     :param mode: The AES MODE
     :return: plain text in binary data
     """
-    unpad = lambda s : s[0:-ord(s[-1])]
     aes = AES.new(key, mode, iv)
     output = aes.decrypt(cipherdata)
     # remove padding
-    output = unpad(output)
+    output = output[0:-ord(output[-1])]
     return output
 
 

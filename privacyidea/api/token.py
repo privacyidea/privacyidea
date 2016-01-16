@@ -721,10 +721,9 @@ def loadtokens_api(filename=None):
     file_type = getParam(request.all_data, "type", required)
     hashlib = getParam(request.all_data, "aladdin_hashlib")
     aes_psk = getParam(request.all_data, "psk")
-    if aes_psk:
-        if len(aes_psk) != 32:
-            raise TokenAdminError("The Pre Shared Key must be 128 Bit hex "
-                                  "encoded. It must be 32 characters long!")
+    if aes_psk and len(aes_psk) != 32:
+        raise TokenAdminError("The Pre Shared Key must be 128 Bit hex "
+                              "encoded. It must be 32 characters long!")
     trealms = getParam(request.all_data, "tokenrealms") or ""
     tokenrealms = []
     if trealms:
