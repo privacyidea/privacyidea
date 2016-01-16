@@ -706,10 +706,11 @@ def loadtokens_api(filename=None):
 
     The function is called as a POST request with the file upload.
 
-    :jsonparam basestring filename: The name of the token file, that is imported
-    :jsonparam basestring type: The file type. Can be "aladdin-xml",
+    :jsonparam filename: The name of the token file, that is imported
+    :jsonparam type: The file type. Can be "aladdin-xml",
         "oathcsv" or "yubikeycsv".
-    :jsonparam basestring tokenrealms: comma separated list of tokens.
+    :jsonparam tokenrealms: comma separated list of tokens.
+    :jsonparam psk: Pre Shared Key, when importing PSKC
     :return: The number of the imported tokens
     :rtype: int
     """
@@ -719,6 +720,11 @@ def loadtokens_api(filename=None):
                    'Yubikey CSV', 'pskc']
     file_type = getParam(request.all_data, "type", required)
     hashlib = getParam(request.all_data, "aladdin_hashlib")
+    aes_psk = getParam(request.all_data, "psk")
+    if aes_psk:
+        if len(aes_psk) != 32:
+            raise TokenAdminError("The Pre Shared Key must be 128 Bit hex "
+                                  "encoded. It must be 32 characters long!")
     trealms = getParam(request.all_data, "tokenrealms") or ""
     tokenrealms = []
     if trealms:
@@ -761,9 +767,7 @@ def loadtokens_api(filename=None):
     elif file_type in ["yubikeycsv", "Yubikey CSV"]:
         TOKENS = parseYubicoCSV(file_contents)
     elif file_type in ["pskc"]:
-        # At the moment we only process unencrypted data
-        # TODO: We need to also parse encryption!
-        TOKENS = parsePSKCdata(file_contents)
+        TOKENS = parsePSKCdata(file_contents, preshared_key_hex=aes_psk)
 
     # Now import the Tokens from the dictionary
     ret = ""

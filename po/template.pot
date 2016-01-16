@@ -123,6 +123,12 @@ msgstr ""
 msgid "Application"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.import.html:64
+msgid ""
+"As the values are encrypted with AES128-CBC, you need to give a\n"
+"            32 characters long hex string."
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.details.html:346
 msgid "Assgined User"
 msgstr ""
@@ -1377,6 +1383,10 @@ msgstr ""
 msgid "Port"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.import.html:69
+msgid "Pre Shared Key"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.system.html:69
 msgid ""
 "Prepend the PIN in front of the OTP value\n"
@@ -1405,7 +1415,7 @@ msgstr ""
 msgid "Print the OTP list"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:86
+#: privacyidea/static/components/token/views/token.import.html:94
 msgid "Progress: {{ progressPercentage }}%"
 msgstr ""
 
@@ -1710,7 +1720,7 @@ msgid ""
 "        <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:78
+#: privacyidea/static/components/token/views/token.import.html:86
 msgid "Select file and import"
 msgstr ""
 
@@ -2377,8 +2387,9 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.import.html:58
 msgid ""
 "This is an RFC6030 OATH compliant PSKC file.\n"
-"            At the moment only unencrypted PSKC files are supported.\n"
-"            Please ask for an update to import encrypted PSKC files."
+"            Values in the PSKC files may be unencrypted or encrypted with a\n"
+"            Pre Shared Key. If the values are encrypted, please specify the\n"
+"            Pre Shared Key in hex format."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:67
@@ -2610,11 +2621,11 @@ msgstr ""
 msgid "Upload Request"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:89
+#: privacyidea/static/components/token/views/token.import.html:97
 msgid "Uploaded File: {{ uploadedFile }}"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:92
+#: privacyidea/static/components/token/views/token.import.html:100
 msgid "Uploaded Tokens: {{ uploadedTokens }}"
 msgstr ""
 
@@ -2760,7 +2771,7 @@ msgid ""
 "                credentials."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:66
+#: privacyidea/static/components/token/views/token.import.html:74
 msgid ""
 "You can choose a realm to which the tokens should be imported.\n"
 "            You can also change the realms of each token later."

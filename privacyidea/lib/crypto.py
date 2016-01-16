@@ -367,6 +367,28 @@ def decrypt(input, iv, id=0):
     return ret
 
 
+@log_with(log, log_exit=False)
+def aes_decrypt(key, iv, cipherdata, mode=AES.MODE_CBC):
+    """
+    Decrypts the given cipherdata with the key/iv.
+
+    :param key: The encryption key
+    :type key: binary string
+    :param iv: The initialization vector
+    :type iv: binary string
+    :param cipherdata: The cipher text
+    :type cipherdata: binary string
+    :param mode: The AES MODE
+    :return: plain text in binary data
+    """
+    unpad = lambda s : s[0:-ord(s[-1])]
+    aes = AES.new(key, mode, iv)
+    output = aes.decrypt(cipherdata)
+    # remove padding
+    output = unpad(output)
+    return output
+
+
 # @log_with(log)
 def geturandom(length=20, hex=False):
     '''

@@ -133,6 +133,14 @@ msgstr "Eine Email wurde an Sie gesendet, um Ihr Passwort zurückzusetzen."
 msgid "Application"
 msgstr "Applikationen"
 
+#: privacyidea/static/components/token/views/token.import.html:64
+msgid ""
+"As the values are encrypted with AES128-CBC, you need to give a\n"
+"            32 characters long hex string."
+msgstr ""
+"Da die OTP seeds mit AES128-CBC verschlüsselt werden, müssen Sie einen 32 "
+"Zeichen langen Hex-String eingeben."
+
 #: privacyidea/static/components/token/views/token.details.html:346
 msgid "Assgined User"
 msgstr "Benutzer zuweisen"
@@ -1453,6 +1461,10 @@ msgstr "Pool-Timeout"
 msgid "Port"
 msgstr "Port"
 
+#: privacyidea/static/components/token/views/token.import.html:69
+msgid "Pre Shared Key"
+msgstr "Pre Shared Key"
+
 #: privacyidea/static/components/config/views/config.system.html:69
 msgid ""
 "Prepend the PIN in front of the OTP value\n"
@@ -1483,7 +1495,7 @@ msgstr "Zurück"
 msgid "Print the OTP list"
 msgstr "OTP Liste drucken"
 
-#: privacyidea/static/components/token/views/token.import.html:86
+#: privacyidea/static/components/token/views/token.import.html:94
 msgid "Progress: {{ progressPercentage }}%"
 msgstr "Fortschritt: {{ progressPercentage }}%"
 
@@ -1798,7 +1810,7 @@ msgstr ""
 "Wählen Sie eine bestehende <a ui-sref=\"config.smtp\">SMTP Server "
 "Konfiguration</a>."
 
-#: privacyidea/static/components/token/views/token.import.html:78
+#: privacyidea/static/components/token/views/token.import.html:86
 msgid "Select file and import"
 msgstr "Datei auswählen und importieren"
 
@@ -2644,12 +2656,13 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.import.html:58
 msgid ""
 "This is an RFC6030 OATH compliant PSKC file.\n"
-"            At the moment only unencrypted PSKC files are supported.\n"
-"            Please ask for an update to import encrypted PSKC files."
+"            Values in the PSKC files may be unencrypted or encrypted with a\n"
+"            Pre Shared Key. If the values are encrypted, please specify the\n"
+"            Pre Shared Key in hex format."
 msgstr ""
-"Dies ist eine RFC6030 konformes PSKC-Datei. Im Moment werden nur "
-"unverschlüsselte PSKC-Dateien unterstützt. Bitte fragen Sie nach einem "
-"update, um verschlüsselte PSKC-Dateien zu importieren."
+"Dies ist eine RFC6030 konformes PSKC-Datei. Die Werte in der PSKC Datei sind "
+"entweder unverschlüsselt oder   aber mit einem Pre Shared Key verschlüsselt. "
+"Bitte geben Sie in diesem Fall den Pre Shared Key im Hexformat an."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:67
 msgid ""
@@ -2903,11 +2916,11 @@ msgstr "Zertifikat hochladen"
 msgid "Upload Request"
 msgstr "Zertifikatsanforderung hochladen"
 
-#: privacyidea/static/components/token/views/token.import.html:89
+#: privacyidea/static/components/token/views/token.import.html:97
 msgid "Uploaded File: {{ uploadedFile }}"
 msgstr "Hochgeladene Datei: {{ uploadedFile }}"
 
-#: privacyidea/static/components/token/views/token.import.html:92
+#: privacyidea/static/components/token/views/token.import.html:100
 msgid "Uploaded Tokens: {{ uploadedTokens }}"
 msgstr "Hochgeladene Token: {{ uploadedTokens }}"
 
@@ -3062,7 +3075,7 @@ msgstr ""
 "    <b>{{ remoteUser }}</b> authentifiziert.\n"
 "   Sie können sich ohne weitere Authentisierung an privacyIDEA anmelden."
 
-#: privacyidea/static/components/token/views/token.import.html:66
+#: privacyidea/static/components/token/views/token.import.html:74
 msgid ""
 "You can choose a realm to which the tokens should be imported.\n"
 "            You can also change the realms of each token later."

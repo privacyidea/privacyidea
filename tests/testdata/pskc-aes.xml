@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ <KeyContainer Version="1.0"
+     xmlns="urn:ietf:params:xml:ns:keyprov:pskc"
+     xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+     xmlns:xenc="http://www.w3.org/2001/04/xmlenc#">
+     <EncryptionKey>
+         <ds:KeyName>Pre-shared-key</ds:KeyName>
+     </EncryptionKey>
+     <MACMethod Algorithm="http://www.w3.org/2000/09/xmldsig#hmac-sha1">
+         <MACKey>
+             <xenc:EncryptionMethod
+             Algorithm="http://www.w3.org/2001/04/xmlenc#aes128-cbc"/>
+             <xenc:CipherData>
+                 <xenc:CipherValue>
+     ESIzRFVmd4iZABEiM0RVZgKn6WjLaTC1sbeBMSvIhRejN9vJa2BOlSaMrR7I5wSX
+                 </xenc:CipherValue>
+             </xenc:CipherData>
+         </MACKey>
+     </MACMethod>
+     <KeyPackage>
+         <DeviceInfo>
+             <Manufacturer>Manufacturer</Manufacturer>
+             <SerialNo>987654321</SerialNo>
+         </DeviceInfo>
+         <CryptoModuleInfo>
+             <Id>CM_ID_001</Id>
+         </CryptoModuleInfo>
+         <Key Id="12345678"
+             Algorithm="urn:ietf:params:xml:ns:keyprov:pskc:hotp">
+             <Issuer>Issuer</Issuer>
+             <AlgorithmParameters>
+                 <ResponseFormat Length="8" Encoding="DECIMAL"/>
+             </AlgorithmParameters>
+             <Data>
+                 <Secret>
+                     <EncryptedValue>
+                         <xenc:EncryptionMethod
+             Algorithm="http://www.w3.org/2001/04/xmlenc#aes128-cbc"/>
+                         <xenc:CipherData>
+                             <xenc:CipherValue>
+     AAECAwQFBgcICQoLDA0OD+cIHItlB3Wra1DUpxVvOx2lef1VmNPCMl8jwZqIUqGv
+                             </xenc:CipherValue>
+                         </xenc:CipherData>
+                     </EncryptedValue>
+                     <ValueMAC>Su+NvtQfmvfJzF6bmQiJqoLRExc=
+                     </ValueMAC>
+                 </Secret>
+                 <Counter>
+                     <PlainValue>0</PlainValue>
+                 </Counter>
+             </Data>
+         </Key>
+     </KeyPackage>

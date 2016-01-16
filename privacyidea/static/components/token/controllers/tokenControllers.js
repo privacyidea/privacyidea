@@ -443,7 +443,8 @@ myApp.controller("tokenImportController", function ($scope, $upload,
                     url: tokenUrl + '/load/filename',
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()},
                     fields: {type: $scope.form.type,
-                            tokenrealms: $scope.form.realm},
+                             psk: $scope.form.psk,
+                             tokenrealms: $scope.form.realm},
                     file: file
                 }).progress(function (evt) {
                     $scope.progressPercentage = parseInt(100.0 * evt.loaded / evt.total);

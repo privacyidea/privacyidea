@@ -186,3 +186,5 @@ V	161211182042Z		100000BD	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=requester.loc
 V	161211182042Z		100000BE	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=usercert
 V	161211182043Z		100000BF	unknown	/CN=Steve Test/emailAddress=steve@openssl.org
 V	161211182248Z		100000C0	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=requester.localdomain
+V	170115161741Z		100000C1	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=requester.localdomain
+V	170115161900Z		100000C2	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=requester.localdomain

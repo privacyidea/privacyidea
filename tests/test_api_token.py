@@ -11,6 +11,8 @@ from privacyidea.lib.token import check_serial_pass
 PWFILE = "tests/testdata/passwords"
 IMPORTFILE = "tests/testdata/import.oath"
 IMPORTFILE2 = "tests/testdata/empty.oath"
+IMPORTPSKC = "tests/testdata/pskc-aes.xml"
+PSK_HEX = "12345678901234567890123456789012"
 YUBICOFILE = "tests/testdata/yubico-oath.csv"
 OTPKEY = "3132333435363738393031323334353637383930"
 OTPKEY2 = "010fe88d31948c0c2e3258a4b0f7b11956a258ef"
@@ -688,6 +690,20 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
+
+        # Load PSKC file, encrypted
+        with self.app.test_request_context('/token/load/pskc-aes.xml',
+                                            method="POST",
+                                            data={"type": "pskc",
+                                                  "psk": PSK_HEX,
+                                                  "file": (IMPORTPSKC,
+                                                           "pskc-aes.xml")},
+                                            headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            self.assertTrue(value == 1, result)
 
     def test_12_copy_token(self):
         self._create_temp_token("FROM001")

@@ -164,6 +164,63 @@ XML_PSKC = '''<?xml version="1.0" encoding="UTF-8"?>
 </KeyContainer>
 '''
 
+# AES preshared key encrypted PSKC file according to
+# http://tools.ietf.org/html/rfc6030#section-6.1
+XML_PSKC_AES = '''
+<?xml version="1.0" encoding="UTF-8"?>
+ <KeyContainer Version="1.0"
+     xmlns="urn:ietf:params:xml:ns:keyprov:pskc"
+     xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+     xmlns:xenc="http://www.w3.org/2001/04/xmlenc#">
+     <EncryptionKey>
+         <ds:KeyName>Pre-shared-key</ds:KeyName>
+     </EncryptionKey>
+     <MACMethod Algorithm="http://www.w3.org/2000/09/xmldsig#hmac-sha1">
+         <MACKey>
+             <xenc:EncryptionMethod
+             Algorithm="http://www.w3.org/2001/04/xmlenc#aes128-cbc"/>
+             <xenc:CipherData>
+                 <xenc:CipherValue>
+     ESIzRFVmd4iZABEiM0RVZgKn6WjLaTC1sbeBMSvIhRejN9vJa2BOlSaMrR7I5wSX
+                 </xenc:CipherValue>
+             </xenc:CipherData>
+         </MACKey>
+     </MACMethod>
+     <KeyPackage>
+         <DeviceInfo>
+             <Manufacturer>Manufacturer</Manufacturer>
+             <SerialNo>987654321</SerialNo>
+         </DeviceInfo>
+         <CryptoModuleInfo>
+             <Id>CM_ID_001</Id>
+         </CryptoModuleInfo>
+         <Key Id="12345678"
+             Algorithm="urn:ietf:params:xml:ns:keyprov:pskc:hotp">
+             <Issuer>Issuer</Issuer>
+             <AlgorithmParameters>
+                 <ResponseFormat Length="8" Encoding="DECIMAL"/>
+             </AlgorithmParameters>
+             <Data>
+                 <Secret>
+                     <EncryptedValue>
+                         <xenc:EncryptionMethod
+             Algorithm="http://www.w3.org/2001/04/xmlenc#aes128-cbc"/>
+                         <xenc:CipherData>
+                             <xenc:CipherValue>
+     AAECAwQFBgcICQoLDA0OD+cIHItlB3Wra1DUpxVvOx2lef1VmNPCMl8jwZqIUqGv
+                             </xenc:CipherValue>
+                         </xenc:CipherData>
+                     </EncryptedValue>
+                     <ValueMAC>Su+NvtQfmvfJzF6bmQiJqoLRExc=
+                     </ValueMAC>
+                 </Secret>
+                 <Counter>
+                     <PlainValue>0</PlainValue>
+                 </Counter>
+             </Data>
+         </Key>
+     </KeyPackage>'''
+
 DATDATA = '''
 # ===== SafeWord Authenticator Records $Version: 100$ =====
 dn: sccAuthenticatorId=RAINER01
@@ -348,3 +405,14 @@ class ImportOTPTestCase(MyTestCase):
         self.assertEqual(tokens["1000133508267"].get("type"), "hotp")
         self.assertEqual(tokens["2600135004013"].get("type"), "totp")
         self.assertEqual(tokens["2600135004013"].get("timeStep"), "60")
+
+    def test_04_import_pskc_aes(self):
+        encryption_key_hex = "12345678901234567890123456789012"
+        tokens = parsePSKCdata(XML_PSKC_AES,
+                               preshared_key_hex=encryption_key_hex)
+        self.assertEqual(len(tokens), 1)
+        self.assertEqual(tokens["12345678"].get("type"), "hotp")
+        self.assertEqual(tokens["12345678"].get("otplen"), "8")
+        self.assertEqual(tokens["12345678"].get("otpkey"),
+                         "3132333435363738393031323334353637383930")
+        self.assertEqual(tokens["12345678"].get("description"), "Manufacturer")

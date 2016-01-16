@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-#  privacyIDEA is a fork of LinOTP
 #
+#  2016-01-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add PSKC import with pre shared key
 #  2015-05-28 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add PSKC import
 #  2014-12-11 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -42,8 +43,10 @@ import base64
 from privacyidea.lib.utils import modhex_decode
 from privacyidea.lib.utils import modhex_encode
 from privacyidea.lib.log import log_with
+from privacyidea.lib.crypto import aes_decrypt
 from Crypto.Cipher import AES
 from bs4 import BeautifulSoup
+import traceback
 
 import logging
 log = logging.getLogger(__name__)
@@ -371,8 +374,7 @@ def parseSafeNetXML(xml):
 def parsePSKCdata(xml_data,
                   preshared_key_hex=None,
                   password=None,
-                  do_checkserial=True,
-                  do_feitian=False):
+                  do_checkserial=False):
     """
     This function parses XML data of a PSKC file, (RFC6030)
     It can read
@@ -380,8 +382,15 @@ def parsePSKCdata(xml_data,
     * password based encrypted data
     * plain text data
 
-    It returns a dictionary of
-        serial : { otpkey , counter, .... }
+    :param xml_data: The XML data
+    :type xml_data: basestring
+    :param preshared_key_hex: The preshared key, hexlified
+    :param password: The password that encrypted the keys
+    :param do_checkserial: Check if the serial numbers conform to the OATH
+        specification (not yet implemented)
+
+    :return: a dictionary of token dictionaries
+        { serial : { otpkey , counter, .... }}
     """
     tokens = {}
     xml = BeautifulSoup(xml_data)
@@ -398,8 +407,31 @@ def parsePSKCdata(xml_data,
         token["type"] = algo[-4:].lower()
         parameters = key.algorithmparameters
         token["otplen"] = parameters.responseformat["length"] or 6
-        secret = key.data.secret.plainvalue.string
-        token["otpkey"] = binascii.hexlify(base64.b64decode(secret))
+        try:
+            if key.data.secret.plainvalue:
+                secret = key.data.secret.plainvalue.string
+                token["otpkey"] = binascii.hexlify(base64.b64decode(secret))
+            elif key.data.secret.encryptedvalue:
+                encryptionmethod = key.data.secret.encryptedvalue.find(
+                    "xenc:encryptionmethod")
+                enc_algorithm = encryptionmethod["algorithm"]
+                enc_algorithm = enc_algorithm.split("#")[-1]
+                if enc_algorithm.lower() != "aes128-cbc":
+                    raise ImportException("We only import PSKC files with "
+                                          "AES128-CBC.")
+                enc_data = key.data.secret.encryptedvalue.find(
+                    "xenc:ciphervalue").string
+                enc_data = base64.b64decode(enc_data.strip())
+                enc_iv = enc_data[:16]
+                enc_cipher = enc_data[16:]
+                secret = aes_decrypt(binascii.unhexlify(preshared_key_hex),
+                                     enc_iv, enc_cipher)
+                token["otpkey"] = binascii.hexlify(secret)
+        except Exception as exx:
+            log.error("Failed to import tokendata: %s" % exx)
+            log.debug(traceback.format_exc())
+            raise ImportException("Failed to import tokendata. Wrong "
+                                  "encryption key? %s" % exx)
         if token["type"] == "hotp":
             token["counter"] = key.data.counter.plainvalue.string
         elif token["type"] == "totp":
