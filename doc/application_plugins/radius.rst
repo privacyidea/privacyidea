@@ -48,7 +48,7 @@ Radius and Realms
 .. index:: RADIUS, FreeRADIUS, RADIUS Realms, Realms
 
 FreeRADIUS also has a notion of realms. In general the RADIUS realms are not
-the same as the privacyIDEA realms, but they can be mapped.
+necessarily the same as the privacyIDEA realms, but they can be mapped.
 
 A user can authenticate to the FreeRADIUS either with a simple username
 "fred", or a username combined with a RADIUS realm in the format like
@@ -61,9 +61,9 @@ A user can authenticate to the FreeRADIUS either with a simple username
    ``/etc/freeradius/sites-enabled/privacyidea``.
 
 The RADIUS server tries to split the realms according to the definition of
-"suffic" or "ntdomain". I.e. a ``User-Name`` "fred@realmRadius" would be
+"suffix" or "ntdomain". I.e. a ``User-Name`` "fred@realmRadius" would be
 split
-into ``Stripped-User-Name`` "fred" and ``Realm`` (RADIUD realm) "realmRadius".
+into ``Stripped-User-Name`` "fred" and ``Realm`` (RADIUS realm) "realmRadius".
 **But only if** FreeRADIUS can identify "realmRadius" as a RADIUS realm. For
 FreeRADIUS to identify this as a REALM you need to add this to the file
 ``/etc/freeradius/proxy.conf``::
@@ -91,6 +91,21 @@ then FreeRADIUS will split the ``User-Name`` into the RADIUS attributes
 
 This way you can directly map RADIUS realms in the RADIUS user name to realm
 in privacyIDEA.
+
+.. note:: If the ``User-Name`` could be split into the RADIUS attributes
+   ``Stripped-User-Name`` and ``Realm``, then these values are sent to the
+   privacyIDEA server. If the ``User-Name`` could not be split (and
+   ``Stripped-User-Name`` is empty) then ``User-Name`` is sent to the
+   privacyIDEA server.
+
+   For a deeper insight take a look at the code
+   https://github.com/privacyidea/FreeRADIUS/blob/master/privacyidea_radius.pm#L276
+
+.. note:: The ``NAS-IP-Address`` is sent as the *client* parameter to the
+   privacyIDEA server. Using :ref:`override_client` you can pass the RADIUS
+   client IP to the privacyIDEA server to perform policies based on the
+   RADIUS client's IP address.
+
 
 .. note:: You can define a realm in ``/opt/privacyIDEA/rlm_perl.ini``. Such a
    realm definition will override a RADIUS realm in the ``User-Name``.

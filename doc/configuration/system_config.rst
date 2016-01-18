@@ -77,6 +77,8 @@ provides a wrong OTP value. AutoResync works like this:
 
 .. index:: authenticating client, client, override client
 
+.. _override_client:
+
 Override Authentication Client
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
