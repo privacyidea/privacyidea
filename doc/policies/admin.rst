@@ -32,10 +32,10 @@ All administrative actions also refer to the defined user realm. Meaning
 an administrator may have many rights in one user realm and only a few
 rights in another realm.
 
-Creating a policy with ``scope:admin``, ``user:frank``, ``action:enable``
-and ``realm:sales``
-means that the administrator *frank* is allowed to enable tokens in the
-realm *sales*. 
+Creating a policy with ``scope:admin``, ``admin-realm:helpdesk``,
+``user:frank``, ``action:enable`` and ``realm:sales``
+means that the administrator *frank* in the admin-realm *helpdesk* is allowed
+to enable tokens in the user-realm *sales*.
 
 .. note:: As long as no admin policy is defined all administrators
    are allowed to do everything.
