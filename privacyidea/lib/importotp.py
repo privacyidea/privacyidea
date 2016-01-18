@@ -491,11 +491,9 @@ def parsePSKCdata(xml_data,
             log.debug(traceback.format_exc())
             raise ImportException("Failed to import tokendata. Wrong "
                                   "encryption key? %s" % exx)
-        if token["type"] == "hotp":
-            if key.data.counter:
+        if token["type"] == "hotp" and key.data.counter:
                 token["counter"] = key.data.counter.text.strip()
-        elif token["type"] == "totp":
-            if key.data.timeinterval:
+        elif token["type"] == "totp" and key.data.timeinterval:
                 token["timeStep"] = key.data.timeinterval.text.strip()
 
         tokens[serial] = token
