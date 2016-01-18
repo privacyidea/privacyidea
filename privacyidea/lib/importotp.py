@@ -47,6 +47,8 @@ from privacyidea.lib.crypto import aes_decrypt
 from Crypto.Cipher import AES
 from bs4 import BeautifulSoup
 import traceback
+from passlib.utils.pbkdf2 import pbkdf2
+from privacyidea.lib.utils import to_utf8
 
 import logging
 log = logging.getLogger(__name__)
@@ -370,6 +372,54 @@ def parseSafeNetXML(xml):
     return TOKENS
 
 
+def strip_prefix_from_soup(xml_soup):
+    """
+    We strip prefixes from the XML tags.
+        <pskc:encryption>
+        </pskc:encryption>
+    results in:
+        <encryption>
+        </encryption>
+
+    :param xml_soup: Beautiful Soup XML with tags with prefixes
+    :type xml_soup: Beautiful Soup object
+    :return: Beautiful Soup without prefixes in the tags
+    """
+    # strip the prefixes from the tags!
+    for tag in xml_soup.findAll():
+        if tag.name.find(":") >= 1:
+            prefix, name = tag.name.split(":")
+            tag.name = name
+
+    return xml_soup
+
+
+def derive_key(xml, password):
+    """
+    Derive the encryption key from the password with the parameters given
+    in the XML soup.
+
+    :param xml: The XML
+    :param password: the password
+    :return: The derived key, hexlified
+    """
+    if not password:
+        raise ImportException("The XML KeyContainer specifies a derived "
+                              "encryption key, but no password given!")
+
+    keymeth= xml.keycontainer.encryptionkey.derivedkey.keyderivationmethod
+    derivation_algo = keymeth["algorithm"].split("#")[-1]
+    if derivation_algo.lower() != "pbkdf2":
+        raise ImportException("We only support PBKDF2 as Key derivation "
+                              "function!")
+    salt = keymeth.find("salt").text.strip()
+    keylength = keymeth.find("keylength").text.strip()
+    rounds = keymeth.find("iterationcount").text.strip()
+    r = pbkdf2(to_utf8(password), base64.b64decode(salt), int(rounds),
+               int(keylength))
+    return binascii.hexlify(r)
+
+
 @log_with(log)
 def parsePSKCdata(xml_data,
                   preshared_key_hex=None,
@@ -393,7 +443,15 @@ def parsePSKCdata(xml_data,
         { serial : { otpkey , counter, .... }}
     """
     tokens = {}
-    xml = BeautifulSoup(xml_data)
+    #xml = BeautifulSoup(xml_data, "lxml")
+    xml = strip_prefix_from_soup(BeautifulSoup(xml_data))
+
+    if xml.keycontainer.encryptionkey and \
+            xml.keycontainer.encryptionkey.derivedkey:
+        # If we have a password we also need a tag EncryptionKey in the
+        # KeyContainer
+        preshared_key_hex = derive_key(xml, password)
+
     key_packages = xml.keycontainer.findAll("keypackage")
     for key_package in key_packages:
         token = {}
@@ -403,6 +461,10 @@ def parsePSKCdata(xml_data,
         except Exception as exx:
             log.debug("Can not get manufacturer string %s" % exx)
         serial = key["id"]
+        try:
+            serial = key_package.deviceinfo.serialno.string
+        except Exception as exx:
+            log.debug("Can not get serial string from device info %s" % exx)
         algo = key["algorithm"]
         token["type"] = algo[-4:].lower()
         parameters = key.algorithmparameters
@@ -412,15 +474,12 @@ def parsePSKCdata(xml_data,
                 secret = key.data.secret.plainvalue.string
                 token["otpkey"] = binascii.hexlify(base64.b64decode(secret))
             elif key.data.secret.encryptedvalue:
-                encryptionmethod = key.data.secret.encryptedvalue.find(
-                    "xenc:encryptionmethod")
-                enc_algorithm = encryptionmethod["algorithm"]
-                enc_algorithm = enc_algorithm.split("#")[-1]
+                encryptionmethod = key.data.secret.encryptedvalue.encryptionmethod
+                enc_algorithm = encryptionmethod["algorithm"].split("#")[-1]
                 if enc_algorithm.lower() != "aes128-cbc":
                     raise ImportException("We only import PSKC files with "
                                           "AES128-CBC.")
-                enc_data = key.data.secret.encryptedvalue.find(
-                    "xenc:ciphervalue").string
+                enc_data = key.data.secret.encryptedvalue.ciphervalue.text
                 enc_data = base64.b64decode(enc_data.strip())
                 enc_iv = enc_data[:16]
                 enc_cipher = enc_data[16:]
@@ -433,9 +492,11 @@ def parsePSKCdata(xml_data,
             raise ImportException("Failed to import tokendata. Wrong "
                                   "encryption key? %s" % exx)
         if token["type"] == "hotp":
-            token["counter"] = key.data.counter.plainvalue.string
+            if key.data.counter:
+                token["counter"] = key.data.counter.text.strip()
         elif token["type"] == "totp":
-            token["timeStep"] = key.data.timeinterval.plainvalue.string
+            if key.data.timeinterval:
+                token["timeStep"] = key.data.timeinterval.text.strip()
 
         tokens[serial] = token
     return tokens

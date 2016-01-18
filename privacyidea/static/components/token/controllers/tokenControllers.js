@@ -444,6 +444,7 @@ myApp.controller("tokenImportController", function ($scope, $upload,
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()},
                     fields: {type: $scope.form.type,
                              psk: $scope.form.psk,
+                             password: $scope.form.password,
                              tokenrealms: $scope.form.realm},
                     file: file
                 }).progress(function (evt) {

@@ -721,6 +721,7 @@ def loadtokens_api(filename=None):
     file_type = getParam(request.all_data, "type", required)
     hashlib = getParam(request.all_data, "aladdin_hashlib")
     aes_psk = getParam(request.all_data, "psk")
+    aes_password = getParam(request.all_data, "password")
     if aes_psk and len(aes_psk) != 32:
         raise TokenAdminError("The Pre Shared Key must be 128 Bit hex "
                               "encoded. It must be 32 characters long!")
@@ -766,7 +767,8 @@ def loadtokens_api(filename=None):
     elif file_type in ["yubikeycsv", "Yubikey CSV"]:
         TOKENS = parseYubicoCSV(file_contents)
     elif file_type in ["pskc"]:
-        TOKENS = parsePSKCdata(file_contents, preshared_key_hex=aes_psk)
+        TOKENS = parsePSKCdata(file_contents, preshared_key_hex=aes_psk,
+                               password=aes_password)
 
     # Now import the Tokens from the dictionary
     ret = ""

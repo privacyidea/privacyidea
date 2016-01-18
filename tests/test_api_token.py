@@ -12,6 +12,7 @@ PWFILE = "tests/testdata/passwords"
 IMPORTFILE = "tests/testdata/import.oath"
 IMPORTFILE2 = "tests/testdata/empty.oath"
 IMPORTPSKC = "tests/testdata/pskc-aes.xml"
+IMPORTPSKC_PASS = "tests/testdata/pskc-password.xml"
 PSK_HEX = "12345678901234567890123456789012"
 YUBICOFILE = "tests/testdata/yubico-oath.csv"
 OTPKEY = "3132333435363738393031323334353637383930"
@@ -691,13 +692,27 @@ class APITokenTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
 
-        # Load PSKC file, encrypted
+        # Load PSKC file, encrypted PSK
         with self.app.test_request_context('/token/load/pskc-aes.xml',
                                             method="POST",
                                             data={"type": "pskc",
                                                   "psk": PSK_HEX,
                                                   "file": (IMPORTPSKC,
                                                            "pskc-aes.xml")},
+                                            headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            self.assertTrue(value == 1, result)
+
+        # Load PSKC file, encrypted Password
+        with self.app.test_request_context('/token/load/pskc-password.xml',
+                                            method="POST",
+                                            data={"type": "pskc",
+                                                  "password": "qwerty",
+                                                  "file": (IMPORTPSKC_PASS,
+                                                           "pskc-password.xml")},
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)

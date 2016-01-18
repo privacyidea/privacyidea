@@ -8,6 +8,80 @@ from .base import MyTestCase
 from privacyidea.lib.importotp import (parseOATHcsv, parseYubicoCSV,
                                        parseSafeNetXML, ImportException,
                                        parsePSKCdata)
+import binascii
+
+
+XML_PSKC_PASSWORD_PREFIX = """<?xml version="1.0" encoding="UTF-8"?>
+  <KeyContainer
+    xmlns="urn:ietf:params:xml:ns:keyprov:pskc"
+    xmlns:xenc11="http://www.w3.org/2009/xmlenc11#"
+    xmlns:pkcs5=
+    "http://www.rsasecurity.com/rsalabs/pkcs/schemas/pkcs-5v2-0#"
+    xmlns:xenc="http://www.w3.org/2001/04/xmlenc#" Version="1.0">
+      <EncryptionKey>
+          <xenc11:DerivedKey>
+              <xenc11:KeyDerivationMethod
+                Algorithm=
+   "http://www.rsasecurity.com/rsalabs/pkcs/schemas/pkcs-5v2-0#pbkdf2">
+                  <pkcs5:PBKDF2-params>
+                      <Salt>
+                          <Specified>Ej7/PEpyEpw=</Specified>
+                      </Salt>
+                      <IterationCount>1000</IterationCount>
+                      <KeyLength>16</KeyLength>
+                      <PRF/>
+                  </pkcs5:PBKDF2-params>
+              </xenc11:KeyDerivationMethod>
+              <xenc:ReferenceList>
+                  <xenc:DataReference URI="#ED"/>
+              </xenc:ReferenceList>
+              <xenc11:MasterKeyName>My Password 1</xenc11:MasterKeyName>
+          </xenc11:DerivedKey>
+      </pskc:EncryptionKey>
+      <pskc:MACMethod
+          Algorithm="http://www.w3.org/2000/09/xmldsig#hmac-sha1">
+          <pskc:MACKey>
+              <xenc:EncryptionMethod
+              Algorithm="http://www.w3.org/2001/04/xmlenc#aes128-cbc"/>
+              <xenc:CipherData>
+                  <xenc:CipherValue>
+  2GTTnLwM3I4e5IO5FkufoOEiOhNj91fhKRQBtBJYluUDsPOLTfUvoU2dStyOwYZx
+                  </xenc:CipherValue>
+              </xenc:CipherData>
+          </pskc:MACKey>
+      </pskc:MACMethod>
+      <pskc:KeyPackage>
+          <pskc:DeviceInfo>
+              <pskc:Manufacturer>TokenVendorAcme</pskc:Manufacturer>
+              <pskc:SerialNo>987654321</pskc:SerialNo>
+          </pskc:DeviceInfo>
+          <pskc:CryptoModuleInfo>
+              <pskc:Id>CM_ID_001</pskc:Id>
+          </pskc:CryptoModuleInfo>
+          <pskc:Key Algorithm="urn:ietf:params:xml:ns:keyprov:pskc:hotp" Id="123456">
+              <pskc:Issuer>Example-Issuer</pskc:Issuer>
+              <pskc:AlgorithmParameters>
+                  <pskc:ResponseFormat Length="8" Encoding="DECIMAL"/>
+              </pskc:AlgorithmParameters>
+              <pskc:Data>
+                  <pskc:Secret>
+                  <pskc:EncryptedValue Id="ED">
+                      <xenc:EncryptionMethod
+                          Algorithm=
+  "http://www.w3.org/2001/04/xmlenc#aes128-cbc"/>
+                          <xenc:CipherData>
+                              <xenc:CipherValue>
+        oTvo+S22nsmS2Z/RtcoF8Hfh+jzMe0RkiafpoDpnoZTjPYZu6V+A4aEn032yCr4f
+                          </xenc:CipherValue>
+                      </xenc:CipherData>
+                      </pskc:EncryptedValue>
+                      <pskc:ValueMAC>LP6xMvjtypbfT9PdkJhBZ+D6O4w=
+                      </pskc:ValueMAC>
+                  </pskc:Secret>
+              </pskc:Data>
+          </pskc:Key>
+      </pskc:KeyPackage>
+  </pskc:KeyContainer>"""
 
 XML_PSKC = '''<?xml version="1.0" encoding="UTF-8"?>
 <KeyContainer Version="1.0" xmlns ="urn:ietf:params:xml:ns:keyprov:pskc">
@@ -411,8 +485,23 @@ class ImportOTPTestCase(MyTestCase):
         tokens = parsePSKCdata(XML_PSKC_AES,
                                preshared_key_hex=encryption_key_hex)
         self.assertEqual(len(tokens), 1)
-        self.assertEqual(tokens["12345678"].get("type"), "hotp")
-        self.assertEqual(tokens["12345678"].get("otplen"), "8")
-        self.assertEqual(tokens["12345678"].get("otpkey"),
+        self.assertEqual(tokens["987654321"].get("type"), "hotp")
+        self.assertEqual(tokens["987654321"].get("otplen"), "8")
+        self.assertEqual(tokens["987654321"].get("otpkey"),
                          "3132333435363738393031323334353637383930")
-        self.assertEqual(tokens["12345678"].get("description"), "Manufacturer")
+        self.assertEqual(tokens["987654321"].get("description"), "Manufacturer")
+
+    def test_05_import_pskc_password(self):
+        password = "qwerty"
+
+        self.assertRaises(ImportException, parsePSKCdata,
+                          XML_PSKC_PASSWORD_PREFIX)
+
+        tokens = parsePSKCdata(XML_PSKC_PASSWORD_PREFIX, password=password)
+        self.assertEqual(len(tokens), 1)
+        self.assertEqual(tokens["987654321"].get("type"), "hotp")
+        self.assertEqual(tokens["987654321"].get("otplen"), "8")
+        self.assertEqual(tokens["987654321"].get("otpkey"),
+                         binascii.hexlify("12345678901234567890"))
+        self.assertEqual(tokens["987654321"].get("description"),
+                         "TokenVendorAcme")

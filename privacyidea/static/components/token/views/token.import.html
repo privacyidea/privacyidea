@@ -57,9 +57,11 @@
     <div ng-show="form.type==='pskc'">
         <p class="help-block" translate>
             This is an RFC6030 OATH compliant PSKC file.
-            Values in the PSKC files may be unencrypted or encrypted with a
-            Pre Shared Key. If the values are encrypted, please specify the
-            Pre Shared Key in hex format.
+            Values in the PSKC files may be unencrypted or
+            <em>either</em> encrypted with a
+            <em>Pre Shared Key</em> or <em>password</em>. If the values are
+            encrypted, please specify the Pre Shared Key in hex format or the
+            password.
         </p>
         <p class="help-block" translate>
             As the values are encrypted with AES128-CBC, you need to give a
@@ -67,7 +69,12 @@
         </p>
         <input class="form-control"
                placeholder="{{ 'Pre Shared Key' | translate }}"
+               ng-keypress="form.password =''"
                ng-model="form.psk" minlength="0" maxlength="32">
+        <input class="form-control"
+               placeholder="{{ 'Password' | translate }}"
+               ng-keypress="form.psk = ''"
+               ng-model="form.password">
     </div>
 
     <div >
