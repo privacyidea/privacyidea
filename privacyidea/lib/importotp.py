@@ -442,9 +442,10 @@ def parsePSKCdata(xml_data,
     :return: a dictionary of token dictionaries
         { serial : { otpkey , counter, .... }}
     """
+
     tokens = {}
     #xml = BeautifulSoup(xml_data, "lxml")
-    xml = strip_prefix_from_soup(BeautifulSoup(xml_data))
+    xml = strip_prefix_from_soup(BeautifulSoup(xml_data, "lxml"))
 
     if xml.keycontainer.encryptionkey and \
             xml.keycontainer.encryptionkey.derivedkey:

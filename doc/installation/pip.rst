@@ -19,6 +19,7 @@ distributions the packages are called
 * python-dev
 * libffi-dev
 * libssl-dev
+* libxslt1-dev
 
 Now you can install privacyIDEA like this::
 

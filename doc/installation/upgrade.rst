@@ -16,6 +16,10 @@ You need to update the database models::
    pi-manage db stamp 4f32a4e1bf33 -d path/to/migrations
    pi-manage db upgrade -d path/to/migrations
 
+privacyIDEA 2.10 can import all kind of PSKC token files. These XML files
+need to be parsed. Therefore *BeautifulSoup4* and *lxml* is used. On pip
+installations you need to install a package like *libxslt1-dev*.
+
 
 Upgrade From privacyIDEA 2.x to 2.3
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
