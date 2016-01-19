@@ -1,13 +1,14 @@
-python-privacyidea (2.10~dev3-1trusty) trusty; urgency=low
+python-privacyidea (2.10~dev4-1trusty) trusty; urgency=low
 
   Features
   * User registration
   * system wider SMTP server configuration
+  * Add PSKC import
 
   Fixes
   * Fix special characters in LDAP password 
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 13 Dec 2015 10:20:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Tue, 19 Dec 2015 12:20:00 +0200
 
 python-privacyidea (2.9-1trusty) trusty; urgency=low
 
