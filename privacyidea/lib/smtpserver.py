@@ -84,9 +84,11 @@ Date: %s
         mail.ehlo()
         # Start TLS if required
         if config.tls:
+            log.debug("Trying to STARTTLS: %s" % config.tls)
             mail.starttls()
         # Authenticate, if a username is given.
         if config.username:
+            log.debug("Doing authentication with %s" % config.username)
             password = decryptPassword(config.password)
             mail.login(config.username, password)
         r = mail.sendmail(mail_from, recipient, body)
