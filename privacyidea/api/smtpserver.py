@@ -69,7 +69,8 @@ def create(identifier=None):
     username = getParam(param, "username", default="")
     password = getParam(param, "password", default="")
     sender = getParam(param, "sender", default="")
-    tls = bool(getParam(param, "tls"))
+    tls = getParam(param, "tls", default=False)
+    tls = tls in ["True", True, "true", "1"]
     description = getParam(param, "description", default="")
 
     r = add_smtpserver(identifier, server, port=port, username=username,
@@ -132,7 +133,8 @@ def test():
     username = getParam(param, "username", default="")
     password = getParam(param, "password", default="")
     sender = getParam(param, "sender", default="")
-    tls = bool(getParam(param, "tls"))
+    tls = getParam(param, "tls", default=False)
+    tls = tls in [True, "True", "true", "1"]
     recipient = getParam(param, "recipient", required)
 
     s = SMTPServerDB(identifier=identifier, server=server, port=port,

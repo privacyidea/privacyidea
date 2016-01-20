@@ -6,6 +6,7 @@ from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.smtpserver import (get_smtpservers, add_smtpserver,
                                         delete_smtpserver, get_smtpserver)
 import smtpmock
+from smtplib import SMTPException
 
 
 class SMTPServerTestCase(MyTestCase):
@@ -32,18 +33,36 @@ class SMTPServerTestCase(MyTestCase):
 
     @smtpmock.activate
     def test_02_send_email(self):
-        r = add_smtpserver(identifier="myserver", server="1.2.3.4")
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
         self.assertTrue(r > 0)
 
         server = get_smtpserver("myserver")
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")})
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=False)
         r = server.send_email(["recp@example.com"], "Hallo", "Body")
         self.assertEqual(r, True)
 
         smtpmock.setdata(response={"recp@example.com": (550,
-                                                        "Message rejected")})
+                                                        "Message rejected")},
+                         support_tls=False)
         r = server.send_email(["recp@example.com"], "Hallo", "Body")
         self.assertEqual(r, False)
+
+        # Use TLS
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=True)
+        self.assertTrue(r > 0)
+        server = get_smtpserver("myserver")
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=True)
+        r = server.send_email(["recp@example.com"], "Hallo", "Body")
+        self.assertEqual(r, True)
+
+        # If we configure TLS but the server does not support this, we raise
+        # an error
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=False)
+        self.assertRaises(SMTPException, server.send_email,
+                          ["recp@example.com"], "Hallo", "Body")
 
         delete_smtpserver("myserver")
 

@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-2015-01-30 Change responses.py to be able to run with SMTP
-        Cornelius Kölbel <cornelius@privacyidea.org>
+2016-01-20 Cornelus Kölbel <cornelius@privacyidea.org>
+           Support STARTTLS mock
+
+2015-01-30 Cornelius Kölbel <cornelius@privacyidea.org>
+           Change responses.py to be able to run with SMTP
+
 
 Original responses.py is:
 Copyright 2013 Dropbox, Inc.
@@ -100,10 +104,11 @@ class SmtpMock(object):
         self._calls.reset()
 
     def setdata(self, response=None, authenticated=True,
-                config=None, exception=False):
+                config=None, exception=False, support_tls=True):
         if response is None:
                 response = {}
         config = config or {}
+        self.support_tls = support_tls
         self.exception = exception
         self._request_data = {
             'response': response,
@@ -160,6 +165,8 @@ class SmtpMock(object):
     def _on_starttls(self, SMTP_instance):
         if self.exception:
             raise SMTPException("MOCK TLS ERROR")
+        if not self.support_tls:
+            raise SMTPException("The SMTP Server does not support TLS.")
         return None
 
     def start(self):

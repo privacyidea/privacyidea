@@ -41,14 +41,14 @@ class SMTPServer(object):
     SMTP Object that holds a SMTP Database Object but can also send emails.
     """
 
-    def __init__(self, dbSMTPServer):
+    def __init__(self, db_smtpserver_object):
         """
         Creates a new SMTPServer instance from a DB Server Object
 
-        :param dbSMTPServer:
+        :param db_smtpserver_object: A DB STMTPserver object
         :return: A SMTP Server Object
         """
-        self.config = dbSMTPServer
+        self.config = db_smtpserver_object
 
     def send_email(self, recipient, subject, body, sender=None):
         return self.test_email(self.config, recipient, subject, body, sender)
