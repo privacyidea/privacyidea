@@ -332,7 +332,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         // TODO: The entries should be handled automatically.
         var entries = ["radius.server", "radius.secret", "remote.server",
             "totp.hashlib", "hotp.hashlib", "email.mailserver",
-            "email.mailfrom", "sms.provider", "yubico.id", "tiqr.regServer"];
+            "email.mailfrom", "sms.Provider", "yubico.id", "tiqr.regServer"];
         entries.forEach(function(entry) {
             if (!$scope.form[entry]) {
                 // preset the UI
