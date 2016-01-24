@@ -15,8 +15,12 @@ VERSION4=2.0
 URL4=https://pypi.python.org/packages/source/F/Flask-SQLAlchemy/Flask-SQLAlchemy-$(VERSION4).tar.gz
 
 CONTRIB5=python-pymysql
-VERSION5=0.6.6
+VERSION5=0.7.1
 URL5=https://pypi.python.org/packages/source/P/PyMySQL/PyMySQL-$(VERSION5).tar.gz
+
+CONTRIB6=python-pymysql_sa
+VERSION6=1.0
+URL6=https://pypi.python.org/packages/source/p/pymysql_sa/pymysql_sa-$(VERSION6).tar.gz
 
 ME=Cornelius Kölbel <cornelius@privacyidea.org>
 
@@ -34,6 +38,7 @@ ubuntu:
 	make flask-cache
 	make ldap3
 	make flask-sqlalchemy
+	make pymysql
 
 ldap3:
 	mkdir -p $(CONTRIB3)
@@ -91,6 +96,15 @@ pymysql:
 	(cd $(CONTRIB5)/deb_dist/pymysql-$(VERSION5); debuild -sa -S)
 	(cd $(CONTRIB5)/deb_dist/pymysql-$(VERSION5); debuild -b)
 	(cp $(CONTRIB5)/deb_dist/* DEBUILD || true)
+	#
+	mkdir -p $(CONTRIB6)
+	mkdir -p DEBUILD
+	(cd $(CONTRIB6); curl $(URL6) -o pymysql_sa-$(VERSION6).tar.gz) 
+	(cd $(CONTRIB6); py2dsc -m '$(ME)' pymysql_sa-$(VERSION6).tar.gz)
+	(cd $(CONTRIB6)/deb_dist/pymysql-sa-$(VERSION6); dch -v $(VERSION6)-1$(series)1 --distribution $(series) -M "built for privacyidea")
+	(cd $(CONTRIB6)/deb_dist/pymysql-sa-$(VERSION6); debuild -sa -S)
+	(cd $(CONTRIB6)/deb_dist/pymysql-sa-$(VERSION6); debuild -b)
+	(cp $(CONTRIB6)/deb_dist/* DEBUILD || true)
 
 
 ppa-dev:
