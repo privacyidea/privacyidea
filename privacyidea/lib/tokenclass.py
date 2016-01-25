@@ -930,6 +930,34 @@ class TokenClass(object):
 
         return True
 
+    def check_all(self, message_list):
+        """
+        Perfom all checks on the token. Returns False if the token is either:
+        * auth counter exceeded
+        * not active
+        * fail counter exceeded
+        * validity period exceeded
+
+        This is used in the function token.check_token_list
+
+        :param message_list: A list of messages
+        :return: False, if any of the checks fail
+        """
+        r = False
+        # Check if the max auth is succeeded
+        if not self.check_auth_counter():
+            message_list.append("Authentication counter exceeded")
+        # Check if the token is disabled
+        elif not self.is_active():
+            message_list.append("Token is disabled")
+        elif not self.check_failcount():
+            message_list.append("Failcounter exceeded")
+        elif not self.check_validity_period():
+            message_list.append("Outside validity period")
+        else:
+            r = True
+        return r
+
     @log_with(log)
     @check_token_locked
     def inc_otp_counter(self, counter=None, reset=True):

@@ -1807,7 +1807,7 @@ def check_user_pass(user, passw, options=None):
 def check_token_list(tokenobject_list, passw, user=None, options=None):
     """
     this takes a list of token objects and tries to find the matching token
-    for the given passw. In also tests,
+    for the given passw. It also tests,
     * if the token is active or
     * the max fail count is reached,
     * if the validity period is ok...
@@ -1906,16 +1906,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
             token_obj.inc_count_auth()
             token_obj.inc_count_auth_success()
             # Check if the max auth is succeeded
-            if not token_obj.check_auth_counter():
-                message_list.append("Authentication counter exceeded")
-            # Check if the token is disabled
-            elif not token_obj.is_active():
-                message_list.append("Token is disabled")
-            elif not token_obj.check_failcount():
-                message_list.append("Failcounter exceeded")
-            elif not token_obj.check_validity_period():
-                message_list.append("Outside validity period")
-            else:
+            if token_obj.check_all(message_list):
                 # The token is active and the auth counters are ok.
                 res = True
                 # reset the failcounter
@@ -1951,15 +1942,20 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
     elif challenge_request_token_list:
         # A challenge token was found.
         if len(challenge_request_token_list) == 1:
-            # One token that can create challenge
-            tokenobject = challenge_request_token_list[0]
-            r_chal, message, transaction_id, \
-            attributes = tokenobject.create_challenge(options=options)
-            # Add the reply to the response
-            reply_dict = {"message": message}
-            if r_chal:
-                reply_dict["transaction_id"] = transaction_id
-                reply_dict["attributes"] = attributes
+            message_list = []
+            token_obj = challenge_request_token_list[0]
+            # Check if the max auth is succeeded
+            if token_obj.check_all(message_list):
+                # One token that can create challenge
+                tokenobject = challenge_request_token_list[0]
+                r_chal, message, transaction_id, \
+                attributes = tokenobject.create_challenge(options=options)
+                # Add the reply to the response
+                message_list.append(message)
+                if r_chal:
+                    reply_dict["transaction_id"] = transaction_id
+                    reply_dict["attributes"] = attributes
+            reply_dict["message"] = ", ".join(message_list)
         else:
             reply_dict["message"] = "Multiple tokens to create a challenge " \
                                     "found!"

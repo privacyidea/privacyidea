@@ -8,7 +8,7 @@ from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
                                     get_inc_fail_count_on_false_pin,
                                     delete_privacyidea_config)
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
-                                   reset_token)
+                                   reset_token, enable_token)
 from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy
 from privacyidea.lib.error import TokenAdminError
 
@@ -496,6 +496,20 @@ class ValidateAPITestCase(MyTestCase):
                             "but the SMS could not be sent" in
                             detail.get("message"))
             transaction_id = detail.get("transaction_id")
+
+        # disable the token. The detail->message should be empty
+        r = enable_token(serial=serial, enable=False)
+        self.assertEqual(r, True)
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertFalse(result.get("value"))
+            self.assertEqual(detail.get("message"), "Token is disabled")
 
         # delete the token
         remove_token(serial=serial)
