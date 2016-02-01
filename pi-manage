@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+# 2016-01-29 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Add profiling
 # 2015-10-09 Cornelius Kölbel <cornelius@privacyidea.org>
 #            Set file permissions
 # 2015-09-24 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -341,6 +343,17 @@ def validate(user, password, realm=None, client=None):
     except Exception as exx:
         print("RESULT=Error")
         print("ERROR=%s" % exx)
+
+
+@manager.command
+def profile(length=30, profile_dir=None):
+    """
+    Start the application in profiling mode.
+    """
+    from werkzeug.contrib.profiler import ProfilerMiddleware
+    app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[length],
+                                      profile_dir=profile_dir)
+    app.run()
 
 
 @manager.option('--highwatermark', help="If entries exceed this value, "
