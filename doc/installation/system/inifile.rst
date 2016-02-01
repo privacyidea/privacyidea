@@ -97,10 +97,7 @@ In addition in caches LDAP requests of the LDAP resolver for 120 seconds.
 This way we avoid looking up user lists or user details multiple times.
 
 To enable the redis caching you need to specify the ``PI_REDIS_URL``
-in the *pi.cfg* file. In the simplest form it only takes the name of the
-server with the redis cache like *localhost*.
-
-A REDIUS_URL can look like this::
+in the *pi.cfg* file. A redius_url can look like this::
 
    redis://[:password]@localhost:6379/0
 
