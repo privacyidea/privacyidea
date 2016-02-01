@@ -107,11 +107,6 @@ class ConfigTestCase(MyTestCase):
         # When the resolvers are determined, they are stored
         types = get_resolver_types()
         self.assertTrue("passwdresolver" in types, types)
-        # Now the resolver types are contained.
-        self.assertTrue("pi_resolver_types" in current_app.config,
-                         current_app.config)
-        types = get_resolver_types()
-        self.assertTrue("passwdresolver" in types, types)
 
     def test_02_token(self):
         r = get_token_list()
@@ -154,8 +149,8 @@ class ConfigTestCase(MyTestCase):
         self.assertTrue("totp" in types, types)
         self.assertTrue("hotp" in types, types)
         # Now the resolver types are contained.
-        self.assertTrue("pi_token_types" in current_app.config,
-                        current_app.config)
+        #self.assertTrue("pi_token_types" in current_app.config,
+        #                current_app.config)
         types = get_token_types()
         self.assertTrue("totp" in types, types)
         self.assertTrue("hotp" in types, types)
@@ -167,8 +162,8 @@ class ConfigTestCase(MyTestCase):
         self.assertTrue(TotpTokenClass in r, r)
         self.assertTrue(HotpTokenClass in r, r)
         # Now the token classes are cached
-        self.assertTrue("pi_token_classes" in current_app.config,
-                        current_app.config)
+        #self.assertTrue("pi_token_classes" in current_app.config,
+        #                current_app.config)
         r = get_token_classes()
         self.assertTrue(TotpTokenClass in r, r)
         self.assertTrue(HotpTokenClass in r, r)
