@@ -932,7 +932,7 @@ class TokenClass(object):
 
     def check_all(self, message_list):
         """
-        Perfom all checks on the token. Returns False if the token is either:
+        Perform all checks on the token. Returns False if the token is either:
         * auth counter exceeded
         * not active
         * fail counter exceeded
