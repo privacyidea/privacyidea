@@ -59,6 +59,7 @@ from .realm import (get_realms,
                     get_default_realm,
                     get_realm)
 from .config import get_from_config
+from privacyidea.lib.decorators import cached
 
 ENCODING = 'utf-8'
 
@@ -554,6 +555,7 @@ def get_user_from_param(param, optionalOrRequired=optional):
 
 
 @log_with(log)
+@cached()
 def get_user_list(param=None, user=None):
     users = []
     resolvers = []
@@ -631,6 +633,7 @@ def get_user_list(param=None, user=None):
 
 
 @log_with(log)
+@cached()
 def get_user_info(userid, resolvername):
     """
     return the detailed information for a user in a resolver
@@ -649,6 +652,7 @@ def get_user_info(userid, resolvername):
 
 
 @log_with(log)
+@cached()
 def get_username(userid, resolvername):
     """
     Determine the username for a given id and a resolvername.

@@ -77,6 +77,7 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_timelimit,
                                               auth_lastauth,
                                               config_lost_token)
+from privacyidea.lib.decorators import cached
 
 log = logging.getLogger(__name__)
 
@@ -232,7 +233,6 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
 
 
 @log_with(log)
-#@cache.memoize(10)
 def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
                serial=None, active=None, resolver=None, rollout_state=None,
                count=False, revoked=None, locked=None):

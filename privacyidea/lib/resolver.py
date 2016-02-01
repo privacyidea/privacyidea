@@ -51,7 +51,7 @@ from .error import ConfigAdminError
 from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
 from privacyidea.lib.utils import sanity_name_check
-#from privacyidea.lib.cache import cache
+from privacyidea.lib.decorators import cached
 
 log = logging.getLogger(__name__)
 
@@ -158,7 +158,7 @@ def save_resolver(params):
 
 
 @log_with(log)
-#@cache.memoize(10)
+@cached()
 def get_resolver_list(filter_resolver_type=None,
                       filter_resolver_name=None,
                       editable=None):
@@ -203,7 +203,6 @@ def get_resolver_list(filter_resolver_type=None,
             elif editable is False and r["data"].get("Editable") != "1":
                 Resolvers[reso.name] = r
 
-
     return Resolvers
 
 
@@ -233,7 +232,7 @@ def delete_resolver(resolvername):
 
 
 @log_with(log)
-#@cache.memoize(10)
+@cached()
 def get_resolver_config(resolvername):
     """
     return the complete config of a given resolver from the database
@@ -247,7 +246,7 @@ def get_resolver_config(resolvername):
 
 
 @log_with(log)
-#@cache.memoize(10)
+@cached()
 def get_resolver_config_description(resolver_type):
     """
     get the configuration description of a resolver
@@ -277,11 +276,10 @@ def get_resolver_class(resolver_type):
     '''
     return the class object for a resolver type
     :param resolver_type: string specifying the resolver
-                          fully qualified or abreviated
+                          fully qualified or abbreviated
     :return: resolver object class
     '''
     ret = None
-    
     (resolver_clazzes, resolver_types) = get_resolver_class_dict()
 
     if resolver_type in resolver_types.values():
@@ -292,7 +290,7 @@ def get_resolver_class(resolver_type):
     return ret
 
 
-#@cache.memoize(10)
+@cached()
 def get_resolver_type(resolvername):
     """
     return the type of a resolvername

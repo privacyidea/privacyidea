@@ -35,9 +35,11 @@ The file should contain the following contents::
    PI_AUDIT_KEY_PRIVATE = '/home/cornelius/src/privacyidea/private.pem'
    PI_AUDIT_KEY_PUBLIC = '/home/cornelius/src/privacyidea/public.pem'
    # PI_LOGFILE = '....'
-   # PI_LOGLEVEL = 20
+   import logging
+   # PI_LOGLEVEL = logging.DEBUG
    # PI_INIT_CHECK_HOOK = 'your.module.function'
    # PI_CSS = '/location/of/theme.css'
+   # PI_CACHE_REDIS_URL = 'localhost'
 
 
 .. note:: The config file is parsed as python code, so you can use variables to
@@ -79,4 +81,35 @@ A good stating point might be the themes at http://bootswatch.com.
 
 .. note:: If you add your own CSS file, the file *bootstrap-theme.css* will
    not be loaded anymore. So you might start with a copy of the original file.
+
+.. _caching:
+
+Caching
+-------
+
+.. index:: Caching, REDIS
+
+privacyIDEA can use the in memory key value database redis to cache certain
+functions. It caches configuration functions for 5 seconds, to avoid
+lookup of privacyIDEA settings on the database.
+
+In addition in caches LDAP requests of the LDAP resolver for 120 seconds.
+This way we avoid looking up user lists or user details multiple times.
+
+To enable the redis caching you need to specify the ``PI_REDIS_URL``
+in the *pi.cfg* file. In the simplest form it only takes the name of the
+server with the redis cache like *localhost*.
+
+A REDIUS_URL can look like this::
+
+   redis://[:password]@localhost:6379/0
+
+.. warning:: If you are using no password, every user on the privacyIDEA system
+   can read or write to the redis database and thus modify the systems
+   behaviour by faking LDAP responses and privacyIDEA config entries.
+
+
+
+
+
 

@@ -43,11 +43,12 @@ from ..models import (Realm,
 from log import log_with
 import logging
 from privacyidea.lib.utils import sanity_name_check
+from privacyidea.lib.decorators import cached
 log = logging.getLogger(__name__)
 
 
 @log_with(log)
-#@cache.memoize(10)
+@cached()
 def get_realms(realmname=""):
     '''
     either return all defined realms or a specific realm
@@ -76,7 +77,7 @@ def get_realms(realmname=""):
     return result
 
 
-#@cache.memoize(10)
+@cached()
 def get_realm(realmname):
     """
     :param realmname:
@@ -89,6 +90,7 @@ def get_realm(realmname):
 
 
 @log_with(log)
+@cached()
 def realm_is_defined(realm):
     """
     check, if a realm already exists or not
@@ -127,7 +129,7 @@ def set_default_realm(default_realm=None):
 
 
 @log_with(log)
-#@cache.memoize(10)
+@cached()
 def get_default_realm():
     """
     return the default realm
@@ -172,12 +174,6 @@ def delete_realm(realmname):
                     set_default_realm(key)
 
     return ret
-
-
-
-
-
-
 
 
 @log_with(log)

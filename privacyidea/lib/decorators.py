@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-02-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add caching decorator
+#
 #  (c) Cornelius Kölbel
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
@@ -22,9 +25,73 @@ import logging
 import functools
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.error import ParameterError
-from flask import request
+from flask import request, current_app
 from gettext import gettext as _
+import redis
+import cPickle as pickle
+from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
+
+
 log = logging.getLogger(__name__)
+
+
+def cached(time=5, skip_args=0):
+    """
+    Decorator that caches the result of a method for the specified time in
+    seconds.
+
+    :param time: The time in seconds to cache the result
+    :param skip_args: number of the args to skip. Usually this would be 1 in
+        case of LDAP.
+
+    Use it as:
+
+    @cached(time=1200)
+    def get_user(arguments):
+      ...
+    """
+
+    def decorator(function):
+        @functools.wraps(function)
+        def wrapper(*args, **kwargs):
+            redis_url = current_app.config.get("PI_REDIS_URL")
+            if redis_url:
+                redis_up = True
+                prefix = ""
+                if skip_args:
+                    if isinstance(args[0], UserIdResolver):
+                        # In case of LDAP, we need to prefix the ResolverID!
+                        prefix = args[0].resolverId
+                cache = redis.Redis.from_url(redis_url)
+                # args[0] contains the Instance of the LDAP Resolver
+                key = '%s_%s_%s_%s' % (prefix,
+                                       function.__name__,
+                                       str(args[skip_args:]),
+                                       str(kwargs))
+                # Spaces are not allowed in key
+                key = key.replace(' ', '_')
+                try:
+                    svalue = cache.get(key)
+                except redis.ConnectionError as exx:
+                    log.error('Failed to get key from redis: %s' % exx)
+                    redis_up = False
+                    svalue = None
+                if svalue:
+                    log.debug('Cache lookup for %s: Hit found' % key)
+                    value = pickle.loads(svalue)
+                else:
+                    log.debug('Cache lookup for %s: Cache empty' % key)
+                    value = function(*args, **kwargs)
+                    if redis_up:
+                        svalue = pickle.dumps(value)
+                        log.debug("Saving %s for %i seconds" % (key, time))
+                        cache.setex(key, svalue, time)
+            else:
+                value = function(*args, **kwargs)
+
+            return value
+        return wrapper
+    return decorator
 
 
 def check_token_locked(func):

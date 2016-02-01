@@ -2,6 +2,8 @@
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
+#  2016-02-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add REDIUS Cache
 #  2015-10-05 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Remove reverse_map, so that one LDAP field can map
 #             to several privacyIDEA fields.
@@ -30,7 +32,6 @@ OpenLDAP and Active Directory.
 
 The file is tested in tests/test_lib_resolver.py
 """
-
 import logging
 import ldap3
 import yaml
@@ -39,10 +40,11 @@ import traceback
 from UserIdResolver import UserIdResolver
 from gettext import gettext as _
 from privacyidea.lib.utils import to_utf8
+from privacyidea.lib.decorators import cached
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
-
+CACHE_TIME = 120
 
 class AUTHTYPE(object):
     SIMPLE = "Simple"
@@ -50,7 +52,7 @@ class AUTHTYPE(object):
     NTLM = "NTLM"
 
 
-class IdResolver (UserIdResolver):
+class IdResolver(UserIdResolver):
 
     def __init__(self):
         self.i_am_bound = False
@@ -202,6 +204,7 @@ class IdResolver (UserIdResolver):
                 raise Exception("Wrong credentials")
             self.i_am_bound = True
 
+    @cached(time=CACHE_TIME, skip_args=1)
     def getUserInfo(self, userId):
         """
         This function returns all user info for a given userid/object.
@@ -258,7 +261,8 @@ class IdResolver (UserIdResolver):
                     else:
                         ret[map_k] = ldap_v
         return ret
-    
+
+    @cached(time=CACHE_TIME, skip_args=1)
     def getUsername(self, user_id):
         """
         Returns the username/loginname for a given user_id
@@ -269,7 +273,8 @@ class IdResolver (UserIdResolver):
         """
         info = self.getUserInfo(user_id)
         return info.get('username', "")
-   
+
+    @cached(time=CACHE_TIME, skip_args=1)
     def getUserId(self, LoginName):
         """
         resolve the loginname to the userid.
@@ -304,6 +309,7 @@ class IdResolver (UserIdResolver):
 
         return userid
 
+    @cached(time=CACHE_TIME, skip_args=1)
     def getUserList(self, searchDict):
         """
         :param searchDict: A dictionary with search parameters
