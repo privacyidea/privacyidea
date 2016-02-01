@@ -561,7 +561,7 @@ class TokenInfo(MethodsMixin, db.Model):
     Type = db.Column(db.Unicode(100), default=u'')
     Description = db.Column(db.Unicode(2000), default=u'')
     token_id = db.Column(db.Integer(),
-                         db.ForeignKey('token.id'))
+                         db.ForeignKey('token.id'), index=True)
     token = db.relationship('Token',
                             lazy='joined',
                             backref='info_list')
@@ -1590,6 +1590,7 @@ def get_token_id(serial):
     """
     token = Token.query.filter(Token.serial == serial).first()
     return token.id
+
 
 def get_machineresolver_id(resolvername):
     """
