@@ -27,7 +27,8 @@
                         <translate>Users</translate>
                     </a></li>
                 <li ng-class="{active: $state.includes('user')}"
-                    ng-show="loggedInUser.role == 'user'">
+                    ng-show="loggedInUser.role == 'user' &&
+                        checkRight('updateuser')">
                     <a ui-sref="user.password">
                     <span class="glyphicon glyphicon-user"
                           aria-hidden="true"></span>
@@ -49,7 +50,7 @@
                     </a>
                 </li>
                 <li ng-class="{active: $state.includes('audit')}"
-                    ng-show="loggedInUser.role">
+                    ng-show="loggedInUser.role && checkRight('auditlog')">
                     <a ui-sref="audit">
                         <span class="glyphicon glyphicon-search"
                               aria-hidden="true"></span>
