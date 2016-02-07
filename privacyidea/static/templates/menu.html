@@ -11,7 +11,7 @@
         </button>
 
         <div class="navbar-collapse collapse myMainNavbar">
-            <ul class="nav navbar-nav">
+            <ul class="nav navbar-nav" ng-hide="token_wizard">
                 <li ng-class="{active: $state.includes('token')}"
                     ng-show="loggedInUser.role">
                     <a ui-sref="token.list">

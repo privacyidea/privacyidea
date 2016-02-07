@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-02-05 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add tokenwizard in scope UI
 #  2015-12-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add password reset policy
 #  2015-12-28 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -218,6 +220,7 @@ class ACTION(object):
     TOKENPAGESIZE = "token_page_size"
     TOKENREALMS = "tokenrealms"
     TOKENTYPE = "tokentype"
+    TOKENWIZARD = "tokenwizard"
     UNASSIGN = "unassign"
     USERLIST = "userlist"
     USERPAGESIZE = "user_page_size"
@@ -1164,6 +1167,11 @@ def get_static_policy_definitions(scope=None):
                           "templates can be found.  (Default "
                           "https://raw.githubusercontent.com/privacyidea/"
                           "policy-templates/master/templates/)")
+            },
+            ACTION.TOKENWIZARD: {
+                'type': 'bool',
+                'desc': _("As long as a user has not token, he will only see"
+                          " a token wizard in the UI.")
             },
             ACTION.DEFAULT_TOKENTYPE: {
                 'type': 'str',

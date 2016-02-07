@@ -1,7 +1,7 @@
 <div class="well" ng-controller="tokenController">
 
     <div class="row">
-        <div class="col-lg-3">
+        <div class="col-lg-3" ng-hide="token_wizard">
             <div class="pa-sidebar panel">
                 <ul class="nav nav-pills nav-stacked">
                     <li role="presentation"
@@ -22,6 +22,14 @@
                         <a ui-sref="token.enroll">
                             <span class="glyphicon glyphicon-edit"></span>
                             <translate>Enroll Token</translate>
+                        </a>
+                    </li>
+                    <li role="presentation"
+                        ng-show="loggedInUser.role == 'user'"
+                        ng-class="{active: $state.includes('token.wizard')}">
+                        <a ui-sref="token.wizard">
+                            <span class="glyphicon glyphicon-star"></span>
+                            <translate>Token enrollment wizard</translate>
                         </a>
                     </li>
                     <li role="presentation"

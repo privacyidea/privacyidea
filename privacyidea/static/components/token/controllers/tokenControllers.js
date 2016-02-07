@@ -31,6 +31,10 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
     if ($location.path() == "/token") {
         $location.path("/token/list");
     }
+    // go to token.wizard, if the wizard is defined
+    if ($scope.token_wizard) {
+        $location.path("/token/wizard");
+    }
 
     // Change the pagination
     $scope.pageChanged = function () {
@@ -116,6 +120,10 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         }
     });
 
+    $scope.qrCodeWidth = 250;
+    if ($state.includes('token.wizard')) {
+        $scope.qrCodeWidth = 500;
+    }
     $scope.loggedInUser = AuthFactory.getUser();
     $scope.newUser = {};
     $scope.tempData = {};

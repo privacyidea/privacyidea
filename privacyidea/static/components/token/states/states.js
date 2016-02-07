@@ -2,7 +2,9 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
- * 2015-11-30 Cornelius Kölbel <cornelus@privacyidea.org>
+ * 2016-02-05 Cornelius Kölbel <cornelius@privacyidea.org>
+ *     Add token enrollment wizard
+ * 2015-11-30 Cornelius Kölbel <cornelius@privacyidea.org>
  *     Add view for challenges
  * 2015-01-11 Cornelius Kölbel, <cornelius@privacyidea.org>
  *
@@ -62,6 +64,11 @@ angular.module('privacyideaApp.tokenStates', ['ui.router']).config(
                 })
                 .state('token.enroll', {
                     url: "/enroll/{realmname:.*}/{username:.*}",
+                    templateUrl: tokenpath + "token.enroll.html",
+                    controller: "tokenEnrollController"
+                })
+                .state('token.wizard', {
+                    url: "/wizard",
                     templateUrl: tokenpath + "token.enroll.html",
                     controller: "tokenEnrollController"
                 })

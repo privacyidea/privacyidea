@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-02-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add tokenwizard
 #  2015-10-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add default token type for tokenenrollment
 #  2015-09-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -52,7 +54,8 @@ import re
 import netaddr
 from privacyidea.lib.crypto import Sign
 from privacyidea.api.lib.utils import get_all_params
-from privacyidea.lib.user import split_user
+from privacyidea.lib.auth import ROLE
+from privacyidea.lib.user import (split_user, User)
 from privacyidea.lib.realm import get_default_realm
 
 
@@ -335,10 +338,10 @@ def get_webui_settings(request, response):
     content = json.loads(response.data)
     # check, if the authentication was successful, then we need to do nothing
     if content.get("result").get("status") is True:
-        _role = content.get("result").get("value").get("role")
+        role = content.get("result").get("value").get("role")
         username = content.get("result").get("value").get("username")
         # get the realm
-        _loginname, realm = split_user(username)
+        loginname, realm = split_user(username)
         if not realm:
             realm = get_default_realm()
 
@@ -367,6 +370,21 @@ def get_webui_settings(request, response):
             client=client,
             unique=True
         )
+        token_wizard = False
+        if role == ROLE.USER:
+            token_wizard_pol = policy_object.get_policies(
+                action=ACTION.TOKENWIZARD,
+                scope=SCOPE.WEBUI,
+                realm=realm,
+                client=client
+            )
+
+            if len(token_wizard_pol):
+                # We also need to check, if the user has not tokens assigned.
+                # If the user has no tokens, we run the wizard. If the user
+                # already has tokens, we do not run the wizard.
+                if get_tokens(user=User(loginname, realm), count=True) == 0:
+                    token_wizard = True
         user_details_pol = policy_object.get_policies(
             action=ACTION.USERDETAILS,
             scope=SCOPE.WEBUI,
@@ -411,6 +429,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["policy_template_url"] = policy_template_url
         content["result"]["value"]["default_tokentype"] = default_tokentype
         content["result"]["value"]["user_details"] = len(user_details_pol) > 0
+        content["result"]["value"]["token_wizard"] = token_wizard
         response.data = json.dumps(content)
     return response
 
