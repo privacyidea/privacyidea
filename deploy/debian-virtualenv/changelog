@@ -1,4 +1,4 @@
-privacyidea-venv (2.10~dev4-1) wheezy; urgency=low
+privacyidea-venv (2.10~dev6-1) wheezy; urgency=low
 
   Features
   * User Registration: A user may register himself and thus create
@@ -29,7 +29,7 @@ privacyidea-venv (2.10~dev4-1) wheezy; urgency=low
   * Fix UI displaying of saved SMS Provider.
   * Do not start challenge response with a locked/disabled token.
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 01 Feb 2016 08:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 08 Feb 2016 23:30:00 +0200
 
 privacyidea-venv (2.9-1) wheezy; urgency=low
 
