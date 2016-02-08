@@ -379,12 +379,12 @@ def get_webui_settings(request, response):
                 client=client
             )
 
-            if len(token_wizard_pol):
-                # We also need to check, if the user has not tokens assigned.
-                # If the user has no tokens, we run the wizard. If the user
-                # already has tokens, we do not run the wizard.
-                if get_tokens(user=User(loginname, realm), count=True) == 0:
-                    token_wizard = True
+            # We also need to check, if the user has not tokens assigned.
+            # If the user has no tokens, we run the wizard. If the user
+            # already has tokens, we do not run the wizard.
+            token_wizard = token_wizard_pol and \
+                           get_tokens(user=User(loginname, realm),
+                                      count=True) == 0
         user_details_pol = policy_object.get_policies(
             action=ACTION.USERDETAILS,
             scope=SCOPE.WEBUI,
