@@ -3,23 +3,9 @@
 <!-- hide the form, after the token was enrolled -->
 <div ng-hide="enrolledToken">
     <!-- Configurable prolog -->
-        <div ng-show="$state.includes('token.wizard')">
-          <div class="alert alert-info alert-dismissible" role="alert">
-        <button class="close" aria-label="Close" data-dismiss="alert" type="button">
-          <span aria-hidden="true">&times;</span>
-        </button>
-        <translate>
-              Please ensure you have your OTP client on your mobile device ready!
-        </translate>
-      </div>
-
-    <p>This is the enrollment1-prologue - When you click on the "Enroll Token" below,
-        a QR code will be displayed, and you will use
-        your OTP client app to take an image of the displayed
-        QR code. Allowing your app to capture the QR code image
-        will prepare your multi-factor app and your account for use.
-      </p>
-        </div>
+    <div ng-if="$state.includes('token.wizard')"
+         ng-include="instanceUrl+
+         '/static/components/token/views/token.enroll.pre.top.html'"></div>
 
     <form name="formEnrollToken" role="form" validate>
 
@@ -121,17 +107,10 @@
     </form>
 
     <!-- Configurable epilog -->
-    <div ng-show="$state.includes('token.wizard')">
-      <h3>This is the enrollment1-epilogue - NOTICE TO USERS</h3>
-      <p>
-        This is your personal legal disclaimer.
-      </p>
+    <div ng-if="$state.includes('token.wizard')"
+         ng-include="instanceUrl+
+         '/static/components/token/views/token.enroll.pre.bottom.html'"></div>
 
-      <p>Any or all uses of this system and all files on this system may be
-        intercepted....</p>
-
-      <p>Unauthorized or improper use of this system may result in...</p>
-    </div>
 </div>
 
 <!-- Show this information after the token was enrolled -->
@@ -153,18 +132,18 @@
         </span>
     </p>
 
-    <div ng-show="$state.includes('token.wizard')">
-        Show the configurable epilog part 1.
-    </div>
+    <div ng-if="$state.includes('token.wizard')"
+         ng-include="instanceUrl+
+         '/static/components/token/views/token.enroll.post.top.html'"></div>
 
     <!-- This is the token data section. It differs for every token type-->
     <ng-include src="instanceUrl +
     '/static/components/token/views/token.enrolled.' + form.type + '.html'">
     </ng-include>
 
-    <div ng-show="$state.includes('token.wizard')">
-        Show the configurable epilog part 2.
-    </div>
+    <div ng-if="$state.includes('token.wizard')"
+         ng-include="instanceUrl+
+         '/static/components/token/views/token.enroll.post.bottom.html'"></div>
 
     <div class="text-center" ng-hide="click_wait">
         <button ng-click="enrolledToken = null;"

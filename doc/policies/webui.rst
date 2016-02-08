@@ -130,3 +130,34 @@ type: str
 You can define which is the default tokentype when enrolling a new token in
 the Web UI. This is the token, which will be selected, when entering the
 enrollment dialog.
+
+
+.. _policy_token_wizard:
+
+tokenwizard
+~~~~~~~~~~~
+
+.. index:: Wizard, Token wizard
+
+type: bool
+
+If this policy is set and the user has no token, then the user will only see
+an easy token wizard to enroll his first token. If the user has enrolled his
+first token and he logs in to the web UI, he will see the normal view.
+
+The user will enroll a token defined in :ref:`policy_default_tokentype`.
+
+Other sensible policies to combine are in :ref:`user_policies` the OTP
+length, the TOTP timestep and the HASH-lib.
+
+You can add a prologue and epilog to the enrollment wizard in the greeting
+and after the token is enrolled and e.g. the QR code is displayed.
+
+Create the files
+
+ * static/components/token/views/token.enroll.pre.top.html
+ * static/components/token/views/token.enroll.pre.bottom.html
+ * static/components/token/views/token.enroll.post.top.html
+ * static/components/token/views/token.enroll.post.bottom.html
+
+to display the contents in the first step (pre) or in the second step (post).
