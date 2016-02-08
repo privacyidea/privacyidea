@@ -6,6 +6,7 @@ privacyidea-venv (2.10~dev4-1) wheezy; urgency=low
   * Password Reset: Using a recovery token a user may issue a
     password reset without bothering the administrator or the
     help desk.
+  * Enrollment Wizard for easy user token enrollment
   * SMTP Servers: Define several system wide SMTP settings and use
     these for
     * Email token,

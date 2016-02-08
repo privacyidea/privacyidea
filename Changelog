@@ -6,6 +6,7 @@ Version 2.10, 2016-02-11
   * Password Reset: Using a recovery token a user may issue a 
     password reset without bothering the administrator or the 
     help desk.
+  * Enrollment Wizard for easy user token enrollment
   * SMTP Servers: Define several system wide SMTP settings and use
     these for 
     * Email token,
