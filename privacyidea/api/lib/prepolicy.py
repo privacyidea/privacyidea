@@ -531,10 +531,10 @@ def check_base_action(request=None, action=None, anonymous=False):
         parameters.
     :return: True otherwise raises an Exception
     """
-    ERROR = {"user": "User actions are defined, but this action is not "
-                     "allowed!",
-             "admin": "Admin actions are defined, but this action is not "
-                      "allowed!"}
+    ERROR = {"user": "User actions are defined, but the action %s is not "
+                     "allowed!" % action,
+             "admin": "Admin actions are defined, but the action %s is not "
+                      "allowed!" % action}
     params = request.all_data
     policy_object = g.policy_object
     username = g.logged_in_user.get("username")
@@ -542,6 +542,8 @@ def check_base_action(request=None, action=None, anonymous=False):
     scope = SCOPE.ADMIN
     admin_realm = g.logged_in_user.get("realm")
     realm = params.get("realm")
+    if type(realm) == list and len(realm) == 1:
+        realm = realm[0]
 
     if role == "user":
         scope = SCOPE.USER
