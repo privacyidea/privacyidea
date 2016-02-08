@@ -155,6 +155,15 @@
                                     .allowedValues"
                                     >
                             </select>
+                            <select class="form-control"
+                                    ng-show="action.allowedValues && action.type=='text'"
+                                    ng-model="actionValuesText[action.name]"
+                                    ng-disabled="!actionCheckBox[action.name]"
+                                    name="action.name"
+                                    ng-options="select for select in action
+                                    .allowedValues"
+                                    >
+                            </select>
                             <input type="text"
                                    placeholder="text..."
                                    ng-model="actionValuesStr[action.name]"
@@ -170,6 +179,13 @@
                                    ng-required="actionCheckBox[action.name] &&action
                                    .type=='num'"
                                    class="form-control"/>
+                            <textarea
+                                   ng-model="actionValuesText[action.name]"
+                                   ng-show="action.type=='text' && !action.allowedValues"
+                                   ng-disabled="!actionCheckBox[action.name]"
+                                   ng-required="actionCheckBox[action.name] &&action
+                                   .type=='text'"
+                                   class="form-control"></textarea>
                         </td>
                         <td>
                             <p class="help-block">

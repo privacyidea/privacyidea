@@ -209,6 +209,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             $scope.actionValuesStr = {};
             $scope.actionValuesNum = {};
             $scope.actionCheckBox = {};
+            $scope.actionValuesText = {};
             $scope.actions = [];
             // This scope contains action values. We need to create
             // a list of checkboxes and input fields.
@@ -225,6 +226,8 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
                             $scope.actionValuesStr[key] = policyActions[key];
                         if (value.type === "int")
                             $scope.actionValuesNum[key] = parseInt(policyActions[key]);
+                        if (value.type === "text")
+                            $scope.actionValuesText[key] = policyActions[key];
                     }
                 }
             });
@@ -252,6 +255,10 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
                     // The action is checked. So try to get an action value.
                     // either a string, a num or only a bool
                     var aval = $scope.actionValuesStr[key];
+                    if (!aval) {
+                        // No 'str' so lets try a 'text'.
+                        aval = $scope.actionValuesText[key];
+                    }
                     if (aval) {
                         $scope.params.action.push(key + "=" + aval);
                     } else {
