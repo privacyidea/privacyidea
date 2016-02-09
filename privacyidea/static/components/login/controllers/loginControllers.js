@@ -40,6 +40,8 @@ angular.module("privacyideaApp")
     $scope.passwordReset = obj.val();
     obj = angular.element(document.querySelector("#HSM_READY"));
     $scope.hsmReady = obj.val();
+    obj = angular.element(document.querySelector("#CUSTOMIZATION"));
+    $scope.piCustomization = obj.val();
     // Check if registration is allowed
     $scope.registrationAllowed = false;
     RegisterFactory.status(function (data) {

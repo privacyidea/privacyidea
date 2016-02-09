@@ -155,9 +155,14 @@ and after the token is enrolled and e.g. the QR code is displayed.
 
 Create the files
 
- * static/components/token/views/token.enroll.pre.top.html
- * static/components/token/views/token.enroll.pre.bottom.html
- * static/components/token/views/token.enroll.post.top.html
- * static/components/token/views/token.enroll.post.bottom.html
+ * static/customize/views/includes/token.enroll.pre.top.html
+ * static/customize/views/includes/token.enroll.pre.bottom.html
+ * static/customize/views/includes/token.enroll.post.top.html
+ * static/customize/views/includes/token.enroll.post.bottom.html
 
 to display the contents in the first step (pre) or in the second step (post).
+
+.. note:: You can change the directory *static/customize* to a URL that fits
+   your needs the best by defining a variable `PI_CUSTOMIZATION` in the file
+   *pi.cfg*. This way you can put all modifications in one place apart from
+   the original code.

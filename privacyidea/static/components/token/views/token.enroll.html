@@ -4,8 +4,8 @@
 <div ng-hide="enrolledToken">
     <!-- Configurable prolog -->
     <div ng-if="$state.includes('token.wizard')"
-         ng-include="instanceUrl+
-         '/static/components/token/views/token.enroll.pre.top.html'"></div>
+         ng-include="instanceUrl+'/'+piCustomization+
+         '/views/includes/token.enroll.pre.top.html'"></div>
 
     <form name="formEnrollToken" role="form" validate>
 
@@ -108,8 +108,8 @@
 
     <!-- Configurable epilog -->
     <div ng-if="$state.includes('token.wizard')"
-         ng-include="instanceUrl+
-         '/static/components/token/views/token.enroll.pre.bottom.html'"></div>
+         ng-include="instanceUrl+'/'+piCustomization+
+         '/views/includes/token.enroll.pre.bottom.html'"></div>
 
 </div>
 
@@ -134,8 +134,8 @@
     </p>
 
     <div ng-if="$state.includes('token.wizard')"
-         ng-include="instanceUrl+
-         '/static/components/token/views/token.enroll.post.top.html'"></div>
+         ng-include="instanceUrl+'/'+piCustomization+
+         '/views/includes/token.enroll.post.top.html'"></div>
 
     <!-- This is the token data section. It differs for every token type-->
     <ng-include src="instanceUrl +
@@ -143,8 +143,8 @@
     </ng-include>
 
     <div ng-if="$state.includes('token.wizard')"
-         ng-include="instanceUrl+
-         '/static/components/token/views/token.enroll.post.bottom.html'"></div>
+         ng-include="instanceUrl+'/'+piCustomization+
+         '/views/includes/token.enroll.post.bottom.html'"></div>
 
     <div class="text-center" ng-hide="click_wait">
         <button ng-click="enrolledToken = null;"
