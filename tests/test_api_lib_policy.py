@@ -22,7 +22,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             no_detail_on_success,
                                             no_detail_on_fail, autoassign,
-                                            offline_info, sign_response)
+                                            offline_info, sign_response,
+                                            get_webui_settings)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token)
 from privacyidea.lib.user import User
@@ -1041,8 +1042,6 @@ class PostPolicyDecoratorTestCase(MyTestCase):
 
         delete_policy("pol2")
 
-
-
     def test_06_offline_auth(self):
         # Test that a machine definition will return offline hashes
         self.setUp_user_realms()
@@ -1121,3 +1120,59 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         jresult = json.loads(new_response.data)
         self.assertEqual(jresult.get("nonce"), "12345678")
         self.assertEqual(jresult.get("signature"), "7220461805369685253863294214862525311437731987121534735993146952136348520396812489782945679627890785973634896605293523175424850299832912878523161817380029213546063467888018205435416020286712762804412024065559270543774578319469096483246637875013247101135063221604113204491121777932147776087110152414627230087278622508771143940031542890514380486863296102037208395371717795767683973979032142677315402422403254992482761563612174177151960004042109847122772813717599078313600692433727690239340230353616318691769042290314664126975201679642739717702497638318611217001361093950139025744740660953017413716736691777322916588328")
+
+    def test_08_get_webui_settings(self):
+        # Test that a machine definition will return offline hashes
+        self.setUp_user_realms()
+        serial = "offline01"
+        tokenobject = init_token({"serial": serial, "type": "hotp",
+                                  "otpkey": "3132333435363738393031"
+                                            "323334353637383930",
+                                  "pin": "offline",
+                                  "user": "cornelius"})
+
+        # Set the Machine and MachineToken
+        resolver1 = save_resolver({"name": "reso1",
+                                   "type": "hosts",
+                                   "filename": HOSTSFILE})
+
+        mt = attach_token(serial, "offline", hostname="gandalf")
+        self.assertEqual(mt.token.serial, serial)
+        self.assertEqual(mt.token.machine_list[0].machine_id, "192.168.0.1")
+
+        # The request with an OTP value and a PIN of a user, who has not
+        # token assigned
+        builder = EnvironBuilder(method='POST',
+                                 data={},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "192.168.0.1"
+        req = Request(env)
+        req.all_data = {"user": "cornelius",
+                        "pass": "offline287082"}
+
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": {"role": "user",
+                                    "username": "cornelius"}},
+               "version": "privacyIDEA test",
+               "detail": {"serial": serial},
+               "id": 1}
+        resp = Response(json.dumps(res))
+
+        new_response = get_webui_settings(req, resp)
+        jresult = json.loads(new_response.data)
+        self.assertEqual(jresult.get("result").get("value").get(
+            "token_wizard"), False)
+
+        # Set a policy. User has not token, so "token_wizard" will be True
+        set_policy(name="pol_wizard",
+                   scope=SCOPE.WEBUI,
+                   action=ACTION.TOKENWIZARD)
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        jresult = json.loads(new_response.data)
+        self.assertEqual(jresult.get("result").get("value").get(
+            "token_wizard"), True)
+
+        delete_policy("pol_wizard")

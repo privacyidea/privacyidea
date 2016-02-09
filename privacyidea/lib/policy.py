@@ -1170,7 +1170,7 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.TOKENWIZARD: {
                 'type': 'bool',
-                'desc': _("As long as a user has not token, he will only see"
+                'desc': _("As long as a user has no token, he will only see"
                           " a token wizard in the UI.")
             },
             ACTION.DEFAULT_TOKENTYPE: {
