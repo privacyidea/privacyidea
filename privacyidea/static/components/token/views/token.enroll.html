@@ -37,8 +37,7 @@
         </div>
         <!-- Token PIN -->
         <div class="form-group"
-             ng-show="loggedInUser.role == 'user' && !hidePin"
-             ng-hide="$state.includes('token.wizard')">
+             ng-show="loggedInUser.role == 'user' && !hidePin && !$state.includes('token.wizard')">
             <label for="otppin" translate>PIN</label>
             <input name="otppin" ng-model="newUser.pin"
                    type=password class="form-control"
