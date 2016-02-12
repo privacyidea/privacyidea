@@ -1,3 +1,7 @@
+privacyidea-venv (2.10~dev0-1) wheezy; urgency=low
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 12 Feb 2016 00:01:00 +0200
+
 privacyidea-venv (2.10-1) wheezy; urgency=low
 
   Features
