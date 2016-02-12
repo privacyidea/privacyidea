@@ -336,7 +336,7 @@ class IdResolver (UserIdResolver):
             hr = hashfunc(password)
             hr.update(salt)
             return digest == hr.digest()
-        97
+        
         def _check_sha(pw_hash, password):
             b64_db_password = pw_hash[5:]
             hr = hashlib.sha1(password).digest()
