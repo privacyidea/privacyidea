@@ -175,7 +175,19 @@ which privayIDEA attribute. The known attributes are:
  * mobile,
  * email,
  * givenname,
- * surname.
+ * surname,
+ * password.
+
+The ``password`` attribute is the database column that contains the user
+password. This is used, if you are doing user authentication against the SQL
+database.
+
+.. note:: There is no standard way to store passwords in an SQL database.
+   There are several different ways to do this. privacyIDEA supports the most
+   common ways like Wordpress hashes starting with *$P* or *$S*. Secure hashes
+   starting with *{SHA}* or salted secure hashes starting with *{SSHA}*,
+   *{SSHA256}* or *{SSHA512}*. Password hashes of length 64 are interpreted as
+   OTRS sha256 hashes.
 
 You can add an additional ``Where statement`` if you do not want to use
 all users from the table.
