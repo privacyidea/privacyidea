@@ -1,3 +1,12 @@
+privacyidea-venv (2.10.1-1) wheezy; urgency=low
+
+  * Fix double PIN entry
+  * Fix SMTP UI
+  * Fix Migration script directory
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Tue, 16 Feb 2016 16:12:00 +0200
+
+
 privacyidea-venv (2.10-1) wheezy; urgency=low
 
   Features
