@@ -5,7 +5,7 @@ import glob
 import sys
 
 #VERSION="2.1dev4"
-VERSION="2.10dev0"
+VERSION="2.11dev0"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -20,6 +20,13 @@ def get_file_contents(file_path):
     except:
         print >> sys.stderr, "### could not open file %r" % file_path
     return content
+
+def get_file_list(file_path):
+    full_path = os.path.join(package_directory, file_path)
+    file_list = os.listdir(full_path)
+    # now we need to add the path to the files
+    return [ file_path + f for f in file_list ]
+
 
 install_requires = ["Flask>=0.10.1",
                     "Flask-Migrate>=1.2.0",
@@ -127,12 +134,7 @@ setup(
                   "migrations/README",
                   "migrations/script.py.mako"]),
                 ('lib/privacyidea/migrations/versions',
-                 ["migrations/versions/2551ee982544_.py",
-                  "migrations/versions/4f32a4e1bf33_.py",
-                  "migrations/versions/2181294eed0b_.py",
-                  "migrations/versions/e5cbeb7c177_.py",
-                  "migrations/versions/4d9178fa8336_.py",
-                  "migrations/versions/20969b4cbf06_.py"])
+                 get_file_list("migrations/versions/"))
                 ],
     classifiers=["Framework :: Flask",
                  "License :: OSI Approved :: "
