@@ -835,8 +835,8 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
         $scope.params.USERINFO = '{ "username": "sAMAccountName", "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }';
         $scope.params.NOREFERRALS = true;
         $scope.params.SIZELIMIT = 500;
-        $scope.params.UIDTYPE = "DN";
-        $scope.params.AUTHTYPE = "NTLM";
+        $scope.params.UIDTYPE = "objectGUID";
+        $scope.params.AUTHTYPE = "Simple";
         $scope.params.SCOPE = "SUBTREE";
     };
 

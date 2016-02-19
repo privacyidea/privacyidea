@@ -32,6 +32,8 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 'userPassword': 'alicepw',
                                 'oid': "2",
                                 "email": "alice@test.com",
+                                "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
+                                              '\x9b\xf9\xcajl\rMw1',
                                 'mobile': ["1234", "45678"]}},
                 {"dn": 'cn=bob,ou=example,o=test',
                  "attributes": {'cn': 'bob',
@@ -40,6 +42,8 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "email": "bob@example.com",
                                 "mobile": "123456",
                                 'userPassword': 'bobpwééé',
+                                "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
+                                              '\x9b\xf9\xcajl\rMw',
                                 'oid': "3"}},
                 {"dn": 'cn=manager,ou=example,o=test',
                  "attributes": {'cn': 'manager',
@@ -48,6 +52,8 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "email": "ck@o",
                                 "mobile": "123354",
                                 'userPassword': 'ldaptest',
+                                "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
+                                              '\x9b\xf9\xcajl\rMT',
                                 'oid': "1"}}]
 
 
@@ -829,6 +835,30 @@ class LDAPResolverTestCase(MyTestCase):
                              "info": "this is located on another LDAP"}])
 
         self.assertEqual(len(r), 2)
+
+    @ldap3mock.activate
+    def test_09_test_objectGUID(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'LDAPFILTER': '(&(cn=%s))',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'NOREFERRALS': True
+        })
+        user_id = y.getUserId("bob")
+        res = y.checkPass(user_id, "bobpwééé")
+        self.assertTrue(res)
 
 
 class BaseResolverTestCase(MyTestCase):

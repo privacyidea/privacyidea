@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+2016-02-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+           Add the possibility to check objectGUID
 2015-01-31 Change responses.py to be able to run with SMTP
         Cornelius Kölbel <cornelius@privacyidea.org>
 
@@ -25,6 +27,7 @@ from __future__ import (
 
 import six
 import ldap3
+from ldap3.utils.conv import check_escape
 
 try:
     from six import cStringIO as BufferIO
@@ -119,7 +122,7 @@ class Connection(object):
             cur = cur[1:-1]
             (k, v) = cur.split("=")
             if v != "*":
-                condition[k] = v
+                condition[k] = check_escape(v)
             search_filter = search_filter[pos:]
         for entry in self.directory:
             dn = entry.get("dn")
@@ -128,16 +131,21 @@ class Connection(object):
                 filtered = False
                 for k, v in condition.iteritems():
                     filtered = True
-                    if entry.get("attributes").get(k) == v:
-                        # exact matching
-                        filtered = False
-                    elif "*" in v:
-                        # rough substring matching
-                        # We assume, that there are only leading and trailing
-                        #  asterisks
-                        v = v.replace("*", "")
-                        if v in entry.get("attributes").get(k, ""):
+                    try:
+                        if entry.get("attributes").get(k) == v:
+                            # exact matching
                             filtered = False
+                        elif "*" in v:
+                            # rough substring matching
+                            # We assume, that there are only leading and
+                            # trailing asterisks
+                            v = v.replace("*", "")
+                            if v in entry.get("attributes").get(k, ""):
+                                filtered = False
+                    except UnicodeDecodeError:
+                        # This happens when we check for a "*" in the binary
+                        # string as it occurs in objectGUID
+                        pass
                 if not filtered:
                     entry["type"] = "searchResEntry"
                     self.response.append(entry)
