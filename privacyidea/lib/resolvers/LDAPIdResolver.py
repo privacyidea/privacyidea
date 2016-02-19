@@ -35,6 +35,8 @@ import logging
 import ldap3
 import yaml
 import traceback
+import uuid
+import base64
 
 from UserIdResolver import UserIdResolver
 from gettext import gettext as _
@@ -154,6 +156,9 @@ class IdResolver (UserIdResolver):
                 uid = attributes.get(uidtype)[0]
             else:
                 uid = attributes.get(uidtype)
+            # in case: fix the objectGUID
+            if uidtype == "objectGUID":
+                uid = str(uuid.UUID(bytes_le=uid))
         return uid
         
     def _getDN(self, userId):
@@ -170,6 +175,10 @@ class IdResolver (UserIdResolver):
         if self.uidtype.lower() == "dn":
             dn = userId
         else:
+            if self.uidtype == "objectGUID":
+                userId_b = uuid.UUID("{%s}" % userId).bytes_le
+                from ldap3.utils.conv import escape_bytes
+                userId = escape_bytes(userId_b)
             # get the DN for the Object
             self._bind()
             filter = "(&%s(%s=%s))" % \
