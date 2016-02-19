@@ -2,6 +2,8 @@
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
+#  2016-02-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Allow objectGUID to be the uid.
 #  2015-10-05 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Remove reverse_map, so that one LDAP field can map
 #             to several privacyIDEA fields.
@@ -36,7 +38,7 @@ import ldap3
 import yaml
 import traceback
 import uuid
-import base64
+from ldap3.utils.conv import escape_bytes
 
 from UserIdResolver import UserIdResolver
 from gettext import gettext as _
@@ -176,17 +178,16 @@ class IdResolver (UserIdResolver):
             dn = userId
         else:
             if self.uidtype == "objectGUID":
-                userId_b = uuid.UUID("{%s}" % userId).bytes_le
-                from ldap3.utils.conv import escape_bytes
-                userId = escape_bytes(userId_b)
+                userId = uuid.UUID("{%s}" % userId).bytes_le
+                userId = escape_bytes(userId)
             # get the DN for the Object
             self._bind()
             filter = "(&%s(%s=%s))" % \
                 (self.searchfilter, self.uidtype, userId)
             self.l.search(search_base=self.basedn,
-                              search_scope=self.scope,
-                              search_filter=filter,
-                              attributes=self.userinfo.values())
+                          search_scope=self.scope,
+                          search_filter=filter,
+                          attributes=self.userinfo.values())
             r = self.l.response
             r = self._trim_result(r)
             if len(r) > 1:  # pragma: no cover
