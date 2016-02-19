@@ -339,11 +339,9 @@ def get_webui_settings(request, response):
     # check, if the authentication was successful, then we need to do nothing
     if content.get("result").get("status") is True:
         role = content.get("result").get("value").get("role")
-        username = content.get("result").get("value").get("username")
-        # get the realm
-        loginname, realm = split_user(username)
-        if not realm:
-            realm = get_default_realm()
+        loginname = content.get("result").get("value").get("username")
+        realm = content.get("result").get("value").get("realm")
+        realm = realm or get_default_realm()
 
         policy_object = g.policy_object
         try:
