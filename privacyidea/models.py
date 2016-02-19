@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 #
-# Nov 11, 2014 Cornelius Kölbel, info@privacyidea.org
-# http://www.privacyidea.org
-#
+#  2016-02-19 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Add radiusserver table
 #  2015-08-27 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Add revocation of token
+# Nov 11, 2014 Cornelius Kölbel, info@privacyidea.org
+# http://www.privacyidea.org
 #
 # privacyIDEA is a fork of LinOTP. This model definition
 # is based on the LinOTP model.
@@ -1632,6 +1633,59 @@ def get_machinetoken_id(machine_id, resolver_name, serial, application):
     if mt:
         ret = mt.id
     return ret
+
+
+class RADIUSServer(MethodsMixin, db.Model):
+    """
+    This table can store configurations of RADIUS servers.
+    https://github.com/privacyidea/privacyidea/issues/321
+
+    It saves
+    * a unique name
+    * a description
+    * an IP address a
+    * a Port
+    * a secret
+
+    These RADIUS server definition can be used in RADIUS tokens or in a
+    radius passthru policy.
+    """
+    __tablename__ = 'radiusserver'
+    id = db.Column(db.Integer, primary_key=True)
+    # This is a name to refer to
+    identifier = db.Column(db.Unicode(255), nullable=False, unique=True)
+    # This is the FQDN or the IP address
+    server = db.Column(db.Unicode(255), nullable=False)
+    port = db.Column(db.Integer, default=25)
+    secret = db.Column(db.Unicode(255), default=u"")
+    description = db.Column(db.Unicode(2000), default=u'')
+
+    def save(self):
+        """
+        If a RADIUS server with a given name is save, then the existing
+        RADIUS server is updated.
+        """
+        radius = RADIUSServer.query.filter(RADIUSServer.identifier ==
+                                           self.identifier).first()
+        if radius is None:
+            # create a new one
+            db.session.add(self)
+            db.session.commit()
+            ret = self.id
+        else:
+            # update
+            values = {"server": self.server}
+            if self.port is not None:
+                values["port"] = self.port
+            if self.secret is not None:
+                values["secret"] = self.password
+            if self.description is not None:
+                values["description"] = self.description
+            SMTPServer.query.filter(SMTPServer.identifier ==
+                                    self.identifier).update(values)
+            ret = radius.id
+        db.session.commit()
+        return ret
 
 
 class SMTPServer(MethodsMixin, db.Model):
