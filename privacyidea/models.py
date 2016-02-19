@@ -1678,11 +1678,11 @@ class RADIUSServer(MethodsMixin, db.Model):
             if self.port is not None:
                 values["port"] = self.port
             if self.secret is not None:
-                values["secret"] = self.password
+                values["secret"] = self.secret
             if self.description is not None:
                 values["description"] = self.description
-            SMTPServer.query.filter(SMTPServer.identifier ==
-                                    self.identifier).update(values)
+            RADIUSServer.query.filter(RADIUSServer.identifier ==
+                                      self.identifier).update(values)
             ret = radius.id
         db.session.commit()
         return ret
