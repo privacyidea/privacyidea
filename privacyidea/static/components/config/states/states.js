@@ -174,5 +174,20 @@ angular.module('privacyideaApp.configStates', ['ui.router']).config(
                     templateUrl: configpath + "config.smtp.edit.html",
                     controller: "smtpServerController"
                 })
+                .state('config.radius', {
+                    url: "/radius",
+                    templateUrl: configpath + "config.radius.html",
+                    controller: "radiusServerController"
+                })
+                .state('config.radius.list', {
+                    url: "/list",
+                    templateUrl: configpath + "config.radius.list.html",
+                    controller: "radiusServerController"
+                })
+                .state('config.radius.edit', {
+                    url: "/edit/{identifier:.*}",
+                    templateUrl: configpath + "config.radius.edit.html",
+                    controller: "radiusServerController"
+                })
             ;
         }]);

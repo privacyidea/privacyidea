@@ -67,6 +67,7 @@ myApp.constant("policyUrl", backendUrl + instance + "/policy");
 myApp.constant("registerUrl", backendUrl + instance + "/register");
 myApp.constant("CAConnectorUrl", backendUrl + instance + "/caconnector");
 myApp.constant("smtpServerUrl", backendUrl + instance + "/smtpserver");
+myApp.constant("radiusServerUrl", backendUrl + instance + "/radiusserver");
 myApp.constant("recoveryUrl", backendUrl + instance + "/recover");
 myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
         function ($rootScope, $state, $stateParams, gettextCatalog) {

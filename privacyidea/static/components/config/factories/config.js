@@ -52,6 +52,7 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
                                          resolverUrl, realmUrl,
                                          machineResolverUrl,
                                          policyUrl, smtpServerUrl,
+                                         radiusServerUrl,
                                          defaultRealmUrl, systemUrl,
                                          CAConnectorUrl, inform) {
     /**
@@ -300,6 +301,32 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
         },
         testSmtp: function(params, callback) {
             $http.post(smtpServerUrl + "/send_test_email", params, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
+        getRadius: function(callback, identifier) {
+            if (!identifier) {identifier = "";}
+            $http.get(radiusServerUrl + "/" + identifier, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
+        delRadius: function(identifier, callback) {
+            $http.delete(radiusServerUrl + "/" + identifier, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
+        addRadius: function(params, callback) {
+            var identifier = params["identifier"];
+            $http.post(radiusServerUrl + "/" + identifier, params, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
+        testRadius: function(params, callback) {
+            $http.post(radiusServerUrl + "/test_request", params, {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken(),
                           'Content-Type': 'application/json'}
             }).success(callback).error(error_func);
