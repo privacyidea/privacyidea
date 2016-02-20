@@ -231,6 +231,7 @@ class ACTION(object):
     APIKEY = "api_key_required"
     SETHSM = "set_hsm_password"
     SMTPSERVERWRITE = "smtpserver_write"
+    RADIUSSERVERWRITE = "radiusserver_write"
 
 
 class LOGINMODE(object):
@@ -873,7 +874,11 @@ def get_static_policy_definitions(scope=None):
                                              "the list of active challenges.")},
             ACTION.SMTPSERVERWRITE: {'type': 'bool',
                                      'desc': _("Admin is allowed to write new "
-                                               "SMTP server definitions.")}
+                                               "SMTP server definitions.")},
+            ACTION.RADIUSSERVERWRITE: {'type': 'bool',
+                                       'desc': _("Admin is allowed to write "
+                                                 "new RADIUS server "
+                                                 "definitions.")}
 
         },
         # 'gettoken': {

@@ -47,6 +47,7 @@ from .caconnector import caconnector_blueprint
 from .token import token_blueprint
 from .system import system_blueprint
 from .smtpserver import smtpserver_blueprint
+from .radiusserver import radiusserver_blueprint
 from .recover import recover_blueprint
 from .register import register_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
@@ -75,6 +76,7 @@ def before_user_request():
 @policy_blueprint.before_request
 @application_blueprint.before_request
 @smtpserver_blueprint.before_request
+@radiusserver_blueprint.before_request
 @admin_required
 def before_admin_request():
     before_request()
@@ -145,6 +147,7 @@ def before_request():
 @machineresolver_blueprint.after_request
 @caconnector_blueprint.after_request
 @smtpserver_blueprint.after_request
+@radiusserver_blueprint.after_request
 @postrequest(sign_response, request=request)
 def after_request(response):
     """

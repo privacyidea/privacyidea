@@ -3,7 +3,7 @@
 # http://www.privacyidea.org
 # (c) Cornelius Kölbel
 #
-# 2014-12-27 Cornelius Kölbel, <cornelius@privacyidea.org>
+# 2015-12-27 Cornelius Kölbel, <cornelius@privacyidea.org>
 #            Implement REST API, create, update, delete, list
 #            for SMTP server definitions
 #

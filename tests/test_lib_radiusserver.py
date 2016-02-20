@@ -8,7 +8,7 @@ from privacyidea.lib.radiusserver import (add_radius, delete_radius,
                                           RADIUSServer)
 from privacyidea.lib.config import set_privacyidea_config
 import radiusmock
-DICT_FILE="tests/testdata/dictionary"
+DICT_FILE = "tests/testdata/dictionary"
 
 
 class RADIUSServerTestCase(MyTestCase):
