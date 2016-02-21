@@ -62,9 +62,11 @@ def create(identifier=None):
     port = int(getParam(param, "port", default=1812))
     secret = getParam(param, "secret", required)
     description = getParam(param, "description", default="")
+    dictionary = getParam(param, "dictionary",
+                          default="/etc/privacyidea/dictionary")
 
     r = add_radius(identifier, server, secret, port=port,
-                   description=description)
+                   description=description, dictionary=dictionary)
 
     g.audit_object.log({'success': r > 0,
                         'info':  r})
@@ -83,6 +85,7 @@ def list_radius():
         # We do not add the secret!
         res[server.config.identifier] = {"server": server.config.server,
                                          "port": server.config.port,
+                                         "dictionary": server.config.dictionary,
                                          "description":
                                              server.config.description}
     g.audit_object.log({'success': True})
@@ -120,9 +123,11 @@ def test():
     secret = getParam(param, "secret", required)
     user = getParam(param, "username", required)
     password = getParam(param, "password", required)
+    dictionary = getParam(param, "dictinoary",
+                          default="/etc/privacyidea/dictinoary")
 
     s = RADIUSServerDB(identifier=identifier, server=server, port=port,
-                       secret=secret)
+                       secret=secret, dictionary=dictionary)
     r = RADIUSServer.request(s, user, password)
 
     g.audit_object.log({'success': r > 0,

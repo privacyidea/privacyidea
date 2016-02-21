@@ -152,7 +152,8 @@ def get_radiusservers(identifier=None, server=None):
 
 
 @log_with(log)
-def add_radius(identifier, server, secret, port=1812, description=""):
+def add_radius(identifier, server, secret, port=1812, description="",
+               dictionary='/etc/privacyidea/dictionary'):
     """
     This adds a RADIUS server to the RADIUSServer database table.
 
@@ -165,6 +166,12 @@ def add_radius(identifier, server, secret, port=1812, description=""):
     :type identifier: basestring
     :param server: The FQDN or IP address of the RADIUS server
     :type server: basestring
+    :param secret: The RADIUS secret
+    :param port: the radius port
+    :type port: int
+    :param description: Human readable description of the RADIUS server
+        definition
+    :param dictionary: The RADIUS dictionary
     :return: The Id of the database object
     """
     cryptedSecret = encryptPassword(secret)

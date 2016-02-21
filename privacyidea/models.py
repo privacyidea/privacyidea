@@ -1658,6 +1658,8 @@ class RADIUSServer(MethodsMixin, db.Model):
     server = db.Column(db.Unicode(255), nullable=False)
     port = db.Column(db.Integer, default=25)
     secret = db.Column(db.Unicode(255), default=u"")
+    dictionary = db.Column(db.Unicode(255),
+                           default="/etc/privacyidea/dictionary")
     description = db.Column(db.Unicode(2000), default=u'')
 
     def save(self):
@@ -1679,6 +1681,8 @@ class RADIUSServer(MethodsMixin, db.Model):
                 values["port"] = self.port
             if self.secret is not None:
                 values["secret"] = self.secret
+            if self.dictionary is not None:
+                values["dictionary"] = self.dictionary
             if self.description is not None:
                 values["description"] = self.description
             RADIUSServer.query.filter(RADIUSServer.identifier ==

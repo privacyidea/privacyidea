@@ -471,7 +471,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:25
 #: privacyidea/static/components/config/views/config.policies.details.html:17
 #: privacyidea/static/components/config/views/config.policies.list.html:53
-#: privacyidea/static/components/config/views/config.radius.list.html:25
+#: privacyidea/static/components/config/views/config.radius.list.html:29
 #: privacyidea/static/components/config/views/config.realms.list.html:64
 #: privacyidea/static/components/config/views/config.resolvers.list.html:24
 #: privacyidea/static/components/config/views/config.smtp.list.html:34
@@ -494,8 +494,8 @@ msgstr ""
 msgid "Deprecated configuration"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.radius.edit.html:58
-#: privacyidea/static/components/config/views/config.radius.list.html:7
+#: privacyidea/static/components/config/views/config.radius.edit.html:68
+#: privacyidea/static/components/config/views/config.radius.list.html:8
 #: privacyidea/static/components/config/views/config.smtp.edit.html:87
 #: privacyidea/static/components/config/views/config.smtp.list.html:9
 #: privacyidea/static/components/token/views/token.details.html:118
@@ -521,6 +521,11 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.details.html:14
 msgid "Details for user {{ username }} in realm"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.radius.edit.html:59
+#: privacyidea/static/components/config/views/config.radius.list.html:7
+msgid "Dictionary"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.details.html:5
@@ -1338,6 +1343,7 @@ msgstr ""
 msgid "PIN"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.radius.edit.html:85
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:77
 #: privacyidea/static/components/config/views/config.smtp.edit.html:77
 #: privacyidea/static/components/login/views/login.html:49
@@ -1531,7 +1537,6 @@ msgstr ""
 msgid "Received"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.radius.edit.html:68
 #: privacyidea/static/components/config/views/config.smtp.edit.html:108
 msgid "Recipient for testing"
 msgstr ""
@@ -1695,7 +1700,7 @@ msgstr ""
 msgid "Save Options"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.radius.edit.html:84
+#: privacyidea/static/components/config/views/config.radius.edit.html:98
 msgid "Save RADIUS server"
 msgstr ""
 
@@ -1743,7 +1748,7 @@ msgstr ""
 msgid "Search Filter"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.radius.edit.html:48
+#: privacyidea/static/components/config/views/config.radius.edit.html:49
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:60
 msgid "Secret"
 msgstr ""
@@ -1776,7 +1781,7 @@ msgstr ""
 msgid "Send Test Email"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.radius.edit.html:75
+#: privacyidea/static/components/config/views/config.radius.edit.html:90
 msgid "Send test RADIUS request"
 msgstr ""
 
@@ -2709,6 +2714,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.details.html:239
 #: privacyidea/static/components/config/views/config.policies.list.html:10
+#: privacyidea/static/components/config/views/config.radius.edit.html:79
 #: privacyidea/static/templates/menu.html:35
 msgid "User"
 msgstr ""
