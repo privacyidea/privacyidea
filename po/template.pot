@@ -443,14 +443,6 @@ msgstr ""
 msgid "Default Hashlib"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.radius.html:26
-msgid "Default RADIUS Secret"
-msgstr ""
-
-#: privacyidea/static/components/config/views/config.token.radius.html:8
-msgid "Default RADIUS Server"
-msgstr ""
-
 #: privacyidea/static/components/config/views/config.token.remote.html:17
 msgid "Default Remote Server"
 msgstr ""
@@ -491,6 +483,7 @@ msgid "Delete user"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.email.html:7
+#: privacyidea/static/components/config/views/config.token.radius.html:7
 msgid "Deprecated configuration"
 msgstr ""
 
@@ -525,6 +518,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:59
 #: privacyidea/static/components/config/views/config.radius.list.html:7
+#: privacyidea/static/components/config/views/config.token.radius.html:26
 msgid "Dictionary"
 msgstr ""
 
@@ -1190,6 +1184,7 @@ msgid "New SMTP server"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.email.html:41
+#: privacyidea/static/components/config/views/config.token.radius.html:33
 msgid "New configuration"
 msgstr ""
 
@@ -1412,6 +1407,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:46
 #: privacyidea/static/components/config/views/config.smtp.edit.html:37
 #: privacyidea/static/components/config/views/config.token.email.html:22
+#: privacyidea/static/components/config/views/config.token.radius.html:22
 msgid "Port"
 msgstr ""
 
@@ -1487,6 +1483,7 @@ msgstr ""
 msgid "RADIUS Secret"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.token.radius.html:18
 #: privacyidea/static/components/token/views/token.enroll.radius.html:40
 msgid "RADIUS Server"
 msgstr ""
@@ -1499,12 +1496,12 @@ msgstr ""
 msgid "RADIUS User"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.radius.html:17
-msgid "RADIUS dictionary file"
-msgstr ""
-
 #: privacyidea/static/components/config/controllers/radiusServerController.js:66
 msgid "RADIUS request successful."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.radius.html:35
+msgid "RADIUS server configuration"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.system.html:32
@@ -1763,6 +1760,12 @@ msgid ""
 "                    <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.token.radius.html:36
+msgid ""
+"Select a predefined\n"
+"        <a ui-sref=\"config.radius\">RADIUS server configuration</a>."
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.token.email.html:44
 msgid ""
 "Select a predefined\n"
@@ -1894,7 +1897,7 @@ msgid "System Config"
 msgstr ""
 
 #: privacyidea/static/components/config/controllers/configControllers.js:423
-#: privacyidea/static/components/config/controllers/configControllers.js:626
+#: privacyidea/static/components/config/controllers/configControllers.js:633
 msgid "System Config saved."
 msgstr ""
 
@@ -2517,6 +2520,10 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.email.html:13
 msgid "This view will be removed in version 2.11."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.radius.html:13
+msgid "This view will be removed in version 2.12."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:21

@@ -515,6 +515,12 @@ myApp.controller("configController", function ($scope, $location,
         });
     };
 
+    $scope.getRADIUSIdentifiers = function() {
+        ConfigFactory.getRadius(function(data){
+            $scope.radiusIdentifiers = data.result.value;
+        });
+    };
+
     $scope.delResolver = function (name) {
         ConfigFactory.delResolver(name, function (data) {
             $scope.resolvers = data.result.value;
@@ -606,6 +612,7 @@ myApp.controller("configController", function ($scope, $location,
     $scope.getResolvers();
     $scope.selectedResolvers = {};
     $scope.getSmtpIdentifiers();
+    $scope.getRADIUSIdentifiers();
 
     $scope.testResolver = function () {
         ConfigFactory.testResolver($scope.params, function (data) {

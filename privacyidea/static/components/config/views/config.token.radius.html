@@ -4,33 +4,44 @@
     server.
 </p>
 
-<div class="form-group">
-    <label for="radiusServer" translate>Default RADIUS Server</label>
-    <input type="text"
-           required
-           class="form-control"
-           placeholder="your.radius.server:1812"
-           ng-model="form['radius.server']" name="radiusServer">
+<h3 translate>Deprecated configuration</h3>
+<p class="help-block">The deprecated configuration was used till privacyIDEA
+    version 2.10. Starting with version 2.11 you can select a RADIUS
+    configuration by its identifier.
+    <a ui-sref="config.radius">RADIUS server configuration</a>
+</p>
+<p class="bg-danger" translate>This view will be removed in version 2.12.</p>
+<div>
+    <table class="table table-bordered table-responsive table-striped">
+        <tbody>
+            <tr>
+                <td translate>RADIUS Server</td>
+                <td>{{ form['radius.server'] }}</td>
+            </tr>
+            <tr>
+                <td translate>Port</td>
+                <td>{{ form['radius.port'] }}</td>
+            </tr>
+            <tr>
+                <td translate>Dictionary</td>
+                <td>{{ form['radius.dictfile'] }}</td>
+            </tr>
+        </tbody>
+    </table>
 </div>
 
+<h3 translate>New configuration</h3>
 <div class="form-group">
-    <label for="radiusDict" translate>RADIUS dictionary file</label>
-    <input type="text"
-           required
-           class="form-control"
-           placeholder="/etc/privacyidea/dictionary"
-           ng-model="form['radius.dictfile']" name="radiusDict">
+    <label for="idenfifier" translate>RADIUS server configuration</label>
+    <p class="help-block" translate>Select a predefined
+        <a ui-sref="config.radius">RADIUS server configuration</a>.</p>
+    <select class="form-control"
+            ng-model="form['radius.identifier']"
+            name="identifier"
+            ng-options="identifier as identifier for (identifier, config) in
+            radiusIdentifiers">
+    </select>
 </div>
 
-<div class="form-group">
-    <label for="radiusSecret" translate>Default RADIUS Secret</label>
-    <input type="password"
-           required
-           equals="{{ secret2 }}"
-           class="form-control"
-           ng-model="form['radius.secret']" name="radiusSecret">
-    <input type="password"
-           equals="{{ form['radius.secret'] }}"
-           class="form-control"
-           ng-model="secret2" name="radiusSecret2">
-</div>
+
+
