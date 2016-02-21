@@ -4,41 +4,6 @@
     the given email address, when the correct OTP PIN was presented by the user.
 </p>
 
-<h3 translate>Deprecated configuration</h3>
-<p class="help-block">The deprecated configuration was used till privacyIDEA
-    version 2.9. Starting with version 2.10 you can select an SMTP
-    configuration by its identifier.
-    <a ui-sref="config.smtp">SMTP server configuration</a>
-</p>
-<p class="bg-danger" translate>This view will be removed in version 2.11.</p>
-<div>
-    <table class="table table-bordered table-responsive table-striped">
-        <tbody>
-            <tr>
-                <td translate>Mail Server</td>
-                <td>{{ form['email.mailserver'] }}</td>
-            </tr>
-            <tr>
-                <td translate>Port</td>
-                <td>{{ form['email.port'] }}</td>
-            </tr>
-            <tr>
-                <td translate>Mail User</td>
-                <td>{{ form['email.username'] }}</td>
-            </tr>
-            <tr>
-                <td translate>Mail Sender Address</td>
-                <td>{{ form['email.mailfrom'] }}</td>
-            </tr>
-            <tr>
-                <td translate>Use TLS</td>
-                <td>{{ form['email.tls'] }}</td>
-            </tr>
-        </tbody>
-    </table>
-</div>
-
-<h3 translate>New configuration</h3>
 <div class="form-group">
     <label for="idenfifier" translate>SMTP server configuration</label>
     <p class="help-block" translate>Select a predefined
