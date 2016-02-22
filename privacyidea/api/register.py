@@ -116,6 +116,13 @@ def register_post():
             if value and key not in ["g", "clientip"]:
                 options[key] = value
 
+    # 0. check, if we can do the registration at all!
+    smtpconfig = g.policy_object.get_action_values(ACTION.EMAILCONFIG,
+                                                   scope=SCOPE.REGISTER,
+                                                   unique=True)
+    if not smtpconfig:
+        raise RegistrationError("No SMTP server configuration specified!")
+
     # 1. determine, in which resolver/realm the user should be created
     realm = g.policy_object.get_action_values(ACTION.REALM,
                                               scope=SCOPE.REGISTER,
@@ -150,18 +157,22 @@ def register_post():
     token = init_token({"type": "registration"}, user=user)
     # 4. send the registration token to the users email
     registration_key = token.init_details.get("otpkey")
-    smtpconfig = g.policy_object.get_action_values(ACTION.EMAILCONFIG,
-                                                   scope=SCOPE.REGISTER,
-                                                   unique=True)
-    if not smtpconfig:
-        raise RegistrationError("No SMTP server configuration specified!")
+
     smtpconfig = smtpconfig[0]
     # Send the registration key via email
-    r = send_email_identifier(smtpconfig, email,
-                              "Your privacyIDEA registration",
-                              "Your registration token is %s" %
-                              registration_key)
+    email_sent = send_email_identifier(smtpconfig, email,
+                                       "Your privacyIDEA registration",
+                                       "Your registration token is %s" %
+                                       registration_key)
+    if not email_sent:
+        log.warning("Failed to send registration email to %s" % email)
+        # delete registration token
+        token.delete()
+        # delete user
+        user.delete()
+        raise RegistrationError("Failed to send email!")
+
     log.debug("Registration email sent to %s" % email)
 
-    g.audit_object.log({"success": r})
-    return send_result(r)
+    g.audit_object.log({"success": email_sent})
+    return send_result(email_sent)
