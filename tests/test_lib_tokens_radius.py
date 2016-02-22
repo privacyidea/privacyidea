@@ -164,11 +164,10 @@ class RadiusTokenTestCase(MyTestCase):
         set_privacyidea_config("radius.dictfile", DICT_FILE)
         radiusmock.setdata(success=True)
         r = add_radius(identifier="myserver", server="1.2.3.4",
-                       secret="testing123")
+                       secret="testing123", dictionary=DICT_FILE)
         self.assertTrue(r > 0)
         token = init_token({"type": "radius",
                             "radius.identifier": "myserver",
-                            "radius.dictionary": DICT_FILE,
                             "radius.user": "user1"})
         r = token.authenticate("radiuspassword")
         self.assertEqual(r[0], True)
