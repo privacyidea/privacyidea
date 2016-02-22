@@ -22,12 +22,13 @@ __doc__ = """The SQL Audit Module is used to write audit entries to an SQL
 database.
 The SQL Audit Module is configured like this:
 
-    PI_AUDIT_MODULE = privacyidea.lib.auditmodules.sqlaudit
-    PI_AUDIT_KEY_PRIVATE = tests/testdata/private.pem
-    PI_AUDIT_KEY_PUBLIC = tests/testdata/public.pem
+    PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
+    PI_AUDIT_KEY_PRIVATE = "tests/testdata/private.pem"
+    PI_AUDIT_KEY_PUBLIC = "tests/testdata/public.pem"
+    PI_AUDIT_SERVERNAME = "your choice"
 
     Optional:
-    PI_AUDIT_SQL_URI = sqlite://
+    PI_AUDIT_SQL_URI = "sqlite://"
 
 If the PI_AUDIT_SQL_URI is omitted the Audit data is written to the
 token database.
