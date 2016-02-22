@@ -43,6 +43,7 @@ from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timelimit, parse_timedelta
 import datetime
+from privacyidea.lib.radiusserver import get_radius
 
 log = logging.getLogger(__name__)
 
@@ -237,14 +238,29 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                                                realm=user_object.realm,
                                                user=user_object.login,
                                                client=clientip, active=True)
+        if len(pass_thru) > 1:
+            raise PolicyError("Contradicting passthru policies.")
         if pass_thru and get_tokens(user=user_object, count=True) == 0:
             # If the user has NO Token, authenticate against the user store
             # Now we need to check the userstore password
-            if user_object.check_password(passw):
-                return True, {"message": "The user authenticated against his "
-                                         "userstore according to "
-                                         "policy '%s'." %
-                                         pass_thru[0].get("name")}
+            pass_thru_action = pass_thru[0].get("action").get("passthru")
+            policy_name = pass_thru[0].get("name")
+            if pass_thru_action in ["userstore", True]:
+                if user_object.check_password(passw):
+                    return True, {"message": "The user authenticated against "
+                                             "his userstore according to "
+                                             "policy '%s'." % policy_name}
+            else:
+                # We are doing RADIUS passthru
+                log.info("Forwarding the authentication request to the radius "
+                         "server %s" % pass_thru_action)
+                radius = get_radius(pass_thru_action)
+                r = radius.request(radius.config, user_object.login, passw)
+                if r:
+                    return True, {'message': "The user authenticated against "
+                                             "the RADIUS server %s according "
+                                             "to policy '%s'." %
+                                             (pass_thru_action, policy_name)}
 
     # If nothing else returned, we return the wrapped function
     return wrapped_function(user_object, passw, options)

@@ -1,3 +1,4 @@
+.. _rollout_strategies:
 
 What are possible rollout strategies?
 -------------------------------------

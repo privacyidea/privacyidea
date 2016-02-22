@@ -53,10 +53,9 @@ class RADIUSServerTestCase(MyTestCase):
 
     @radiusmock.activate
     def test_04_RADIUS_request(self):
-        set_privacyidea_config("radius.dictfile", DICT_FILE)
         radiusmock.setdata(success=True)
         r = add_radius(identifier="myserver", server="1.2.3.4",
-                       secret="testing123")
+                       secret="testing123", dictionary=DICT_FILE)
         self.assertTrue(r > 0)
         radius = get_radius("myserver")
         r = RADIUSServer.request(radius.config, "user", "password")

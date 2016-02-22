@@ -10,6 +10,7 @@ Frequently Asked Questions
    creating-users
    admins
    rollout-strategies
+   migration-strategies
    translation
    high-availability
    mysqldb

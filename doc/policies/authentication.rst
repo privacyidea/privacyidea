@@ -57,18 +57,23 @@ how the authentication should be processed:
 passthru
 ~~~~~~~~
 
-.. index:: passthru
+.. index:: passthru, migration
 
-type: bool
+type: str
 
 If the user has no token assigned, he will be authenticated
-against the UserIdResolver, i.e. he needs to provide the
-LDAP- or SQL-password.
+against the userstore or against the given RADIUS configuration.
+I.e. the user needs to provide the LDAP- or SQL-password or valid credentials
+for the RADIUS server.
 
 .. note:: This is a good way to do a smooth enrollment.
    Users having a token enrolled will have to use the 
    token, users not having a token, yet, will be able
    to authenticate with their domain password.
+
+   It is also a way to do smooth migrations from other OTP systems.
+   The authentication request of users without a token is forwarded to the
+   specified RADIUS server.
 
 .. warning:: If the user has the right to delete his
    tokens in selfservice portal, the user could 

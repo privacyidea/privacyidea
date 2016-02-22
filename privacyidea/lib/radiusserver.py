@@ -77,8 +77,9 @@ class RADIUSServer(object):
 
         nas_identifier = get_from_config("radius.nas_identifier",
                                          "privacyIDEA")
-        r_dict = get_from_config("radius.dictfile",
-                                 "/etc/privacyidea/dictionary")
+        r_dict = config.dictionary or get_from_config("radius.dictfile",
+                                                      "/etc/privacyidea/"
+                                                      "dictionary")
         log.debug("NAS Identifier: %r, "
                   "Dictionary: %r" % (nas_identifier, r_dict))
         log.debug("constructing client object "

@@ -78,6 +78,7 @@ class RADIUSServerTestCase(MyTestCase):
                                                  "secret": "secret",
                                                  "port": "1812",
                                                  "server": "1.2.3.4",
+                                                 "dictionary": DICT_FILE,
                                                  "username": "testuser",
                                                  "password": "testpassword"},
                                            headers={'Authorization': self.at}):

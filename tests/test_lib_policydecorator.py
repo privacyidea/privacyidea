@@ -4,6 +4,8 @@ This test file tests the lib.policy.py
 The lib.policy.py only depends on the database model.
 """
 PWFILE2 = "tests/testdata/passwords"
+DICT_FILE = "tests/testdata/dictionary"
+
 
 from .base import MyTestCase, FakeFlaskG
 
@@ -24,7 +26,9 @@ from privacyidea.lib.realm import set_realm
 from privacyidea.lib.token import (init_token, remove_token, check_user_pass,
                                    get_tokens)
 from privacyidea.lib.error import UserError, PolicyError
+from privacyidea.lib.radiusserver import add_radius
 import datetime
+import radiusmock
 
 
 def _check_policy_name(polname, policies):
@@ -205,6 +209,7 @@ class LibPolicyTestCase(MyTestCase):
                          u"policy 'pol1'.")
         delete_policy("pol1")
 
+    @radiusmock.activate
     def test_06_passthru(self):
         user = User("cornelius", realm="r1")
         passw = "test"
@@ -217,7 +222,7 @@ class LibPolicyTestCase(MyTestCase):
                          "The user has no tokens assigned")
 
         # Now we set a PASSTHRU policy, so that the user may authenticate
-        # against his userstore
+        # against his userstore (old style)
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
                    action=ACTION.PASSTHRU)
@@ -230,6 +235,38 @@ class LibPolicyTestCase(MyTestCase):
         self.assertEqual(rv[1].get("message"),
                          u"The user authenticated against his userstore "
                          u"according to policy 'pol1'.")
+
+        # Now set a PASSTHRU policy to the userstore (new style)
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTH,
+                   action="%s=userstore" % ACTION.PASSTHRU)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        options = {"g": g}
+        rv = auth_user_passthru(check_user_pass, user, passw,
+                                options=options)
+        self.assertTrue(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         u"The user authenticated against his userstore "
+                         u"according to policy 'pol1'.")
+
+        # Now set a PASSTHRU policy to a RADIUS config (new style)
+        radiusmock.setdata(success=True)
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTH,
+                   action="%s=radiusconfig1" % ACTION.PASSTHRU)
+        r = add_radius("radiusconfig1", "1.2.3.4", "testing123",
+                       dictionary=DICT_FILE)
+        self.assertTrue(r > 0)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        options = {"g": g}
+        rv = auth_user_passthru(check_user_pass, user, passw,
+                                options=options)
+        self.assertTrue(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         u"The user authenticated against the RADIUS server "
+                         u"radiusconfig1 according to policy 'pol1'.")
 
         # Now assign a token to the user. If the user has a token and the
         # passthru policy is set, the user must not be able to authenticate

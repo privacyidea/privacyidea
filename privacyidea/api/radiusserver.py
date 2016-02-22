@@ -58,6 +58,7 @@ def create(identifier=None):
     :param description: A description for the definition
     """
     param = request.all_data
+    identifier = identifier.replace(" ", "_")
     server = getParam(param, "server", required)
     port = int(getParam(param, "port", default=1812))
     secret = getParam(param, "secret", required)
@@ -123,7 +124,7 @@ def test():
     secret = getParam(param, "secret", required)
     user = getParam(param, "username", required)
     password = getParam(param, "password", required)
-    dictionary = getParam(param, "dictinoary",
+    dictionary = getParam(param, "dictionary",
                           default="/etc/privacyidea/dictinoary")
 
     s = RADIUSServerDB(identifier=identifier, server=server, port=port,

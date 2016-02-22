@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-02-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add RADIUS passthru policy
 #  2016-02-05 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add tokenwizard in scope UI
 #  2015-12-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -125,6 +127,7 @@ from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
+from privacyidea.lib.radiusserver import get_radiusservers
 log = logging.getLogger(__name__)
 
 optional = True
@@ -688,6 +691,9 @@ def get_static_policy_definitions(scope=None):
     resolvers = get_resolver_list().keys()
     realms = get_realms().keys()
     smtpconfigs = [server.config.identifier for server in get_smtpservers()]
+    radiusconfigs = [radius.config.identifier for radius in
+                     get_radiusservers()]
+    radiusconfigs = ["userstore"] + radiusconfigs
     pol = {
         SCOPE.REGISTER: {
             ACTION.RESOLVER: {'type': 'str',
@@ -1043,9 +1049,11 @@ def get_static_policy_definitions(scope=None):
                           'that can be used with challenge response.')
             },
             ACTION.PASSTHRU: {
-                'type': 'bool',
+                'type': 'str',
+                'value': radiusconfigs,
                 'desc': _('If set, the user in this realm will be '
-                          'authenticated against the UserIdResolver,'
+                          'authenticated against the userstore or against the '
+                          'given RADIUS config,'
                           ' if the user has no tokens assigned.')
             },
             ACTION.PASSNOTOKEN: {
