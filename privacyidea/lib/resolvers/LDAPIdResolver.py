@@ -399,7 +399,7 @@ class IdResolver (UserIdResolver):
         self.binddn = config.get("BINDDN")
         self.bindpw = config.get("BINDPW")
         self.timeout = float(config.get("TIMEOUT", 5))
-        self.sizelimit = config.get("SIZELIMIT", 500)
+        self.sizelimit = int(config.get("SIZELIMIT", 500))
         self.loginname_attribute = config.get("LOGINNAMEATTRIBUTE")
         self.searchfilter = config.get("LDAPSEARCHFILTER")
         self.reversefilter = config.get("LDAPFILTER")
