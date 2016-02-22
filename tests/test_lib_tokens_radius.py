@@ -168,6 +168,7 @@ class RadiusTokenTestCase(MyTestCase):
         self.assertTrue(r > 0)
         token = init_token({"type": "radius",
                             "radius.identifier": "myserver",
+                            "radius.dictionary": DICT_FILE,
                             "radius.user": "user1"})
         r = token.authenticate("radiuspassword")
         self.assertEqual(r[0], True)
