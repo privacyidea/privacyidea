@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-02-22 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Add the RADIUS identifier, which points to the system wide list
+#             of RADIUS servers.
 #  2015-10-09 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Add the RADIUS-System-Config, so that not each
 #             RADIUS-token needs his own secret. -> change the
@@ -42,10 +45,11 @@ import traceback
 import binascii
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.remotetoken import RemoteTokenClass
-from privacyidea.api.lib.utils import getParam
+from privacyidea.api.lib.utils import getParam, ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.radiusserver import get_radius
 
 import pyrad.packet
 from pyrad.client import Client
@@ -114,9 +118,24 @@ class RadiusTokenClass(RemoteTokenClass):
         return ret
 
     def update(self, param):
+        # New value
+        radius_identifier = getParam(param, "radius.identifier")
+        self.add_tokeninfo("radius.identifier", radius_identifier)
 
-        radiusServer = getParam(param, "radius.server", required)
-        self.add_tokeninfo("radius.server", radiusServer)
+        # old values
+        if not radius_identifier:
+            radiusServer = getParam(param, "radius.server", optional=required)
+            self.add_tokeninfo("radius.server", radiusServer)
+            radius_secret = getParam(param, "radius.secret", optional=required)
+            self.token.set_otpkey(binascii.hexlify(radius_secret))
+            system_settings = getParam(param, "radius.system_settings",
+                                       default=False)
+            self.add_tokeninfo("radius.system_settings", system_settings)
+
+        if not radius_identifier and not (radiusServer or radius_secret) and \
+                not system_settings:
+            raise ParameterError("Missing parameter: radius.identifier", id=905)
+
         # if another OTP length would be specified in /admin/init this would
         # be overwritten by the parent class, which is ok.
         self.set_otplen(6)
@@ -126,12 +145,6 @@ class RadiusTokenClass(RemoteTokenClass):
 
         val = getParam(param, "radius.user", required)
         self.add_tokeninfo("radius.user", val)
-
-        val = getParam(param, "radius.secret", required)
-        self.token.set_otpkey(binascii.hexlify(val))
-
-        val = getParam(param, "radius.system_settings", default=False)
-        self.add_tokeninfo("radius.system_settings", val)
 
     @property
     def check_pin_local(self):
@@ -181,22 +194,35 @@ class RadiusTokenClass(RemoteTokenClass):
         otp_count = -1
         options = options or {}
 
-        radiusUser = self.get_tokeninfo("radius.user")
+        radius_dictionary = None
+        radius_identifier = self.get_tokeninfo("radius.identifier")
+        radius_user = self.get_tokeninfo("radius.user")
         system_radius_settings = self.get_tokeninfo("radius.system_settings")
-        if system_radius_settings:
-            radiusServer = get_from_config("radius.server")
-            radiusSecret = get_from_config("radius.secret")
+        if radius_identifier:
+            # New configuration
+            radius_server_object = get_radius(radius_identifier)
+            radius_server = radius_server_object.config.server
+            radius_port = radius_server_object.config.port
+            radius_server = "%s:%s" % (radius_server, radius_port)
+            radius_secret = radius_server_object.get_secret()
+            radius_dictionary = radius_server_object.config.dictionary
+
+        elif system_radius_settings:
+            # system configuration
+            radius_server = get_from_config("radius.server")
+            radius_secret = get_from_config("radius.secret")
             # Is returned as unicode, so we convert it to utf-8
-            radiusSecret = radiusSecret.encode("utf-8")
+            radius_secret = radius_secret.encode("utf-8")
         else:
-            radiusServer = self.get_tokeninfo("radius.server")
+            # individual token settings
+            radius_server = self.get_tokeninfo("radius.server")
             # Read the secret
             secret = self.token.get_otpkey()
-            radiusSecret = binascii.unhexlify(secret.getKey())
+            radius_secret = binascii.unhexlify(secret.getKey())
 
         # here we also need to check for radius.user
         log.debug("checking OTP len:%s on radius server: %s, user: %s" 
-                  % (len(otpval), radiusServer, radiusUser))
+                  % (len(otpval), radius_server, radius_user))
 
         try:
             # pyrad does not allow to set timeout and retries.
@@ -204,28 +230,30 @@ class RadiusTokenClass(RemoteTokenClass):
 
             # TODO: At the moment we support only one radius server.
             # No round robin.
-            server = radiusServer.split(':')
+            server = radius_server.split(':')
             r_server = server[0]
             r_authport = 1812
             if len(server) >= 2:
                 r_authport = int(server[1])
             nas_identifier = get_from_config("radius.nas_identifier",
                                              "privacyIDEA")
-            r_dict = get_from_config("radius.dictfile",
-                                     "/etc/privacyidea/dictionary")
+            if not radius_dictionary:
+                radius_dictionary = get_from_config("radius.dictfile",
+                                                    "/etc/privacyidea/"
+                                                    "dictionary")
             log.debug("NAS Identifier: %r, "
-                      "Dictionary: %r" % (nas_identifier, r_dict))
+                      "Dictionary: %r" % (nas_identifier, radius_dictionary))
             log.debug("constructing client object "
                       "with server: %r, port: %r, secret: %r" %
-                      (r_server, r_authport, radiusSecret))
+                      (r_server, r_authport, radius_secret))
 
             srv = Client(server=r_server,
                          authport=r_authport,
-                         secret=radiusSecret,
-                         dict=Dictionary(r_dict))
+                         secret=radius_secret,
+                         dict=Dictionary(radius_dictionary))
 
             req = srv.CreateAuthPacket(code=pyrad.packet.AccessRequest,
-                                       User_Name=radiusUser.encode('ascii'),
+                                       User_Name=radius_user.encode('ascii'),
                                        NAS_Identifier=nas_identifier.encode('ascii'))
 
             req["User-Password"] = req.PwCrypt(otpval)
@@ -250,12 +278,12 @@ class RadiusTokenClass(RemoteTokenClass):
             """
             if response.code == pyrad.packet.AccessAccept:
                 log.info("Radiusserver %s granted "
-                         "access to user %s." % (r_server, radiusUser))
+                         "access to user %s." % (r_server, radius_user))
                 otp_count = 0
             else:
                 log.warning("Radiusserver %s"
                             "rejected access to user %s." %
-                            (r_server, radiusUser))
+                            (r_server, radius_user))
 
         except Exception as ex:  # pragma: no cover
             log.error("Error contacting radius Server: %r" % (ex))

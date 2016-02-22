@@ -315,6 +315,14 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         });
     };
 
+    // get the list of configured RADIUS server identifiers
+    $scope.getRADIUSIdentifiers = function() {
+        ConfigFactory.getRadius(function(data){
+            $scope.radiusIdentifiers = data.result.value;
+        });
+    };
+    $scope.getRADIUSIdentifiers();
+
     // get the list of configured CA connectors
     $scope.getCAConnectors = function () {
         ConfigFactory.getCAConnectors(function (data){
@@ -332,13 +340,14 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     ConfigFactory.loadSystemConfig(function (data) {
         /* Default config values like
             radius.server, radius.secret...
-         are stored in systemDefault and $scope.form
+           are stored in systemDefault and $scope.form
          */
         var systemDefault = data.result.value;
         console.log("system default config");
         console.log(systemDefault);
         // TODO: The entries should be handled automatically.
         var entries = ["radius.server", "radius.secret", "remote.server",
+            "radius.identifier",
             "totp.hashlib", "hotp.hashlib", "email.mailserver",
             "email.mailfrom", "sms.Provider", "yubico.id", "tiqr.regServer"];
         entries.forEach(function(entry) {

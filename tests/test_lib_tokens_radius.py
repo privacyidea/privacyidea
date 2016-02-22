@@ -10,6 +10,7 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.config import set_privacyidea_config
 import radiusmock
 from privacyidea.lib.token import init_token
+from privacyidea.lib.radiusserver import add_radius
 
 DICT_FILE="tests/testdata/dictionary"
 
@@ -153,6 +154,21 @@ class RadiusTokenTestCase(MyTestCase):
                             "radius.user": "user1",
                             "radius.server": "",
                             "radius.secret": ""})
+        r = token.authenticate("radiuspassword")
+        self.assertEqual(r[0], True)
+        self.assertEqual(r[1], 0)
+        self.assertEqual(r[2].get("message"), "matching 1 tokens")
+
+    @radiusmock.activate
+    def test_11_RADIUS_request(self):
+        set_privacyidea_config("radius.dictfile", DICT_FILE)
+        radiusmock.setdata(success=True)
+        r = add_radius(identifier="myserver", server="1.2.3.4",
+                       secret="testing123")
+        self.assertTrue(r > 0)
+        token = init_token({"type": "radius",
+                            "radius.identifier": "myserver",
+                            "radius.user": "user1"})
         r = token.authenticate("radiuspassword")
         self.assertEqual(r[0], True)
         self.assertEqual(r[1], 0)

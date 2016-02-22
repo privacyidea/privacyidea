@@ -53,6 +53,9 @@ class RADIUSServer(object):
         """
         self.config = db_radius_object
 
+    def get_secret(self):
+        return decryptPassword(self.config.secret)
+
     @staticmethod
     def request(config, user, password):
         """
