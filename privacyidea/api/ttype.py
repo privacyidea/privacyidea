@@ -59,6 +59,8 @@ def before_request():
     This is executed before the request
     """
     request.all_data = get_all_params(request.values, request.data)
+    privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
+                         request.host
     # Create a policy_object, that reads the database audit settings
     # and contains the complete policy definition during the request.
     # This audit_object can be used in the postpolicy and prepolicy and it
@@ -69,7 +71,7 @@ def before_request():
                         "action_detail": "",
                         "client": request.remote_addr,
                         "client_user_agent": request.user_agent.browser,
-                        "privacyidea_server": request.host,
+                        "privacyidea_server": privacyidea_server,
                         "action": "%s %s" % (request.method, request.url_rule),
                         "info": ""})
 

@@ -72,12 +72,14 @@ def before_request():
     """
     This is executed before the request
     """
+    privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
+                         request.host
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
     g.audit_object.log({"success": False,
                         "client": request.remote_addr,
                         "client_user_agent": request.user_agent.browser,
-                        "privacyidea_server": request.host,
+                        "privacyidea_server": privacyidea_server,
                         "action": "%s %s" % (request.method, request.url_rule),
                         "action_detail": "",
                         "info": ""})
