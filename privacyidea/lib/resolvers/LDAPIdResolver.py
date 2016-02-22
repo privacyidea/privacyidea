@@ -261,7 +261,14 @@ class IdResolver (UserIdResolver):
         for ldap_k, ldap_v in attributes.items():
             for map_k, map_v in self.userinfo.items():
                 if ldap_k == map_v:
-                    if type(ldap_v) == list and map_k not in ["mobile"]:
+		    if ldap_k == "objectGUID":
+                       try:
+                          import uuid
+                          uuid_v = uuid.UUID(bytes_le=ldap_v[0])
+                          ret[map_k] = str(uuid_v)
+                       except:
+                          ret[map_k] = ''
+                    elif type(ldap_v) == list and map_k not in ["mobile"]:
                         # All lists (except) mobile return the first value as
                         #  a string. Mobile is returned as a list
                         ret[map_k] = ldap_v[0]
