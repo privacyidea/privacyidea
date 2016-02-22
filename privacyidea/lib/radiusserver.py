@@ -179,7 +179,8 @@ def add_radius(identifier, server, secret, port=1812, description="",
     """
     cryptedSecret = encryptPassword(secret)
     r = RADIUSServerDB(identifier=identifier, server=server, port=port,
-                       secret=cryptedSecret,description=description).save()
+                       secret=cryptedSecret, description=description,
+                       dictionary=dictionary).save()
     return r
 
 
