@@ -830,6 +830,14 @@ class LDAPResolverTestCase(MyTestCase):
 
         self.assertEqual(len(r), 2)
 
+    def test_09_escape_loginname(self):
+        r = LDAPResolver._escape_loginname("hans*")
+        self.assertEqual(r, "hans\\2a")
+        r = LDAPResolver._escape_loginname("hans()")
+        self.assertEqual(r, "hans\\28\\29")
+        r = LDAPResolver._escape_loginname("hans\\/")
+        self.assertEqual(r, "hans\\5c\\2f")
+
 
 class BaseResolverTestCase(MyTestCase):
 
