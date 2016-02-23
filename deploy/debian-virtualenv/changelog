@@ -1,3 +1,9 @@
+privacyidea-venv (2.10.2-1) wheezy; urgency=low
+
+  * Fix LDAP user harvesting (#330)
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Tue, 23 Feb 2016 20:45:00 +0200
+
 privacyidea-venv (2.10.1-1) wheezy; urgency=low
 
   * Fix double PIN entry

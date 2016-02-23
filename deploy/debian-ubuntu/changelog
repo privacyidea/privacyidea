@@ -1,3 +1,9 @@
+python-privacyidea (2.10.2-1trusty) trusty; urgency=low
+
+  * Fix LDAP user harvesting (#330)
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Tue, 23 Feb 2016 20:45:00 +0200
+
 python-privacyidea (2.10.1-1trusty) trusty; urgency=low
 
   * Fix double PIN entry
