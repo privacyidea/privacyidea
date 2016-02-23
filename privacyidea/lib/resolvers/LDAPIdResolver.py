@@ -150,6 +150,25 @@ class IdResolver (UserIdResolver):
         return new_list
 
     @staticmethod
+    def _escape_loginname(loginname):
+        """
+        This function escapes the loginname according to
+        https://msdn.microsoft.com/en-us/library/aa746475(v=vs.85).aspx
+        This is to avoid username guessing by trying to login as user
+           a*
+           ac*
+           ach*
+           achm*
+           achme*
+           achemd*
+
+        :param loginname: The loginname
+        :return: The escaped loginname
+        """
+        return loginname.replace("\\", "\\5c").replace("*", "\\2a").replace(
+            "(", "\\28").replace(")", "\\29").replace("/", "\\2f")
+
+    @staticmethod
     def _get_uid(entry, uidtype):
         uid = None
         if uidtype.lower() == "dn":
@@ -296,7 +315,8 @@ class IdResolver (UserIdResolver):
         userid = ""
         self._bind()
         filter = "(&%s(%s=%s))" % \
-            (self.searchfilter, self.loginname_attribute, LoginName)
+            (self.searchfilter, self.loginname_attribute,
+             self._escape_loginname(LoginName))
 
         # create search attributes
         attributes = self.userinfo.values()
