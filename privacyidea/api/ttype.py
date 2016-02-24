@@ -93,8 +93,8 @@ def after_request(response):
     return response
 
 
-@log_with(log)
 @ttype_blueprint.route('/<ttype>', methods=['POST', 'GET'])
+@log_with(log)
 def token(ttype=None):
     """
     This is a special token function. Each token type can define an

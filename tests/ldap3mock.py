@@ -145,7 +145,8 @@ class Connection(object):
                     except UnicodeDecodeError:
                         # This happens when we check for a "*" in the binary
                         # string as it occurs in objectGUID
-                        pass
+                        print("OK, some potential objectGUID exception. But "
+                              "this is OK")
                 if not filtered:
                     entry["type"] = "searchResEntry"
                     self.response.append(entry)
