@@ -63,12 +63,13 @@ Create a flat file like this::
    privacyidea-create-pwidresolver-user -u user2 -i 1002 >> /your/flat/file
 
 
+.. _ldap_resolver:
 
 LDAP resolver
 .............
 
 .. index:: LDAP resolver, OpenLDAP, Active Directory, FreeIPA, Penrose,
-   Novell eDirectory
+   Novell eDirectory, SAML attributes
 
 The LDAP resolver can be used to access any kind of LDAP service like
 OpenLDAP, Active Directory,
@@ -128,7 +129,21 @@ privacyIDEA. privacyIDEA knows the following attributes:
  * mobile,
  * email,
  * surname,
- * givenname.
+ * givenname,
+ * password.
+
+The above attributes are used for privacyIDEA's normal functionality and are
+listed in the userview. However, with a SAML authentication request user
+attributes can be returned. (see :ref:`return_saml_attributes`). To return
+arbitrary attributes from the LDAP you can add additional keys to the
+attribute mapping with a key, you make up and the LDAP attribute like:
+
+   "homedir": "homeDirectory",
+   "studentID": "objectGUID"
+
+"homeDirectory" and "objectGUID" being the attributes in the LDAP directory
+and "homedir" and "studentID" the keys returned in a SAML authentication
+request.
   
 The ``UID Type`` is the unique identifier for the LDAP object. If it is left
 blank, the distinguished name will be used. In case of OpenLDAP this can be

@@ -31,6 +31,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "givenName": "Alice",
                                 'userPassword': 'alicepw',
                                 'oid': "2",
+                                "homeDirectory": "/home/alice",
                                 "email": "alice@test.com",
                                 "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
                                               '\x9b\xf9\xcajl\rMw1',
@@ -41,6 +42,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "givenName": "Robert",
                                 "email": "bob@example.com",
                                 "mobile": "123456",
+                                "homeDirectory": "/home/bob",
                                 'userPassword': 'bobpwééé',
                                 "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
                                               '\x9b\xf9\xcajl\rMw',
@@ -867,6 +869,33 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(r, "hans\\28\\29")
         r = LDAPResolver._escape_loginname("hans\\/")
         self.assertEqual(r, "hans\\5c\\2f")
+
+    @ldap3mock.activate
+    def test_11_extended_userinfo(self):
+        # For testing the return of additional SAML attributes.
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'LDAPFILTER': '(&(cn=%s))',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName",'
+                                  '"additionalAttr": "homeDirectory" }',
+                      'UIDTYPE': 'DN',
+                      'NOREFERRALS': True}
+                     )
+        uid = y.getUserId("bob")
+        self.assertEqual(uid, 'cn=bob,ou=example,o=test')
+        userinfo = y.getUserInfo(uid)
+        self.assertEqual(userinfo.get("additionalAttr"), "/home/bob")
 
 
 class BaseResolverTestCase(MyTestCase):

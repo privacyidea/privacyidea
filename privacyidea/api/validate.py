@@ -237,18 +237,24 @@ def samlcheck():
               "jsonrpc": "2.0",
               "result": {
                 "status": true,
-                "value": {"auth": true,
-                          "username: <loginname>,
-                          "realm": ....,
-                          "surname": ....,
-                          "givenname": .....,
-                          "mobile": ....,
-                          "phone": ....,
-                          "email": ....
-                }
+                "value": {"attributes": {
+                            "username": "koelbel",
+                            "realm": "themis",
+                            "mobile": null,
+                            "phone": null,
+                            "myOwn": "/data/file/home/koelbel",
+                            "resolver": "themis",
+                            "surname": "Kölbel",
+                            "givenname": "Cornelius",
+                            "email": null},
+                          "auth": true}
               },
               "version": "privacyIDEA unknown"
             }
+
+    The response in value->attributes can contain additional attributes
+    (like "myOwn") which you can define in the LDAP resolver in the attribute
+    mapping.
     """
     user = get_user_from_param(request.all_data)
     password = getParam(request.all_data, "pass", required)
@@ -264,6 +270,7 @@ def samlcheck():
     result_obj = {"auth": auth,
                   "attributes": {}}
     if return_saml_attributes():
+        # privacyIDEA's own attribute map
         result_obj["attributes"] = {"username": ui.get("username"),
                                     "realm": user.realm,
                                     "resolver": user.resolver,
@@ -273,6 +280,9 @@ def samlcheck():
                                     "mobile": ui.get("mobile"),
                                     "phone": ui.get("phone")
                                     }
+        # additional attributes
+        for k, v in ui.iteritems():
+            result_obj["attributes"][k] = v
 
     g.audit_object.log({"info": details.get("message"),
                         "success": auth,

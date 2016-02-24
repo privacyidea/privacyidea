@@ -27,12 +27,21 @@ In most cases this is the wanted behaviour.
 But given your users log in with email addresses like *user@gmail.com* and
 *otheruser@outlook.com* you probably do not want to split.
 
+.. _return_saml_attributes:
+
 SAML Attributes
 ~~~~~~~~~~~~~~~
+
+.. index:: SAML attributes
 
 ``Return SAML attributes`` defines if during an SAML authentication request
 additional SAML attributes should be returned.
 Usually an authentication response only returns *true* or *false*.
+
+The SAML attributes are the known attributes that are defined in the
+attribute mapping e.g. of the LDAP resolver like *email*, *phone*,
+*givenname*, *surname* or any other attributes you fetch from the LDAP
+directory. For more information read :ref:`ldap_resolver`.
 
 
 FailCounterIncOnFalsePin
