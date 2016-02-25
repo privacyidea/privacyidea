@@ -124,7 +124,7 @@ LDAP object.
 The ``attribute mapping`` maps LDAP object attributes to user attributes in
 privacyIDEA. privacyIDEA knows the following attributes:
 
- * username,
+ * username *(mandatory)*,
  * phone,
  * mobile,
  * email,
@@ -184,8 +184,8 @@ if you have several thousand user entries in the table.
 The ``Attribute mapping`` defines which table column should be mapped to
 which privayIDEA attribute. The known attributes are:
 
- * userid,
- * username,
+ * userid *(mandatory)*,
+ * username *(mandatory)*,
  * phone,
  * mobile,
  * email,
@@ -235,7 +235,7 @@ Userinformation is then retrieved from the resource server.
 
 The available attributes for the ``Attribute mapping`` are:
 
- * username,
+ * username *(mandatory)*,
  * givenname,
  * surname,
  * phone,
