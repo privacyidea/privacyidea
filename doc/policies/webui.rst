@@ -60,6 +60,41 @@ Possible values are "disable" and "allowed".
 
 .. note:: The policy *login_mode* and *remote_user* work independent of each
    other. I.e. you can disable *login_mode* and allow *remote_user*.
+   
+You can use this policy to enable Single-Sign-On and integration into Kerberos
+or Active Directory. Add the following template into you apache configuration
+in /etc/apache2/sites-available/privacyidea.conf::
+
+        <Directory />
+                # For Apache 2.4 you need to set this:
+                # Require all granted
+                Options FollowSymLinks
+                AllowOverride None
+
+                SSLRequireSSL
+                AuthType Kerberos
+                AuthName "Kerberos Login"
+                KrbMethodNegotiate On
+                KrbMethodK5Passwd On
+                KrbAuthRealms YOUR-REALM
+                Krb5KeyTab /etc/apache2/http.keytab
+                KrbServiceName HTTP
+                KrbSaveCredentials On
+                require valid-user
+        </Directory>
+
+        <Location /validate/check>
+                Require all granted
+                Options FollowSymLinks
+                AllowOverride None
+        </Location>
+
+        <Location /ttype>
+                Require all granted
+                Options FollowSymLinks
+                AllowOverride None
+        </Location>
+
 
 logout_time
 ~~~~~~~~~~~
