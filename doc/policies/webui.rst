@@ -89,7 +89,7 @@ in /etc/apache2/sites-available/privacyidea.conf::
                 AllowOverride None
         </Location>
 
-        <Location /ttype/yubikey>
+        <Location /ttype>
                 Require all granted
                 Options FollowSymLinks
                 AllowOverride None
