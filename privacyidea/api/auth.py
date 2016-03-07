@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+# 2016-03-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add SAML Service Provider based on
+#            https://github.com/jpf/okta-pysaml2-example
 # 2015-11-04 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add REMOTE_USER check
 # 2015-04-03 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -41,7 +44,8 @@ and password.
 from flask import (Blueprint,
                    request,
                    current_app,
-                   g)
+                   g,
+                   redirect, url_for)
 from lib.utils import (send_result, get_all_params,
                        verify_auth_token)
 from ..lib.crypto import geturandom, init_hsm
@@ -60,6 +64,15 @@ from privacyidea.lib.realm import get_default_realm
 from privacyidea.api.lib.postpolicy import postpolicy, get_webui_settings
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 import logging
+import requests
+from saml2 import (
+    BINDING_HTTP_POST,
+    BINDING_HTTP_REDIRECT,
+    entity,
+)
+from saml2.client import Saml2Client
+from saml2.config import Config as Saml2Config
+
 
 log = logging.getLogger(__name__)
 
@@ -335,3 +348,186 @@ def get_rights():
     enroll_types = g.policy_object.ui_get_enroll_tokentypes(request.remote_addr,
                                                             g.logged_in_user)
     return send_result(enroll_types)
+
+
+saml_urls = {
+    "okta": 'http://idp.oktadev.com/metadata',
+}
+
+
+def saml_client_for(idp_name=None):
+    '''
+    Given the name of an IdP, return a configuation.
+    The configuration is a hash for use by saml2.config.Config
+    '''
+
+    if idp_name not in saml_urls:
+        raise Exception("Settings for IDP '{}' not found".format(idp_name))
+    #acs_url = url_for(
+    #    ".saml_idp_return",
+    #    idp_name=idp_name,
+    #    _external=True)
+    #https_acs_url = url_for(
+    #    ".saml_idp_return",
+    #    idp_name=idp_name,
+    #    _external=True,
+    #    _scheme='https')
+    acs_url = "http://1b3369c8.ngrok.com/auth/saml/acs/%s" % idp_name
+    https_acs_url = "http://1b3369c8.ngrok.com/auth/saml/acs/%s" % idp_name
+
+    # NOTE:
+    #   Ideally, this should fetch the metadata and pass it to
+    #   PySAML2 via the "inline" metadata type.
+    #   However, this method doesn't seem to work on PySAML2 v2.4.0
+    #
+    #   SAML metadata changes very rarely. On a production system,
+    #   this data should be cached as approprate for your production system.
+    rv = requests.get(saml_urls[idp_name])
+    import tempfile
+    tmp = tempfile.NamedTemporaryFile()
+    f = open(tmp.name, 'w')
+    f.write(rv.text)
+    f.close()
+
+    settings = {
+        'metadata': {
+            # 'inline': metadata,
+            "local": [tmp.name]
+            },
+        'service': {
+            'sp': {
+                'endpoints': {
+                    'assertion_consumer_service': [
+                        (acs_url, BINDING_HTTP_REDIRECT),
+                        (acs_url, BINDING_HTTP_POST),
+                        (https_acs_url, BINDING_HTTP_REDIRECT),
+                        (https_acs_url, BINDING_HTTP_POST)
+                    ],
+                },
+                # Don't verify that the incoming requests originate from us via
+                # the built-in cache for authn request ids in pysaml2
+                'allow_unsolicited': True,
+                # Don't sign authn requests, since signed requests only make
+                # sense in a situation where you control both the SP and IdP
+                'authn_requests_signed': False,
+                'logout_requests_signed': True,
+                'want_assertions_signed': True,
+                'want_response_signed': False,
+            },
+        },
+    }
+    spConfig = Saml2Config()
+    spConfig.load(settings)
+    spConfig.allow_unknown_attributes = True
+    saml_client = Saml2Client(config=spConfig)
+    tmp.close()
+    return saml_client
+
+
+@jwtauth.route('/saml/acs/<idp_name>', methods=["POST"])
+def saml_acs(idp_name):
+    """
+    This endpoint is called, after the login at the SAML IdP was successful.
+    :param idp_name:
+    :return:
+    """
+    saml_client = saml_client_for(idp_name)
+    authn_response = saml_client.parse_authn_request_response(
+        request.form['SAMLResponse'],
+        entity.BINDING_HTTP_POST)
+    authn_response.get_identity()
+    user_info = authn_response.get_subject()
+    username = user_info.text
+
+    # Here we need to check, if the user exists and log the user in.
+    (loginname, realm) = split_user(username)
+    realm = realm or get_default_realm()
+    role = ROLE.USER
+    admin_auth = False
+    user_auth = False
+    if db_admin_exist(username):
+        role = ROLE.ADMIN
+        admin_auth = True
+        g.audit_object.log({"success": True,
+                            "user": "",
+                            "administrator": username,
+                            "info": "internal admin"})
+    else:
+        # check, if the user exists
+        user_obj = User(loginname, realm)
+        if user_obj.exist():
+            user_auth = True
+            superuser_realms = current_app.config.get("SUPERUSER_REALM", [])
+            if user_obj.realm in superuser_realms:
+                role = ROLE.ADMIN
+                admin_auth = True
+
+    if not admin_auth and not user_auth:
+        raise AuthError("Authentication failure",
+                        "User does not exist", status=401)
+    else:
+        g.audit_object.log({"success": True})
+
+    # If the HSM is not ready, we need to create the nonce in another way!
+    hsm = init_hsm()
+    if hsm.is_ready:
+        nonce = geturandom(hex=True)
+        # Add the role to the JWT, so that we can verify it internally
+        # Add the authtype to the JWT, so that we could use it for access
+        # definitions
+        rights = g.policy_object.ui_get_rights(role, realm, loginname,
+                                               request.remote_addr)
+    else:
+        import os
+        import binascii
+        nonce = binascii.hexlify(os.urandom(20))
+        rights = []
+
+    validity = timedelta(hours=1)
+    secret = current_app.secret_key
+    token = jwt.encode({"username": loginname,
+                        "realm": realm,
+                        "nonce": nonce,
+                        "role": role,
+                        "authtype": "saml",
+                        "exp": datetime.utcnow() + validity,
+                        "rights": rights}, secret)
+
+    # Add the role to the response, so that the WebUI can make decisions
+    # based on this (only show selfservice, not the admin part)
+    return send_result({"token": token,
+                        "role": role,
+                        "username": loginname,
+                        "realm": realm,
+                        "rights": rights})
+
+    # For this we need to create the access token and
+    # Then we need to call the WebUI.
+    return redirect("http://localhost:5000")
+
+
+@jwtauth.route('/saml/login/<idp_name>', methods=['POST', 'GET'])
+def saml_sp_login(idp_name):
+    """
+    This redirects to the SAML IdP Login page.
+    :return:
+    """
+    saml_client = saml_client_for(idp_name)
+    reqid, info = saml_client.prepare_for_authenticate()
+
+    redirect_url = None
+    # Select the IdP URL to send the AuthN request to
+    for key, value in info['headers']:
+        if key is 'Location':
+            redirect_url = value
+    response = redirect(redirect_url, code=302)
+    # NOTE:
+    #   I realize I _technically_ don't need to set Cache-Control or Pragma:
+    #     http://stackoverflow.com/a/5494469
+    #   However, Section 3.2.3.2 of the SAML spec suggests they are set:
+    #     http://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf
+    #   We set those headers here as a "belt and suspenders" approach,
+    #   since enterprise environments don't always conform to RFCs
+    response.headers['Cache-Control'] = 'no-cache, no-store'
+    response.headers['Pragma'] = 'no-cache'
+    return response
