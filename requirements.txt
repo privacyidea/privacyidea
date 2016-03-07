@@ -62,3 +62,4 @@ sqlsoup==0.9.0
 stdeb==0.8.5
 Werkzeug==0.10.4
 psycopg2==2.6
+lxml>=3.3
