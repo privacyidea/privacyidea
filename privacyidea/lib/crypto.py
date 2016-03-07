@@ -43,10 +43,12 @@ from flask import current_app
 from Crypto.Hash import SHA as SHA1
 from Crypto.Hash import SHA256 as HashFunc
 from Crypto.Cipher import AES
+from Crypto.PublicKey import RSA
+from Crypto.Signature import pkcs1_15
 import passlib.hash
 import sys
 import traceback
-from Crypto.PublicKey import RSA
+
 
 
 (ma, mi, _, _, _,) = sys.version_info
@@ -615,8 +617,10 @@ class Sign(object):
         :rtype: long
         """
         RSAkey = RSA.importKey(self.private)
-        hashvalue = HashFunc.new(s).digest()
-        signature = RSAkey.sign(hashvalue, 1)
+        #hashvalue = HashFunc.new(s).digest()
+        # signature = RSAkey.sign(hashvalue, 1)
+        hashvalue = HashFunc.new(s)
+        signature = pkcs1_15.new(RSAkey).sign(hashvalue)
         s_signature = str(signature[0])
         return s_signature
 
@@ -627,9 +631,11 @@ class Sign(object):
         r = False
         try:
             RSAkey = RSA.importKey(self.public)
-            hashvalue = HashFunc.new(s).digest()
+            #hashvalue = HashFunc.new(s).digest()
             signature = long(signature)
-            r = RSAkey.verify(hashvalue, (signature,))
+            #r = RSAkey.verify(hashvalue, (signature,))
+            hashvalue = HashFunc.new(s)
+            pkcs1_15.new(RSAkey).verify(hashvalue, signature)
         except Exception:  # pragma: no cover
             log.error("Failed to verify signature: %r" % s)
             log.debug("%s" % traceback.format_exc())
