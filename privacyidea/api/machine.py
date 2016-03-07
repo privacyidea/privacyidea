@@ -102,7 +102,11 @@ def list_machines_api():
     hostname = getParam(request.all_data, "hostname")
     ip = getParam(request.all_data, "ip")
     if ip:
-        ip = netaddr.IPAddress(ip)
+        try:
+            ip = netaddr.IPAddress(ip)
+        except netaddr.AddrFormatError:
+            # This happens when filtering in the machine view
+            ip = None
     id = getParam(request.all_data, "id")
     resolver = getParam(request.all_data, "resolver")
 
