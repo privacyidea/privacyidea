@@ -111,6 +111,8 @@ def get_auth_token():
         the API.
     :jsonparam password: The password/credentials of the user who wants to
         authenticate to the API.
+    :jsonparam SAMLResponse: When acting as a SAML 2.0 SP and the user has
+        authenticated to an IdP, this contains the SAML Response.
 
     :return: A json response with an authentication token, that needs to be
         used in any further request.
@@ -174,22 +176,36 @@ def get_auth_token():
        }
 
     """
-    validity = timedelta(hours=1)
-    username = request.all_data.get("username")
-    password = request.all_data.get("password")
-
-    g.audit_object.log({"user": username})
-
-    secret = current_app.secret_key
-    superuser_realms = current_app.config.get("SUPERUSER_REALM", [])
-    # This is the default role for the logged in user.
-    # The role privileges may be risen to "admin"
-    role = ROLE.USER
     # The way the user authenticated. This could be
     # "password" = The admin user DB or the user store
     # "pi" = The admin or the user is authenticated against privacyIDEA
     # "remote_user" = authenticated by webserver
     authtype = "password"
+
+    validity = timedelta(hours=1)
+    username = request.all_data.get("username")
+    password = request.all_data.get("password")
+    saml_respone = request.all_data.get("SAMLResponse")
+
+    if saml_respone:
+        saml_client = saml_client_for("okta")
+        authn_response = saml_client.parse_authn_request_response(
+            saml_respone,
+            entity.BINDING_HTTP_POST)
+        authn_response.get_identity()
+        user_info = authn_response.get_subject()
+        username = user_info.text
+        authtype = "saml"
+
+    # Here we need to check, if the user exists and log the user in.
+    loginname, realm = split_user(username)
+    realm = realm or get_default_realm()
+    g.audit_object.log({"user": username})
+    secret = current_app.secret_key
+    superuser_realms = current_app.config.get("SUPERUSER_REALM", [])
+    # This is the default role for the logged in user.
+    # The role privileges may be risen to "admin"
+    role = ROLE.USER
     if username is None:
         raise AuthError("Authentication failure",
                         "missing Username",
@@ -197,19 +213,20 @@ def get_auth_token():
     # Verify the password
     admin_auth = False
     user_auth = False
-
-    loginname, realm = split_user(username)
-    realm = realm or get_default_realm()
     details = None
 
-    # Check if the remote user is allowed
-    if (request.remote_user == username) and is_remote_user_allowed(request):
+    if ((request.remote_user == username) and is_remote_user_allowed(
+            request)) or saml_respone:
+        # Now we only have to check, if the user exists and if he is a admin
+        # or a normal user
+        # Check if the remote user is allowed
+
         # Authenticated by the Web Server
         # Check if the username exists
         # 1. in local admins
         # 2. in a realm
         # 2a. is an admin realm
-        authtype = "remote_user "
+        authtype = "remote_user"
         if db_admin_exist(username):
             role = ROLE.ADMIN
             admin_auth = True
@@ -372,8 +389,8 @@ def saml_client_for(idp_name=None):
     #    idp_name=idp_name,
     #    _external=True,
     #    _scheme='https')
-    acs_url = "http://1b3369c8.ngrok.com/auth/saml/acs/%s" % idp_name
-    https_acs_url = "http://1b3369c8.ngrok.com/auth/saml/acs/%s" % idp_name
+    acs_url = "http://1b3369c8.ngrok.com/"
+    https_acs_url = "http://1b3369c8.ngrok.com/"
 
     # NOTE:
     #   Ideally, this should fetch the metadata and pass it to
@@ -430,10 +447,14 @@ def saml_acs(idp_name):
     This endpoint is called, after the login at the SAML IdP was successful.
     :param idp_name:
     :return:
+
+
     """
+    # TODO: Put this logic into get_auth_token!!!!
     saml_client = saml_client_for(idp_name)
     authn_response = saml_client.parse_authn_request_response(
-        request.form['SAMLResponse'],
+        request.all_data.get("SAMLResponse"),
+        #request.form['SAMLResponse'],
         entity.BINDING_HTTP_POST)
     authn_response.get_identity()
     user_info = authn_response.get_subject()
@@ -501,10 +522,6 @@ def saml_acs(idp_name):
                         "realm": realm,
                         "rights": rights})
 
-    # For this we need to create the access token and
-    # Then we need to call the WebUI.
-    return redirect("http://localhost:5000")
-
 
 @jwtauth.route('/saml/login/<idp_name>', methods=['POST', 'GET'])
 def saml_sp_login(idp_name):
@@ -521,13 +538,6 @@ def saml_sp_login(idp_name):
         if key is 'Location':
             redirect_url = value
     response = redirect(redirect_url, code=302)
-    # NOTE:
-    #   I realize I _technically_ don't need to set Cache-Control or Pragma:
-    #     http://stackoverflow.com/a/5494469
-    #   However, Section 3.2.3.2 of the SAML spec suggests they are set:
-    #     http://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf
-    #   We set those headers here as a "belt and suspenders" approach,
-    #   since enterprise environments don't always conform to RFCs
     response.headers['Cache-Control'] = 'no-cache, no-store'
     response.headers['Pragma'] = 'no-cache'
     return response

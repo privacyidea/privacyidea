@@ -60,6 +60,12 @@
                     <p class="text-right" ng-show="passwordReset === 'True'">
                         <a ui-sref="recovery" translate>Reset Password</a>
                     </p>
+                    <p class="text-right">
+                        <a href="/auth/saml/login/okta" translate>Login with
+                            SSO (okta)
+                            {{ samlResponse }}
+                        </a>
+                    </p>
                 </div>
 
             </form>

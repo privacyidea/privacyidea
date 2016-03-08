@@ -38,7 +38,7 @@ DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
 login_blueprint = Blueprint('login_blueprint', __name__)
 
 
-@login_blueprint.route('/', methods=['GET'])
+@login_blueprint.route('/', methods=['GET', 'POST'])
 def single_page_application():
     instance = request.script_root
     if instance == "/":
@@ -70,6 +70,7 @@ def single_page_application():
     except HSMException:
         hsm_ready = False
 
+    saml_response = request.form.get('SAMLResponse', '')
     return render_template("index.html", instance=instance,
                            backendUrl=backend_url,
                            browser_lang=browser_lang,
@@ -77,5 +78,6 @@ def single_page_application():
                            theme=theme,
                            password_reset=password_reset,
                            hsm_ready=hsm_ready,
-                           customization=customization)
+                           customization=customization,
+                           SAMLResponse=saml_response)
 

@@ -36,6 +36,8 @@ angular.module("privacyideaApp")
     if (!$scope.remoteUser) {
         $scope.loginWithCredentials = true;
     }
+    obj = angular.element(document.querySelector("#SAML_RESPONSE"));
+    $scope.samlResponse = obj.val();
     obj = angular.element(document.querySelector("#PASSWORD_RESET"));
     $scope.passwordReset = obj.val();
     obj = angular.element(document.querySelector("#HSM_READY"));
@@ -136,6 +138,21 @@ angular.module("privacyideaApp")
         $scope.login = {username: $scope.remoteUser, password: ""};
         $scope.authenticate();
     };
+
+    if ($scope.samlResponse) {
+        // Now do automatic login
+        $http.post(authUrl, {
+            SAMLResponse: $scope.samlResponse
+        }, {}).success(function (data) {
+            $scope.do_login_stuff(data);
+        }).error(function(data){
+            inform.add(gettextCatalog.getString("Authentication failed. ")
+                    + data.result.error.message,
+                {type: "danger", ttl: 10000});
+        }).finally(
+            $scope.samlResponse = ""
+        )
+    }
 
     $scope.authenticate = function () {
         $scope.polling = false;
