@@ -51,7 +51,7 @@ pycparser==2.10
 pycrypto==2.6.1
 pyparsing==2.0.3
 pyrad==2.0
-pysaml2==4.0.3
+pysaml2==4.0.0
 pytest==2.7.2
 pytest-cov==1.8.1
 pytest-runner==2.5.1

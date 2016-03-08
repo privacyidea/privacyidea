@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2016-03-08 Cornelius Kölbel <cornelius@privacyidea.org>
+ *     Add states for configuring SAML IdP configuration
  * 2015-12-18 Cornelius Kölbel <cornelius@privacyidea.org>
  *     Add state for SMTP Servers
  * 2015-01-11 Cornelius Kölbel, <cornelius@privacyidea.org>
@@ -188,6 +190,21 @@ angular.module('privacyideaApp.configStates', ['ui.router']).config(
                     url: "/edit/{identifier:.*}",
                     templateUrl: configpath + "config.radius.edit.html",
                     controller: "radiusServerController"
+                })
+                .state('config.saml', {
+                    url: "/saml",
+                    templateUrl: configpath+ "config.saml.html",
+                    controller: "samlIdPController"
+                })
+                .state('config.saml.list', {
+                    url: "/list",
+                    templateUrl: configpath + "config.saml.list.html",
+                    controller: "samlIdPController"
+                })
+                .state('config.saml.edit', {
+                    url: "/edit/{identifier:.*}",
+                    templateUrl: configpath + "config.saml.edit.html",
+                    controller: "samlIdPController"
                 })
             ;
         }]);

@@ -1,0 +1,37 @@
+<div>
+    <table class="table table-bordered table-responsive table-striped">
+        <thead>
+        <tr>
+            <th translate>Identifier</th>
+            <th translate>Metadata Url</th>
+            <th translate>Active</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="(identifier, server) in samlIdPs">
+            <td>
+                <a ui-sref="config.saml.edit({identifier:identifier})">
+                        {{ identifier }}</a>
+            </td>
+            <td>
+                {{ server.metadata_url }}
+            </td>
+            <td>
+                {{ server.active }}
+            </td>
+            <td>
+                <button class="btn btn-danger"
+                        ng-click="delSAMLIdP(identifier)">
+                        <div class="glyphicon glyphicon-trash"
+                                translate>
+                        Delete
+                        </div>
+                </button>
+            </td>
+        </tr>
+
+        </tbody>
+    </table>
+
+
+</div>

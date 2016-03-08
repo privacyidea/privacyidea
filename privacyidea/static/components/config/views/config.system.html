@@ -32,6 +32,13 @@
                             <translate>RADIUS servers</translate>
                         </a>
                     </li>
+                    <li role="presentation"
+                        ng-class="{ active: $state.includes('config.saml')}">
+                        <a ui-sref="config.saml">
+                            <span class="glyphicon glyphicon-cloud"></span>
+                            <translate>SAML IdPs</translate>
+                        </a>
+                    </li>
             </ul>
         </div>
     </div>

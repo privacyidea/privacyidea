@@ -1,0 +1,23 @@
+<div class="row">
+    <div class="col-lg-3">
+        <div class="pa-sidebar panel">
+            <ul class="nav nav-pills nav-stacked">
+                <li role="presentation"
+                    ng-class="{ active: $state.includes('config.saml.list')}">
+                    <a ui-sref="config.saml.list"
+                            translate>List SAML IdP definitions</a></li>
+                <li role="presentation"
+                    >
+                    <a ui-sref="config.saml.edit" translate>
+                        New SAML Identity Provider
+                    </a>
+
+                </li>
+            </ul>
+        </div>
+
+    </div>
+    <div ui-view class="col-lg-9 slide panel">
+    </div>
+</div>
+

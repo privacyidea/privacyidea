@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2016-03-08 Cornelius Kölbel <cornelius@privacyidea.org>
+ *     Add SAML factories
  * 2015-01-11 Cornelius Kölbel, <cornelius@privacyidea.org>
  *
  * This code is free software; you can redistribute it and/or
@@ -52,7 +54,7 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
                                          resolverUrl, realmUrl,
                                          machineResolverUrl,
                                          policyUrl, smtpServerUrl,
-                                         radiusServerUrl,
+                                         radiusServerUrl, samlUrl,
                                          defaultRealmUrl, systemUrl,
                                          CAConnectorUrl, inform) {
     /**
@@ -330,6 +332,27 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
                 headers: {'PI-Authorization': AuthFactory.getAuthToken(),
                           'Content-Type': 'application/json'}
             }).success(callback).error(error_func);
-        }
+        },
+        addSAML: function(params, callback) {
+            var identifier = params["identifier"];
+            $http.post(samlUrl + "/" + identifier, params, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+
+        },
+        delSAML: function(identifier, callback) {
+            $http.delete(samlUrl + "/" + identifier, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
+        getSAML: function(callback, identifier) {
+            if (!identifier) {identifier = "";}
+            $http.get(samlUrl + "/" + identifier, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
     };
 });

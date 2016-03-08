@@ -1,0 +1,47 @@
+
+<h2 class="form-signin-heading"
+        ng-show="identifier"
+        translate>Edit SAML Identity Provider {{ identifier }}</h2>
+<h2 class="form-signin-heading"
+        ng-hide="identifier"
+        translate>Create a new Identity Provider {{ params.identifier }}</h2>
+
+<form name="formSAML" role="form" validate
+      class="form-horizontal">
+
+    <div class="form-group"
+        ng-class="{'has-error': !params.identifier}">
+        <label for="identifier" class="col-sm-3 control-label"
+                translate>Identifier</label>
+        <div class="col-sm-9">
+            <input name="identifier" id="identifier" class="form-control"
+                   ng-model="params.identifier" required
+                   placeholder="some_SAML_IdP"
+                   autofocus/>
+            <p class="help-block" translate>This is the unique identifying name
+                of the SAML Identity Provider.</p>
+        </div>
+    </div>
+    <div class="form-group"
+        ng-class="{'has-error': !params.metadata_url}">
+        <label for="server" class="col-sm-3 control-label" translate>
+            Metadata URL</label>
+
+        <div class="col-sm-9">
+            <input name="metadata_url" class="form-control"
+                   ng-model="params.metadata_url" required
+                   placeholder="http://your.identity-provider
+                   .com/path/to/metadata"/>
+        </div>
+    </div>
+
+    <div class="text-center">
+        <button ng-click="saveSAMLIdP()"
+                ng-disabled="formSAML.$invalid"
+                class="btn btn-primary"
+                translate>Save SAML IdP definition
+        </button>
+    </div>
+
+</form>
+

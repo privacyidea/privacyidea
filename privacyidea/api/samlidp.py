@@ -61,7 +61,18 @@ def create(identifier=None):
     """
     param = request.all_data
     identifier = identifier.replace(" ", "_")
-    r = add_samlidp(identifier, **param)
+    metadata_url = getParam(param, "metadata_url", optional=required)
+    active = getParam(param, "active", default=True)
+    allow_unsolicited = getParam(param, "allow_unsolicited", default=True)
+    authn_requests_signed = getParam(param, "authn_requests_signed",
+                                     default=False),
+    logout_requests_signed = getParam(param, "logout_requests_signed",
+                                      default=True),
+    want_assertions_signed = getParam(param, "want_assertions_signed",
+                                      default=True),
+    want_response_signed = getParam(param, "want_response_signed",
+                                    default=False)
+    r = add_samlidp(identifier, metadata_url, active=active)
     g.audit_object.log({'success': r > 0,
                         'info':  r})
     return send_result(r > 0)
