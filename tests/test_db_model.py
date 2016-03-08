@@ -9,6 +9,7 @@ from privacyidea.models import (Token,
                                 Challenge, MachineResolver,
                                 MachineResolverConfig, MachineToken, Admin,
                                 CAConnector, CAConnectorConfig, SMTPServer,
+                                SAMLIdP,
                                 PasswordReset)
 from .base import MyTestCase
 from datetime import datetime
@@ -505,3 +506,28 @@ class TokenModelTestCase(MyTestCase):
         p2 = PasswordReset.query.filter_by(username="cornelius",
                                            realm="realm").first()
         self.assertTrue(p2.recoverycode, "recoverycode")
+
+    def test_19_add_and_delete_samlidp(self):
+        s1 = SAMLIdP(identifier="ssoidp1",
+                     metadata_url="http://example.com/metadata")
+        s1.save()
+        s2 = SAMLIdP.query.filter_by(identifier="ssoidp1").first()
+        self.assertTrue(s2.metadata_url, "http://example.com/metadata")
+
+        # Update the server
+        r = SAMLIdP(identifier="ssoidp1",
+                    metadata_url="http://example.com/metadata",
+                    authn_requests_signed=True,
+                    active=False).save()
+        modified_server = SAMLIdP.query.filter_by(
+            identifier="ssoidp1").first()
+
+        self.assertEqual(modified_server.authn_requests_signed, True)
+        self.assertEqual(modified_server.active, False)
+
+        # Delete the server
+        s2.delete()
+        # Try to find the server
+        s2 = SAMLIdP.query.filter_by(identifier="ssoidp1").first()
+        # The server does not exist anymore
+        self.assertEqual(s2, None)

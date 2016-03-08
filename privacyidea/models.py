@@ -1692,6 +1692,52 @@ class RADIUSServer(MethodsMixin, db.Model):
         return ret
 
 
+class SAMLIdP(MethodsMixin, db.Model):
+    """
+    This table stores the SAML IdP Configuration.
+    """
+    __tablename__ = 'samlidp'
+    id = db.Column(db.Integer, primary_key=True)
+    identifier = db.Column(db.Unicode(255), nullable=False)
+    active = db.Column(db.Boolean, default=True)
+    metadata_url = db.Column(db.Unicode(1024), nullable=False)
+    allow_unsolicited = db.Column(db.Boolean, default=True)
+    authn_requests_signed = db.Column(db.Boolean, default=False)
+    logout_requests_signed = db.Column(db.Boolean, default=True)
+    want_assertions_signed = db.Column(db.Boolean, default=True)
+    want_response_signed = db.Column(db.Boolean, default=False)
+    metadata_cache = db.Column(db.UnicodeText, default="")
+
+    def save(self):
+        samlidp = SAMLIdP.query.filter(SAMLIdP.identifier ==
+                                       self.identifier).first()
+        if samlidp is None:
+            # create a new one
+            db.session.add(self)
+            db.session.commit()
+            ret = self.id
+        else:
+            # update
+            values = {"metadata_url": self.metadata_url}
+            if self.active is not None:
+                values["active"] = self.active
+            if self.allow_unsolicited is not None:
+                values["allow_unsolicited"] = self.allow_unsolicited
+            if self.authn_requests_signed is not None:
+                values["authn_requests_signed"] = self.authn_requests_signed
+            if self.logout_requests_signed is not None:
+                values["logout_requests_signed"] = self.logout_requests_signed
+            if self.want_assertions_signed is not None:
+                values["want_assertions_signed"] = self.want_assertions_signed
+            if self.want_response_signed is not None:
+                values["want_response_signed"] = self.want_response_signed
+            SAMLIdP.query.filter(SAMLIdP.identifier ==
+                                 self.identifier).update(values)
+            ret = samlidp.id
+        db.session.commit()
+        return ret
+
+
 class SMTPServer(MethodsMixin, db.Model):
     """
     This table can store configurations for SMTP servers.
