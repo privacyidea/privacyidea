@@ -152,7 +152,7 @@ def before_request():
 @caconnector_blueprint.after_request
 @smtpserver_blueprint.after_request
 @radiusserver_blueprint.after_request
-@samlidp_blueprint.after_app_request
+@samlidp_blueprint.after_request
 @postrequest(sign_response, request=request)
 def after_request(response):
     """
