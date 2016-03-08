@@ -326,8 +326,8 @@ class DefaultSecurityModule(SecurityModule):
         """
         Encrypt the given text with the password.
         A key is derived from the password and used to encrypt the text in
-        AES MODE_CBC. The IV is returned togeather with the cipher text.
-        <IV:Ciphter>
+        AES MODE_CBC. The IV is returned together with the cipher text.
+        <IV:Cipher>
 
         :param text: The text to encrypt
         :param password: The password to derive a key from
