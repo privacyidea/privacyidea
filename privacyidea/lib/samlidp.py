@@ -104,7 +104,7 @@ def add_samlidp(identifier, metadata_url,
     :param identifier: The identifier or the name of the SAML IdP configuration.
     :type identifier: basestring
     :param metadata_url: The URL where to fetch the metadata
-    :param active: wheather the SAML config should be active
+    :param active: whether the SAML config should be active
     :param allow_unsolicited:
     :param authn_requests_signed:
     :param logout_requests_signed:
@@ -113,8 +113,9 @@ def add_samlidp(identifier, metadata_url,
     :return: The Id of the database object
     """
     metadata = ""
-    r = SAMLIdP_DB(identifier=identifier, metadata_url=metadata_url,
-                   active=active, allow_unsolicited=allow_unsolicited,
+    r = SAMLIdP_DB(identifier=identifier, active=active,
+                   metadata_url=metadata_url,
+                   allow_unsolicited=allow_unsolicited,
                    authn_requests_signed=authn_requests_signed,
                    logout_requests_signed=logout_requests_signed,
                    want_assertions_signed=want_assertions_signed,

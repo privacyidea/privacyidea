@@ -47,6 +47,7 @@ from privacyidea.api.ttype import ttype_blueprint
 from privacyidea.api.smtpserver import smtpserver_blueprint
 from privacyidea.api.radiusserver import radiusserver_blueprint
 from privacyidea.api.recover import recover_blueprint
+from privacyidea.api.samlidp import samlidp_blueprint
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
 from privacyidea.config import config
 from privacyidea.models import db
@@ -150,6 +151,7 @@ def create_app(config_name="development",
     app.register_blueprint(smtpserver_blueprint, url_prefix='/smtpserver')
     app.register_blueprint(recover_blueprint, url_prefix='/recover')
     app.register_blueprint(radiusserver_blueprint, url_prefix='/radiusserver')
+    app.register_blueprint(samlidp_blueprint, url_prefix='/samlidp')
     db.init_app(app)
     migrate = Migrate(app, db)
 

@@ -235,6 +235,7 @@ class ACTION(object):
     SETHSM = "set_hsm_password"
     SMTPSERVERWRITE = "smtpserver_write"
     RADIUSSERVERWRITE = "radiusserver_write"
+    SAMLIDPWRITE = "samlidp_write"
 
 
 class LOGINMODE(object):
@@ -884,7 +885,10 @@ def get_static_policy_definitions(scope=None):
             ACTION.RADIUSSERVERWRITE: {'type': 'bool',
                                        'desc': _("Admin is allowed to write "
                                                  "new RADIUS server "
-                                                 "definitions.")}
+                                                 "definitions.")},
+            ACTION.SAMLIDPWRITE: {'type': 'bool',
+                                  'desc': _("Admin is allowed to write new "
+                                            "SAML IdP definitions.")}
 
         },
         # 'gettoken': {
