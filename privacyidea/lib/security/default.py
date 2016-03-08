@@ -309,7 +309,7 @@ class DefaultSecurityModule(SecurityModule):
         key = self._get_secret(slot_id)
         # convert input to ascii, so we can securely append bin data
         input_data = binascii.b2a_hex(data)
-        input_data += u"\x01\x02"
+        input_data += "\x01\x02"
         padding = (16 - len(input_data) % 16) % 16
         input_data += padding * "\0"
         aes = AES.new(key, AES.MODE_CBC, iv)
@@ -337,7 +337,7 @@ class DefaultSecurityModule(SecurityModule):
         bkey = create_key_from_password(password)
         # convert input to ascii, so we can securely append bin data
         input_data = binascii.b2a_hex(text)
-        input_data += u"\x01\x02"
+        input_data += "\x01\x02"
         padding = (16 - len(input_data) % 16) % 16
         input_data += padding * "\0"
         iv = geturandom(16)
@@ -366,7 +366,7 @@ class DefaultSecurityModule(SecurityModule):
         cipher_bin = binascii.unhexlify(cipher_hex)
         aes = AES.new(bkey, AES.MODE_CBC, iv_bin)
         output = aes.decrypt(cipher_bin)
-        eof = output.rfind(u"\x01\x02")
+        eof = output.rfind("\x01\x02")
         if eof >= 0:
             output = output[:eof]
         cleartext = binascii.a2b_hex(output)
@@ -395,7 +395,7 @@ class DefaultSecurityModule(SecurityModule):
         key = self._get_secret(slot_id)
         aes = AES.new(key, AES.MODE_CBC, iv)
         output = aes.decrypt(input_data)
-        eof = output.rfind(u"\x01\x02")
+        eof = output.rfind("\x01\x02")
         if eof >= 0:
             output = output[:eof]
 
