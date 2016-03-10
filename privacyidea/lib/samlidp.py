@@ -155,6 +155,7 @@ def delete_samlidp(identifier):
     return ret
 
 
+@log_with(log)
 def get_saml_client(identifier):
     """
     Returns the SAML client configuration to a SAML IdP stored in the database.
@@ -201,3 +202,16 @@ def get_saml_client(identifier):
     spConfig.allow_unknown_attributes = True
     saml_client = Saml2Client(config=spConfig)
     return saml_client
+
+
+@log_with(log)
+def get_first_saml_idp():
+    """
+    Return the identifier of the fist active SAML IdP.
+    :return: SAML IdP identifier
+    """
+    saml_idp = ""
+    samlidp_list = get_samlidp_list(active=True)
+    if samlidp_list:
+        saml_idp = samlidp_list[0].identifier
+    return saml_idp

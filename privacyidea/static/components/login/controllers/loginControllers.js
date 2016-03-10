@@ -38,6 +38,8 @@ angular.module("privacyideaApp")
     }
     obj = angular.element(document.querySelector("#SAML_RESPONSE"));
     $scope.samlResponse = obj.val();
+    obj = angular.element(document.querySelector("#SAMLIdP"));
+    $scope.SAMLIdP = obj.val();
     obj = angular.element(document.querySelector("#PASSWORD_RESET"));
     $scope.passwordReset = obj.val();
     obj = angular.element(document.querySelector("#HSM_READY"));

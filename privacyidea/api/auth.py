@@ -64,7 +64,7 @@ from privacyidea.lib.realm import get_default_realm
 from privacyidea.api.lib.postpolicy import postpolicy, get_webui_settings
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 import logging
-from privacyidea.lib.samlidp import get_saml_client
+from privacyidea.lib.samlidp import get_saml_client, get_first_saml_idp
 from saml2 import entity
 
 log = logging.getLogger(__name__)
@@ -181,7 +181,7 @@ def get_auth_token():
     saml_respone = request.all_data.get("SAMLResponse")
 
     if saml_respone:
-        saml_client = get_saml_client("okta")
+        saml_client = get_saml_client(get_first_saml_idp())
         authn_response = saml_client.parse_authn_request_response(
             saml_respone,
             entity.BINDING_HTTP_POST)

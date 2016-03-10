@@ -32,6 +32,7 @@ from flask import (Blueprint, render_template, request, current_app)
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.lib.passwordreset import is_password_reset
 from privacyidea.lib.error import HSMException
+from privacyidea.lib.samlidp import get_first_saml_idp
 
 DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
 
@@ -70,7 +71,13 @@ def single_page_application():
     except HSMException:
         hsm_ready = False
 
+    # Do SAML stuff. Get the SAMLResponse
+    # TODO: We might move the Assertion Consumer Service, that receives the
+    #       SAMLResponse to a dedicated page
     saml_response = request.form.get('SAMLResponse', '')
+    # TODO: Support more than one IdP
+    saml_idp = get_first_saml_idp()
+
     return render_template("index.html", instance=instance,
                            backendUrl=backend_url,
                            browser_lang=browser_lang,
@@ -79,5 +86,6 @@ def single_page_application():
                            password_reset=password_reset,
                            hsm_ready=hsm_ready,
                            customization=customization,
-                           SAMLResponse=saml_response)
+                           SAMLResponse=saml_response,
+                           SAMLIdP=saml_idp)
 

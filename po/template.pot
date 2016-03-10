@@ -190,8 +190,8 @@ msgstr ""
 msgid "Authentication Server URI"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:149
-#: privacyidea/static/components/login/controllers/loginControllers.js:205
+#: privacyidea/static/components/login/controllers/loginControllers.js:151
+#: privacyidea/static/components/login/controllers/loginControllers.js:207
 msgid "Authentication failed."
 msgstr ""
 
@@ -291,7 +291,7 @@ msgstr ""
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:177
+#: privacyidea/static/components/login/controllers/loginControllers.js:179
 msgid "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr ""
 
@@ -691,7 +691,7 @@ msgstr ""
 msgid "Enroll Token"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:55
+#: privacyidea/static/components/login/controllers/loginControllers.js:57
 #: privacyidea/static/components/token/controllers/tokenControllers.js:108
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:149
@@ -1063,7 +1063,7 @@ msgstr ""
 msgid "List SMTP server definitions"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:63
+#: privacyidea/static/components/login/controllers/loginControllers.js:65
 msgid "List tokens"
 msgstr ""
 
@@ -1090,7 +1090,7 @@ msgstr ""
 msgid "Log In"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:70
+#: privacyidea/static/components/login/controllers/loginControllers.js:72
 msgid "Log out"
 msgstr ""
 
@@ -1104,11 +1104,8 @@ msgid ""
 "                {{ remoteUser }}"
 msgstr ""
 
-#: privacyidea/static/components/login/views/login.html:64
-msgid ""
-"Login with\n"
-"                            SSO (okta)\n"
-"                            {{ samlResponse }}"
+#: privacyidea/static/components/login/views/login.html:66
+msgid "Login with SSO"
 msgstr ""
 
 #: privacyidea/static/components/login/views/login.html:19
@@ -1334,7 +1331,7 @@ msgid ""
 "          default realm for you from the machines /etc/passwd?"
 msgstr ""
 
-#: privacyidea/static/templates/index.html:38
+#: privacyidea/static/templates/index.html:39
 #: privacyidea/static/templates/menu.html:86
 msgid "Online Documentation"
 msgstr ""
@@ -1555,7 +1552,7 @@ msgstr ""
 msgid "Realm"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:301
+#: privacyidea/static/components/login/controllers/loginControllers.js:303
 msgid "Realm defrealm created."
 msgstr ""
 
@@ -1946,7 +1943,7 @@ msgstr ""
 msgid "Successfully authenticated."
 msgstr ""
 
-#: privacyidea/static/templates/index.html:28
+#: privacyidea/static/templates/index.html:29
 #: privacyidea/static/templates/menu.html:91
 msgid "Support"
 msgstr ""
@@ -2097,7 +2094,7 @@ msgid ""
 "    smartphone into an authentication device."
 msgstr ""
 
-#: privacyidea/static/components/login/views/login.html:77
+#: privacyidea/static/components/login/views/login.html:78
 msgid ""
 "The HSM is not ready. privacyIDEA can not work properly. Please start\n"
 "        the HSM and reload this page."
@@ -3136,7 +3133,7 @@ msgstr ""
 msgid "privacyIDEA Single Page Web Client"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:256
+#: privacyidea/static/components/login/controllers/loginControllers.js:258
 msgid "privacyIDEA UI supports hotkeys. Use '?' to get help."
 msgstr ""
 

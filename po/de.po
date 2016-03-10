@@ -202,8 +202,8 @@ msgstr "Audit"
 msgid "Authentication Server URI"
 msgstr "URI des Authentisierungsservers"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:149
-#: privacyidea/static/components/login/controllers/loginControllers.js:205
+#: privacyidea/static/components/login/controllers/loginControllers.js:151
+#: privacyidea/static/components/login/controllers/loginControllers.js:207
 msgid "Authentication failed."
 msgstr "Authentisierung fehlgeschlagen."
 
@@ -308,7 +308,7 @@ msgstr "Zertifikatsanforderung (PEM)"
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr "Zertifikate: x509 Zertifikate ausrollen."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:177
+#: privacyidea/static/components/login/controllers/loginControllers.js:179
 msgid ""
 "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr "Challenge-Response Anmeldung. Sie sind noch nicht fertig angemeldet."
@@ -721,7 +721,7 @@ msgstr "Neuen Token ausrollen"
 msgid "Enroll Token"
 msgstr "Token ausrollen"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:55
+#: privacyidea/static/components/login/controllers/loginControllers.js:57
 #: privacyidea/static/components/token/controllers/tokenControllers.js:108
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:149
@@ -1137,7 +1137,7 @@ msgstr "Alle IdPs anzeigen"
 msgid "List SMTP server definitions"
 msgstr "Alle SMTP Server anzeigen"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:63
+#: privacyidea/static/components/login/controllers/loginControllers.js:65
 msgid "List tokens"
 msgstr "Tokenliste anzeigen"
 
@@ -1164,7 +1164,7 @@ msgstr "Logbuch"
 msgid "Log In"
 msgstr "Anmelden"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:70
+#: privacyidea/static/components/login/controllers/loginControllers.js:72
 msgid "Log out"
 msgstr "Abmelden"
 
@@ -1178,12 +1178,9 @@ msgid ""
 "                {{ remoteUser }}"
 msgstr "Als {{ remoteUser }} anmelden"
 
-#: privacyidea/static/components/login/views/login.html:64
-msgid ""
-"Login with\n"
-"                            SSO (okta)\n"
-"                            {{ samlResponse }}"
-msgstr "Anmelden per SSO (okta)"
+#: privacyidea/static/components/login/views/login.html:66
+msgid "Login with SSO"
+msgstr "Single Sign-on"
 
 #: privacyidea/static/components/login/views/login.html:19
 msgid "Login with credentials"
@@ -1411,7 +1408,7 @@ msgstr ""
 "Datei /etc/passwd dieser Maschine automatisch ein Standard Realm erzeugt "
 "wird?"
 
-#: privacyidea/static/templates/index.html:38
+#: privacyidea/static/templates/index.html:39
 #: privacyidea/static/templates/menu.html:86
 msgid "Online Documentation"
 msgstr "Online Dokumentation"
@@ -1637,7 +1634,7 @@ msgstr ""
 msgid "Realm"
 msgstr "Realm "
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:301
+#: privacyidea/static/components/login/controllers/loginControllers.js:303
 msgid "Realm defrealm created."
 msgstr "Der Realm defrealm wurde erzeugt."
 
@@ -2041,7 +2038,7 @@ msgstr "Statistik"
 msgid "Successfully authenticated."
 msgstr "Erfolgreich authentisiert."
 
-#: privacyidea/static/templates/index.html:28
+#: privacyidea/static/templates/index.html:29
 #: privacyidea/static/templates/menu.html:91
 msgid "Support"
 msgstr "Support"
@@ -2214,7 +2211,7 @@ msgstr ""
 "einscannen. So können Sie das Smartphone zu einem Authentisierungs-Token "
 "umwandeln."
 
-#: privacyidea/static/components/login/views/login.html:77
+#: privacyidea/static/components/login/views/login.html:78
 msgid ""
 "The HSM is not ready. privacyIDEA can not work properly. Please start\n"
 "        the HSM and reload this page."
@@ -3467,7 +3464,7 @@ msgstr "Telefon"
 msgid "privacyIDEA Single Page Web Client"
 msgstr "privacyIDEA Single Page Web Client"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:256
+#: privacyidea/static/components/login/controllers/loginControllers.js:258
 msgid "privacyIDEA UI supports hotkeys. Use '?' to get help."
 msgstr "Das privacyIDEA UI unterstützt Hotkeys. Benutzen Sie '?' für Hilfe."
 
@@ -3591,6 +3588,12 @@ msgstr "Fenster"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."
+
+#~ msgid ""
+#~ "Login with\n"
+#~ "                            SSO (okta)\n"
+#~ "                            {{ samlResponse }}"
+#~ msgstr "Anmelden per SSO (okta)"
 
 #~ msgid "logout_requests_signed."
 #~ msgstr "Logout Anfragen signieren."
