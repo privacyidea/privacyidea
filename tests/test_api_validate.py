@@ -869,3 +869,47 @@ class ValidateAPITestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
             self.assertEqual(result.get("value"), True)
+
+    def test_21_validate_disabled(self):
+        # test a user with two tokens and otppin=userstore.
+        # One token is disabled. But the user must be able to login with the
+        # 2nd token
+        # user disableduser, realm: self.realm2, passwd: superSecret
+        set_policy(name="disalbed",
+                   scope=SCOPE.AUTH,
+                   action="%s=%s" % (ACTION.OTPPIN, "userstore"))
+        # enroll two tokens
+        r = init_token({"type": "spass", "serial": "spass1d"},
+                       user=User("disableduser", self.realm2))
+        r = init_token({"type": "spass", "serial": "spass2d"},
+                       user=User("disableduser", self.realm2))
+        # disable first token
+        r = enable_token("spass1d", False)
+        self.assertEqual(r, True)
+        # Check that the user still can authenticate with the 2nd token
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "disableduser",
+                                                 "realm": self.realm2,
+                                                 "pass": "superSecret"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+
+        # disable 2nd token
+        r = enable_token("spass2d", False)
+        r = enable_token("spass1d")
+        self.assertEqual(r, True)
+        # Check that the user still can authenticate with the first token
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "disableduser",
+                                                 "realm": self.realm2,
+                                                 "pass": "superSecret"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+
+        delete_policy("disabled")
