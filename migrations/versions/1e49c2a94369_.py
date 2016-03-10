@@ -22,6 +22,8 @@ def upgrade():
         sa.Column('identifier', sa.Unicode(length=255), nullable=False),
         sa.Column('active', sa.Boolean(), nullable=True),
         sa.Column('metadata_url', sa.Unicode(length=1024), nullable=False),
+        sa.Column('acs_url', sa.Unicode(length=1024), nullable=False),
+        sa.Column('https_acs_url', sa.Unicode(length=1024), nullable=False),
         sa.Column('allow_unsolicited', sa.Boolean(), nullable=True),
         sa.Column('authn_requests_signed', sa.Boolean(), nullable=True),
         sa.Column('logout_requests_signed', sa.Boolean(), nullable=True),

@@ -86,7 +86,7 @@ def getParam(param, key, optional=True, default=None):
 
     if key in param:
         ret = param[key]
-    elif default:
+    elif default is not None:
         ret = default
     elif not optional:
         raise ParameterError("Missing parameter: %r" % key, id=905)

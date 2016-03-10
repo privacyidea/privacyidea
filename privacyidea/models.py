@@ -1707,6 +1707,8 @@ class SAMLIdP(MethodsMixin, db.Model):
     want_assertions_signed = db.Column(db.Boolean, default=True)
     want_response_signed = db.Column(db.Boolean, default=False)
     metadata_cache = db.Column(db.UnicodeText, default="")
+    acs_url = db.Column(db.Unicode(1023), nullable=False)
+    https_acs_url = db.Column(db.Unicode(1023), nullable=False)
 
     def save(self):
         samlidp = SAMLIdP.query.filter(SAMLIdP.identifier ==
@@ -1731,6 +1733,10 @@ class SAMLIdP(MethodsMixin, db.Model):
                 values["want_assertions_signed"] = self.want_assertions_signed
             if self.want_response_signed is not None:
                 values["want_response_signed"] = self.want_response_signed
+            if self.acs_url is not None:
+                values["acs_url"] = self.acs_url
+            if self.https_acs_url is not None:
+                values["https_acs_url"] = self.https_acs_url
             SAMLIdP.query.filter(SAMLIdP.identifier ==
                                  self.identifier).update(values)
             ret = samlidp.id

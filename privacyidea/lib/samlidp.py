@@ -22,6 +22,13 @@ import logging
 from privacyidea.lib.log import log_with
 from privacyidea.lib.error import ConfigAdminError
 import requests
+from saml2 import (
+    BINDING_HTTP_POST,
+    BINDING_HTTP_REDIRECT,
+    entity,
+)
+from saml2.client import Saml2Client
+from saml2.config import Config as Saml2Config
 __doc__ = """
 This is the library for creating, listing and deleting SAML IdP server
 configurations in the database.
@@ -92,6 +99,7 @@ def get_samlidp_list(identifier=None, active=None):
 
 @log_with(log)
 def add_samlidp(identifier, metadata_url,
+                acs_url, https_acs_url,
                 active=True, allow_unsolicited=True,
                 authn_requests_signed=False,
                 logout_requests_signed=True,
@@ -104,6 +112,9 @@ def add_samlidp(identifier, metadata_url,
     :param identifier: The identifier or the name of the SAML IdP configuration.
     :type identifier: basestring
     :param metadata_url: The URL where to fetch the metadata
+    :param acs_url: The URL where the IdP returns to.
+        Usually the privacyIDEA base URL
+    :param https_acs_url: The URL where the IdP returns to.
     :param active: whether the SAML config should be active
     :param allow_unsolicited:
     :param authn_requests_signed:
@@ -115,6 +126,7 @@ def add_samlidp(identifier, metadata_url,
     metadata = ""
     r = SAMLIdP_DB(identifier=identifier, active=active,
                    metadata_url=metadata_url,
+                   acs_url=acs_url, https_acs_url=https_acs_url,
                    allow_unsolicited=allow_unsolicited,
                    authn_requests_signed=authn_requests_signed,
                    logout_requests_signed=logout_requests_signed,
@@ -142,3 +154,50 @@ def delete_samlidp(identifier):
         ret = samlidp.id
     return ret
 
+
+def get_saml_client(identifier):
+    """
+    Returns the SAML client configuration to a SAML IdP stored in the database.
+    The configuration is a hash for use by saml2.config.Config
+
+    :return: SAML client configuration
+    :rtype: saml2.config.Config
+    """
+    saml_idps = get_samlidp_list()
+    saml_config = None
+    # Find the identifier in the list
+    for saml_idp in saml_idps:
+        if saml_idp.identifier == identifier:
+            saml_config = saml_idp
+
+    # Fetch the metadata if the data is not yet cached
+    if not saml_config.metadata_cache:
+        fetch_metadata(identifier)
+
+    settings = {
+        'metadata': {
+            "inline": saml_config.metadata_cache
+            },
+        'service': {
+            'sp': {
+                'endpoints': {
+                    'assertion_consumer_service': [
+                        (saml_config.acs_url, BINDING_HTTP_REDIRECT),
+                        (saml_config.acs_url, BINDING_HTTP_POST),
+                        (saml_config.https_acs_url, BINDING_HTTP_REDIRECT),
+                        (saml_config.https_acs_url, BINDING_HTTP_POST)
+                    ],
+                },
+                'allow_unsolicited': saml_config.allow_unsolicited,
+                'authn_requests_signed': saml_config.authn_requests_signed,
+                'logout_requests_signed': saml_config.logout_requests_signed,
+                'want_assertions_signed': saml_config.want_assertions_signed,
+                'want_response_signed': saml_config.want_response_signed,
+            },
+        },
+    }
+    spConfig = Saml2Config()
+    spConfig.load(settings)
+    spConfig.allow_unknown_attributes = True
+    saml_client = Saml2Client(config=spConfig)
+    return saml_client

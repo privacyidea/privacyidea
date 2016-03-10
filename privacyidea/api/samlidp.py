@@ -52,6 +52,8 @@ def create(identifier=None):
 
     :param identifier: The unique name of the SAML IdP
     :param metadata_url: The URL where to fetch the metadata
+    :param acs_url: The URL where the IdP returns to
+    :param https_acs_url: The URL where the IdP returns to
     :param active: whether the SAML config should be active
     :param allow_unsolicited:
     :param authn_requests_signed:
@@ -65,14 +67,21 @@ def create(identifier=None):
     active = getParam(param, "active", default=True)
     allow_unsolicited = getParam(param, "allow_unsolicited", default=True)
     authn_requests_signed = getParam(param, "authn_requests_signed",
-                                     default=False),
+                                     default=False)
     logout_requests_signed = getParam(param, "logout_requests_signed",
-                                      default=True),
+                                      default=True)
     want_assertions_signed = getParam(param, "want_assertions_signed",
-                                      default=True),
+                                      default=True)
     want_response_signed = getParam(param, "want_response_signed",
                                     default=False)
-    r = add_samlidp(identifier, metadata_url, active=active)
+    acs_url = getParam(param, "acs_url", optional=required)
+    https_acs_url = getParam(param, "https_acs_url", optional=required)
+    r = add_samlidp(identifier, metadata_url, acs_url, https_acs_url,
+                    active=active, allow_unsolicited=allow_unsolicited,
+                    authn_requests_signed=authn_requests_signed,
+                    logout_requests_signed=logout_requests_signed,
+                    want_assertions_signed=want_assertions_signed,
+                    want_response_signed=want_response_signed)
     g.audit_object.log({'success': r > 0,
                         'info':  r})
     return send_result(r > 0)
@@ -89,6 +98,8 @@ def list_saml():
     for server in server_list:
         res[server.identifier] = {
             "metadata_url": server.metadata_url,
+            "acs_url": server.acs_url,
+            "https_acs_url": server.https_acs_url,
             "active": server.active,
             "allow_unsolicited": server.allow_unsolicited,
             "authn_requests_signed": server.authn_requests_signed,

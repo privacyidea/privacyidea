@@ -24,7 +24,7 @@
     </div>
     <div class="form-group"
         ng-class="{'has-error': !params.metadata_url}">
-        <label for="server" class="col-sm-3 control-label" translate>
+        <label for="metadata_url" class="col-sm-3 control-label" translate>
             Metadata URL</label>
 
         <div class="col-sm-9">
@@ -32,6 +32,30 @@
                    ng-model="params.metadata_url" required
                    placeholder="http://your.identity-provider
                    .com/path/to/metadata"/>
+        </div>
+    </div>
+
+    <div class="form-group"
+        ng-class="{'has-error': !params.acs_url}">
+        <label for="acs_url" class="col-sm-3 control-label" translate>
+            ACS URL</label>
+
+        <div class="col-sm-9">
+            <input name="acs_url" class="form-control"
+                   ng-model="params.acs_url" required
+                   placeholder="http://your.privacyidea"/>
+        </div>
+    </div>
+
+    <div class="form-group"
+        ng-class="{'has-error': !params.https_acs_url}">
+        <label for="https_acs_url" class="col-sm-3 control-label" translate>
+            HTTPS ACS URL</label>
+
+        <div class="col-sm-9">
+            <input name="https_acs_url" class="form-control"
+                   ng-model="params.https_acs_url" required
+                   placeholder="https://your.privacyidea"/>
         </div>
     </div>
 
