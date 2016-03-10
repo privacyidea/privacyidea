@@ -185,6 +185,15 @@ def get_auth_token():
         authn_response = saml_client.parse_authn_request_response(
             saml_respone,
             entity.BINDING_HTTP_POST)
+        if not authn_response:
+            # This often happens in saml2.entity:_parse_response.
+            # In response.verify(keys). The response can not be verified due
+            # to a time shift!
+            # Or if the ACS is not contained in the return addresses. Even a
+            # trailing slash can be a problem!
+            raise AuthError("Authentication failure",
+                            "Invalid SAML Response.",
+                            status=401)
         authn_response.get_identity()
         user_info = authn_response.get_subject()
         username = user_info.text

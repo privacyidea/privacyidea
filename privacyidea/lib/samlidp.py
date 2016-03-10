@@ -174,17 +174,6 @@ def get_saml_client(identifier):
     if not saml_config.metadata_cache:
         fetch_metadata(identifier)
 
-    # See if the metadata exists at /etc/privacyidea/saml-metadata/<identifier>
-    # TODO:
-
-    # The metadata needs to be read from a file. So we need to write it to a
-    # file
-    import tempfile
-    import os
-    fp = tempfile.NamedTemporaryFile(delete=False)
-    fp.write(saml_config.metadata_cache)
-    fp.close()
-
     settings = {
         'metadata': {
             "inline": [saml_config.metadata_cache],
@@ -211,5 +200,4 @@ def get_saml_client(identifier):
     spConfig.load(settings)
     spConfig.allow_unknown_attributes = True
     saml_client = Saml2Client(config=spConfig)
-    os.unlink(fp.name)
     return saml_client

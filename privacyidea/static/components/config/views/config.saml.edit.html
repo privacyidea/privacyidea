@@ -30,8 +30,16 @@
         <div class="col-sm-9">
             <input name="metadata_url" class="form-control"
                    ng-model="params.metadata_url" required
-                   placeholder="http://your.identity-provider
-                   .com/path/to/metadata"/>
+                   placeholder=
+                               "http://your.identity-provider.com/path/to/metadata"/>
+            <accordion close-others="false">
+                <accordion-group>
+                    <accordion-heading>
+                        <translate>Metadata XML</translate>
+                    </accordion-heading>
+                    {{ params.metadata }}
+                </accordion-group>
+            </accordion>
         </div>
     </div>
 
@@ -64,6 +72,100 @@
                 to.</p>
         </div>
     </div>
+
+    <div class="form-group">
+        <input name="active" id="active"
+               class="col-sm-3"
+               ng-model="params.active"
+               type="checkbox"
+                ng-checked="isChecked(params.active)"/>
+        <div class="col-sm-9">
+            <label for="active" translate>
+                This SAML IdP is active.
+            </label>
+            <p class="help help-block" translate>The IdP can only be used
+                for login if it is marked as active.</p>
+        </div>
+    </div>
+    <div class="form-group">
+        <input name="allow_unsolicited" id="allow_unsolicited"
+               ng-model="params.allow_unsolicited"
+               class="col-sm-3"
+               type="checkbox"
+                ng-checked="isChecked(params.allow_unsolicited)"/>
+        <div class="col-sm-9">
+            <label for="allow_unsolicited" translate>
+                Allow unsolicited requests.</label>
+            <p class="help help-block" translate>
+                This indicates if the IdP is allowed to initiate a
+                SAMLResponse to the Service Provider - in this case privacyIDEA.
+            </p>
+        </div>
+    </div>
+    <div class="form-group">
+        <input name="authn_requests_signed" id="authn_requests_signed"
+               ng-model="params.authn_requests_signed"
+               class="col-sm-3"
+               type="checkbox"
+                ng-checked="isChecked(params.authn_requests_signed)"/>
+        <div class="col-sm-9">
+            <label for="authn_requests_signed" translate>
+                Authn Requests signed.</label>
+            <p class="help help-block" translate>
+                Sign Authentication Requests.
+            </p>
+        </div>
+    </div>
+    <div class="form-group">
+        <input name="logout_requests_signed" id="logout_requests_signed"
+               ng-model="params.logout_requests_signed"
+               class="col-sm-3"
+               type="checkbox"
+                ng-checked="isChecked(params.logout_requests_signed)"/>
+        <div class="col-sm-9">
+            <label for="logout_requests_signed" translate>
+                Sign Logout Requests.</label>
+            <p class="help help-block" translate>
+                Sign Logout Requests.
+            </p>
+        </div>
+    </div>
+    <div class="form-group">
+        <input name="want_response_signed" id="want_response_signed"
+               ng-model="params.want_response_signed"
+               class="col-sm-3"
+               type="checkbox"
+                ng-checked="isChecked(params.want_response_signed)"/>
+        <div class="col-sm-9">
+            <label for="want_response_signed" translate>
+                Sign Responses.</label>
+            <p class="help help-block" translate>
+                Require the Responses to be signed.
+            </p>
+        </div>
+    </div>
+    <div class="form-group">
+        <input name="want_assertions_signed" id="want_assertions_signed"
+               ng-model="params.want_assertions_signed"
+               class="col-sm-3"
+               type="checkbox"
+                ng-checked="isChecked(params.want_assertions_signed)"/>
+        <div class="col-sm-9">
+            <label for="want_assertions_signed" translate>
+                Sign Assertions.</label>
+            <p class="help help-block" translate>
+                Require assertions to be signed.
+            </p>
+        </div>
+    </div>
+
+
+
+
+    <p class="help help-block" translate>
+        To view and verify the metadata you need to return to this page,
+        after you have saved the IdP settings.
+    </p>
 
     <div class="text-center">
         <button ng-click="saveSAMLIdP()"

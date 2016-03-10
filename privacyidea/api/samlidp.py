@@ -98,6 +98,7 @@ def list_saml():
     for server in server_list:
         res[server.identifier] = {
             "metadata_url": server.metadata_url,
+            "metadata": server.metadata_cache,
             "acs_url": server.acs_url,
             "https_acs_url": server.https_acs_url,
             "active": server.active,

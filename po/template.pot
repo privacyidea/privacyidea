@@ -22,6 +22,10 @@ msgid ""
 "    <p>Please try to reload and otherwise contact your system administrator!</p>"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.saml.edit.html:48
+msgid "ACS URL"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.token.yubico.html:25
 #: privacyidea/static/components/config/views/config.token.yubico.html:29
 #: privacyidea/static/components/config/views/config.token.yubikey.html:20
@@ -105,6 +109,10 @@ msgstr ""
 msgid "All users"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.saml.edit.html:97
+msgid "Allow unsolicited requests."
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:116
 msgid "An Attribute or the DN to identify the machine"
 msgstr ""
@@ -185,6 +193,10 @@ msgstr ""
 #: privacyidea/static/components/login/controllers/loginControllers.js:149
 #: privacyidea/static/components/login/controllers/loginControllers.js:205
 msgid "Authentication failed."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:112
+msgid "Authn Requests signed."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.system.html:108
@@ -855,6 +867,10 @@ msgstr ""
 msgid "HOTP: event based One Time Passwords"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.saml.edit.html:63
+msgid "HTTPS ACS URL"
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:50
 #: privacyidea/static/components/token/views/token.enroll.totp.html:58
 msgid "Hash algorithm"
@@ -1171,6 +1187,10 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.saml.list.html:6
 msgid "Metadata Url"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:38
+msgid "Metadata XML"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:88
@@ -1607,6 +1627,14 @@ msgstr ""
 msgid "Repeat password"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.saml.edit.html:156
+msgid "Require assertions to be signed."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:142
+msgid "Require the Responses to be signed."
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:22
 msgid "Required Realms"
 msgstr ""
@@ -1730,7 +1758,7 @@ msgstr ""
 msgid "Save Resolver"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:39
+#: privacyidea/static/components/config/views/config.saml.edit.html:171
 msgid "Save SAML IdP definition"
 msgstr ""
 
@@ -1881,6 +1909,23 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:316
 msgid "Show password"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:154
+msgid "Sign Assertions."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:114
+msgid "Sign Authentication Requests."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:126
+#: privacyidea/static/components/config/views/config.saml.edit.html:128
+msgid "Sign Logout Requests."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:140
+msgid "Sign Responses."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:88
@@ -2056,6 +2101,12 @@ msgstr ""
 msgid ""
 "The HSM is not ready. privacyIDEA can not work properly. Please start\n"
 "        the HSM and reload this page."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:86
+msgid ""
+"The IdP can only be used\n"
+"                for login if it is marked as active."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:8
@@ -2452,11 +2503,21 @@ msgid ""
 "                    allowed to masquerade as another client."
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.saml.edit.html:83
+msgid "This SAML IdP is active."
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.system.html:49
 msgid ""
 "This documentation contains the current\n"
 "            configuration of your system in restructured text. You can use\n"
 "            this to document your installed system."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:99
+msgid ""
+"This indicates if the IdP is allowed to initiate a\n"
+"                SAMLResponse to the Service Provider - in this case privacyIDEA."
 msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:18
@@ -2480,6 +2541,14 @@ msgid ""
 "            <em>Pre Shared Key</em> or <em>password</em>. If the values are\n"
 "            encrypted, please specify the Pre Shared Key in hex format or the\n"
 "            password."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:55
+#: privacyidea/static/components/config/views/config.saml.edit.html:70
+msgid ""
+"This is the Assertion Consumer\n"
+"                Service. The URL of your privacyIDEA system, the IdP returns\n"
+"                to."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:67
@@ -2616,6 +2685,12 @@ msgid ""
 "To ease the enrolling of RADIUS tokens you can\n"
 "    set default values in the\n"
 "    <a ui-sref=\"config.tokens({tokentype:'radius'})\">RADIUS Token Config</a>."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:165
+msgid ""
+"To view and verify the metadata you need to return to this page,\n"
+"        after you have saved the IdP settings."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.getserial.html:21

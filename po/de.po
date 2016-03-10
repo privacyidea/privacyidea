@@ -32,6 +32,10 @@ msgstr ""
 "<p>Die privacyIDEA API scheint offline zu sein!</p><p>Bitte laden Sie die "
 "Seite neu. Ansonsten wenden Sie sich an Ihren System Administrator!</p>"
 
+#: privacyidea/static/components/config/views/config.saml.edit.html:48
+msgid "ACS URL"
+msgstr "ACS URL"
+
 #: privacyidea/static/components/config/views/config.token.yubico.html:25
 #: privacyidea/static/components/config/views/config.token.yubico.html:29
 #: privacyidea/static/components/config/views/config.token.yubikey.html:20
@@ -114,6 +118,10 @@ msgstr "Alle Token"
 #: privacyidea/static/components/user/views/user.html:18
 msgid "All users"
 msgstr "Alle Benutzer"
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:97
+msgid "Allow unsolicited requests."
+msgstr "Unaufgeforderte Anfragen zulassen."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:116
 msgid "An Attribute or the DN to identify the machine"
@@ -198,6 +206,10 @@ msgstr "URI des Authentisierungsservers"
 #: privacyidea/static/components/login/controllers/loginControllers.js:205
 msgid "Authentication failed."
 msgstr "Authentisierung fehlgeschlagen."
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:112
+msgid "Authn Requests signed."
+msgstr "Authentifizierungsanfragen signieren."
 
 #: privacyidea/static/components/config/views/config.system.html:108
 msgid "Auto resync timeout"
@@ -896,6 +908,10 @@ msgstr "HOTP Token Einstellungen"
 msgid "HOTP: event based One Time Passwords"
 msgstr "HOTP: Ereignisbasiertes Einmal-Passwort"
 
+#: privacyidea/static/components/config/views/config.saml.edit.html:63
+msgid "HTTPS ACS URL"
+msgstr "HTTPS ACS URL"
+
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:50
 #: privacyidea/static/components/token/views/token.enroll.totp.html:58
 msgid "Hash algorithm"
@@ -1167,7 +1183,7 @@ msgid ""
 "Login with\n"
 "                            SSO (okta)\n"
 "                            {{ samlResponse }}"
-msgstr ""
+msgstr "Anmelden per SSO (okta)"
 
 #: privacyidea/static/components/login/views/login.html:19
 msgid "Login with credentials"
@@ -1246,6 +1262,10 @@ msgstr "SAML Metadaten URL"
 #: privacyidea/static/components/config/views/config.saml.list.html:6
 msgid "Metadata Url"
 msgstr "SAML Metadaten URL"
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:38
+msgid "Metadata XML"
+msgstr "XML Metadaten"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:88
 msgid "Microsoft Internet Explorer is not supported."
@@ -1691,6 +1711,14 @@ msgstr "Remote Benutzer"
 msgid "Repeat password"
 msgstr "Passwort wiederholen"
 
+#: privacyidea/static/components/config/views/config.saml.edit.html:156
+msgid "Require assertions to be signed."
+msgstr "Assertions des IdP müssen signiert sein."
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:142
+msgid "Require the Responses to be signed."
+msgstr "Antworten des IdP müssen signiert sein."
+
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:22
 msgid "Required Realms"
 msgstr "Erforderliche Realms"
@@ -1815,7 +1843,7 @@ msgstr "RADIUS Server speichern"
 msgid "Save Resolver"
 msgstr "Resolver speichern"
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:39
+#: privacyidea/static/components/config/views/config.saml.edit.html:171
 msgid "Save SAML IdP definition"
 msgstr "SAML IdP speichern"
 
@@ -1977,6 +2005,23 @@ msgstr "Vorlagen anzeigen"
 #: privacyidea/static/components/token/views/token.details.html:316
 msgid "Show password"
 msgstr "Passwort anzeigen"
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:154
+msgid "Sign Assertions."
+msgstr "Assertions signieren."
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:114
+msgid "Sign Authentication Requests."
+msgstr "Authentifizierungsanfragen signieren."
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:126
+#: privacyidea/static/components/config/views/config.saml.edit.html:128
+msgid "Sign Logout Requests."
+msgstr "Logout Anfragen signieren."
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:140
+msgid "Sign Responses."
+msgstr "Antworten signieren."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:88
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:100
@@ -2177,6 +2222,14 @@ msgstr ""
 "Das Security Modul ist nicht bereit. privacyIDEA wird nicht wie erwartet "
 "funktionieren, da es verschlüsselte Daten nicht entschlüsseln kann.    Bitte "
 "starten Sie das Security Modul und laden Sie diese Seite neu."
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:86
+msgid ""
+"The IdP can only be used\n"
+"                for login if it is marked as active."
+msgstr ""
+"Der Identity Provider kann für die Anmeldung nur verwendet werden, wenn er "
+"aktiv ist."
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:8
 #: privacyidea/static/components/token/views/token.enrolled.motp.html:8
@@ -2719,6 +2772,10 @@ msgstr ""
 "Diese Client IP Adressen oder Subnetze dürfen sich als ein anderer Client "
 "(andere IP-Adresse) ausgeben."
 
+#: privacyidea/static/components/config/views/config.saml.edit.html:83
+msgid "This SAML IdP is active."
+msgstr "Dieser SAML IdP ist aktiv."
+
 #: privacyidea/static/components/config/views/config.system.html:49
 msgid ""
 "This documentation contains the current\n"
@@ -2728,6 +2785,15 @@ msgstr ""
 "Diese Dokumentation enthält die aktuelle System-Konfiguration im "
 "\"restructured text\" Format.Dies kann verwendet werden, um einen "
 "Dokumentation des installierten Systems zu erstellen."
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:99
+msgid ""
+"This indicates if the IdP is allowed to initiate a\n"
+"                SAMLResponse to the Service Provider - in this case "
+"privacyIDEA."
+msgstr ""
+"Dies zeigt an, dass der Identity Provider selber SAML-Antworten an den "
+"Service Provider (privacyIDEA) senden darf."
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:18
 msgid ""
@@ -2760,6 +2826,17 @@ msgstr ""
 "unverschlüsselt oder   aber entweder mit einem <em>Pre Shared Key</em> oder "
 "<em>Passwort</em> verschlüsselt. Bitte geben Sie in diesem Fall den Pre "
 "Shared Key im Hexformat oder das Passwort an."
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:55
+#: privacyidea/static/components/config/views/config.saml.edit.html:70
+msgid ""
+"This is the Assertion Consumer\n"
+"                Service. The URL of your privacyIDEA system, the IdP "
+"returns\n"
+"                to."
+msgstr ""
+"Dies ist der \"Assertion Consumer Service\". Dies ist die URL des "
+"privacyIDEA Systems, zu dem der IdP zurück verweist."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:67
 msgid ""
@@ -2920,6 +2997,15 @@ msgid ""
 msgstr ""
 "Um RADIUS Token leichter auszurollen, können Sie die    <a ui-sref=\"config."
 "tokens({tokentype:'radius'})\">RADIUS Token Konfiguration</a> setzen."
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:165
+msgid ""
+"To view and verify the metadata you need to return to this page,\n"
+"        after you have saved the IdP settings."
+msgstr ""
+"Um die Metadaten sehen zu können und diese zu überprüfen, müssen Sie bitte "
+"zu dieser Seite zurückkehren, wenn Sie die IdP Einstellungen gespeichert "
+"haben."
 
 #: privacyidea/static/components/token/views/token.getserial.html:21
 msgid "Token Type"
@@ -3505,6 +3591,12 @@ msgstr "Fenster"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."
+
+#~ msgid "logout_requests_signed."
+#~ msgstr "Logout Anfragen signieren."
+
+#~ msgid "View"
+#~ msgstr "Anzeigen"
 
 #~ msgid "Mail Sender Address"
 #~ msgstr "Absenderadresse"
