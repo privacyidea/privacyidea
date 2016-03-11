@@ -104,7 +104,8 @@ def add_samlidp(identifier, metadata_url,
                 authn_requests_signed=False,
                 logout_requests_signed=True,
                 want_assertions_signed=True,
-                want_response_signed=False):
+                want_response_signed=False,
+                entityid="privacyIDEA_SP"):
     """
     This adds a SAML IdP configuration to the SAMLIdP database table.
     If the "identifier" already exists, the database entry is updated.
@@ -121,6 +122,8 @@ def add_samlidp(identifier, metadata_url,
     :param logout_requests_signed:
     :param want_response_signed:
     :param want_assertions_signed:
+    :param entityid: The "entityid" which also needs to be set as unique
+        identifier on the IdP for this SP.
     :return: The Id of the database object
     """
     metadata = ""
@@ -131,7 +134,8 @@ def add_samlidp(identifier, metadata_url,
                    authn_requests_signed=authn_requests_signed,
                    logout_requests_signed=logout_requests_signed,
                    want_assertions_signed=want_assertions_signed,
-                   want_response_signed=want_response_signed).save()
+                   want_response_signed=want_response_signed,
+                   entityid=entityid).save()
     if r > 0:
         # We were able to save the data and immediately try to fill the
         # metadata cache
@@ -176,6 +180,7 @@ def get_saml_client(identifier):
         fetch_metadata(identifier)
 
     settings = {
+        'entityid': saml_config.entityid,
         'metadata': {
             "inline": [saml_config.metadata_cache],
             },

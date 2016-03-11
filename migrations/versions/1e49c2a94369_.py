@@ -30,6 +30,7 @@ def upgrade():
         sa.Column('want_assertions_signed', sa.Boolean(), nullable=True),
         sa.Column('want_response_signed', sa.Boolean(), nullable=True),
         sa.Column('metadata_cache', sa.UnicodeText(), nullable=True),
+        sa.Column('entityid', sa.Unicode(length=1024), nullable=False),
         sa.PrimaryKeyConstraint('id')
         )
     except (OperationalError, ProgrammingError, InternalError) as exx:

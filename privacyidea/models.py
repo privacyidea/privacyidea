@@ -1709,6 +1709,7 @@ class SAMLIdP(MethodsMixin, db.Model):
     metadata_cache = db.Column(db.UnicodeText, default="")
     acs_url = db.Column(db.Unicode(1023), nullable=False)
     https_acs_url = db.Column(db.Unicode(1023), nullable=False)
+    entityid = db.Column(db.Unicode(1023), nullable=False)
 
     def save(self):
         samlidp = SAMLIdP.query.filter(SAMLIdP.identifier ==
@@ -1737,6 +1738,8 @@ class SAMLIdP(MethodsMixin, db.Model):
                 values["acs_url"] = self.acs_url
             if self.https_acs_url is not None:
                 values["https_acs_url"] = self.https_acs_url
+            if self.entityid is not None:
+                values["entityid"] = self.entityid
             SAMLIdP.query.filter(SAMLIdP.identifier ==
                                  self.identifier).update(values)
             ret = samlidp.id

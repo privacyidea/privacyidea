@@ -44,6 +44,19 @@
     </div>
 
     <div class="form-group"
+        ng-class="{'has-error': !params.entityid}">
+        <label for="entityid" class="col-sm-3 control-label"
+                translate>Entity ID</label>
+        <div class="col-sm-9">
+            <input name="entityid" id="entityid" class="form-control"
+                   ng-model="params.entityid" required
+                   placeholder="privacyIDEA_SP"/>
+            <p class="help-block" translate>This is the entityid, to identify
+                this Service Provider (privacyIDEA) on the remote IdP.</p>
+        </div>
+    </div>
+
+    <div class="form-group"
         ng-class="{'has-error': !params.acs_url}">
         <label for="acs_url" class="col-sm-3 control-label" translate>
             ACS URL</label>

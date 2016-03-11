@@ -32,7 +32,7 @@ msgstr ""
 "<p>Die privacyIDEA API scheint offline zu sein!</p><p>Bitte laden Sie die "
 "Seite neu. Ansonsten wenden Sie sich an Ihren System Administrator!</p>"
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:48
+#: privacyidea/static/components/config/views/config.saml.edit.html:61
 msgid "ACS URL"
 msgstr "ACS URL"
 
@@ -119,7 +119,7 @@ msgstr "Alle Token"
 msgid "All users"
 msgstr "Alle Benutzer"
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:97
+#: privacyidea/static/components/config/views/config.saml.edit.html:110
 msgid "Allow unsolicited requests."
 msgstr "Unaufgeforderte Anfragen zulassen."
 
@@ -207,7 +207,7 @@ msgstr "URI des Authentisierungsservers"
 msgid "Authentication failed."
 msgstr "Authentisierung fehlgeschlagen."
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:112
+#: privacyidea/static/components/config/views/config.saml.edit.html:125
 msgid "Authn Requests signed."
 msgstr "Authentifizierungsanfragen signieren."
 
@@ -765,6 +765,10 @@ msgstr ""
 "Bitte geben Sie Ihren Benutzernamen und Ihr Passwort ein, \n"
 "um sich anzumelden."
 
+#: privacyidea/static/components/config/views/config.saml.edit.html:48
+msgid "Entity ID"
+msgstr "Entity ID"
+
 #: privacyidea/static/components/config/factories/config.js:45
 msgid "Error fetching policy template"
 msgstr "Fehler beim Laden der Richtlinien-Vorlagen."
@@ -908,7 +912,7 @@ msgstr "HOTP Token Einstellungen"
 msgid "HOTP: event based One Time Passwords"
 msgstr "HOTP: Ereignisbasiertes Einmal-Passwort"
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:63
+#: privacyidea/static/components/config/views/config.saml.edit.html:76
 msgid "HTTPS ACS URL"
 msgstr "HTTPS ACS URL"
 
@@ -1708,11 +1712,11 @@ msgstr "Remote Benutzer"
 msgid "Repeat password"
 msgstr "Passwort wiederholen"
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:156
+#: privacyidea/static/components/config/views/config.saml.edit.html:169
 msgid "Require assertions to be signed."
 msgstr "Assertions des IdP müssen signiert sein."
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:142
+#: privacyidea/static/components/config/views/config.saml.edit.html:155
 msgid "Require the Responses to be signed."
 msgstr "Antworten des IdP müssen signiert sein."
 
@@ -1840,7 +1844,7 @@ msgstr "RADIUS Server speichern"
 msgid "Save Resolver"
 msgstr "Resolver speichern"
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:171
+#: privacyidea/static/components/config/views/config.saml.edit.html:184
 msgid "Save SAML IdP definition"
 msgstr "SAML IdP speichern"
 
@@ -2003,20 +2007,20 @@ msgstr "Vorlagen anzeigen"
 msgid "Show password"
 msgstr "Passwort anzeigen"
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:154
+#: privacyidea/static/components/config/views/config.saml.edit.html:167
 msgid "Sign Assertions."
 msgstr "Assertions signieren."
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:114
+#: privacyidea/static/components/config/views/config.saml.edit.html:127
 msgid "Sign Authentication Requests."
 msgstr "Authentifizierungsanfragen signieren."
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:126
-#: privacyidea/static/components/config/views/config.saml.edit.html:128
+#: privacyidea/static/components/config/views/config.saml.edit.html:139
+#: privacyidea/static/components/config/views/config.saml.edit.html:141
 msgid "Sign Logout Requests."
 msgstr "Logout Anfragen signieren."
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:140
+#: privacyidea/static/components/config/views/config.saml.edit.html:153
 msgid "Sign Responses."
 msgstr "Antworten signieren."
 
@@ -2220,7 +2224,7 @@ msgstr ""
 "funktionieren, da es verschlüsselte Daten nicht entschlüsseln kann.    Bitte "
 "starten Sie das Security Modul und laden Sie diese Seite neu."
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:86
+#: privacyidea/static/components/config/views/config.saml.edit.html:99
 msgid ""
 "The IdP can only be used\n"
 "                for login if it is marked as active."
@@ -2769,7 +2773,7 @@ msgstr ""
 "Diese Client IP Adressen oder Subnetze dürfen sich als ein anderer Client "
 "(andere IP-Adresse) ausgeben."
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:83
+#: privacyidea/static/components/config/views/config.saml.edit.html:96
 msgid "This SAML IdP is active."
 msgstr "Dieser SAML IdP ist aktiv."
 
@@ -2783,7 +2787,7 @@ msgstr ""
 "\"restructured text\" Format.Dies kann verwendet werden, um einen "
 "Dokumentation des installierten Systems zu erstellen."
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:99
+#: privacyidea/static/components/config/views/config.saml.edit.html:112
 msgid ""
 "This indicates if the IdP is allowed to initiate a\n"
 "                SAMLResponse to the Service Provider - in this case "
@@ -2824,8 +2828,8 @@ msgstr ""
 "<em>Passwort</em> verschlüsselt. Bitte geben Sie in diesem Fall den Pre "
 "Shared Key im Hexformat oder das Passwort an."
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:55
-#: privacyidea/static/components/config/views/config.saml.edit.html:70
+#: privacyidea/static/components/config/views/config.saml.edit.html:68
+#: privacyidea/static/components/config/views/config.saml.edit.html:83
 msgid ""
 "This is the Assertion Consumer\n"
 "                Service. The URL of your privacyIDEA system, the IdP "
@@ -2862,6 +2866,14 @@ msgid ""
 msgstr ""
 "Die Email-Adresse des Versenders. Dies sollte eine Email-Adresse sein,, die "
 "Ihr privacyIDEA-System identifiziert."
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:54
+msgid ""
+"This is the entityid, to identify\n"
+"                this Service Provider (privacyIDEA) on the remote IdP."
+msgstr ""
+"Die Entitity ID ist ein eindeutiger Name, mit dem der Service Provider (hier "
+"privacyIDEA) auf dem entfernten IdP identifiziert wird."
 
 #: privacyidea/static/components/config/views/config.token.question.html:12
 msgid "This is the number of answers a user needs to define to enroll a token."
@@ -2995,7 +3007,7 @@ msgstr ""
 "Um RADIUS Token leichter auszurollen, können Sie die    <a ui-sref=\"config."
 "tokens({tokentype:'radius'})\">RADIUS Token Konfiguration</a> setzen."
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:165
+#: privacyidea/static/components/config/views/config.saml.edit.html:178
 msgid ""
 "To view and verify the metadata you need to return to this page,\n"
 "        after you have saved the IdP settings."

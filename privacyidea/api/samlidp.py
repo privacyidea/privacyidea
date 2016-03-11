@@ -60,6 +60,7 @@ def create(identifier=None):
     :param logout_requests_signed:
     :param want_response_signed:
     :param want_assertions_signed:
+    :param entityid:
     """
     param = request.all_data
     identifier = identifier.replace(" ", "_")
@@ -76,12 +77,14 @@ def create(identifier=None):
                                     default=False)
     acs_url = getParam(param, "acs_url", optional=required)
     https_acs_url = getParam(param, "https_acs_url", optional=required)
+    entityid = getParam(param, "entityid", default="privacyIDEA_SP")
     r = add_samlidp(identifier, metadata_url, acs_url, https_acs_url,
                     active=active, allow_unsolicited=allow_unsolicited,
                     authn_requests_signed=authn_requests_signed,
                     logout_requests_signed=logout_requests_signed,
                     want_assertions_signed=want_assertions_signed,
-                    want_response_signed=want_response_signed)
+                    want_response_signed=want_response_signed,
+                    entityid=entityid)
     g.audit_object.log({'success': r > 0,
                         'info':  r})
     return send_result(r > 0)
@@ -99,6 +102,7 @@ def list_saml():
         res[server.identifier] = {
             "metadata_url": server.metadata_url,
             "metadata": server.metadata_cache,
+            "entityid": server.entityid,
             "acs_url": server.acs_url,
             "https_acs_url": server.https_acs_url,
             "active": server.active,
