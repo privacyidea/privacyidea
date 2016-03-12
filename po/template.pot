@@ -195,10 +195,6 @@ msgstr ""
 msgid "Authentication failed."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:125
-msgid "Authn Requests signed."
-msgstr ""
-
 #: privacyidea/static/components/config/views/config.system.html:108
 msgid "Auto resync timeout"
 msgstr ""
@@ -1628,12 +1624,18 @@ msgstr ""
 msgid "Repeat password"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:169
-msgid "Require assertions to be signed."
+#: privacyidea/static/components/config/views/config.saml.edit.html:174
+msgid ""
+"Require assertions to be signed. The Service Provider\n"
+"                (privacyIDEA) will only accept assertions from the IdP if\n"
+"                they are signed."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:155
-msgid "Require the Responses to be signed."
+#: privacyidea/static/components/config/views/config.saml.edit.html:158
+msgid ""
+"Require the Responses to be signed. The Service Provider\n"
+"                (privacyIDEA) will only accept responses from the IdP if they\n"
+"                are signed."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:22
@@ -1759,7 +1761,7 @@ msgstr ""
 msgid "Save Resolver"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:184
+#: privacyidea/static/components/config/views/config.saml.edit.html:191
 msgid "Save SAML IdP definition"
 msgstr ""
 
@@ -1912,20 +1914,25 @@ msgstr ""
 msgid "Show password"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:167
+#: privacyidea/static/components/config/views/config.saml.edit.html:172
 msgid "Sign Assertions."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:127
+#: privacyidea/static/components/config/views/config.saml.edit.html:125
 msgid "Sign Authentication Requests."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:139
 #: privacyidea/static/components/config/views/config.saml.edit.html:141
 msgid "Sign Logout Requests."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:153
+#: privacyidea/static/components/config/views/config.saml.edit.html:143
+msgid ""
+"Sign Logout Requests. (At the moment we do not support Logout\n"
+"                Requests)"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:156
 msgid "Sign Responses."
 msgstr ""
 
@@ -2190,6 +2197,13 @@ msgstr ""
 msgid ""
 "The Serial number for the OTP value {{ otp }} is\n"
 "    <a ui-sref=\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:127
+msgid ""
+"The Service Provider (privacyIDEA) will sign the\n"
+"                authentication requests sent to the IdP. (At the moment this\n"
+"                is not supported, since you would need a certificate and a key)"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.spass.html:1
@@ -2694,7 +2708,7 @@ msgid ""
 "    <a ui-sref=\"config.tokens({tokentype:'radius'})\">RADIUS Token Config</a>."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:178
+#: privacyidea/static/components/config/views/config.saml.edit.html:185
 msgid ""
 "To view and verify the metadata you need to return to this page,\n"
 "        after you have saved the IdP settings."

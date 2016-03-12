@@ -207,10 +207,6 @@ msgstr "URI des Authentisierungsservers"
 msgid "Authentication failed."
 msgstr "Authentisierung fehlgeschlagen."
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:125
-msgid "Authn Requests signed."
-msgstr "Authentifizierungsanfragen signieren."
-
 #: privacyidea/static/components/config/views/config.system.html:108
 msgid "Auto resync timeout"
 msgstr "Timeout für Auto Resynchronisation"
@@ -1712,13 +1708,24 @@ msgstr "Remote Benutzer"
 msgid "Repeat password"
 msgstr "Passwort wiederholen"
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:169
-msgid "Require assertions to be signed."
-msgstr "Assertions des IdP müssen signiert sein."
+#: privacyidea/static/components/config/views/config.saml.edit.html:174
+msgid ""
+"Require assertions to be signed. The Service Provider\n"
+"                (privacyIDEA) will only accept assertions from the IdP if\n"
+"                they are signed."
+msgstr ""
+"SAML Assertions müssen signiert sein. Der Service Provider (privacyIDEA) "
+"akzeptiert Assertions vom IdP nur, wenn diese korrekt signiert sind."
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:155
-msgid "Require the Responses to be signed."
-msgstr "Antworten des IdP müssen signiert sein."
+#: privacyidea/static/components/config/views/config.saml.edit.html:158
+msgid ""
+"Require the Responses to be signed. The Service Provider\n"
+"                (privacyIDEA) will only accept responses from the IdP if "
+"they\n"
+"                are signed."
+msgstr ""
+"SAML Antworten müssen signiert sein. Der Service Provider (privacyIDEA) "
+"akzeptiert Antworten vom IdP nur, wenn diese korrekt signiert sind."
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:22
 msgid "Required Realms"
@@ -1844,7 +1851,7 @@ msgstr "RADIUS Server speichern"
 msgid "Save Resolver"
 msgstr "Resolver speichern"
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:184
+#: privacyidea/static/components/config/views/config.saml.edit.html:191
 msgid "Save SAML IdP definition"
 msgstr "SAML IdP speichern"
 
@@ -2007,20 +2014,27 @@ msgstr "Vorlagen anzeigen"
 msgid "Show password"
 msgstr "Passwort anzeigen"
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:167
+#: privacyidea/static/components/config/views/config.saml.edit.html:172
 msgid "Sign Assertions."
 msgstr "Assertions signieren."
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:127
+#: privacyidea/static/components/config/views/config.saml.edit.html:125
 msgid "Sign Authentication Requests."
 msgstr "Authentifizierungsanfragen signieren."
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:139
 #: privacyidea/static/components/config/views/config.saml.edit.html:141
 msgid "Sign Logout Requests."
 msgstr "Logout Anfragen signieren."
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:153
+#: privacyidea/static/components/config/views/config.saml.edit.html:143
+msgid ""
+"Sign Logout Requests. (At the moment we do not support Logout\n"
+"                Requests)"
+msgstr ""
+"Logout Requests signieren. (Im Moment werden Logout Requests nicht "
+"unterstützt)"
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:156
 msgid "Sign Responses."
 msgstr "Antworten signieren."
 
@@ -2342,6 +2356,18 @@ msgid ""
 msgstr ""
 "Die Seriennummer für den Token mit dem OTP-Wert {{ otp }} ist <a ui-sref="
 "\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
+
+#: privacyidea/static/components/config/views/config.saml.edit.html:127
+msgid ""
+"The Service Provider (privacyIDEA) will sign the\n"
+"                authentication requests sent to the IdP. (At the moment "
+"this\n"
+"                is not supported, since you would need a certificate and a "
+"key)"
+msgstr ""
+"Der Service Provider (privacyIDEA) signiert die Authentisierungsanfragen, "
+"die an den IdP gesendet werden. (Im Moment wird dies nicht unterstützt. "
+"Hierzu wird ein Zertifikat und ein privater Schlüssel benötigt)."
 
 #: privacyidea/static/components/token/views/token.enroll.spass.html:1
 msgid ""
@@ -3007,7 +3033,7 @@ msgstr ""
 "Um RADIUS Token leichter auszurollen, können Sie die    <a ui-sref=\"config."
 "tokens({tokentype:'radius'})\">RADIUS Token Konfiguration</a> setzen."
 
-#: privacyidea/static/components/config/views/config.saml.edit.html:178
+#: privacyidea/static/components/config/views/config.saml.edit.html:185
 msgid ""
 "To view and verify the metadata you need to return to this page,\n"
 "        after you have saved the IdP settings."
@@ -3600,6 +3626,15 @@ msgstr "Fenster"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."
+
+#~ msgid "Authn Requests signed."
+#~ msgstr "Authentifizierungsanfragen signieren."
+
+#~ msgid "Require assertions to be signed."
+#~ msgstr "Assertions des IdP müssen signiert sein."
+
+#~ msgid "Require the Responses to be signed."
+#~ msgstr "Antworten des IdP müssen signiert sein."
 
 #~ msgid ""
 #~ "Login with\n"

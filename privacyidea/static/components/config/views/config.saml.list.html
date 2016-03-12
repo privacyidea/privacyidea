@@ -17,7 +17,12 @@
                 {{ server.metadata_url }}
             </td>
             <td>
-                {{ server.active }}
+                <span ng-show="server.active"
+                      class="glyphicon glyphicon-ok">
+                </span>
+                <span ng-hide="server.active"
+                      class="glyphicon glyphicon-minus">
+                </span>
             </td>
             <td>
                 <button class="btn btn-danger"

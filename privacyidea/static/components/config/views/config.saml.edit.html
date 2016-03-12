@@ -123,9 +123,11 @@
                 ng-checked="isChecked(params.authn_requests_signed)"/>
         <div class="col-sm-9">
             <label for="authn_requests_signed" translate>
-                Authn Requests signed.</label>
+                Sign Authentication Requests.</label>
             <p class="help help-block" translate>
-                Sign Authentication Requests.
+                The Service Provider (privacyIDEA) will sign the
+                authentication requests sent to the IdP. (At the moment this
+                is not supported, since you would need a certificate and a key)
             </p>
         </div>
     </div>
@@ -139,7 +141,8 @@
             <label for="logout_requests_signed" translate>
                 Sign Logout Requests.</label>
             <p class="help help-block" translate>
-                Sign Logout Requests.
+                Sign Logout Requests. (At the moment we do not support Logout
+                Requests)
             </p>
         </div>
     </div>
@@ -153,7 +156,9 @@
             <label for="want_response_signed" translate>
                 Sign Responses.</label>
             <p class="help help-block" translate>
-                Require the Responses to be signed.
+                Require the Responses to be signed. The Service Provider
+                (privacyIDEA) will only accept responses from the IdP if they
+                are signed.
             </p>
         </div>
     </div>
@@ -167,7 +172,9 @@
             <label for="want_assertions_signed" translate>
                 Sign Assertions.</label>
             <p class="help help-block" translate>
-                Require assertions to be signed.
+                Require assertions to be signed. The Service Provider
+                (privacyIDEA) will only accept assertions from the IdP if
+                they are signed.
             </p>
         </div>
     </div>
