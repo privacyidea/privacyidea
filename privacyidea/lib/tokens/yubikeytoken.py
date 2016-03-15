@@ -407,13 +407,10 @@ h={h}
         if not token_list:
             # If we did not find the token via the serial number, we also
             # search for the yubikey.prefix in the tokeninfo.
-            # TODO: Change this to only request the tokens by tokeninfo
-            token_candidate_list = get_tokens(tokentype='yubikey')
-            for tokenobject in token_candidate_list:
-                token_prefix = tokenobject.get_tokeninfo("yubikey.prefix")
-                if prefix == token_prefix:
-                    # ...and also add the token to the tokenlist
-                    token_list.append(tokenobject)
+            token_candidate_list = get_tokens(tokentype='yubikey',
+                                              tokeninfo={"yubikey.prefix":
+                                                             prefix})
+            token_list.extend(token_candidate_list)
 
         if not token_list:
             opt['action_detail'] = ("The prefix %s could not be found!" %
