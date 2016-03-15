@@ -456,6 +456,11 @@ class TokenClass(object):
         if otplen is not None:
             self.set_otplen(otplen)
 
+        # Add parameters starting with the tokentype-name to the tokeninfo:
+        for p in param.keys():
+            if p.startswith(self.type + "."):
+                self.add_tokeninfo(p, getParam(param, p))
+
         return
 
     def _genOtpKey_(self, otpkeylen=None):

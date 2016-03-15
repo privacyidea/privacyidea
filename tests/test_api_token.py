@@ -1030,3 +1030,22 @@ class APITokenTestCase(MyTestCase):
             self.assertEqual(value.get("count"), 0)
 
         delete_policy("chalresp")
+
+    def test_20_init_yubikey(self):
+        # save yubikey.prefix
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={
+                                               "type": "yubikey",
+                                               "serial": "yk1",
+                                               "otpkey": self.otpkey,
+                                               "yubikey.prefix": "vv123456"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+
+        tokens = get_tokens(serial="yk1")
+        self.assertEqual(tokens[0].get_tokeninfo("yubikey.prefix"), "vv123456")
