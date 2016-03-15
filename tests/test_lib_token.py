@@ -53,7 +53,8 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    set_validity_period_end,
                                    set_validity_period_start)
 
-from privacyidea.lib.error import (TokenAdminError, ParameterError)
+from privacyidea.lib.error import (TokenAdminError, ParameterError,
+                                   privacyIDEAError)
 
 
 class TokenTestCase(MyTestCase):
@@ -147,6 +148,23 @@ class TokenTestCase(MyTestCase):
         tokenobject_list = get_tokens(user=User(login="cornelius",
                                                 realm=self.realm1))
         self.assertTrue(len(tokenobject_list) == 1, tokenobject_list)
+
+        # get tokens for a given tokeninfo of the token!!!
+        token = init_token({"type": "yubikey",
+                            "serial": "yk1",
+                            "yubikey.prefix": "vv123456",
+                            "otpkey": self.otpkey})
+        self.assertEqual(token.token.serial, "yk1")
+        tokenobject_list = get_tokens(tokeninfo={"yubikey.prefix": "vv123456"})
+        self.assertEqual(len(tokenobject_list), 1)
+        self.assertEqual(tokenobject_list[0].get_tokeninfo("yubikey.prefix"),
+                         "vv123456")
+        remove_token("yk1")
+
+        # Tokeninfo with more than one entry is not supported
+        self.assertRaises(privacyIDEAError, get_tokens,
+                          tokeninfo={"key1": "value1",
+                                     "key2": "value2"})
 
     def test_03_get_token_type(self):
         ttype = get_token_type("hotptoken")

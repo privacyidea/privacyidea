@@ -54,15 +54,16 @@ import os
 import logging
 
 from sqlalchemy import (and_, func)
-from privacyidea.lib.error import TokenAdminError
-from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import (TokenAdminError,
+                                   ParameterError,
+                                   privacyIDEAError)
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.utils import generate_password
 from privacyidea.lib.log import log_with
 from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
-                                MachineToken)
+                                MachineToken, TokenInfo)
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types,
@@ -118,7 +119,7 @@ def create_tokenclass_object(db_token):
 def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                         serial=None, active=None, resolver=None,
                         rollout_state=None, description=None, revoked=None,
-                        locked=None, userid=None):
+                        locked=None, userid=None, tokeninfo=None):
     """
     This function create the sql query for getting tokens. It is used by
     get_tokens and get_tokens_paginate.
@@ -228,6 +229,16 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
     if rollout_state is not None:
         # Filter for tokens with the given rollout state
         sql_query = sql_query.filter(Token.rollout_state == rollout_state)
+
+    if tokeninfo is not None:
+        # Filter for tokens with token token.info.<key> and token.info.<value>
+        if len(tokeninfo) != 1:
+            raise privacyIDEAError("I can only create SQL filters from "
+                                   "tokeninfo of length 1.")
+        sql_query = sql_query.filter(TokenInfo.Key == tokeninfo.keys()[0])
+        sql_query = sql_query.filter(TokenInfo.Value == tokeninfo.values()[0])
+        sql_query = sql_query.filter(TokenInfo.token_id == Token.id)
+
     return sql_query
 
 
@@ -235,7 +246,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
 #@cache.memoize(10)
 def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
                serial=None, active=None, resolver=None, rollout_state=None,
-               count=False, revoked=None, locked=None):
+               count=False, revoked=None, locked=None, tokeninfo=None):
     """
     (was getTokensOfType)
     This function returns a list of token objects of a
@@ -274,6 +285,9 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     :type revoked: bool
     :param locked: Only search for locked tokens or only for not locked tokens
     :type locked: bool
+    :param tokeninfo: Return tokens with the given tokeninfo. The tokeninfo
+        is a key/value dictionary
+    :type tokeninfo: dict
 
     :return: A list of tokenclasses (lib.tokenclass)
     :rtype: list
@@ -284,7 +298,8 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
                                     serial=serial, active=active,
                                     resolver=resolver,
                                     rollout_state=rollout_state,
-                                    revoked=revoked, locked=locked)
+                                    revoked=revoked, locked=locked,
+                                    tokeninfo=tokeninfo)
 
     # Decide, what we are supposed to return
     if count is True:
