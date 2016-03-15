@@ -114,8 +114,11 @@ class YubikeyTokenTestCase(MyTestCase):
         r, opt = YubikeyTokenClass.check_yubikey_pass(
             "fcebeeejedecebegfcniufvgvjturjgvinhebbbertjnihit")
         self.assertFalse(r)
+        #self.assertTrue(opt.get("action_detail") ==
+        #                "The serial UBAM@1382015 could not be found!", opt)
         self.assertTrue(opt.get("action_detail") ==
-                        "The serial UBAM@1382015 could not be found!", opt)
+                        "The prefix fcebeeejedecebeg could not be found!", opt)
+
 
         # check for an invalid OTP
         r, opt = YubikeyTokenClass.check_yubikey_pass(self.further_otps[0])
@@ -166,6 +169,7 @@ class YubikeyTokenTestCase(MyTestCase):
         token = init_token({"type": "yubikey",
                             "otpkey": otpkey,
                             "otplen": len(otps[0]),
+                            "yubikey.prefix": fixed,
                             "serial": "UBAM12345678_1"})
 
         builder = EnvironBuilder(method='GET',
