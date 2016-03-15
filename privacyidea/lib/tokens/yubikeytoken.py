@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 #
-#  privacyIDEA is a fork of LinOTP
-#
+#  2016-03-15 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Keep backward compatibility
+#  2016-03-08 Jochen Hein <jochen@jochen.org>
+#             Add the yubikey prefix to work with pam_yubikey/Yubico
+#             Authentication Protocol.
 #  2015-12-01 Cornelius Kölbel <cornelius@privacyidea.org>
-#            Add yubico validation protocol
+#             Add yubico validation protocol
 #  2014-12-15 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Adapt during flask migration
 #  2014-05-08 Cornelius Kölbel
@@ -369,7 +372,7 @@ h={h}
         This checks the output of a yubikey in AES mode without providing
         the serial number.
         The first 12 (of 44) or 16 of 48) characters are the tokenid, which is
-        stored in the tokeninfo.
+        stored in the tokeninfo yubikey.tokenid or the prefix yubikey.prefix.
 
         :param passw: The password that consist of the static yubikey prefix and
             the otp
@@ -382,7 +385,6 @@ h={h}
         res = False
 
         token_list = []
-        token_candidate_list = []
 
         # strip the yubico OTP and the PIN
         prefix = passw[:-32][-16:]
@@ -390,11 +392,28 @@ h={h}
         from privacyidea.lib.token import get_tokens
         from privacyidea.lib.token import check_token_list
 
-        token_candidate_list = get_tokens(tokentype='yubikey')
-        for tokenobject in token_candidate_list:
-            token_prefix = tokenobject.get_tokeninfo("yubikey.prefix")
-            if prefix == token_prefix:
-                token_list.append(tokenobject)
+        # See if the prefix matches the serial number
+        try:
+            # Keep the backward compatibility
+            serialnum = "UBAM" + modhex_decode(prefix)
+            for i in range(1, 3):
+                s = "%s_%s" % (serialnum, i)
+                toks = get_tokens(serial=s)
+                token_list.extend(toks)
+        except TypeError as exx:  # pragma: no cover
+            log.error("Failed to convert serialnumber: %r" % exx)
+
+        # Now, we see, if the prefix matches the new version
+        if not token_list:
+            # If we did not find the token via the serial number, we also
+            # search for the yubikey.prefix in the tokeninfo.
+            # TODO: Change this to only request the tokens by tokeninfo
+            token_candidate_list = get_tokens(tokentype='yubikey')
+            for tokenobject in token_candidate_list:
+                token_prefix = tokenobject.get_tokeninfo("yubikey.prefix")
+                if prefix == token_prefix:
+                    # ...and also add the token to the tokenlist
+                    token_list.append(tokenobject)
 
         if not token_list:
             opt['action_detail'] = ("The prefix %s could not be found!" %
