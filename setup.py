@@ -150,5 +150,5 @@ setup(
     #        ('**.py', 'python', None),
     #        ('static/**.html', 'html', {'input_encoding': 'utf-8'})]},
     zip_safe=False,
-    long_description=get_file_contents('README.md')
+    long_description=get_file_contents('README.rst')
 )
