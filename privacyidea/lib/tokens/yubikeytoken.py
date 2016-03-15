@@ -205,8 +205,6 @@ class YubikeyTokenClass(TokenClass):
         # The variable otp val is the last 32 chars
         yubi_otp = anOtpVal[-32:]
 
-        # TODO: We can also check the PREFIX! At the moment, we do not use it!
-
         try:
             otp_bin = modhex_decode(yubi_otp)
         except KeyError:
@@ -251,6 +249,11 @@ class YubikeyTokenClass(TokenClass):
             log.debug("Got no tokenid for %r. Setting to %r." % (serial, uid))
             tokenid = uid
             self.add_tokeninfo("yubikey.tokenid", tokenid)
+
+        prefix = self.get_tokeninfo("yubikey.prefix")
+        if not prefix:
+            log.debug("Got no prefix for %r. Setting to %r." % (serial, yubi_prefix))
+            self.add_tokeninfo("yubikey.prefix", yubi_prefix)
 
         if tokenid != uid:
             # wrong token!
@@ -379,29 +382,23 @@ h={h}
         res = False
 
         token_list = []
+        token_candidate_list = []
 
         # strip the yubico OTP and the PIN
-        modhex_serial = passw[:-32][-16:]
-        try:
-            serialnum = "UBAM" + modhex_decode(modhex_serial)
-        except TypeError as exx:  # pragma: no cover
-            log.error("Failed to convert serialnumber: %r" % exx)
-            return res, opt
-
-        # build list of possible yubikey tokens
-        serials = [serialnum]
-        for i in range(1, 3):
-            serials.append("%s_%s" % (serialnum, i))
+        prefix = passw[:-32][-16:]
 
         from privacyidea.lib.token import get_tokens
         from privacyidea.lib.token import check_token_list
-        for serial in serials:
-            tokenobject_list = get_tokens(serial=serial)
-            token_list.extend(tokenobject_list)
+
+        token_candidate_list = get_tokens(tokentype='yubikey')
+        for tokenobject in token_candidate_list:
+            token_prefix = tokenobject.get_tokeninfo("yubikey.prefix")
+            if prefix == token_prefix:
+                token_list.append(tokenobject)
 
         if not token_list:
-            opt['action_detail'] = ("The serial %s could not be found!" %
-                                    serialnum)
+            opt['action_detail'] = ("The prefix %s could not be found!" %
+                                    prefix)
             return res, opt
 
         (res, opt) = check_token_list(token_list, passw)
