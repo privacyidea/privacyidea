@@ -60,7 +60,7 @@ msgstr ""
 msgid "Add user"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:237
+#: privacyidea/static/components/config/views/config.policies.details.html:233
 msgid "Admin"
 msgstr ""
 
@@ -313,7 +313,7 @@ msgid ""
 "            want to add the Token to your TiQR App."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:253
+#: privacyidea/static/components/config/views/config.policies.details.html:249
 #: privacyidea/static/components/config/views/config.policies.list.html:12
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:49
 msgid "Client"
@@ -363,7 +363,7 @@ msgid ""
 "                    newly enrolled tokens"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:271
+#: privacyidea/static/components/config/views/config.policies.details.html:267
 msgid "Create Policy"
 msgstr ""
 
@@ -482,7 +482,6 @@ msgstr ""
 msgid "Delete user"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.email.html:7
 #: privacyidea/static/components/config/views/config.token.radius.html:7
 msgid "Deprecated configuration"
 msgstr ""
@@ -681,7 +680,7 @@ msgid "Enter OTP + PIN to check the token."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.totp.html:31
-#: privacyidea/static/components/token/views/token.enroll.yubikey.html:42
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:45
 msgid "Enter OTP key..."
 msgstr ""
 
@@ -1007,7 +1006,7 @@ msgstr ""
 msgid "Leave the Bind DN empty if you want to do anonymous binding."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.yubikey.html:27
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:30
 msgid "Length of UID"
 msgstr ""
 
@@ -1116,18 +1115,6 @@ msgstr ""
 msgid "Machines this token is attached to"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.email.html:30
-msgid "Mail Sender Address"
-msgstr ""
-
-#: privacyidea/static/components/config/views/config.token.email.html:18
-msgid "Mail Server"
-msgstr ""
-
-#: privacyidea/static/components/config/views/config.token.email.html:26
-msgid "Mail User"
-msgstr ""
-
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:144
 msgid "Mapping"
 msgstr ""
@@ -1183,7 +1170,6 @@ msgstr ""
 msgid "New SMTP server"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.email.html:41
 #: privacyidea/static/components/config/views/config.token.radius.html:33
 msgid "New configuration"
 msgstr ""
@@ -1249,7 +1235,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:28
 #: privacyidea/static/components/token/views/token.enroll.motp.html:23
 #: privacyidea/static/components/token/views/token.enroll.totp.html:27
-#: privacyidea/static/components/token/views/token.enroll.yubikey.html:37
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:40
 msgid "OTP Key"
 msgstr ""
 
@@ -1268,7 +1254,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:37
 #: privacyidea/static/components/token/views/token.enroll.totp.html:36
-#: privacyidea/static/components/token/views/token.enroll.yubikey.html:47
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:50
 msgid "OTP length"
 msgstr ""
 
@@ -1278,7 +1264,7 @@ msgid ""
 "                    newly enrolled tokens"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.email.html:54
+#: privacyidea/static/components/config/views/config.token.email.html:19
 msgid "OTP validity time"
 msgstr ""
 
@@ -1406,7 +1392,6 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.radius.edit.html:37
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:46
 #: privacyidea/static/components/config/views/config.smtp.edit.html:37
-#: privacyidea/static/components/config/views/config.token.email.html:22
 #: privacyidea/static/components/config/views/config.token.radius.html:22
 msgid "Port"
 msgstr ""
@@ -1451,7 +1436,7 @@ msgstr ""
 msgid "Provider Config"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.yubikey.html:16
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:19
 msgid "Push Yubikey button here..."
 msgstr ""
 
@@ -1479,12 +1464,7 @@ msgstr ""
 msgid "RADIUS Config saved."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.radius.html:52
-msgid "RADIUS Secret"
-msgstr ""
-
 #: privacyidea/static/components/config/views/config.token.radius.html:18
-#: privacyidea/static/components/token/views/token.enroll.radius.html:40
 msgid "RADIUS Server"
 msgstr ""
 
@@ -1492,7 +1472,7 @@ msgstr ""
 msgid "RADIUS Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.radius.html:61
+#: privacyidea/static/components/token/views/token.enroll.radius.html:45
 msgid "RADIUS User"
 msgstr ""
 
@@ -1501,6 +1481,7 @@ msgid "RADIUS request successful."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.radius.html:35
+#: privacyidea/static/components/token/views/token.enroll.radius.html:32
 msgid "RADIUS server configuration"
 msgstr ""
 
@@ -1663,7 +1644,7 @@ msgstr ""
 msgid "SMTP Config saved."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.email.html:43
+#: privacyidea/static/components/config/views/config.token.email.html:8
 msgid "SMTP server configuration"
 msgstr ""
 
@@ -1766,7 +1747,14 @@ msgid ""
 "        <a ui-sref=\"config.radius\">RADIUS server configuration</a>."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.email.html:44
+#: privacyidea/static/components/token/views/token.enroll.radius.html:33
+msgid ""
+"Select a predefined\n"
+"        <a ui-sref=\"config.radius\">RADIUS server configuration</a>.\n"
+"        The RADIUS request will be forwarded to this RADIUS server."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.email.html:9
 msgid ""
 "Select a predefined\n"
 "        <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
@@ -1942,7 +1930,7 @@ msgstr ""
 msgid "Test SQL Resolver"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.yubikey.html:12
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:15
 msgid "Test Yubikey"
 msgstr ""
 
@@ -2044,10 +2032,6 @@ msgid ""
 "The Questionnaire token will let you define answers to questions.\n"
 "    When authenticating with this type of token, you will be asked a random\n"
 "    question and then need to provide the previously defined answer."
-msgstr ""
-
-#: privacyidea/static/components/token/views/token.enroll.radius.html:46
-msgid "The RADIUS server may include the port number."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:1
@@ -2181,6 +2165,9 @@ msgid ""
 "The Yubikey Token is an USB device that emits an event based One Time\n"
 "    Password. You can initialize the Yubikey using the tool ykpersonalize.\n"
 "    Paste the secret hex key here.\n"
+"    For tokens compatible with the Yubico cloud service check \"emit a public ID\".\n"
+"    When programming the token the prefix must be 6 bytes, which will give\n"
+"    you a UID with 12 characters.\n"
 "    You also need to choose, if the Yubikey emits the additional UID, which\n"
 "    is either 12 or 16 characters long. You can check this in the test field."
 msgstr ""
@@ -2332,7 +2319,7 @@ msgid ""
 "            displayed to you to be scanned with the Token2 app."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.email.html:55
+#: privacyidea/static/components/config/views/config.token.email.html:20
 msgid ""
 "The time in seconds for which the sent OTP value is valid for\n"
 "        authentication."
@@ -2379,7 +2366,7 @@ msgid ""
 "    newly generated password."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.radius.html:68
+#: privacyidea/static/components/token/views/token.enroll.radius.html:52
 msgid "The username on the RADIUS server"
 msgstr ""
 
@@ -2499,7 +2486,7 @@ msgid ""
 "                of the SMTP server definition."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.radius.html:62
+#: privacyidea/static/components/token/views/token.enroll.radius.html:46
 msgid ""
 "This is the username that is sent\n"
 "        to the RADIUS server. It can be different from the owner of this\n"
@@ -2516,10 +2503,6 @@ msgstr ""
 msgid ""
 "This must be a valid FQDN with also a valid top level domain -\n"
 "        otherwise you might receive a U2F Error 2 (Bad Request)."
-msgstr ""
-
-#: privacyidea/static/components/config/views/config.token.email.html:13
-msgid "This view will be removed in version 2.11."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.radius.html:13
@@ -2599,7 +2582,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:6
 #: privacyidea/static/components/token/views/token.enroll.totp.html:8
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:6
-#: privacyidea/static/components/token/views/token.enroll.yubikey.html:9
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:12
 msgid "Token data"
 msgstr ""
 
@@ -2708,18 +2691,10 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:103
-#: privacyidea/static/components/config/views/config.token.email.html:34
 msgid "Use TLS"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.radius.html:33
-msgid ""
-"Use the RADIUS server from the\n"
-"        system settings. Even if you change the RADIUS system settings later\n"
-"        this token will use the new RADIUS server definition."
-msgstr ""
-
-#: privacyidea/static/components/config/views/config.policies.details.html:239
+#: privacyidea/static/components/config/views/config.policies.details.html:235
 #: privacyidea/static/components/config/views/config.policies.list.html:10
 #: privacyidea/static/components/config/views/config.radius.edit.html:79
 #: privacyidea/static/templates/menu.html:35
@@ -2754,11 +2729,11 @@ msgstr ""
 msgid "User updated successfully."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:207
+#: privacyidea/static/components/config/views/config.policies.details.html:203
 msgid "User-Realm"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:222
+#: privacyidea/static/components/config/views/config.policies.details.html:218
 msgid "User-Resolver"
 msgstr ""
 
@@ -2958,7 +2933,7 @@ msgstr ""
 msgid "email"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.yubikey.html:24
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:27
 msgid "emit a public UID"
 msgstr ""
 
