@@ -133,36 +133,52 @@ class Connection(object):
             if dn.endswith(search_base):
                 # The entry is in the correct search base
                 # NOTE: Checking condition works only for one condition
-                filtered = bool(condition)
+                found = True
                 for k, v in condition.iteritems():
                     try:
+                        lesser = False
+                        unequal = False
                         if k.endswith("<"):
-                            # first we try <=
-                            ldap_value = entry.get("attributes").get(k[:-1])
-                            requested_value = int(v)
-                            # If the LDAP value is greater, then we do not
-                            # return this entry
-                            filtered = ldap_value > requested_value
-                            if not filtered:
-                                # Patch: In case of accountExpires we can not
-                                # check for other conditions
-                                break
-                        elif entry.get("attributes").get(k) == v:
-                            # exact matching
-                            filtered = False
-                        elif "*" in v:
-                            # rough substring matching
-                            # We assume, that there are only leading and
-                            # trailing asterisks
-                            v = v.replace("*", "")
-                            if v in entry.get("attributes").get(k, ""):
-                                filtered = False
+                            lesser = True
+                            k = k.strip("<")
+                        if k.endswith("!"):
+                            unequal = True
+                            k = k.strip("!")
+                        if k in entry.get("attributes").keys():
+                            if unequal:
+                                ldap_value = entry.get("attributes").get(k)
+                                requested_value = int(v)
+                                found = found and (ldap_value !=
+                                                   requested_value)
+                            elif lesser:
+                                # first we try <=
+                                ldap_value = entry.get("attributes").get(k)
+                                requested_value = int(v)
+                                # If the LDAP value is greater, then we do not
+                                # return this entry
+                                found = found and (ldap_value < requested_value)
+                            elif entry.get("attributes").get(k) == v:
+                                # exact matching
+                                found = found and True
+                            elif "*" in v:
+                                # rough substring matching
+                                # We assume, that there are only leading and
+                                # trailing asterisks
+                                v = v.replace("*", "")
+                                if v not in entry.get("attributes").get(k, ""):
+                                    found = False
+                            else:
+                                found = found and False
+                        else:
+                            # The entry does not have such an attribute at all!
+                            found = False
                     except UnicodeDecodeError:
                         # This happens when we check for a "*" in the binary
                         # string as it occurs in objectGUID
                         print("OK, some potential objectGUID exception. But "
                               "this is OK")
-                if not filtered:
+                        found = False
+                if found:
                     entry["type"] = "searchResEntry"
                     self.response.append(entry)
 
