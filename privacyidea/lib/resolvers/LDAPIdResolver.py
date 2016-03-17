@@ -41,13 +41,34 @@ import yaml
 import traceback
 import uuid
 from ldap3.utils.conv import escape_bytes
+import datetime
 
 from UserIdResolver import UserIdResolver
 from gettext import gettext as _
 from privacyidea.lib.utils import to_utf8
 
+
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
+# 1 sec == 10^9 nano secs == 10^7 * (100 nano secs)
+MS_AD_MULTIPLYER = 10 ** 7
+MS_AD_START = datetime.datetime(1601, 1, 1)
+
+
+def get_ad_timestamp_now():
+    """
+    returns the current UTC time as it is used in Active Directory in the
+    attribute accountExpires.
+    This is 100-nano-secs since 1.1.1601
+
+    :return: time
+    :rtype: int
+    """
+    utc_now = datetime.datetime.utcnow()
+    elapsed_time = utc_now - MS_AD_START
+    total_seconds = elapsed_time.total_seconds()
+    # convert this to (100 nanoseconds)
+    return int(MS_AD_MULTIPLYER * total_seconds)
 
 
 class AUTHTYPE(object):
@@ -348,14 +369,24 @@ class IdResolver (UserIdResolver):
         ret = []
         self._bind()
         attributes = self.userinfo.values()
+        ad_timestamp = get_ad_timestamp_now()
         if self.uidtype.lower() != "dn":
             attributes.append(str(self.uidtype))
             
         # do the filter depending on the searchDict
         filter = "(&" + self.searchfilter
         for search_key in searchDict.keys():
-            filter += "(%s=%s)" % \
-                (self.userinfo[search_key], searchDict[search_key])
+            if search_key == "accountExpires":
+                comperator = ">="
+                if searchDict[search_key] in ["1", 1]:
+                    comperator = "<="
+                filter += "(|(%s%s%s)(%s!=0))" % (self.userinfo[search_key],
+                                                  comperator,
+                                                  get_ad_timestamp_now(),
+                                                  self.userinfo[search_key])
+            else:
+                filter += "(%s=%s)" % \
+                    (self.userinfo[search_key], searchDict[search_key])
         filter += ")"
 
         paged_search = True

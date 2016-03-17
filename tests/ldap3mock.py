@@ -111,8 +111,10 @@ class Connection(object):
         return self.bound
 
     def search(self, search_base=None, search_scope=None,
-               search_filter=None, attributes=None, paged_size=5):
+               search_filter=None, attributes=None, paged_size=5,
+               size_limit=0, paged_cookie=None):
         self.response = []
+        self.result = {}
         condition = {}
         # (&(cn=*)(cn=bob)) -> (cn=*)(cn=bob)
         search_filter = search_filter[2:-1]
@@ -120,19 +122,32 @@ class Connection(object):
             pos = search_filter.find(')')+1
             cur = search_filter[0:pos]
             cur = cur[1:-1]
-            (k, v) = cur.split("=")
-            if v != "*":
-                condition[k] = check_escape(v)
+            cur = cur.strip("|").strip("(").strip(")")
+            if cur:
+                (k, v) = cur.split("=")
+                if v != "*":
+                    condition[k] = check_escape(v)
             search_filter = search_filter[pos:]
         for entry in self.directory:
             dn = entry.get("dn")
             if dn.endswith(search_base):
                 # The entry is in the correct search base
-                filtered = False
+                # NOTE: Checking condition works only for one condition
+                filtered = bool(condition)
                 for k, v in condition.iteritems():
-                    filtered = True
                     try:
-                        if entry.get("attributes").get(k) == v:
+                        if k.endswith("<"):
+                            # first we try <=
+                            ldap_value = entry.get("attributes").get(k[:-1])
+                            requested_value = int(v)
+                            # If the LDAP value is greater, then we do not
+                            # return this entry
+                            filtered = ldap_value > requested_value
+                            if not filtered:
+                                # Patch: In case of accountExpires we can not
+                                # check for other conditions
+                                break
+                        elif entry.get("attributes").get(k) == v:
                             # exact matching
                             filtered = False
                         elif "*" in v:

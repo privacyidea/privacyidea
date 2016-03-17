@@ -33,6 +33,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 'oid': "2",
                                 "homeDirectory": "/home/alice",
                                 "email": "alice@test.com",
+                                "accountExpires": 131024988000000000,
                                 "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
                                               '\x9b\xf9\xcajl\rMw1',
                                 'mobile': ["1234", "45678"]}},
@@ -44,6 +45,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "mobile": "123456",
                                 "homeDirectory": "/home/bob",
                                 'userPassword': 'bobpwééé',
+                                "accountExpires": 9223372036854775807,
                                 "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
                                               '\x9b\xf9\xcajl\rMw',
                                 'oid': "3"}},
@@ -54,6 +56,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "email": "ck@o",
                                 "mobile": "123354",
                                 'userPassword': 'ldaptest',
+                                "accountExpires": 9223372036854775807,
                                 "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
                                               '\x9b\xf9\xcajl\rMT',
                                 'oid': "1"}}]
@@ -896,6 +899,31 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(uid, 'cn=bob,ou=example,o=test')
         userinfo = y.getUserInfo(uid)
         self.assertEqual(userinfo.get("additionalAttr"), "/home/bob")
+
+    @ldap3mock.activate
+    def test_12_get_expired_accounts(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'LDAPFILTER': '(&(cn=%s))',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName", '
+                                  '"accountExpires": "accountExpires" }',
+                      'UIDTYPE': 'DN',
+                      'NOREFERRALS': True
+        })
+        res = y.getUserList({"accountExpires": 1})
+        self.assertEqual(len(res), 1)
+        self.assertEqual(res[0].get("username"), "alice")
 
 
 class BaseResolverTestCase(MyTestCase):

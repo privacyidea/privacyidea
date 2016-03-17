@@ -130,7 +130,8 @@ privacyIDEA. privacyIDEA knows the following attributes:
  * email,
  * surname,
  * givenname,
- * password.
+ * password
+ * accountExpires.
 
 The above attributes are used for privacyIDEA's normal functionality and are
 listed in the userview. However, with a SAML authentication request user
@@ -149,6 +150,20 @@ The ``UID Type`` is the unique identifier for the LDAP object. If it is left
 blank, the distinguished name will be used. In case of OpenLDAP this can be
 *entryUUID* and in case of Active Directory *objectGUID*.
 
+Expired Users
+~~~~~~~~~~~~~
+
+.. index:: Expired Users
+
+You may set
+
+    "accountExpires": "accountExpires"
+
+in the attribute mapping for Microsoft Active Directories. You can then call
+the user listing API with the parameter *accountExpires=1* and you will only
+see expired accounts.
+
+This functionality is used with the script *privacyidea-expired-users*.
 
 SQL resolver
 ............
