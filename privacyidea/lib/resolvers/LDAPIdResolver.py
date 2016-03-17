@@ -357,22 +357,30 @@ class IdResolver (UserIdResolver):
             filter += "(%s=%s)" % \
                 (self.userinfo[search_key], searchDict[search_key])
         filter += ")"
-            
-        self.l.search(search_base=self.basedn,
-                      search_scope=self.scope,
-                      search_filter=filter,
-                      attributes=attributes,
-                      paged_size=self.sizelimit)
-        # returns a list of dictionaries
-        for entry in self.l.response:
-            try:
-                attributes = entry.get("attributes")
-                user = self._ldap_attributes_to_user_object(attributes)
-                user['userid'] = self._get_uid(entry, self.uidtype)
-                ret.append(user)
-            except Exception as exx:  # pragma: no cover
-                log.error("Error during fetching LDAP objects: %r" % exx)
-                log.debug("%s" % traceback.format_exc())
+
+        paged_search = True
+        paged_cookie = None
+        while paged_search:
+            self.l.search(search_base=self.basedn,
+                          search_scope=self.scope,
+                          search_filter=filter,
+                          attributes=attributes,
+                          paged_size=1000,
+                          size_limit=self.sizelimit,
+                          paged_cookie=paged_cookie)
+            # returns a list of dictionaries
+            for entry in self.l.response:
+                try:
+                    attributes = entry.get("attributes")
+                    user = self._ldap_attributes_to_user_object(attributes)
+                    user['userid'] = self._get_uid(entry, self.uidtype)
+                    ret.append(user)
+                except Exception as exx:  # pragma: no cover
+                    log.error("Error during fetching LDAP objects: %r" % exx)
+                    log.debug("%s" % traceback.format_exc())
+            paged_cookie = self.l.result.get('controls', {}).get(
+                '1.2.840.113556.1.4.319', {}).get('value', {}).get('cookie')
+            paged_search = bool(paged_cookie)
         
         return ret
     
