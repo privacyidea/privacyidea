@@ -93,6 +93,7 @@ class IdResolver (UserIdResolver):
         self.userinfo = {}
         self.uidtype = ""
         self.noreferrals = False
+        self.editable = False
         self.certificate = ""
         self.resolverId = self.uri
         self.scope = ldap3.SUBTREE
@@ -455,6 +456,7 @@ class IdResolver (UserIdResolver):
         '#ldap_mapping': 'USERINFO',
         '#ldap_uidtype': 'UIDTYPE',
         '#ldap_noreferrals' : 'NOREFERRALS',
+        '#ldap_editable' : 'EDITABLE',
         '#ldap_certificate': 'CACERTIFICATE',
                     
         """
@@ -471,6 +473,7 @@ class IdResolver (UserIdResolver):
         self.userinfo = yaml.load(userinfo)
         self.uidtype = config.get("UIDTYPE", "DN")
         self.noreferrals = config.get("NOREFERRALS", False)
+        self.editable = config.get("EDITABLE", False)
         self.certificate = config.get("CACERTIFICATE")
         self.scope = config.get("SCOPE") or ldap3.SUBTREE
         self.resolverId = self.uri
@@ -567,6 +570,7 @@ class IdResolver (UserIdResolver):
                                 'UIDTYPE': 'string',
                                 'NOREFERRALS': 'bool',
                                 'CACERTIFICATE': 'string',
+                                'EDITABLE': 'bool',
                                 'AUTHTYPE': 'string'}
         return {typ: descriptor}
 

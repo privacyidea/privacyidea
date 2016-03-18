@@ -115,6 +115,7 @@ def set_resolver(resolver=None):
             * LDAPFILTER
             * USERINFO
             * NOREFERRALS        - True|False
+            * EDITABLE           - True|False
         SQL:
             * Database
             * Driver
