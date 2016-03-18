@@ -106,7 +106,21 @@
                    placeholder="500"/>
         </div>
     </div>
-
+    <div class="form-group">
+        <label for="editable"
+            class="col-sm-3 control-label" translate>
+            Edit user store
+        </label>
+        <div class="col-sm-9">
+        <input name="editable" id="editable"
+               ng-model="params.EDITABLE"
+               type="checkbox"/>
+            <p class="help-block" translate>
+                The user data in this database can be modified from within
+                privacyIDEA.
+            </p>
+        </div>
+    </div>
     <div class="well">
         <button class="btn btn-info" ng-click="presetLDAP()" translate>
             Preset OpenLDAP

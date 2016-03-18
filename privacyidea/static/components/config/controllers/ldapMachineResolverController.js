@@ -38,6 +38,7 @@ myApp.controller("ldapMachineResolverController", function ($scope,
             $scope.params = resolver.data;
             $scope.params.type = 'ldap';
             $scope.params.NOREFERRALS = ($scope.params.NOREFERRALS == "1");
+            $scope.params.EDITABLE = ($scope.params.EDITABLE == "1");
         });
     }
 
@@ -48,6 +49,7 @@ myApp.controller("ldapMachineResolverController", function ($scope,
         $scope.params.IPATTRIBUTE = "";
         $scope.params.HOSTNAMEATTRIBUTE = "dNSHostName";
         $scope.params.NOREFERRALS = true;
+        $scope.params.EDITABLE = true;
     };
 
     $scope.setLDAPMachineResolver = function () {
