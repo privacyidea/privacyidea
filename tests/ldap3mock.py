@@ -93,12 +93,34 @@ class CallList(Sequence, Sized):
 
 class Connection(object):
 
+    class Extend(object):
+
+        class Standard(object):
+
+            def __init__(self, connection):
+                self.connection = connection
+
+            def paged_search(self, **kwargs):
+                self.connection.search(search_base=kwargs.get("search_base"),
+                                       search_scope=kwargs.get("search_scope"),
+                                       search_filter=kwargs.get(
+                                           "search_filter"),
+                                       attributes=kwargs.get("attributes"),
+                                       paged_size=kwargs.get("page_size"),
+                                       size_limit=kwargs.get("size_limit"),
+                                       paged_cookie=None)
+                return self.connection.response
+
+        def __init__(self, connection):
+            self.standard = self.Standard(connection)
+
     def __init__(self, directory=None):
         if directory is None:
                 directory = []
         import copy
         self.directory = copy.deepcopy(directory)
         self.bound = False
+        self.extend = self.Extend(self)
 
     def set_directory(self, directory):
         self.directory = directory
