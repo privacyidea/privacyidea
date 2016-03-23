@@ -394,7 +394,8 @@ class IdResolver (UserIdResolver):
                                                 search_scope=self.scope,
                                                 attributes=attributes,
                                                 paged_size=100,
-                                                size_limit=self.sizelimit)
+                                                size_limit=self.sizelimit,
+                                                generator=True)
         # returns a generator of dictionaries
         for entry in g:
             try:
@@ -590,10 +591,10 @@ class IdResolver (UserIdResolver):
                                              float(param.get("TIMEOUT", 5)))
             l = cls.create_connection(authtype=param.get("AUTHTYPE",
                                                           AUTHTYPE.SIMPLE),
-                                       server=server_pool,
-                                       user=param.get("BINDDN"),
-                                       password=to_utf8(param.get("BINDPW")),
-                                       auto_referrals=not param.get(
+                                      server=server_pool,
+                                      user=param.get("BINDDN"),
+                                      password=to_utf8(param.get("BINDPW")),
+                                      auto_referrals=not param.get(
                                            "NOREFERRALS"))
             l.open()
             #log.error("LDAP Server Pool States: %s" % server_pool.pool_states)
@@ -604,25 +605,28 @@ class IdResolver (UserIdResolver):
             if uidtype.lower() != "dn":
                 attributes.append(str(uidtype))
             # search for users...
-            l.search(search_base=param["LDAPBASE"],
-                     search_scope=param.get("SCOPE") or ldap3.SUBTREE,
-                     search_filter="(&" + param["LDAPSEARCHFILTER"] + ")",
-                     attributes=attributes)
-
-            r = l.response
-            count = len(r)
+            g = l.extend.standard.paged_search(
+                search_base=param["LDAPBASE"],
+                search_filter="(&" + param["LDAPSEARCHFILTER"] + ")",
+                search_scope=param.get("SCOPE") or ldap3.SUBTREE,
+                attributes=attributes,
+                paged_size=100,
+                generator=True)
+            # returns a generator of dictionaries
+            count = 0
             uidtype_count = 0
-            for entry in r:
+            for entry in g:
                 userid = cls._get_uid(entry, uidtype)
+                count += 1
                 if userid:
                     uidtype_count += 1
             if uidtype_count < count:  # pragma: no cover
                 desc = _("Your LDAP config found %i user objects, but only %i "
                          "with the specified uidtype" % (count, uidtype_count))
             else:
-                desc = _("Your LDAP config seems to be OK, %i user objects found.")\
-                    % count
-            
+                desc = _("Your LDAP config seems to be OK, %i user objects "
+                         "found.") % count
+
             l.unbind()
             success = True
             
