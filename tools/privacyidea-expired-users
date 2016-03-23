@@ -1,0 +1,183 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# 2016-03-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#
+# Copyright (c) 2016, Cornelius Kölbel
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+# contributors may be used to endorse or promote products derived from this
+# software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+__doc__ = """
+This script reads the users from the userstore and checks for the attribute
+"accountExpires".
+
+To add this attribute to the user details you need to add it to the attribute
+mapping. For Microsoft Active Directory add
+
+    "accountExpires": "accountExpires"
+
+to the attribute mapping.
+
+The script then checks if the account actually is expired. If the account is
+expired, it deletes tokens of the account with the serial number matching
+DELETE_SERIAL and unassigns tokens with the serial number matching
+UNASSIGN_SERIAL.
+
+You can call the script like this:
+
+    privacyidea-expired-users expire --realm ad -d '^T.*'
+
+This would check for all expired users in the realm "AD" and then unassign
+all tokens and delete all of the user's tokens, that start with a 'T',
+which is indicated by the '-d' switch.
+
+This script runs against the library level of privacyIDEA. I.e. the
+webserver/API needs not to run. But the scripts needs to have access to
+pi.cfg and the encryption keys.
+
+accountExpires in Active Directory
+https://msdn.microsoft.com/en-us/library/windows/desktop/ms675098(v=vs.85).aspx
+
+    "The date when the account expires. This value represents the number of
+     100-nanosecond intervals since January 1, 1601 (UTC). A value of 0 or
+     0x7FFFFFFFFFFFFFFF (9223372036854775807) indicates that the account
+     never expires."
+
+Use the '-n' (noaction) switch, to verify if the script would do what you
+expect.
+"""
+__version__ = "0.1"
+
+from privacyidea.lib.user import get_user_list, User
+from privacyidea.lib.token import get_tokens, remove_token, unassign_token
+from privacyidea.app import create_app
+from flask.ext.script import Manager
+import datetime
+import re
+
+# If set to None, this condition does not match
+# Otherwise you may use a regular expression to match the serial numbers
+DELETE_SERIAL = None
+UNASSIGN_SERIAL = ".*"
+# You do not need to change this
+ATTRIBUTE_NAME = "accountExpires"
+
+#############################
+# Do not change this
+# one second contains 10^9 nano seconds. -> contains 10^7 100-nanoseconds
+MULTIPLYER = 10 ** 7
+MS_AD_START = datetime.datetime(1601, 1, 1)
+
+app = create_app(config_name='production', silent=True)
+manager = Manager(app)
+
+
+@manager.command
+def expire(realm=None, attribute_name=ATTRIBUTE_NAME,
+           delete_serial=DELETE_SERIAL, unassign_serial=UNASSIGN_SERIAL,
+           noaction=False):
+    """
+    This searches for expired Users in the specified realm.
+    The attributeName should contain an integer like that in Microsoft(R)
+    Active Directory. This is 100-nano-seconds steps since 1601/01/01.
+
+    :param realm: The realm which should be checked
+    :param attribute_name: The attribute name, that contains the expiration
+        date. defaults to accountExpires.
+    :param delete_serial:
+    :param unassign_serial:
+    :param noaction: If set to True, the script will only show, which accounts
+        have expired, but do nothing.
+    :return:
+    """
+    utc_now = datetime.datetime.utcnow()
+    # Active directory starts at 1.1.1601 ;-)
+    elapsed_time = utc_now - MS_AD_START
+    total_seconds = elapsed_time.total_seconds()
+    # convert this to (100 nanoseconds)
+    # 1 sec == 10^9 nano secs == 10^7 * (100 nano secs)
+    multiplyer = 10 ** 7
+    total_100_nano_secs = multiplyer * total_seconds
+    params = {"accountExpires": "1"}
+    if realm:
+        params["realm"] = realm
+    users = get_user_list(params)
+
+    for user in users:
+        username = user.get("username")
+        account_expires = user.get(attribute_name)
+        if account_expires:
+            if int(account_expires) == 0:
+                # 0 -> account never expires
+                print("%s does not expire." % username)
+                continue
+            td = datetime.timedelta(seconds=(int(account_expires) / MULTIPLYER))
+            try:
+                exp_date = MS_AD_START + td
+            except OverflowError:
+                # values like 9223372036854775807 do not expire
+                print("%s does not expire." % username)
+                continue
+
+            print("= User %s has an expiration date." % username)
+            print("== UTC now : %s" % utc_now)
+            print("== expires : %s" % exp_date)
+            if exp_date <= utc_now:
+                print("=== Account %s has expired." % username)
+
+                user = User(username, realm=realm)
+                tokens = get_tokens(user=user)
+                if not tokens:
+                    print("=== The account has no tokens assigned.")
+                for token in tokens:
+                    if unassign_serial:
+                        m = re.search(unassign_serial, token.token.serial)
+                        if m:
+                            if noaction:
+                                print("=== I WOULD unassign token %s" %
+                                      token.token.serial)
+                            else:
+                                print("=== Unassigning token %s" %
+                                      token.token.serial)
+                                unassign_token(token.token.serial)
+
+                    if delete_serial:
+                        m = re.search(delete_serial, token.token.serial)
+                        if m:
+                            if noaction:
+                                print("=== I WOULD delete token %s" %
+                                      token.token.serial)
+                            else:
+                                print("=== Deleting token %s" %
+                                      token.token.serial)
+                                remove_token(token.token.serial)
+
+
+if __name__ == '__main__':
+    print
+    manager.run()
+
