@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-03-23 Jochen Hein <jochen@jochen.org>
+#             Fix signature verification/generation
 #  2016-03-15 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Keep backward compatibility
 #  2016-03-08 Jochen Hein <jochen@jochen.org>
@@ -299,7 +301,7 @@ class YubikeyTokenClass(TokenClass):
         data_string = ""
         for key in keys:
             data_string += "%s=%s&" % (key, data.get(key))
-        data_string.strip("&")
+        data_string = data_string.strip("&")
         api_key_bin = base64.b64decode(api_key)
         # generate the signature
         h = hmac.new(api_key_bin, data_string, sha1).digest()
