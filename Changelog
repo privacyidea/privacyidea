@@ -1,3 +1,29 @@
+Version 2.11, 2016-03-29
+
+  Features
+  * RADIUS Servers: Allow central definition of RADIUS servers
+  * RADIUS passthru policy: Authentication requests for users
+    with no tokens can be forwarded to a specified RADIUS server
+
+  Enhancements
+  * Allow objectGUID in LDAP-Resolver of Active Directory
+  * Allow privacyIDEA instance name to be configured for
+    the AUDIT log
+  * Allow special characters in LDAP loginnames and passwords
+  * Add arbitrary attributes to SAML Authentication response
+  * Enhance the handling of YUBICO mode yubikeys with the
+    YUBICO API. The prefix is handled correctly.
+  * Allow in get_tokens to be filtered for tokeninfo.
+  * Add paged search in LDAP resolver. This allows responses
+    with more than 1000 objects.
+
+  Fixes
+  * Fix SMTP authentication
+  * Fix Enrollment Wizard for non-default realm users
+  * Registration process: If an email can not be delivered,
+    the token is deleted, since it can not be used.
+
+
 Version 2.10, 2016-02-11
 
   Features
