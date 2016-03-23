@@ -354,11 +354,13 @@ class YubikeyTokenClass(TokenClass):
         Optional parameters h, timestamp, sl, timeout are not supported at the
         moment.
         """
-        # TODO: If the request contains a signature (h) we verify the signature
+
         id = getParam(request.all_data, "id")
         otp = getParam(request.all_data, "otp")
         nonce = getParam(request.all_data, "nonce")
+        signature = getParam(request.all_data, "h")
         status = "MISSING_PARAMETER"
+
         timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ%f")
         data = {'otp': otp,
                 'nonce': nonce,
@@ -370,13 +372,16 @@ class YubikeyTokenClass(TokenClass):
             data['status'] = "NO_SUCH_CLIENT"
             data['h'] = ""
         elif otp and id and nonce:
-            options = {"g": g,
-                       "clientip": request.remote_addr}
-            res, opt = cls.check_yubikey_pass(otp)
-            if res:
-                data['status'] = "OK"
+            if signature and not cls._check_api_signature(request.all_data, api_key, signature):
+                # yubico server don't send nonce and otp back. Do we want that?
+                data['status'] = "BAD_SIGNATURE"
             else:
-                data['status'] = "BAD_OTP"
+                res, opt = cls.check_yubikey_pass(otp)
+                if res:
+                    data['status'] = "OK"
+                else:
+                    # Do we want REPLAYED_OTP too?
+                    data['status'] = "BAD_OTP"
 
             data["h"] = cls._api_signature(data, api_key)
         response = """nonce={nonce}
