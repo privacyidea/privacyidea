@@ -308,6 +308,29 @@ class YubikeyTokenClass(TokenClass):
         h_b64 = base64.b64encode(h)
         return h_b64
 
+    @staticmethod
+    def _check_api_signature(data, api_key, signature):
+        """
+        Get a dictionary "data", sort the dictionary by the keys
+        and sign it HMAC-SHA1 with the api_key
+        :param data: dictionary
+        :param api_key: base64 encoded API key
+        :return: base64 encoded signature
+        """
+        r = dict(data)
+        if 'h' in r:
+            del r['h']
+        keys = sorted(r.keys())
+        data_string = ""
+        for key in keys:
+            data_string += "%s=%s&" % (key, r.get(key))
+        data_string = data_string.strip("&")
+        api_key_bin = base64.b64decode(api_key)
+        # generate the signature
+        h = hmac.new(api_key_bin, data_string, sha1).digest()
+        h_b64 = base64.b64encode(h)
+        return h_b64 == signature
+
     @classmethod
     def api_endpoint(cls, request, g):
         """
