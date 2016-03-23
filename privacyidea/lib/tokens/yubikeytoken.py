@@ -418,15 +418,16 @@ h={h}
         from privacyidea.lib.token import check_token_list
 
         # See if the prefix matches the serial number
-        try:
-            # Keep the backward compatibility
-            serialnum = "UBAM" + modhex_decode(prefix)
-            for i in range(1, 3):
-                s = "%s_%s" % (serialnum, i)
-                toks = get_tokens(serial=s)
-                token_list.extend(toks)
-        except TypeError as exx:  # pragma: no cover
-            log.error("Failed to convert serialnumber: %r" % exx)
+        if prefix[:2] != "vv" and prefix[:2] != "cc":
+            try:
+                # Keep the backward compatibility
+                serialnum = "UBAM" + modhex_decode(prefix)
+                for i in range(1, 3):
+                    s = "%s_%s" % (serialnum, i)
+                    toks = get_tokens(serial=s)
+                    token_list.extend(toks)
+            except TypeError as exx:  # pragma: no cover
+                log.error("Failed to convert serialnumber: %r" % exx)
 
         # Now, we see, if the prefix matches the new version
         if not token_list:
