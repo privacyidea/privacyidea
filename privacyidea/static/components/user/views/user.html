@@ -5,7 +5,7 @@
             <div class="pa-sidebar panel">
                 <ul class="nav nav-pills nav-stacked"
                     ng-show="loggedInUser.role === 'user' &&
-                        checkRight('updateuser')">
+                        checkRight('userlist')">
                    <li role="presentation" ng-class=
                            "{active: $state.includes('user.password')}">
                        <a ui-sref="user.password">
