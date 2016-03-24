@@ -971,6 +971,9 @@ def get_static_policy_definitions(scope=None):
             ACTION.AUDIT: {
                 'type': 'bool',
                 'desc': _('Allow the user to view his own token history.')},
+            ACTION.USERLIST: {'type': 'bool',
+                                'desc': _("The user is allowed to view his "
+                                          "own user information.")},
             ACTION.UPDATEUSER: {'type': 'bool',
                                 'desc': _("The user is allowed to update his "
                                           "own user information, like changing "
