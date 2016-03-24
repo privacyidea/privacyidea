@@ -372,7 +372,8 @@ class YubikeyTokenClass(TokenClass):
             data['status'] = "NO_SUCH_CLIENT"
             data['h'] = ""
         elif otp and id and nonce:
-            if signature and not cls._check_api_signature(request.all_data, api_key, signature):
+            if signature and not cls._check_api_signature(request.all_data,
+                                                          api_key, signature):
                 # yubico server don't send nonce and otp back. Do we want that?
                 data['status'] = "BAD_SIGNATURE"
             else:
