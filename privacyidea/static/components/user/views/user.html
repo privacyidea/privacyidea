@@ -4,7 +4,8 @@
         <div class="col-lg-3">
             <div class="pa-sidebar panel">
                 <ul class="nav nav-pills nav-stacked"
-                    ng-show="loggedInUser.role === 'user'">
+                    ng-show="loggedInUser.role === 'user' &&
+                        checkRight('updateuser')">
                    <li role="presentation" ng-class=
                            "{active: $state.includes('user.password')}">
                        <a ui-sref="user.password">
@@ -13,7 +14,7 @@
                    </li>
                 </ul>
                 <ul class="nav nav-pills nav-stacked"
-                    ng-show="loggedInUser.role === 'admin'">
+                    ng-show="loggedInUser.role == 'admin'">
                     <li role="presentation"
                         ng-class="{active: $state.includes('user.list')}"><a
                             ui-sref="user.list"
