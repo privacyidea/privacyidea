@@ -126,9 +126,11 @@
         <tr>
             <td translate>Info</td>
             <td>
-                <li ng-repeat="(k,v) in token.info">
-                    {{ k }}: {{ v | truncate:30 }}
-                </li>
+                <ul>
+                    <li ng-repeat="(k,v) in token.info">
+                        {{ k }}: {{ v | truncate:30 }}
+                    </li>
+                <ul>
                 <div ng-show="editTokenInfo">
                     <div class="form-group">
                         <label for="max_auth_count"
