@@ -153,7 +153,7 @@ class YubikeyTokenTestCase(MyTestCase):
                 "nonce": "blablafoo",
                 "timestamp": "time"}
         h = YubikeyTokenClass._api_signature(data, api_key)
-        self.assertEqual(h, "InGUM9l0cgfOzEAb0C1LgMktycU=")
+        self.assertEqual(h, "0KRJecfPNSrpZ79+xODbJl0HM8I=")
 
     def test_10_api_endpoint(self):
         fixed = "ebedeeefegeheiej"
