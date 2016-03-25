@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-03-23 Jochen Hein <jochen@jochen.org>
+#             Fix signature verification/generation
 #  2016-03-15 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Keep backward compatibility
 #  2016-03-08 Jochen Hein <jochen@jochen.org>
@@ -299,12 +301,35 @@ class YubikeyTokenClass(TokenClass):
         data_string = ""
         for key in keys:
             data_string += "%s=%s&" % (key, data.get(key))
-        data_string.strip("&")
+        data_string = data_string.strip("&")
         api_key_bin = base64.b64decode(api_key)
         # generate the signature
         h = hmac.new(api_key_bin, data_string, sha1).digest()
         h_b64 = base64.b64encode(h)
         return h_b64
+
+    @staticmethod
+    def _check_api_signature(data, api_key, signature):
+        """
+        Get a dictionary "data", sort the dictionary by the keys
+        and sign it HMAC-SHA1 with the api_key
+        :param data: dictionary
+        :param api_key: base64 encoded API key
+        :return: base64 encoded signature
+        """
+        r = dict(data)
+        if 'h' in r:
+            del r['h']
+        keys = sorted(r.keys())
+        data_string = ""
+        for key in keys:
+            data_string += "%s=%s&" % (key, r.get(key))
+        data_string = data_string.strip("&")
+        api_key_bin = base64.b64decode(api_key)
+        # generate the signature
+        h = hmac.new(api_key_bin, data_string, sha1).digest()
+        h_b64 = base64.b64encode(h)
+        return h_b64 == signature
 
     @classmethod
     def api_endpoint(cls, request, g):
@@ -329,11 +354,13 @@ class YubikeyTokenClass(TokenClass):
         Optional parameters h, timestamp, sl, timeout are not supported at the
         moment.
         """
-        # TODO: If the request contains a signature (h) we verify the signature
+
         id = getParam(request.all_data, "id")
         otp = getParam(request.all_data, "otp")
         nonce = getParam(request.all_data, "nonce")
+        signature = getParam(request.all_data, "h")
         status = "MISSING_PARAMETER"
+
         timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ%f")
         data = {'otp': otp,
                 'nonce': nonce,
@@ -345,13 +372,17 @@ class YubikeyTokenClass(TokenClass):
             data['status'] = "NO_SUCH_CLIENT"
             data['h'] = ""
         elif otp and id and nonce:
-            options = {"g": g,
-                       "clientip": request.remote_addr}
-            res, opt = cls.check_yubikey_pass(otp)
-            if res:
-                data['status'] = "OK"
+            if signature and not cls._check_api_signature(request.all_data,
+                                                          api_key, signature):
+                # yubico server don't send nonce and otp back. Do we want that?
+                data['status'] = "BAD_SIGNATURE"
             else:
-                data['status'] = "BAD_OTP"
+                res, opt = cls.check_yubikey_pass(otp)
+                if res:
+                    data['status'] = "OK"
+                else:
+                    # Do we want REPLAYED_OTP too?
+                    data['status'] = "BAD_OTP"
 
             data["h"] = cls._api_signature(data, api_key)
         response = """nonce={nonce}
@@ -393,15 +424,16 @@ h={h}
         from privacyidea.lib.token import check_token_list
 
         # See if the prefix matches the serial number
-        try:
-            # Keep the backward compatibility
-            serialnum = "UBAM" + modhex_decode(prefix)
-            for i in range(1, 3):
-                s = "%s_%s" % (serialnum, i)
-                toks = get_tokens(serial=s)
-                token_list.extend(toks)
-        except TypeError as exx:  # pragma: no cover
-            log.error("Failed to convert serialnumber: %r" % exx)
+        if prefix[:2] != "vv" and prefix[:2] != "cc":
+            try:
+                # Keep the backward compatibility
+                serialnum = "UBAM" + modhex_decode(prefix)
+                for i in range(1, 3):
+                    s = "%s_%s" % (serialnum, i)
+                    toks = get_tokens(serial=s)
+                    token_list.extend(toks)
+            except TypeError as exx:  # pragma: no cover
+                log.error("Failed to convert serialnumber: %r" % exx)
 
         # Now, we see, if the prefix matches the new version
         if not token_list:
