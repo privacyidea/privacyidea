@@ -3,6 +3,21 @@
 Upgrading
 ---------
 
+Upgrade to privacyIDEA 2.11
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In privacyIDEA 2.11 the RADIUS server definition was added.
+RADIUS servers can be used in RADIUS tokens and in the
+RADIUS passthru policy. 
+
+A new database table "radiusserver" was added.
+
+You need to update the database models::
+
+   pi-manage db stamp 4f32a4e1bf33 -d path/to/migrations
+   pi-manage db upgrade -d path/to/migrations
+
+
 Upgrade to privacyIDEA 2.10
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
