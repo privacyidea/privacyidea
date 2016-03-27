@@ -1,6 +1,29 @@
 python-privacyidea (2.11~dev2-1trusty) trusty; urgency=low
 
-  * start 2.11
+  Features
+  * RADIUS Servers: Allow central definition of RADIUS servers
+  * RADIUS passthru policy: Authentication requests for users
+    with no tokens can be forwarded to a specified RADIUS server
+
+  Enhancements
+  * Allow objectGUID in LDAP-Resolver of Active Directory
+  * Use paged searches in LDAP. LDAP resolver will find all
+    users in the LDAP directory.
+  * Allow privacyIDEA instance name to be configured for
+    the AUDIT log
+  * Allow special characters in LDAP loginnames and passwords
+  * Add arbitrary attributes to SAML Authentication response
+  * Enhance the handling of YUBICO mode yubikeys with the
+    YUBICO API. The prefix is handled correctly.
+  * Allow in get_tokens to be filtered for tokeninfo.
+  * Add paged search in LDAP resolver. This allows responses
+    with more than 1000 objects.
+
+  Fixes
+  * Fix SMTP authentication
+  * Fix Enrollment Wizard for non-default realm users
+  * Registration process: If an email can not be delivered,
+    the token is deleted, since it can not be used.
 
  -- Cornelius Kölbel <cornelius@privacyidea.org>  Sun, 27 Mar 2016 17:30:00 +0200
 

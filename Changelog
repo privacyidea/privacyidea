@@ -7,6 +7,8 @@ Version 2.11, 2016-03-29
 
   Enhancements
   * Allow objectGUID in LDAP-Resolver of Active Directory
+  * Use paged searches in LDAP. LDAP resolver will find all
+    users in the LDAP directory.
   * Allow privacyIDEA instance name to be configured for
     the AUDIT log
   * Allow special characters in LDAP loginnames and passwords

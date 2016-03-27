@@ -34,6 +34,16 @@ clean:
 	rm -f .coverage
 	(cd doc; make clean)
 
+setversion:
+	vim Makefile
+	vim setup.py
+	vim deploy/debian-ubuntu/changelog
+	vim deploy/debian-virtualenv/changelog
+	vim doc/conf.py
+	vim Changelog
+	@echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+	@echo "Please set a tag like:  git tag 3.17"
+
 translate:
 	grunt nggettext_extract
 	(cd po; msgmerge de.po template.pot > tmp.po; mv tmp.po de.po)
