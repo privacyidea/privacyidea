@@ -30,4 +30,13 @@
            ng-model="form['yubico.secret']" name="yubicoKey">
 </div>
 
+<div class="form-group">
+    <label for="yubicoURL" translate>Yubico URL</label>
+    <input type="url"
+           required
+           class="form-control"
+           placeholder="https://api.yubico.com/wsapi/2.0/verify"
+           ng-model="form['yubico.url']" name="yubicoURL">
+</div>
+
 
