@@ -51,7 +51,7 @@ import binascii
 
 YUBICO_LEN_ID = 12
 YUBICO_LEN_OTP = 44
-YUBICO_URL = "http://api.yubico.com/wsapi/2.0/verify"
+YUBICO_URL = "https://api.yubico.com/wsapi/2.0/verify"
 DEFAULT_CLIENT_ID = 20771
 DEFAULT_API_KEY = "9iE9DRkPHQDJbAFFC31/dum5I54="
 
@@ -138,6 +138,7 @@ class YubicoTokenClass(TokenClass):
 
         apiId = get_from_config("yubico.id", DEFAULT_CLIENT_ID)
         apiKey = get_from_config("yubico.secret", DEFAULT_API_KEY)
+        yubico_url = get_from_config("yubico.url", YUBICO_URL)
 
         if apiKey == DEFAULT_API_KEY or apiId == DEFAULT_CLIENT_ID:
             log.warning("Usage of default apiKey or apiId not recomended!")
@@ -159,7 +160,7 @@ class YubicoTokenClass(TokenClass):
                  'id': apiId}
 
             try:
-                r = requests.post(YUBICO_URL,
+                r = requests.post(yubico_url,
                                   data=p)
 
                 if r.status_code == requests.codes.ok:
