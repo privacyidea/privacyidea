@@ -1,4 +1,4 @@
-python-privacyidea (2.11~dev2-1trusty) trusty; urgency=low
+python-privacyidea (2.11-1trusty) trusty; urgency=low
 
   Features
   * RADIUS Servers: Allow central definition of RADIUS servers
@@ -25,7 +25,7 @@ python-privacyidea (2.11~dev2-1trusty) trusty; urgency=low
   * Registration process: If an email can not be delivered,
     the token is deleted, since it can not be used.
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Sun, 27 Mar 2016 17:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Tue, 29 Mar 2016 08:30:00 +0200
 
 python-privacyidea (2.10-1trusty) trusty; urgency=low
 

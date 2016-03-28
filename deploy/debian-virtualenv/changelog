@@ -1,4 +1,4 @@
-privacyidea-venv (2.11~dev2-1) wheezy; urgency=low
+privacyidea-venv (2.11-1) wheezy; urgency=low
 
   Features
   * RADIUS Servers: Allow central definition of RADIUS servers
@@ -25,7 +25,7 @@ privacyidea-venv (2.11~dev2-1) wheezy; urgency=low
   * Registration process: If an email can not be delivered,
     the token is deleted, since it can not be used.
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Sun, 27 Mar 2016 17:00:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Tue, 29 Mar 2016 08:30:00 +0200
 
 privacyidea-venv (2.10-1) wheezy; urgency=low
 
