@@ -63,3 +63,4 @@ stdeb==0.8.5
 Werkzeug==0.10.4
 psycopg2==2.6
 lxml>=3.3
+ecdsa>=0.13
