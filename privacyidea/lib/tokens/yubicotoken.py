@@ -174,10 +174,9 @@ class YubicoTokenClass(TokenClass):
                     return_hash = m.group(1)
 
                     # check signature:
-                    elements = response.split('\r')
+                    elements = response.split('\n')
                     hash_elements = []
                     for elem in elements:
-                        elem = elem.strip('\n')
                         if elem and elem[:2] != "h=":
                             hash_elements.append(elem)
 
