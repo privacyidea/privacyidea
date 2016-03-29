@@ -2864,6 +2864,10 @@ msgstr ""
 msgid "Yubico Token settings"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.token.yubico.html:34
+msgid "Yubico URL"
+msgstr ""
+
 #: privacyidea/static/components/token/controllers/tokenControllers.js:154
 msgid "Yubikey AES mode: One Time Passwords with Yubikey"
 msgstr ""
