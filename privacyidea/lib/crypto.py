@@ -16,7 +16,8 @@
 # License as published by the Free Software Foundation; either
 # version 3 of the License, or any later version.
 #
-# This code is distributed in the hope that it will be useful,
+# This code is dist
+# ributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU AFFERO GENERAL PUBLIC LICENSE for more details.
@@ -55,6 +56,7 @@ import sys
 import traceback
 
 
+FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"
 
 (ma, mi, _, _, _,) = sys.version_info
 pver = float(int(ma) + int(mi) * 0.1)
@@ -324,7 +326,7 @@ def decryptPassword(cryptPass):
         ret = hsm.decrypt_password(cryptPass)
     except Exception as exx:  # pragma: no cover
         log.warning(exx)
-        ret = "FAILED TO DECRYPT PASSWORD!"
+        ret = FAILED_TO_DECRYPT_PASSWORD
     return ret
 
 

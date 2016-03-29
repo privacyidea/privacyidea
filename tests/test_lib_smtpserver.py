@@ -4,7 +4,9 @@ This test file tests the lib/smtpserver.py
 from .base import MyTestCase
 from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.smtpserver import (get_smtpservers, add_smtpserver,
-                                        delete_smtpserver, get_smtpserver)
+                                        delete_smtpserver, get_smtpserver,
+                                        SMTPServer)
+from privacyidea.models import SMTPServer as SMTPServerDB
 import smtpmock
 from smtplib import SMTPException
 
@@ -74,3 +76,24 @@ class SMTPServerTestCase(MyTestCase):
 
     def test_04_missing_configuration(self):
         self.assertRaises(ConfigAdminError, get_smtpserver, "notExisting")
+
+    @smtpmock.activate
+    def test_05_test_email(self):
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=True)
+        identifier = "newConfig"
+        server = "mailsever"
+        port = 25
+        username = "mailsender"
+        password = "secret"
+        sender = "mailsender@exmaple.com"
+        tls = True
+        recipient = "user@example.com"
+
+        s = SMTPServerDB(identifier=identifier, server=server, port=port,
+                         username=username, password=password, sender=sender,
+                         tls=tls)
+        r = SMTPServer.test_email(s, recipient,
+                                  "Test Email from privacyIDEA",
+                                  "This is a test email from privacyIDEA. "
+                                  "The configuration %s is working." % identifier)

@@ -18,7 +18,8 @@
 #
 #
 from privacyidea.models import SMTPServer as SMTPServerDB
-from privacyidea.lib.crypto import decryptPassword, encryptPassword
+from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
+                                    FAILED_TO_DECRYPT_PASSWORD)
 import logging
 from privacyidea.lib.log import log_with
 import datetime
@@ -90,6 +91,8 @@ Date: %s
         if config.username:
             log.debug("Doing authentication with %s" % config.username)
             password = decryptPassword(config.password)
+            if password == FAILED_TO_DECRYPT_PASSWORD:
+                password = config.password
             mail.login(config.username, password)
         r = mail.sendmail(mail_from, recipient, body)
         log.info("Mail sent: %s" % r)
