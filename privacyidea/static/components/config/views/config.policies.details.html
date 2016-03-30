@@ -75,6 +75,19 @@
             </table>
         </div>
     </div>
+    
+    <div class="text-center"
+         ng-show="checkRight('policywrite')">
+        <button ng-click="createPolicy()"
+                id="createPolicyButton"
+                ng-disabled="formPolicyAdd.$invalid"
+                class="btn btn-primary">
+            <div class="glyphicon glyphicon-plus" translate>
+                Create Policy
+            </div>
+        </button>
+    </div>
+
     <div class="form-group">
         <label for="scope" class="col-sm-3 control-label">
             Scope</label>
