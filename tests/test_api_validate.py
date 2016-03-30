@@ -8,7 +8,7 @@ from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
                                     get_inc_fail_count_on_false_pin,
                                     delete_privacyidea_config)
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
-                                   reset_token, enable_token)
+                                   reset_token, enable_token, revoke_token)
 from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy
 from privacyidea.lib.error import TokenAdminError
 
@@ -25,6 +25,7 @@ class ValidateAPITestCase(MyTestCase):
 
     def test_00_create_realms(self):
         self.setUp_user_realms()
+        self.setUp_user_realm2()
 
         # create a  token and assign it to the user
         db_token = Token(self.serials[0], tokentype="hotp")
@@ -620,7 +621,6 @@ class ValidateAPITestCase(MyTestCase):
         remove_token(serial="VP001")
 
     def test_15_validate_at_sign(self):
-        self.setUp_user_realm2()
         serial1 = "Split001"
         serial2 = "Split002"
         init_token({"serial": serial1,
@@ -875,7 +875,7 @@ class ValidateAPITestCase(MyTestCase):
         # One token is disabled. But the user must be able to login with the
         # 2nd token
         # user disableduser, realm: self.realm2, passwd: superSecret
-        set_policy(name="disalbed",
+        set_policy(name="disabled",
                    scope=SCOPE.AUTH,
                    action="%s=%s" % (ACTION.OTPPIN, "userstore"))
         # enroll two tokens
@@ -913,3 +913,37 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(result.get("value"), True)
 
         delete_policy("disabled")
+
+    def test_22_validate_locked(self):
+        # test a user with two tokens
+        # One token is locked/revoked.
+        #  But the user must be able to login with the 2nd token
+        # user lockeduser, realm: self.realm2
+        # enroll two tokens
+        user = "lockeduser"
+        set_policy(name="locked",
+                   scope=SCOPE.AUTH,
+                   action="%s=%s" % (ACTION.OTPPIN, "tokenpin"))
+        r = init_token({"type": "spass", "serial": "spass1l",
+                        "pin": "locked"},
+                       user=User(user, self.realm2))
+        r = init_token({"type": "spass", "serial": "spass2l",
+                        "pin": "locked"},
+                       user=User(user, self.realm2))
+        # disable first token
+        r = revoke_token("spass1l")
+        self.assertEqual(r, True)
+        # Check that the user still can authenticate with the 2nd token
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": user,
+                                                 "realm": self.realm2,
+                                                 "pass": "locked"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+
+        remove_token("spass1l")
+        remove_token("spass2l")
+        delete_policy("locked")

@@ -1870,8 +1870,14 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
             challenge_request_token_list.append(tokenobject)
         else:
             # This is a normal authentication attempt
-            pin_match, otp_count, repl = tokenobject.authenticate(passw, user,
-                                                                  options=options)
+            try:
+                pin_match, otp_count, repl = \
+                    tokenobject.authenticate(passw, user, options=options)
+            except TokenAdminError as tae:
+                # Token is locked
+                pin_match = False
+                otp_count = -1
+                repl = {'message': tae.message}
             repl = repl or {}
             reply_dict.update(repl)
             if otp_count >= 0:
