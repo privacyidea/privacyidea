@@ -65,6 +65,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"serial": "SomeSerial"}
 
@@ -148,6 +149,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {}
 
@@ -170,6 +172,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"type": "totp"}
 
@@ -208,6 +211,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"filename": "token.xml"}
 
@@ -225,6 +229,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # The admin can not upload from another IP address
         # An exception is raised
         env["REMOTE_ADDR"] = "192.168.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"filename": "token.xml"}
         self.assertRaises(PolicyError,
@@ -241,6 +246,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"user": "cornelius",
                         "realm": self.realm1}
@@ -299,6 +305,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"realm": self.realm1}
 
@@ -348,6 +355,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
 
         # Set a policy, that allows two tokens per realm
@@ -393,6 +401,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
 
         # Set a policy that defines the tokenlabel
@@ -427,6 +436,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
 
         # Set a policy that defines the tokenlabel
@@ -460,6 +470,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
 
         # Set a policy that defines the PIN to be encrypted
@@ -488,6 +499,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
 
         # Set a policy that defines PIN policy
@@ -582,6 +594,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         g.policy_object = PolicyClass()
 
@@ -628,6 +641,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
 
         # Set a mangle policy to change the username
@@ -668,6 +682,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         env["REMOTE_USER"] = "admin"
         req = Request(env)
 
@@ -702,6 +717,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         # Set a mangle policy to change the username
         # and only use the last 4 characters of the username
@@ -736,6 +752,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         # Set a mangle policy to change the username
         # and only use the last 4 characters of the username
@@ -768,6 +785,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         # The response contains the token type SPASS
         res = {"jsonrpc": "2.0",
@@ -813,6 +831,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         # The response contains the token type SPASS
         res = {"jsonrpc": "2.0",
@@ -857,6 +876,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         # The response contains the token type SPASS
         res = {"jsonrpc": "2.0",
@@ -887,6 +907,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         # The response contains the token type SPASS
         res = {"jsonrpc": "2.0",
@@ -948,6 +969,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                                  headers={})
         env = builder.get_environ()
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"user": "autoassignuser", "realm": self.realm1,
                         "pass": "test287082"}
@@ -1005,6 +1027,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                                  headers={})
         env = builder.get_environ()
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"user": "autoassignuser", "realm": self.realm1,
                         "pass": "password287082"}
@@ -1068,6 +1091,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                                  headers={})
         env = builder.get_environ()
         env["REMOTE_ADDR"] = "192.168.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"user": "cornelius",
                         "pass": "offline287082"}
@@ -1101,6 +1125,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                                  headers={})
         env = builder.get_environ()
         env["REMOTE_ADDR"] = "192.168.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.values = {"user": "cornelius",
                       "pass": "offline287082",
@@ -1147,6 +1172,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                                  headers={})
         env = builder.get_environ()
         env["REMOTE_ADDR"] = "192.168.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"user": "cornelius",
                         "pass": "offline287082"}

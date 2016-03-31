@@ -466,7 +466,7 @@ class U2fTokenClass(TokenClass):
         # Read the facets from the policies
         pol_facets = g.policy_object.get_action_values(U2FACTION.FACETS,
                                                        scope=SCOPE.AUTH,
-                                                       client=request.remote_addr)
+                                                       client=g.client_ip)
         facet_list = ["https://%s" % x for x in pol_facets]
         facet_list.append(app_id)
 

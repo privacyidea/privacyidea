@@ -25,13 +25,12 @@ __doc__ = """This REST API is used to list machines from Machine Resolvers.
 The code is tested in tests/test_api_machines
 """
 from flask import (Blueprint,
-                   request)
+                   request, g)
 from lib.utils import (getParam,
                        send_result)
 from ..api.lib.prepolicy import prepolicy, check_base_action, mangle
 from ..lib.policy import ACTION
 
-from flask import (g)
 from ..lib.machine import (get_machines, attach_token, detach_token,
                            add_option, delete_option,
                            list_token_machines, list_machine_tokens,
@@ -362,7 +361,7 @@ def get_auth_items_api(application=None):
         if key in filter_param:
             del(filter_param[key])
 
-    ret = get_auth_items(hostname, ip=request.remote_addr,
+    ret = get_auth_items(hostname, ip=g.client_ip,
                          application=application, challenge=challenge,
                          filter_param=filter_param)
     g.audit_object.log({'success': True,

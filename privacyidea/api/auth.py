@@ -76,8 +76,10 @@ def before_request():
                          request.host
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
+    # We can add logic to use X-Forwarded-For
+    g.client_ip = request.remote_addr
     g.audit_object.log({"success": False,
-                        "client": request.remote_addr,
+                        "client": g.client_ip,
                         "client_user_agent": request.user_agent.browser,
                         "privacyidea_server": privacyidea_server,
                         "action": "%s %s" % (request.method, request.url_rule),
@@ -227,7 +229,7 @@ def get_auth_token():
         # The user could not be identified against the admin database,
         # so we do the rest of the check
         options = {"g": g,
-                   "clientip": request.remote_addr}
+                   "clientip": g.client_ip}
         for key, value in request.all_data.items():
             if value and key not in ["g", "clientip"]:
                 options[key] = value
@@ -256,7 +258,7 @@ def get_auth_token():
         # Add the authtype to the JWT, so that we could use it for access
         # definitions
         rights = g.policy_object.ui_get_rights(role, realm, loginname,
-                                               request.remote_addr)
+                                               g.client_ip)
     else:
         import os
         import binascii
@@ -332,6 +334,6 @@ def get_rights():
 
     :reqheader Authorization: The authorization token acquired by /auth request
     """
-    enroll_types = g.policy_object.ui_get_enroll_tokentypes(request.remote_addr,
+    enroll_types = g.policy_object.ui_get_enroll_tokentypes(g.client_ip,
                                                             g.logged_in_user)
     return send_result(enroll_types)

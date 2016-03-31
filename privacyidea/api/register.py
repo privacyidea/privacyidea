@@ -109,7 +109,7 @@ def register_post():
     mobile = getParam(request.all_data, "mobile")
     phone = getParam(request.all_data, "phone")
     options = {"g": g,
-               "clientip": request.remote_addr}
+               "clientip": g.client_ip}
     g.audit_object.log({"info": username})
     # Add all params to the options
     for key, value in request.all_data.items():

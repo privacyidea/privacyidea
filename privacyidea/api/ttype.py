@@ -67,9 +67,11 @@ def before_request():
     # can be passed to the innerpolicies.
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
+    # We can add logic to use X-Forwarded-For
+    g.client_ip = request.remote_addr
     g.audit_object.log({"success": False,
                         "action_detail": "",
-                        "client": request.remote_addr,
+                        "client": g.client_ip,
                         "client_user_agent": request.user_agent.browser,
                         "privacyidea_server": privacyidea_server,
                         "action": "%s %s" % (request.method, request.url_rule),

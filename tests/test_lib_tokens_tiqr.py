@@ -368,6 +368,7 @@ class TiQRTokenTestCase(MyTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"action": "metadata",
                         "session": session,

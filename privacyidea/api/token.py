@@ -876,7 +876,7 @@ def lost_api(serial=None):
                 userobj, serial))
 
     options = {"g": g,
-               "clientip": request.remote_addr}
+               "clientip": g.client_ip}
     res = lost_token(serial, options=options)
 
     g.audit_object.log({"success": True})

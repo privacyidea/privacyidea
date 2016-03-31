@@ -96,6 +96,8 @@ def before_request():
 
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
+    # We can add logic to use X-Forwarded-For
+    g.client_ip = request.remote_addr
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
                          request.host
     # Already get some typical parameters to log
@@ -105,7 +107,7 @@ def before_request():
     g.audit_object.log({"success": False,
                         "serial": serial,
                         "realm": realm,
-                        "client": request.remote_addr,
+                        "client": g.client_ip,
                         "client_user_agent": request.user_agent.browser,
                         "privacyidea_server": privacyidea_server,
                         "action": "%s %s" % (request.method, request.url_rule),

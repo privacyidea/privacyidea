@@ -193,7 +193,7 @@ def check_tokentype(request, response):
 
     allowed_tokentypes = policy_object.get_action_values("tokentype",
                                                  scope=SCOPE.AUTHZ,
-                                                 client=request.remote_addr)
+                                                 client=g.client_ip)
     if tokentype and allowed_tokentypes and tokentype not in allowed_tokentypes:
         g.audit_object.log({"success": False,
                             'action_detail': "Tokentype not allowed for "
@@ -220,7 +220,7 @@ def check_serial(request, response):
     # get the serials from a policy definition
     allowed_serials = policy_object.get_action_values("serial",
                                                     scope=SCOPE.AUTHZ,
-                                                    client=request.remote_addr)
+                                                    client=g.client_ip)
 
     # If we can compare a serial and if we do serial matching!
     if serial and allowed_serials:
@@ -253,7 +253,7 @@ def no_detail_on_success(request, response):
     # get the serials from a policy definition
     detailPol = policy_object.get_policies(action=ACTION.NODETAILSUCCESS,
                                            scope=SCOPE.AUTHZ,
-                                           client=request.remote_addr,
+                                           client=g.client_ip,
                                            active=True)
 
     if detailPol and content.get("result", {}).get("value"):
@@ -282,7 +282,7 @@ def no_detail_on_fail(request, response):
     # get the serials from a policy definition
     detailPol = policy_object.get_policies(action=ACTION.NODETAILFAIL,
                                            scope=SCOPE.AUTHZ,
-                                           client=request.remote_addr,
+                                           client=g.client_ip,
                                            active=True)
 
     if detailPol and content.get("result", {}).get("value") is False:
@@ -306,9 +306,10 @@ def offline_info(request, response):
     content = json.loads(response.data)
     # check if the authentication was successful
     if content.get("result").get("value") is True:
-        # If there is no remote address, we can not determine offline information
-        if request.remote_addr:
-            client_ip = netaddr.IPAddress(request.remote_addr)
+        # If there is no remote address, we can not determine
+        # offline information
+        if g.client_ip:
+            client_ip = netaddr.IPAddress(g.client_ip)
             # check if there is a MachineToken definition
             detail = content.get("detail", {})
             serial = detail.get("serial")
@@ -345,7 +346,7 @@ def get_webui_settings(request, response):
 
         policy_object = g.policy_object
         try:
-            client = request.remote_addr
+            client = g.client_ip
         except Exception:
             client = None
         logout_time_pol = policy_object.get_action_values(
@@ -459,7 +460,7 @@ def autoassign(request, response):
                                   scope=SCOPE.ENROLL,
                                   user=user_obj.login,
                                   realm=user_obj.realm,
-                                  client=request.remote_addr)
+                                  client=g.client_ip)
 
             if len(autoassign_values) > 1:
                 raise PolicyError("Contradicting Autoassign policies.")
