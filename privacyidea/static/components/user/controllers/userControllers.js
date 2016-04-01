@@ -58,7 +58,7 @@ angular.module("privacyideaApp")
 
         // The user can fetch his own information.
         $scope.getUserDetails = function () {
-            UserFactory.getUsers({}, function (data) {
+            UserFactory.getUserDetails({}, function (data) {
                 $scope.User = data.result.value[0];
                 $scope.User.password = "";
             });
@@ -113,7 +113,7 @@ angular.module("privacyideaApp")
         };
 
         $scope.getUserDetails = function () {
-            UserFactory.getUsers({
+            UserFactory.getUserDetails({
                 username: $scope.username,
                 realm: $scope.realmname
             }, function (data) {

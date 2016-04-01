@@ -45,6 +45,14 @@ myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope,
                 }).success(callback
                 ).error(error_func);
             },
+            getUserDetails: function(params, callback) {
+                // get user information without cancelling the call.
+                $http.get(userUrl + "/", {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken() },
+                    params: params
+                }).success(callback
+                ).error(error_func);
+            },
             updateUser: function(resolver, params, callback) {
                 params.resolver = resolver;
                 params.user = params.username;
