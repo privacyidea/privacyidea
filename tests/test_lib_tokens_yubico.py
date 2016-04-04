@@ -1,5 +1,5 @@
 """
-This test file tests the lib.tokens.sshkeytoken
+This test file tests the lib.tokens.yubicotoken
 This depends on lib.tokenclass
 """
 
@@ -22,8 +22,7 @@ t=2015-01-28T15:22:57Z0508
 otp=vvbgidlghkhgndujklhhudbcuttkcklhvjktrjbfukrt
 nonce=5e1cdbcbb798af7445b60376aaf2c17b2f064f41
 sl=25
-status=OK
-    """
+status=OK"""
 
     fail_body = """h=3+BO86TdIuhg1gFpLj+PDyyxxu4=
 t=2015-01-28T15:27:01Z0978
@@ -61,7 +60,7 @@ status=REPLAYED_OTP"""
     @responses.activate
     def test_04_check_otp_success(self):
         responses.add(responses.POST, YUBICO_URL,
-                      body=json.dumps(self.success_body))
+                      body=self.success_body)
 
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = YubicoTokenClass(db_token)
@@ -69,11 +68,10 @@ status=REPLAYED_OTP"""
         # Nonce and hash do not match
         self.assertTrue(otpcount == -2, otpcount)
 
-
     @responses.activate
     def test_05_check_otp_fail(self):
         responses.add(responses.POST, YUBICO_URL,
-                      body=json.dumps(self.fail_body))
+                      body=self.fail_body)
 
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = YubicoTokenClass(db_token)

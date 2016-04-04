@@ -5,7 +5,9 @@ This test file tests the lib.tokens.yubikeytoken
 PWFILE = "tests/testdata/passwords"
 
 from .base import MyTestCase
-from privacyidea.lib.tokens.yubikeytoken import (YubikeyTokenClass)
+from privacyidea.lib.tokens.yubikeytoken import (YubikeyTokenClass,
+                                                 yubico_api_signature,
+                                                 yubico_check_api_signature)
 from privacyidea.lib.token import init_token
 from privacyidea.models import (Token)
 from flask import Request, g
@@ -149,11 +151,17 @@ class YubikeyTokenTestCase(MyTestCase):
 
     def test_09_api_signature(self):
         api_key = "LqeG/IZscF1f7/oGQBqNnGY7MLk="
+        signature = "0KRJecfPNSrpZ79+xODbJl0HM8I="
         data = {"otp": "ececegecejeeedehfftnecrrfcfibfbklhvetghgrvtjdtvv",
                 "nonce": "blablafoo",
+                "h": signature,
                 "timestamp": "time"}
-        h = YubikeyTokenClass._api_signature(data, api_key)
-        self.assertEqual(h, "0KRJecfPNSrpZ79+xODbJl0HM8I=")
+
+        h = yubico_api_signature(data, api_key)
+        self.assertEqual(h, signature)
+        self.assertEqual(yubico_check_api_signature(data, api_key,
+                                                    signature), True)
+        self.assertEqual(yubico_check_api_signature(data, api_key), True)
 
     def test_10_api_endpoint(self):
         fixed = "ebedeeefegeheiej"

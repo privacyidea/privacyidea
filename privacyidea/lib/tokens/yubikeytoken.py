@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-04-04 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Move the API signature static methods to functions.
 #  2016-03-23 Jochen Hein <jochen@jochen.org>
 #             Fix signature verification/generation
 #  2016-03-15 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -70,6 +72,50 @@ required = False
 
 
 log = logging.getLogger(__name__)
+
+
+def yubico_api_signature(data, api_key):
+    """
+    Get a dictionary "data", sort the dictionary by the keys
+    and sign it HMAC-SHA1 with the api_key
+
+    :param data: The data to be signed
+    :type data: dict
+    :param api_key: base64 encoded API key
+    :type api_key: basestring
+    :return: base64 encoded signature
+    """
+    r = dict(data)
+    if 'h' in r:
+        del r['h']
+    keys = sorted(r.keys())
+    data_string = ""
+    for key in keys:
+        data_string += "%s=%s&" % (key, r.get(key))
+    data_string = data_string.strip("&")
+    api_key_bin = base64.b64decode(api_key)
+    # generate the signature
+    h = hmac.new(api_key_bin, data_string, sha1).digest()
+    h_b64 = base64.b64encode(h)
+    return h_b64
+
+
+def yubico_check_api_signature(data, api_key, signature=None):
+    """
+    Verfiy the signature of the data.
+    Either provide the signatrue as parameter or take it from the data
+
+    :param data: The data to be signed
+    :type data: dict
+    :param api_key: base64 encoded API key
+    :type api_key: basestring
+    :param signature: the signature to be verified
+    :type signature: base64 encoded string
+    :return: base64 encoded signature
+    """
+    if not signature:
+        signature = data.get('h')
+    return signature == yubico_api_signature(data, api_key)
 
 
 class YubikeyTokenClass(TokenClass):
@@ -262,10 +308,10 @@ class YubikeyTokenClass(TokenClass):
 
         if tokenid != uid:
             # wrong token!
-            log.warning("The wrong token was presented for %r. Got %r, expected %r."
+            log.warning("The wrong token was presented for %r. "
+                        "Got %r, expected %r."
                         % (serial, uid, tokenid))
             return -2
-
 
         # TODO: We also could check the timestamp
         # see http://www.yubico.com/wp-content/uploads/2013/04/YubiKey-Manual-v3_1.pdf
@@ -282,54 +328,11 @@ class YubikeyTokenClass(TokenClass):
         """
         Return the symmetric key for the given apiId.
 
-        :param apiId: The base64 encoded API ID
+        :param api_id: The base64 encoded API ID
         :return: the base64 encoded API Key or None
         """
         api_key = get_from_config("yubikey.apiid.%s" % api_id)
         return api_key
-
-    @staticmethod
-    def _api_signature(data, api_key):
-        """
-        Get a dictionary "data", sort the dictionary by the keys
-        and sign it HMAC-SHA1 with the api_key
-        :param data: dictionary
-        :param api_key: base64 encoded API key
-        :return: base64 encoded signature
-        """
-        keys = sorted(data.keys())
-        data_string = ""
-        for key in keys:
-            data_string += "%s=%s&" % (key, data.get(key))
-        data_string = data_string.strip("&")
-        api_key_bin = base64.b64decode(api_key)
-        # generate the signature
-        h = hmac.new(api_key_bin, data_string, sha1).digest()
-        h_b64 = base64.b64encode(h)
-        return h_b64
-
-    @staticmethod
-    def _check_api_signature(data, api_key, signature):
-        """
-        Get a dictionary "data", sort the dictionary by the keys
-        and sign it HMAC-SHA1 with the api_key
-        :param data: dictionary
-        :param api_key: base64 encoded API key
-        :return: base64 encoded signature
-        """
-        r = dict(data)
-        if 'h' in r:
-            del r['h']
-        keys = sorted(r.keys())
-        data_string = ""
-        for key in keys:
-            data_string += "%s=%s&" % (key, r.get(key))
-        data_string = data_string.strip("&")
-        api_key_bin = base64.b64decode(api_key)
-        # generate the signature
-        h = hmac.new(api_key_bin, data_string, sha1).digest()
-        h_b64 = base64.b64encode(h)
-        return h_b64 == signature
 
     @classmethod
     def api_endpoint(cls, request, g):
@@ -354,7 +357,6 @@ class YubikeyTokenClass(TokenClass):
         Optional parameters h, timestamp, sl, timeout are not supported at the
         moment.
         """
-
         id = getParam(request.all_data, "id")
         otp = getParam(request.all_data, "otp")
         nonce = getParam(request.all_data, "nonce")
@@ -372,8 +374,8 @@ class YubikeyTokenClass(TokenClass):
             data['status'] = "NO_SUCH_CLIENT"
             data['h'] = ""
         elif otp and id and nonce:
-            if signature and not cls._check_api_signature(request.all_data,
-                                                          api_key, signature):
+            if signature and not yubico_check_api_signature(request.all_data,
+                                                            api_key, signature):
                 # yubico server don't send nonce and otp back. Do we want that?
                 data['status'] = "BAD_SIGNATURE"
             else:
@@ -384,7 +386,7 @@ class YubikeyTokenClass(TokenClass):
                     # Do we want REPLAYED_OTP too?
                     data['status'] = "BAD_OTP"
 
-            data["h"] = cls._api_signature(data, api_key)
+            data["h"] = yubico_api_signature(data, api_key)
         response = """nonce={nonce}
 otp={otp}
 status={status}
