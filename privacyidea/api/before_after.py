@@ -103,10 +103,12 @@ def before_request():
     # Already get some typical parameters to log
     serial = getParam(request.all_data, "serial")
     realm = getParam(request.all_data, "realm")
+    user = get_user_from_param(request.all_data)
     # log it
     g.audit_object.log({"success": False,
                         "serial": serial,
-                        "realm": realm,
+                        "user": user.login,
+                        "realm": user.realm or realm,
                         "client": g.client_ip,
                         "client_user_agent": request.user_agent.browser,
                         "privacyidea_server": privacyidea_server,

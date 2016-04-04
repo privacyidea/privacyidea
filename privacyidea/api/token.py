@@ -388,6 +388,7 @@ def revoke_api(serial=None):
     user = get_user_from_param(request.all_data, optional)
     if not serial:
         serial = getParam(request.all_data, "serial", optional)
+    g.audit_object.log({"serial": serial})
 
     res = revoke_token(serial, user=user)
     g.audit_object.log({"success": res > 0})
@@ -488,6 +489,7 @@ def reset_api(serial=None):
     user = get_user_from_param(request.all_data, optional)
     if not serial:
         serial = getParam(request.all_data, "serial", optional)
+    g.audit_object.log({"serial": serial})
 
     res = reset_token(serial, user=user)
     g.audit_object.log({"success": True})
@@ -511,6 +513,7 @@ def resync_api(serial=None):
     user = get_user_from_param(request.all_data, optional)
     if not serial:
         serial = getParam(request.all_data, "serial", required)
+    g.audit_object.log({"serial": serial})
     otp1 = getParam(request.all_data, "otp1", required)
     otp2 = getParam(request.all_data, "otp2", required)
 
@@ -543,6 +546,7 @@ def setpin_api(serial=None):
     """
     if not serial:
         serial = getParam(request.all_data, "serial", required)
+    g.audit_object.log({"serial": serial})
     userpin = getParam(request.all_data, "userpin")
     sopin = getParam(request.all_data, "sopin")
     otppin = getParam(request.all_data, "otppin")
@@ -595,6 +599,7 @@ def set_api(serial=None):
     """
     if not serial:
         serial = getParam(request.all_data, "serial", required)
+    g.audit_object.log({"serial": serial})
     user = get_user_from_param(request.all_data)
 
     description = getParam(request.all_data, "description")
@@ -868,6 +873,7 @@ def lost_api(serial=None):
     :rtype: bool
     """
     # check if a user is given, that the user matches the token owner.
+    g.audit_object.log({"serial": serial})
     userobj = get_user_from_param(request.all_data)
     if userobj:
         toks = get_tokens(serial=serial, user=userobj)
