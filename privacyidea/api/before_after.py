@@ -103,12 +103,19 @@ def before_request():
     # Already get some typical parameters to log
     serial = getParam(request.all_data, "serial")
     realm = getParam(request.all_data, "realm")
-    user = get_user_from_param(request.all_data)
-    # log it
+    user_loginname = ""
+    if "blueprint_token" in request.endpoint:
+        # In case of token endpoint we evaluate the user in the request.
+        # Note: In policy-endpoint "user" is part of the policy configuration
+        #  and will cause an exception
+        user = get_user_from_param(request.all_data)
+        user_loginname = user.login
+        realm = user.realm or realm
+
     g.audit_object.log({"success": False,
                         "serial": serial,
-                        "user": user.login,
-                        "realm": user.realm or realm,
+                        "user": user_loginname,
+                        "realm": realm,
                         "client": g.client_ip,
                         "client_user_agent": request.user_agent.browser,
                         "privacyidea_server": privacyidea_server,
