@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2016-04-05 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Add time to policies
 # 2014-12-08 Cornelius Kölbel, <cornelius@privacyidea.org>
 #            Complete rewrite during flask migration
 #            Try to provide REST API
@@ -182,7 +184,7 @@ def set_policy_api(name=None):
     g.audit_object.log({'action_detail': name,
                         'info': "%s" % param})
     ret = set_policy(name=name, scope=scope, action=action, realm=realm,
-                     resolver=resolver, user=user, client=client,
+                     resolver=resolver, user=user, client=client, time=time,
                      active=active or True, adminrealm=admin_realm)
     log.debug("policy %s successfully saved." % name)
     string = "setPolicy " + name

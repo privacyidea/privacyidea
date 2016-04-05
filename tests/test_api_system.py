@@ -98,7 +98,7 @@ class APIConfigTestCase(MyTestCase):
                                                  'scope': "selfservice",
                                                  'realm': "r1",
                                                  'resolver': "test",
-                                                 'user': "admin",
+                                                 'user': ["admin"],
                                                  'time': "",
                                                  'client': "127.12.12.12",
                                                  'active': True},

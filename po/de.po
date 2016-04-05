@@ -47,7 +47,7 @@ msgstr "API Client ID"
 msgid "About privacyIDEA Web Client"
 msgstr "Über das privacyIDEA WebUI"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:114
+#: privacyidea/static/components/config/views/config.policies.details.html:127
 #: privacyidea/static/components/config/views/config.policies.list.html:8
 msgid "Action"
 msgstr "Aktion "
@@ -70,11 +70,11 @@ msgstr "Neue Frage hinzufügen"
 msgid "Add user"
 msgstr "Benutzer hinzufügen"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:233
+#: privacyidea/static/components/config/views/config.policies.details.html:246
 msgid "Admin"
 msgstr "Administrator"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:98
+#: privacyidea/static/components/config/views/config.policies.details.html:111
 msgid "Admin-Realm"
 msgstr "Admin-Realm"
 
@@ -339,7 +339,7 @@ msgstr ""
 "Klicken Sie <a href=\"{{ enrolledToken.tiqrenroll.value }}\">hier</a> oder "
 "scannen  Sie den QR-Code, um den Token Ihrer TiQR-App hinzuzufügen."
 
-#: privacyidea/static/components/config/views/config.policies.details.html:249
+#: privacyidea/static/components/config/views/config.policies.details.html:262
 #: privacyidea/static/components/config/views/config.policies.list.html:12
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:49
 msgid "Client"
@@ -389,7 +389,8 @@ msgid ""
 "                    newly enrolled tokens"
 msgstr "Zählerfenster für neu ausgerollte Token"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:267
+#: privacyidea/static/components/config/views/config.policies.details.html:292
+#: privacyidea/static/components/config/views/config.policies.details.html:85
 msgid "Create Policy"
 msgstr "Richtlinie erzeugen"
 
@@ -1979,12 +1980,12 @@ msgstr "System"
 msgid "System Config"
 msgstr "Systemkonfiguration"
 
-#: privacyidea/static/components/config/controllers/configControllers.js:423
-#: privacyidea/static/components/config/controllers/configControllers.js:633
+#: privacyidea/static/components/config/controllers/configControllers.js:425
+#: privacyidea/static/components/config/controllers/configControllers.js:635
 msgid "System Config saved."
 msgstr "Systemkonfiguration gespeichert."
 
-#: privacyidea/static/components/config/controllers/configControllers.js:432
+#: privacyidea/static/components/config/controllers/configControllers.js:434
 msgid "System entry deleted."
 msgstr "Systemeinstellung gelöscht."
 
@@ -3004,7 +3005,7 @@ msgstr ""
 msgid "Use TLS"
 msgstr "TLS verwenden"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:235
+#: privacyidea/static/components/config/views/config.policies.details.html:248
 #: privacyidea/static/components/config/views/config.policies.list.html:10
 #: privacyidea/static/components/config/views/config.radius.edit.html:79
 #: privacyidea/static/templates/menu.html:36
@@ -3039,11 +3040,11 @@ msgstr "Benutzer erfolgreich gelöscht."
 msgid "User updated successfully."
 msgstr "Benutzer erfolgreich aktualisiert."
 
-#: privacyidea/static/components/config/views/config.policies.details.html:203
+#: privacyidea/static/components/config/views/config.policies.details.html:216
 msgid "User-Realm"
 msgstr "Benutzerrealm"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:218
+#: privacyidea/static/components/config/views/config.policies.details.html:231
 msgid "User-Resolver"
 msgstr "Benutzer-Resolver"
 
@@ -3073,6 +3074,10 @@ msgstr "Benutzername"
 #: privacyidea/static/templates/menu.html:27
 msgid "Users"
 msgstr "Benutzer"
+
+#: privacyidea/static/components/config/views/config.policies.details.html:274
+msgid "Valid time"
+msgstr "Gültigkeitszeitraum"
 
 #: privacyidea/static/components/audit/views/audit.stats.html:30
 msgid "Validate Requests per token"

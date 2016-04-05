@@ -168,7 +168,8 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             resolver: "",
             user: "",
             active: true,
-            client: ""
+            client: "",
+            time: ""
         };
     $scope.existingPolicyname = $stateParams.policyname;
     if ($scope.existingPolicyname) {
@@ -313,6 +314,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             $scope.params.user = policy.user;
             $scope.params.active = policy.active;
             $scope.params.client = policy.client;
+            $scope.params.time = policy.time;
             // tick the realms and the resolvers
             angular.forEach($scope.realms, function (value, key) {
                 if (policy.realm.indexOf(value.name) > -1) {
