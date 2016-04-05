@@ -3,8 +3,9 @@ This tests the file lib.utils
 """
 from .base import MyTestCase
 
-from privacyidea.lib.utils import (parse_timelimit, parse_timedelta)
-from datetime import timedelta
+from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
+                                   check_time_in_range)
+from datetime import timedelta, datetime
 
 
 class UtilsTestCase(MyTestCase):
@@ -48,3 +49,38 @@ class UtilsTestCase(MyTestCase):
 
         # A non number raises an Exception
         self.assertRaises(Exception, parse_timedelta, "sevenm")
+
+    def test_03_check_time_in_range(self):
+        # April 5th, 2016 is a Tuesday
+        t = datetime(2016, 4, 5, hour=9, minute=12)
+        r = check_time_in_range("Mon-Fri: 09:00-17:30", t)
+        self.assertEqual(r, True)
+        r = check_time_in_range("Mon - Fri : 09:00- 17:30", t)
+        self.assertEqual(r, True)
+        r = check_time_in_range("Sat-Sun:10:00-15:00, Mon - Fri : 09:00- "
+                                "17:30", t)
+        self.assertEqual(r, True)
+
+        # Short time description
+        r = check_time_in_range("Tue: 9-15", t)
+        self.assertEqual(r, True)
+        r = check_time_in_range("Tue: 9-15:1", t)
+        self.assertEqual(r, True)
+
+        # day out of range
+        r = check_time_in_range("Wed - Fri: 09:00-17:30", t)
+        self.assertEqual(r, False)
+
+        # time out of range
+        r = check_time_in_range("Mon-Fri: 09:30-17:30", t)
+        self.assertEqual(r, False)
+
+        # A time with a missing leading 0 matches anyway
+        r = check_time_in_range("Mon-Fri: 9:12-17:30", t)
+        self.assertEqual(r, True)
+
+        # Nonsense will not match
+        r = check_time_in_range("Mon-Wrong: asd-17:30", t)
+        self.assertEqual(r, False)
+
+
