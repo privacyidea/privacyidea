@@ -707,6 +707,9 @@ class IdResolver (UserIdResolver):
         params = self._attributes_to_ldap_attributes(attributes, uid)
         self.l.modify(uid, params)
 
+        # NOTE: should work out how to make this work
+        # self.l.result
+
         return True
 
     @staticmethod
