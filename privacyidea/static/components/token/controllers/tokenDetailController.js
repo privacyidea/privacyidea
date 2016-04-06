@@ -89,8 +89,13 @@ myApp.controller("tokenDetailController", function ($scope,
     };
 
     $scope.saveRealm = function () {
-        console.log(Object.keys($scope.selectedRealms));
-        TokenFactory.setrealm($scope.tokenSerial, Object.keys($scope.selectedRealms), $scope.get);
+        var realms = [];
+        for (var realm in $scope.selectedRealms) {
+            if ($scope.selectedRealms[realm] === true) {
+                realms.push(realm);
+            }
+        }
+        TokenFactory.setrealm($scope.tokenSerial, realms, $scope.get);
         $scope.cancelEditRealm();
     };
 
