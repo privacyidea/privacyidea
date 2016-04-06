@@ -925,6 +925,64 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(len(res), 1)
         self.assertEqual(res[0].get("username"), "alice")
 
+    @ldap3mock.activate
+    def test_13_add_user_update_delete(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'LDAPFILTER': '(&(cn=%s))',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile",'
+                                  '"email" : "mail",'
+                                  '"password" : "userPassword",'
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName", '
+                                  '"accountExpires": "accountExpires" }',
+                      'UIDTYPE': 'dn',
+                      'NOREFERRALS': True
+        })
+
+        user = "bob"
+        user_id = y.getUserId(user)
+        # Test MODIFY_DELETE
+        r = y.update_user(user_id, {"email": ""})
+        userinfo = y.getUserInfo(user_id)
+        self.assertFalse(userinfo.get("email"))
+        # Test MODIFY_REPLACE
+        r = y.update_user(user_id, {"surname": "Smith"})
+        userinfo = y.getUserInfo(user_id)
+        self.assertEqual(userinfo.get("surname"), "Smith")
+        # Test MODIFY_ADD
+        r = y.update_user(user_id, {"email": "bob@example.com"})
+        userinfo = y.getUserInfo(user_id)
+        self.assertEqual(userinfo.get("email"), "bob@example.com")
+        # Test multiple changes in a single transaction
+        r = y.update_user(user_id, {"email": "",
+                                    "givenname": "Charlie"})
+        userinfo = y.getUserInfo(user_id)
+        self.assertEqual(userinfo.get("givenname"), "Charlie")
+        self.assertFalse(userinfo.get("email"))
+        r = y.update_user(user_id, {"password": "test"})
+        r = y.checkPass(user_id, "test")
+# TODO
+###        uname = y.getUsername(uid)
+###        self.assertEqual(uname, "achmed2")
+###        r = y.checkPass(uid, "test")
+###        self.assertTrue(r)
+###        # Now we delete the user
+###        y.delete_user(uid)
+###        # Now there should be no achmed anymore
+###        uid = y.getUserId("achmed2")
+###        self.assertFalse(uid)
+###        uid = y.getUserId("achmed")
+###        self.assertFalse(uid)
+
 
 class BaseResolverTestCase(MyTestCase):
 
