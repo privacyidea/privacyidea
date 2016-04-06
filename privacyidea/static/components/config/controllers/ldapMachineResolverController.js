@@ -49,7 +49,6 @@ myApp.controller("ldapMachineResolverController", function ($scope,
         $scope.params.IPATTRIBUTE = "";
         $scope.params.HOSTNAMEATTRIBUTE = "dNSHostName";
         $scope.params.NOREFERRALS = true;
-        $scope.params.EDITABLE = true;
     };
 
     $scope.setLDAPMachineResolver = function () {

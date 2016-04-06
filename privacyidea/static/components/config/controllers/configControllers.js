@@ -844,7 +844,7 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
         $scope.params.LDAPFILTER = "(&(sAMAccountName=%s)(objectClass=person))";
         $scope.params.USERINFO = '{ "username": "sAMAccountName", "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }';
         $scope.params.NOREFERRALS = true;
-        $scope.params.EDITABLE = true;
+        $scope.params.EDITABLE = false;
         $scope.params.SIZELIMIT = 500;
         $scope.params.UIDTYPE = "objectGUID";
         $scope.params.AUTHTYPE = "Simple";
@@ -857,7 +857,7 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
         $scope.params.LDAPFILTER = "(&(uid=%s)(objectClass=inetOrgPerson))";
         $scope.params.USERINFO = '{ "username": "uid", "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }';
         $scope.params.NOREFERRALS = true;
-        $scope.params.EDITABLE = true;
+        $scope.params.EDITABLE = false;
         $scope.params.SIZELIMIT = 500;
         $scope.params.UIDTYPE = "entryUUID";
         $scope.params.AUTHTYPE = "Simple";
