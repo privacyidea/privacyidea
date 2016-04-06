@@ -36,14 +36,22 @@ The file is tested in tests/test_lib_resolver.py
 """
 
 import logging
-import ldap3
 import yaml
-import traceback
-import uuid
-from ldap3.utils.conv import escape_bytes
-import datetime
 
 from UserIdResolver import UserIdResolver
+
+import ldap3
+from ldap3 import MODIFY_REPLACE, MODIFY_ADD, MODIFY_DELETE
+from ldap3.utils.conv import escape_bytes
+
+import traceback
+
+import hashlib
+from privacyidea.lib.crypto import urandom, geturandom
+
+import uuid
+import datetime
+
 from gettext import gettext as _
 from privacyidea.lib.utils import to_utf8
 
@@ -471,6 +479,7 @@ class IdResolver (UserIdResolver):
         self.reversefilter = config.get("LDAPFILTER")
         userinfo = config.get("USERINFO", "{}")
         self.userinfo = yaml.load(userinfo)
+        self.map = yaml.load(userinfo)
         self.uidtype = config.get("UIDTYPE", "DN")
         self.noreferrals = config.get("NOREFERRALS", False)
         self.editable = config.get("EDITABLE", False)
@@ -641,6 +650,64 @@ class IdResolver (UserIdResolver):
             desc = "%r" % e
         
         return success, desc
+
+    def _attributes_to_ldap_attributes(self, attributes, uid):
+        """
+        takes the attributes and maps them to the LDAP attributes
+        :param attributes: Attributes to be updated
+        :type attributes: dict
+        :param uid: The uid of the user object in the resolver
+        :type uid: basestring
+        :return: dict with attribute name as keys and values
+        """
+        ldap_attributes = {}
+        for fieldname, value in attributes.iteritems():
+            if self.map.get(fieldname):
+                if fieldname == "password":
+                    password = value 
+                    # Create a {SSHA} password
+                    salt = geturandom(4)
+                    hr = hashlib.sha1(password)
+                    hr.update(salt)
+                    ldap_attributes[self.map.get(fieldname)] = \
+                        [MODIFY_REPLACE, ["{SSHA}" + hr.digest() + salt]]
+                else:
+                    if value:
+                        if fieldname in self.getUserInfo(uid):
+                            ldap_attributes[self.map.get(fieldname)] = \
+                                 [MODIFY_REPLACE, [value]]
+                        else:
+                            ldap_attributes[self.map.get(fieldname)] = \
+                                 [MODIFY_ADD, [value]]
+                    else:
+                        ldap_attributes[self.map.get(fieldname)] = \
+                             [MODIFY_DELETE, [value]]
+
+        return ldap_attributes
+
+    def update_user(self, uid, attributes=None):
+        """
+        Update an existing user.
+        This function is also used to update the password. Since the
+        attribute mapping know, which field contains the password,
+        this function can also take care for password changing.
+
+        Attributes that are not contained in the dict attributes are not
+        modified.
+
+        :param uid: The uid of the user object in the resolver.
+        :type uid: basestring
+        :param attributes: Attributes to be updated.
+        :type attributes: dict
+        :return: True in case of success
+        """
+        attributes = attributes or {}
+        self._bind()
+
+        params = self._attributes_to_ldap_attributes(attributes, uid)
+        self.l.modify(uid, params)
+
+        return True
 
     @staticmethod
     def create_connection(authtype=None, server=None, user=None,
