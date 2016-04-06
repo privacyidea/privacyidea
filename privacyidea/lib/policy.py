@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-04-06 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add time dependency in policy
 #  2016-02-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add RADIUS passthru policy
 #  2016-02-05 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -111,6 +113,18 @@ You can exclude clients from subnets by prepending the client with a '-' or
 a '!'.
 ``172.16.0.0/24, -172.16.0.17`` will match each client in the subnet except
 the 172.16.0.17.
+
+time
+----
+You can specify a time in which the policy should be active.
+Time formats are
+
+<dow>-<dow>:<hh>:<mm>-<hh>:<mm>, ...
+<dow>:<hh>:<mm>-<hh>:<mm>
+<dow>:<hh>-<hh>
+
+and any combination of it. "dow" being day of week Mon, Tue, Wed, Thu, Fri,
+Sat, Sun.
 """
 
 from .log import log_with
@@ -128,6 +142,7 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
+from privacyidea.lib.utils import check_time_in_range
 log = logging.getLogger(__name__)
 
 optional = True
@@ -288,7 +303,7 @@ class PolicyClass(object):
 
     def get_policies(self, name=None, scope=None, realm=None, active=None,
                      resolver=None, user=None, client=None, action=None,
-                     adminrealm=None):
+                     adminrealm=None, time=None, all_times=False):
         """
         Return the policies of the given filter values
 
@@ -302,10 +317,26 @@ class PolicyClass(object):
         :param action:
         :param adminrealm: This is the realm of the admin. This is only
             evaluated in the scope admin.
+        :param time: The optional time, for which the policies should be
+            fetched. The default time is now()
+        :type time: datetime
+        :param all_times: If True the time restriction of the policies is
+            ignored. Policies of all time ranges will be returned.
+        :type all_times: bool
         :return: list of policies
         :rtype: list of dicts
         """
         reduced_policies = self.policies
+
+        # filter policy for time. If no time is set or is a time is set and
+        # it matches the time_range, then we add this policy
+        if not all_times:
+            new_policies = []
+            for policy in reduced_policies:
+                if (policy.get("time") and check_time_in_range(policy.get(
+                        "time"), time)) or not policy.get("time"):
+                    new_policies.append(policy)
+            reduced_policies = new_policies
 
         # Do exact matches for "name", "active" and "scope", as these fields
         # can only contain one entry

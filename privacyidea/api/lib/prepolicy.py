@@ -515,7 +515,8 @@ def check_anonymous_user(request=None, action=None):
                                         adminrealm=None,
                                         active=True)
     action_at_all = policy_object.get_policies(scope=scope,
-                                               active=True)
+                                               active=True,
+                                               all_times=True)
     if action_at_all and len(action) == 0:
         raise PolicyError(ERROR)
     return True
@@ -565,7 +566,8 @@ def check_base_action(request=None, action=None, anonymous=False):
                                         adminrealm=admin_realm,
                                         active=True)
     action_at_all = policy_object.get_policies(scope=scope,
-                                               active=True)
+                                               active=True,
+                                               all_times=True)
     if action_at_all and len(action) == 0:
         raise PolicyError(ERROR.get(role))
     return True
@@ -590,7 +592,8 @@ def check_token_upload(request=None, action=None):
                                         client=g.client_ip,
                                         adminrealm=admin_realm,
                                         active=True)
-    action_at_all = policy_object.get_policies(scope=SCOPE.ADMIN, active=True)
+    action_at_all = policy_object.get_policies(scope=SCOPE.ADMIN,
+                                               active=True, all_times=True)
     if action_at_all and len(action) == 0:
         raise PolicyError("Admin actions are defined, but you are not allowed"
                           " to upload token files.")
@@ -628,7 +631,8 @@ def check_token_init(request=None, action=None):
                                         client=g.client_ip,
                                         adminrealm=admin_realm,
                                         active=True)
-    action_at_all = policy_object.get_policies(scope=scope, active=True)
+    action_at_all = policy_object.get_policies(scope=scope, active=True,
+                                               all_times=True)
     if action_at_all and len(action) == 0:
         raise PolicyError(ERROR.get(role))
     return True

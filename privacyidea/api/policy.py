@@ -268,7 +268,8 @@ def get_policy(name=None, export=None):
         log.debug("retrieving policy name: %s, realm: %s, scope: %s"
                   % (name, realm, scope))
 
-        pol = P.get_policies(name=name, realm=realm, scope=scope, active=active)
+        pol = P.get_policies(name=name, realm=realm, scope=scope,
+                             active=active, all_times=True)
         ret = send_result(pol)
     else:
         # We want to export all policies

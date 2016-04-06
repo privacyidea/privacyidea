@@ -1,7 +1,9 @@
 from .base import MyTestCase
 import json
 import os
-from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, ACTION
+import datetime
+from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
+                                    PolicyClass)
 from privacyidea.lib.token import get_tokens, init_token
 from privacyidea.lib.user import User
 from privacyidea.lib.caconnector import save_caconnector
@@ -1049,3 +1051,39 @@ class APITokenTestCase(MyTestCase):
 
         tokens = get_tokens(serial="yk1")
         self.assertEqual(tokens[0].get_tokeninfo("yubikey.prefix"), "vv123456")
+
+    def test_21_time_policies(self):
+        # Here we test, if an admin policy does not match in time,
+        # it still used to evaluate, that admin policies are defined at all
+        set_policy(name="admin_time", scope=SCOPE.ADMIN,
+                   action="enrollSPASS",
+                   time="Sun: 0-23:59")
+        tn = datetime.datetime.now()
+        dow = tn.isoweekday()
+        P = PolicyClass()
+        all_admin_policies = P.get_policies(all_times=True)
+        self.assertEqual(len(all_admin_policies), 1)
+        self.assertEqual(len(P.policies), 1)
+
+        if dow in [7]:
+            # Only on sunday the admin is allowed to enroll a SPASS token. On
+            # all other days this will raise an exception
+            with self.app.test_request_context(
+                    '/token/init',
+                    method='POST',
+                    data={"type": "spass"},
+                    headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+        else:
+            # On other days enrolling a spass token will trigger an error,
+            # since the admin has no rights at all. Only on sunday.
+            with self.app.test_request_context(
+                    '/token/init',
+                    method='POST',
+                    data={"type": "spass"},
+                    headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 403, res)
+
+        delete_policy("admin_time")

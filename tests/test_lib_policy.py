@@ -10,6 +10,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy,
                                     get_static_policy_definitions,
                                     PolicyClass, SCOPE, enable_policy,
                                     PolicyError)
+import datetime
 
 
 def _check_policy_name(polname, policies):
@@ -464,3 +465,23 @@ class PolicyTestCase(MyTestCase):
         rights = P.ui_get_rights(SCOPE.USER, "realm2", "user")
         # there was still another policy...
         self.assertEqual(rights, ["enable", "disable"])
+
+    def test_18_policy_with_time(self):
+        set_policy(name="time1", scope=SCOPE.AUTHZ,
+                   action="tokentype=hotp totp, enroll",
+                   time="Mon-Wed: 0-23:59")
+        tn = datetime.datetime.now()
+        dow = tn.isoweekday()
+        P = PolicyClass()
+        policies = P.get_policies(name="time1",
+                                  scope=SCOPE.AUTHZ,
+                                  all_times=True)
+        self.assertEqual(len(policies), 1)
+
+        policies = P.get_policies(name="time1",
+                                  scope=SCOPE.AUTHZ)
+        if dow in [1, 2, 3]:
+            self.assertEqual(len(policies), 1)
+        else:
+            self.assertEqual(len(policies), 0)
+        delete_policy("time1")
