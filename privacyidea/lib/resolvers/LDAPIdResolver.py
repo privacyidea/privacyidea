@@ -655,6 +655,40 @@ class IdResolver (UserIdResolver):
         
         return success, desc
 
+    def add_user(self, uid, object_class=None, attributes=None):
+        """
+        Add a new user to the LDAP directory.
+
+        attributes are these
+        "username", "surname", "givenname", "email",
+        "mobile", "phone", "password"
+
+        :param uid: The uid of the user object in the resolver
+        :type uid: string
+        :param object_class: Attributes according to the attribute mapping
+        :type object_class: list
+        :param attributes: Attributes according to the attribute mapping
+        :type attributes: dict
+        :return: The new UID of the user. The UserIdResolver needs to
+        determine the way how to create the UID.
+        """
+        attributes = attributes or {}
+        try:
+            self._bind()
+
+            params = self._attributes_to_ldap_attributes(attributes)
+            self.l.add(uid, object_class, params)
+        except LDAPException as e:
+            log.error("Error accessing LDAP server: %s" % e)
+            log.debug("%s" % traceback.format_exc())
+            return False
+
+        if self.l.result.get('result') != 0:
+            log.error("Error during adding of user: %s details" % uid)
+            return False
+
+        return uid
+
     def _attributes_to_ldap_attributes(self, attributes):
         """
         takes the attributes and maps them to the LDAP attributes
