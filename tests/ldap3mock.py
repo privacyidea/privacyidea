@@ -136,23 +136,41 @@ class Connection(object):
 
     def modify(self, dn, changes, controls=None):
 
+        self.result = { 'dn': '',
+                        'referrals': None,
+                        'description': 'success',
+                        'result': 0,
+                        'message': '',
+                        'type': 'modifyResponse'}
+        index = -1
+
         # Find the element no. coresponding to the users dn
         index = next(i for (i, d) in enumerate(self.directory) if d["dn"] == dn)
+
+        # If we don't find a entry in the directory return
+        if index == -1:
+            self.result["result"] = 32
+            self.result["message"] = "Error no such object: %s" % dn
+            return False
 
         # extract the hash we are interested in
         entry = self.directory[1].get("attributes")
 
         # Loop over the changes hash and apply them
         for k, v in changes.iteritems():
-            if k[1] == "MODIFY_DELETE":
+            if v[0] == "MODIFY_DELETE":
                 entry.pop(k)
-            else:
-                # Adds and modifies done here
+            elif v[0] == "MODIFY_REPLACE" or v[0] == "MODIFY_ADD":
                 entry[k] = v[1][0]
+            else:
+                self.result["result"] = 2
+                self.result["message"] = "Error bad/missing/not implemented" \
+                    "modify operation: %s" % k[1]
 
         # Place the attributes back into the directory hash
         self.directory[1]["attributes"] = entry
 
+        # Attempt to write changes to disk
         with open(DIRECTORY, 'w+') as f:
             f.write(str(self.directory))
 
