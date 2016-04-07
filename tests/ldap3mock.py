@@ -105,12 +105,51 @@ class Connection(object):
     def set_directory(self, directory):
         self.directory = directory
 
+    def _find_user(self, dn):
+            return next(i for (i, d) in enumerate(self.directory) if d["dn"] == dn)
+
     @staticmethod
     def open():
         return
 
     def bind(self):
         return self.bound
+
+    def add(self, dn, object_class=None, attributes=None, controls=None):
+
+        self.result = { 'dn' : '',
+                        'referrals' : None,
+                        'description' : 'success',
+                        'result' : 0,
+                        'message' : '',
+                        'type' : 'addResponse'}
+
+        entry = {}
+        # Check to see if the user exists in the directory
+        try:
+            index = self._find_user(dn)
+        except StopIteration:
+            # If we get here the user doesn't exist so continue
+            pass
+        else:
+            # User already exists
+            self.result["description"] = "failure"
+            self.result["result"] = 68 
+            self.result["message"] = "Error entryAlreadyExists for %s" % dn
+            return False
+
+        # Create a entry object for the new user
+        entry["dn"] = dn
+        entry["attributes"] = attributes
+
+        # Add the user entry to the directory
+        self.directory.append(entry)
+
+        # Attempt to write changes to disk
+        with open(DIRECTORY, 'w+') as f:
+            f.write(str(self.directory))
+
+        return True
 
     def modify(self, dn, changes, controls=None):
 
@@ -291,6 +330,7 @@ class Ldap3Mock(object):
         """
         We need to create a Connection object with
         methods:
+            add()
             modify()
             search()
             unbind()
