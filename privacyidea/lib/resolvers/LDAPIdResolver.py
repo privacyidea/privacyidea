@@ -689,6 +689,26 @@ class IdResolver (UserIdResolver):
 
         return uid
 
+    def delete_user(self, uid):
+        """
+        Delete a user from the LDAP Directory.
+
+        The user is referenced by the user id.
+        :param uid: The uid of the user object, that should be deleted.
+        :type uid: basestring
+        :return: Returns True in case of success
+        :rtype: bool
+        """
+        res = True
+        try:
+            self._bind()
+
+            self.l.delete(uid)
+        except Exception as exx:
+            log.error("Error deleting user: %s" % exx)
+            res = False
+        return res
+
     def _attributes_to_ldap_attributes(self, attributes):
         """
         takes the attributes and maps them to the LDAP attributes
