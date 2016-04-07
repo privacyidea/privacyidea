@@ -151,6 +151,34 @@ class Connection(object):
 
         return True
 
+    def delete(self, dn, controls=None):
+
+        self.result = { 'dn' : '',
+                        'referrals' : None,
+                        'description' : 'success',
+                        'result' : 0,
+                        'message' : '',
+                        'type' : 'addResponse'}
+
+        # Check to see if the user exists in the directory
+        try:
+            index = self._find_user(dn)
+        except StopIteration:
+            # If we get here the user doesn't exist so continue
+            self.result["description"] = "failure"
+            self.result["result"] = 32
+            self.result["message"] = "Error no such object: %s" % dn
+            return False
+
+        # Delete the entry object for the user
+        self.directory.pop(index)
+
+        # Attempt to write changes to disk
+        with open(DIRECTORY, 'w+') as f:
+            f.write(str(self.directory))
+
+        return True
+
     def modify(self, dn, changes, controls=None):
 
         self.result = { 'dn' : '',
