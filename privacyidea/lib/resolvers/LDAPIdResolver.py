@@ -651,7 +651,7 @@ class IdResolver (UserIdResolver):
         
         return success, desc
 
-    def _attributes_to_ldap_attributes(self, attributes, uid):
+    def _attributes_to_ldap_attributes(self, attributes):
         """
         takes the attributes and maps them to the LDAP attributes
         :param attributes: Attributes to be updated
@@ -670,20 +670,33 @@ class IdResolver (UserIdResolver):
                     hr = hashlib.sha1(password)
                     hr.update(salt)
                     ldap_attributes[self.map.get(fieldname)] = \
-                        [MODIFY_REPLACE, ["{SSHA}" + hr.digest() + salt]]
+                        "{SSHA}" + hr.digest() + salt
                 else:
-                    if value:
-                        if fieldname in self.getUserInfo(uid):
-                            ldap_attributes[self.map.get(fieldname)] = \
-                                 [MODIFY_REPLACE, [value]]
-                        else:
-                            ldap_attributes[self.map.get(fieldname)] = \
-                                 [MODIFY_ADD, [value]]
-                    else:
-                        ldap_attributes[self.map.get(fieldname)] = \
-                             [MODIFY_DELETE, [value]]
+                    ldap_attributes[self.map.get(fieldname)] = value 
 
         return ldap_attributes
+
+    def _create_ldap_modify_changes(self, attributes, uid):
+        """
+        takes the attributes and maps them to the LDAP attributes
+        :param attributes: Attributes to be updated
+        :type attributes: dict
+        :param uid: The uid of the user object in the resolver
+        :type uid: basestring
+        :return: dict with attribute name as keys and values
+        """
+        modify_changes = {}
+
+        for fieldname, value in attributes.iteritems():
+            if value:
+                if fieldname in self.getUserInfo(uid):
+                    modify_changes[fieldname] = [MODIFY_REPLACE, [value]]
+                else:
+                    modify_changes[fieldname] = [MODIFY_ADD, [value]]
+            else:
+                modify_changes[fieldname] = [MODIFY_DELETE, [value]]
+
+        return modify_changes
 
     def update_user(self, uid, attributes=None):
         """
@@ -705,7 +718,8 @@ class IdResolver (UserIdResolver):
         try:
             self._bind()
 
-            params = self._attributes_to_ldap_attributes(attributes, uid)
+            mapped = self._create_ldap_modify_changes(attributes, uid)
+            params = self._attributes_to_ldap_attributes(mapped)
             self.l.modify(uid, params)
         except Exception as e:
             log.error("Error accessing LDAP server: %s" % e)
