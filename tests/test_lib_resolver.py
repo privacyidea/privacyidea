@@ -939,7 +939,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'USERINFO': '{ "username": "cn",'
                                   '"phone" : "telephoneNumber", '
                                   '"mobile" : "mobile",'
-                                  '"email" : "mail",'
+                                  '"email" : "email",'
                                   '"password" : "userPassword",'
                                   '"surname" : "sn", '
                                   '"givenname" : "givenName", '
