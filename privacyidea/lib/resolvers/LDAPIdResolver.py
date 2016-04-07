@@ -2,6 +2,10 @@
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
+#  2016-04-16 Martin Wheldon <martin.wheldon@greenhills-it.co.uk>
+#             Allow user accounts held in LDAP to be edited, providing
+#             that the account they are using has permission to edit
+#             those attributes in the LDAP directory  
 #  2016-02-22 Salvo Rapisarda
 #             Allow objectGUID to be a users attribute
 #  2016-02-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
