@@ -948,6 +948,26 @@ class LDAPResolverTestCase(MyTestCase):
                       'NOREFERRALS': True
         })
 
+        user = "achmed"
+        uid="cn=%s,ou=example,o=test" % user
+        classes = ['top', 'inetOrgPerson']
+        # First we add the user with add_user 
+        r = y.add_user(uid, classes, {"username" : user,
+                                          "surname" : "Ali",
+                                          "email" : "achmed.ali@example.com",
+                                          "password" : "testing123",
+                                          'mobile': ["1234", "45678"],
+                                          "givenname" : "Achmed"})
+        self.assertTrue(r)
+        user_id = y.getUserId("achmed")
+        self.assertTrue(user_id == "cn=achmed,ou=example,o=test", user_id)
+
+        # Now we delete the user with add_user
+        y.delete_user(user_id)
+        # Now there should be no achmed anymore
+        user_id = y.getUserId("achmed")
+        self.assertFalse(user_id)
+
         user = "bob"
         user_id = y.getUserId(user)
         # Test MODIFY_DELETE
