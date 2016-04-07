@@ -305,7 +305,9 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
                 // Return to the policy list
                 $scope.getPolicies();
                 $state.go("config.policies.list");
-            });
+        });
+        // Jump to top when the policy is saved
+        $('html,body').scrollTop(0);
     };
 
     $scope.presetEditValues2 = function(policy) {

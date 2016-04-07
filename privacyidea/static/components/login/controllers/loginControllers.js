@@ -251,6 +251,8 @@ angular.module("privacyideaApp")
         $scope.myCountdown = "";
         $state.go("login");
         Idle.unwatch();
+        // Jump to top when the policy is saved
+        $('html,body').scrollTop(0);
     };
 
     $scope.about = function() {
