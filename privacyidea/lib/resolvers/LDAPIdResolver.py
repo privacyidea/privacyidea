@@ -702,13 +702,19 @@ class IdResolver (UserIdResolver):
         :return: True in case of success
         """
         attributes = attributes or {}
-        self._bind()
+        try:
+            self._bind()
 
-        params = self._attributes_to_ldap_attributes(attributes, uid)
-        self.l.modify(uid, params)
+            params = self._attributes_to_ldap_attributes(attributes, uid)
+            self.l.modify(uid, params)
+        except Exception as e:
+            log.error("Error accessing LDAP server: %s" % e)
+            log.debug("%s" % traceback.format_exc())
+            return False
 
-        # NOTE: should work out how to make this work
-        # self.l.result
+        if self.l.result.get('result') != 0:
+            log.error("Error during update of user: %s details" % uid)
+            return False
 
         return True
 
