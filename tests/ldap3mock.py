@@ -153,12 +153,12 @@ class Connection(object):
 
     def modify(self, dn, changes, controls=None):
 
-        self.result = { 'dn': '',
-                        'referrals': None,
-                        'description': 'success',
-                        'result': 0,
-                        'message': '',
-                        'type': 'modifyResponse'}
+        self.result = { 'dn' : '',
+                        'referrals' : None,
+                        'description' : 'success',
+                        'result' : 0,
+                        'message' : '',
+                        'type' : 'modifyResponse'}
         index = -1
 
         # Find the element no. coresponding to the users dn
@@ -166,6 +166,7 @@ class Connection(object):
 
         # If we don't find a entry in the directory return
         if index == -1:
+            self.result["description"] = "failure"
             self.result["result"] = 32
             self.result["message"] = "Error no such object: %s" % dn
             return False
