@@ -136,11 +136,14 @@ class Connection(object):
 
         # Loop over the changes hash and apply them
         for k, v in changes.iteritems():
-            if k[1] == "MODIFY_DELETE":
+            if v[0] == "MODIFY_DELETE":
                 entry.pop(k)
-            else:
-                # Adds and modifies done here
+            elif v[0] == "MODIFY_REPLACE" or v[0] == "MODIFY_ADD":
                 entry[k] = v[1][0]
+            else:
+                self.result["result"] = 2
+                self.result["message"] = "Error bad/missing/not implemented" \
+                    "modify operation: %s" % k[1]
 
         # Place the attributes back into the directory hash
         self.directory[1]["attributes"] = entry
