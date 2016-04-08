@@ -724,7 +724,7 @@ def get_static_policy_definitions(scope=None):
     smtpconfigs = [server.config.identifier for server in get_smtpservers()]
     radiusconfigs = [radius.config.identifier for radius in
                      get_radiusservers()]
-    radiusconfigs = ["userstore"] + radiusconfigs
+    radiusconfigs.insert(0, "userstore")
     pol = {
         SCOPE.REGISTER: {
             ACTION.RESOLVER: {'type': 'str',
