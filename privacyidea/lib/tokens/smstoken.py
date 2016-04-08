@@ -315,13 +315,12 @@ class SmsTokenClass(HotpTokenClass):
         """
         options = options or {}
         ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
-        if ret >= 0:
-            if self._get_auto_sms(options):
-                message = self._get_sms_text(options)
-                self.inc_otp_counter(ret, reset=False)
-                success, message = self._send_sms(message=message)
-                log.debug("AutoSMS: send new SMS: %s" % success)
-                log.debug("AutoSMS: %s" % message)
+        if ret >= 0 and self._get_auto_sms(options):
+            message = self._get_sms_text(options)
+            self.inc_otp_counter(ret, reset=False)
+            success, message = self._send_sms(message=message)
+            log.debug("AutoSMS: send new SMS: %s" % success)
+            log.debug("AutoSMS: %s" % message)
         return ret
 
     @log_with(log)

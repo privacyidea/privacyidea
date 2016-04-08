@@ -274,17 +274,16 @@ class EmailTokenClass(HotpTokenClass):
         """
         options = options or {}
         ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
-        if ret >= 0:
-            if self._get_auto_email(options):
-                message = self._get_email_text_or_subject(options)
-                subject = self._get_email_text_or_subject(options,
-                                                          action=EMAILACTION.EMAILSUBJECT,
-                                                          default="Your OTP")
-                self.inc_otp_counter(ret, reset=False)
-                success, message = self._compose_email(message=message,
-                                                    subject=subject)
-                log.debug("AutoEmail: send new SMS: %s" % success)
-                log.debug("AutoEmail: %s" % message)
+        if ret >= 0 and self._get_auto_email(options):
+            message = self._get_email_text_or_subject(options)
+            subject = self._get_email_text_or_subject(options,
+                                                      action=EMAILACTION.EMAILSUBJECT,
+                                                      default="Your OTP")
+            self.inc_otp_counter(ret, reset=False)
+            success, message = self._compose_email(message=message,
+                                                subject=subject)
+            log.debug("AutoEmail: send new SMS: %s" % success)
+            log.debug("AutoEmail: %s" % message)
         return ret
 
     @staticmethod

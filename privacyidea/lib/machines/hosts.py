@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-04-08 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Avoid consecutive if-statements
 #  2015-02-25 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Initial writup
 #
@@ -65,14 +67,13 @@ class HostsMachineResolver(BaseMachineResolver):
                 line_id = split_line[0]
                 line_ip = netaddr.IPAddress(split_line[0])
                 line_hostname = split_line[1:]
-                if any:
-                    # check if machineid, ip or hostname matches a substring
-                    if any not in line_id and \
-                        len([x for x in line_hostname if any in x]) <= 0 \
-                            and any not in "%s" % line_ip:
-                            # "any" was provided but did not match either
-                            # hostname, ip or machine_id
-                            continue
+                # check if machine_id, ip or hostname matches a substring
+                if (any and any not in line_id and
+                        len([x for x in line_hostname if any in x]) <= 0 and
+                        any not in "%s" % line_ip):
+                    # "any" was provided but did not match either
+                    # hostname, ip or machine_id
+                    continue
 
                 else:
                     if machine_id:

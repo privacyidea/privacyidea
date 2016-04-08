@@ -213,9 +213,8 @@ class PasswordHash(object):
         alg = self.algorithm.lower()
         if (not alg or alg == 'blowfish' or alg == 'bcrypt') \
              and not self.portable_hashes:
-            if _bcrypt_hashpw is None:
-                if alg == 'blowfish' or alg == 'bcrypt':
-                    raise NotImplementedError('The bcrypt module is required')
+            if _bcrypt_hashpw is None and alg == 'blowfish' or alg == 'bcrypt':
+                raise NotImplementedError('The bcrypt module is required')
             else:
                 rnd = self.get_random_bytes(16)
                 salt = self.gensalt_blowfish(rnd)

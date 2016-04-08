@@ -320,23 +320,22 @@ class TiqrTokenClass(TokenClass):
             # The sessionKey is stored in the db_challenge.transaction_id
             # We need to get the token serial for this sessionKey
             challenges = get_challenges(transaction_id=session)
-            if len(challenges) == 1:
-                # We found exactly one challenge
-                if challenges[0].is_valid() and \
-                                challenges[0].otp_valid is False:
-                    # Challenge is still valid (time has not passed) and no
-                    # correct response was given.
-                    serial = challenges[0].serial
-                    tokens = get_tokens(serial=serial)
-                    if len(tokens) == 1:
-                        # We found exactly the one token
-                        res = "INVALID_RESPONSE"
-                        r = tokens[0].verify_response(
-                            challenge=challenges[0].challenge, passw=passw)
-                        if r > 0:
-                            res = "OK"
-                            # Mark the challenge as answered successfully.
-                            challenges[0].set_otp_status(True)
+            # We found exactly one challenge
+            if (len(challenges) == 1 and challenges[0].is_valid() and
+                        challenges[0].otp_valid is False):
+                # Challenge is still valid (time has not passed) and no
+                # correct response was given.
+                serial = challenges[0].serial
+                tokens = get_tokens(serial=serial)
+                if len(tokens) == 1:
+                    # We found exactly the one token
+                    res = "INVALID_RESPONSE"
+                    r = tokens[0].verify_response(
+                        challenge=challenges[0].challenge, passw=passw)
+                    if r > 0:
+                        res = "OK"
+                        # Mark the challenge as answered successfully.
+                        challenges[0].set_otp_status(True)
 
             cleanup_challenges()
 

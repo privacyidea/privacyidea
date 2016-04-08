@@ -179,11 +179,10 @@ class DefaultSecurityModule(SecurityModule):
         if len(cipher) > 100:
             config["crypted"] = True
 
-        if "crypted" in config:
-            if config.get("crypted") is True or config.get('crypted').lower() \
-                    == "true":
-                self.crypted = True
-                self.is_ready = False
+        if (config.get("crypted") is True or
+                    config.get('crypted', "").lower() == "true"):
+            self.crypted = True
+            self.is_ready = False
 
         self.secFile = config.get('file')
         self.secrets = {}

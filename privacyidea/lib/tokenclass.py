@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2016-04-08 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Avoid consecutive if statements
 #  2015-12-18 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Add get_setting_type
 #  2015-10-12 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -243,13 +245,12 @@ class TokenClass(object):
         """
         self.token.del_info()
         for k, v in info.items():
-            if k.endswith(".type"):
-                # we have a type
-                if v == "password":
-                    # of type password, so we need to entrypt the value of
-                    # the original key (without type)
-                    orig_key = ".".join(k.split(".")[:-1])
-                    info[orig_key] = encryptPassword(info.get(orig_key, ""))
+            # check if type is a password
+            if k.endswith(".type") and v == "password":
+                # of type password, so we need to encrypt the value of
+                # the original key (without type)
+                orig_key = ".".join(k.split(".")[:-1])
+                info[orig_key] = encryptPassword(info.get(orig_key, ""))
 
         self.token.set_info(info)
 
@@ -431,14 +432,12 @@ class TokenClass(object):
 
         if otpKey is not None:
             self.token.set_otpkey(otpKey, reset_failcount=reset_failcount)
-        else:
-            if genkey == 1:
-                otpKey = self._genOtpKey_()
+        elif genkey == 1:
+            otpKey = self._genOtpKey_()
 
         # otpKey still None?? - raise the exception
-        if otpKey is None:
-            if self.hKeyRequired is True:
-                otpKey = getParam(param, "otpkey", required)
+        if otpKey is None and self.hKeyRequired is True:
+            otpKey = getParam(param, "otpkey", required)
 
         if otpKey is not None:
             self.add_init_details('otpkey', otpKey)
@@ -902,13 +901,14 @@ class TokenClass(object):
         :return: success if the counter is less than max
         :rtype: bool
         """
-        if self.get_count_auth_max() != 0:
-            if self.get_count_auth() >= self.get_count_auth_max():
-                return False
+        if self.get_count_auth_max() != 0 and self.get_count_auth() >= \
+                self.get_count_auth_max():
+            return False
 
-        if self.get_count_auth_success_max() != 0:
-            if self.get_count_auth_success() >= self.get_count_auth_success_max():
-                return False
+        if self.get_count_auth_success_max() != 0 and  \
+                        self.get_count_auth_success() >=  \
+                        self.get_count_auth_success_max():
+            return False
 
         return True
 
@@ -977,21 +977,20 @@ class TokenClass(object):
         :type reset: bool
         :return: the new counter value
         """
-        resetCounter = False
+        reset_counter = False
         if counter:
             self.token.count = counter + 1
         else:
             self.token.count += 1
 
-        if reset is True:
-            if get_from_config("DefaultResetFailCount") == "True":
-                resetCounter = True
+        if reset is True and get_from_config("DefaultResetFailCount") == "True":
+            reset_counter = True
 
-        if resetCounter and self.token.active:
-            if self.token.failcount < self.token.maxfail:
-                self.token.failcount = 0
+        if (reset_counter and self.token.active and self.token.failcount <
+            self.token.maxfail):
+            self.token.failcount = 0
 
-        # make DB persistent immediately, to avoud the reusage of the counter
+        # make DB persistent immediately, to avoid the re-usage of the counter
         self.token.save()
         return self.token.count
 
@@ -1123,10 +1122,9 @@ class TokenClass(object):
         url = None
         hparam = {}
 
-        if response_detail is not None:
-            if 'googleurl' in response_detail:
-                url = response_detail.get('googleurl')
-                hparam['alt'] = url
+        if response_detail is not None and 'googleurl' in response_detail:
+            url = response_detail.get('googleurl')
+            hparam['alt'] = url
 
         return url, hparam
 
@@ -1178,9 +1176,8 @@ class TokenClass(object):
         request_is_challenge = False
         options = options or {}
         pin_match = self.check_pin(passw, user=user, options=options)
-        if pin_match is True:
-            if "data" in options or "challenge" in options:
-                request_is_challenge = True
+        if pin_match is True and "data" in options or "challenge" in options:
+            request_is_challenge = True
 
         return request_is_challenge
 

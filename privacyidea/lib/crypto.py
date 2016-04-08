@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-04-08 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Avoid consecutive if statements
+#
 #  privacyIDEA is a fork of LinOTP
 #  May 08, 2014 Cornelius Kölbel
 #  License:  AGPLv3
@@ -16,8 +19,7 @@
 # License as published by the Free Software Foundation; either
 # version 3 of the License, or any later version.
 #
-# This code is dist
-# ributed in the hope that it will be useful,
+# This code is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU AFFERO GENERAL PUBLIC LICENSE for more details.
@@ -151,10 +153,9 @@ class SecretObj(object):
             del akey
 
     def _clearKey_(self, preserve=False):
-        if preserve is False:
-            if self.bkey is not None:
-                zerome(self.bkey)
-                del self.bkey
+        if preserve is False and self.bkey is not None:
+            zerome(self.bkey)
+            del self.bkey
 
     # This is used to remove the encryption key from the memory, but
     # this could also disturb the garbage collector and lead to memory eat ups.

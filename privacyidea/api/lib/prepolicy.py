@@ -167,9 +167,9 @@ def check_otp_pin(request=None, action=None):
             # if this is a token, that does not use a pin, we ignore this check
             # And immediately return true
             tokensobject_list = get_tokens(serial=serial)
-            if len(tokensobject_list) == 1:
-                if tokensobject_list[0].using_pin is False:
-                    return True
+            if (len(tokensobject_list) == 1 and
+                    tokensobject_list[0].using_pin is False):
+                return True
         policy_object = g.policy_object
         user_object = get_user_from_param(params)
         # get the policies for minimum length, maximum length and PIN contents

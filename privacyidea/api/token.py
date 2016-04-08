@@ -300,9 +300,8 @@ def list_api():
     # TODO: Userfields
 
     # If the admin wants to see only one realm, then do it:
-    if realm:
-        if realm in filterRealm or '*' in filterRealm:
-            filterRealm = [realm]
+    if realm and (realm in filterRealm or '*' in filterRealm):
+        filterRealm = [realm]
     g.audit_object.log({'info': "realm: %s" % (filterRealm)})
 
     # get list of tokens as a dictionary

@@ -94,11 +94,11 @@ def check_time_in_range(time_range, check_time=None):
             else:
                 time_end = time(te[0])
 
-            # check the day
-            if dow_index.get(dow_start) <= check_day <= dow_index.get(dow_end):
-                # check the time:
-                if time_start <= check_hour <= time_end:
-                    time_match = True
+            # check the day and the time
+            if (dow_index.get(dow_start) <= check_day <= dow_index.get(dow_end)
+                    and
+                    time_start <= check_hour <= time_end):
+                time_match = True
     except ValueError:
         log.error("Wrong time range format: <dow>-<dow>:<hh:mm>-<hh:mm>")
         log.debug("%s" % traceback.format_exc())

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-04-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Avoid consecutive if-statements
 #  2015-12-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Change eval to importlib
 #  2015-04-23 Cornelius Kölbel <cornelius.koelbel@netknigts.it>
@@ -180,16 +182,16 @@ def get_token_class_dict():
     for module in modules:
         for name in dir(module):
             obj = getattr(module, name)
-            if inspect.isclass(obj) and issubclass(obj, TokenClass):
-                # We must not process imported classes!
-                if obj.__module__ == module.__name__:
-                    try:
-                        class_name = "%s.%s" % (module.__name__, obj.__name__)
-                        tokenclass_dict[class_name] = obj
-                        if hasattr(obj, 'get_class_type'):
-                            tokentype_dict[class_name] = obj.get_class_type()
-                    except Exception as e:  # pragma: no cover
-                        log.error("error constructing token_class_dict: %r" % e)
+            # We must not process imported classes!
+            if (inspect.isclass(obj) and issubclass(obj, TokenClass) and
+                        obj.__module__ == module.__name__):
+                try:
+                    class_name = "%s.%s" % (module.__name__, obj.__name__)
+                    tokenclass_dict[class_name] = obj
+                    if hasattr(obj, 'get_class_type'):
+                        tokentype_dict[class_name] = obj.get_class_type()
+                except Exception as e:  # pragma: no cover
+                    log.error("error constructing token_class_dict: %r" % e)
 
     return tokenclass_dict, tokentype_dict
 

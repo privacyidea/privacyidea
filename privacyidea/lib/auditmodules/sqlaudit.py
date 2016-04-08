@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-04-08 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Avoid consecutive if statements
+#
 #  privacyIDEA
 #  May 11, 2014 Cornelius Kölbel, info@privacyidea.org
 #  http://www.privacyidea.org
@@ -162,21 +165,20 @@ class Audit(AuditBase):
         conditions = []
         for search_key in param.keys():
             search_value = param.get(search_key)
-            if search_value.strip() != '':
-                # We do not search if the search value only consists of '*'
-                if search_value.strip('*') != '':
-                    try:
-                        search_value = search_value.replace('*', '%')
-                        if '%' in search_value:
-                            conditions.append(getattr(LogEntry,
-                                                      search_key).like(search_value))
-                        else:
-                            conditions.append(getattr(LogEntry, search_key) ==
-                                              search_value)
-                    except Exception as exx:
-                        # The search_key was no search key but some
-                        # bullshit stuff in the param
-                        log.debug("Not a valid searchkey: %s" % exx)
+            # We do not search if the search value only consists of '*'
+            if search_value.strip() != '' and search_value.strip('*') != '':
+                try:
+                    search_value = search_value.replace('*', '%')
+                    if '%' in search_value:
+                        conditions.append(getattr(LogEntry,
+                                                  search_key).like(search_value))
+                    else:
+                        conditions.append(getattr(LogEntry, search_key) ==
+                                          search_value)
+                except Exception as exx:
+                    # The search_key was no search key but some
+                    # bullshit stuff in the param
+                    log.debug("Not a valid searchkey: %s" % exx)
         # Combine them with or to a BooleanClauseList
         filter_condition = and_(*conditions)
         return filter_condition

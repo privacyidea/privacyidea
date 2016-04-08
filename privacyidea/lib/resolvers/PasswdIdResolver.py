@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 #
-#  product:  privacyIDEA is a fork of LinOTP
-#  module:   privacyidea resolver library
+#
+# 2016-04-08 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Avoid consecutive if-statements
+# 2014-10-03 fix getUsername function
+#            Cornelius Kölbel <cornelius@privcyidea.org>
 #
 #  May, 08 2014 Cornelius Kölbel
 #  http://www.privacyidea.org
-#
-# 2014-10-03 fix getUsername function
-#            Cornelius Kölbel <cornelius@privcyidea.org>
 #
 #  product:  LinOTP2
 #  module:   useridresolver
@@ -381,18 +381,14 @@ class IdResolver (UserIdResolver):
             s = "s"
             pattern = pattern[:-1]
 
-        if e == "e" and s == "s":
-            if string.find(pattern) != -1:
-                return True
-        elif e == "e":
-            if string.endswith(pattern):
-                return True
-        elif s == "s":
-            if string.startswith(pattern):
-                return True
-        else:
-            if string == pattern:
-                return True
+        if e == "e" and s == "s" and string.find(pattern) != -1:
+            return True
+        elif e == "e" and string.endswith(pattern):
+            return True
+        elif s == "s" and string.startswith(pattern):
+            return True
+        elif string == pattern:
+            return True
 
         return ret
 
@@ -438,25 +434,20 @@ class IdResolver (UserIdResolver):
             except:  # pragma: no cover
                 return ret
 
-            if op == "=":
-                if cUserId == ival:
-                    ret = True
+            if op == "=" and cUserId == ival:
+                ret = True
 
-            elif op == ">":
-                if cUserId > ival:
-                    ret = True
+            elif op == ">" and cUserId > ival:
+                ret = True
 
-            elif op == ">=":
-                if cUserId >= ival:
-                    ret = True
+            elif op == ">=" and cUserId >= ival:
+                ret = True
 
-            elif op == "<":
-                if cUserId < ival:
-                    ret = True
+            elif op == "<" and cUserId < ival:
+                ret = True
 
-            elif op == "<=":
-                if cUserId <= ival:
-                    ret = True
+            elif op == "<=" and cUserId <= ival:
+                ret = True
 
         return ret
 
