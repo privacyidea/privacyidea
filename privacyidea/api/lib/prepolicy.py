@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-04-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Avoid "None" as redundant 2nd argument
 #  2015-12-28 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add ACTION.REQUIREDEMAIL
 #  2015-12-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -691,9 +693,9 @@ def api_key_required(request=None, action=None):
     if action:
         # check if we were passed a correct JWT
         # Get the Authorization token from the header
-        auth_token = request.headers.get('PI-Authorization', None)
+        auth_token = request.headers.get('PI-Authorization')
         if not auth_token:
-            auth_token = request.headers.get('Authorization', None)
+            auth_token = request.headers.get('Authorization')
         try:
             r = jwt.decode(auth_token, current_app.secret_key)
             g.logged_in_user = {"username": r.get("username", ""),

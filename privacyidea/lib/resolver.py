@@ -290,7 +290,7 @@ def get_resolver_class(resolver_type):
     if resolver_type in resolver_types.values():
         for k, v in resolver_types.items():
             if v == resolver_type:
-                ret = resolver_clazzes.get(k, None)
+                ret = resolver_clazzes.get(k)
                 break
     return ret
 

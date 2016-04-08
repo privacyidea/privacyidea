@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+# 2016-04-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Avoid "None" as redundant 2nd argument
 # 2015-11-04 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add REMOTE_USER check
 # 2015-04-03 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -317,9 +319,9 @@ def check_auth_token(required_role=None):
     
         http -j POST http://localhost:5000/system/getConfig Authorization:ewrt
     """
-    auth_token = request.headers.get('PI-Authorization', None)
+    auth_token = request.headers.get('PI-Authorization')
     if not auth_token:
-        auth_token = request.headers.get('Authorization', None)
+        auth_token = request.headers.get('Authorization')
     r = verify_auth_token(auth_token, required_role)
     g.logged_in_user = {"username": r.get("username"),
                         "realm": r.get("realm"),

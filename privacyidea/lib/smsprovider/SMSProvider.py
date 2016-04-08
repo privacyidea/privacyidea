@@ -62,8 +62,15 @@ class ISMSProvider(object):
         """
         return True
     
-    def load_config(self, configDict):
-        self.config = configDict
+    def load_config(self, config_dict):
+        """
+        Load the configuration dictionary
+
+        :param config_dict: The conifugration of the SMS provider
+        :type config_dict: dict
+        :return: None
+        """
+        self.config = config_dict
 
 
 def get_sms_provider_class(packageName, className):

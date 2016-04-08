@@ -66,7 +66,7 @@ class SipgateSMSProvider(ISMSProvider):
     def submit_message(self, phone, message):
         username = self.config.get("USERNAME")
         password = self.config.get("PASSWORD")
-        proxy = self.config.get('PROXY', None)
+        proxy = self.config.get('PROXY')
         proxies = None
         if proxy:
             protocol = proxy.split(":")[0]

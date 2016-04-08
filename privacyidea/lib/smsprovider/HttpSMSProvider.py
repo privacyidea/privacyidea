@@ -3,6 +3,8 @@
 #    E-mail: info@privacyidea.org
 #    Contact: www.privacyidea.org
 #
+#    2016-04-08 Cornelius Kölbel <cornelius@privacyidea.org>
+#               Remote "None" as redundant 2nd argument to get
 #    2016-01-13 Cornelius Kölbel <cornelius@privacyidea.org>
 #               omit data object in GET request
 #               omit params in POST request
@@ -54,7 +56,7 @@ class HttpSMSProvider(ISMSProvider):
         :return:
         """
         success = False
-        url = self.config.get('URL', None)
+        url = self.config.get('URL')
         if url is None:
             log.warning("can not submit message. URL is missing.")
             raise SMSError(-1, "No URL specified in the provider config.")
@@ -62,8 +64,8 @@ class HttpSMSProvider(ISMSProvider):
         log.debug("submitting message %s to %s" % (message, phone))
 
         method = self.config.get('HTTP_Method', 'GET')
-        username = self.config.get('USERNAME', None)
-        password = self.config.get('PASSWORD', None)
+        username = self.config.get('USERNAME')
+        password = self.config.get('PASSWORD')
         ssl_verify = self.config.get('CHECK_SSL', True)
         parameter = self._get_parameters(message, phone)
         basic_auth = None
@@ -79,7 +81,7 @@ class HttpSMSProvider(ISMSProvider):
         if username and password is not None:
             basic_auth = (username, password)
 
-        proxy = self.config.get('PROXY', None)
+        proxy = self.config.get('PROXY')
         proxies = None
         if proxy:
             protocol = proxy.split(":")[0]

@@ -1235,7 +1235,7 @@ class TokenClass(object):
         otp_counter = -1
 
         # fetch the transaction_id
-        transaction_id = options.get('transaction_id', None)
+        transaction_id = options.get('transaction_id')
         if transaction_id is None:
             transaction_id = options.get('state')
 

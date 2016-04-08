@@ -233,7 +233,7 @@ def get_caconnector_class(connector_type):
     if connector_type in connector_types.values():
         for k, v in connector_types.items():
             if v == connector_type:
-                ret = connector_classes.get(k, None)
+                ret = connector_classes.get(k)
                 break
     return ret
 
