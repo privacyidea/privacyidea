@@ -6,6 +6,7 @@
 #
 #  2016-04-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Simplifying out of bounds check
+#             Avoid repetition in comparison
 #
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -81,7 +82,7 @@ class PasswordHash(object):
     def __init__(self, iteration_count_log2=8, portable_hashes=True,
                  algorithm=''):
         alg = algorithm.lower()
-        if (alg == 'blowfish' or alg == 'bcrypt') and _bcrypt_hashpw is None:
+        if alg in ['blowfish', 'bcrypt'] and _bcrypt_hashpw is None:
             raise NotImplementedError('The bcrypt module is required')
         self.itoa64 = \
             './0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
@@ -211,9 +212,9 @@ class PasswordHash(object):
     def hash_password(self, pw):  # pragma: no cover
         rnd = ''
         alg = self.algorithm.lower()
-        if (not alg or alg == 'blowfish' or alg == 'bcrypt') \
-             and not self.portable_hashes:
-            if _bcrypt_hashpw is None and alg == 'blowfish' or alg == 'bcrypt':
+        if (not alg or alg in ['blowfish', 'bcrypt'] and not
+                self.portable_hashes):
+            if _bcrypt_hashpw is None and alg in ['blowfish', 'bcrypt']:
                 raise NotImplementedError('The bcrypt module is required')
             else:
                 rnd = self.get_random_bytes(16)
