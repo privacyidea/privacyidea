@@ -497,7 +497,6 @@ class Token(MethodsMixin, db.Model):
             tokeninfos = TokenInfo.query.filter_by(token_id=self.id)
         for ti in tokeninfos:
             ti.delete()
-        pass
 
     def get_info(self):
         """
