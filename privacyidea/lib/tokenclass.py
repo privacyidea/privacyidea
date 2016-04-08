@@ -3,6 +3,7 @@
 #
 #  2016-04-08 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Avoid consecutive if statements
+#             Remove unreachable code
 #  2015-12-18 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Add get_setting_type
 #  2015-10-12 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -1333,14 +1334,17 @@ class TokenClass(object):
         This provides a function to be plugged into the API endpoint
         /ttype/<tokentype> which is defined in api/ttype.py
 
+        The method should return
+            return "json", {}
+        or
+            return "text", "OK"
+
         :param request: The Flask request
         :param g: The Flask global object g
         :return: Flask Response or text
         """
         raise ParameterError("%s does not support the API endpoint" %
                              cls.get_tokentype())
-        return "json", {}
-        # or return "text", "OK"
 
     @staticmethod
     def test_config(params=None):
