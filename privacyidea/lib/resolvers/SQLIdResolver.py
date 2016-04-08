@@ -4,6 +4,9 @@
 #  License:  AGPLv3
 #  contact:  cornelius@privacyidea.org
 #
+#  2016-04-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Simplifying out of bounds check
+#
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
 # License as published by the Free Software Foundation; either
@@ -82,7 +85,7 @@ class PasswordHash(object):
             raise NotImplementedError('The bcrypt module is required')
         self.itoa64 = \
             './0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
-        if iteration_count_log2 < 4 or iteration_count_log2 > 31:
+        if not (4 <= iteration_count_log2 <= 31):
             iteration_count_log2 = 8
         self.iteration_count_log2 = iteration_count_log2
         self.portable_hashes = portable_hashes
@@ -141,7 +144,7 @@ class PasswordHash(object):
         if setting[0:3] not in ['$P$', '$H$', '$S$']:
             return outp
         count_log2 = self.itoa64.find(setting[3])
-        if count_log2 < 7 or count_log2 > 30:
+        if not (7 <= count_log2 <= 30):
             return outp
         count = 1 << count_log2
         salt = setting[4:12]
