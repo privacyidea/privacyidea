@@ -195,7 +195,7 @@ class IdResolver (UserIdResolver):
         log.debug("We found the crypted pass %s for uid %s"
                   % (cryptedpasswd, uid))
         if cryptedpasswd:
-            if cryptedpasswd == 'x' or cryptedpasswd == '*':
+            if cryptedpasswd in ['x', '*']:
                 err = "Sorry, currently no support for shadow passwords"
                 log.error("%s" % err)
                 raise NotImplementedError(err)
