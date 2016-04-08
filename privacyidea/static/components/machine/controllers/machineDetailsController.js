@@ -53,7 +53,7 @@ angular.module("privacyideaApp")
             MachineFactory.getMachineTokens({machineid: $scope.machineid,
                     resolver: $scope.machineresolver},
                 function (data) {
-                    tokenlist = data.result.value;
+                    var tokenlist = data.result.value;
                     $scope.tokenCount = tokenlist.length;
                     var start = ($scope.params.page - 1) * $scope.tokensPerPage;
                     var stop = start + $scope.tokensPerPage;

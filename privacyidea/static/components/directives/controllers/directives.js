@@ -62,7 +62,7 @@ myApp.directive("piSortBy", function(){
         restrict: 'A',
         link: function(scope, element, attr) {
             element.on('click', function() {
-                column = attr.piSortBy;
+                var column = attr.piSortBy;
                 scope.params.sortby=column;
                 scope.reverse=!scope.reverse;
                 $(".sortUp").addClass("unsorted");

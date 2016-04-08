@@ -72,7 +72,7 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
         ConfigFactory.getRealms(function (data) {
             // Check if there is a realm defined, or if we should display the
             // Auto Create Dialog
-            number_of_realms = Object.keys(data.result.value).length;
+            var number_of_realms = Object.keys(data.result.value).length;
             if (number_of_realms == 0) {
                 $('#dialogAutoCreateRealm').modal();
             }
@@ -220,7 +220,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             UserFactory.getUsers({realm: $scope.newUser.realm,
                 username: $scope.newUser.user},
                 function(data) {
-                    userObject = data.result.value[0];
+                    var userObject = data.result.value[0];
                     $scope.form.email = userObject.email;
                     if (typeof userObject.mobile === "string") {
                         $scope.form.phone = userObject.mobile;

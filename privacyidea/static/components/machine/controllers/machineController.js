@@ -57,7 +57,7 @@ angular.module("privacyideaApp")
             }
             MachineFactory.getMachines(params,
                 function (data) {
-                    machinelist = data.result.value;
+                    var machinelist = data.result.value;
                     // The machinelist is the complete list of all machines!
                     $scope.machinecount = machinelist.length;
                     var start = ($scope.params.page - 1) * $scope.machinesPerPage;

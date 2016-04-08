@@ -201,7 +201,7 @@ angular.module("TokenModule", ["privacyideaAuth"])
                 ).error(error_func);
             },
             enroll: function (userObject, formdata, callback) {
-                username = fixUser(userObject.user);
+                var username = fixUser(userObject.user);
                 // all formdata is passed
                 var params = formdata;
                 if (formdata.generate === true) {
