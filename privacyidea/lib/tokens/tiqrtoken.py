@@ -324,18 +324,18 @@ class TiqrTokenClass(TokenClass):
             if (len(challenges) == 1 and challenges[0].is_valid() and
                         challenges[0].otp_valid is False):
                 # Challenge is still valid (time has not passed) and no
-                # correct response was given.
-                serial = challenges[0].serial
-                tokens = get_tokens(serial=serial)
-                if len(tokens) == 1:
-                    # We found exactly the one token
-                    res = "INVALID_RESPONSE"
-                    r = tokens[0].verify_response(
-                        challenge=challenges[0].challenge, passw=passw)
-                    if r > 0:
-                        res = "OK"
-                        # Mark the challenge as answered successfully.
-                        challenges[0].set_otp_status(True)
+                    # correct response was given.
+                    serial = challenges[0].serial
+                    tokens = get_tokens(serial=serial)
+                    if len(tokens) == 1:
+                        # We found exactly the one token
+                        res = "INVALID_RESPONSE"
+                        r = tokens[0].verify_response(
+                            challenge=challenges[0].challenge, passw=passw)
+                        if r > 0:
+                            res = "OK"
+                            # Mark the challenge as answered successfully.
+                            challenges[0].set_otp_status(True)
 
             cleanup_challenges()
 
@@ -480,13 +480,12 @@ class TiqrTokenClass(TokenClass):
                                                   transaction_id=transaction_id)
 
             for challengeobject in challengeobject_list:
-                if challengeobject.is_valid():
-                    # we are still in time.
-                    if challengeobject.otp_valid:
-                        # create a positive response
-                        otp_counter = 1
-                        # delete the challenge
-                        challengeobject.delete()
-                        break
+                # check if we are still in time.
+                if challengeobject.is_valid() and challengeobject.otp_valid:
+                    # create a positive response
+                    otp_counter = 1
+                    # delete the challenge
+                    challengeobject.delete()
+                    break
 
         return otp_counter

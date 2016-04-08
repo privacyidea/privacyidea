@@ -463,47 +463,46 @@ def autoassign(request, response):
 
             if len(autoassign_values) > 1:
                 raise PolicyError("Contradicting Autoassign policies.")
-            if autoassign_values:
-                # check if the user has no token
-                if get_tokens(user=user_obj, count=True) == 0:
-                    # Check is the token would match
-                    # get all unassigned tokens in the realm and look for
-                    # a matching OTP:
-                    realm_tokens = get_tokens(realm=user_obj.realm,
-                                              assigned=False)
+            # check if the user has no token
+            if autoassign_values and get_tokens(user=user_obj, count=True) == 0:
+                # Check is the token would match
+                # get all unassigned tokens in the realm and look for
+                # a matching OTP:
+                realm_tokens = get_tokens(realm=user_obj.realm,
+                                          assigned=False)
 
-                    for token_obj in realm_tokens:
-                        (res, pin, otp) = token_obj.split_pin_pass(password)
-                        if res:
-                            pin_check = True
-                            if autoassign_values[0] == \
-                                    AUTOASSIGNVALUE.USERSTORE:
-                                # If the autoassign policy is set to userstore,
-                                # we need to check against the userstore.
-                                pin_check = user_obj.check_password(pin)
-                            if pin_check:
-                                otp_check = token_obj.check_otp(otp)
-                                if otp_check >= 0:
-                                    # we found a matching token
-                                    #    check MAXTOKENUSER and MAXTOKENREALM
-                                    check_max_token_user(request=request)
-                                    check_max_token_realm(request=request)
-                                    #    Assign token
-                                    assign_token(serial=token_obj.token.serial,
-                                                 user=user_obj, pin=pin)
-                                    # Set the response to true
-                                    content.get("result")["value"] = True
-                                    # Set the serial number
-                                    if not content.get("detail"):
-                                        content["detail"] = {}
-                                    content.get("detail")["serial"] = \
-                                        token_obj.token.serial
-                                    content.get("detail")["type"] = token_obj.type
-                                    content.get("detail")["message"] = "Token " \
-                                                                       "assigned to " \
-                                                                       "user via " \
-                                                                       "Autoassignment"
-                                    response.data = json.dumps(content)
-                                    break
+                for token_obj in realm_tokens:
+                    (res, pin, otp) = token_obj.split_pin_pass(password)
+                    if res:
+                        pin_check = True
+                        if autoassign_values[0] == \
+                                AUTOASSIGNVALUE.USERSTORE:
+                            # If the autoassign policy is set to userstore,
+                            # we need to check against the userstore.
+                            pin_check = user_obj.check_password(pin)
+                        if pin_check:
+                            otp_check = token_obj.check_otp(otp)
+                            if otp_check >= 0:
+                                # we found a matching token
+                                #    check MAXTOKENUSER and MAXTOKENREALM
+                                check_max_token_user(request=request)
+                                check_max_token_realm(request=request)
+                                #    Assign token
+                                assign_token(serial=token_obj.token.serial,
+                                             user=user_obj, pin=pin)
+                                # Set the response to true
+                                content.get("result")["value"] = True
+                                # Set the serial number
+                                if not content.get("detail"):
+                                    content["detail"] = {}
+                                content.get("detail")["serial"] = \
+                                    token_obj.token.serial
+                                content.get("detail")["type"] = token_obj.type
+                                content.get("detail")["message"] = "Token " \
+                                                                   "assigned to " \
+                                                                   "user via " \
+                                                                   "Autoassignment"
+                                response.data = json.dumps(content)
+                                break
 
     return response

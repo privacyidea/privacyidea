@@ -92,10 +92,9 @@ class HostsMachineResolver(BaseMachineResolver):
                             # do not append this machine!
                             continue
 
-                    if ip:
-                        if ip != line_ip:
-                            # Do not append this machine!
-                            continue
+                    if ip and ip != line_ip:
+                        # Do not append this machine!
+                        continue
 
                 machines.append(Machine(self.name, line_id,
                                         hostname=line_hostname,
