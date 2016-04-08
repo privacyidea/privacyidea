@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2016-04-08 Cornelius Kölbel <cornelus@privacyidea.org>
+#             simplify repetetive unequal checks
+#
 #  Nov 27, 2014 Cornelius Kölbel <cornelius@privacyidea.org>
 #               Migration to flask
 #               Rewrite of methods
@@ -107,7 +110,7 @@ def save_resolver(params):
     desc = {}
     data = {}
     for k in params:
-        if k != 'resolver' and k != 'type':
+        if k not in ['resolver', 'type']:
             if k.startswith('type.') is True:
                 key = k[len('type.'):]
                 types[key] = params.get(k)
