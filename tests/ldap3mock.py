@@ -352,6 +352,23 @@ class Ldap3Mock(object):
 
         return "FakeServerObject"
 
+    def _check_password(self, user_supplied_pw, reference_pw):
+        # Strip the label from the string
+        label_removed = reference_pw[6:]
+
+        # Decode base64 and strip salt
+        digest_salt = label_removed.decode('base64')
+        reference_pw_sha = digest_salt[:20]
+        # Strip off the salt for use encoding the user supplied password
+        salt = digest_salt[20:]
+
+        # Encode the user supplied password so we can compare the two
+        user_supplied_sha = hashlib.sha1(user_supplied_pw)
+        user_supplied_sha.update(salt)
+
+        return user_supplied_sha.digest() == reference_pw_sha
+
+
     def _on_Connection(self, server, user, password,
                        auto_bind=None, client_strategy=None,
                        authentication=None, check_names=None,
@@ -379,6 +396,10 @@ class Ldap3Mock(object):
                 pw = entry.get("attributes").get("userPassword")
                 if pw == password:
                     correct_password = True
+                elif pw.startswith('{SSHA}'):
+                    correct_password = self._check_password(password, pw)
+                else:
+                    correct_password = False
         self.con_obj = Connection(self.directory)
         self.con_obj.bound = correct_password
         return self.con_obj
