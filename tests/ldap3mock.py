@@ -28,6 +28,7 @@ from __future__ import (
 DIRECTORY = "tests/testdata/tmp_directory"
 import six
 import ast
+import hashlib
 import ldap3
 from ldap3.utils.conv import check_escape
 
