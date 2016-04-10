@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2016-04-10 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Make route the outermost decorator
 # 2014-12-08 Cornelius Kölbel, <cornelius@privacyidea.org>
 #            Complete rewrite during flask migration
 #            Try to provide REST API
@@ -58,8 +60,8 @@ resolver_blueprint = Blueprint('resolver_blueprint', __name__)
 #   Resolver methods
 #
 
-@log_with(log)
 @resolver_blueprint.route('/', methods=['GET'])
+@log_with(log)
 def get_resolvers():
     """
     returns a json list of all resolver.
@@ -80,8 +82,8 @@ def get_resolvers():
     return send_result(res)
 
 
-@log_with(log)
 @resolver_blueprint.route('/<resolver>', methods=['POST'])
+@log_with(log)
 @prepolicy(check_base_action, request, ACTION.RESOLVERWRITE)
 def set_resolver(resolver=None):
     """
@@ -139,8 +141,8 @@ def set_resolver(resolver=None):
     return send_result(res)
 
 
-@log_with(log)
 @resolver_blueprint.route('/<resolver>', methods=['DELETE'])
+@log_with(log)
 @prepolicy(check_base_action, request, ACTION.RESOLVERDELETE)
 def delete_resolver_api(resolver=None):
     """
@@ -157,8 +159,8 @@ def delete_resolver_api(resolver=None):
     return send_result(res)
 
 
-@log_with(log)
 @resolver_blueprint.route('/<resolver>', methods=['GET'])
+@log_with(log)
 def get_resolver(resolver=None):
     """
     This function retrieves the definition of a single resolver.
@@ -173,8 +175,8 @@ def get_resolver(resolver=None):
 
     return send_result(res)
 
-@log_with(log)
 @resolver_blueprint.route('/test', methods=["POST"])
+@log_with(log)
 def test_resolver():
     """
     :return: a json result with True, if the given values can create a
