@@ -107,7 +107,7 @@ class Connection(object):
         self.directory = directory
 
     def _find_user(self, dn):
-            return next(i for (i, d) in enumerate(self.directory) if d["dn"] == dn)
+        return next(i for (i, d) in enumerate(self.directory) if d["dn"] == dn)
 
     @staticmethod
     def open():
@@ -188,13 +188,12 @@ class Connection(object):
                         'result' : 0,
                         'message' : '',
                         'type' : 'modifyResponse'}
-        index = -1
 
-        # Find the element no. coresponding to the users dn
-        index = next(i for (i, d) in enumerate(self.directory) if d["dn"] == dn)
-
-        # If we don't find a entry in the directory return
-        if index == -1:
+        # Check to see if the user exists in the directory
+        try:
+            index = self._find_user(dn)
+        except StopIteration:
+            # If we get here the user doesn't exist so continue
             self.result["description"] = "failure"
             self.result["result"] = 32
             self.result["message"] = "Error no such object: %s" % dn
