@@ -125,7 +125,6 @@ class Connection(object):
                         'message' : '',
                         'type' : 'addResponse'}
 
-        entry = {}
         # Check to see if the user exists in the directory
         try:
             index = self._find_user(dn)
@@ -140,8 +139,9 @@ class Connection(object):
             return False
 
         # Create a entry object for the new user
-        entry["dn"] = dn
-        entry["attributes"] = attributes
+        entry = {}
+        entry['dn'] = dn
+        entry['attributes'] = attributes
 
         # Add the user entry to the directory
         self.directory.append(entry)
