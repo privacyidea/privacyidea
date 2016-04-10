@@ -91,6 +91,8 @@ class AUTHTYPE(object):
 
 class IdResolver (UserIdResolver):
 
+    updateable = True
+
     def __init__(self):
         self.i_am_bound = False
         self.uri = ""
@@ -724,14 +726,17 @@ class IdResolver (UserIdResolver):
 
             mapped = self._create_ldap_modify_changes(attributes, uid)
             params = self._attributes_to_ldap_attributes(mapped)
-            self.l.modify(uid, params)
+            # We can not modify the sAMAccountName
+            if "sAMAccountName" in params:
+                del(params["sAMAccountName"])
+            self.l.modify(self._getDN(uid), params)
         except Exception as e:
             log.error("Error accessing LDAP server: %s" % e)
             log.debug("%s" % traceback.format_exc())
             return False
 
         if self.l.result.get('result') != 0:
-            log.error("Error during update of user: %s details" % uid)
+            log.error("Error during update of user %s: %s" % (uid, self.l.result.get("message")))
             return False
 
         return True

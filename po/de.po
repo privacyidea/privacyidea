@@ -181,7 +181,7 @@ msgstr "Token anhängen"
 msgid "Attach to a new Machine"
 msgstr "An eine neue Maschine anhängen"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:158
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:172
 msgid "Attribute mapping"
 msgstr "Attributszuordnung"
 
@@ -667,6 +667,7 @@ msgstr "Realms bearbeiten"
 msgid "Edit user"
 msgstr "Benutzer bearbeiten"
 
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:110
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:88
 msgid "Edit user store"
 msgstr "Benutzerquelle editierbar"
@@ -1279,7 +1280,7 @@ msgid "No Serial number could be found for OTP value {{ otp }}."
 msgstr "Zu dem OTP-Wert {{ otp }} konnte keine Seriennummer gefunden werden."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:106
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:121
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:135
 msgid "No anonymous referral chasing"
 msgstr "Referrals werden nicht (anonym) verfolgt."
 
@@ -1488,11 +1489,11 @@ msgstr ""
 "angehängt."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:99
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:114
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:128
 msgid "Preset Active Directory"
 msgstr "Active Directory vorbelegen"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:111
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:125
 msgid "Preset OpenLDAP"
 msgstr "OpenLDAP vorbelegen"
 
@@ -1582,7 +1583,7 @@ msgstr ""
 msgid "Realm"
 msgstr "Realm "
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:284
+#: privacyidea/static/components/login/controllers/loginControllers.js:286
 msgid "Realm defrealm created."
 msgstr "Der Realm defrealm wurde erzeugt."
 
@@ -1791,7 +1792,7 @@ msgstr "Realms speichern"
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:102
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:39
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:158
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:189
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:203
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:38
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:86
 msgid "Save resolver"
@@ -1808,7 +1809,7 @@ msgid "Scope"
 msgstr "Geltungsbereich"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:120
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:136
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:150
 msgid "Search Filter"
 msgstr "Suchfilter"
 
@@ -1945,7 +1946,7 @@ msgstr "Ein paar nette Worte..."
 msgid "Statistics"
 msgstr "Statistik"
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:155
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:160
 msgid "Successfully authenticated."
 msgstr "Erfolgreich authentisiert."
 
@@ -1980,12 +1981,12 @@ msgstr "System"
 msgid "System Config"
 msgstr "Systemkonfiguration"
 
-#: privacyidea/static/components/config/controllers/configControllers.js:425
-#: privacyidea/static/components/config/controllers/configControllers.js:635
+#: privacyidea/static/components/config/controllers/configControllers.js:427
+#: privacyidea/static/components/config/controllers/configControllers.js:637
 msgid "System Config saved."
 msgstr "Systemkonfiguration gespeichert."
 
-#: privacyidea/static/components/config/controllers/configControllers.js:434
+#: privacyidea/static/components/config/controllers/configControllers.js:436
 msgid "System entry deleted."
 msgstr "Systemeinstellung gelöscht."
 
@@ -2014,7 +2015,7 @@ msgid "Test Email sent successfully."
 msgstr "Test Email wurde erfolgreich versendet."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:154
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:184
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:198
 msgid "Test LDAP Resolver"
 msgstr "LDAP Resolver testen"
 
@@ -2618,6 +2619,14 @@ msgstr ""
 "Die Benutzerdaten in der Datenbank können von privacyIDEA aus verwaltet "
 "werden."
 
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:118
+msgid ""
+"The user data in this database can be modified from within\n"
+"                privacyIDEA."
+msgstr ""
+"Die Benutzerdaten in der Datenbank können von \n"
+"          privacyIDEA aus verwaltet werden."
+
 #: privacyidea/static/components/token/views/token.lost.html:12
 msgid ""
 "The user will have to authenticate with the old OTP PIN he knows and this\n"
@@ -2908,11 +2917,11 @@ msgstr "Token ausgerollt"
 msgid "Token enrollment wizard"
 msgstr "Wizard zum Ausrollen von Tokens"
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:139
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:144
 msgid "Token resync failed."
 msgstr "Token Resync fehlgeschlagen."
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:136
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:141
 msgid "Token resync successful."
 msgstr "Token wurde erfolgreich resynchronisiert."
 
@@ -2966,7 +2975,7 @@ msgstr "U2F Token Einstellungen"
 msgid "U2F: Universal 2nd Factor hardware token."
 msgstr "U2F: Universal 2nd Factor. Hardware Token."
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:170
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:184
 msgid "UID Type"
 msgstr "UID Typ"
 
@@ -3012,7 +3021,7 @@ msgstr "TLS verwenden"
 msgid "User"
 msgstr "Benutzer "
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:147
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:161
 msgid "User Filter"
 msgstr "Benutzerfilter"
 
