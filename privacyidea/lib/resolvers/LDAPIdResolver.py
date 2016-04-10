@@ -722,17 +722,43 @@ class IdResolver (UserIdResolver):
         for fieldname, value in attributes.iteritems():
             if self.map.get(fieldname):
                 if fieldname == "password":
-                    password = value 
-                    # Create a {SSHA} password
-                    salt = geturandom(4)
-                    hr = hashlib.sha1(password)
-                    hr.update(salt)
-                    ldap_attributes[self.map.get(fieldname)] = \
-                        "{SSHA}" + hr.digest() + salt
+                    # Variable value may be either a string or a list
+                    # so catch the TypeError exception if we get the wrong
+                    # variable type
+                    try:
+                        pw_hash = self._create_ssha(value[1][0])
+                        value[1][0] = pw_hash
+                        ldap_attributes[self.map.get(fieldname)] = value
+                    except TypeError as e:
+                        pw_hash = self._create_ssha(value)
+                        ldap_attributes[self.map.get(fieldname)] = pw_hash
                 else:
                     ldap_attributes[self.map.get(fieldname)] = value 
 
         return ldap_attributes
+
+    def _create_ssha(self, password):
+        """
+        Encodes the given password as a base64 SSHA hash
+        :param password: string to hash 
+        :type password: basestring
+        :return: string encoded as a base64 SSHA hash 
+        """
+
+        salt = geturandom(4)
+
+        # Hash password string and append the salt
+        shaHash = hashlib.sha1(password)
+        shaHash.update(salt)
+
+        # Create a base64 encoded string
+        digest_b64 = '{}{}'.format(shaHash.digest(),
+                salt).encode('base64').strip()
+
+        # Tag it with SSHA
+        tagged_digest = '{{SSHA}}{}'.format(digest_b64)
+
+        return tagged_digest 
 
     def _create_ldap_modify_changes(self, attributes, uid):
         """
