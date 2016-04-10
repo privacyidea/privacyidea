@@ -746,8 +746,16 @@ msgstr ""
 msgid "Failed authentication requests per user"
 msgstr ""
 
+#: privacyidea/static/components/user/controllers/userControllers.js:153
+msgid "Failed to delete user."
+msgstr ""
+
 #: privacyidea/static/components/recovery/controllers/recoveryControllers.js:31
 msgid "Failed to reset your password."
+msgstr ""
+
+#: privacyidea/static/components/user/controllers/userControllers.js:135
+msgid "Failed to update user."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:27
@@ -2729,7 +2737,7 @@ msgstr ""
 msgid "User created."
 msgstr ""
 
-#: privacyidea/static/components/user/controllers/userControllers.js:145
+#: privacyidea/static/components/user/controllers/userControllers.js:147
 msgid "User deleted successfully."
 msgstr ""
 

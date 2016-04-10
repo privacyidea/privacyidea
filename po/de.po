@@ -778,9 +778,17 @@ msgstr "Fehlgeschlagene Authentisierungen pro Token"
 msgid "Failed authentication requests per user"
 msgstr "Fehlgeschlagene Authentisierungen pro Benutzer"
 
+#: privacyidea/static/components/user/controllers/userControllers.js:153
+msgid "Failed to delete user."
+msgstr "Löschen des Benutzers fehlgeschlagen."
+
 #: privacyidea/static/components/recovery/controllers/recoveryControllers.js:31
 msgid "Failed to reset your password."
 msgstr "Zurücksetzen des Passworts fehlgeschlagen."
+
+#: privacyidea/static/components/user/controllers/userControllers.js:135
+msgid "Failed to update user."
+msgstr "Aktualisieren des Benutzers fehlgeschlagen."
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:27
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:25
@@ -3041,7 +3049,7 @@ msgstr "Benutzerkonto wurde angelegt. Eine Email wurde an Sie gesendet."
 msgid "User created."
 msgstr "Benutzer angelegt."
 
-#: privacyidea/static/components/user/controllers/userControllers.js:145
+#: privacyidea/static/components/user/controllers/userControllers.js:147
 msgid "User deleted successfully."
 msgstr "Benutzer erfolgreich gelöscht."
 

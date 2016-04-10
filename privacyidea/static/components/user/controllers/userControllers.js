@@ -131,6 +131,8 @@ angular.module("privacyideaApp")
                                 {type: "info"});
                     // we also need to update the user list
                     $scope._getUsers();
+                } else {
+                    inform.add(gettextCatalog.getString("Failed to update user."), {type: "danger"});
                 }
             });
         };
@@ -147,6 +149,8 @@ angular.module("privacyideaApp")
                                 {type: "info"});
                     $scope._getUsers();
                     $location.path("/user/list");
+                }  else {
+                    inform.add(gettextCatalog.getString("Failed to delete user."), {type: "danger"});
                 }
             });
         };
