@@ -200,7 +200,7 @@ class Connection(object):
             return False
 
         # extract the hash we are interested in
-        entry = self.directory[1].get("attributes")
+        entry = self.directory[index].get("attributes")
 
         # Loop over the changes hash and apply them
         for k, v in changes.iteritems():
@@ -214,7 +214,7 @@ class Connection(object):
                     "modify operation: %s" % k[1]
 
         # Place the attributes back into the directory hash
-        self.directory[1]["attributes"] = entry
+        self.directory[index]["attributes"] = entry
 
         # Attempt to write changes to disk
         with open(DIRECTORY, 'w+') as f:
