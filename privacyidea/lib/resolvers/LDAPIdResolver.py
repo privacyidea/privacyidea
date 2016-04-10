@@ -678,7 +678,7 @@ class IdResolver (UserIdResolver):
 
             params = self._attributes_to_ldap_attributes(attributes)
             self.l.add(uid, object_class, params)
-        except LDAPException as e:
+        except Exception as e:
             log.error("Error accessing LDAP server: %s" % e)
             log.debug("%s" % traceback.format_exc())
             return False
