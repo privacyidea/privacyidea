@@ -25,7 +25,9 @@ from __future__ import (
     absolute_import, print_function, division, unicode_literals
 )
 
+DIRECTORY = "tests/testdata/tmp_directory"
 import six
+import ast
 import ldap3
 from ldap3.utils.conv import check_escape
 
@@ -132,6 +134,48 @@ class Connection(object):
     def bind(self):
         return self.bound
 
+    def modify(self, dn, changes, controls=None):
+
+        self.result = { 'dn': '',
+                        'referrals': None,
+                        'description': 'success',
+                        'result': 0,
+                        'message': '',
+                        'type': 'modifyResponse'}
+        index = -1
+
+        # Find the element no. coresponding to the users dn
+        index = next(i for (i, d) in enumerate(self.directory) if d["dn"] == dn)
+
+        # If we don't find a entry in the directory return
+        if index == -1:
+            self.result["result"] = 32
+            self.result["message"] = "Error no such object: %s" % dn
+            return False
+
+        # extract the hash we are interested in
+        entry = self.directory[1].get("attributes")
+
+        # Loop over the changes hash and apply them
+        for k, v in changes.iteritems():
+            if v[0] == "MODIFY_DELETE":
+                entry.pop(k)
+            elif v[0] == "MODIFY_REPLACE" or v[0] == "MODIFY_ADD":
+                entry[k] = v[1][0]
+            else:
+                self.result["result"] = 2
+                self.result["message"] = "Error bad/missing/not implemented" \
+                    "modify operation: %s" % k[1]
+
+        # Place the attributes back into the directory hash
+        self.directory[1]["attributes"] = entry
+
+        # Attempt to write changes to disk
+        with open(DIRECTORY, 'w+') as f:
+            f.write(str(self.directory))
+
+        return True
+
     def search(self, search_base=None, search_scope=None,
                search_filter=None, attributes=None, paged_size=5,
                size_limit=0, paged_cookie=None):
@@ -222,8 +266,23 @@ class Ldap3Mock(object):
 
     def setLDAPDirectory(self, directory=None):
         if directory is None:
-                directory = []
-        self.directory = directory
+                self.directory = []
+        else:
+            try:
+                with open(DIRECTORY, 'w+') as f:
+                    f.write(str(directory))
+                    self.directory = directory
+            except OSError as e:
+                raise
+
+    def _load_data(self, directory):
+        try:
+            with open(directory, 'r') as f:
+                data = f.read()
+        except OSError as e:
+            raise
+
+        return ast.literal_eval(data)
 
     @property
     def calls(self):
@@ -254,6 +313,7 @@ class Ldap3Mock(object):
         """
         We need to create a Connection object with
         methods:
+            modify()
             search()
             unbind()
         and object
@@ -262,6 +322,9 @@ class Ldap3Mock(object):
         # check the password
         correct_password = False
         # Anonymous bind
+        # Reload the directory just incase a change has been made to 
+        # user credentials
+        self.directory = self._load_data(DIRECTORY)
         if authentication == ldap3.ANONYMOUS and user == "":
             correct_password = True
         for entry in self.directory:

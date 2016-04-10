@@ -2,6 +2,10 @@
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
+#  2016-04-16 Martin Wheldon <martin.wheldon@greenhills-it.co.uk>
+#             Allow user accounts held in LDAP to be edited, providing
+#             that the account they are using has permission to edit
+#             those attributes in the LDAP directory  
 #  2016-02-22 Salvo Rapisarda
 #             Allow objectGUID to be a users attribute
 #  2016-02-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -36,14 +40,22 @@ The file is tested in tests/test_lib_resolver.py
 """
 
 import logging
-import ldap3
 import yaml
-import traceback
-import uuid
-from ldap3.utils.conv import escape_bytes
-import datetime
 
 from UserIdResolver import UserIdResolver
+
+import ldap3
+from ldap3 import MODIFY_REPLACE, MODIFY_ADD, MODIFY_DELETE
+from ldap3.utils.conv import escape_bytes
+
+import traceback
+
+import hashlib
+from privacyidea.lib.crypto import urandom, geturandom
+
+import uuid
+import datetime
+
 from gettext import gettext as _
 from privacyidea.lib.utils import to_utf8
 
@@ -93,6 +105,7 @@ class IdResolver (UserIdResolver):
         self.userinfo = {}
         self.uidtype = ""
         self.noreferrals = False
+        self.editable = False
         self.certificate = ""
         self.resolverId = self.uri
         self.scope = ldap3.SUBTREE
@@ -452,6 +465,7 @@ class IdResolver (UserIdResolver):
         '#ldap_mapping': 'USERINFO',
         '#ldap_uidtype': 'UIDTYPE',
         '#ldap_noreferrals' : 'NOREFERRALS',
+        '#ldap_editable' : 'EDITABLE',
         '#ldap_certificate': 'CACERTIFICATE',
                     
         """
@@ -466,8 +480,10 @@ class IdResolver (UserIdResolver):
         self.reversefilter = config.get("LDAPFILTER")
         userinfo = config.get("USERINFO", "{}")
         self.userinfo = yaml.load(userinfo)
+        self.map = yaml.load(userinfo)
         self.uidtype = config.get("UIDTYPE", "DN")
         self.noreferrals = config.get("NOREFERRALS", False)
+        self.editable = config.get("EDITABLE", False)
         self.certificate = config.get("CACERTIFICATE")
         self.scope = config.get("SCOPE") or ldap3.SUBTREE
         self.resolverId = self.uri
@@ -564,6 +580,7 @@ class IdResolver (UserIdResolver):
                                 'UIDTYPE': 'string',
                                 'NOREFERRALS': 'bool',
                                 'CACERTIFICATE': 'string',
+                                'EDITABLE': 'bool',
                                 'AUTHTYPE': 'string'}
         return {typ: descriptor}
 
@@ -637,6 +654,87 @@ class IdResolver (UserIdResolver):
             desc = "%r" % e
         
         return success, desc
+
+    def _attributes_to_ldap_attributes(self, attributes):
+        """
+        takes the attributes and maps them to the LDAP attributes
+        :param attributes: Attributes to be updated
+        :type attributes: dict
+        :param uid: The uid of the user object in the resolver
+        :type uid: basestring
+        :return: dict with attribute name as keys and values
+        """
+        ldap_attributes = {}
+        for fieldname, value in attributes.iteritems():
+            if self.map.get(fieldname):
+                if fieldname == "password":
+                    password = value 
+                    # Create a {SSHA} password
+                    salt = geturandom(4)
+                    hr = hashlib.sha1(password)
+                    hr.update(salt)
+                    ldap_attributes[self.map.get(fieldname)] = \
+                        "{SSHA}" + hr.digest() + salt
+                else:
+                    ldap_attributes[self.map.get(fieldname)] = value 
+
+        return ldap_attributes
+
+    def _create_ldap_modify_changes(self, attributes, uid):
+        """
+        takes the attributes and maps them to the LDAP attributes
+        :param attributes: Attributes to be updated
+        :type attributes: dict
+        :param uid: The uid of the user object in the resolver
+        :type uid: basestring
+        :return: dict with attribute name as keys and values
+        """
+        modify_changes = {}
+
+        for fieldname, value in attributes.iteritems():
+            if value:
+                if fieldname in self.getUserInfo(uid):
+                    modify_changes[fieldname] = [MODIFY_REPLACE, [value]]
+                else:
+                    modify_changes[fieldname] = [MODIFY_ADD, [value]]
+            else:
+                modify_changes[fieldname] = [MODIFY_DELETE, [value]]
+
+        return modify_changes
+
+    def update_user(self, uid, attributes=None):
+        """
+        Update an existing user.
+        This function is also used to update the password. Since the
+        attribute mapping know, which field contains the password,
+        this function can also take care for password changing.
+
+        Attributes that are not contained in the dict attributes are not
+        modified.
+
+        :param uid: The uid of the user object in the resolver.
+        :type uid: basestring
+        :param attributes: Attributes to be updated.
+        :type attributes: dict
+        :return: True in case of success
+        """
+        attributes = attributes or {}
+        try:
+            self._bind()
+
+            mapped = self._create_ldap_modify_changes(attributes, uid)
+            params = self._attributes_to_ldap_attributes(mapped)
+            self.l.modify(uid, params)
+        except Exception as e:
+            log.error("Error accessing LDAP server: %s" % e)
+            log.debug("%s" % traceback.format_exc())
+            return False
+
+        if self.l.result.get('result') != 0:
+            log.error("Error during update of user: %s details" % uid)
+            return False
+
+        return True
 
     @staticmethod
     def create_connection(authtype=None, server=None, user=None,

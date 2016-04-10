@@ -237,6 +237,7 @@ class LdapMachineResolver(BaseMachineResolver):
                             self.hostname_attribute: "hostname",
                             self.id_attribute: "id"}
         self.noreferrals = config.get("NOREFERRALS", False)
+        self.editable = config.get("EDITABLE", False)
         self.certificate = config.get("CACERTIFICATE")
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
 
@@ -253,6 +254,7 @@ class LdapMachineResolver(BaseMachineResolver):
                                              "IPATTRIBUTE": "string",
                                              "SEARCHFILTER": "string",
                                              "NOREFERRALS": "bool",
+                                             "EDITABLE": "bool",
                                              "CACERTIFICATE": "string",
                                              "AUTHTYPE": "string"}}}
 
