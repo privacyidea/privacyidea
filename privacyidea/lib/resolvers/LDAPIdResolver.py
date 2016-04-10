@@ -288,6 +288,9 @@ class IdResolver (UserIdResolver):
                           search_filter="(&" + self.searchfilter + ")",
                           attributes=self.userinfo.values())
         else:
+            if self.uidtype == "objectGUID":
+                userId = uuid.UUID("{%s}" % userId).bytes_le
+                userId = escape_bytes(userId)
             filter = "(&%s(%s=%s))" %\
                 (self.searchfilter, self.uidtype, userId)
             self.l.search(search_base=self.basedn,
@@ -662,8 +665,6 @@ class IdResolver (UserIdResolver):
         takes the attributes and maps them to the LDAP attributes
         :param attributes: Attributes to be updated
         :type attributes: dict
-        :param uid: The uid of the user object in the resolver
-        :type uid: basestring
         :return: dict with attribute name as keys and values
         """
         ldap_attributes = {}
@@ -684,7 +685,8 @@ class IdResolver (UserIdResolver):
 
     def _create_ldap_modify_changes(self, attributes, uid):
         """
-        takes the attributes and maps them to the LDAP attributes
+        Identifies if an LDAP attribute already exists and if the value needs to be updated, deleted or added.
+
         :param attributes: Attributes to be updated
         :type attributes: dict
         :param uid: The uid of the user object in the resolver
@@ -692,10 +694,11 @@ class IdResolver (UserIdResolver):
         :return: dict with attribute name as keys and values
         """
         modify_changes = {}
+        uinfo = self.getUserInfo(uid)
 
         for fieldname, value in attributes.iteritems():
             if value:
-                if fieldname in self.getUserInfo(uid):
+                if fieldname in uinfo:
                     modify_changes[fieldname] = [MODIFY_REPLACE, [value]]
                 else:
                     modify_changes[fieldname] = [MODIFY_ADD, [value]]
@@ -726,9 +729,6 @@ class IdResolver (UserIdResolver):
 
             mapped = self._create_ldap_modify_changes(attributes, uid)
             params = self._attributes_to_ldap_attributes(mapped)
-            # We can not modify the sAMAccountName
-            if "sAMAccountName" in params:
-                del(params["sAMAccountName"])
             self.l.modify(self._getDN(uid), params)
         except Exception as e:
             log.error("Error accessing LDAP server: %s" % e)
