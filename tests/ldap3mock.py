@@ -27,7 +27,7 @@ from __future__ import (
 
 DIRECTORY = "tests/testdata/tmp_directory"
 import six
-import ast
+from ast import literal_eval
 import hashlib
 import ldap3
 from ldap3.utils.conv import check_escape
@@ -325,10 +325,9 @@ class Ldap3Mock(object):
         try:
             with open(directory, 'r') as f:
                 data = f.read()
+                return literal_eval(data)
         except OSError as e:
             raise
-
-        return ast.literal_eval(data)
 
     @property
     def calls(self):
