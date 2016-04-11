@@ -152,18 +152,16 @@ class Connection(object):
             index = self._find_user(dn)
         except StopIteration:
             # If we get here the user doesn't exist so continue
-            pass
+	    # Create a entry object for the new user
+	    entry = {}
+	    entry['dn'] = dn
+	    entry['attributes'] = attributes
         else:
             # User already exists
             self.result["description"] = "failure"
             self.result["result"] = 68 
             self.result["message"] = "Error entryAlreadyExists for %s" % dn
             return False
-
-        # Create a entry object for the new user
-        entry = {}
-        entry['dn'] = dn
-        entry['attributes'] = attributes
 
         # Add the user entry to the directory
         self.directory.append(entry)

@@ -688,7 +688,8 @@ class IdResolver (UserIdResolver):
                 from privacyidea.local.lib.resolvers.callbacks import beforeLDAPAdd 
                 uid, object_class, params = beforeLDAPAdd(uid, object_class, params)
             except Exception as e:
-                pass
+                log.debug("Callback before_LDAP_Add not found")
+
             self.l.add(uid, object_class, params)
         except Exception as e:
             log.error("Error accessing LDAP server: %s" % e)
