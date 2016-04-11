@@ -371,7 +371,8 @@ class Ldap3Mock(object):
 
         return "FakeServerObject"
 
-    def _check_password(self, user_supplied_pw, reference_pw):
+    @staticmethod
+    def _check_password(user_supplied_pw, reference_pw):
         # Strip the label from the string
         label_removed = reference_pw[6:]
 

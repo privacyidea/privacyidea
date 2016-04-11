@@ -748,7 +748,8 @@ class IdResolver (UserIdResolver):
 
         return ldap_attributes
 
-    def _create_ssha(self, password):
+    @staticmethod
+    def _create_ssha(password):
         """
         Encodes the given password as a base64 SSHA hash
         :param password: string to hash 
