@@ -217,7 +217,7 @@ class Connection(object):
             # If we get here the user doesn't exist so continue
             self.result["description"] = "failure"
             self.result["result"] = 32
-            self.result["message"] = "Error no such object: %s" % dn
+            self.result["message"] = "Error no such object: {0!s}".format(dn)
             return False
 
         # extract the hash we are interested in

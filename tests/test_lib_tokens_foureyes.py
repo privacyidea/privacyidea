@@ -53,7 +53,7 @@ class FourEyesTokenTestCase(MyTestCase):
 
         init_token({"serial": "eye1",
                     "type": "4eyes",
-                    "4eyes": "%s:2" % self.realm1,
+                    "4eyes": "{0!s}:2".format(self.realm1),
                     "separator": " "})
 
         r = check_serial_pass("eye1", "pin1password1 pin2password2")

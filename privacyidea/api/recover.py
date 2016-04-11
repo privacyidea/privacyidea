@@ -60,7 +60,7 @@ def get_recover_code():
     email = getParam(param, "email", required)
     r = create_recoverycode(user_obj, email, base_url=request.base_url)
     g.audit_object.log({"success": r,
-                        "info": "%s" % user_obj})
+                        "info": "{0!s}".format(user_obj)})
     return send_result(r)
 
 
@@ -85,5 +85,5 @@ def reset_password():
         # set password
         r = user_obj.update_user_info({"password": password})
         g.audit_object.log({"success": r,
-                            "info": "%s" % user_obj})
+                            "info": "{0!s}".format(user_obj)})
     return send_result(r)

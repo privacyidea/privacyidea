@@ -39,13 +39,13 @@ class MotpTokenTestCase(MyTestCase):
                     realm=self.realm1,
                     resolver=self.resolvername1)
 
-        user_str = "%s" % user
+        user_str = "{0!s}".format(user)
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
 
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
 
-        user_repr = "%r" % user
+        user_repr = "{0!r}".format(user)
         expected = "User(login='root', realm='realm1', resolver='resolver1')"
         self.assertTrue(user_repr == expected, user_repr)
 
@@ -73,7 +73,7 @@ class MotpTokenTestCase(MyTestCase):
 
         # check pin+otp:
         token.set_pin(self.otppin)
-        r = token.authenticate("%saba73b" % self.otppin)
+        r = token.authenticate("{0!s}aba73b".format(self.otppin))
         self.assertTrue(r[0], r)
         self.assertTrue(r[1] == -1, r)
 
@@ -162,7 +162,7 @@ class MotpTokenTestCase(MyTestCase):
             otp = otps[i]
             sotp = motp1.calcOtp(e, key, pin)
 
-            self.assertTrue(sotp == otp, "%s==%s" % (sotp, otp))
+            self.assertTrue(sotp == otp, "{0!s}=={1!s}".format(sotp, otp))
             i += 1
 
     def test_06_reuse_otp_value(self):

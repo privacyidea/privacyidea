@@ -157,7 +157,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
         if 1 == int(self.get_tokeninfo("radius.local_checkpin")):
             local_check = True
-        log.debug("local checking pin? %r" % local_check)
+        log.debug("local checking pin? {0!r}".format(local_check))
 
         return local_check
 
@@ -203,7 +203,7 @@ class RadiusTokenClass(RemoteTokenClass):
             radius_server_object = get_radius(radius_identifier)
             radius_server = radius_server_object.config.server
             radius_port = radius_server_object.config.port
-            radius_server = "%s:%s" % (radius_server, radius_port)
+            radius_server = "{0!s}:{1!s}".format(radius_server, radius_port)
             radius_secret = radius_server_object.get_secret()
             radius_dictionary = radius_server_object.config.dictionary
 
@@ -221,8 +221,7 @@ class RadiusTokenClass(RemoteTokenClass):
             radius_secret = binascii.unhexlify(secret.getKey())
 
         # here we also need to check for radius.user
-        log.debug("checking OTP len:%s on radius server: %s, user: %s" 
-                  % (len(otpval), radius_server, radius_user))
+        log.debug("checking OTP len:{0!s} on radius server: {1!s}, user: {2!s}".format(len(otpval), radius_server, radius_user))
 
         try:
             # pyrad does not allow to set timeout and retries.
@@ -286,8 +285,8 @@ class RadiusTokenClass(RemoteTokenClass):
                             (r_server, radius_user))
 
         except Exception as ex:  # pragma: no cover
-            log.error("Error contacting radius Server: %r" % (ex))
-            log.debug("%s" % traceback.format_exc())
+            log.error("Error contacting radius Server: {0!r}".format((ex)))
+            log.debug("{0!s}".format(traceback.format_exc()))
 
         return otp_count
 

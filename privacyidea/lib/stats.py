@@ -60,15 +60,15 @@ def get_statistics(auditobject, start_time=datetime.datetime.now()
 
     # authentication successful/fail per user or serial
     for key in ["user", "serial"]:
-        result["validate_%s_plot" % key] = _get_success_fail(df, key)
+        result["validate_{0!s}_plot".format(key)] = _get_success_fail(df, key)
 
     # get simple usage
     for key in ["serial", "action"]:
-        result["%s_plot" % key] = _get_number_of(df, key)
+        result["{0!s}_plot".format(key)] = _get_number_of(df, key)
 
     # failed authentication requests
     for key in ["user", "serial"]:
-        result["validate_failed_%s_plot" % key] = _get_fail(df, key)
+        result["validate_failed_{0!s}_plot".format(key)] = _get_fail(df, key)
 
     result["admin_plot"] = _get_number_of(df, "action", nums=20)
 
@@ -90,10 +90,10 @@ def _get_success_fail(df, key):
         o_data = output.getvalue()
         output.close()
         image_data = o_data.encode("base64")
-        image_uri = 'data:image/png;base64,%s' % image_data
+        image_uri = 'data:image/png;base64,{0!s}'.format(image_data)
     except Exception as exx:
         log.info(exx)
-        image_uri = "%s" % exx
+        image_uri = "{0!s}".format(exx)
     return image_uri
 
 def _get_fail(df, key):
@@ -118,10 +118,10 @@ def _get_fail(df, key):
         o_data = output.getvalue()
         output.close()
         image_data = o_data.encode("base64")
-        image_uri = 'data:image/png;base64,%s' % image_data
+        image_uri = 'data:image/png;base64,{0!s}'.format(image_data)
     except Exception as exx:
         log.info(exx)
-        image_uri = "%s" % exx
+        image_uri = "{0!s}".format(exx)
     return image_uri
 
 
@@ -147,13 +147,13 @@ def _get_number_of(df, key, nums=5):
         fig = series.plot(ax=ax, kind="bar", colormap="Blues",
                           legend=False,
                           stacked=False,
-                          title="Numbers of %s" % key,
+                          title="Numbers of {0!s}".format(key),
                           grid=True).get_figure()
         fig.savefig(output, format="png")
         o_data = output.getvalue()
         output.close()
         image_data = o_data.encode("base64")
-        image_uri = 'data:image/png;base64,%s' % image_data
+        image_uri = 'data:image/png;base64,{0!s}'.format(image_data)
     except Exception as exx:
         log.info(exx)
         image_uri = "No data"

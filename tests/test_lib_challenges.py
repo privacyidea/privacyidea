@@ -19,7 +19,7 @@ class ChallengeTestCase(MyTestCase):
     def test_01_challenge(self):
 
         set_policy("chalresp", scope=SCOPE.AUTHZ,
-                   action="%s=hotp" % ACTION.CHALLENGERESPONSE)
+                   action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
         token = init_token({"genkey": 1, "serial": "CHAL1", "pin": "pin"})
         from privacyidea.lib.token import check_serial_pass
         r = check_serial_pass(token.token.serial, "pin")

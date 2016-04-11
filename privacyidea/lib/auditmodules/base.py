@@ -119,7 +119,7 @@ class Audit(object):  # pragma: no cover
         :type count: int
         :return:
         """
-        self.audit_data['action_detail'] = "tokennum = %s" % str(count)
+        self.audit_data['action_detail'] = "tokennum = {0!s}".format(str(count))
 
     @log_with(log)
     def read_keys(self, pub, priv):
@@ -142,7 +142,7 @@ class Audit(object):  # pragma: no cover
             self.private = f.read()
             f.close()
         except Exception as e:
-            log.error("Error reading private key %s: (%r)" % (priv, e))
+            log.error("Error reading private key {0!s}: ({1!r})".format(priv, e))
             raise e
 
         try:
@@ -150,7 +150,7 @@ class Audit(object):  # pragma: no cover
             self.public = f.read()
             f.close()
         except Exception as e:
-            log.error("Error reading public key %s: (%r)" % (pub, e))
+            log.error("Error reading public key {0!s}: ({1!r})".format(pub, e))
             raise e
 
     def get_audit_id(self):

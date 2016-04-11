@@ -126,7 +126,7 @@ class IdResolver (UserIdResolver):
         if self.fileName == "":
             self.fileName = "/etc/passwd"
 
-        log.info('loading users from file %s from within %r' % (self.fileName,
+        log.info('loading users from file {0!s} from within {1!r}'.format(self.fileName,
                                                                 os.getcwd()))
         with open(self.fileName, "r") as fileHandle:
             ID = self.sF["userid"]
@@ -141,10 +141,10 @@ class IdResolver (UserIdResolver):
                     continue
 
                 fields = line.split(":", 7)
-                self.nameDict["%s" % fields[NAME]] = fields[ID]
+                self.nameDict["{0!s}".format(fields[NAME])] = fields[ID]
 
                 # for speed reason - build a revers lookup
-                self.reversDict[fields[ID]] = "%s" % fields[NAME]
+                self.reversDict[fields[ID]] = "{0!s}".format(fields[NAME])
 
                 # for full info store the line
                 self.descDict[fields[ID]] = fields
@@ -190,22 +190,21 @@ class IdResolver (UserIdResolver):
         :return: True or False
         :rtype: bool
         """
-        log.info("checking password for user uid %s" % uid)
+        log.info("checking password for user uid {0!s}".format(uid))
         cryptedpasswd = self.passDict[uid]
-        log.debug("We found the crypted pass %s for uid %s"
-                  % (cryptedpasswd, uid))
+        log.debug("We found the crypted pass {0!s} for uid {1!s}".format(cryptedpasswd, uid))
         if cryptedpasswd:
             if cryptedpasswd in ['x', '*']:
                 err = "Sorry, currently no support for shadow passwords"
-                log.error("%s" % err)
+                log.error("{0!s}".format(err))
                 raise NotImplementedError(err)
             cp = crypt.crypt(password, cryptedpasswd)
-            log.debug("crypted pass is %s" % cp)
+            log.debug("crypted pass is {0!s}".format(cp))
             if crypt.crypt(password, cryptedpasswd) == cryptedpasswd:
-                log.info("successfully authenticated user uid %s" % uid)
+                log.info("successfully authenticated user uid {0!s}".format(uid))
                 return True
             else:
-                log.warning("user uid %s failed to authenticate" % uid)
+                log.warning("user uid {0!s} failed to authenticate".format(uid))
                 return False
         else:
             log.warning("Failed to verify password. No crypted password "

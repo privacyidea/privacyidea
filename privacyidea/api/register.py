@@ -162,17 +162,17 @@ def register_post():
     # Send the registration key via email
     email_sent = send_email_identifier(smtpconfig, email,
                                        "Your privacyIDEA registration",
-                                       "Your registration token is %s" %
-                                       registration_key)
+                                       "Your registration token is {0!s}".format(
+                                       registration_key))
     if not email_sent:
-        log.warning("Failed to send registration email to %s" % email)
+        log.warning("Failed to send registration email to {0!s}".format(email))
         # delete registration token
         token.delete()
         # delete user
         user.delete()
         raise RegistrationError("Failed to send email!")
 
-    log.debug("Registration email sent to %s" % email)
+    log.debug("Registration email sent to {0!s}".format(email))
 
     g.audit_object.log({"success": email_sent})
     return send_result(email_sent)

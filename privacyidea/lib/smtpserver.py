@@ -87,17 +87,17 @@ class SMTPServer(object):
         mail.ehlo()
         # Start TLS if required
         if config.tls:
-            log.debug("Trying to STARTTLS: %s" % config.tls)
+            log.debug("Trying to STARTTLS: {0!s}".format(config.tls))
             mail.starttls()
         # Authenticate, if a username is given.
         if config.username:
-            log.debug("Doing authentication with %s" % config.username)
+            log.debug("Doing authentication with {0!s}".format(config.username))
             password = decryptPassword(config.password)
             if password == FAILED_TO_DECRYPT_PASSWORD:
                 password = config.password
             mail.login(config.username, password)
         r = mail.sendmail(mail_from, recipient, msg.as_string())
-        log.info("Mail sent: %s" % r)
+        log.info("Mail sent: {0!s}".format(r))
         # r is a dictionary like {"recp@destination.com": (200, 'OK')}
         # we change this to True or False
         success = True
@@ -105,7 +105,7 @@ class SMTPServer(object):
             res_id, res_text = r.get(one_recipient, (200, "OK"))
             if res_id != 200 and res_text != "OK":
                 success = False
-                log.error("Failed to send email to %s: %s, %s" % (one_recipient,
+                log.error("Failed to send email to {0!s}: {1!s}, {2!s}".format(one_recipient,
                                                                   res_id,
                                                                   res_text))
         mail.quit()

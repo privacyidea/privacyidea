@@ -55,7 +55,7 @@ SALT_SIZE = 10
 
 def check_password(environ, username, password):
     PRIVACYIDEA, REDIS, SSLVERIFY = _get_config()
-    syslog.syslog(syslog.LOG_DEBUG, "Authentication with %s, %s, %s" % (
+    syslog.syslog(syslog.LOG_DEBUG, "Authentication with {0!s}, {1!s}, {2!s}".format(
         PRIVACYIDEA, REDIS, SSLVERIFY))
     r_value = UNAUTHORIZED
     rd = redis.Redis(REDIS)
@@ -84,7 +84,7 @@ def check_password(environ, username, password):
                 # requests < 1.0
                 json_response = response.json
                 syslog.syslog(syslog.LOG_DEBUG, "requests < 1.0")
-                syslog.syslog(syslog.LOG_DEBUG, "%s" % traceback.format_exc())
+                syslog.syslog(syslog.LOG_DEBUG, "{0!s}".format(traceback.format_exc()))
 
             if json_response.get("result", {}).get("value"):
                 rd.setex(key, _generate_digest(password), seconds)
@@ -105,7 +105,7 @@ def _generate_digest(password):
 
 
 def _generate_key(username, environ):
-    key = "%s+%s+%s+%s" % (environ.get("SERVER_NAME", ""),
+    key = "{0!s}+{1!s}+{2!s}+{3!s}".format(environ.get("SERVER_NAME", ""),
                            environ.get("SERVER_PORT", ""),
                            environ.get("DOCUMENT_ROOT", ""),
                            username)
@@ -135,7 +135,7 @@ def _get_config():
             SSLVERIFY = False
         REDIS = config_file.get("DEFAULT", "redis") or DEFAULT_REDIS
     except ConfigParser.NoOptionError as exx:
-        syslog.syslog(syslog.LOG_ERR, "%s" % exx)
-    syslog.syslog(syslog.LOG_DEBUG, "Reading configuration %s, %s, %s" % (
+        syslog.syslog(syslog.LOG_ERR, "{0!s}".format(exx))
+    syslog.syslog(syslog.LOG_DEBUG, "Reading configuration {0!s}, {1!s}, {2!s}".format(
         PRIVACYIDEA, REDIS, SSLVERIFY))
     return PRIVACYIDEA, REDIS, SSLVERIFY

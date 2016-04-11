@@ -183,8 +183,8 @@ class TokenClass(object):
         """
         user_object = self.user
         user_info = user_object.info
-        user_identifier = "%s_%s" % (user_object.login, user_object.realm)
-        user_displayname = "%s %s" % (user_info.get("givenname", "."),
+        user_identifier = "{0!s}_{1!s}".format(user_object.login, user_object.realm)
+        user_displayname = "{0!s} {1!s}".format(user_info.get("givenname", "."),
                                       user_info.get("surname", "."))
         return user_identifier, user_displayname
 
@@ -1076,10 +1076,10 @@ class TokenClass(object):
         """
         ldict = {}
         for attr in self.__dict__:
-            key = "%r" % attr
-            val = "%r" % getattr(self, attr)
+            key = "{0!r}".format(attr)
+            val = "{0!r}".format(getattr(self, attr))
             ldict[key] = val
-        res = "<%r %r>" % (self.__class__, ldict)
+        res = "<{0!r} {1!r}>".format(self.__class__, ldict)
         return res
 
     def get_init_detail(self, params=None, user=None):
@@ -1111,7 +1111,7 @@ class TokenClass(object):
 
         if otpkey is not None:
             response_detail["otpkey"] = {"description": "OTP seed",
-                                         "value": "seed://%s" % otpkey,
+                                         "value": "seed://{0!s}".format(otpkey),
                                          "img": create_img(otpkey, width=200)}
 
         return response_detail
@@ -1343,8 +1343,8 @@ class TokenClass(object):
         :param g: The Flask global object g
         :return: Flask Response or text
         """
-        raise ParameterError("%s does not support the API endpoint" %
-                             cls.get_tokentype())
+        raise ParameterError("{0!s} does not support the API endpoint".format(
+                             cls.get_tokentype()))
 
     @staticmethod
     def test_config(params=None):

@@ -302,7 +302,7 @@ def list_api():
     # If the admin wants to see only one realm, then do it:
     if realm and (realm in filterRealm or '*' in filterRealm):
         filterRealm = [realm]
-    g.audit_object.log({'info': "realm: %s" % (filterRealm)})
+    g.audit_object.log({'info': "realm: {0!s}".format((filterRealm))})
 
     # get list of tokens as a dictionary
     tokens = get_tokens_paginate(serial=serial, realm=realm, page=page,
@@ -645,21 +645,21 @@ def set_api(serial=None):
 
     if count_auth_success_max is not None:
         g.audit_object.add_to_log({'action_detail':
-                                       "count_auth_success_max=%r, " %
-                                       count_auth_success_max})
+                                       "count_auth_success_max={0!r}, ".format(
+                                       count_auth_success_max)})
         res += set_count_auth(serial, count_auth_success_max, user=user,
                               max=True, success=True)
 
     if validity_period_end is not None:
         g.audit_object.add_to_log({'action_detail':
-                                       "validity_period_end=%r, " %
-                                       validity_period_end})
+                                       "validity_period_end={0!r}, ".format(
+                                       validity_period_end)})
         res += set_validity_period_end(serial, user, validity_period_end)
 
     if validity_period_start is not None:
         g.audit_object.add_to_log({'action_detail':
-                                       "validity_period_start=%r, " %
-                                       validity_period_start})
+                                       "validity_period_start={0!r}, ".format(
+                                       validity_period_start)})
         res += set_validity_period_start(serial, user, validity_period_start)
 
     g.audit_object.log({"success": True})
@@ -752,13 +752,12 @@ def loadtokens_api(filename=None):
         file_contents = token_file
 
     if file_contents == "":
-        log.error("Error loading/importing token file. file %s empty!" %
-                  filename)
+        log.error("Error loading/importing token file. file {0!s} empty!".format(
+                  filename))
         raise ParameterError("Error loading token file. File empty!")
 
     if file_type not in known_types:
-        log.error("Unknown file type: >>%s<<. We only know the types: %s" %
-                  (file_type, ', '.join(known_types)))
+        log.error("Unknown file type: >>{0!s}<<. We only know the types: {1!s}".format(file_type, ', '.join(known_types)))
         raise TokenAdminError("Unknown file type: >>%s<<. We only know the "
                               "types: %s" % (file_type,
                                              ', '.join(known_types)))
@@ -777,9 +776,9 @@ def loadtokens_api(filename=None):
     # Now import the Tokens from the dictionary
     ret = ""
     for serial in TOKENS:
-        log.debug("importing token %s" % TOKENS[serial])
+        log.debug("importing token {0!s}".format(TOKENS[serial]))
 
-        log.info("initialize token. serial: %s, realm: %s" % (serial,
+        log.info("initialize token. serial: {0!s}, realm: {1!s}".format(serial,
                                                               tokenrealms))
 
         init_param = {'serial': serial,
@@ -800,7 +799,7 @@ def loadtokens_api(filename=None):
 
         init_token(init_param, tokenrealms=tokenrealms)
 
-    g.audit_object.log({'info': "%s, %s (imported: %i)" % (file_type,
+    g.audit_object.log({'info': "{0!s}, {1!s} (imported: {2:d})".format(file_type,
                                                            token_file,
                                                            len(TOKENS)),
                         'serial': ', '.join(TOKENS.keys())})
@@ -877,7 +876,7 @@ def lost_api(serial=None):
     if userobj:
         toks = get_tokens(serial=serial, user=userobj)
         if not toks:
-            raise TokenAdminError("The user %s does not own the token %s" % (
+            raise TokenAdminError("The user {0!s} does not own the token {1!s}".format(
                 userobj, serial))
 
     options = {"g": g,
@@ -922,11 +921,11 @@ def get_serial_by_otp_api(otp=None):
         assigned = True
 
     tokenobj_list = get_tokens(tokentype=ttype,
-                               serial="*%s*" % serial_substr,
+                               serial="*{0!s}*".format(serial_substr),
                                assigned=assigned)
     serial = get_serial_by_otp(tokenobj_list, otp=otp, window=window)
 
     g.audit_object.log({"success": True,
-                        "info": "get %s by OTP" % serial})
+                        "info": "get {0!s} by OTP".format(serial)})
 
     return send_result({"serial": serial})

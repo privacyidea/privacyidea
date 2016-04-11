@@ -87,28 +87,28 @@ class LdapMachineResolver(BaseMachineResolver):
         if not any:
             if hostname:
                 if substring:
-                    filter += "(%s=*%s*)" % (hostname_attribute, hostname)
+                    filter += "({0!s}=*{1!s}*)".format(hostname_attribute, hostname)
                 else:
-                    filter += "(%s=%s)" % (hostname_attribute, hostname)
+                    filter += "({0!s}={1!s})".format(hostname_attribute, hostname)
             if ip:
                 if substring:
-                    filter += "(%s=*%s*)" % (ip_attribute, ip)
+                    filter += "({0!s}=*{1!s}*)".format(ip_attribute, ip)
                 else:
-                    filter += "(%s=%s)" % (ip_attribute, ip)
+                    filter += "({0!s}={1!s})".format(ip_attribute, ip)
         filter += ")"
         if any:
             # Now we need to extend the search filter
             # like this  (& (&(....)) (|(ip=...)(host=...)) )
             any_filter = "(|"
             if id_attribute:
-                any_filter += "(%s=*%s*)" % (id_attribute, any)
+                any_filter += "({0!s}=*{1!s}*)".format(id_attribute, any)
             if hostname_attribute:
-                any_filter += "(%s=*%s*)" % (hostname_attribute, any)
+                any_filter += "({0!s}=*{1!s}*)".format(hostname_attribute, any)
             if ip_attribute:
-                any_filter += "(%s=*%s*)" % (ip_attribute, any)
+                any_filter += "({0!s}=*{1!s}*)".format(ip_attribute, any)
             any_filter += ")"
 
-            filter = "(&%s%s)" % (filter, any_filter)
+            filter = "(&{0!s}{1!s})".format(filter, any_filter)
 
         return filter
 
@@ -173,8 +173,8 @@ class LdapMachineResolver(BaseMachineResolver):
                                             hostname=machine['hostname'],
                                             ip=machine_ip))
             except Exception as exx:  # pragma: no cover
-                log.error("Error during fetching LDAP objects: %r" % exx)
-                log.debug("%s" % traceback.format_exc())
+                log.error("Error during fetching LDAP objects: {0!r}".format(exx))
+                log.debug("{0!s}".format(traceback.format_exc()))
 
         return machines
 
@@ -196,8 +196,8 @@ class LdapMachineResolver(BaseMachineResolver):
         machine_id = None
         machines = self.get_machines(hostname=hostname, ip=ip)
         if len(machines) > 1:
-            raise Exception("More than one machine found in LDAP resolver %s" %
-                            self.name)
+            raise Exception("More than one machine found in LDAP resolver {0!s}".format(
+                            self.name))
 
         if len(machines) == 1:
             machine_id = machines[0].id
@@ -301,6 +301,6 @@ class LdapMachineResolver(BaseMachineResolver):
             success = True
 
         except Exception as e:
-            desc = "%r" % e
+            desc = "{0!r}".format(e)
 
         return success, desc

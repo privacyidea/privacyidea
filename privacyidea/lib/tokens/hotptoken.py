@@ -193,8 +193,8 @@ class HotpTokenClass(TokenClass):
                                                                     width=250)
                                                   }
                 except Exception as ex:  # pragma: no cover
-                    log.error("%s" % (traceback.format_exc()))
-                    log.error('failed to set oath or google url: %r' % ex)
+                    log.error("{0!s}".format((traceback.format_exc())))
+                    log.error('failed to set oath or google url: {0!r}'.format(ex))
                     
         return response_detail
 
@@ -352,10 +352,10 @@ class HotpTokenClass(TokenClass):
             # we need to do this manually here:
             self.inc_otp_counter(res)
         if res == -1:
-            msg = "otp counter %r was not found" % otp
+            msg = "otp counter {0!r} was not found".format(otp)
         else:
-            msg = "otp counter %r was found" % otp
-        log.debug("end. %r: res %r" % (msg, res))
+            msg = "otp counter {0!r} was found".format(otp)
+        log.debug("end. {0!r}: res {1!r}".format(msg, res))
         return res
 
     @log_with(log)
@@ -404,7 +404,7 @@ class HotpTokenClass(TokenClass):
 
         # if _autosync is not enabled
         if autosync is False:
-            log.debug("end. _autosync is not enabled : res %r" % (res))
+            log.debug("end. _autosync is not enabled : res {0!r}".format((res)))
             return res
 
         info = self.get_tokeninfo()
@@ -476,7 +476,7 @@ class HotpTokenClass(TokenClass):
         counter = hmac2Otp.checkOtp(otp1, syncWindow)
 
         if counter == -1:
-            log.debug("exit. First counter (-1) not found  ret: %r" % (ret))
+            log.debug("exit. First counter (-1) not found  ret: {0!r}".format((ret)))
             return ret
 
         nextOtp = hmac2Otp.generate(counter + 1)
@@ -489,7 +489,7 @@ class HotpTokenClass(TokenClass):
         ret = True
         self.inc_otp_counter(counter + 1, True)
 
-        log.debug("end. resync was successful: ret: %r" % (ret))
+        log.debug("end. resync was successful: ret: {0!r}".format((ret)))
         return ret
 
     @staticmethod
@@ -503,8 +503,7 @@ class HotpTokenClass(TokenClass):
         try:
             timeOut = int(get_from_config("AutoResyncTimeout", 5 * 60))
         except Exception as ex:
-            log.warning("AutoResyncTimeout: value error %r - reset to 5*60"
-                        % (ex))
+            log.warning("AutoResyncTimeout: value error {0!r} - reset to 5*60".format((ex)))
             timeOut = 5 * 60
 
         return timeOut
@@ -528,10 +527,10 @@ class HotpTokenClass(TokenClass):
         otpval = hmac2Otp.generate(inc_counter=False)
 
         pin = self.token.get_pin()
-        combined = "%s%s" % (otpval, pin)
+        combined = "{0!s}{1!s}".format(otpval, pin)
 
         if get_from_config("PrependPin") == "True":
-            combined = "%s%s" % (pin, otpval)
+            combined = "{0!s}{1!s}".format(pin, otpval)
 
         return 1, pin, otpval, combined
 
@@ -561,7 +560,7 @@ class HotpTokenClass(TokenClass):
         secretHOtp = self.token.get_otpkey()
         hmac2Otp = HmacOtp(secretHOtp, self.token.count, otplen,
                            self.get_hashlib(self.hashlib))
-        log.debug("retrieving %i OTP values for token %s" % (count, hmac2Otp))
+        log.debug("retrieving {0:d} OTP values for token {1!s}".format(count, hmac2Otp))
 
         if count > 0:
             error = "OK"

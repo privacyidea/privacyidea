@@ -80,7 +80,7 @@ class OCRASuite(object):
         self.sha = hotp_sha_trunc[1]
         self.truncation = int(hotp_sha_trunc[2])
         if hotp != "HOTP":
-            raise Exception("Only HOTP is allowed. You specified %s" % hotp)
+            raise Exception("Only HOTP is allowed. You specified {0!s}".format(hotp))
         if self.sha not in ["SHA1", "SHA256", "SHA512"]:
             raise Exception("Only SHA1, SHA256 or SHA512 is allowed. You "
                             "specified %s" % self.sha)
@@ -252,12 +252,12 @@ class OCRA(object):
                 counter = struct.pack('>Q', int(counter))
                 data_input += counter
             else:
-                raise Exception("The ocrasuite %s requires a counter" %
-                                self.ocrasuite)
+                raise Exception("The ocrasuite {0!s} requires a counter".format(
+                                self.ocrasuite))
         # Check for Question
         if self.ocrasuite_obj.challenge_type == "QN":
             # In case of QN
-            question = '%x' % int(question)
+            question = '{0:x}'.format(int(question))
             question += '0' * (len(question) % 2)
             question = binascii.unhexlify(question)
             question += '\0' * (128-len(question))
@@ -278,12 +278,12 @@ class OCRA(object):
                     pin).digest()
                 data_input += pin_hash
             else:
-                raise Exception("The ocrasuite %s requires a PIN!" %
-                                self.ocrasuite)
+                raise Exception("The ocrasuite {0!s} requires a PIN!".format(
+                                self.ocrasuite))
         elif self.ocrasuite_obj.signature_type == "T":
             if not timesteps:
-                raise Exception("The ocrasuite %s requires timesteps" %
-                                self.ocrasuite)
+                raise Exception("The ocrasuite {0!s} requires timesteps".format(
+                                self.ocrasuite))
             # In case of Time
             timesteps = int(timesteps, 16)
             timesteps = struct.pack('>Q', int(timesteps))

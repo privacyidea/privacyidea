@@ -49,7 +49,7 @@ class APIUsersTestCase(MyTestCase):
         # create realm
         realm = u"realm1"
         resolvers = u"r1, r2"
-        with self.app.test_request_context('/realm/%s' % realm,
+        with self.app.test_request_context('/realm/{0!s}'.format(realm),
                                            data={u"resolvers": resolvers},
                                            method='POST',
                                            headers={"Authorization": self.at}):
@@ -158,7 +158,7 @@ class APIUsersTestCase(MyTestCase):
         # Get user authentication and update by user.
         with self.app.test_request_context('/auth',
                                            method='POST',
-                                           data={"username": "wordy@%s" % realm,
+                                           data={"username": "wordy@{0!s}".format(realm),
                                                  "password": "passwort"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -189,7 +189,7 @@ class APIUsersTestCase(MyTestCase):
         # "wordy2", he updated his own password.
         with self.app.test_request_context('/auth',
                                            method='POST',
-                                           data={"username": "wordy@%s" % realm,
+                                           data={"username": "wordy@{0!s}".format(realm),
                                                  "password": "newPassword"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -202,7 +202,7 @@ class APIUsersTestCase(MyTestCase):
             self.assertTrue(role == "user", result)
 
         # Delete the users
-        with self.app.test_request_context('/user/%s/%s' % (resolver, "wordy"),
+        with self.app.test_request_context('/user/{0!s}/{1!s}'.format(resolver, "wordy"),
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()

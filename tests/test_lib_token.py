@@ -180,7 +180,7 @@ class TokenTestCase(MyTestCase):
     def test_05_get_num_tokens_in_realm(self):
         # one active token
         self.assertTrue(get_num_tokens_in_realm(self.realm1) == 1,
-                        "%r" % get_num_tokens_in_realm(self.realm1))
+                        "{0!r}".format(get_num_tokens_in_realm(self.realm1)))
         # No active tokens
         self.assertTrue(get_num_tokens_in_realm(self.realm1, active=False) == 0)
 
@@ -191,7 +191,7 @@ class TokenTestCase(MyTestCase):
     def test_06_get_realms_of_token(self):
         # Return a list of realmnames for a token
         self.assertTrue(get_realms_of_token("hotptoken") == [self.realm1],
-                        "%s" % get_realms_of_token("hotptoken"))
+                        "{0!s}".format(get_realms_of_token("hotptoken")))
 
     def test_07_token_exist(self):
         self.assertTrue(token_exist("hotptoken"))
@@ -383,14 +383,14 @@ class TokenTestCase(MyTestCase):
         tokenobject = init_token({"serial": serial,
                                   "otpkey": "1234567890123456"})
         realms = get_realms_of_token(serial)
-        self.assertTrue(realms == [], "%s" % realms)
+        self.assertTrue(realms == [], "{0!s}".format(realms))
         rnum = set_realms(serial, [self.realm1])
         self.assertTrue(rnum == 1, rnum)
         realms = get_realms_of_token(serial)
-        self.assertTrue(realms == [self.realm1], "%s" % realms)
+        self.assertTrue(realms == [self.realm1], "{0!s}".format(realms))
         remove_token(serial=serial)
         realms = get_realms_of_token(serial)
-        self.assertTrue(realms == [], "%s" % realms)
+        self.assertTrue(realms == [], "{0!s}".format(realms))
 
 
     def test_17_set_defaults(self):
@@ -588,7 +588,7 @@ class TokenTestCase(MyTestCase):
         r = set_max_failcount(serial, 112)
         self.assertTrue(r == 1, r)
         self.assertTrue(tokenobject.token.maxfail == 112,
-                        "%s" % tokenobject.token.maxfail)
+                        "{0!s}".format(tokenobject.token.maxfail))
         remove_token(serial)
 
     def test_31_copy_token_pin(self):
@@ -603,7 +603,7 @@ class TokenTestCase(MyTestCase):
 
         # Now compare the pinhash
         self.assertTrue(tobject1.token.pin_hash == tobject2.token.pin_hash,
-                        "%s <> %s" % (tobject1.token.pin_hash,
+                        "{0!s} <> {1!s}".format(tobject1.token.pin_hash,
                                       tobject2.token.pin_hash))
 
         remove_token(serial1)
@@ -654,7 +654,7 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(r.get("pin") == True, r)
         self.assertTrue(r.get("init") == True, r)
         self.assertTrue(r.get("user") == True, r)
-        self.assertTrue(r.get("serial") == "lost%s" % serial1, r)
+        self.assertTrue(r.get("serial") == "lost{0!s}".format(serial1), r)
         remove_token("losttoken")
         remove_token("lostlosttoken")
 
@@ -772,7 +772,7 @@ class TokenTestCase(MyTestCase):
         r, reply = check_user_pass(user, "passwordasdf")
         self.assertFalse(r)
         self.assertTrue(reply.get("message") == 'The user has no tokens '
-                                                'assigned', "%s" % reply)
+                                                'assigned', "{0!s}".format(reply))
 
         user = User("cornelius", realm=self.realm1)
         r, reply = check_user_pass(user, "hotppin868912")

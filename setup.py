@@ -18,7 +18,7 @@ def get_file_contents(file_path):
         full_path = os.path.join(package_directory, file_path)
         content = open(full_path, 'r').read()
     except:
-        print >> sys.stderr, "### could not open file %r" % file_path
+        print >> sys.stderr, "### could not open file {0!r}".format(file_path)
     return content
 
 def get_file_list(file_path):

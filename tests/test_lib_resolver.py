@@ -638,7 +638,7 @@ class LDAPResolverTestCase(MyTestCase):
 
         user = "bob"
         user_id = y.getUserId(user)
-        self.assertTrue(user_id == "3", "%s" % user_id)
+        self.assertTrue(user_id == "3", "{0!s}".format(user_id))
 
         rid = y.getResolverId()
         self.assertTrue(rid == "ldap://localhost", rid)
@@ -1219,7 +1219,7 @@ class ResolverTestCase(MyTestCase):
         r = y.getUserList({"userid": "between 1001, 1000"})
         self.assertTrue(len(r) == 2, r)
         r = y.getUserList({"userid": "<=1000"})
-        self.assertTrue(len(r) == 1, "%s" % r)
+        self.assertTrue(len(r) == 1, "{0!s}".format(r))
         r = y.getUserList({"userid": ">=1000"})
         self.assertTrue(len(r) > 1, r)
 

@@ -90,7 +90,7 @@ def create_recoverycode(user, email=None, expiration_seconds=3600,
                                           user.login, user.realm,
                                           recoverycode))
         if not r:
-            raise privacyIDEAError("Failed to send email. %s" % r)
+            raise privacyIDEAError("Failed to send email. {0!s}".format(r))
     else:
         raise ConfigAdminError("Missing configuration "
                                "recovery.identifier.")
@@ -113,7 +113,7 @@ def check_recoverycode(user, recoverycode):
     # delete old entries
     r = PasswordReset.query.filter(and_(PasswordReset.expiration <
                                       datetime.now())).delete()
-    log.debug("%s old password recoverycodes deleted." % r)
+    log.debug("{0!s} old password recoverycodes deleted.".format(r))
     sql_query = PasswordReset.query.filter(and_(PasswordReset.username ==
                                             user.login,
                                                 PasswordReset.realm
@@ -121,10 +121,10 @@ def check_recoverycode(user, recoverycode):
     for pwr in sql_query:
         if verify_with_pepper(pwr.recoverycode, recoverycode):
             recoverycode_valid = True
-            log.debug("Found valid recoverycode for user %s" % user)
+            log.debug("Found valid recoverycode for user {0!s}".format(user))
             # Delete the recovery code, so that it can only be used once!
             r = pwr.delete()
-            log.debug("%s used password recoverycode deleted." % r)
+            log.debug("{0!s} used password recoverycode deleted.".format(r))
 
     return recoverycode_valid
 
@@ -140,14 +140,14 @@ def is_password_reset():
     :return: True or False
     """
     rlist = get_resolver_list(editable=True)
-    log.debug("Number of editable resolvers: %s" % len(rlist))
+    log.debug("Number of editable resolvers: {0!s}".format(len(rlist)))
     Policy = PolicyClass()
     policy_at_all = Policy.get_policies(scope=SCOPE.USER, active=True)
-    log.debug("Policy at all: %s" % policy_at_all)
+    log.debug("Policy at all: {0!s}".format(policy_at_all))
     policy_reset_pw = Policy.get_policies(scope=SCOPE.USER,
                                           action=ACTION.PASSWORDRESET)
-    log.debug("Password reset policy: %s" % policy_reset_pw)
+    log.debug("Password reset policy: {0!s}".format(policy_reset_pw))
     pwreset = (policy_at_all and policy_reset_pw) or not policy_at_all
-    log.debug("Password reset allowed via policy: %s" % pwreset)
+    log.debug("Password reset allowed via policy: {0!s}".format(pwreset))
 
     return bool(rlist and pwreset)

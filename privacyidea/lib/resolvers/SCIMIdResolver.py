@@ -239,12 +239,12 @@ class IdResolver (UserIdResolver):
             content = cls._search_users(param.get("Resourceserver"),
                                                     access_token, "")
             num = content.get("totalResults", -1)
-            desc = "Found %s users" % num
+            desc = "Found {0!s} users".format(num)
             success = True
         except Exception as exx:
-            log.error("Failed to retrieve users: %s" % exx)
-            log.debug("%s" % traceback.format_exc(exx))
-            desc = "failed to retrieve users: %s" % exx
+            log.error("Failed to retrieve users: {0!s}".format(exx))
+            log.debug("{0!s}".format(traceback.format_exc(exx)))
+            desc = "failed to retrieve users: {0!s}".format(exx)
             
         return success, desc
 
@@ -260,7 +260,7 @@ class IdResolver (UserIdResolver):
         url = '{0}/Users?{1}'.format(resource_server, urlencode(params))
         resp = requests.get(url, headers=headers)
         if resp.status_code != 200:
-            info = "Could not get user list: %s" % resp.status_code
+            info = "Could not get user list: {0!s}".format(resp.status_code)
             log.error(info)
             raise Exception(info)
         j_content = yaml.load(resp.content)
@@ -286,7 +286,7 @@ class IdResolver (UserIdResolver):
         resp = requests.get(url, headers=headers)
 
         if resp.status_code != 200:
-            info = "Could not get user: %s" % resp.status_code
+            info = "Could not get user: {0!s}".format(resp.status_code)
             log.error(info)
             raise Exception(info)
         j_content = yaml.load(resp.content)
@@ -298,12 +298,12 @@ class IdResolver (UserIdResolver):
 
         auth = base64.encodestring(client + ':' + secret)
 
-        url = "%s/oauth/token?grant_type=client_credentials" % server
+        url = "{0!s}/oauth/token?grant_type=client_credentials".format(server)
         resp = requests.get(url,
                             headers={'Authorization': 'Basic ' + auth})
 
         if resp.status_code != 200:
-            info = "Could not get access token: %s" % resp.status_code
+            info = "Could not get access token: {0!s}".format(resp.status_code)
             log.error(info)
             raise Exception(info)
 

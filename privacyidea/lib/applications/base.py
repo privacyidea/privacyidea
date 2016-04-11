@@ -42,8 +42,7 @@ def get_machine_application_class_list():
     modules = [f.split(".")[0] for f in files if f.endswith(".py") and f !=
                "__init__.py"]
     for module in modules:
-        class_list.append("privacyidea.lib.applications.%s.MachineApplication"
-                          % module)
+        class_list.append("privacyidea.lib.applications.{0!s}.MachineApplication".format(module))
     return class_list
 
 
@@ -160,11 +159,11 @@ def get_application_types():
     for f in files:
         if f not in ["base", "__init__"]:
             try:
-                mod = import_module("privacyidea.lib.applications.%s" % f)
+                mod = import_module("privacyidea.lib.applications.{0!s}".format(f))
                 name = mod.MachineApplication.application_name
                 options = mod.MachineApplication.get_options()
                 ret[name] = {"options": options}
             except Exception as exx:
-                log.info("Can not get application type: %s" % exx)
+                log.info("Can not get application type: {0!s}".format(exx))
 
     return ret

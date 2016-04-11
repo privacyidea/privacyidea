@@ -62,7 +62,7 @@ def get_version():
     self service portal.
     """
     version = get_version_number()
-    return "privacyIDEA %s" % version
+    return "privacyIDEA {0!s}".format(version)
 
 
 def getParam(param, key, optional=True, default=None):
@@ -89,7 +89,7 @@ def getParam(param, key, optional=True, default=None):
     elif default:
         ret = default
     elif not optional:
-        raise ParameterError("Missing parameter: %r" % key, id=905)
+        raise ParameterError("Missing parameter: {0!r}".format(key), id=905)
 
     return ret
 
@@ -186,11 +186,11 @@ def send_csv_result(obj, data_key="tokens",
     """
     delim = "'"
     content_type = "application/force-download"
-    headers = {'Content-disposition': 'attachment; filename=%s' % filename}
+    headers = {'Content-disposition': 'attachment; filename={0!s}'.format(filename)}
     output = u""
     # Do the header
     for k, _v in obj.get(data_key, {})[0].items():
-        output += "%s%s%s, " % (delim, k, delim)
+        output += "{0!s}{1!s}{2!s}, ".format(delim, k, delim)
     output += "\n"
 
     # Do the data
@@ -200,7 +200,7 @@ def send_csv_result(obj, data_key="tokens",
                 value = val.replace("\n", " ")
             else:
                 value = val
-            output += "%s%s%s, " % (delim, value, delim)
+            output += "{0!s}{1!s}{2!s}, ".format(delim, value, delim)
         output += "\n"
 
     return Response(output, mimetype=content_type)
@@ -232,7 +232,7 @@ def get_all_params(param, body):
         for k, v in json_data.items():
             return_param[k] = v
     except Exception as exx:
-        log.debug("Can not get param: %s" % exx)
+        log.debug("Can not get param: {0!s}".format(exx))
 
     return return_param
 
@@ -273,11 +273,11 @@ def verify_auth_token(auth_token, required_role=None):
         r = jwt.decode(auth_token, current_app.secret_key)
     except jwt.DecodeError as err:
         raise AuthError("Authentication failure",
-                        "error during decoding your token: %s" % err,
+                        "error during decoding your token: {0!s}".format(err),
                         status=401)
     except jwt.ExpiredSignature as err:
         raise AuthError("Authentication failure",
-                        "Your token has expired: %s" % err,
+                        "Your token has expired: {0!s}".format(err),
                         status=401)
     if required_role and r.get("role") not in required_role:
         # If we require a certain role like "admin", but the users role does

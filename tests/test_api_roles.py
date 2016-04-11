@@ -61,8 +61,8 @@ class APIAuthTestCase(MyTestCase):
 
     def test_02_REMOTE_USER(self):
         # Allow remote user
-        set_policy(name="remote", scope=SCOPE.WEBUI, action="%s=allowed" %
-                                                            ACTION.REMOTE_USER)
+        set_policy(name="remote", scope=SCOPE.WEBUI, action="{0!s}=allowed".format(
+                                                            ACTION.REMOTE_USER))
 
         # Admin remote user
         with self.app.test_request_context('/auth', method='POST',
@@ -307,7 +307,7 @@ class APISelfserviceTestCase(MyTestCase):
                         tokenobject.token.resolver == "resolver1")
 
         # user can delete his own token
-        with self.app.test_request_context('/token/%s' % serial,
+        with self.app.test_request_context('/token/{0!s}'.format(serial),
                                            method='DELETE',
                                            headers={'Authorization':
                                                         self.at_user}):
@@ -323,7 +323,7 @@ class APISelfserviceTestCase(MyTestCase):
     def test_04_user_can_not_delete_another_token(self):
         self.authenticate_selfserive_user()
         assign_token(self.foreign_serial, User("cornelius", self.realm1))
-        with self.app.test_request_context('/token/%s' % self.foreign_serial,
+        with self.app.test_request_context('/token/{0!s}'.format(self.foreign_serial),
                                            method='DELETE',
                                            headers={'Authorization':
                                                         self.at_user}):
@@ -339,8 +339,8 @@ class APISelfserviceTestCase(MyTestCase):
     def test_04_user_can_not_disable_another_token(self):
         self.authenticate_selfserive_user()
         assign_token(self.foreign_serial, User("cornelius", self.realm1))
-        with self.app.test_request_context('/token/disable/%s' %
-                                                   self.foreign_serial,
+        with self.app.test_request_context('/token/disable/{0!s}'.format(
+                                                   self.foreign_serial),
                                            method='POST',
                                            headers={'Authorization':
                                                         self.at_user}):
@@ -357,8 +357,8 @@ class APISelfserviceTestCase(MyTestCase):
     def test_04_user_can_not_lost_another_token(self):
         self.authenticate_selfserive_user()
         assign_token(self.foreign_serial, User("cornelius", self.realm1))
-        with self.app.test_request_context('/token/lost/%s' %
-                                                   self.foreign_serial,
+        with self.app.test_request_context('/token/lost/{0!s}'.format(
+                                                   self.foreign_serial),
                                            method='POST',
                                            headers={'Authorization':
                                                         self.at_user}):
@@ -369,8 +369,8 @@ class APISelfserviceTestCase(MyTestCase):
     def test_05_user_can_disable_token(self):
         self.authenticate_selfserive_user()
         # User can not disable a token, that does not belong to him.
-        with self.app.test_request_context('/token/disable/%s' %
-                                                   self.foreign_serial,
+        with self.app.test_request_context('/token/disable/{0!s}'.format(
+                                                   self.foreign_serial),
                                            method='POST',
                                            headers={'Authorization':
                                                         self.at_user}):
@@ -383,7 +383,7 @@ class APISelfserviceTestCase(MyTestCase):
         self.assertTrue(tokenobject.token.active, tokenobject.token.active)
 
         # User disables his token
-        with self.app.test_request_context('/token/disable/%s' % self.my_serial,
+        with self.app.test_request_context('/token/disable/{0!s}'.format(self.my_serial),
                                            method='POST',
                                            headers={'Authorization':
                                                         self.at_user}):
@@ -397,7 +397,7 @@ class APISelfserviceTestCase(MyTestCase):
         self.assertFalse(tokenobject.token.active, tokenobject.token.active)
 
         # User enables his token
-        with self.app.test_request_context('/token/enable/%s' % self.my_serial,
+        with self.app.test_request_context('/token/enable/{0!s}'.format(self.my_serial),
                                            method='POST',
                                            headers={'Authorization':
                                                         self.at_user}):
@@ -415,8 +415,8 @@ class APISelfserviceTestCase(MyTestCase):
         # Is token disabled?
         tokenobject = get_tokens(serial=self.foreign_serial)[0]
         self.assertFalse(tokenobject.token.active, tokenobject.token.active)
-        with self.app.test_request_context('/token/enable/%s' %
-                                                   self.foreign_serial,
+        with self.app.test_request_context('/token/enable/{0!s}'.format(
+                                                   self.foreign_serial),
                                            method='POST',
                                            headers={'Authorization':
                                                         self.at_user}):
@@ -560,7 +560,7 @@ class APISelfserviceTestCase(MyTestCase):
             self.assertTrue(res.status_code == 401, res)
 
         # Can not set token realm
-        with self.app.test_request_context('/token/realm/%s' % serial,
+        with self.app.test_request_context('/token/realm/{0!s}'.format(serial),
                                             method="POST",
                                             data={"realms": "realm1"},
                                             headers={'Authorization':
@@ -601,11 +601,11 @@ class APISelfserviceTestCase(MyTestCase):
             self.assertTrue(res.status_code == 401, res)
 
     def test_41_webui_settings(self):
-        set_policy(name="webui1", scope=SCOPE.WEBUI, action="%s=%s" % (
+        set_policy(name="webui1", scope=SCOPE.WEBUI, action="{0!s}={1!s}".format(
             ACTION.TOKENPAGESIZE, 20))
-        set_policy(name="webui2", scope=SCOPE.WEBUI, action="%s=%s" % (
+        set_policy(name="webui2", scope=SCOPE.WEBUI, action="{0!s}={1!s}".format(
             ACTION.USERPAGESIZE, 20))
-        set_policy(name="webui3", scope=SCOPE.WEBUI, action="%s=%s" % (
+        set_policy(name="webui3", scope=SCOPE.WEBUI, action="{0!s}={1!s}".format(
             ACTION.LOGOUTTIME, 200))
         with self.app.test_request_context('/auth',
                                            method='POST',

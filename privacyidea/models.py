@@ -209,7 +209,7 @@ class Token(MethodsMixin, db.Model):
         self.key_enc = unicode(binascii.hexlify(enc_otp_key))
         length = len(self.key_enc)
         if length > 1024:
-            log.error("Key %s exceeds database field %d!" % (self.get_serial(),
+            log.error("Key {0!s} exceeds database field {1:d}!".format(self.get_serial(),
                                                              length))
         self.key_iv = unicode(binascii.hexlify(iv))
         self.count = 0
@@ -290,7 +290,7 @@ class Token(MethodsMixin, db.Model):
         seed_str = self._fix_spaces(self.pin_seed)
         seed = binascii.unhexlify(seed_str)
         hPin = hash(pin, seed)
-        log.debug("hPin: %s, pin: %s, seed: %s" % (binascii.hexlify(hPin),
+        log.debug("hPin: {0!s}, pin: {1!s}, seed: {2!s}".format(binascii.hexlify(hPin),
                                                    pin,
                                                    self.pin_seed))
         return binascii.hexlify(hPin)
@@ -315,10 +315,10 @@ class Token(MethodsMixin, db.Model):
             upin = pin
         if hashed is True:
             self.set_hashed_pin(upin)
-            log.debug("setPin(HASH:%r)" % self.pin_hash)
+            log.debug("setPin(HASH:{0!r})".format(self.pin_hash))
         elif hashed is False:
             self.pin_hash = "@@" + encryptPin(upin)
-            log.debug("setPin(ENCR:%r)" % self.pin_hash)
+            log.debug("setPin(ENCR:{0!r})".format(self.pin_hash))
         return self.pin_hash
 
     def check_pin(self, pin):
@@ -453,10 +453,10 @@ class Token(MethodsMixin, db.Model):
         '''
         ldict = {}
         for attr in self.__dict__:
-            key = "%r" % attr
-            val = "%r" % getattr(self, attr)
+            key = "{0!r}".format(attr)
+            val = "{0!r}".format(getattr(self, attr))
             ldict[key] = val
-        res = "<%r %r>" % (self.__class__, ldict)
+        res = "<{0!r} {1!r}>".format(self.__class__, ldict)
         return res
 
     def set_info(self, info):
@@ -672,7 +672,7 @@ class Config(db.Model):
         self.Description = unicode(Description)
 
     def __unicode__(self):
-        return "<%s (%s)>" % (self.Key, self.Type)
+        return "<{0!s} ({1!s})>".format(self.Key, self.Type)
     
     def save(self):
         db.session.add(self)
@@ -982,7 +982,7 @@ class TokenRealm(MethodsMixin, db.Model):
         :param realm_id: The id of the realm
         :param token_id: The id of the token
         """
-        log.debug("setting realm_id to %i" % realm_id)
+        log.debug("setting realm_id to {0:d}".format(realm_id))
         if realmname:
             r = Realm.query.filter_by(name=realmname).first()
             self.realm_id = r.id
@@ -1157,7 +1157,7 @@ class Challenge(MethodsMixin, db.Model):
         descr['serial'] = self.serial
         descr['data'] = self.get_data()
         if timestamp is True:
-            descr['timestamp'] = "%s" % self.timestamp
+            descr['timestamp'] = "{0!s}".format(self.timestamp)
         else:
             descr['timestamp'] = self.timestamp
         descr['otp_received'] = self.received_count > 0
@@ -1168,7 +1168,7 @@ class Challenge(MethodsMixin, db.Model):
 
     def __unicode__(self):
         descr = self.get()
-        return "%s" % unicode(descr)
+        return "{0!s}".format(unicode(descr))
 
     __str__ = __unicode__
 
@@ -1444,7 +1444,7 @@ class MachineTokenOptions(db.Model):
                                    backref='option_list')
 
     def __init__(self, machinetoken_id, key, value):
-        log.debug("setting %r to %r for MachineToken %s" % (key,
+        log.debug("setting {0!r} to {1!r} for MachineToken {2!s}".format(key,
                                                             value,
                                                             machinetoken_id))
         self.machinetoken_id = machinetoken_id

@@ -36,13 +36,13 @@ class SMSError(Exception):
         self.description = description
 
     def __repr__(self):
-        ret = '%s(error_id=%r, description=%r)' % (type(self).__name__,
+        ret = '{0!s}(error_id={1!r}, description={2!r})'.format(type(self).__name__,
                                                    self.error_id,
                                                    self.description)
         return ret
 
     def __str__(self):
-        ret = '%s' % self.description
+        ret = '{0!s}'.format(self.description)
         return ret
 
 

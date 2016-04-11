@@ -225,7 +225,7 @@ class EmailTokenClass(HotpTokenClass):
 
         if self.is_active() is True:
             counter = self.get_otp_count()
-            log.debug("counter=%r" % counter)
+            log.debug("counter={0!r}".format(counter))
             self.inc_otp_counter(counter, reset=False)
             # At this point we must not bail out in case of an
             # Gateway error, since checkPIN is successful. A bail
@@ -254,7 +254,7 @@ class EmailTokenClass(HotpTokenClass):
                 info = ("The PIN was correct, but the "
                         "EMail could not be sent: %r" % e)
                 log.warning(info)
-                log.debug("%s" % traceback.format_exc(e))
+                log.debug("{0!s}".format(traceback.format_exc(e)))
                 return_message = info
 
         return success, return_message, transactionid, attributes
@@ -282,8 +282,8 @@ class EmailTokenClass(HotpTokenClass):
             self.inc_otp_counter(ret, reset=False)
             success, message = self._compose_email(message=message,
                                                 subject=subject)
-            log.debug("AutoEmail: send new SMS: %s" % success)
-            log.debug("AutoEmail: %s" % message)
+            log.debug("AutoEmail: send new SMS: {0!s}".format(success))
+            log.debug("AutoEmail: {0!s}".format(message))
         return ret
 
     @staticmethod
@@ -381,7 +381,7 @@ class EmailTokenClass(HotpTokenClass):
         subject = subject.replace("<otp>", otp)
         subject = subject.replace("<serial>", serial)
 
-        log.debug("sending Email to %s " % recipient)
+        log.debug("sending Email to {0!s} ".format(recipient))
 
         identifier = get_from_config("email.identifier")
         if identifier:

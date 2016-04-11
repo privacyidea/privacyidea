@@ -124,10 +124,10 @@ class CertificateTokenTestCase(MyTestCase):
         certificate = detail.get("certificate")
         # At each testrun, the certificate might get another serial number!
         x509obj = crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
-        self.assertEqual("%r" % x509obj.get_issuer(),
+        self.assertEqual("{0!r}".format(x509obj.get_issuer()),
                          "<X509Name object '/C=DE/ST=Hessen"
                          "/O=privacyidea/CN=CA001'>")
-        self.assertEqual("%r" % x509obj.get_subject(),
+        self.assertEqual("{0!r}".format(x509obj.get_subject()),
                          "<X509Name object '/C=DE/ST=Hessen"
                          "/O=privacyidea/CN=requester.localdomain'>")
 
@@ -136,10 +136,10 @@ class CertificateTokenTestCase(MyTestCase):
         token = get_tokens(serial=self.serial2)[0]
         certificate = token.get_tokeninfo("certificate")
         x509obj = crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
-        self.assertEqual("%r" % x509obj.get_issuer(),
+        self.assertEqual("{0!r}".format(x509obj.get_issuer()),
                          "<X509Name object '/C=DE/ST=Hessen"
                          "/O=privacyidea/CN=CA001'>")
-        self.assertEqual("%r" % x509obj.get_subject(),
+        self.assertEqual("{0!r}".format(x509obj.get_subject()),
                          "<X509Name object '/C=DE/ST=Hessen"
                          "/O=privacyidea/CN=requester.localdomain'>")
 

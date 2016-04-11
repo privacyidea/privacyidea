@@ -22,11 +22,11 @@ class SMSTestCase(MyTestCase):
 
     def test_00_SMSError(self):
         err = SMSError(100, "Some Error")
-        text = "%r" % err
+        text = "{0!r}".format(err)
         self.assertTrue(text == "SMSError(error_id=100, description='Some "
                                 "Error')", text)
 
-        text = "%s" % err
+        text = "{0!s}".format(err)
         self.assertTrue(text == "Some Error", text)
 
     def test_01_get_provider_class(self):

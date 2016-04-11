@@ -716,7 +716,7 @@ class ValidateAPITestCase(MyTestCase):
         # set policy for timelimit
         set_policy(name="pol_time1",
                    scope=SCOPE.AUTHZ,
-                   action="%s=2/20s" % ACTION.AUTHMAXSUCCESS)
+                   action="{0!s}=2/20s".format(ACTION.AUTHMAXSUCCESS))
 
         for i in [1, 2]:
             with self.app.test_request_context('/validate/check',
@@ -751,7 +751,7 @@ class ValidateAPITestCase(MyTestCase):
         # set policy for timelimit
         set_policy(name="pol_time1",
                    scope=SCOPE.AUTHZ,
-                   action="%s=2/20s" % ACTION.AUTHMAXFAIL)
+                   action="{0!s}=2/20s".format(ACTION.AUTHMAXFAIL))
 
         for i in [1, 2]:
             with self.app.test_request_context('/validate/check',
@@ -877,7 +877,7 @@ class ValidateAPITestCase(MyTestCase):
         # user disableduser, realm: self.realm2, passwd: superSecret
         set_policy(name="disabled",
                    scope=SCOPE.AUTH,
-                   action="%s=%s" % (ACTION.OTPPIN, "userstore"))
+                   action="{0!s}={1!s}".format(ACTION.OTPPIN, "userstore"))
         # enroll two tokens
         r = init_token({"type": "spass", "serial": "spass1d"},
                        user=User("disableduser", self.realm2))
@@ -923,7 +923,7 @@ class ValidateAPITestCase(MyTestCase):
         user = "lockeduser"
         set_policy(name="locked",
                    scope=SCOPE.AUTH,
-                   action="%s=%s" % (ACTION.OTPPIN, "tokenpin"))
+                   action="{0!s}={1!s}".format(ACTION.OTPPIN, "tokenpin"))
         r = init_token({"type": "spass", "serial": "spass1l",
                         "pin": "locked"},
                        user=User(user, self.realm2))

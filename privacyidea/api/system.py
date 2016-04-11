@@ -195,7 +195,7 @@ def set_config():
             desc = getParam(param, key + ".desc", optional)
             res = set_privacyidea_config(key, value, typ, desc)
             result[key] = res
-            g.audit_object.add_to_log({"info": "%s=%s, " % (key, value)})
+            g.audit_object.add_to_log({"info": "{0!s}={1!s}, ".format(key, value)})
     g.audit_object.log({"success": True})
     return send_result(result)
 
@@ -227,7 +227,7 @@ def set_default():
             "DefaultOtpLen",
             "DefaultResetFailCount"]
     
-    description = "parameters are: %s" % ", ".join(keys)
+    description = "parameters are: {0!s}".format(", ".join(keys))
     param = getLowerParams(request.all_data)
     result = {}
     for k in keys:
@@ -236,13 +236,13 @@ def set_default():
             res = set_privacyidea_config(k, value)
             result[k] = res
             g.audit_object.log({"success": True})
-            g.audit_object.add_to_log({"info": "%s=%s, " % (k, value)})
+            g.audit_object.add_to_log({"info": "{0!s}={1!s}, ".format(k, value)})
 
     if not result:
         log.warning("Failed saving config. Could not find any "
                     "known parameter. %s"
                     % description)
-        raise ParameterError("Usage: %s" % description, id=77)
+        raise ParameterError("Usage: {0!s}".format(description), id=77)
     
     return send_result(result)
 

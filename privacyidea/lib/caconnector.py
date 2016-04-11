@@ -71,8 +71,7 @@ def save_caconnector(params):
     sanity_name_check(connector_name)
     # check the type
     if connector_type not in get_caconnector_types():
-        raise Exception("connector type : %s not in %s" %
-                        (connector_type, unicode(get_caconnector_types())))
+        raise Exception("connector type : {0!s} not in {1!s}".format(connector_type, unicode(get_caconnector_types())))
 
     # check the name
     connectors = get_caconnector_list(filter_caconnector_name=connector_name)
@@ -268,7 +267,7 @@ def get_caconnector_object(connector_name):
     c_obj_class = get_caconnector_class(c_type)
 
     if c_obj_class is None:
-        log.error("unknown CA connector class %s " % connector_name)
+        log.error("unknown CA connector class {0!s} ".format(connector_name))
     else:
         # create the resolver instance and load the config
         c_obj = c_obj_class(connector_name)
