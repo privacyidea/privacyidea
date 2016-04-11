@@ -759,11 +759,11 @@ class IdResolver (UserIdResolver):
         salt = geturandom(4)
 
         # Hash password string and append the salt
-        shaHash = hashlib.sha1(password)
-        shaHash.update(salt)
+        sha_hash = hashlib.sha1(password)
+        sha_hash.update(salt)
 
         # Create a base64 encoded string
-        digest_b64 = '{}{}'.format(shaHash.digest(),
+        digest_b64 = '{}{}'.format(sha_hash.digest(),
                 salt).encode('base64').strip()
 
         # Tag it with SSHA
