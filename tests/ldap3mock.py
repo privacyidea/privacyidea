@@ -138,7 +138,7 @@ class Connection(object):
     def bind(self):
         return self.bound
 
-    def add(self, dn, object_class=None, attributes=None, controls=None):
+    def add(self, dn, object_class=None, attributes=None):
 
         self.result = { 'dn' : '',
                         'referrals' : None,
