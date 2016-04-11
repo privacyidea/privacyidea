@@ -27,7 +27,8 @@ from __future__ import (
 
 DIRECTORY = "tests/testdata/tmp_directory"
 import six
-import ast
+from ast import literal_eval
+import hashlib
 import ldap3
 from ldap3.utils.conv import check_escape
 
@@ -127,6 +128,9 @@ class Connection(object):
     def set_directory(self, directory):
         self.directory = directory
 
+    def _find_user(self, dn):
+        return next(i for (i, d) in enumerate(self.directory) if d["dn"] == dn)
+
     @staticmethod
     def open():
         return
@@ -134,27 +138,90 @@ class Connection(object):
     def bind(self):
         return self.bound
 
+    def add(self, dn, object_class=None, attributes=None):
+
+        self.result = { 'dn' : '',
+                        'referrals' : None,
+                        'description' : 'success',
+                        'result' : 0,
+                        'message' : '',
+                        'type' : 'addResponse'}
+
+        # Check to see if the user exists in the directory
+        try:
+            index = self._find_user(dn)
+        except StopIteration:
+            # If we get here the user doesn't exist so continue
+	    # Create a entry object for the new user
+	    entry = {}
+	    entry['dn'] = dn
+	    entry['attributes'] = attributes
+        else:
+            # User already exists
+            self.result["description"] = "failure"
+            self.result["result"] = 68 
+            self.result["message"] = \
+                    "Error entryAlreadyExists for {0}".format(dn)
+            return False
+
+        # Add the user entry to the directory
+        self.directory.append(entry)
+
+        # Attempt to write changes to disk
+        with open(DIRECTORY, 'w+') as f:
+            f.write(str(self.directory))
+
+        return True
+
+    def delete(self, dn, controls=None):
+
+        self.result = { 'dn' : '',
+                        'referrals' : None,
+                        'description' : 'success',
+                        'result' : 0,
+                        'message' : '',
+                        'type' : 'addResponse'}
+
+        # Check to see if the user exists in the directory
+        try:
+            index = self._find_user(dn)
+        except StopIteration:
+            # If we get here the user doesn't exist so continue
+            self.result["description"] = "failure"
+            self.result["result"] = 32
+            self.result["message"] = "Error no such object: {0}".format(dn)
+            return False
+
+        # Delete the entry object for the user
+        self.directory.pop(index)
+
+        # Attempt to write changes to disk
+        with open(DIRECTORY, 'w+') as f:
+            f.write(str(self.directory))
+
+        return True
+
     def modify(self, dn, changes, controls=None):
 
-        self.result = { 'dn': '',
-                        'referrals': None,
-                        'description': 'success',
-                        'result': 0,
-                        'message': '',
-                        'type': 'modifyResponse'}
-        index = -1
+        self.result = { 'dn' : '',
+                        'referrals' : None,
+                        'description' : 'success',
+                        'result' : 0,
+                        'message' : '',
+                        'type' : 'modifyResponse'}
 
-        # Find the element no. coresponding to the users dn
-        index = next(i for (i, d) in enumerate(self.directory) if d["dn"] == dn)
-
-        # If we don't find a entry in the directory return
-        if index == -1:
+        # Check to see if the user exists in the directory
+        try:
+            index = self._find_user(dn)
+        except StopIteration:
+            # If we get here the user doesn't exist so continue
+            self.result["description"] = "failure"
             self.result["result"] = 32
             self.result["message"] = "Error no such object: {0!s}".format(dn)
             return False
 
         # extract the hash we are interested in
-        entry = self.directory[1].get("attributes")
+        entry = self.directory[index].get("attributes")
 
         # Loop over the changes hash and apply them
         for k, v in changes.iteritems():
@@ -168,7 +235,7 @@ class Connection(object):
                     "modify operation: %s" % k[1]
 
         # Place the attributes back into the directory hash
-        self.directory[1]["attributes"] = entry
+        self.directory[index]["attributes"] = entry
 
         # Attempt to write changes to disk
         with open(DIRECTORY, 'w+') as f:
@@ -279,10 +346,9 @@ class Ldap3Mock(object):
         try:
             with open(directory, 'r') as f:
                 data = f.read()
+                return literal_eval(data)
         except OSError as e:
             raise
-
-        return ast.literal_eval(data)
 
     @property
     def calls(self):
@@ -306,6 +372,24 @@ class Ldap3Mock(object):
 
         return "FakeServerObject"
 
+    @staticmethod
+    def _check_password(user_supplied_pw, reference_pw):
+        # Strip the label from the string
+        label_removed = reference_pw[6:]
+
+        # Decode base64 and strip salt
+        digest_salt = label_removed.decode('base64')
+        reference_pw_sha = digest_salt[:20]
+        # Strip off the salt for use encoding the user supplied password
+        salt = digest_salt[20:]
+
+        # Encode the user supplied password so we can compare the two
+        user_supplied_sha = hashlib.sha1(user_supplied_pw)
+        user_supplied_sha.update(salt)
+
+        return user_supplied_sha.digest() == reference_pw_sha
+
+
     def _on_Connection(self, server, user, password,
                        auto_bind=None, client_strategy=None,
                        authentication=None, check_names=None,
@@ -313,6 +397,7 @@ class Ldap3Mock(object):
         """
         We need to create a Connection object with
         methods:
+            add()
             modify()
             search()
             unbind()
@@ -332,6 +417,10 @@ class Ldap3Mock(object):
                 pw = entry.get("attributes").get("userPassword")
                 if pw == password:
                     correct_password = True
+                elif pw.startswith('{SSHA}'):
+                    correct_password = self._check_password(password, pw)
+                else:
+                    correct_password = False
         self.con_obj = Connection(self.directory)
         self.con_obj.bound = correct_password
         return self.con_obj
