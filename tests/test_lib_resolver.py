@@ -949,7 +949,7 @@ class LDAPResolverTestCase(MyTestCase):
         })
 
         user = "achmed"
-        uid="cn=%s,ou=example,o=test" % user
+        uid="cn={0},ou=example,o=test".format(user)
         classes = ['top', 'inetOrgPerson']
         # First we add the user with add_user 
         r = y.add_user(uid, classes, {"username" : user,

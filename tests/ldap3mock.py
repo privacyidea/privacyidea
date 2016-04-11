@@ -160,7 +160,8 @@ class Connection(object):
             # User already exists
             self.result["description"] = "failure"
             self.result["result"] = 68 
-            self.result["message"] = "Error entryAlreadyExists for %s" % dn
+            self.result["message"] = \
+                    "Error entryAlreadyExists for {0}".format(dn)
             return False
 
         # Add the user entry to the directory
@@ -188,7 +189,7 @@ class Connection(object):
             # If we get here the user doesn't exist so continue
             self.result["description"] = "failure"
             self.result["result"] = 32
-            self.result["message"] = "Error no such object: %s" % dn
+            self.result["message"] = "Error no such object: {0}".format(dn)
             return False
 
         # Delete the entry object for the user

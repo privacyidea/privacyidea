@@ -692,12 +692,12 @@ class IdResolver (UserIdResolver):
 
             self.l.add(uid, object_class, params)
         except Exception as e:
-            log.error("Error accessing LDAP server: %s" % e)
-            log.debug("%s" % traceback.format_exc())
+            log.error("Error accessing LDAP server: {0}".format(e))
+            log.debug("{0}".format(traceback.format_exc()))
             return False
 
         if self.l.result.get('result') != 0:
-            log.error("Error during adding of user: %s details" % uid)
+            log.error("Error during adding of user: {0} details".format(uid))
             return False
 
         return uid
@@ -718,7 +718,7 @@ class IdResolver (UserIdResolver):
 
             self.l.delete(uid)
         except Exception as exx:
-            log.error("Error deleting user: %s" % exx)
+            log.error("Error deleting user: {0}".format(exx))
             res = False
         return res
 
@@ -820,8 +820,8 @@ class IdResolver (UserIdResolver):
             params = self._attributes_to_ldap_attributes(mapped)
             self.l.modify(self._getDN(uid), params)
         except Exception as e:
-            log.error("Error accessing LDAP server: %s" % e)
-            log.debug("%s" % traceback.format_exc())
+            log.error("Error accessing LDAP server: {0}".format(e))
+            log.debug("{0}".format(traceback.format_exc()))
             return False
 
         if self.l.result.get('result') != 0:
