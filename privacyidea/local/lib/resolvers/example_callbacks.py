@@ -7,7 +7,7 @@ provided by privacyidea.
 This enables a easy route for customisation of functionality.
 """
 
-def beforeLDAPAdd(uid, object_class, attributes):
+def before_LDAP_Add(uid, object_class, attributes):
     """
     Example callback where modification of the LDAP objectClases and/or
     LDAP attributes can be maniplulated prior to being added to the LDAP

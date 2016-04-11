@@ -685,7 +685,7 @@ class IdResolver (UserIdResolver):
             # Create ability to add a callback to massage the objectclass(es)
             # and attributes before the ldapadd is carried out
             try:
-                from privacyidea.local.lib.resolvers.callbacks import beforeLDAPAdd 
+                from privacyidea.local.lib.resolvers.callbacks import before_LDAP_Add
                 uid, object_class, params = beforeLDAPAdd(uid, object_class, params)
             except Exception as e:
                 log.debug("Callback before_LDAP_Add not found")
