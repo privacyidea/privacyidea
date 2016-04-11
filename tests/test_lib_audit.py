@@ -161,7 +161,7 @@ class AuditTestCase(MyTestCase):
                         type(audit_log).__name__)
 
         for audit_entry in audit_log:
-            self.assertTrue(type(audit_entry).__name__ == "unicode",
+            self.assertTrue(type(audit_entry).__name__ in ["unicode", "str"],
                             type(audit_entry).__name__)
 
     def test_05_dataframe(self):

@@ -794,7 +794,7 @@ def gen_serial(tokentype=None, prefix=None):
     """
     def _gen_serial(_prefix, _tokennum):
         h_serial = ''
-        num_str = '{0:.4d}'.format(_tokennum)
+        num_str = '{:04d}'.format(_tokennum)
         h_len = 8 - len(num_str)
         if h_len > 0:
             h_serial = binascii.hexlify(os.urandom(h_len)).upper()[0:h_len]
