@@ -173,10 +173,10 @@ class LocalCATestCase(MyTestCase):
                                   {"CSRDir": "",
                                    "CertificateDir": "",
                                    "WorkingDir": cwd + "/" + WORKINGDIR})
-        self.assertEqual("%r" % cert.get_issuer(),
+        self.assertEqual("{0!r}".format(cert.get_issuer()),
                          "<X509Name object "
                          "'/C=DE/ST=Hessen/O=privacyidea/CN=CA001'>")
-        self.assertEqual("%r" % cert.get_subject(),
+        self.assertEqual("{0!r}".format(cert.get_subject()),
                          "<X509Name object "
                          "'/C=DE/ST=Hessen/O=privacyidea/CN=requester"
                          ".localdomain'>")
@@ -191,10 +191,10 @@ class LocalCATestCase(MyTestCase):
                                   "WorkingDir": cwd + "/" + WORKINGDIR})
 
         cert = cacon.sign_request(REQUEST_USER)
-        self.assertEqual("%r" % cert.get_issuer(),
+        self.assertEqual("{0!r}".format(cert.get_issuer()),
                          "<X509Name object "
                          "'/C=DE/ST=Hessen/O=privacyidea/CN=CA001'>")
-        self.assertEqual("%r" % cert.get_subject(),
+        self.assertEqual("{0!r}".format(cert.get_subject()),
                          "<X509Name object "
                          "'/C=DE/ST=Hessen/O=privacyidea/CN=usercert'>")
 
@@ -207,10 +207,10 @@ class LocalCATestCase(MyTestCase):
                                   "WorkingDir": cwd + "/" + WORKINGDIR})
 
         cert = cacon.sign_request(SPKAC, options={"spkac": 1})
-        self.assertEqual("%r" % cert.get_issuer(),
+        self.assertEqual("{0!r}".format(cert.get_issuer()),
                          "<X509Name object "
                          "'/C=DE/ST=Hessen/O=privacyidea/CN=CA001'>")
-        self.assertEqual("%r" % cert.get_subject(),
+        self.assertEqual("{0!r}".format(cert.get_subject()),
                          "<X509Name object '/CN=Steve Test"
                          "/emailAddress=steve@openssl.org'>")
 

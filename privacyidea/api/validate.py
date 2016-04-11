@@ -102,7 +102,7 @@ def before_request():
                         "client": g.client_ip,
                         "client_user_agent": request.user_agent.browser,
                         "privacyidea_server": privacyidea_server,
-                        "action": "%s %s" % (request.method, request.url_rule),
+                        "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                         "info": ""})
 
 

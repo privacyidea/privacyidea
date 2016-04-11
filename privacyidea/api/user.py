@@ -99,7 +99,7 @@ def get_users():
     users = get_user_list(request.all_data)
 
     g.audit_object.log({'success': True,
-                        'info': "realm: %s" % realm})
+                        'info': "realm: {0!s}".format(realm)})
     
     return send_result(users)
 
@@ -127,7 +127,7 @@ def delete_user(resolvername=None, username=None):
     user_obj = User(login=username, resolver=resolvername)
     res = user_obj.delete()
     g.audit_object.log({"success": res,
-                        "info": "%s" % user_obj})
+                        "info": "{0!s}".format(user_obj)})
     return send_result(res)
 
 
@@ -164,7 +164,7 @@ def create_user_api():
     resolvername = getParam(request.all_data, "resolver", optional=False)
     r = create_user(resolvername, attributes)
     g.audit_object.log({"success": True,
-                        "info": "%s: %s/%s" % (r, username, resolvername)})
+                        "info": "{0!s}: {1!s}/{2!s}".format(r, username, resolvername)})
     return send_result(r)
 
 
@@ -205,7 +205,7 @@ def update_user():
     user_obj = User(login=username, resolver=resolvername)
     r = user_obj.update_user_info(attributes)
     g.audit_object.log({"success": True,
-                        "info": "%s: %s/%s" % (r, username, resolvername)})
+                        "info": "{0!s}: {1!s}/{2!s}".format(r, username, resolvername)})
     return send_result(r)
 
 

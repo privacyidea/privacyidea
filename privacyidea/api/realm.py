@@ -139,7 +139,7 @@ def set_realm_api(realm=None):
         Resolvers = resolvers.split(',')
     (added, failed) = set_realm(realm, Resolvers, priority=priority)
     g.audit_object.log({'success': len(added) == len(Resolvers),
-                        'info':  "realm: %r, resolvers: %r" % (realm,
+                        'info':  "realm: {0!r}, resolvers: {1!r}".format(realm,
                                                                resolvers)})
     return send_result({"added": added,
                         "failed": failed})

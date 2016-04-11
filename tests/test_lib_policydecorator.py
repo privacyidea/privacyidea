@@ -55,7 +55,7 @@ class LibPolicyTestCase(MyTestCase):
         my_user = User("cornelius", realm="r1")
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
-                   action="%s=%s" % (ACTION.OTPPIN, ACTIONVALUE.NONE))
+                   action="{0!s}={1!s}".format(ACTION.OTPPIN, ACTIONVALUE.NONE))
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
@@ -80,7 +80,7 @@ class LibPolicyTestCase(MyTestCase):
         delete_policy("pol1")
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
-                   action="%s=%s" % (ACTION.OTPPIN, ACTIONVALUE.TOKENPIN))
+                   action="{0!s}={1!s}".format(ACTION.OTPPIN, ACTIONVALUE.TOKENPIN))
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
@@ -110,7 +110,7 @@ class LibPolicyTestCase(MyTestCase):
         # now create a policy with userstore PW
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
-                   action="%s=%s" % (ACTION.OTPPIN, ACTIONVALUE.USERSTORE))
+                   action="{0!s}={1!s}".format(ACTION.OTPPIN, ACTIONVALUE.USERSTORE))
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
@@ -133,7 +133,7 @@ class LibPolicyTestCase(MyTestCase):
         # now create a policy with userstore PW
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
-                   action="%s=%s" % (ACTION.OTPPIN, ACTIONVALUE.USERSTORE))
+                   action="{0!s}={1!s}".format(ACTION.OTPPIN, ACTIONVALUE.USERSTORE))
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
@@ -239,7 +239,7 @@ class LibPolicyTestCase(MyTestCase):
         # Now set a PASSTHRU policy to the userstore (new style)
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
-                   action="%s=userstore" % ACTION.PASSTHRU)
+                   action="{0!s}=userstore".format(ACTION.PASSTHRU))
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
         options = {"g": g}
@@ -254,7 +254,7 @@ class LibPolicyTestCase(MyTestCase):
         radiusmock.setdata(success=True)
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
-                   action="%s=radiusconfig1" % ACTION.PASSTHRU)
+                   action="{0!s}=radiusconfig1".format(ACTION.PASSTHRU))
         r = add_radius("radiusconfig1", "1.2.3.4", "testing123",
                        dictionary=DICT_FILE)
         self.assertTrue(r > 0)
@@ -308,7 +308,7 @@ class LibPolicyTestCase(MyTestCase):
 
         set_policy(name="pol2",
                    scope=SCOPE.WEBUI,
-                   action="%s=%s" % (ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+                   action="{0!s}={1!s}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA))
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
@@ -321,7 +321,7 @@ class LibPolicyTestCase(MyTestCase):
         # Set policy, so that the user is not allowed to login at all
         set_policy(name="pol2",
                    scope=SCOPE.WEBUI,
-                   action="%s=%s" % (ACTION.LOGINMODE, LOGINMODE.DISABLE))
+                   action="{0!s}={1!s}".format(ACTION.LOGINMODE, LOGINMODE.DISABLE))
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
@@ -390,10 +390,10 @@ class LibPolicyTestCase(MyTestCase):
         # Now we set a policy with several tokentypes
         set_policy(name="pol_chal_resp_1",
                    scope=SCOPE.AUTH,
-                   action="%s=hotp tiqr totp" % ACTION.CHALLENGERESPONSE)
+                   action="{0!s}=hotp tiqr totp".format(ACTION.CHALLENGERESPONSE))
         set_policy(name="pol_chal_resp_2",
                    scope=SCOPE.AUTH,
-                   action="%s=hotp motp" % ACTION.CHALLENGERESPONSE)
+                   action="{0!s}=hotp motp".format(ACTION.CHALLENGERESPONSE))
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
         options = {"g": g}
@@ -419,7 +419,7 @@ class LibPolicyTestCase(MyTestCase):
         # set time limit policy
         set_policy(name="pol_lastauth",
                    scope=SCOPE.AUTHZ,
-                   action="%s=1d" % ACTION.LASTAUTH)
+                   action="{0!s}=1d".format(ACTION.LASTAUTH))
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
         options = {"g": g}

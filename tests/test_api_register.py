@@ -59,7 +59,7 @@ class RegisterTestCase(MyTestCase):
 
         # create policy
         r = set_policy(name="pol2", scope=SCOPE.REGISTER,
-                       action="%s=%s, %s=%s" % (ACTION.REALM, "register",
+                       action="{0!s}={1!s}, {2!s}={3!s}".format(ACTION.REALM, "register",
                                                 ACTION.RESOLVER, "register"))
 
         # Try to register, but missing parameter
@@ -88,7 +88,7 @@ class RegisterTestCase(MyTestCase):
         # Set SMTP config and policy
         add_smtpserver("myserver", "1.2.3.4", sender="pi@localhost")
         set_policy("pol3", scope=SCOPE.REGISTER,
-                   action="%s=myserver" % ACTION.EMAILCONFIG)
+                   action="{0!s}=myserver".format(ACTION.EMAILCONFIG))
         with self.app.test_request_context('/register',
                                            method='POST',
                                            data={"username": "corneliusReg",

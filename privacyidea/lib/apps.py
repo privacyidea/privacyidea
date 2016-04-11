@@ -68,7 +68,7 @@ def create_motp_url(key, user=None, realm=None, serial=""):
     label = label[0:allowed_label_len]
     url_label = quote(label)
     
-    return "motp://privacyidea:%s?secret=%s" % (url_label, otpkey)
+    return "motp://privacyidea:{0!s}?secret={1!s}".format(url_label, otpkey)
 
 
 @log_with(log)
@@ -97,11 +97,11 @@ def create_google_authenticator_url(key=None, user=None,
     # also strip the padding =, as it will get problems with the google app.
     otpkey = base64.b32encode(key_bin).strip('=')
 
-    base_len = len("otpauth://%s/?secret=%s&counter=1" % (tokentype, otpkey))
+    base_len = len("otpauth://{0!s}/?secret={1!s}&counter=1".format(tokentype, otpkey))
     max_len = 119
     allowed_label_len = max_len - base_len
-    log.debug("we have got %s characters left for the token label" %
-              str(allowed_label_len))
+    log.debug("we have got {0!s} characters left for the token label".format(
+              str(allowed_label_len)))
     label = tokenlabel.replace("<s>",
                                serial).replace("<u>",
                                                user).replace("<r>", realm)
@@ -110,7 +110,7 @@ def create_google_authenticator_url(key=None, user=None,
     url_label = quote(label)
 
     if hash_algo.lower() != "sha1":
-        hash_algo = "algorithm=%s&" % hash_algo
+        hash_algo = "algorithm={0!s}&".format(hash_algo)
     else:
         # If the hash_algo is SHA1, we do not add it to the QR code to keep
         # the QR code simpler
@@ -137,7 +137,7 @@ def create_oathtoken_url(otpkey=None, user=None, realm=None,
                                                user).replace("<r>", realm)
     url_label = quote(label)
 
-    url = "oathtoken:///addToken?name=%s&lockdown=true&key=%s%s" % (
+    url = "oathtoken:///addToken?name={0!s}&lockdown=true&key={1!s}{2!s}".format(
                                                                   url_label,
                                                                   otpkey,
                                                                   timebased

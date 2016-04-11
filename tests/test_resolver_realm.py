@@ -58,7 +58,7 @@ class APIResolverTestCase(MyTestCase):
     def test_01_create_realm(self):
         realm = u"realm1"
         resolvers = u"r1, r2"
-        with self.app.test_request_context('/realm/%s' % realm,
+        with self.app.test_request_context('/realm/{0!s}'.format(realm),
                                            data={u"resolvers": resolvers},
                                            method='POST',
                                            headers={"Authorization": self.at}):

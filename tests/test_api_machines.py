@@ -247,7 +247,7 @@ class APIMachinesTestCase(MyTestCase):
         # Remove everything that sounds like "SOMETHING\" in front of
         # the username
         set_policy(name="mangle1", scope=SCOPE.AUTH,
-                   action="%s=user/.*\\\\(.*)/\\1/" % ACTION.MANGLE)
+                   action="{0!s}=user/.*\\\\(.*)/\\1/".format(ACTION.MANGLE))
         with self.app.test_request_context(
                 '/machine/authitem/ssh?hostname=gandalf&user=DOMAIN\\testuser',
                 method='GET',

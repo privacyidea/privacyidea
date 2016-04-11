@@ -115,7 +115,7 @@ def challenge_response_allowed(func):
                 realm=user_object.realm,
                 user=user_object.login,
                 client=clientip)
-            log.debug("Found these allowed tokentypes: %s" % allowed_tokentypes)
+            log.debug("Found these allowed tokentypes: {0!s}".format(allowed_tokentypes))
 
             # allowed_tokentypes is a list of actions from several policies. I
             # could look like this:
@@ -309,8 +309,8 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
         # Check for maximum failed authentications
         # Always - also in case of unsuccessful authentication
         if len(max_fail) > 1:
-            raise PolicyError("Contradicting policies for %s" %
-                              ACTION.AUTHMAXFAIL)
+            raise PolicyError("Contradicting policies for {0!s}".format(
+                              ACTION.AUTHMAXFAIL))
         if len(max_fail) == 1:
             policy_count, tdelta = parse_timelimit(max_fail[0])
             fail_c = g.audit_object.get_count({"user": user_object.login,
@@ -331,8 +331,8 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
             # Check for maximum successful authentications
             # Only in case of a successful authentication
             if len(max_success) > 1:
-                raise PolicyError("Contradicting policies for %s" %
-                                  ACTION.AUTHMAXSUCCESS)
+                raise PolicyError("Contradicting policies for {0!s}".format(
+                                  ACTION.AUTHMAXSUCCESS))
 
             if len(max_success) == 1:
                 policy_count, tdelta = parse_timelimit(max_success[0])
@@ -454,8 +454,8 @@ def login_mode(wrapped_function, *args, **kwds):
     kwds["options"] contains the flask g
     :return: calls the original function with the modified "check_otp" argument
     """
-    ERROR = "There are contradicting policies for the action %s!" % \
-            ACTION.LOGINMODE
+    ERROR = "There are contradicting policies for the action {0!s}!".format( \
+            ACTION.LOGINMODE)
     # if tokenclass.check_pin is called in any other way, options may be None
     #  or it might have no element "g".
     options = kwds.get("options") or {}
@@ -504,8 +504,8 @@ def auth_otppin(wrapped_function, *args, **kwds):
     :param **kwds: kwds["options"] contains the flask g
     :return: True or False
     """
-    ERROR = "There are contradicting policies for the action %s!" % \
-            ACTION.OTPPIN
+    ERROR = "There are contradicting policies for the action {0!s}!".format( \
+            ACTION.OTPPIN)
     # if tokenclass.check_pin is called in any other way, options may be None
     #  or it might have no element "g".
     options = kwds.get("options") or {}

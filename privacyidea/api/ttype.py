@@ -74,7 +74,7 @@ def before_request():
                         "client": g.client_ip,
                         "client_user_agent": request.user_agent.browser,
                         "privacyidea_server": privacyidea_server,
-                        "action": "%s %s" % (request.method, request.url_rule),
+                        "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                         "info": ""})
 
 
@@ -116,5 +116,5 @@ def token(ttype=None):
     if res[0] == "json":
         return jsonify(res[1])
     elif res[0] in ["html", "plain"]:
-        return Response(res[1], mimetype="text/%s" % res[0])
+        return Response(res[1], mimetype="text/{0!s}".format(res[0]))
 

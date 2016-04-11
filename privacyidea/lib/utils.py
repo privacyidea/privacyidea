@@ -101,7 +101,7 @@ def check_time_in_range(time_range, check_time=None):
                 time_match = True
     except ValueError:
         log.error("Wrong time range format: <dow>-<dow>:<hh:mm>-<hh:mm>")
-        log.debug("%s" % traceback.format_exc())
+        log.debug("{0!s}".format(traceback.format_exc()))
 
     return time_match
 
@@ -120,7 +120,7 @@ def to_utf8(password):
         except UnicodeDecodeError as exx:
             # In case the password is already an encoded string, we fail to
             # encode it again...
-            log.debug("Failed to convert password: %s" % type(password))
+            log.debug("Failed to convert password: {0!s}".format(type(password)))
     return password
 
 
@@ -133,7 +133,7 @@ def generate_otpkey(key_size=20):
     :return: hexlified key
     :rtype: string
     """
-    log.debug("generating key of size %s" % key_size)
+    log.debug("generating key of size {0!s}".format(key_size))
     return binascii.hexlify(geturandom(key_size))
 
 
@@ -172,13 +172,13 @@ def create_img(data, width=0, alt=None, raw=False):
     data_uri = o_data.encode("base64").replace("\n", "")
 
     if width != 0:
-        width_str = " width=%d " % (int(width))
+        width_str = " width={0:d} ".format((int(width)))
 
     if alt is not None:
         val = urllib.urlencode({'alt': alt})
-        alt_str = " alt=%r " % (val[len('alt='):])
+        alt_str = " alt={0!r} ".format((val[len('alt='):]))
 
-    ret_img = 'data:image/png;base64,%s' % data_uri
+    ret_img = 'data:image/png;base64,{0!s}'.format(data_uri)
 
     return ret_img
 
@@ -299,8 +299,8 @@ def get_data_from_params(params, exclude_params, config_description, module,
         if t not in data:
             _missing = True
     if _missing:
-        raise Exception("type or description without necessary data! %s" %
-                        unicode(params))
+        raise Exception("type or description without necessary data! {0!s}".format(
+                        unicode(params)))
 
     return data, types, desc
 

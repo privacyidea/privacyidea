@@ -108,10 +108,10 @@ def create_tokenclass_object(db_token):
         try:
             token_object = token_class(db_token)
         except Exception as e:  # pragma: no cover
-            raise TokenAdminError("create_tokenclass_object failed:  %r" % e,
+            raise TokenAdminError("create_tokenclass_object failed:  {0!r}".format(e),
                                   id=1609)
     else:
-        log.error('type %r not found in tokenclasses' % tokentype)
+        log.error('type {0!r} not found in tokenclasses'.format(tokentype))
 
     return token_object
 
@@ -159,7 +159,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
         elif assigned is True:
             sql_query = sql_query.filter(Token.user_id != "")
         else:
-            log.warning("assigned value not in [True, False] %r" % assigned)
+            log.warning("assigned value not in [True, False] {0!r}".format(assigned))
 
     if realm is not None:
         # filter for the realm
@@ -399,7 +399,7 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                     token_dict["username"] = userobject.login
                     token_dict["user_realm"] = userobject.realm
             except Exception as exx:
-                log.error("User information can not be retrieved: %s" % exx)
+                log.error("User information can not be retrieved: {0!s}".format(exx))
                 token_dict["username"] = "**resolver error**"
 
             token_list.append(token_dict)
@@ -454,7 +454,7 @@ def check_serial(serial):
         # as long as we find a token, modify the serial:
         i += 1
         result = False
-        new_serial = "%s_%02i" % (serial, i)
+        new_serial = "{0!s}_{1:02d}".format(serial, i)
 
     return result, new_serial
 
@@ -639,7 +639,7 @@ def get_otp(serial, current_time=None):
     tokenobject_list = get_tokens(serial=serial)
 
     if not tokenobject_list:
-        log.warning("there is no token with serial %r" % serial)
+        log.warning("there is no token with serial {0!r}".format(serial))
         return -1, "", "", ""
 
     tokenobject = tokenobject_list[0]
@@ -673,13 +673,12 @@ def get_multi_otp(serial, count=0, epoch_start=0, epoch_end=0,
     ret = {"result": False}
     tokenobject_list = get_tokens(serial=serial)
     if not tokenobject_list:
-        log.warning("there is no token with serial %r" % serial)
-        ret["error"] = "No token with serial %s found." % serial
+        log.warning("there is no token with serial {0!r}".format(serial))
+        ret["error"] = "No token with serial {0!s} found.".format(serial)
 
     else:
         tokenobject = tokenobject_list[0]
-        log.debug("getting multiple otp values for token %r. curTime=%r" %
-                  (tokenobject, curTime))
+        log.debug("getting multiple otp values for token {0!r}. curTime={1!r}".format(tokenobject, curTime))
 
         res, error, otp_dict = tokenobject.\
             get_multi_otp(count=count,
@@ -687,7 +686,7 @@ def get_multi_otp(serial, count=0, epoch_start=0, epoch_end=0,
                           epoch_end=epoch_end,
                           curTime=curTime,
                           timestamp=timestamp)
-        log.debug("received %r, %r, and %r otp values" % (res, error,
+        log.debug("received {0!r}, {1!r}, and {2!r} otp values".format(res, error,
                                                           len(otp_dict)))
 
         if res is True:
@@ -721,9 +720,9 @@ def get_token_by_otp(token_list, otp="", window=10):
     result_list = []
 
     for token in token_list:
-        log.debug("checking token %r" % token.get_serial())
+        log.debug("checking token {0!r}".format(token.get_serial()))
         r = token.check_otp_exist(otp=otp, window=window)
-        log.debug("result = %d" % int(r))
+        log.debug("result = {0:d}".format(int(r)))
         if r >= 0:
             result_list.append(token)
 
@@ -778,7 +777,7 @@ def get_tokenserial_of_transaction(transaction_id):
     if challenge:
         serial = challenge.serial
     else:
-        log.info('no challenge found for transaction_id %r' % transaction_id)
+        log.info('no challenge found for transaction_id {0!r}'.format(transaction_id))
 
     return serial
 
@@ -795,11 +794,11 @@ def gen_serial(tokentype=None, prefix=None):
     """
     def _gen_serial(_prefix, _tokennum):
         h_serial = ''
-        num_str = '%.4d' % _tokennum
+        num_str = '{0:.4d}'.format(_tokennum)
         h_len = 8 - len(num_str)
         if h_len > 0:
             h_serial = binascii.hexlify(os.urandom(h_len)).upper()[0:h_len]
-        return "%s%s%s" % (_prefix, num_str, h_serial)
+        return "{0!s}{1!s}{2!s}".format(_prefix, num_str, h_serial)
 
     if not tokentype:
         tokentype = 'PIUN'
@@ -851,10 +850,8 @@ def init_token(param, user=None, tokenrealms=None):
     # unsupported tokentype
     tokentypes = get_token_types()
     if tokentype.lower() not in tokentypes:
-        log.error('type %r not found in tokentypes: %r' %
-                  (tokentype, tokentypes))
-        raise TokenAdminError("init token failed: unknown token type %r"
-                               % tokentype, id=1610)
+        log.error('type {0!r} not found in tokentypes: {1!r}'.format(tokentype, tokentypes))
+        raise TokenAdminError("init token failed: unknown token type {0!r}".format(tokentype), id=1610)
 
     # Check, if a token with this serial already exist
     # create a list of the found tokens
@@ -875,7 +872,7 @@ def init_token(param, user=None, tokenrealms=None):
                                                                   old_typ,
                                                                   tokentype))
             log.error(msg)
-            raise TokenAdminError("initToken failed: %s" % msg)
+            raise TokenAdminError("initToken failed: {0!s}".format(msg))
 
     # if there is a realm as parameter (and the realm is not empty), but no
     # user, we assign the token to this realm.
@@ -914,8 +911,8 @@ def init_token(param, user=None, tokenrealms=None):
 
     except Exception as e:  # pragma: no cover
         log.error('token create failed!')
-        log.debug("%s" % traceback.format_exc())
-        raise TokenAdminError("token create failed %r" % e, id=1112)
+        log.debug("{0!s}".format(traceback.format_exc()))
+        raise TokenAdminError("token create failed {0!r}".format(e), id=1112)
 
     # Set the validity period
     validity_period_start = param.get("validity_period_start")
@@ -1044,7 +1041,7 @@ def assign_token(serial, user, pin=None, encrypt_pin=False):
     tokenobject_list = get_tokens(serial=serial)
 
     if not tokenobject_list:
-        log.warning("no tokens found with serial: %r" % serial)
+        log.warning("no tokens found with serial: {0!r}".format(serial))
         raise TokenAdminError("no token found!", id=1102)
 
     tokenobject = tokenobject_list[0]
@@ -1052,9 +1049,9 @@ def assign_token(serial, user, pin=None, encrypt_pin=False):
     # Check if the token already belongs to another user
     old_user = tokenobject.user
     if old_user:
-        log.warning("token already assigned to user: %r" % old_user)
-        raise TokenAdminError("Token already assigned to user %r" %
-                              old_user, id=1103)
+        log.warning("token already assigned to user: {0!r}".format(old_user))
+        raise TokenAdminError("Token already assigned to user {0!r}".format(
+                              old_user), id=1103)
 
     tokenobject.set_user(user)
     if pin is not None:
@@ -1067,8 +1064,7 @@ def assign_token(serial, user, pin=None, encrypt_pin=False):
         tokenobject.save()
     except Exception as e:  # pragma: no cover
         log.error('update Token DB failed')
-        raise TokenAdminError("Token assign failed for %r/%s : %r"
-                              % (user, serial, e), id=1105)
+        raise TokenAdminError("Token assign failed for {0!r}/{1!s} : {2!r}".format(user, serial, e), id=1105)
 
     log.debug("successfully assigned token with serial "
               "%r to user %r" % (serial, user))
@@ -1087,7 +1083,7 @@ def unassign_token(serial, user=None):
     tokenobject_list = get_tokens(serial=serial, user=user)
 
     if not tokenobject_list:
-        log.warning("no tokens found with serial: %r" % serial)
+        log.warning("no tokens found with serial: {0!r}".format(serial))
         raise TokenAdminError("no token found!", id=1102)
 
     tokenobject = tokenobject_list[0]
@@ -1101,10 +1097,9 @@ def unassign_token(serial, user=None):
         tokenobject.save()
     except Exception as e:  # pragma: no cover
         log.error('update token DB failed')
-        raise TokenAdminError("Token unassign failed for %r: %r"
-                              % (serial, e), id=1105)
+        raise TokenAdminError("Token unassign failed for {0!r}: {1!r}".format(serial, e), id=1105)
 
-    log.debug("successfully unassigned token with serial %r" % serial)
+    log.debug("successfully unassigned token with serial {0!r}".format(serial))
     return True
 
 
@@ -1173,9 +1168,9 @@ def set_pin(serial, pin, user=None, encrypt_pin=False):
     if isinstance(user, basestring):
         # check if by accident the wrong parameter (like PIN)
         # is put into the user attribute
-        log.warning("Parameter user must not be a string: %r" % user)
-        raise ParameterError("Parameter user must not be a string: %r" %
-                             user, id=1212)
+        log.warning("Parameter user must not be a string: {0!r}".format(user))
+        raise ParameterError("Parameter user must not be a string: {0!r}".format(
+                             user), id=1212)
 
     tokenobject_list = get_tokens(serial=serial, user=user)
 
@@ -1657,17 +1652,17 @@ def lost_token(serial, new_serial=None, password=None,
     :return: result dictionary
     """
     res = {}
-    new_serial = new_serial or "lost%s" % serial
+    new_serial = new_serial or "lost{0!s}".format(serial)
     user = get_token_owner(serial)
 
-    log.debug("doing lost token for serial %r and user %r" % (serial, user))
+    log.debug("doing lost token for serial {0!r} and user {1!r}".format(serial, user))
 
     if user is None or user.is_empty():
         err = "You can only define a lost token for an assigned token."
-        log.warning("%s" % err)
+        log.warning("{0!s}".format(err))
         raise TokenAdminError(err, id=2012)
 
-    character_pool = "%s%s%s" % (string.ascii_lowercase,
+    character_pool = "{0!s}{1!s}{2!s}".format(string.ascii_lowercase,
                                  string.ascii_uppercase, string.digits)
     if contents != "":
         character_pool = ""
@@ -1687,8 +1682,8 @@ def lost_token(serial, new_serial=None, password=None,
 
     tokenobject = init_token({"otpkey": password, "serial": new_serial,
                               "type": "pw",
-                              "description": "temporary replacement for %s" %
-                                             serial})
+                              "description": "temporary replacement for {0!s}".format(
+                                             serial)})
 
     res['init'] = tokenobject is not None
     if res['init']:
@@ -1699,7 +1694,7 @@ def lost_token(serial, new_serial=None, password=None,
         end_date = (datetime.date.today()
                     + datetime.timedelta(days=validity)).strftime("%d/%m/%y")
 
-        end_date = "%s 23:59" % end_date
+        end_date = "{0!s} 23:59".format(end_date)
         tokenobject_list = get_tokens(serial=new_serial)
         for tokenobject in tokenobject_list:
             tokenobject.set_validity_period_end(end_date)
@@ -1858,7 +1853,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                  'token_type': tokenobject.get_type(),
                  'weight': 0}
 
-        log.debug("Found user with loginId %r: %r" % (
+        log.debug("Found user with loginId {0!r}: {1!r}".format(
                   tokenobject.user, tokenobject.get_serial()))
 
         if tokenobject.is_challenge_response(passw, user=user, options=options):
@@ -1921,7 +1916,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
     if valid_token_list:
         # One ore more successfully authenticating tokens found
         # We need to return success
-        message_list = ["matching %i tokens" % len(valid_token_list)]
+        message_list = ["matching {0:d} tokens".format(len(valid_token_list))]
         # write serial numbers or something to audit log
         for token_obj in valid_token_list:
             token_obj.inc_count_auth()
@@ -2032,14 +2027,14 @@ def get_dynamic_policy_definitions(scope=None):
            SCOPE.ENROLL: {},
            SCOPE.AUTHZ: {}}
     for ttype in get_token_types():
-        pol[SCOPE.ADMIN]["enroll%s" % ttype.upper()] \
+        pol[SCOPE.ADMIN]["enroll{0!s}".format(ttype.upper())] \
             = {'type': 'bool',
                'desc': _('Admin is allowed to initalize %s tokens.') %
                        ttype.upper()}
 
         conf = get_tokenclass_info(ttype, section='user')
         if 'enroll' in conf:
-            pol[SCOPE.USER]["enroll%s" % ttype.upper()] = {
+            pol[SCOPE.USER]["enroll{0!s}".format(ttype.upper())] = {
                 'type': 'bool',
                 'desc': _("The user is allowed to enroll a %s token.") % ttype}
 
@@ -2059,7 +2054,7 @@ def get_dynamic_policy_definitions(scope=None):
                 for pol_def in pol_entry:
                     set_def = pol_def
                     if pol_def.startswith(ttype) is not True:
-                        set_def = '%s_%s' % (ttype, pol_def)
+                        set_def = '{0!s}_{1!s}'.format(ttype, pol_def)
 
                     pol[pol_section][set_def] = pol_entry.get(pol_def)
 

@@ -102,12 +102,12 @@ def create_app(config_name="development",
     :rtype: App object
     """
     if not silent:
-        print("The configuration name is: %s" % config_name)
+        print("The configuration name is: {0!s}".format(config_name))
     if os.environ.get(ENV_KEY):
         config_file = os.environ[ENV_KEY]
     if not silent:
-        print("Additional configuration can be read from the file %s" %
-              config_file)
+        print("Additional configuration can be read from the file {0!s}".format(
+              config_file))
     app = Flask(__name__, static_folder="static",
                 template_folder="static/templates")
     if config_name:
@@ -120,7 +120,7 @@ def create_app(config_name="development",
     except IOError:
         sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
         sys.stderr.write("  WARNING: privacyidea create_app has no access\n")
-        sys.stderr.write("  to %s!\n" % config_file)
+        sys.stderr.write("  to {0!s}!\n".format(config_file))
         sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
 
     # Try to load the file, that was specified in the environment variable
@@ -160,20 +160,20 @@ def create_app(config_name="development",
         if os.path.isfile(log_config_file):
             logging.config.fileConfig(log_config_file)
             if not silent:
-                print("Reading Logging settings from %s" % log_config_file)
+                print("Reading Logging settings from {0!s}".format(log_config_file))
         else:
             raise Exception("The config file specified in PI_LOGCONFIG does "
                             "not exist.")
     except Exception as exx:
-        sys.stderr.write("%s\n" % exx)
+        sys.stderr.write("{0!s}\n".format(exx))
         sys.stderr.write("Could not use PI_LOGCONFIG. "
                          "Using PI_LOGLEVEL and PI_LOGFILE.\n")
         level = app.config.get("PI_LOGLEVEL", logging.DEBUG)
         # If there is another logfile in pi.cfg we use this.
         logfile = app.config.get("PI_LOGFILE")
         if logfile:
-            sys.stderr.write("Using PI_LOGLEVEL %s.\n" % level)
-            sys.stderr.write("Using PI_LOGFILE %s.\n" % logfile)
+            sys.stderr.write("Using PI_LOGLEVEL {0!s}.\n".format(level))
+            sys.stderr.write("Using PI_LOGFILE {0!s}.\n".format(logfile))
             PI_LOGGING_CONFIG["handlers"]["file"]["filename"] = logfile
             PI_LOGGING_CONFIG["handlers"]["file"]["level"] = level
             PI_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = level

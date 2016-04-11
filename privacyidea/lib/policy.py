@@ -507,7 +507,7 @@ class PolicyClass(object):
             rights = get_static_policy_definitions(scope).keys()
         # reduce the list
         rights = list(set(rights))
-        log.debug("returning the admin rights: %s" % rights)
+        log.debug("returning the admin rights: {0!s}".format(rights))
         return rights
 
     def ui_get_enroll_tokentypes(self, client, logged_in_user):
@@ -600,7 +600,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         for k, v in action.items():
             if v is not True:
                 # value key
-                action_list.append("%s=%s" % (k, v))
+                action_list.append("{0!s}={1!s}".format(k, v))
             else:
                 # simple boolean value
                 action_list.append(k)
@@ -631,7 +631,7 @@ def enable_policy(name, enable=True):
     :return: ID of the policy
     """
     if not Policy.query.filter(Policy.name == name).first():
-        raise ParameterError("The policy with name '%s' does not exist" % name)
+        raise ParameterError("The policy with name '{0!s}' does not exist".format(name))
 
     # Update the policy
     p = set_policy(name=name, active=enable)
@@ -666,9 +666,9 @@ def export_policies(policies):
     file_contents = ""
     if policies:
         for policy in policies:
-            file_contents += "[%s]\n" % policy.get("name")
+            file_contents += "[{0!s}]\n".format(policy.get("name"))
             for key, value in policy.items():
-                file_contents += "%s = %s\n" % (key, value)
+                file_contents += "{0!s} = {1!s}\n".format(key, value)
             file_contents += "\n"
 
     return file_contents
@@ -701,7 +701,7 @@ def import_policies(file_contents):
                          time=policy.get("time", "")
                          )
         if ret > 0:
-            log.debug("import policy %s: %s" % (policy_name, ret))
+            log.debug("import policy {0!s}: {1!s}".format(policy_name, ret))
             res += 1
     return res
 

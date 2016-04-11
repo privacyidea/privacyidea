@@ -58,7 +58,7 @@ RyMSQe4mn8oHJma2VzepBRBpLt7Q==
 
         info = token.get_class_info()
         self.assertTrue(info.get("title") == "SSHkey Token",
-                        "%s" % info.get("title"))
+                        "{0!s}".format(info.get("title")))
 
         info = token.get_class_info("title")
         self.assertTrue(info == "SSHkey Token", info)

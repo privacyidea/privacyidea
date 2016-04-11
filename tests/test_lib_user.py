@@ -57,13 +57,13 @@ class UserTestCase(MyTestCase):
                     realm=self.realm1,
                     resolver=self.resolvername1)
         
-        user_str = "%s" % user
+        user_str = "{0!s}".format(user)
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
         
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
         
-        user_repr = "%r" % user
+        user_repr = "{0!r}".format(user)
         expected = "User(login='root', realm='realm1', resolver='resolver1')"
         self.assertTrue(user_repr == expected, user_repr)
         
@@ -190,7 +190,7 @@ class UserTestCase(MyTestCase):
         param = {"user": "cornelius",
                  "realm": self.realm2}
         user = get_user_from_param(param)
-        self.assertEqual("%s" % user, "<cornelius.resolver1@realm2>")
+        self.assertEqual("{0!s}".format(user), "<cornelius.resolver1@realm2>")
         
     def test_10_check_user_password(self):
         (added, failed) = set_realm("passwordrealm",

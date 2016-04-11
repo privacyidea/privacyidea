@@ -79,10 +79,10 @@ def cert_enroll():
     ca = request.form.get("ca")
     # TODO: Read the email address from the user source
     email = "meine"
-    csr = """SPKAC=%s
-CN=%s,CN=%s,O=%s
-emailAddress=%s
-""" % (request_key,
+    csr = """SPKAC={0!s}
+CN={1!s},CN={2!s},O={3!s}
+emailAddress={4!s}
+""".format(request_key,
        request.PI_username,
        request.PI_role,
        request.PI_realm,
@@ -101,7 +101,7 @@ emailAddress=%s
     return render_template("token_enrolled.html",
                            instance=instance,
                            backendUrl=backend_url,
-                           username="%s@%s" % (request.PI_username,
+                           username="{0!s}@{1!s}".format(request.PI_username,
                                                request.PI_realm),
                            role=request.PI_role,
                            serial=serial,

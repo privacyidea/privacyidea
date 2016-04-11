@@ -155,7 +155,7 @@ class APIU2fTestCase(MyTestCase):
             self.assertTrue("trustedFacets" in data)
 
         set_policy(name="facet1", scope=SCOPE.AUTH,
-                   action="%s=host1 host2 host3" % U2FACTION.FACETS)
+                   action="{0!s}=host1 host2 host3".format(U2FACTION.FACETS))
 
         with self.app.test_request_context('/ttype/u2f',
                                            method='GET'):

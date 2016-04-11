@@ -77,7 +77,7 @@ class AuditTestCase(MyTestCase):
         # with search filter
         tot = self.Audit.get_total({"action": "action2",
                                     "bullshit": "value"})
-        self.assertTrue(tot == 2, "Total numbers: %s" % tot)
+        self.assertTrue(tot == 2, "Total numbers: {0!s}".format(tot))
 
     def test_02_filter_search(self):
         # Prepare some audit entries:

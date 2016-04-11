@@ -161,7 +161,7 @@ class APITokenTestCase(MyTestCase):
             detail = json.loads(res.data).get("detail")
             tokenlist = result.get("value").get("tokens")
             # NO token assigned, yet
-            self.assertTrue(len(tokenlist) == 0, "%s" % tokenlist)
+            self.assertTrue(len(tokenlist) == 0, "{0!s}".format(tokenlist))
 
         # get unassigned tokens
         with self.app.test_request_context('/token/',
@@ -923,8 +923,8 @@ class APITokenTestCase(MyTestCase):
         for timestep in ["30", "60"]:
             with self.app.test_request_context('/token/init',
                                                data={"type": "totp",
-                                                     "serial": "totp%s" %
-                                                             timestep,
+                                                     "serial": "totp{0!s}".format(
+                                                             timestep),
                                                      "timeStep": timestep,
                                                      "genkey": "1"},
                                                method="POST",
@@ -935,7 +935,7 @@ class APITokenTestCase(MyTestCase):
                 self.assertTrue(result.get("value"))
                 detail = json.loads(res.data).get("detail")
 
-            token = get_tokens(serial="totp%s" % timestep)[0]
+            token = get_tokens(serial="totp{0!s}".format(timestep))[0]
             self.assertEqual(token.timestep, int(timestep))
 
     def test_17_enroll_certificate(self):
@@ -987,7 +987,7 @@ class APITokenTestCase(MyTestCase):
 
     def test_19_get_challenges(self):
         set_policy("chalresp", scope=SCOPE.AUTHZ,
-        action="%s=hotp" % ACTION.CHALLENGERESPONSE)
+        action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
         token = init_token({"genkey": 1, "serial": "CHAL1", "pin": "pin"})
         serial = token.token.serial
         r = check_serial_pass(serial, "pin")

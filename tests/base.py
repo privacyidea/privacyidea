@@ -49,13 +49,13 @@ class MyTestCase(unittest.TestCase):
                     realm=self.realm1,
                     resolver=self.resolvername1)
 
-        user_str = "%s" % user
+        user_str = "{0!s}".format(user)
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
 
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
 
-        user_repr = "%r" % user
+        user_repr = "{0!r}".format(user)
         expected = "User(login='root', realm='realm1', resolver='resolver1')"
         self.assertTrue(user_repr == expected, user_repr)
 
@@ -75,13 +75,13 @@ class MyTestCase(unittest.TestCase):
                     realm=self.realm2,
                     resolver=self.resolvername1)
 
-        user_str = "%s" % user
+        user_str = "{0!s}".format(user)
         self.assertTrue(user_str == "<root.resolver1@realm2>", user_str)
 
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
 
-        user_repr = "%r" % user
+        user_repr = "{0!r}".format(user)
         expected = "User(login='root', realm='realm2', resolver='resolver1')"
         self.assertTrue(user_repr == expected, user_repr)
 

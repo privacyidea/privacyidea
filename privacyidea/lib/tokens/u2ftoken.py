@@ -362,8 +362,8 @@ class U2fTokenClass(TokenClass):
         additional ``attributes``, which are displayed in the JSON response.
         """
         options = options or {}
-        message = 'Please confirm with your U2F token (%s)' % \
-                  self.token.description
+        message = 'Please confirm with your U2F token ({0!s})'.format( \
+                  self.token.description)
 
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
         tokentype = self.get_tokentype().lower()
@@ -444,8 +444,8 @@ class U2fTokenClass(TokenClass):
                     log.warning("The signature of %s was valid, but contained "
                                 "an old counter." % self.token.serial)
             else:
-                log.warning("Checking response for token %s failed." %
-                            self.token.serial)
+                log.warning("Checking response for token {0!s} failed.".format(
+                            self.token.serial))
 
         return ret
 
@@ -467,10 +467,10 @@ class U2fTokenClass(TokenClass):
         pol_facets = g.policy_object.get_action_values(U2FACTION.FACETS,
                                                        scope=SCOPE.AUTH,
                                                        client=g.client_ip)
-        facet_list = ["https://%s" % x for x in pol_facets]
+        facet_list = ["https://{0!s}".format(x) for x in pol_facets]
         facet_list.append(app_id)
 
-        log.debug("Sending facets lists for appId %s: %s" % (app_id,
+        log.debug("Sending facets lists for appId {0!s}: {1!s}".format(app_id,
                                                              facet_list))
         res = {"trustedFacets": [{"version": {"major": 1,
                                               "minor": 0},

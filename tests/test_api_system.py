@@ -379,7 +379,7 @@ class APIConfigTestCase(MyTestCase):
         resolvername = "reso1_with_realm"
         realmname = "realm1_with_resolver"
         # create a resolver
-        with self.app.test_request_context('/resolver/%s' % resolvername,
+        with self.app.test_request_context('/resolver/{0!s}'.format(resolvername),
                                            method='POST',
                                            data={"filename": PWFILE,
                                                  "type": "passwdresolver"},
@@ -392,7 +392,7 @@ class APIConfigTestCase(MyTestCase):
             self.assertTrue(result["value"] > 0, result)
 
         # create a realm
-        with self.app.test_request_context('/realm/%s' % realmname,
+        with self.app.test_request_context('/realm/{0!s}'.format(realmname),
                                            method='POST',
                                            data={"resolvers": resolvername},
                                            headers={'Authorization': self.at}):
@@ -429,7 +429,7 @@ class APIConfigTestCase(MyTestCase):
             self.assertTrue("adminrealm" in result["value"], result)
 
         # try to delete the resolver in the realm
-        with self.app.test_request_context('/resolver/%s' % resolvername,
+        with self.app.test_request_context('/resolver/{0!s}'.format(resolvername),
                                             method='DELETE',
                                             headers={'Authorization': self.at}):
             # The resolver must not be deleted, since it is contained in a realm
@@ -437,7 +437,7 @@ class APIConfigTestCase(MyTestCase):
             self.assertTrue(res.status_code == 400, res)
 
         # delete the realm
-        with self.app.test_request_context('/realm/%s' % realmname,
+        with self.app.test_request_context('/realm/{0!s}'.format(realmname),
                                             method='DELETE',
                                             headers={'Authorization': self.at}):
             # The realm gets deleted
@@ -449,7 +449,7 @@ class APIConfigTestCase(MyTestCase):
             self.assertTrue(result["value"] == 1, result)
 
         # Now, we can delete the resolver
-        with self.app.test_request_context('/resolver/%s' % resolvername,
+        with self.app.test_request_context('/resolver/{0!s}'.format(resolvername),
                                             method='DELETE',
                                             headers={'Authorization': self.at}):
             # The resolver must not be deleted, since it is contained in a realm
@@ -465,7 +465,7 @@ class APIConfigTestCase(MyTestCase):
     def test_10_default_realm(self):
         resolvername = "defresolver"
         realmname = "defrealm"
-        with self.app.test_request_context('/resolver/%s' % resolvername,
+        with self.app.test_request_context('/resolver/{0!s}'.format(resolvername),
                                            method='POST',
                                            data={"filename": PWFILE,
                                                  "type": "passwdresolver"},
@@ -476,7 +476,7 @@ class APIConfigTestCase(MyTestCase):
             self.assertTrue(result["status"] is True, result)
 
         # create a realm
-        with self.app.test_request_context('/realm/%s' % realmname,
+        with self.app.test_request_context('/realm/{0!s}'.format(realmname),
                                            method='POST',
                                            data={"resolvers": resolvername,
                                                  "priority.defresolver": 10},

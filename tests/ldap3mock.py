@@ -150,7 +150,7 @@ class Connection(object):
         # If we don't find a entry in the directory return
         if index == -1:
             self.result["result"] = 32
-            self.result["message"] = "Error no such object: %s" % dn
+            self.result["message"] = "Error no such object: {0!s}".format(dn)
             return False
 
         # extract the hash we are interested in

@@ -61,11 +61,11 @@ class privacyIDEAError(Exception):
         try:
             res = pstr % (self.id, self.message)
         except Exception as exx:
-            res = u"ERR%d: %r" % (self.id, self.message)
+            res = u"ERR{0:d}: {1!r}".format(self.id, self.message)
         return res
 
     def __repr__(self):
-        ret = '%s(description=%r, id=%d)' % (type(self).__name__,
+        ret = '{0!s}(description={1!r}, id={2:d})'.format(type(self).__name__,
                                              self.message, self.id)
         return ret
 
@@ -84,7 +84,7 @@ class BaseError(Exception):
                 "description": self.description}
         
     def __repr__(self):
-        ret = '%s(error=%r, description=%r, id=%d)' % (type(self).__name__,
+        ret = '{0!s}(error={1!r}, description={2!r}, id={3:d})'.format(type(self).__name__,
                                                        self.error,
                                                        self.description,
                                                        self.status_code)

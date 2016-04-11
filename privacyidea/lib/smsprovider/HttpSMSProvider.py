@@ -61,7 +61,7 @@ class HttpSMSProvider(ISMSProvider):
             log.warning("can not submit message. URL is missing.")
             raise SMSError(-1, "No URL specified in the provider config.")
 
-        log.debug("submitting message %s to %s" % (message, phone))
+        log.debug("submitting message {0!s} to {1!s}".format(message, phone))
 
         method = self.config.get('HTTP_Method', 'GET')
         username = self.config.get('USERNAME')
@@ -104,8 +104,8 @@ class HttpSMSProvider(ISMSProvider):
                       verify=ssl_verify,
                       auth=basic_auth,
                       proxies=proxies)
-        log.debug("queued SMS on the HTTP gateway. status code returned: %s" %
-                  r.status_code)
+        log.debug("queued SMS on the HTTP gateway. status code returned: {0!s}".format(
+                  r.status_code))
 
         # We assume, that all gateway return with HTTP Status Code 200
         if r.status_code != 200:
@@ -125,7 +125,7 @@ class HttpSMSProvider(ISMSProvider):
         urldata[messageKey] = message
         params = self.config.get('PARAMETER', {})
         urldata.update(params)
-        log.debug("[getParameters] urldata: %s" % urldata)
+        log.debug("[getParameters] urldata: {0!s}".format(urldata))
         return urldata
 
     def _check_success(self, response):

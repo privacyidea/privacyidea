@@ -112,7 +112,7 @@ def parse_registration_data(reg_data):
                                            attestation_cert))
     # TODO: Check the issuer of the certificate
     issuer = attestation_cert.get_issuer()
-    log.debug("The attestation certificate is signed by %s" % issuer)
+    log.debug("The attestation certificate is signed by {0!s}".format(issuer))
     not_after = attestation_cert.get_notAfter()
     not_before = attestation_cert.get_notBefore()
     log.debug("The attestation certificate "
@@ -122,7 +122,7 @@ def parse_registration_data(reg_data):
     # check the validity period of the certificate
     if start_time > time.localtime() or \
                     end_time < time.localtime():  #pragma no cover
-        log.error("The certificate is not valid. %s -> %s" % (not_before,
+        log.error("The certificate is not valid. {0!s} -> {1!s}".format(not_before,
                                                               not_after))
         raise Exception("The time of the attestation certificate is not "
                         "valid.")
@@ -268,7 +268,7 @@ def check_response(user_pub_key, app_id, client_data, signature,
     try:
         vkey.verify(signature_bin_asn, input_data)
     except ecdsa.BadSignatureError:
-        log.error("Bad signature for app_id %s" % app_id)
+        log.error("Bad signature for app_id {0!s}".format(app_id))
         res = False
     return res
 

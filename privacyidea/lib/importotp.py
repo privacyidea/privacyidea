@@ -75,7 +75,7 @@ class ImportException(Exception):
         self.description = description
 
     def __str__(self):
-        return ('%s' % self.description)
+        return ('{0!s}'.format(self.description))
 
 
 def getTagName(elem):
@@ -116,7 +116,7 @@ def parseOATHcsv(csv):
 
     csv_array = csv.split('\n')
 
-    log.debug("the file contains %i tokens." % len(csv_array))
+    log.debug("the file contains {0:d} tokens.".format(len(csv_array)))
     for line in csv_array:
         l = line.split(',')
         serial = ""
@@ -136,7 +136,7 @@ def parseOATHcsv(csv):
                 if len(key) == 32:
                     hashlib = "sha256"
             else:
-                log.error("the line %s did not contain a hotp key" % line)
+                log.error("the line {0!s} did not contain a hotp key".format(line))
                 continue
 
             # ttype
@@ -154,8 +154,7 @@ def parseOATHcsv(csv):
             if len(l) >= 5:
                 seconds = int(l[4].strip())
 
-            log.debug("read the line |%s|%s|%s|%i %s|%i|" %
-                      (serial, key, ttype, otplen, ocrasuite, seconds))
+            log.debug("read the line |{0!s}|{1!s}|{2!s}|{3:d} {4!s}|{5:d}|".format(serial, key, ttype, otplen, ocrasuite, seconds))
 
             TOKENS[serial] = {'type': ttype,
                               'otpkey': key,
@@ -215,7 +214,7 @@ def parseYubicoCSV(csv):
     TOKENS = {}
     csv_array = csv.split('\n')
 
-    log.debug("the file contains %i tokens." % len(csv_array))
+    log.debug("the file contains {0:d} tokens.".format(len(csv_array)))
     for line in csv_array:
         l = line.split(',')
         serial = ""
@@ -237,7 +236,7 @@ def parseYubicoCSV(csv):
                 if public_id == "":
                     # Usually a "static password" does not have a public ID!
                     # So we would bail out here for static passwords.
-                    log.warning("No public ID in line %r" % line)
+                    log.warning("No public ID in line {0!r}".format(line))
                     continue
 
                 serial_int = int(binascii.hexlify(modhex_decode(public_id)),
@@ -246,7 +245,7 @@ def parseYubicoCSV(csv):
                 if typ.lower() == "yubico otp":
                     ttype = "yubikey"
                     otplen = 32 + len(public_id)
-                    serial = "UBAM%08d_%s" % (serial_int, slot)
+                    serial = "UBAM{0:08d}_{1!s}".format(serial_int, slot)
                     TOKENS[serial] = {'type': ttype,
                                       'otpkey': key,
                                       'otplen': otplen,
@@ -263,7 +262,7 @@ def parseYubicoCSV(csv):
                     '''
                     ttype = "hotp"
                     otplen = 6
-                    serial = "UBOM%08d_%s" % (serial_int, slot)
+                    serial = "UBOM{0:08d}_{1!s}".format(serial_int, slot)
                     TOKENS[serial] = {'type': ttype,
                                       'otpkey': key,
                                       'otplen': otplen,
@@ -283,12 +282,12 @@ def parseYubicoCSV(csv):
                 if l[2].strip() == "0":
                     # HOTP
                     typ = "hotp"
-                    serial = "UBOM%s_%s" % (serial, slot)
+                    serial = "UBOM{0!s}_{1!s}".format(serial, slot)
                     otplen = 6
                 elif l[2].strip() == "":
                     # Static
                     typ = "pw"
-                    serial = "UBSM%s_%s" % (serial, slot)
+                    serial = "UBSM{0!s}_{1!s}".format(serial, slot)
                     key = _create_static_password(key)
                     otplen = len(key)
                     log.warning("We can not enroll a static mode, since we do"
@@ -298,7 +297,7 @@ def parseYubicoCSV(csv):
                 else:
                     # Yubico
                     typ = "yubikey"
-                    serial = "UBAM%s_%s" % (serial, slot)
+                    serial = "UBAM{0!s}_{1!s}".format(serial, slot)
                     public_id = l[1].strip()
                     otplen = 32 + len(public_id)
                 TOKENS[serial] = {'type': typ,
@@ -307,7 +306,7 @@ def parseYubicoCSV(csv):
                                   'description': public_id
                                   }
         else:
-            log.warning("the line %r did not contain a enough values" % line)
+            log.warning("the line {0!r} did not contain a enough values".format(line))
             continue
 
     return TOKENS
@@ -336,7 +335,7 @@ def parseSafeNetXML(xml):
         DESCRIPTION = None
         if getTagName(elem_token) == "Token":
             SERIAL = elem_token.get("serial")
-            log.debug("Found token with serial %s" % SERIAL)
+            log.debug("Found token with serial {0!s}".format(SERIAL))
             for elem_tdata in list(elem_token):
                 tag = getTagName(elem_tdata)
                 if "ProductName" == tag:
@@ -366,8 +365,8 @@ def parseSafeNetXML(xml):
                                       'hashlib': hashlib
                                       }
                 else:
-                    log.error("Found token %s without a element 'Seed'" %
-                              SERIAL)
+                    log.error("Found token {0!s} without a element 'Seed'".format(
+                              SERIAL))
 
     return TOKENS
 
@@ -460,12 +459,12 @@ def parsePSKCdata(xml_data,
         try:
             token["description"] = key_package.deviceinfo.manufacturer.string
         except Exception as exx:
-            log.debug("Can not get manufacturer string %s" % exx)
+            log.debug("Can not get manufacturer string {0!s}".format(exx))
         serial = key["id"]
         try:
             serial = key_package.deviceinfo.serialno.string
         except Exception as exx:
-            log.debug("Can not get serial string from device info %s" % exx)
+            log.debug("Can not get serial string from device info {0!s}".format(exx))
         algo = key["algorithm"]
         token["type"] = algo[-4:].lower()
         parameters = key.algorithmparameters
@@ -488,7 +487,7 @@ def parsePSKCdata(xml_data,
                                      enc_iv, enc_cipher)
                 token["otpkey"] = binascii.hexlify(secret)
         except Exception as exx:
-            log.error("Failed to import tokendata: %s" % exx)
+            log.error("Failed to import tokendata: {0!s}".format(exx))
             log.debug(traceback.format_exc())
             raise ImportException("Failed to import tokendata. Wrong "
                                   "encryption key? %s" % exx)

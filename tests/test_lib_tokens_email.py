@@ -47,13 +47,13 @@ class EmailTokenTestCase(MyTestCase):
                     realm=self.realm1,
                     resolver=self.resolvername1)
 
-        user_str = "%s" % user
+        user_str = "{0!s}".format(user)
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
 
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
 
-        user_repr = "%r" % user
+        user_repr = "{0!r}".format(user)
         expected = "User(login='root', realm='realm1', resolver='resolver1')"
         self.assertTrue(user_repr == expected, user_repr)
 
@@ -335,7 +335,7 @@ class EmailTokenTestCase(MyTestCase):
     def test_19_emailtext(self):
         # create a EMAILTEXT policy:
         p = set_policy(name="emailtext",
-                       action="%s=%s" % (EMAILACTION.EMAILTEXT, "'Your <otp>'"),
+                       action="{0!s}={1!s}".format(EMAILACTION.EMAILTEXT, "'Your <otp>'"),
                        scope=SCOPE.AUTH)
         self.assertTrue(p > 0)
 

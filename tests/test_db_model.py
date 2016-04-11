@@ -169,7 +169,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(t3.get_info().get("info") == "value")
         
         # test the string represenative
-        s = "%s" % t3
+        s = "{0!s}".format(t3)
         self.assertTrue(s == "serial2")
         
         # update token type
@@ -198,7 +198,7 @@ class TokenModelTestCase(MyTestCase):
         
         cid = c.save()
         self.assertTrue(cid == "splitRealm", cid)
-        self.assertTrue(u"%s" % c == "<splitRealm (string)>", c)
+        self.assertTrue(u"{0!s}".format(c) == "<splitRealm (string)>", c)
         
         # delete the config
         config = Config.query.filter_by(Key="splitRealm").first()
@@ -366,9 +366,9 @@ class TokenModelTestCase(MyTestCase):
         c.set_challenge("challenge")
         self.assertTrue(c.get_challenge() == "challenge", c.challenge)
         
-        self.assertTrue("otp_received" in "%s" % c, "%s" % c)
-        self.assertTrue("transaction_id" in "%s" % c, "%s" % c)
-        self.assertTrue("timestamp" in "%s" % c, "%s" % c)
+        self.assertTrue("otp_received" in "{0!s}".format(c), "{0!s}".format(c))
+        self.assertTrue("transaction_id" in "{0!s}".format(c), "{0!s}".format(c))
+        self.assertTrue("timestamp" in "{0!s}".format(c), "{0!s}".format(c))
         
         # test with timestamp=True, which results in something like this:
         timestamp = '2014-11-29 21:56:43.057293'
