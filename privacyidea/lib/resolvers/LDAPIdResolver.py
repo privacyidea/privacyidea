@@ -682,6 +682,13 @@ class IdResolver (UserIdResolver):
             self._bind()
 
             params = self._attributes_to_ldap_attributes(attributes)
+            # Create ability to add a callback to massage the objectclass(es)
+            # and attributes before the ldapadd is carried out
+            try:
+                from privacyidea.local.lib.resolvers.callbacks import beforeLDAPAdd 
+                uid, object_class, params = beforeLDAPAdd(uid, object_class, params)
+            except Exception as e:
+                pass
             self.l.add(uid, object_class, params)
         except Exception as e:
             log.error("Error accessing LDAP server: %s" % e)
