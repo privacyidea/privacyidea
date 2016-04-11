@@ -42,9 +42,9 @@ log = logging.getLogger(__name__)
 caconnector_blueprint = Blueprint('caconnector_blueprint', __name__)
 
 
-@log_with(log)
 @caconnector_blueprint.route('/<name>', methods=['GET'])
 @caconnector_blueprint.route('/', methods=['GET'])
+@log_with(log)
 #@prepolicy(check_base_action, request, ACTION.CACONNECTORREAD)
 def get_caconnector_api(name=None):
     """
@@ -58,8 +58,8 @@ def get_caconnector_api(name=None):
     return send_result(res)
 
 
-@log_with(log)
 @caconnector_blueprint.route('/<name>', methods=['POST'])
+@log_with(log)
 @prepolicy(check_base_action, request, ACTION.CACONNECTORWRITE)
 @admin_required
 def save_caconnector_api(name=None):
@@ -74,8 +74,8 @@ def save_caconnector_api(name=None):
     return send_result(res)
 
 
-@log_with(log)
 @caconnector_blueprint.route('/<name>', methods=['DELETE'])
+@log_with(log)
 @prepolicy(check_base_action, request, ACTION.CACONNECTORDELETE)
 @admin_required
 def delete_caconnector_api(name=None):

@@ -47,8 +47,8 @@ log = logging.getLogger(__name__)
 machineresolver_blueprint = Blueprint('machineresolver_blueprint', __name__)
 
 
-@log_with(log)
 @machineresolver_blueprint.route('/', methods=['GET'])
+@log_with(log)
 def get_resolvers():
     """
     returns a json list of all machine resolver.
@@ -61,8 +61,8 @@ def get_resolvers():
     return send_result(res)
 
 
-@log_with(log)
 @machineresolver_blueprint.route('/<resolver>', methods=['POST'])
+@log_with(log)
 @prepolicy(check_base_action, request, ACTION.MACHINERESOLVERWRITE)
 def set_resolver(resolver=None):
     """
@@ -94,8 +94,8 @@ def set_resolver(resolver=None):
     return send_result(res)
 
 
-@log_with(log)
 @machineresolver_blueprint.route('/<resolver>', methods=['DELETE'])
+@log_with(log)
 @prepolicy(check_base_action, request, ACTION.MACHINERESOLVERDELETE)
 def delete_resolver_api(resolver=None):
     """
@@ -111,8 +111,8 @@ def delete_resolver_api(resolver=None):
     return send_result(res)
 
 
-@log_with(log)
 @machineresolver_blueprint.route('/<resolver>', methods=['GET'])
+@log_with(log)
 def get_resolver(resolver=None):
     """
     This function retrieves the definition of a single machine resolver.
@@ -127,8 +127,9 @@ def get_resolver(resolver=None):
 
     return send_result(res)
 
-@log_with(log)
+
 @machineresolver_blueprint.route('/test', methods=["POST"])
+@log_with(log)
 def test_resolver():
     """
     This function tests, if the given parameter will create a working

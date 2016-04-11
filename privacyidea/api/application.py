@@ -41,8 +41,8 @@ log = logging.getLogger(__name__)
 application_blueprint = Blueprint('application_blueprint', __name__)
 
 
-@log_with(log)
 @application_blueprint.route('/', methods=['GET'])
+@log_with(log)
 def get_applications():
     """
     returns a json list of the available applications
