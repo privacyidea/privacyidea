@@ -154,7 +154,7 @@ class FourEyesTokenClass(TokenClass):
         if type(realms) is dict:
             for realmname, v in realms.items():
                 if v.get("selected"):
-                    realms_string += "%s:%s," % (realmname, v.get("count"))
+                    realms_string += "{0!s}:{1!s},".format(realmname, v.get("count"))
             if realms_string[-1] == ',':
                 realms_string = realms_string[:-1]
         else:
@@ -250,7 +250,7 @@ class FourEyesTokenClass(TokenClass):
             found_serials[realm] = list(set(found_serials[realm]))
 
             if len(found_serials[realm]) < required_realms[realm]:
-                reply = {"foureyes": "Only found %i tokens in realm %s" % (
+                reply = {"foureyes": "Only found {0:d} tokens in realm {1!s}".format(
                     len(found_serials[realm]), realm)}
                 otp_counter = -1
                 break

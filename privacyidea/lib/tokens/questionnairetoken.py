@@ -231,8 +231,8 @@ class QuestionnaireTokenClass(TokenClass):
         if answer == given_answer:
             res = 1
         else:
-            log.debug("The answer for token %s does not match." %
-                      self.get_serial())
+            log.debug("The answer for token {0!s} does not match.".format(
+                      self.get_serial()))
         return res
 
     @check_token_locked

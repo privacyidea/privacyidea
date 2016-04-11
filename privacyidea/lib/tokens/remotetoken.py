@@ -164,7 +164,7 @@ class RemoteTokenClass(TokenClass):
         local_check = False
         if 1 == int(self.get_tokeninfo("remote.local_checkpin")):
             local_check = True
-        log.debug(" local checking pin? %r" % local_check)
+        log.debug(" local checking pin? {0!r}".format(local_check))
 
         return local_check
 
@@ -275,7 +275,7 @@ class RemoteTokenClass(TokenClass):
             return otp_count
 
         params['pass'] = otpval
-        request_url = "%s%s" % (remoteServer, remotePath)
+        request_url = "{0!s}{1!s}".format(remoteServer, remotePath)
 
         try:
             r = requests.post(request_url, data=params, verify=ssl_verify)
@@ -289,7 +289,7 @@ class RemoteTokenClass(TokenClass):
         except Exception as exx:  # pragma: no cover
             log.error("Error getting response from "
                       "remote Server (%r): %r" % (request_url, exx))
-            log.debug("%s" % traceback.format_exc())
+            log.debug("{0!s}".format(traceback.format_exc()))
 
         return otp_count
 

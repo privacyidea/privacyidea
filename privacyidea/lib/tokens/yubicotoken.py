@@ -118,8 +118,8 @@ class YubicoTokenClass(TokenClass):
     def update(self, param):
         tokenid = getParam(param, "yubico.tokenid", required)
         if len(tokenid) < YUBICO_LEN_ID:
-            log.error("The tokenid needs to be %i characters long!" % YUBICO_LEN_ID)
-            raise Exception("The Yubikey token ID needs to be %i characters long!" % YUBICO_LEN_ID)
+            log.error("The tokenid needs to be {0:d} characters long!".format(YUBICO_LEN_ID))
+            raise Exception("The Yubikey token ID needs to be {0:d} characters long!".format(YUBICO_LEN_ID))
 
         if len(tokenid) > YUBICO_LEN_ID:
             tokenid = tokenid[:YUBICO_LEN_ID]
@@ -150,7 +150,7 @@ class YubicoTokenClass(TokenClass):
 
         tokenid = self.get_tokeninfo("yubico.tokenid")
         if len(anOtpVal) < 12:
-            log.warning("The otpval is too short: %r" % anOtpVal)
+            log.warning("The otpval is too short: {0!r}".format(anOtpVal))
         elif anOtpVal[:12] != tokenid:
             log.warning("The tokenid in the OTP value does not match "
                         "the assigned token!")
@@ -194,11 +194,11 @@ class YubicoTokenClass(TokenClass):
                     else:
                         # possible results are listed here:
                         # https://github.com/Yubico/yubikey-val/wiki/ValidationProtocolV20
-                        log.warning("failed with %r" % result)
+                        log.warning("failed with {0!r}".format(result))
 
             except Exception as ex:
                 log.error("Error getting response from Yubico Cloud Server"
                           " (%r): %r" % (yubico_url, ex))
-                log.debug("%s" % traceback.format_exc())
+                log.debug("{0!s}".format(traceback.format_exc()))
 
         return res

@@ -142,11 +142,10 @@ class HmacOtp(object):
             start = 0 if (start < 0) else start
             end = self.counter + (window)
 
-        log.debug("OTP range counter: %r - %r" % (start, end))
+        log.debug("OTP range counter: {0!r} - {1!r}".format(start, end))
         for c in range(start, end):
             otpval = self.generate(c)
-            log.debug("calculating counter %r: %r %r"
-                      % (c, anOtpVal, otpval))
+            log.debug("calculating counter {0!r}: {1!r} {2!r}".format(c, anOtpVal, otpval))
 
             if unicode(otpval) == unicode(anOtpVal):
                 res = c

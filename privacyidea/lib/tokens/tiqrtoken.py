@@ -203,12 +203,12 @@ class TiqrTokenClass(TokenClass):
         response_detail = TokenClass.get_init_detail(self, params, user)
         params = params or {}
         enroll_url = get_from_config("tiqr.regServer")
-        log.info("using tiqr.regServer for enrollment: %s" % enroll_url)
+        log.info("using tiqr.regServer for enrollment: {0!s}".format(enroll_url))
         serial = self.token.serial
         session = generate_otpkey()
         # save the session in the token
         self.add_tokeninfo("session", session)
-        tiqrenroll = "tiqrenroll://%s?action=%s&session=%s&serial=%s" % (
+        tiqrenroll = "tiqrenroll://{0!s}?action={1!s}&session={2!s}&serial={3!s}".format(
             enroll_url, API_ACTIONS.METADATA,
             session, serial)
 
@@ -236,8 +236,8 @@ class TiqrTokenClass(TokenClass):
         action = getParam(params, "action", optional) or \
                  API_ACTIONS.AUTHENTICATION
         if action not in API_ACTIONS.ALLOWED_ACTIONS:
-            raise ParameterError("Allowed actions are %s" %
-                                 API_ACTIONS.ALLOWED_ACTIONS)
+            raise ParameterError("Allowed actions are {0!s}".format(
+                                 API_ACTIONS.ALLOWED_ACTIONS))
 
         if action == API_ACTIONS.METADATA:
             session = getParam(params, "session", required)
@@ -246,7 +246,7 @@ class TiqrTokenClass(TokenClass):
             # We need to set the user ID
             tokens = get_tokens(serial=serial)
             if not tokens:  # pragma: no cover
-                raise ParameterError("No token with serial %s" % serial)
+                raise ParameterError("No token with serial {0!s}".format(serial))
             user_identifier, user_displayname = tokens[0].get_user_displayname()
 
             service_identifier = get_from_config("tiqr.serviceIdentifier") or\
@@ -263,10 +263,10 @@ class TiqrTokenClass(TokenClass):
                        "logoUrl": logo_url,
                        "infoUrl": "https://www.privacyidea.org",
                        "authenticationUrl":
-                           "%s" % auth_server,
+                           "{0!s}".format(auth_server),
                        "ocraSuite": ocrasuite,
                        "enrollmentUrl":
-                           "%s?action=%s&session=%s&serial=%s" % (
+                           "{0!s}?action={1!s}&session={2!s}&serial={3!s}".format(
                                reg_server,
                                API_ACTIONS.ENROLLMENT,
                                session, serial)
@@ -417,7 +417,7 @@ class TiqrTokenClass(TokenClass):
                                  validitytime=validity)
         db_challenge.save()
 
-        authurl = "tiqrauth://%s@%s/%s/%s" % (user_identifier,
+        authurl = "tiqrauth://{0!s}@{1!s}/{2!s}/{3!s}".format(user_identifier,
                                               service_identifier,
                                               db_challenge.transaction_id,
                                               challenge)

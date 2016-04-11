@@ -79,8 +79,8 @@ class SipgateSMSProvider(ISMSProvider):
                           auth=(username, password),
                           proxies=proxies)
 
-        log.debug("SMS submitted: %s" % r.status_code)
-        log.debug("response content: %s" % r.text)
+        log.debug("SMS submitted: {0!s}".format(r.status_code))
+        log.debug("response content: {0!s}".format(r.text))
 
         if r.status_code != 200:
             raise SMSError(r.status_code, "SMS could not be "

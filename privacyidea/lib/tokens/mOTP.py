@@ -110,8 +110,7 @@ class mTimeOtp(object):
             otp = unicode(self.calcOtp(i, key, pin))
             if unicode(anOtpVal) == otp:
                 res = i
-                log.debug("otpvalue %r found at: %r" %
-                            (anOtpVal, res))
+                log.debug("otpvalue {0!r} found at: {1!r}".format(anOtpVal, res))
                 break
 
         if self.secretObject is not None:
@@ -122,15 +121,14 @@ class mTimeOtp(object):
 
         ## prevent access twice with last motp
         if res <= self.oldtime:
-            log.warning("otpvalue %s checked once before (%r<=%r)" %
-                        (anOtpVal, res, self.oldtime))
+            log.warning("otpvalue {0!s} checked once before ({1!r}<={2!r})".format(anOtpVal, res, self.oldtime))
             res = -1
         if res == -1:
             msg = 'checking motp failed'
         else:
             msg = 'checking motp sucess'
 
-        log.debug("end. %s : returning result: %r, " % (msg, res))
+        log.debug("end. {0!s} : returning result: {1!r}, ".format(msg, res))
         return res
 
     def calcOtp(self, counter, key=None, pin=None):
@@ -150,7 +148,7 @@ class mTimeOtp(object):
         if key is None:
             key = self.key
 
-        vhash = "%d%s%s" % (counter, key, pin)
+        vhash = "{0:d}{1!s}{2!s}".format(counter, key, pin)
         motp = md5(vhash).hexdigest()[:self.digits]
         return motp
 

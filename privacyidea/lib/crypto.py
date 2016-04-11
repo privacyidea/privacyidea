@@ -546,7 +546,7 @@ def get_rand_digit_str(length=16):
         raise ValueError("get_rand_digit_str only works for values > 1")
     clen = int(length / 2.4 + 0.5)
     randd = geturandom(clen)
-    s = "%d" % (int(randd.encode('hex'), 16))
+    s = "{0:d}".format((int(randd.encode('hex'), 16)))
     if len(s) < length:
         s = "0" * (length - len(s)) + s
     elif len(s) > length:
@@ -606,7 +606,7 @@ class Sign(object):
             self.private = f.read()
             f.close()
         except Exception as e:
-            log.error("Error reading private key %s: (%r)" % (private_file, e))
+            log.error("Error reading private key {0!s}: ({1!r})".format(private_file, e))
             raise e
 
         try:
@@ -614,7 +614,7 @@ class Sign(object):
             self.public = f.read()
             f.close()
         except Exception as e:
-            log.error("Error reading public key %s: (%r)" % (public_file, e))
+            log.error("Error reading public key {0!s}: ({1!r})".format(public_file, e))
             raise e
 
     def sign(self, s):
@@ -649,6 +649,6 @@ class Sign(object):
                 hashvalue = HashFunc.new(s)
                 pkcs1_15.new(RSAkey).verify(hashvalue, signature)
         except Exception:  # pragma: no cover
-            log.error("Failed to verify signature: %r" % s)
-            log.debug("%s" % traceback.format_exc())
+            log.error("Failed to verify signature: {0!r}".format(s))
+            log.debug("{0!s}".format(traceback.format_exc()))
         return r

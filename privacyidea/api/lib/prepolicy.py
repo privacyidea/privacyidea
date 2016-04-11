@@ -121,7 +121,7 @@ def init_random_pin(request=None, action=None):
                                                unique=True)
 
     if len(pin_pols) == 1:
-        log.debug("Creating random OTP PIN with length %s" % pin_pols[0])
+        log.debug("Creating random OTP PIN with length {0!s}".format(pin_pols[0]))
         request.all_data["pin"] = generate_password(size=int(pin_pols[0]))
 
         # handle the PIN
@@ -132,7 +132,7 @@ def init_random_pin(request=None, action=None):
         # We can have more than one pin handler policy. So we can process the
         #  PIN in several ways!
         for handle_pol in handle_pols:
-            log.debug("Handle the random PIN with the class %s" % handle_pol)
+            log.debug("Handle the random PIN with the class {0!s}".format(handle_pol))
             packageName = ".".join(handle_pol.split(".")[:-1])
             className = handle_pol.split(".")[-1:][0]
             mod = __import__(packageName, globals(), locals(), [className])
@@ -196,13 +196,13 @@ def check_otp_pin(request=None, action=None):
 
         if len(pol_minlen) == 1 and len(pin) < int(pol_minlen[0]):
             # check the minimum length requirement
-            raise PolicyError("The minimum OTP PIN length is %s" %
-                              pol_minlen[0])
+            raise PolicyError("The minimum OTP PIN length is {0!s}".format(
+                              pol_minlen[0]))
 
         if len(pol_maxlen) == 1 and len(pin) > int(pol_maxlen[0]):
             # check the maximum length requirement
-            raise PolicyError("The maximum OTP PIN length is %s" %
-                              pol_minlen[0])
+            raise PolicyError("The maximum OTP PIN length is {0!s}".format(
+                              pol_minlen[0]))
 
         if len(pol_contents) == 1:
             # check the contents requirement
@@ -220,11 +220,11 @@ def check_otp_pin(request=None, action=None):
                 pol_contents = pol_contents[1:]
             #  TODO implement grouping and substraction
             if "c" in pol_contents[0] and not re.search(chars, pin):
-                raise PolicyError("Missing character in PIN: %s" % chars)
+                raise PolicyError("Missing character in PIN: {0!s}".format(chars))
             if "n" in pol_contents[0] and not re.search(digits, pin):
-                raise PolicyError("Missing character in PIN: %s" % digits)
+                raise PolicyError("Missing character in PIN: {0!s}".format(digits))
             if "s" in pol_contents[0] and not re.search(special, pin):
-                raise PolicyError("Missing character in PIN: %s" % special)
+                raise PolicyError("Missing character in PIN: {0!s}".format(special))
 
     return True
 
@@ -483,7 +483,7 @@ def mangle(request=None, action=None):
         mangle_key, search, replace, _rest = mangle_pol_action.split("/", 3)
         mangle_value = request.all_data.get(mangle_key)
         if mangle_value:
-            log.debug("mangling authentication data: %s" % mangle_key)
+            log.debug("mangling authentication data: {0!s}".format(mangle_key))
             request.all_data[mangle_key] = re.sub(search, replace,
                                                   mangle_value)
     return True
@@ -625,7 +625,7 @@ def check_token_init(request=None, action=None):
         scope = SCOPE.USER
         admin_realm = None
     tokentype = params.get("type", "HOTP")
-    action = "enroll%s" % tokentype.upper()
+    action = "enroll{0!s}".format(tokentype.upper())
     action = policy_object.get_policies(action=action,
                                         user=username,
                                         realm=params.get("realm"),
@@ -660,7 +660,7 @@ def check_external(request=None, action="init"):
             module = importlib.import_module(module_name)
             function_name = module_func.split(".")[-1]
     except Exception as exx:
-        log.error("Error importing external check function: %s" % exx)
+        log.error("Error importing external check function: {0!s}".format(exx))
 
     # Import of function was successful
     if function_name:

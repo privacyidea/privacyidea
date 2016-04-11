@@ -128,7 +128,7 @@ class IdResolver (UserIdResolver):
             # In fact we need the sAMAccountName. If the username mapping is
             # another attribute than the sAMAccountName the authentication
             # will fail!
-            bind_user = "%s\%s" % (domain_name, uinfo.get("username"))
+            bind_user = "{0!s}\{1!s}".format(domain_name, uinfo.get("username"))
         else:
             bind_user = self._getDN(uid)
 
@@ -136,8 +136,8 @@ class IdResolver (UserIdResolver):
         password = to_utf8(password)
 
         try:
-            log.debug("Authtype: %s" % self.authtype)
-            log.debug("user    : %s" % bind_user)
+            log.debug("Authtype: {0!s}".format(self.authtype))
+            log.debug("user    : {0!s}".format(bind_user))
             # Whatever happens. If we have an empty bind_user, we must break
             # since we must avoid anonymous binds!
             if not bind_user or len(bind_user) < 1:
@@ -149,15 +149,14 @@ class IdResolver (UserIdResolver):
                                        auto_referrals=not self.noreferrals)
             l.open()
             r = l.bind()
-            log.debug("bind result: %s" % r)
+            log.debug("bind result: {0!s}".format(r))
             if not r:
                 raise Exception("Wrong credentials")
             log.debug("bind seems successful.")
             l.unbind()
             log.debug("unbind successful.")
         except Exception as e:
-            log.warning("failed to check password for %r/%r: %r"
-                        % (uid, bind_user, e))
+            log.warning("failed to check password for {0!r}/{1!r}: {2!r}".format(uid, bind_user, e))
             return False
         
         return True
@@ -235,12 +234,11 @@ class IdResolver (UserIdResolver):
             dn = userId
         else:
             if self.uidtype == "objectGUID":
-                userId = uuid.UUID("{%s}" % userId).bytes_le
+                userId = uuid.UUID("{{{0!s}}}".format(userId)).bytes_le
                 userId = escape_bytes(userId)
             # get the DN for the Object
             self._bind()
-            filter = "(&%s(%s=%s))" % \
-                (self.searchfilter, self.uidtype, userId)
+            filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter, self.uidtype, userId)
             self.l.search(search_base=self.basedn,
                           search_scope=self.scope,
                           search_filter=filter,
@@ -248,8 +246,7 @@ class IdResolver (UserIdResolver):
             r = self.l.response
             r = self._trim_result(r)
             if len(r) > 1:  # pragma: no cover
-                raise Exception("Found more than one object for uid %r"
-                                % userId)
+                raise Exception("Found more than one object for uid {0!r}".format(userId))
             if len(r) == 1:
                 dn = r[0].get("dn")
 
@@ -289,10 +286,9 @@ class IdResolver (UserIdResolver):
                           attributes=self.userinfo.values())
         else:
             if self.uidtype == "objectGUID":
-                userId = uuid.UUID("{%s}" % userId).bytes_le
+                userId = uuid.UUID("{{{0!s}}}".format(userId)).bytes_le
                 userId = escape_bytes(userId)
-            filter = "(&%s(%s=%s))" %\
-                (self.searchfilter, self.uidtype, userId)
+            filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter, self.uidtype, userId)
             self.l.search(search_base=self.basedn,
                               search_scope=self.scope,
                               search_filter=filter,
@@ -301,7 +297,7 @@ class IdResolver (UserIdResolver):
         r = self.l.response
         r = self._trim_result(r)
         if len(r) > 1:  # pragma: no cover
-            raise Exception("Found more than one object for uid %r" % userId)
+            raise Exception("Found more than one object for uid {0!r}".format(userId))
 
         for entry in r:
             attributes = entry.get("attributes")
@@ -353,8 +349,7 @@ class IdResolver (UserIdResolver):
         """
         userid = ""
         self._bind()
-        filter = "(&%s(%s=%s))" % \
-            (self.searchfilter, self.loginname_attribute,
+        filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter, self.loginname_attribute,
              self._escape_loginname(LoginName))
 
         # create search attributes
@@ -370,8 +365,8 @@ class IdResolver (UserIdResolver):
         r = self.l.response
         r = self._trim_result(r)
         if len(r) > 1:  # pragma: no cover
-            raise Exception("Found more than one object for Loginname %r" %
-                            LoginName)
+            raise Exception("Found more than one object for Loginname {0!r}".format(
+                            LoginName))
         
         for entry in r:
             userid = self._get_uid(entry, self.uidtype)
@@ -398,13 +393,12 @@ class IdResolver (UserIdResolver):
                 comperator = ">="
                 if searchDict[search_key] in ["1", 1]:
                     comperator = "<="
-                filter += "(|(%s%s%s)(%s!=0))" % (self.userinfo[search_key],
+                filter += "(|({0!s}{1!s}{2!s})({3!s}!=0))".format(self.userinfo[search_key],
                                                   comperator,
                                                   get_ad_timestamp_now(),
                                                   self.userinfo[search_key])
             else:
-                filter += "(%s=%s)" % \
-                    (self.userinfo[search_key], searchDict[search_key])
+                filter += "({0!s}={1!s})".format(self.userinfo[search_key], searchDict[search_key])
         filter += ")"
 
         g = self.l.extend.standard.paged_search(search_base=self.basedn,
@@ -425,8 +419,8 @@ class IdResolver (UserIdResolver):
                 user['userid'] = self._get_uid(entry, self.uidtype)
                 ret.append(user)
             except Exception as exx:  # pragma: no cover
-                log.error("Error during fetching LDAP objects: %r" % exx)
-                log.debug("%s" % traceback.format_exc())
+                log.error("Error during fetching LDAP objects: {0!r}".format(exx))
+                log.debug("{0!s}".format(traceback.format_exc()))
 
         return ret
     
@@ -556,7 +550,7 @@ class IdResolver (UserIdResolver):
                                   use_ssl=ssl,
                                   connect_timeout=float(timeout))
             server_pool.add(server)
-            log.debug("Added %s, %s, %s to server pool." % (host, port, ssl))
+            log.debug("Added {0!s}, {1!s}, {2!s} to server pool.".format(host, port, ssl))
         return server_pool
 
     @classmethod
@@ -656,7 +650,7 @@ class IdResolver (UserIdResolver):
             success = True
             
         except Exception as e:
-            desc = "%r" % e
+            desc = "{0!r}".format(e)
         
         return success, desc
 
@@ -731,12 +725,12 @@ class IdResolver (UserIdResolver):
             params = self._attributes_to_ldap_attributes(mapped)
             self.l.modify(self._getDN(uid), params)
         except Exception as e:
-            log.error("Error accessing LDAP server: %s" % e)
-            log.debug("%s" % traceback.format_exc())
+            log.error("Error accessing LDAP server: {0!s}".format(e))
+            log.debug("{0!s}".format(traceback.format_exc()))
             return False
 
         if self.l.result.get('result') != 0:
-            log.error("Error during update of user %s: %s" % (uid, self.l.result.get("message")))
+            log.error("Error during update of user {0!s}: {1!s}".format(uid, self.l.result.get("message")))
             return False
 
         return True
@@ -787,6 +781,6 @@ class IdResolver (UserIdResolver):
                                  check_names=check_names,
                                  auto_referrals=auto_referrals)
         else:
-            raise Exception("Authtype %s not supported" % authtype)
+            raise Exception("Authtype {0!s} not supported".format(authtype))
 
         return l

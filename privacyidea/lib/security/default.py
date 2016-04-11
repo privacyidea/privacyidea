@@ -84,59 +84,51 @@ class SecurityModule(object):
         fname = 'setup_module'
         log.error("This is the base class. You should implement "
                   "the method : %s " % (fname,))
-        raise NotImplementedError("Should have been implemented %s"
-                                  % fname)
+        raise NotImplementedError("Should have been implemented {0!s}".format(fname))
 
     ''' base methods '''
     def random(self, length):
         fname = 'random'
         log.error("This is the base class. You should implement "
                   "the method : %s " % (fname,))
-        raise NotImplementedError("Should have been implemented %s"
-                                  % fname)
+        raise NotImplementedError("Should have been implemented {0!s}".format(fname))
 
     def encrypt(self, value, iv=None):
         fname = 'encrypt'
         log.error("This is the base class. You should implement "
                   "the method : %s " % (fname,))
-        raise NotImplementedError("Should have been implemented %s"
-                                  % fname)
+        raise NotImplementedError("Should have been implemented {0!s}".format(fname))
 
     def decrypt(self, value, iv=None):
         fname = 'decrypt'
         log.error("This is the base class. You should implement "
                   "the method : %s " % (fname,))
-        raise NotImplementedError("Should have been implemented %s"
-                                  % fname)
+        raise NotImplementedError("Should have been implemented {0!s}".format(fname))
 
     ''' higer level methods '''
     def encrypt_password(self, clear_pass):
         fname = 'encrypt_password'
         log.error("This is the base class. You should implement "
                   "the method : %s " % (fname,))
-        raise NotImplementedError("Should have been implemented %s"
-                                  % fname)
+        raise NotImplementedError("Should have been implemented {0!s}".format(fname))
 
     def encrypt_pin(self, clear_pin):
         fname = 'encrypt_pin'
         log.error("This is the base class. You should implement "
                   "the method : %s " % (fname,))
-        raise NotImplementedError("Should have been implemented %s"
-                                  % fname)
+        raise NotImplementedError("Should have been implemented {0!s}".format(fname))
 
     def decrypt_password(self, crypt_pass):
         fname = 'decrypt_password'
         log.error("This is the base class. You should implement "
                   "the method : %s " % (fname,))
-        raise NotImplementedError("Should have been implemented %s"
-                                  % fname)
+        raise NotImplementedError("Should have been implemented {0!s}".format(fname))
 
     def decrypt_pin(self, crypt_pin):
         fname = 'decrypt_pin'
         log.error("This is the base class. You should implement "
                   "the method : %s " % (fname,))
-        raise NotImplementedError("Should have been implemented %s"
-                                  % fname)
+        raise NotImplementedError("Should have been implemented {0!s}".format(fname))
 
 
 class DefaultSecurityModule(SecurityModule):
@@ -344,7 +336,7 @@ class DefaultSecurityModule(SecurityModule):
         cipher = aes.encrypt(input_data)
         iv_hex = binascii.hexlify(iv)
         cipher_hex = binascii.hexlify(cipher)
-        return "%s:%s" % (iv_hex, cipher_hex)
+        return "{0!s}:{1!s}".format(iv_hex, cipher_hex)
 
     @staticmethod
     def password_decrypt(data, password):

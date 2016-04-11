@@ -218,7 +218,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # Set a policy, that does allow the action
         set_policy(name="pol1",
                    scope=SCOPE.ADMIN,
-                   action="enrollTOTP, enrollHOTP, %s" % ACTION.IMPORT,
+                   action="enrollTOTP, enrollHOTP, {0!s}".format(ACTION.IMPORT),
                    client="10.0.0.0/8")
         g.policy_object = PolicyClass()
 
@@ -254,7 +254,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # Set a policy, that allows two tokens per user
         set_policy(name="pol1",
                    scope=SCOPE.ENROLL,
-                   action="%s=%s" % (ACTION.MAXTOKENUSER, 2))
+                   action="{0!s}={1!s}".format(ACTION.MAXTOKENUSER, 2))
         g.policy_object = PolicyClass()
         # The user has one token, everything is fine.
         self.setUp_user_realms()
@@ -334,7 +334,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         self.assertTrue(len(tokenobject_list) == 2)
 
         # request with a user object, not with a realm
-        req.all_data = {"user": "cornelius@%s" % self.realm1}
+        req.all_data = {"user": "cornelius@{0!s}".format(self.realm1)}
 
         # Now a new policy check will fail, since there are already two
         # tokens in the realm
@@ -361,7 +361,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # Set a policy, that allows two tokens per realm
         set_policy(name="pol1",
                    scope=SCOPE.AUTHZ,
-                   action="%s=%s" % (ACTION.SETREALM, self.realm1),
+                   action="{0!s}={1!s}".format(ACTION.SETREALM, self.realm1),
                    realm="somerealm")
         g.policy_object = PolicyClass()
 
@@ -381,7 +381,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         #  we get an exception
         set_policy(name="pol2",
                    scope=SCOPE.AUTHZ,
-                   action="%s=%s" % (ACTION.SETREALM, "ConflictRealm"),
+                   action="{0!s}={1!s}".format(ACTION.SETREALM, "ConflictRealm"),
                    realm="somerealm")
         g.policy_object = PolicyClass()
         # This request will trigger two policies with different realms to set
@@ -407,10 +407,10 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # Set a policy that defines the tokenlabel
         set_policy(name="pol1",
                    scope=SCOPE.ENROLL,
-                   action="%s=%s" % (ACTION.TOKENLABEL, "<u>@<r>"))
+                   action="{0!s}={1!s}".format(ACTION.TOKENLABEL, "<u>@<r>"))
         set_policy(name="pol2",
                    scope=SCOPE.ENROLL,
-                   action="%s=%s" % (ACTION.TOKENISSUER, "myPI"))
+                   action="{0!s}={1!s}".format(ACTION.TOKENISSUER, "myPI"))
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -442,11 +442,11 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # Set a policy that defines the tokenlabel
         set_policy(name="pol1",
                    scope=SCOPE.ENROLL,
-                   action="%s=%s" % (ACTION.OTPPINRANDOM, "12"))
+                   action="{0!s}={1!s}".format(ACTION.OTPPINRANDOM, "12"))
         set_policy(name="pinhandling",
                    scope=SCOPE.ENROLL,
-                   action="%s=privacyidea.lib.pinhandling.base.PinHandler" %
-                          ACTION.PINHANDLING)
+                   action="{0!s}=privacyidea.lib.pinhandling.base.PinHandler".format(
+                          ACTION.PINHANDLING))
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -505,7 +505,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # Set a policy that defines PIN policy
         set_policy(name="pol1",
                    scope=SCOPE.USER,
-                   action="%s=%s,%s=%s,%s=%s" % (ACTION.OTPPINMAXLEN, "10",
+                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(ACTION.OTPPINMAXLEN, "10",
                                                  ACTION.OTPPINMINLEN, "4",
                                                  ACTION.OTPPINCONTENTS, "cn"))
         g.policy_object = PolicyClass()
@@ -648,7 +648,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # and only use the last 4 characters of the username
         set_policy(name="mangle1",
                    scope=SCOPE.AUTH,
-                   action="%s=user/.*(.{4}$)/\\1/" % ACTION.MANGLE)
+                   action="{0!s}=user/.*(.{{4}}$)/\\1/".format(ACTION.MANGLE))
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -660,7 +660,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # Set a mangle policy to remove blanks from realm name
         set_policy(name="mangle2",
                    scope=SCOPE.AUTH,
-                   action="%s=realm/\\s//" % ACTION.MANGLE)
+                   action="{0!s}=realm/\\s//".format(ACTION.MANGLE))
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -689,7 +689,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # A user, for whom the login via REMOTE_USER is allowed.
         set_policy(name="ruser",
                    scope=SCOPE.WEBUI,
-                   action="%s=%s" % (ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
+                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
         g.policy_object = PolicyClass()
 
         r = is_remote_user_allowed(req)
@@ -699,7 +699,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # Only allowed for user "super", but REMOTE_USER=admin
         set_policy(name="ruser",
                    scope=SCOPE.WEBUI,
-                   action="%s=%s" % (ACTION.REMOTE_USER, REMOTE_USER.ACTIVE),
+                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE),
                    user="super")
         g.policy_object = PolicyClass()
 
@@ -723,7 +723,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # and only use the last 4 characters of the username
         set_policy(name="email1",
                    scope=SCOPE.REGISTER,
-                   action="%s=/.*@mydomain\..*" % ACTION.REQUIREDEMAIL)
+                   action="{0!s}=/.*@mydomain\..*".format(ACTION.REQUIREDEMAIL))
         g.policy_object = PolicyClass()
         # request, that matches the policy
         req.all_data = {"email": "user@mydomain.net"}
@@ -758,7 +758,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # and only use the last 4 characters of the username
         set_policy(name="recover",
                    scope=SCOPE.USER,
-                   action="%s" % ACTION.RESYNC)
+                   action="{0!s}".format(ACTION.RESYNC))
         g.policy_object = PolicyClass()
         req.all_data = {"user": "cornelius", "realm": self.realm1}
         # There is a user policy without password reset, so an exception is
@@ -769,7 +769,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # The password reset is allowed
         set_policy(name="recover",
                    scope=SCOPE.USER,
-                   action="%s" % ACTION.PASSWORDRESET)
+                   action="{0!s}".format(ACTION.PASSWORDRESET))
         g.policy_object = PolicyClass()
         r = check_anonymous_user(req, ACTION.PASSWORDRESET)
         self.assertEqual(r, True)
@@ -985,7 +985,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         # to "any_pin"
         set_policy(name="pol2",
                    scope=SCOPE.ENROLL,
-                   action="%s=%s" % (ACTION.AUTOASSIGN, AUTOASSIGNVALUE.NONE),
+                   action="{0!s}={1!s}".format(ACTION.AUTOASSIGN, AUTOASSIGNVALUE.NONE),
                                      client="10.0.0.0/8")
         g.policy_object = PolicyClass()
 
@@ -1043,7 +1043,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         # to "userstore"
         set_policy(name="pol2",
                    scope=SCOPE.ENROLL,
-                   action="%s=%s" % (ACTION.AUTOASSIGN,
+                   action="{0!s}={1!s}".format(ACTION.AUTOASSIGN,
                                      AUTOASSIGNVALUE.USERSTORE),
                                      client="10.0.0.0/8")
         g.policy_object = PolicyClass()

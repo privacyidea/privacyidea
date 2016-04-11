@@ -269,7 +269,7 @@ class SmsTokenClass(HotpTokenClass):
 
         if self.is_active() is True:
             counter = self.get_otp_count()
-            log.debug("counter=%r" % counter)
+            log.debug("counter={0!r}".format(counter))
             self.inc_otp_counter(counter, reset=False)
             # At this point we must not bail out in case of an
             # Gateway error, since checkPIN is successful. A bail
@@ -296,7 +296,7 @@ class SmsTokenClass(HotpTokenClass):
         validity = self._get_sms_timeout()
         expiry_date = datetime.datetime.now() + \
                                     datetime.timedelta(seconds=validity)
-        attributes['valid_until'] = "%s" % expiry_date
+        attributes['valid_until'] = "{0!s}".format(expiry_date)
 
         return success, return_message, transactionid, attributes
 
@@ -319,8 +319,8 @@ class SmsTokenClass(HotpTokenClass):
             message = self._get_sms_text(options)
             self.inc_otp_counter(ret, reset=False)
             success, message = self._send_sms(message=message)
-            log.debug("AutoSMS: send new SMS: %s" % success)
-            log.debug("AutoSMS: %s" % message)
+            log.debug("AutoSMS: send new SMS: {0!s}".format(success))
+            log.debug("AutoSMS: {0!s}".format(message))
         return ret
 
     @log_with(log)
@@ -344,30 +344,30 @@ class SmsTokenClass(HotpTokenClass):
         message = message.replace("<otp>", otp)
         message = message.replace("<serial>", serial)
 
-        log.debug("sending SMS to phone number %s " % phone)
+        log.debug("sending SMS to phone number {0!s} ".format(phone))
         (SMSProvider, SMSProviderClass) = self._get_sms_provider()
-        log.debug("smsprovider: %s, class: %s" % (SMSProvider,
+        log.debug("smsprovider: {0!s}, class: {1!s}".format(SMSProvider,
                                                   SMSProviderClass))
 
         try:
             sms = get_sms_provider_class(SMSProvider, SMSProviderClass)()
         except Exception as exc:
-            log.error("Failed to load SMSProvider: %r" % exc)
-            log.debug("%s" % traceback.format_exc())
+            log.error("Failed to load SMSProvider: {0!r}".format(exc))
+            log.debug("{0!s}".format(traceback.format_exc()))
             raise exc
 
         try:
             # now we need the config from the env
-            log.debug("loading SMS configuration for class %s" % sms)
+            log.debug("loading SMS configuration for class {0!s}".format(sms))
             config = self._get_sms_provider_config()
-            log.debug("config: %r" % config)
+            log.debug("config: {0!r}".format(config))
             sms.load_config(config)
         except Exception as exc:
-            log.error("Failed to load sms.providerConfig: %r" % exc)
-            log.debug("%s" % traceback.format_exc())
-            raise Exception("Failed to load sms.providerConfig: %r" % exc)
+            log.error("Failed to load sms.providerConfig: {0!r}".format(exc))
+            log.debug("{0!s}".format(traceback.format_exc()))
+            raise Exception("Failed to load sms.providerConfig: {0!r}".format(exc))
 
-        log.debug("submitMessage: %r, to phone %r" % (message, phone))
+        log.debug("submitMessage: {0!r}, to phone {1!r}".format(message, phone))
         ret = sms.submit_message(phone, message)
         return ret, message
 
@@ -411,8 +411,7 @@ class SmsTokenClass(HotpTokenClass):
         try:
             timeout = int(get_from_config("sms.providerTimeout", 5 * 60))
         except Exception as ex:  # pragma: no cover
-            log.warning("SMSProviderTimeout: value error %r - reset to 5*60"
-                                                                        % (ex))
+            log.warning("SMSProviderTimeout: value error {0!r} - reset to 5*60".format((ex)))
             timeout = 5 * 60
         return timeout
 
