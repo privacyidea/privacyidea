@@ -654,7 +654,7 @@ class IdResolver (UserIdResolver):
         
         return success, desc
 
-    def add_user(self, uid, object_class=None, attributes=None):
+    def add_user(self, uid, object_class=None, attributes=None, dn=None):
         """
         Add a new user to the LDAP directory.
 
@@ -676,7 +676,11 @@ class IdResolver (UserIdResolver):
             self._bind()
 
             params = self._attributes_to_ldap_attributes(attributes)
-            self.l.add(uid, object_class, params)
+            if dn == None:
+                self.l.add(self._getDN(uid), object_class, params)
+            else:
+                self.l.add(dn, object_class, params)
+
         except Exception as e:
             log.error("Error accessing LDAP server: {0}".format(e))
             log.debug("{0}".format(traceback.format_exc()))
@@ -702,7 +706,7 @@ class IdResolver (UserIdResolver):
         try:
             self._bind()
 
-            self.l.delete(uid)
+            self.l.delete(self._getDN(uid))
         except Exception as exx:
             log.error("Error deleting user: {0}".format(exx))
             res = False
