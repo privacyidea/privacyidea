@@ -676,7 +676,7 @@ class IdResolver (UserIdResolver):
             self._bind()
 
             params = self._attributes_to_ldap_attributes(attributes)
-            if dn == None:
+            if dn is None:
                 self.l.add(self._getDN(uid), object_class, params)
             else:
                 self.l.add(dn, object_class, params)
