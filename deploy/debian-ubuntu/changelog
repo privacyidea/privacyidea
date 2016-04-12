@@ -1,3 +1,11 @@
+python-privacyidea (2.11.1-1trusty) trusty; urgency=low
+
+  Fixes
+  * User is able to enroll a token in UI. Allow user
+    to fetch the list of the RADIUS servers
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Tue, 12 Apr 2016 08:30:00 +0200
+
 python-privacyidea (2.11-1trusty) trusty; urgency=low
 
   Features
