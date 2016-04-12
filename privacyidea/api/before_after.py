@@ -63,6 +63,7 @@ log = logging.getLogger(__name__)
 @user_blueprint.before_request
 @caconnector_blueprint.before_request
 @system_blueprint.before_request
+@radiusserver_blueprint.before_request
 @user_required
 def before_user_request():
     before_request()
@@ -76,7 +77,6 @@ def before_user_request():
 @policy_blueprint.before_request
 @application_blueprint.before_request
 @smtpserver_blueprint.before_request
-@radiusserver_blueprint.before_request
 @admin_required
 def before_admin_request():
     before_request()
