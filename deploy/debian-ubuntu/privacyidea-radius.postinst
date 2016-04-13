@@ -35,7 +35,6 @@ HERE
 }
 
 activate_site() {
-	rm /etc/freeradius/sites-enabled/*
 	ln -s /etc/freeradius/sites-available/privacyidea /etc/freeradius/sites-enabled/	
 }
 
