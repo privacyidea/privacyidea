@@ -12,6 +12,7 @@ PWFILE = "tests/testdata/passwords"
 from .base import MyTestCase
 import ldap3mock
 import responses
+import uuid
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
@@ -853,16 +854,25 @@ class LDAPResolverTestCase(MyTestCase):
                       'LDAPSEARCHFILTER': '(cn=*)',
                       'LDAPFILTER': '(&(cn=%s))',
                       'USERINFO': '{ "username": "cn",'
-                                  '"phone" : "telephoneNumber", '
-                                  '"mobile" : "mobile"'
-                                  ', "email" : "mail", '
-                                  '"surname" : "sn", '
+                                  '"phone" : "telephoneNumber",'
+                                  '"mobile" : "mobile",'
+                                  '"password" : "userPassword",'
+                                  '"email" : "mail",'
+                                  '"surname" : "sn",'
                                   '"givenname" : "givenName" }',
                       'UIDTYPE': 'objectGUID',
                       'NOREFERRALS': True
         })
         user_id = y.getUserId("bob")
         res = y.checkPass(user_id, "bobpwééé")
+        self.assertTrue(res)
+
+        # Test changing the password
+        res = y.update_user(user_id, {"password": "test"})
+        self.assertTrue(res)
+
+        user_id = y.getUserId("bob")
+        res = y.checkPass(user_id, "test")
         self.assertTrue(res)
 
     def test_10_escape_loginname(self):
@@ -939,50 +949,118 @@ class LDAPResolverTestCase(MyTestCase):
                       'USERINFO': '{ "username": "cn",'
                                   '"phone" : "telephoneNumber", '
                                   '"mobile" : "mobile",'
-                                  '"email" : "mail",'
+                                  '"email" : "email",'
                                   '"password" : "userPassword",'
                                   '"surname" : "sn", '
                                   '"givenname" : "givenName", '
                                   '"accountExpires": "accountExpires" }',
-                      'UIDTYPE': 'dn',
+                      'UIDTYPE': 'DN',
                       'NOREFERRALS': True
         })
 
-        user = "bob"
-        user_id = y.getUserId(user)
+        user = "achmed"
+        uid="cn={0},ou=example,o=test".format(user)
+        classes = ['top', 'inetOrgPerson']
+        # First we add the user with add_user 
+        r = y.add_user(uid, classes, {"username" : user,
+                                          "surname" : "Ali",
+                                          "email" : "achmed.ali@example.com",
+                                          "password" : "testing123",
+                                          'mobile': ["1234", "45678"],
+                                          "givenname" : "Achmed"})
+        self.assertTrue(r)
+
+        # Find the new users user_id
+        user_id = y.getUserId("achmed")
+        self.assertTrue(user_id == "cn=achmed,ou=example,o=test", user_id)
+
+        # Test changing the password
+        r = y.update_user(user_id, {"password": "test"})
+        self.assertTrue(r)
+
+        # Test checking the password
+        r = y.checkPass(user_id, "test")
+        self.assertTrue(r)
+
         # Test MODIFY_DELETE
         r = y.update_user(user_id, {"email": ""})
+        self.assertTrue(r)
         userinfo = y.getUserInfo(user_id)
         self.assertFalse(userinfo.get("email"))
+
         # Test MODIFY_REPLACE
         r = y.update_user(user_id, {"surname": "Smith"})
+        self.assertTrue(r)
         userinfo = y.getUserInfo(user_id)
         self.assertEqual(userinfo.get("surname"), "Smith")
+
         # Test MODIFY_ADD
-        r = y.update_user(user_id, {"email": "bob@example.com"})
+        r = y.update_user(user_id, {"email": "bob@testing.com"})
+        self.assertTrue(r)
         userinfo = y.getUserInfo(user_id)
-        self.assertEqual(userinfo.get("email"), "bob@example.com")
+        self.assertEqual(userinfo.get("email"), "bob@testing.com")
+
         # Test multiple changes in a single transaction
         r = y.update_user(user_id, {"email": "",
                                     "givenname": "Charlie"})
+        self.assertTrue(r)
         userinfo = y.getUserInfo(user_id)
         self.assertEqual(userinfo.get("givenname"), "Charlie")
         self.assertFalse(userinfo.get("email"))
-        r = y.update_user(user_id, {"password": "test"})
-        r = y.checkPass(user_id, "test")
-# TODO
-###        uname = y.getUsername(uid)
-###        self.assertEqual(uname, "achmed2")
-###        r = y.checkPass(uid, "test")
-###        self.assertTrue(r)
-###        # Now we delete the user
-###        y.delete_user(uid)
-###        # Now there should be no achmed anymore
-###        uid = y.getUserId("achmed2")
-###        self.assertFalse(uid)
-###        uid = y.getUserId("achmed")
-###        self.assertFalse(uid)
 
+        # Now we delete the user with add_user
+        y.delete_user(user_id)
+        # Now there should be no achmed anymore
+        user_id = y.getUserId("achmed")
+        self.assertFalse(user_id)
+
+    @ldap3mock.activate
+    def test_14_add_user_update_delete_objectGUID(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'LDAPFILTER': '(&(cn=%s))',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile",'
+                                  '"email" : "email",'
+                                  '"userid" : "objectGUID",'
+                                  '"password" : "userPassword",'
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName", '
+                                  '"accountExpires": "accountExpires" }',
+                      'UIDTYPE': 'objectGUID',
+                      'NOREFERRALS': True
+        })
+
+        user = "achmed"
+        dn="cn={0},ou=example,o=test".format(user)
+        uid = uuid.uuid4().bytes
+        user_id = str(uuid.UUID(bytes_le=uid))
+
+        classes = ['top', 'inetOrgPerson']
+        attributes = {"username" : user,
+                      "surname" : "Ali",
+                      "userid" : uid, 
+                      "email" : "achmed.ali@example.com",
+                      "password" : "testing123",
+                      'mobile': ["1234", "45678"],
+                      "givenname" : "Achmed"}
+
+        # First we add the user with add_user 
+        r = y.add_user(user_id, classes, attributes, dn)
+        self.assertTrue(r)
+
+        # Now we delete the user with add_user
+        y.delete_user(user_id)
+        # Now there should be no achmed anymore
+        user_id = y.getUserId("achmed")
+        self.assertFalse(user_id)
 
 class BaseResolverTestCase(MyTestCase):
 
