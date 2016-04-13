@@ -939,6 +939,7 @@ class LDAPResolverTestCase(MyTestCase):
     def test_13_add_user_update_delete(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         y = LDAPResolver()
+        classes = "top, inetOrgPerson"
         y.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
@@ -954,20 +955,21 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"surname" : "sn", '
                                   '"givenname" : "givenName", '
                                   '"accountExpires": "accountExpires" }',
+                      'OBJECT_CLASSES': classes,
+                      'DN_TEMPLATE': "cn=<username>,ou=example,o=test",
                       'UIDTYPE': 'DN',
                       'NOREFERRALS': True
         })
 
         user = "achmed"
-        uid="cn={0},ou=example,o=test".format(user)
-        classes = ['top', 'inetOrgPerson']
+
         # First we add the user with add_user 
-        r = y.add_user(uid, classes, {"username" : user,
-                                          "surname" : "Ali",
-                                          "email" : "achmed.ali@example.com",
-                                          "password" : "testing123",
-                                          'mobile': ["1234", "45678"],
-                                          "givenname" : "Achmed"})
+        r = y.add_user({"username" : user,
+                        "surname" : "Ali",
+                        "email" : "achmed.ali@example.com",
+                        "password" : "testing123",
+                        'mobile': ["1234", "45678"],
+                        "givenname" : "Achmed"})
         self.assertTrue(r)
 
         # Find the new users user_id
@@ -1017,6 +1019,7 @@ class LDAPResolverTestCase(MyTestCase):
     @ldap3mock.activate
     def test_14_add_user_update_delete_objectGUID(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
+        classes = 'top, inetOrgPerson'
         y = LDAPResolver()
         y.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
@@ -1035,25 +1038,25 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"givenname" : "givenName", '
                                   '"accountExpires": "accountExpires" }',
                       'UIDTYPE': 'objectGUID',
+                      'DN_TEMPLATE': 'cn=<username>,ou=example,o=test',
+                      'OBJECT_CLASSES': classes,
                       'NOREFERRALS': True
         })
 
         user = "achmed"
-        dn="cn={0},ou=example,o=test".format(user)
         uid = uuid.uuid4().bytes
         user_id = str(uuid.UUID(bytes_le=uid))
 
-        classes = ['top', 'inetOrgPerson']
-        attributes = {"username" : user,
-                      "surname" : "Ali",
-                      "userid" : uid, 
-                      "email" : "achmed.ali@example.com",
-                      "password" : "testing123",
+        attributes = {"username": user,
+                      "surname": "Ali",
+                      "userid": uid,
+                      "email": "achmed.ali@example.com",
+                      "password": "testing123",
                       'mobile': ["1234", "45678"],
-                      "givenname" : "Achmed"}
+                      "givenname": "Achmed"}
 
         # First we add the user with add_user 
-        r = y.add_user(user_id, classes, attributes, dn)
+        r = y.add_user(attributes)
         self.assertTrue(r)
 
         # Now we delete the user with add_user
@@ -1061,6 +1064,7 @@ class LDAPResolverTestCase(MyTestCase):
         # Now there should be no achmed anymore
         user_id = y.getUserId("achmed")
         self.assertFalse(user_id)
+
 
 class BaseResolverTestCase(MyTestCase):
 

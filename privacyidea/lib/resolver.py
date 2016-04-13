@@ -200,9 +200,9 @@ def get_resolver_list(filter_resolver_type=None,
         if editable is None:
             Resolvers[reso.name] = r
         else:
-            if editable is True and r["data"].get("Editable") == "1":
+            if editable is True and (r["data"].get("Editable") or r["data"].get("EDITABLE"))== "1":
                 Resolvers[reso.name] = r
-            elif editable is False and r["data"].get("Editable") != "1":
+            elif editable is False and (r["data"].get("Editable") or r["data"].get("EDTIABLE")) != "1":
                 Resolvers[reso.name] = r
 
 

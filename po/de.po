@@ -181,7 +181,7 @@ msgstr "Token anhängen"
 msgid "Attach to a new Machine"
 msgstr "An eine neue Maschine anhängen"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:172
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:188
 msgid "Attribute mapping"
 msgstr "Attributszuordnung"
 
@@ -452,6 +452,10 @@ msgstr "Erzeuge einen neue Richtlinie"
 #: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:22
 msgid "Create realm"
 msgstr "Realm anlegen"
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:130
+msgid "DN of a new created user object"
+msgstr "DN eines neu erzeugten Benutzerobjekts"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:57
 msgid "Database"
@@ -1288,7 +1292,7 @@ msgid "No Serial number could be found for OTP value {{ otp }}."
 msgstr "Zu dem OTP-Wert {{ otp }} konnte keine Seriennummer gefunden werden."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:106
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:135
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:151
 msgid "No anonymous referral chasing"
 msgstr "Referrals werden nicht (anonym) verfolgt."
 
@@ -1355,6 +1359,10 @@ msgstr "Gültigkeitszeitraum für OTP"
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:107
 msgid "OTRS"
 msgstr "OTRS"
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:124
+msgid "Object classes of a new created user object"
+msgstr "Objektklassen eines neu erzeugten Benutzerobjekts"
 
 #: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:15
 msgid ""
@@ -1497,11 +1505,11 @@ msgstr ""
 "angehängt."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:99
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:128
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:144
 msgid "Preset Active Directory"
 msgstr "Active Directory vorbelegen"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:125
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:141
 msgid "Preset OpenLDAP"
 msgstr "OpenLDAP vorbelegen"
 
@@ -1800,7 +1808,7 @@ msgstr "Realms speichern"
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:102
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:39
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:158
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:203
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:219
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:38
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:86
 msgid "Save resolver"
@@ -1817,7 +1825,7 @@ msgid "Scope"
 msgstr "Geltungsbereich"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:120
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:150
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:166
 msgid "Search Filter"
 msgstr "Suchfilter"
 
@@ -2023,7 +2031,7 @@ msgid "Test Email sent successfully."
 msgstr "Test Email wurde erfolgreich versendet."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:154
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:198
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:214
 msgid "Test LDAP Resolver"
 msgstr "LDAP Resolver testen"
 
@@ -2983,7 +2991,7 @@ msgstr "U2F Token Einstellungen"
 msgid "U2F: Universal 2nd Factor hardware token."
 msgstr "U2F: Universal 2nd Factor. Hardware Token."
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:184
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:200
 msgid "UID Type"
 msgstr "UID Typ"
 
@@ -3029,7 +3037,7 @@ msgstr "TLS verwenden"
 msgid "User"
 msgstr "Benutzer "
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:161
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:177
 msgid "User Filter"
 msgstr "Benutzerfilter"
 

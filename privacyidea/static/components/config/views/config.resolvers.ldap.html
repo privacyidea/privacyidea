@@ -119,6 +119,22 @@
                 The user data in this database can be modified from within
                 privacyIDEA.
             </p>
+
+            <div class="well" ng-show="params.EDITABLE">
+                <label for="object_classes" class="control-label" translate>
+                    Object classes of a new created user object
+                </label>
+                <input name="object_classes" id="object_classes"
+                       class="form-control"
+                       ng-model="params.OBJECT_CLASSES" />
+                <label for="dn_template" class="control-label" translate>
+                    DN of a new created user object
+                </label>
+                <input name="dn_template" id="dn_template"
+                       class="form-control"
+                       placeholder="CN=<username>,<basendn>"
+                       ng-model="params.DN_TEMPLATE" />
+            </div>
         </div>
     </div>
     <div class="well">

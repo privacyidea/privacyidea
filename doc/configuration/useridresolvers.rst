@@ -150,6 +150,30 @@ The ``UID Type`` is the unique identifier for the LDAP object. If it is left
 blank, the distinguished name will be used. In case of OpenLDAP this can be
 *entryUUID* and in case of Active Directory *objectGUID*.
 
+Modifying users
+~~~~~~~~~~~~~~~
+
+Starting with privacyIDEA 2.12 you can define the LDAP resolver as editable.
+I.e. you can create and modify users from within privacyIDEA.
+
+There are two additional configuration parameters for this case.
+
+``DN Template`` defines how the DN of the new LDAP object should be created. You can use *username*, *surname*,
+*givenname* and *basedn* to create the distiguished name.
+
+**Examples**:
+
+   CN=<givenname> <surname>,<basedn>
+
+   CN=<username>,OU=external users,<basedn>
+
+   uid=<username>,ou=users,o=example,c=com
+
+``Object Classes`` defines which object classes the user should be assigned to. This is a comma separated list.
+The usual object classes for Active Directory are
+
+   top, person, organizationalPerson, user, inetOrgPerson
+
 Expired Users
 ~~~~~~~~~~~~~
 

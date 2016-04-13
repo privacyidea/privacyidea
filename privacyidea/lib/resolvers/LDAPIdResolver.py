@@ -2,7 +2,10 @@
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
-#  2016-04-16 Martin Wheldon <martin.wheldon@greenhills-it.co.uk>
+#  2016-04-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add object_classes and dn_composition to configuration
+#             to allow flexible user_add
+#  2016-04-10 Martin Wheldon <martin.wheldon@greenhills-it.co.uk>
 #             Allow user accounts held in LDAP to be edited, providing
 #             that the account they are using has permission to edit
 #             those attributes in the LDAP directory  
@@ -58,6 +61,7 @@ import datetime
 
 from gettext import gettext as _
 from privacyidea.lib.utils import to_utf8
+from privacyidea.lib.error import privacyIDEAError
 
 
 log = logging.getLogger(__name__)
@@ -99,6 +103,8 @@ class IdResolver (UserIdResolver):
         self.basedn = ""
         self.binddn = ""
         self.bindpw = ""
+        self.object_classes = []
+        self.dn_template = ""
         self.timeout = 5.0  # seconds!
         self.sizelimit = 500
         self.loginname_attribute = ""
@@ -471,6 +477,10 @@ class IdResolver (UserIdResolver):
         self.uri = config.get("LDAPURI")
         self.basedn = config.get("LDAPBASE")
         self.binddn = config.get("BINDDN")
+        # object_classes is a comma separated list like
+        # ["top", "person", "organizationalPerson", "user", "inetOrgPerson"]
+        self.object_classes = [cl.strip() for cl in config.get("OBJECT_CLASSES", "").split(",")]
+        self.dn_template = config.get("DN_TEMPLATE", "")
         self.bindpw = config.get("BINDPW")
         self.timeout = float(config.get("TIMEOUT", 5))
         self.sizelimit = int(config.get("SIZELIMIT", 500))
@@ -654,43 +664,45 @@ class IdResolver (UserIdResolver):
         
         return success, desc
 
-    def add_user(self, uid, object_class=None, attributes=None, dn=None):
+    def add_user(self, attributes=None):
         """
         Add a new user to the LDAP directory.
+        The user can only be created in the LDAP using a DN.
+        So we have to construct the DN out of the given attributes.
 
         attributes are these
         "username", "surname", "givenname", "email",
         "mobile", "phone", "password"
 
-        :param uid: The uid of the user object in the resolver
-        :type uid: string
-        :param object_class: Attributes according to the attribute mapping
-        :type object_class: list
         :param attributes: Attributes according to the attribute mapping
         :type attributes: dict
         :return: The new UID of the user. The UserIdResolver needs to
         determine the way how to create the UID.
         """
+        # TODO: We still have some utf8 issues creating users with special characters.
         attributes = attributes or {}
+
+        dn = self.dn_template
+        dn = dn.replace("<basedn>", self.basedn)
+        dn = dn.replace("<username>", attributes.get("username", ""))
+        dn = dn.replace("<givenname>", attributes.get("givenname", ""))
+        dn = dn.replace("<surname>", attributes.get("surname", ""))
+
         try:
             self._bind()
-
             params = self._attributes_to_ldap_attributes(attributes)
-            if dn is None:
-                self.l.add(self._getDN(uid), object_class, params)
-            else:
-                self.l.add(dn, object_class, params)
+            self.l.add(dn, self.object_classes, params)
 
         except Exception as e:
             log.error("Error accessing LDAP server: {0}".format(e))
             log.debug("{0}".format(traceback.format_exc()))
-            return False
+            raise privacyIDEAError(e)
 
         if self.l.result.get('result') != 0:
-            log.error("Error during adding of user: {0} details".format(uid))
-            return False
+            log.error("Error during adding of user {0}: {1}".format(dn, self.l.result.get('message')))
+            raise privacyIDEAError(self.l.result.get('message'))
 
-        return uid
+        return self.getUserId(attributes.get("username"))
 
     def delete_user(self, uid):
         """
