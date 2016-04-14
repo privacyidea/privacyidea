@@ -177,3 +177,18 @@ type: int
 This is how many days the replacement token for the lost token should 
 be valid. After this many days the replacement can not be used anymore.
 
+yubikey_access_code
+~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This is a 12 character long access code in hex format to be used to initialize yubikeys. If
+no access code is set, yubikeys can be re-initialized by everybody. You can choose
+a company wide access code, so that Yubikeys can only be re-initialized by your own system.
+
+You can add two access codes separated by a colon to change from one access code to the other.
+
+   313233343536:414243444546
+
+
+

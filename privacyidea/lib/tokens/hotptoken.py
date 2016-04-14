@@ -44,6 +44,7 @@ from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import create_img
 from privacyidea.lib.utils import generate_otpkey
 from privacyidea.lib.policydecorators import challenge_response_allowed
+from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.decorators import check_token_locked
 import gettext
 import traceback
@@ -106,20 +107,27 @@ class HotpTokenClass(TokenClass):
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {'user': {
-                   'hotp_hashlib': {'type': 'str',
-                                    'value': ["sha1",
-                                              "sha256",
-                                              "sha512"],
-                                    'desc': desc_self1},
-                   'hotp_otplen': {'type': 'int',
-                                   'value': [6, 8],
-                                   'desc': desc_self2},
-                   'hotp_force_server_generate': {'type': 'bool',
-                                                  'desc': _("Force the key to "
-                                                            "be generated on "
-                                                            "the server.")}
-               }
+               'policy': {
+                   SCOPE.ENROLL: {
+                       'yubikey_access_code': {
+                           'type': 'str',
+                           'desc': _("The Yubikey access code used to initialize Yubikeys.")
+                       }
+                   },
+                   SCOPE.USER: {
+                       'hotp_hashlib': {'type': 'str',
+                                        'value': ["sha1",
+                                                  "sha256",
+                                                  "sha512"],
+                                        'desc': desc_self1},
+                       'hotp_otplen': {'type': 'int',
+                                       'value': [6, 8],
+                                       'desc': desc_self2},
+                       'hotp_force_server_generate': {'type': 'bool',
+                                                      'desc': _("Force the key to "
+                                                                "be generated on "
+                                                                "the server.")}
+                   }
                }
                }
 
