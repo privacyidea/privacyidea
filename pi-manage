@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+# 2016-04-15 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Add backup for pymysql driver
 # 2016-01-29 Cornelius Kölbel <cornelius@privacyidea.org>
 #            Add profiling
 # 2015-10-09 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -147,8 +149,8 @@ def create(directory="/var/lib/privacyidea/backup/"):
         print("Backup SQLite %s" % productive_file)
         sqlfile = "%s/db-%s.sqlite" % (directory, DATE)
         call(["cp", productive_file, sqlfile])
-    elif sqltype == "mysql":
-        m = re.match("mysql://(.*):(.*)@(.*)/(.*)", sqluri)
+    elif sqltype in ["mysql", "pymysql"]:
+        m = re.match(".*mysql://(.*):(.*)@(.*)/(.*)", sqluri)
         username = m.groups()[0]
         password = m.groups()[1]
         datahost = m.groups()[2]
@@ -199,8 +201,8 @@ def restore(backup_file):
         sqlfile = "%s/db-*.sqlite" % directory
         call(["cp", sqlfile, productive_file])
         os.unlink(sqlfile)
-    elif sqltype == "mysql":
-        m = re.match("mysql://(.*):(.*)@(.*)/(.*)", sqluri)
+    elif sqltype in ["mysql", "pymysql"]:
+        m = re.match(".*mysql://(.*):(.*)@(.*)/(.*)", sqluri)
         username = m.groups()[0]
         password = m.groups()[1]
         datahost = m.groups()[2]
