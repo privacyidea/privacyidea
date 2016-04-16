@@ -280,15 +280,43 @@ def verify_with_pepper(passwordhash, password):
 def init_hsm():
     """
     Initialize the HSM in the current_app config
+
+    The config file pi.cfg may contain PI_HSM_MODULE and parameters like:
+    PI_HSM_MODULE_MODULE
+    PI_HSM_MODULE_SLOT_ID...
+
     :return: hsm object
     """
     config = current_app.config
     if "pi_hsm" not in config or not isinstance(config["pi_hsm"], dict):
-        from security.default import DefaultSecurityModule
-        # TODO: Migration fix it
-        HSM_config = {"obj": DefaultSecurityModule({"file":
-                                                        config.get("PI_ENCFILE")})}
+        hsm_module_name = config.get("PI_HSM_MODULE",
+                                     "privacyidea.lib.security.default.DefaultSecurityModule")
+        module_parts = hsm_module_name.split(".")
+        package_name = ".".join(module_parts[:-1])
+        class_name = module_parts[-1]
+        mod = __import__(package_name, globals(), locals(), [class_name])
+        hsm_class = getattr(mod, class_name)
+        log.info("initializing HSM class: {0!s}".format(hsm_class))
+        if not hasattr(hsm_class, "setup_module"):  # pragma: no cover
+            raise NameError("Security Module AttributeError: " + package_name + "." +
+                            class_name+ " instance has no attribute 'setup_module'")
+
+        hsm_parameters = {}
+        if class_name == "DefaultSecurityModule":
+            hsm_parameters = {"file": config.get("PI_ENCFILE")}
+        else:
+            # get all parameters by splitting every config entry starting with PI_HSM_MODULE_
+            # and pass this as a config object to hsm_class.
+            hsm_parameters = {}
+            for key in config.keys():
+                if key.startswith("PI_HSM_MODULE_"):
+                    param = key[len("PI_HSM_MODULE_"):].lower()
+                    hsm_parameters[param] = config.get(key)
+            log.info("calling HSM module with parameters {0}".format(hsm_parameters))
+
+        HSM_config = {"obj": hsm_class(hsm_parameters)}
         current_app.config["pi_hsm"] = HSM_config
+        log.info("Initialized HSM object {0}".format(HSM_config))
     hsm = current_app.config.get("pi_hsm").get('obj')
     return hsm
 

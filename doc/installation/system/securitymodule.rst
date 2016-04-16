@@ -17,6 +17,9 @@ privacyIDEA provides a security module that takes care of
 .. note:: The Security Module concept can also be used to add a Hardware
    Security Module to perform the above mentioned tasks.
 
+Default Security Module
+-----------------------
+
 The ``default`` security module is implemented with the operating systems
 capabilities. The encryption key is located in a file *enckey* specified via
 ``PI_ENCFILE`` in the configuration file (:ref:`cfgfile`).
@@ -49,3 +52,21 @@ To do so run::
 .. note:: If the security module is not operational yet, you might get an
    error message "HSM not ready.".
 
+PKCS11 Security Module
+-----------------------
+
+The PKCS11 Security Module can be used to encrypt data with an hardware
+security module, that is connected via the PKCS11 interface. To encrypt and
+decrypt data you can use an RSA key pair that is stored on the HSM.
+
+To activate this module add the following to the configuration file
+(:ref:`cfgfile`)
+
+   PI_HSM_MODULE = "privacyidea.lib.security.pkcs11.PKCS11SecurityModule"
+
+Additional attributes are
+
+``PI_HSM_MODULE_MODULE`` which takes the pkcs11 library. This is the full
+specified path to the shared object file in the file system.
+
+``PI_HSM_MODULE_KEY_ID`` is the key id (integer) on the HSM.

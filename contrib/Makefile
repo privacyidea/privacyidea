@@ -22,6 +22,10 @@ CONTRIB6=python-pymysql_sa
 VERSION6=1.0
 URL6=https://pypi.python.org/packages/source/p/pymysql_sa/pymysql_sa-$(VERSION6).tar.gz
 
+CONTRIB7=PyKCS
+VERSION7=1.3.2
+URL7=https://pypi.python.org/packages/source/p/pykcs11/PyKCS11-$(VERSION7).tar.gz
+
 ME=Cornelius Kölbel <cornelius@privacyidea.org>
 
 series=trusty
@@ -105,6 +109,18 @@ pymysql:
 	(cd $(CONTRIB6)/deb_dist/pymysql-sa-$(VERSION6); debuild -sa -S)
 	(cd $(CONTRIB6)/deb_dist/pymysql-sa-$(VERSION6); debuild -b)
 	(cp $(CONTRIB6)/deb_dist/* DEBUILD || true)
+
+pykcs11:
+	mkdir -p $(CONTRIB7)
+	mkdir -p DEBUILD
+	(cd $(CONTRIB7); curl $(URL7) -o PyKCS11-$(VERSION7).tar.gz)
+	(cd $(CONTRIB7); py2dsc -m '$(ME)' PyKCS11-$(VERSION7).tar.gz)
+	(cd $(CONTRIB7)/deb_dist/pykcs11-$(VERSION7); dch -v $(VERSION7)-1$(series)1 --distribution $(series) -M "built for privacyidea")
+	(cd $(CONTRIB7)/deb_dist/pykcs11-$(VERSION7); debuild -sa -S)
+	(cd $(CONTRIB7)/deb_dist/pykcs11-$(VERSION7); debuild -b)
+	(cp $(CONTRIB7)/deb_dist/* DEBUILD || true)
+
+	
 
 
 ppa-dev:
