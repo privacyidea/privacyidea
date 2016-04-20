@@ -118,7 +118,7 @@ angular.module("privacyideaApp")
     // helper function
     $scope.isChecked = function (val) {
         // check if val is set
-        return [true, 1, '1', 'True'].indexOf(val) > -1;
+        return [true, 1, '1', 'True', 'true', 'TRUE'].indexOf(val) > -1;
     };
 
     // This holds the user object, the username, the password and the token.
