@@ -43,5 +43,4 @@ matrix:
 script: "nosetests -v --with-coverage --cover-package=privacyidea tests"
 
 after_success: 
-    - coveralls --rcfile=coveragerc
     - codecov

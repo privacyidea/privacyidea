@@ -9,10 +9,6 @@ privacyIDEA
     :alt: CircleCI
     :target: https://circleci.com/gh/privacyidea/privacyidea
 
-.. image:: https://img.shields.io/coveralls/privacyidea/privacyidea.svg
-    :alt: Coverage
-    :target: https://coveralls.io/r/privacyidea/privacyidea
-
 .. image:: https://codecov.io/github/privacyidea/privacyidea/coverage.svg?branch=master
     :target: https://codecov.io/github/privacyidea/privacyidea?branch=master
 
