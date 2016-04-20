@@ -962,6 +962,8 @@ class TokenClass(object):
             message_list.append("Outside validity period")
         else:
             r = True
+        if not r:
+            log.info("{0} {1}".format(message_list, self.get_serial()))
         return r
 
     @log_with(log)
