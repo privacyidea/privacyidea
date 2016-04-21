@@ -97,7 +97,8 @@ def before_request():
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
     # access_route contains the ip adresses of all clients, hops and proxies.
-    g.client_ip = request.access_route[0]
+    g.client_ip = request.access_route[0] if request.access_route else \
+        request.remote_addr
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
                          request.host
     # Already get some typical parameters to log

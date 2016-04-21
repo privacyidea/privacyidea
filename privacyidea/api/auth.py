@@ -79,7 +79,8 @@ def before_request():
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
     # access_route contains the ip adresses of all clients, hops and proxies.
-    g.client_ip = request.access_route[0]
+    g.client_ip = request.access_route[0] if request.access_route else \
+        request.remote_addr
     g.audit_object.log({"success": False,
                         "client": g.client_ip,
                         "client_user_agent": request.user_agent.browser,
