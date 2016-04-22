@@ -21,5 +21,13 @@ server {
                 uwsgi_param     SERVER_SOFTWARE nginx/$nginx_version;
                 uwsgi_param SCRIPT_NAME '';
         }
+
+        # Yubico servers use /wsapi/2.0/verify as the path in the
+        # validation URL. Some tools (e.g. Kolab 2fa) let the 
+        # user/admin change the api host, but not the rest of
+        # the URL. Uncomment the following two lines to reroute 
+        # the api URL internally to privacyideas /ttype/yubikey.
+        #rewrite ^/wsapi/2.0/verify(.*)  /ttype/yubikey$1 last;
+
 }
 
