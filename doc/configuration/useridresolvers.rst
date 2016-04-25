@@ -150,6 +150,8 @@ The ``UID Type`` is the unique identifier for the LDAP object. If it is left
 blank, the distinguished name will be used. In case of OpenLDAP this can be
 *entryUUID* and in case of Active Directory *objectGUID*.
 
+.. note:: The attributes *entryUUID* and *objectGUID* are case sensitive!
+
 Modifying users
 ~~~~~~~~~~~~~~~
 
