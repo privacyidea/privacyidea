@@ -46,9 +46,8 @@ Table of Contents
    policies/index
    audit/index
    machines/index
+   workflows_and_tools/index
    application_plugins/index
-   tools/index
-   import/index
    modules/index
    faq/index
 
