@@ -153,10 +153,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
         :return: bool
         """
-        local_check = False
-
-        if 1 == int(self.get_tokeninfo("radius.local_checkpin")):
-            local_check = True
+        local_check = 1 == int(self.get_tokeninfo("radius.local_checkpin"))
         log.debug("local checking pin? {0!r}".format(local_check))
 
         return local_check

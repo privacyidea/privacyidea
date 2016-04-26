@@ -148,7 +148,10 @@ class RemoteTokenClass(TokenClass):
         remoteServer = getParam(param, "remote.server", required)
         self.add_tokeninfo("remote.server", remoteServer)
 
-        for key in ["remote.local_checkpin", "remote.serial", "remote.user",
+        val = getParam(param, "remote.local_checkpin", optional) or 0
+        self.add_tokeninfo("remote.local_checkpin", val)
+
+        for key in ["remote.serial", "remote.user",
                     "remote.realm", "remote.resolver"]:
             val = getParam(param, key, optional)
             if val is not None:
@@ -161,9 +164,7 @@ class RemoteTokenClass(TokenClass):
 
         :return: bool
         """
-        local_check = False
-        if 1 == int(self.get_tokeninfo("remote.local_checkpin")):
-            local_check = True
+        local_check = 1 == int(self.get_tokeninfo("remote.local_checkpin"))
         log.debug(" local checking pin? {0!r}".format(local_check))
 
         return local_check
