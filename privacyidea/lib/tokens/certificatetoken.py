@@ -5,6 +5,9 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2016-04-26 Add the possibility to create key pair on server side
+#             Cornelius Kölbel <cornelius@privacyidea.org>
+#
 #  2015-05-15 Adapt during migration to flask
 #             Cornelius Kölbel <cornelius@privacyidea.org>
 #
@@ -29,10 +32,13 @@ The code is tested in test_lib_tokens_certificate.py.
 
 import logging
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.token import get_tokens
 from privacyidea.lib.log import log_with
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.caconnector import get_caconnector_object
+from privacyidea.lib.user import get_user_from_param
 from OpenSSL import crypto
+import binascii
 
 optional = True
 required = False
@@ -54,7 +60,7 @@ class CertificateTokenClass(TokenClass):
     A certificate token can be created by an administrative task with the
     token/init api like this:
 
-      **Example Authentication Request**:
+      **Example Initialization Request**:
 
         .. sourcecode:: http
 
@@ -66,6 +72,22 @@ class CertificateTokenClass(TokenClass):
            user=cornelius
            realm=realm1
            request=<PEM encoded request>
+           ca=<name of the ca connector>
+
+      **Example Initialization Request, key generation on servers side**
+
+      In this case the certificate is created on behalf of another user.
+
+        .. sourcecode:: http
+
+           POST /auth HTTP/1.1
+           Host: example.com
+           Accept: application/json
+
+           type=certificate
+           user=cornelius
+           realm=realm1
+           generate=1
            ca=<name of the ca connector>
 
       **Example response**:
@@ -148,19 +170,52 @@ class CertificateTokenClass(TokenClass):
 
         request = getParam(param, "request", optional)
         spkac = getParam(param, "spkac", optional)
-        certificate = None
-        if request:
+        certificate = getParam(param, "certificate", optional)
+        generate = getParam(param, "genkey", optional)
+        if request or generate:
+            # If we do not upload a user certificate, then we need a CA do
+            # sign the uploaded request or generated certificate.
             ca = getParam(param, "ca", required)
             self.add_tokeninfo("CA", ca)
+            cacon = get_caconnector_object(ca)
+        if request:
             # During the initialization process, we need to create the
             # certificate
-            cacon = get_caconnector_object(ca)
             x509object = cacon.sign_request(request,
                                             options={"spkac": spkac})
             certificate = crypto.dump_certificate(crypto.FILETYPE_PEM,
                                                   x509object)
-        else:
-            certificate = getParam(param, "certificate", optional)
+        elif generate:
+            # Create the certificate on behalf of another user.
+            # Now we need to create the key pair,
+            # the request
+            # and the certificate
+            # We need the user for whom the certificate should be created
+            user = get_user_from_param(param, optionalOrRequired=required)
+
+            keysize = getParam(param, "keysize", optional, 2048)
+            key = crypto.PKey()
+            key.generate_key(crypto.TYPE_RSA, keysize)
+            req = crypto.X509Req()
+            req.get_subject().CN = user.login
+            # Add email to subject
+            if user.info.get("email"):
+                req.get_subject().emailAddress = user.info.get("email")
+            req.get_subject().organizationalUnitName = user.realm
+            # TODO: Add Country, Organization, Email
+            # req.get_subject().countryName = 'xxx'
+            # req.get_subject().stateOrProvinceName = 'xxx'
+            # req.get_subject().localityName = 'xxx'
+            # req.get_subject().organizationName = 'xxx'
+            req.set_pubkey(key)
+            req.sign(key, "sha256")
+            x509object = cacon.sign_request(crypto.dump_certificate_request(
+                crypto.FILETYPE_PEM, req))
+            certificate = crypto.dump_certificate(crypto.FILETYPE_PEM,
+                                                  x509object)
+            # Save the private key to the encrypted key field of the token
+            s = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
+            self.add_tokeninfo("privatekey", s, value_type="password")
 
         if certificate:
             self.add_tokeninfo("certificate", certificate)
@@ -174,4 +229,49 @@ class CertificateTokenClass(TokenClass):
         params = params or {}
         certificate = self.get_tokeninfo("certificate")
         response_detail["certificate"] = certificate
+        privatekey = self.get_tokeninfo("privatekey")
+        # If there is a private key, we dump a PKCS12
+        if privatekey:
+            pkcs12 = crypto.PKCS12()
+            pkcs12.set_certificate(crypto.load_certificate(
+                crypto.FILETYPE_PEM, certificate))
+            pkcs12.set_privatekey(crypto.load_privatekey(crypto.FILETYPE_PEM,
+                                                         privatekey))
+            # TODO define a random passphrase and hand it to the user
+            response_detail["pkcs12"] = str(binascii.hexlify(pkcs12.export(
+                passphrase="secret")))
+
+            f = open("/tmp/cert.p12", "wb")
+            f.write(pkcs12.export(passphrase="secret"))
+            f.close()
+
         return response_detail
+
+    @staticmethod
+    def api_endpoint(request, g):
+        """
+        This provides a function to be plugged into the API endpoint
+        /ttype/certificate
+
+        The certificate token can return the binary PKCS12 file
+
+        :param request: The Flask request
+        :param g: The Flask global object g
+        :return: Flask Response or text
+        """
+        serial = getParam(request.all_data, "serial")
+        token = get_tokens(serial=serial)[0]
+        certificate = token.get_tokeninfo("certificate")
+        privatekey = token.get_tokeninfo("privatekey")
+        res = None
+        if privatekey:
+            pkcs12 = crypto.PKCS12()
+            pkcs12.set_certificate(crypto.load_certificate(
+                crypto.FILETYPE_PEM, certificate))
+            pkcs12.set_privatekey(crypto.load_privatekey(crypto.FILETYPE_PEM,
+                                                         privatekey))
+            # TODO define a random passphrase and hand it to the user
+            res = pkcs12.export(passphrase="secret")
+        return "binary", res,\
+               {"Content-Disposition": "attachment; filename={0}.p12".format(
+                   serial)}

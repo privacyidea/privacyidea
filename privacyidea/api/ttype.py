@@ -118,4 +118,6 @@ def token(ttype=None):
         return jsonify(res[1])
     elif res[0] in ["html", "plain"]:
         return Response(res[1], mimetype="text/{0!s}".format(res[0]))
-
+    else:
+        return Response(res[1], mimetype="application/octet-binary",
+                        headers=res[2])

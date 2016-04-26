@@ -208,8 +208,8 @@ class Token(MethodsMixin, db.Model):
         enc_otp_key = encrypt(otpkey, iv)
         self.key_enc = unicode(binascii.hexlify(enc_otp_key))
         length = len(self.key_enc)
-        if length > 1024:
-            log.error("Key {0!s} exceeds database field {1:d}!".format(self.get_serial(),
+        if length > Token.key_enc.property.columns[0].type.length:
+            log.error("Key {0!s} exceeds database field {1:d}!".format(self.serial,
                                                              length))
         self.key_iv = unicode(binascii.hexlify(iv))
         self.count = 0
