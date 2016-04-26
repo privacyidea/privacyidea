@@ -209,6 +209,11 @@ matter what OTP PIN he enters, a policy might look like this::
 
    action: mangle=pass/.*(.{6})/\\1/
 
+**Example**: If you want to strip a string from the front of a username, for
+example to have "admin_username" resolve to just "username", it would look like
+this::
+
+   action: mangle=user/admin_(.*)/\\1/
 
 .. _policy_challenge_response:
 
