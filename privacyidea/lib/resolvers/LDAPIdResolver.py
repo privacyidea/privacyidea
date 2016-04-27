@@ -2,6 +2,8 @@
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
+#  2016-04-27 Cornelus Kölbel <cornelius.koelbel@netknights.it>
+#             Fix getUserInfo with objectGUID
 #  2016-02-22 Salvo Rapisarda
 #             Allow objectGUID to be a users attribute
 #  2016-02-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -273,6 +275,9 @@ class IdResolver (UserIdResolver):
                           search_filter="(&" + self.searchfilter + ")",
                           attributes=self.userinfo.values())
         else:
+            if self.uidtype == "objectGUID":
+                userId = uuid.UUID("{%s}" % userId).bytes_le
+                userId = escape_bytes(userId)
             filter = "(&%s(%s=%s))" %\
                 (self.searchfilter, self.uidtype, userId)
             self.l.search(search_base=self.basedn,

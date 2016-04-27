@@ -1,3 +1,11 @@
+python-privacyidea (2.11.2-1trusty) trusty; urgency=low
+
+  Fixes
+  * Fix the getUserInfo method in LDAP resolver
+    in case of uid_type objectGUID
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 27 Apr 2016 00:30:00 +0200
+
 python-privacyidea (2.11.1-1trusty) trusty; urgency=low
 
   Fixes
