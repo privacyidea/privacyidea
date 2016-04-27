@@ -1065,6 +1065,32 @@ class LDAPResolverTestCase(MyTestCase):
         user_id = y.getUserId("achmed")
         self.assertFalse(user_id)
 
+    @ldap3mock.activate
+    def test_21_test_objectGUID_getUserInfo(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'LDAPFILTER': '(&(cn=%s))',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'NOREFERRALS': True
+                      })
+        user_id = y.getUserId("bob")
+        user_info = y.getUserInfo(user_id)
+        self.assertEqual(user_info.get("username"), "bob")
+        self.assertEqual(user_info.get("surname"), "Marley")
+        self.assertEqual(user_info.get("givenname"), "Robert")
+
 
 class BaseResolverTestCase(MyTestCase):
 
