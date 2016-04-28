@@ -7,6 +7,7 @@ Frequently Asked Questions
 
 .. toctree::
 
+   customization
    creating-users
    admins
    rollout-strategies

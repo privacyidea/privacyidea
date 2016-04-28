@@ -1,7 +1,7 @@
 .. _crypto_considerations:
 
 Cryptographic considerations of privacyIDEA
-------------------------------------------
+-------------------------------------------
 
 .. index:: Crypto considerations
 
