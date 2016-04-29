@@ -626,3 +626,7 @@ class TokenBaseTestCase(MyTestCase):
     def test_33_get_setting_type(self):
         r = TokenClass.get_setting_type("something")
         self.assertEqual(r, "")
+
+    def test_34_get_default_settings(self):
+        r = TokenClass.get_default_settings({})
+        self.assertEqual(r, {})

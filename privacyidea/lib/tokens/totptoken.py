@@ -2,6 +2,9 @@
 #
 #  (c) 2015 Cornelius Kölbel - cornelius@privacyidea.org
 #
+#  2016-04-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add get_default_settings to change the parameters before
+#             the token is created
 #  2015-11-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             initial write
 #
@@ -40,6 +43,8 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.policy import ACTION, SCOPE
+from privacyidea.lib.auth import ROLE
 import gettext
 _ = gettext.gettext
 
@@ -613,3 +618,74 @@ class TotpTokenClass(HotpTokenClass):
                     "totp.timeStep": "public",
                     "totp.timeWindow": "public"}
         return settings.get(key, "")
+
+    @classmethod
+    def get_default_settings(cls, params, logged_in_user=None,
+                             policy_object=None, client_ip=None):
+        """
+        This method returns a dictionary with default settings for token
+        enrollment.
+        These default settings are defined in SCOPE.USER and are
+        totp_hashlib, totp_timestep and totp_otplen.
+        If these are set, the user will only be able to enroll tokens with
+        these values.
+
+        The returned dictionary is added to the parameters of the API call.
+        :param params: The call parameters
+        :type params: dict
+        :param logged_in_user: The logged_in_user dictionary with "role",
+            "username" and "realm"
+        :type logged_in_user: dict
+        :param policy_object: The policy_object
+        :type policy_object: PolicyClass
+        :param client_ip: The client IP address
+        :type client_ip: basestring
+        :return: default parameters
+        """
+        ret = {}
+        if logged_in_user.get("role") == ROLE.USER:
+            hashlib_pol = policy_object.get_action_values(
+                action="totp_hashlib",
+                scope=SCOPE.USER,
+                user=logged_in_user.get("username"),
+                realm=logged_in_user.get("realm"),
+                client=client_ip,
+                unique=True)
+            if hashlib_pol:
+                ret["totp.hashlib"] = hashlib_pol[0]
+
+            timestep_pol = policy_object.get_action_values(
+                action="totp_timestep",
+                scope=SCOPE.USER,
+                user=logged_in_user.get("username"),
+                realm=logged_in_user.get("realm"),
+                client=client_ip,
+                unique=True)
+            if timestep_pol:
+                ret["timeStep"] = timestep_pol[0]
+
+            otplen_pol = policy_object.get_action_values(
+                action="totp_otplen",
+                scope=SCOPE.USER,
+                user=logged_in_user.get("username"),
+                realm=logged_in_user.get("realm"),
+                client=client_ip,
+                unique=True)
+            if otplen_pol:
+                ret["otplen"] = otplen_pol[0]
+
+        return ret
+
+    @log_with(log)
+    def get_init_detail(self, params=None, user=None):
+        """
+        to complete the token initialization some additional details
+        should be returned, which are displayed at the end of
+        the token initialization.
+        This is the e.g. the enrollment URL for a Google Authenticator.
+        """
+        params = params or {}
+        if params.get("totp.hashlib"):
+            params["hashlib"] = params.get("totp.hashlib")
+        response_detail = HotpTokenClass.get_init_detail(self, params, user)
+        return response_detail

@@ -11,6 +11,8 @@ from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
+from privacyidea.lib.policy import (PolicyClass, set_policy, delete_policy,
+                                    SCOPE, ACTION)
 from privacyidea.models import (Token,
                                  Config,
                                  Challenge)
@@ -710,3 +712,21 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertEqual(r, "public")
         r = TotpTokenClass.get_setting_type("totp.blabla")
         self.assertEqual(r, "")
+
+    def test_27_get_default_settings(self):
+        params = {}
+        logged_in_user = {"user": "hans",
+                          "realm": "default",
+                          "role": "user"}
+        set_policy("pol1", scope=SCOPE.USER, action="totp_hashlib=sha256,"
+                                                    "totp_timestep=60,"
+                                                    "totp_otplen=8")
+        pol = PolicyClass()
+        p = TotpTokenClass.get_default_settings(params,
+                                                logged_in_user=logged_in_user,
+                                                policy_object=pol)
+        self.assertEqual(p.get("otplen"), "8")
+        self.assertEqual(p.get("totp.hashlib"), "sha256")
+        self.assertEqual(p.get("timeStep"), "60")
+        delete_policy("pol1")
+

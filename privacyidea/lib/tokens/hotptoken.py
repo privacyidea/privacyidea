@@ -5,6 +5,9 @@
 #  License: AGPLv3
 #  contact: http://www.privacyidea.org
 #
+#  2016-04-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add get_default_settings to change the parameters before
+#             the token is created
 #  2014-10-03 Add getInitDetail
 #             Cornelius Kölbel <cornelius@privacyidea.org>
 #
@@ -44,8 +47,9 @@ from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import create_img
 from privacyidea.lib.utils import generate_otpkey
 from privacyidea.lib.policydecorators import challenge_response_allowed
-from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.auth import ROLE
+from privacyidea.lib.policy import SCOPE
 import gettext
 import traceback
 import logging
@@ -579,3 +583,50 @@ class HotpTokenClass(TokenClass):
             ret = True
 
         return ret, error, otp_dict
+
+    @classmethod
+    def get_default_settings(cls, params, logged_in_user=None,
+                             policy_object=None, client_ip=None):
+        """
+        This method returns a dictionary with default settings for token
+        enrollment.
+        These default settings are defined in SCOPE.USER and are
+        hotp_hashlib, hotp_otplen.
+        If these are set, the user will only be able to enroll tokens with
+        these values.
+
+        The returned dictionary is added to the parameters of the API call.
+        :param params: The call parameters
+        :type params: dict
+        :param logged_in_user: The logged_in_user dictionary with "role",
+            "username" and "realm"
+        :type logged_in_user: dict
+        :param policy_object: The policy_object
+        :type policy_object: PolicyClass
+        :param client_ip: The client IP address
+        :type client_ip: basestring
+        :return: default parameters
+        """
+        ret = {}
+        if logged_in_user.get("role") == ROLE.USER:
+            hashlib_pol = policy_object.get_action_values(
+                action="hotp_hashlib",
+                scope=SCOPE.USER,
+                user=logged_in_user.get("username"),
+                realm=logged_in_user.get("realm"),
+                client=client_ip,
+                unique=True)
+            if hashlib_pol:
+                ret["hashlib"] = hashlib_pol[0]
+
+            otplen_pol = policy_object.get_action_values(
+                action="hotp_otplen",
+                scope=SCOPE.USER,
+                user=logged_in_user.get("username"),
+                realm=logged_in_user.get("realm"),
+                client=client_ip,
+                unique=True)
+            if otplen_pol:
+                ret["otplen"] = otplen_pol[0]
+
+        return ret

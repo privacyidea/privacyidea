@@ -15,6 +15,8 @@ from privacyidea.models import (Token,
                                  Config,
                                  Challenge)
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
+from privacyidea.lib.policy import (PolicyClass, SCOPE, set_policy,
+                                    delete_policy)
 import binascii
 import datetime
 
@@ -674,3 +676,18 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertEqual(r, False)
         r = token.check_otp("254676")
         self.assertEqual(r, 5)
+
+    def test_27_get_default_settings(self):
+        params = {}
+        logged_in_user = {"user": "hans",
+                          "realm": "default",
+                          "role": "user"}
+        set_policy("pol1", scope=SCOPE.USER, action="hotp_hashlib=sha256,"
+                                                    "hotp_otplen=8")
+        pol = PolicyClass()
+        p = HotpTokenClass.get_default_settings(params,
+                                                logged_in_user=logged_in_user,
+                                                policy_object=pol)
+        self.assertEqual(p.get("otplen"), "8")
+        self.assertEqual(p.get("hashlib"), "sha256")
+        delete_policy("pol1")

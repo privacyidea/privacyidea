@@ -15,6 +15,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_anonymous_user,
                                            check_max_token_realm, set_realm,
                                            init_tokenlabel, init_random_pin,
+                                           init_token_defaults,
                                            encrypt_pin, check_otp_pin,
                                            check_external, api_key_required,
                                            mangle, is_remote_user_allowed,
@@ -1202,3 +1203,36 @@ class PostPolicyDecoratorTestCase(MyTestCase):
             "token_wizard"), True)
 
         delete_policy("pol_wizard")
+
+    def test_16_init_token_defaults(self):
+        g.logged_in_user = {"username": "cornelius",
+                            "role": "user"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'type': "totp",
+                                       "genkey": "1"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+
+        # Set a policy that defines the default totp settings
+        set_policy(name="pol1",
+                   scope=SCOPE.USER,
+                   action="totp_otplen=8,totp_hashlib=sha256,totp_timestep=60")
+        g.policy_object = PolicyClass()
+
+        # request, that matches the policy
+        req.all_data = {
+            "type": "totp",
+            "genkey": "1"}
+        init_token_defaults(req)
+
+        # Check, if the token defaults were added
+        self.assertEqual(req.all_data.get("totp.hashlib"), "sha256")
+        self.assertEqual(req.all_data.get("otplen"), "8")
+        self.assertEqual(req.all_data.get("timeStep"), "60")
+        # finally delete policy
+        delete_policy("pol1")
+

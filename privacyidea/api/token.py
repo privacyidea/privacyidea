@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2016-04-28 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add init defaults for token types
 # 2015-12-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Move the complete before and after logic
 # 2015-11-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -72,7 +74,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            check_max_token_realm,
                                            init_tokenlabel, init_random_pin,
                                            encrypt_pin, check_otp_pin,
-                                           check_external)
+                                           check_external, init_token_defaults)
 from privacyidea.api.auth import admin_required
 
 
@@ -101,6 +103,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(encrypt_pin, request)
 @prepolicy(check_otp_pin, request)
 @prepolicy(check_external, request, action="init")
+@prepolicy(init_token_defaults, request)
 @log_with(log, log_entry=False)
 def init():
     """

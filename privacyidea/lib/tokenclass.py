@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2016-04-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add get_default_settings to change the parameters before
+#             the token is created
 #  2016-04-08 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Avoid consecutive if statements
 #             Remove unreachable code
@@ -1379,3 +1382,24 @@ class TokenClass(object):
         :return: A string like "public"
         """
         return ""
+
+    @classmethod
+    def get_default_settings(cls, params, logged_in_user=None,
+                             policy_object=None, client_ip=None):
+        """
+        This method returns a dictionary with default settings for token
+        enrollment.
+        These default settings depend on the token type and the defined
+        policies.
+
+        The returned dictionary is added to the parameters of the API call.
+        :param params: The call parameters
+        :type params: dict
+        :param logged_in_user: The logged_in_user dictionary with "role",
+            "username" and "realm"
+        :type logged_in_user: dict
+        :param policy_object: The policy_object
+        :type policy_object: PolicyClass
+        :return: default parameters
+        """
+        return {}

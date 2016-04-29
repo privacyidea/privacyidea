@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-04-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add init_token_defaults to set default parameters
+#             during token init.
 #  2016-04-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Avoid "None" as redundant 2nd argument
 #  2015-12-28 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -50,6 +53,7 @@ from privacyidea.lib.token import (get_tokens, get_realms_of_token)
 from privacyidea.lib.utils import generate_password
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam
+from privacyidea.lib.config import get_token_class
 import functools
 import jwt
 import re
@@ -256,6 +260,25 @@ def encrypt_pin(request=None, action=None):
         if "encryptpin" in request.all_data:
             del request.all_data["encryptpin"]
 
+    return True
+
+
+def init_token_defaults(request=None, action=None):
+    """
+    This policy function is used as a decorator for the API init function.
+    Depending on policy settings it can add token specific default values
+    like totp_hashlib, hotp_hashlib, totp_otplen...
+    """
+    params = request.all_data
+    ttype = params.get("type") or "hotp"
+    token_class = get_token_class(ttype)
+    default_settings = token_class.get_default_settings(params,
+                                                        g.logged_in_user,
+                                                        g.policy_object,
+                                                        g.client_ip)
+    log.debug("Adding default settings {0!s} for token type {1!s}".format(
+        default_settings, ttype))
+    request.all_data.update(default_settings)
     return True
 
 
