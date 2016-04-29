@@ -38,6 +38,7 @@ from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.caconnector import get_caconnector_object
 from privacyidea.lib.user import get_user_from_param
 from OpenSSL import crypto
+from privacyidea.lib.decorators import check_token_locked
 import base64
 
 optional = True
@@ -49,7 +50,11 @@ log = logging.getLogger(__name__)
 class CertificateTokenClass(TokenClass):
     """
     Token to implement an X509 certificate.
-    The certificate can be enrolled by sending a CSR to the server.
+    The certificate can be enrolled by sending a CSR to the server or the
+    keypair is created by the server. If the server creates the keypair,
+    the user can download a PKCS12 file.
+    The OTP PIN is used as passphrase for the PKCS12 file.
+
     privacyIDEA is capable of working with different CA connectors.
 
     Valid parameters are *request* or *certificate*, both PEM encoded.
@@ -252,7 +257,10 @@ class CertificateTokenClass(TokenClass):
         pkcs12.set_privatekey(crypto.load_privatekey(crypto.FILETYPE_PEM,
                                                      privatekey))
         # TODO define a random passphrase and hand it to the user
-        pkcs12_bin = pkcs12.export(passphrase="secret")
+        passphrase = self.token.get_pin()
+        if passphrase == -1:
+            passphrase = ""
+        pkcs12_bin = pkcs12.export(passphrase=passphrase)
         return pkcs12_bin
 
     def get_as_dict(self):
@@ -274,3 +282,19 @@ class CertificateTokenClass(TokenClass):
             #del(token_dict["privatekey"])
 
         return token_dict
+
+    @check_token_locked
+    def set_pin(self, pin, encrypt=False):
+        """
+        set the PIN of a token.
+        The PIN of the certificate token is stored encrypted. It is used as
+        passphrase for the PKCS12 file.
+
+        :param pin: the pin to be set for the token
+        :type pin: basestring
+        :param encrypt: If set to True, the pin is stored encrypted and
+                        can be retrieved from the database again
+        :type encrypt: bool
+        """
+        storeHashed = False
+        self.token.set_pin(pin, storeHashed)

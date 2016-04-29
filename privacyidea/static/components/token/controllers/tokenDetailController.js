@@ -142,6 +142,11 @@ myApp.controller("tokenDetailController", function ($scope,
             $scope.pin1, function () {
                 $scope.pin1 = "";
                 $scope.pin2 = "";
+                // in case of certificate tokens we need to reread the token
+                // information. Since the PKCS12 is encrypted with the new PIN.
+                if ($scope.token.tokentype === "certificate") {
+                    $scope.get();
+                }
             });
     };
 
