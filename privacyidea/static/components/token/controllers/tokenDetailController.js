@@ -39,6 +39,12 @@ myApp.controller("tokenDetailController", function ($scope,
             $scope.max_auth_count = parseInt($scope.token.info.count_auth_max);
             $scope.max_success_auth_count = parseInt($scope.token.info.count_auth_success_max);
             console.log($scope.token);
+            // Add a certificateBlob, if it exists
+            if ($scope.token.info.certificate) {
+                var blob = new Blob([ $scope.token.info.certificate ],
+                    { type : 'text/plain' });
+                $scope.certificateBlob = (window.URL || window.webkitURL).createObjectURL( blob );
+            }
         });
     };
 

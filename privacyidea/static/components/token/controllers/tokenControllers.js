@@ -257,7 +257,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     $scope.radioCSR = 'csrgenerate';
 
 
-    // default callback
+    // default enrollment callback
     $scope.callback = function (data) {
         $scope.U2FToken = {};
         $scope.enrolledToken = data.detail;
