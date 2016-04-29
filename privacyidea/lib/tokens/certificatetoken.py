@@ -5,8 +5,9 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
-#  2016-04-26 Add the possibility to create key pair on server side
-#             Cornelius Kölbel <cornelius@privacyidea.org>
+#  2016-04-26 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Add the possibility to create key pair on server side
+#             Provide download for pkcs12 file
 #
 #  2015-05-15 Adapt during migration to flask
 #             Cornelius Kölbel <cornelius@privacyidea.org>
@@ -38,7 +39,7 @@ from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.caconnector import get_caconnector_object
 from privacyidea.lib.user import get_user_from_param
 from OpenSSL import crypto
-import binascii
+import base64
 
 optional = True
 required = False
@@ -223,7 +224,8 @@ class CertificateTokenClass(TokenClass):
     @log_with(log)
     def get_init_detail(self, params=None, user=None):
         """
-        At the end of the initialization we return the certificate
+        At the end of the initialization we return the certificate and the
+        PKCS12 file, if the private key exists.
         """
         response_detail = TokenClass.get_init_detail(self, params, user)
         params = params or {}
@@ -232,46 +234,24 @@ class CertificateTokenClass(TokenClass):
         privatekey = self.get_tokeninfo("privatekey")
         # If there is a private key, we dump a PKCS12
         if privatekey:
-            pkcs12 = crypto.PKCS12()
-            pkcs12.set_certificate(crypto.load_certificate(
-                crypto.FILETYPE_PEM, certificate))
-            pkcs12.set_privatekey(crypto.load_privatekey(crypto.FILETYPE_PEM,
-                                                         privatekey))
-            # TODO define a random passphrase and hand it to the user
-            response_detail["pkcs12"] = str(binascii.hexlify(pkcs12.export(
-                passphrase="secret")))
-
-            f = open("/tmp/cert.p12", "wb")
-            f.write(pkcs12.export(passphrase="secret"))
-            f.close()
+            response_detail["pkcs12"] = base64.b64encode(
+                self._create_pkcs12_bin())
 
         return response_detail
 
-    @staticmethod
-    def api_endpoint(request, g):
+    def _create_pkcs12_bin(self):
         """
-        This provides a function to be plugged into the API endpoint
-        /ttype/certificate
+        Helper function to create an encrypted pkcs12 binary for download
 
-        The certificate token can return the binary PKCS12 file
-
-        :param request: The Flask request
-        :param g: The Flask global object g
-        :return: Flask Response or text
+        :return: PKCS12 binary
         """
-        serial = getParam(request.all_data, "serial")
-        token = get_tokens(serial=serial)[0]
-        certificate = token.get_tokeninfo("certificate")
-        privatekey = token.get_tokeninfo("privatekey")
-        res = None
-        if privatekey:
-            pkcs12 = crypto.PKCS12()
-            pkcs12.set_certificate(crypto.load_certificate(
-                crypto.FILETYPE_PEM, certificate))
-            pkcs12.set_privatekey(crypto.load_privatekey(crypto.FILETYPE_PEM,
-                                                         privatekey))
-            # TODO define a random passphrase and hand it to the user
-            res = pkcs12.export(passphrase="secret")
-        return "binary", res,\
-               {"Content-Disposition": "attachment; filename={0}.p12".format(
-                   serial)}
+        certificate = self.get_tokeninfo("certificate")
+        privatekey = self.get_tokeninfo("privatekey")
+        pkcs12 = crypto.PKCS12()
+        pkcs12.set_certificate(crypto.load_certificate(
+            crypto.FILETYPE_PEM, certificate))
+        pkcs12.set_privatekey(crypto.load_privatekey(crypto.FILETYPE_PEM,
+                                                     privatekey))
+        # TODO define a random passphrase and hand it to the user
+        pkcs12_bin = pkcs12.export(passphrase="secret")
+        return pkcs12_bin
