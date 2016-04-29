@@ -204,6 +204,8 @@ def get_token_class(tokentype):
     :return: The tokenclass for the given type
     :rtype: tokenclass
     """
+    if tokentype.lower() == "hmac":
+        tokentype = "hotp"
     class_dict, type_dict = get_token_class_dict()
     tokenmodule = ""
     tokenclass = None
