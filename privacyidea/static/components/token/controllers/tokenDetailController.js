@@ -45,6 +45,16 @@ myApp.controller("tokenDetailController", function ($scope,
                     { type : 'text/plain' });
                 $scope.certificateBlob = (window.URL || window.webkitURL).createObjectURL( blob );
             }
+            if ($scope.token.info.pkcs12) {
+                var bytechars = atob($scope.token.info.pkcs12);
+                var byteNumbers = new Array(bytechars.length);
+                for (var i = 0; i < bytechars.length; i++) {
+                    byteNumbers[i] = bytechars.charCodeAt(i);
+                }
+                var byteArray = new Uint8Array(byteNumbers);
+                var blob = new Blob([byteArray], {type: 'application/x-pkcs12'});
+                $scope.pkcs12Blob = (window.URL || window.webkitURL).createObjectURL( blob );
+            }
         });
     };
 

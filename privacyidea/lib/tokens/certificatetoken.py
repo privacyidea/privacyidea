@@ -33,7 +33,6 @@ The code is tested in test_lib_tokens_certificate.py.
 
 import logging
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.token import get_tokens
 from privacyidea.lib.log import log_with
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.caconnector import get_caconnector_object
@@ -255,3 +254,23 @@ class CertificateTokenClass(TokenClass):
         # TODO define a random passphrase and hand it to the user
         pkcs12_bin = pkcs12.export(passphrase="secret")
         return pkcs12_bin
+
+    def get_as_dict(self):
+        """
+        This returns the token data as a dictionary.
+        It is used to display the token list at /token/list.
+
+        The certificate token can add the PKCS12 file if it exists
+
+        :return: The token data as dict
+        :rtype: dict
+        """
+        # first get the database values as dict
+        token_dict = self.token.get()
+
+        if "privatekey" in token_dict.get("info"):
+            token_dict["info"]["pkcs12"] = base64.b64encode(
+                self._create_pkcs12_bin())
+            #del(token_dict["privatekey"])
+
+        return token_dict
