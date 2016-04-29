@@ -7,6 +7,7 @@ from privacyidea.lib.tokens.certificatetoken import CertificateTokenClass
 from privacyidea.models import Token
 from privacyidea.lib.caconnector import save_caconnector
 from privacyidea.lib.token import get_tokens
+from privacyidea.lib.error import ParameterError
 import os
 from OpenSSL import crypto
 
@@ -74,6 +75,7 @@ class CertificateTokenTestCase(MyTestCase):
 
     serial1 = "CRT0001"
     serial2 = "CRT0002"
+    serial3 = "CRT0003"
 
     def test_01_create_token_from_certificate(self):
         db_token = Token(self.serial1, tokentype="certificate")
@@ -154,4 +156,58 @@ class CertificateTokenTestCase(MyTestCase):
         info = token.get_class_info("title")
         self.assertTrue(info == "Certificate Token", info)
 
+    def test_04_create_token_on_server(self):
+        self.setUp_user_realms()
+        cwd = os.getcwd()
+        # setup ca connector
+        r = save_caconnector({"cakey": CAKEY,
+                              "cacert": CACERT,
+                              "type": "local",
+                              "caconnector": "localCA",
+                              "openssl.cnf": OPENSSLCNF,
+                              "CSRDir": "",
+                              "CertificateDir": "",
+                              "WorkingDir": cwd + "/" + WORKINGDIR})
+
+        db_token = Token(self.serial3, tokentype="certificate")
+        db_token.save()
+        token = CertificateTokenClass(db_token)
+
+        # missing user
+        self.assertRaises(ParameterError,
+                          token.update, {"ca": "localCA","genkey": 1})
+
+        token.update({"ca": "localCA", "genkey": 1,
+                      "user": "cornelius"})
+
+        self.assertEqual(token.token.serial, self.serial3)
+        self.assertEqual(token.token.tokentype, "certificate")
+        self.assertEqual(token.type, "certificate")
+
+        detail = token.get_init_detail()
+        certificate = detail.get("certificate")
+        # At each testrun, the certificate might get another serial number!
+        x509obj = crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
+        self.assertEqual("{0!r}".format(x509obj.get_issuer()),
+                         "<X509Name object '/C=DE/ST=Hessen"
+                         "/O=privacyidea/CN=CA001'>")
+        self.assertEqual("{0!r}".format(x509obj.get_subject()),
+                         "<X509Name object '/OU=realm1/CN=cornelius/emailAddress=user@localhost.localdomain'>")
+
+        # Test, if the certificate is also completely stored in the tokeninfo
+        # and if we can retrieve it from the tokeninfo
+        token = get_tokens(serial=self.serial3)[0]
+        certificate = token.get_tokeninfo("certificate")
+        x509obj = crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
+        self.assertEqual("{0!r}".format(x509obj.get_issuer()),
+                         "<X509Name object '/C=DE/ST=Hessen"
+                         "/O=privacyidea/CN=CA001'>")
+        self.assertEqual("{0!r}".format(x509obj.get_subject()),
+                         "<X509Name object '/OU=realm1/CN=cornelius/emailAddress=user@localhost.localdomain'>")
+
+        privatekey = token.get_tokeninfo("privatekey")
+        self.assertTrue(privatekey.startswith("-----BEGIN PRIVATE KEY-----"))
+
+        # check for pkcs12
+        self.assertTrue(detail.get("pkcs12"))
 

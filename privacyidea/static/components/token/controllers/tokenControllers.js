@@ -256,7 +256,8 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     $scope.CAConnectors = [];
     $scope.radioCSR = 'csrgenerate';
 
-    // default callback
+
+    // default enrollment callback
     $scope.callback = function (data) {
         $scope.U2FToken = {};
         $scope.enrolledToken = data.detail;
@@ -265,6 +266,16 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             var blob = new Blob([ $scope.enrolledToken.certificate ],
                 { type : 'text/plain' });
             $scope.certificateBlob = (window.URL || window.webkitURL).createObjectURL( blob );
+        }
+        if ($scope.enrolledToken.pkcs12) {
+            var bytechars = atob($scope.enrolledToken.pkcs12);
+            var byteNumbers = new Array(bytechars.length);
+            for (var i = 0; i < bytechars.length; i++) {
+                byteNumbers[i] = bytechars.charCodeAt(i);
+            }
+            var byteArray = new Uint8Array(byteNumbers);
+            var blob = new Blob([byteArray], {type: 'application/x-pkcs12'});
+            $scope.pkcs12Blob = (window.URL || window.webkitURL).createObjectURL( blob );
         }
         if ($scope.enrolledToken.u2fRegisterRequest) {
             // This is the first step of U2F registering

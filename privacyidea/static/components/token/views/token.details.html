@@ -128,9 +128,26 @@
             <td>
                 <ul>
                     <li ng-repeat="(k,v) in token.info">
-                        {{ k }}: {{ v | truncate:30 }}
+                        <span ng-show="k=='certificate'">
+                            <a download="{{ token.serial }}.pem"
+                               ng-href="{{ certificateBlob }}">
+                                <span class="glyphicon glyphicon-bookmark"
+                                      aria-hidden="true"></span>
+                                <translate>certificate</translate></a>.
+                        </span>
+                        <span ng-show="k=='pkcs12'">
+                            <a download="{{ token.serial }}.p12"
+                               ng-href="{{ pkcs12Blob }}">
+                                <span class="glyphicon glyphicon-bookmark"
+                                      aria-hidden="true"></span>
+                                <translate>PKCS12</translate></a>.
+                        </span>
+                        <span ng-hide="['certificate', 'pkcs12']
+                        .indexOf(k)!=-1">
+                            {{ k }}: {{ v | truncate:30 }}
+                        </span>
                     </li>
-                <ul>
+                </ul>
                 <div ng-show="editTokenInfo">
                     <div class="form-group">
                         <label for="max_auth_count"

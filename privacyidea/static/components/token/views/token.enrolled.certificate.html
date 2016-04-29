@@ -8,6 +8,15 @@
                           aria-hidden="true"></span>
         <translate>Download the certificate</translate></a>.
 </p>
+<!-- If the keys were generated on the server,
+     we can download a PKCS12 file -->
+<p ng-show="enrolledToken.pkcs12">
+    <a download="{{ enrolledToken.serial }}.p12"
+       ng-href="{{ pkcs12Blob }}">
+        <span class="glyphicon glyphicon-bookmark"
+                          aria-hidden="true"></span>
+        <translate>Download the PKCS12 file</translate></a>.
+</p>
 <pre>
 {{ enrolledToken.certificate }}
 </pre>
