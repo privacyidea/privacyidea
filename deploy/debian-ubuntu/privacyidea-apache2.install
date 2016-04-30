@@ -1,4 +1,5 @@
 deploy/debian/pi.cfg                            etc/privacyidea/
+deploy/debian/openssl.cnf			etc/privacyidea/CA
 deploy/apache/privacyideaapp.wsgi               etc/privacyidea/
 
 # apache config
