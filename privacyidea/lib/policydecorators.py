@@ -203,9 +203,11 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw,
                                                   client=clientip,
                                                   active=True)
         if pass_no_user:
-            return True, {"message": "The user does not exist, but is "
-                                     "accepted due to policy '%s'." %
-                                     pass_no_user[0].get("name")}
+            # Check if user object exists
+            if not user_object.exist():
+                return True, {"message": "The user does not exist, but is "
+                                         "accepted due to policy '%s'." %
+                                         pass_no_user[0].get("name")}
 
     # If nothing else returned, we return the wrapped function
     return wrapped_function(user_object, passw, options)

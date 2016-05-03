@@ -8,6 +8,7 @@ from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
                                     get_inc_fail_count_on_false_pin,
                                     delete_privacyidea_config)
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
+                                   revoke_token,
                                    reset_token, enable_token)
 from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy
 from privacyidea.lib.error import TokenAdminError
@@ -875,7 +876,7 @@ class ValidateAPITestCase(MyTestCase):
         # One token is disabled. But the user must be able to login with the
         # 2nd token
         # user disableduser, realm: self.realm2, passwd: superSecret
-        set_policy(name="disalbed",
+        set_policy(name="disabled",
                    scope=SCOPE.AUTH,
                    action="%s=%s" % (ACTION.OTPPIN, "userstore"))
         # enroll two tokens
@@ -913,3 +914,83 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(result.get("value"), True)
 
         delete_policy("disabled")
+
+    def test_23_pass_no_user_and_pass_no_token(self):
+        # Test with pass_no_user AND with pass_no_token.
+        user = "passthru"
+        user_no_token = "usernotoken"
+        pin = "mypin"
+        serial = "t23"
+        set_policy(name="pass_no",
+                   scope=SCOPE.AUTH,
+                   action="{0!s},{1!s}".format(ACTION.PASSNOTOKEN,
+                                               ACTION.PASSNOUSER))
+
+        r = init_token({"type": "spass", "serial": serial,
+                        "pin": pin}, user=User(user, self.realm2))
+        self.assertTrue(r)
+
+        r = get_tokens(user=User(user, self.realm2), count=True)
+        self.assertEqual(r, 1)
+        # User can authenticate with his SPASS token
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": user,
+                                                 "realm": self.realm2,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+
+        # User that does not exist, can authenticate
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "doesNotExist",
+                                                 "realm": self.realm2,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+
+        r = get_tokens(user=User(user, self.realm2), count=True)
+        self.assertEqual(r, 1)
+        # User with no token can authenticate
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": user_no_token,
+                                                 "realm": self.realm2,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+
+        r = get_tokens(user=User(user, self.realm2), count=True)
+        self.assertEqual(r, 1)
+
+        # user with wrong password fails to authenticate
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": user,
+                                                 "realm": self.realm2,
+                                                 "pass": "wrongPiN"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), False)
+
+        delete_policy("pass_no")
+        remove_token(serial)
+
+        # User that does not exist, can NOT authenticate after removing the
+        # policy
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "doesNotExist",
+                                                 "realm": self.realm2,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+

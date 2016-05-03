@@ -1781,11 +1781,11 @@ def check_serial_pass(serial, passw, options=None):
     return res, reply_dict
 
 
+@libpolicy(auth_user_does_not_exist)
+@libpolicy(auth_user_has_no_token)
 @libpolicy(auth_user_timelimit)
 @libpolicy(auth_lastauth)
 @libpolicy(auth_user_passthru)
-@libpolicy(auth_user_has_no_token)
-@libpolicy(auth_user_does_not_exist)
 @log_with(log)
 def check_user_pass(user, passw, options=None):
     """

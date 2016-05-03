@@ -1,3 +1,11 @@
+python-privacyidea (2.11.3-1trusty) trusty; urgency=low
+
+  Fixes
+  * Fix passOnNoUser policy, so that it won't allow
+    arbitrary users to authenticate.
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Tue, 03 May 2016 22:30:00 +0200
+
 python-privacyidea (2.11.2-1trusty) trusty; urgency=low
 
   Fixes
