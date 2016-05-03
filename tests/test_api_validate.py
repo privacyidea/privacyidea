@@ -947,3 +947,84 @@ class ValidateAPITestCase(MyTestCase):
         remove_token("spass1l")
         remove_token("spass2l")
         delete_policy("locked")
+
+    def test_23_pass_no_user_and_pass_no_token(self):
+        # Test with pass_no_user AND with pass_no_token.
+        user = "passthru"
+        user_no_token = "usernotoken"
+        pin = "mypin"
+        serial = "t23"
+        set_policy(name="pass_no",
+                   scope=SCOPE.AUTH,
+                   action="{0!s},{1!s}".format(ACTION.PASSNOTOKEN,
+                                               ACTION.PASSNOUSER))
+
+        r = init_token({"type": "spass", "serial": serial,
+                        "pin": pin}, user=User(user, self.realm2))
+        self.assertTrue(r)
+
+        r = get_tokens(user=User(user, self.realm2), count=True)
+        self.assertEqual(r, 1)
+        # User can authenticate with his SPASS token
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": user,
+                                                 "realm": self.realm2,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+
+        # User that does not exist, can authenticate
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "doesNotExist",
+                                                 "realm": self.realm2,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+
+        r = get_tokens(user=User(user, self.realm2), count=True)
+        self.assertEqual(r, 1)
+        # User with no token can authenticate
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": user_no_token,
+                                                 "realm": self.realm2,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+
+        r = get_tokens(user=User(user, self.realm2), count=True)
+        self.assertEqual(r, 1)
+
+        # user with wrong password fails to authenticate
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": user,
+                                                 "realm": self.realm2,
+                                                 "pass": "wrongPiN"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), False)
+
+        delete_policy("pass_no")
+        remove_token(serial)
+
+        # User that does not exist, can NOT authenticate after removing the
+        # policy
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "doesNotExist",
+                                                 "realm": self.realm2,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+
+

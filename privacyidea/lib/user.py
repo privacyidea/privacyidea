@@ -232,6 +232,7 @@ class User(object):
         :return: True or False
         """
         success = True
+        uid = None
         try:
             uid, _rtype, _resolver = self.get_user_identifiers()
         except UserError:
