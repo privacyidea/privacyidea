@@ -721,10 +721,16 @@ def get_token_by_otp(token_list, otp="", window=10):
 
     for token in token_list:
         log.debug("checking token {0!r}".format(token.get_serial()))
-        r = token.check_otp_exist(otp=otp, window=window)
-        log.debug("result = {0:d}".format(int(r)))
-        if r >= 0:
-            result_list.append(token)
+        try:
+            r = token.check_otp_exist(otp=otp, window=window)
+            log.debug("result = {0:d}".format(int(r)))
+            if r >= 0:
+                result_list.append(token)
+        except Exception as err:
+            # A flaw in a single token should not stop privacyidea from finding
+            # the right token
+            log.warning("error in calculating OTP for token {0!s}: "
+                        "{1!s}".format(token.token.serial, err))
 
     if len(result_list) == 1:
         result_token = result_list[0]

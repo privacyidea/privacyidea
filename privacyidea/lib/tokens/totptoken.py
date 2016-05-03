@@ -218,7 +218,7 @@ class TotpTokenClass(HotpTokenClass):
         options = options or {}
         timeStepping = int(self.get_tokeninfo("timeStep") or
                            get_from_config("totp.timeStep") or 30)
-        window = window or (self.get_sync_window() * timeStepping)
+        window = (window or self.get_sync_window()) * timeStepping
         res = self.check_otp(otp, window=window, options=options)
 
         if inc_counter and res >= 0:
