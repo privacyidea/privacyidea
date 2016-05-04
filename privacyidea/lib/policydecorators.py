@@ -168,7 +168,7 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
             # Now we need to check, if the user really has no token.
             tokencount = get_tokens(user=user_object, count=True)
             if tokencount == 0:
-                return True, {"message": "The user has not token, but is "
+                return True, {"message": "The user has no token, but is "
                                          "accepted due to policy '%s'." %
                                          pass_no_token[0].get("name")}
 

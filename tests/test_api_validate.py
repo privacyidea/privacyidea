@@ -975,6 +975,8 @@ class ValidateAPITestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
             self.assertEqual(result.get("value"), True)
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(detail.get("serial"), serial)
 
         # User that does not exist, can authenticate
         with self.app.test_request_context('/validate/check',
@@ -986,6 +988,10 @@ class ValidateAPITestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
             self.assertEqual(result.get("value"), True)
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(detail.get("message"),
+                             u"The user does not exist, but is accepted "
+                             u"due to policy 'pass_no'.")
 
         r = get_tokens(user=User(user, self.realm2), count=True)
         self.assertEqual(r, 1)
@@ -999,6 +1005,10 @@ class ValidateAPITestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
             self.assertEqual(result.get("value"), True)
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(detail.get("message"),
+                             u"The user has no token, but is "
+                             u"accepted due to policy 'pass_no'.")
 
         r = get_tokens(user=User(user, self.realm2), count=True)
         self.assertEqual(r, 1)
@@ -1013,6 +1023,9 @@ class ValidateAPITestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
             self.assertEqual(result.get("value"), False)
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(detail.get("message"),
+                             "wrong otp pin")
 
         delete_policy("pass_no")
         remove_token(serial)
@@ -1026,5 +1039,5 @@ class ValidateAPITestCase(MyTestCase):
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-
-
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(detail, None)
