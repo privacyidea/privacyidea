@@ -205,7 +205,7 @@ class LibPolicyTestCase(MyTestCase):
                                       options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"),
-                         u"The user has not token, but is accepted due to "
+                         u"The user has no token, but is accepted due to "
                          u"policy 'pol1'.")
         delete_policy("pol1")
 
