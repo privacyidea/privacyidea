@@ -1493,6 +1493,98 @@ class MachineUserOptions(db.Model):
 
 """
 
+
+class EventHandler(MethodsMixin, db.Model):
+    """
+    This model holds the list of defined events and actions to this events.
+    A handler module can be bound to an event with the corresponding
+    condition and action.
+    """
+    __tablename__ = 'eventhandler'
+    id = db.Column(db.Integer, primary_key=True, nullable=False)
+    ordering = db.Column(db.Integer, nullable=False, default=0)
+    # This is the name of the event in the code
+    event = db.Column(db.Unicode(255), nullable=False)
+    # This is the identifier of an event handler module
+    handlermodule = db.Column(db.Unicode(255), nullable=False)
+    condition = db.Column(db.Unicode(1024), default=u"")
+    action = db.Column(db.Unicode(1024), default=u"")
+    options = db.relationship('EventHandlerOption',
+                              lazy='dynamic',
+                              backref='eventhandler')
+
+    def __init__(self, event, handlermodule, action, condition="",
+                 ordering=0, options=None):
+        self.odering = ordering
+        self.event = event
+        self.handlermodule = handlermodule
+        self.condition = condition
+        self.action = action
+        id = self.save()
+        # add the options to the event handler
+        options = options or {}
+        for k, v in options.iteritems():
+            EventHandlerOption(eventhandler_id=id, Key=k, Value=v).save()
+
+    def delete(self):
+        ret = self.id
+        db.session.delete(self)
+        # delete all EventHandlerOptions
+        db.session.query(EventHandlerOption) \
+            .filter(EventHandlerOption.eventhandler_id == ret) \
+            .delete()
+        db.session.commit()
+        return ret
+
+
+class EventHandlerOption(db.Model):
+    """
+    Each EventHandler entry can have additional options according to the
+    handler module.
+    """
+    __tablename__ = 'eventhandleroption'
+    id = db.Column(db.Integer, primary_key=True)
+    eventhandler_id = db.Column(db.Integer,
+                                db.ForeignKey('eventhandler.id'))
+    Key = db.Column(db.Unicode(255), nullable=False)
+    Value = db.Column(db.Unicode(2000), default=u'')
+    Type = db.Column(db.Unicode(2000), default=u'')
+    Description = db.Column(db.Unicode(2000), default=u'')
+    evhdl = db.relationship('EventHandler',
+                            lazy='joined',
+                            backref='option_list')
+    __table_args__ = (db.UniqueConstraint('eventhandler_id',
+                                          'Key',
+                                          name='ehoix_1'), {})
+
+    def __init__(self, eventhandler_id, Key, Value, Type="", Description=""):
+        self.eventhandler_id = eventhandler_id
+        self.Key = Key
+        self.Value = Value
+        self.Type = Type
+        self.Description = Description
+        self.save()
+
+    def save(self):
+        eho = EventHandlerOption.query.filter_by(
+            eventhandler_id=self.eventhandler_id, Key=self.Key).first()
+        if eho is None:
+            # create a new one
+            db.session.add(self)
+            db.session.commit()
+            ret = self.id
+        else:
+            # update
+            EventHandlerOption.query.filter_by(
+                eventhandler_id=self.eventhandler_id, Key=self.Key) \
+                .update({'Value': self.Value,
+                         'Type': self.Type,
+                         'Description': self.Description})
+            ret = eho.id
+        db.session.commit()
+        return ret
+
+
 class MachineResolver(MethodsMixin, db.Model):
     """
     This model holds the definition to the machinestore.
