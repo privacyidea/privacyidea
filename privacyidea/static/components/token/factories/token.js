@@ -76,7 +76,7 @@ function fixMachine(machinestr) {
 
 angular.module("TokenModule", ["privacyideaAuth"])
     .factory("TokenFactory", function (AuthFactory, $http, $state, $rootScope,
-                                       tokenUrl, authUrl, inform) {
+                                       tokenUrl, authUrl, inform, $q) {
         /**
          Each service - just like this service factory - is a singleton.
          */
@@ -89,11 +89,18 @@ angular.module("TokenModule", ["privacyideaAuth"])
             }
         };
 
+        var canceller = $q.defer();
+
         return {
             getTokens: function (callback, params) {
+                // We only need ONE getTokens call at once.
+                // If another getTokens call is running, we cancel it.
+                canceller.resolve();
+                canceller = $q.defer(); 
                 $http.get(tokenUrl + "/", {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()},
-                    params: params
+                    params: params,
+                    timeout: canceller.promise
                 }).success(callback
                 ).error(error_func);
             },
