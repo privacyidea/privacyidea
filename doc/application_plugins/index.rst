@@ -66,6 +66,80 @@ additional OTP value.
 
 Read more about how to use PAM to do :ref:`openvpn`.
 
+.. _pam_yubico
+
+Using pam_yubico
+----------------
+
+.. index:: pam_yubico, PAM
+
+If you are using yubikey tokens you might also use ``pam_yubico``.
+You can use Yubikey tokens for two more or less distinct applications. 
+The first is using privacyideas PAM module as described above. 
+In this case privacyidea handles the policies
+for user access and password validation. This works fine, when you only use
+privacyidea for token validation.
+
+The second mode is using the standard PAM module for yubikeys from Yubico
+``pam_yubico`` to handle the token validation. The upside ist that you can
+use the PAM module included with you distribution, but there are downsides as
+well.
+
+* You can't set a token PIN in privacyidea, because ``pam_yubico`` tries to
+  use the token PIN entered by the user as a system password (which is likely
+  to fail), i.e. the PIN will be stripped by ``pam_yubico`` and will not reach 
+  the privacyIDEA system.
+
+* Setting the policy which tokens are valid for which users is done either in
+  ``~/.yubico/authorized_keys`` or in the file given by the ``authfile`` option
+  in the PAM configuration. The api server will only validate the token, but
+  not check any kind of policy.
+
+You can work around the restrictions by using a clever combination
+of tokentype yubikey and yubico as follows:
+
+* enroll a yubikey token with ``yubikey_mass_enroll --mode YUBICO``.
+
+* do not set a token password.
+
+* do not assign the token to a user.
+
+* please make a note of yubikey.prefix (12 characters starting with vv).
+
+Now the token can be used with ``pam_yubico``, but will not allow any
+user access in privacyidea. If you want to use the token with
+``pam_yubico`` see the manual page for details. You'll want something like the
+following in your PAM config::
+
+   auth required pam_yubico.so id=<apiid> key=<API key> \
+        urllist=https://<privacyidea-server>/ttype/yubikey authfile=/etc/yubikeys/authorized_yubikeys
+
+The file ``/etc/yubikeys/authorized_yubikeys`` contains a line
+for each user with the username and the allowed tokens delimited
+by ":", for example::
+
+   <username>:<serial number1>:<prefix1>:<prefix2>
+
+... doc/configuration/tokenconfig, add yubikey.rst to describe
+how to configure Client ID/apiid and API key
+
+Now create a second token representing the Yubikey, but this time
+use the ``Yubico Cloud mode``. Go to Tokens -> Enroll Token and select
+``Yubico Cloud mode``.  Enter the 12 characters prefix you noted above
+and assign this token to a user and possibly set a token PIN. It would
+be nice to have the the serial number of the UBCM token correspond
+to the UBAM token, but this is right now not possible with the WebUI.
+
+In the WebUI, test the UBAM token without a Token PIN, test the UBCM token
+with the stored Token PIN, and check the token info afterwards.
+Check the yubikey token via ``/ttype/yubikey``, for example with:
+
+   ykclient --debug --url https://<privacyidea>/ttype/yubikey --apikey "<API key>" "apiid" <otp>
+
+There should be successful authentications (count_auth_success),
+but no failures.
+
+
 .. _freeradius_plugin:
 
 FreeRADIUS Plugin
