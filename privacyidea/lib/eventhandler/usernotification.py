@@ -60,7 +60,7 @@ class UserNotificationEventHandler(BaseEventHandler):
     It returns an identifier, which can be used in the eventhandlig definitions
     """
 
-    identifier = "UserNotifictaion"
+    identifier = "UserNotification"
     description = "This eventhandler notifies the user about actions on his " \
                   "tokens"
 

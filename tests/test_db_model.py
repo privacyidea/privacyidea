@@ -510,6 +510,7 @@ class TokenModelTestCase(MyTestCase):
     def test_19_add_update_delete_eventhandler(self):
         # Bind the module "usernotice" to the enroll event
         event = "enroll"
+        event_update = "init"
         handlermodule = "usernotice"
         action = "email"
         condition = "always"
@@ -531,7 +532,13 @@ class TokenModelTestCase(MyTestCase):
 
         id = eh1.id
 
-        # Update value
+        # update eventhandler
+        eh2 = EventHandler(event_update, handlermodule=handlermodule,
+                           action=action, condition=condition,
+                           options=options, ordering=0, id=id)
+        self.assertEqual(eh1.event, event_update)
+
+        # Update option value
         EventHandlerOption(id, Key="mailserver", Value="mailserver")
         self.assertEqual(eh1.option_list[0].Value, "mailserver")
 

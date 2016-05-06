@@ -20,6 +20,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
+from privacyidea.models import EventHandler, EventHandlerOption, db
 import functools
 import logging
 log = logging.getLogger(__name__)
@@ -62,4 +63,62 @@ class event(object):
             return f_result
 
         return event_wrapper
+
+
+def set_event(event, handlermodule, action, condition="",
+              ordering=0, options=None, id=None):
+
+    """
+    Set and event handling conifugration. This writes an entry to the
+    database eventhandler.
+
+    :param event: The name of the event to react on. Can be a single event or
+        a comma separated list.
+    :type event: basestring
+    :param handlermodule: The identifier of the event handler module. This is
+        an identifier string like "UserNotification"
+    :type handlermodule: basestring
+    :param action: The action to perform. This is an action defined by the
+        handler module
+    :type action: basestring
+    :param condition: A condition. Only if this condition is met, the action is
+        performed.
+    :param ordering: An optional ordering of the event definitions.
+    :type ordering: integer
+    :param options: Additional options, that are needed as parameters for the
+        action
+    :type options: dict
+    :param id: The DB id of the event. If the id is given, the event is
+        updated. Otherwiese a new entry is generated.
+    :return: The id of the event.
+    """
+    event = EventHandler(event, handlermodule, action, condition=condition,
+                 ordering=ordering, options=options, id=id)
+    return event.id
+
+
+def delete_event(event_id):
+    """
+    Delete the event configuration with this given ID.
+    :param event_id: The database ID of the event.
+    :return:
+    """
+    r = EventHandler.query.filter_by(id=event_id).delete()
+    return r
+
+
+class EventConfiguration(object):
+
+    def __init__(self):
+        self.eventlist = []
+        self._read_events()
+
+    @property
+    def events(self):
+        return self.eventlist
+
+    def _read_events(self):
+        q = EventHandler.query.order_by(EventHandler.ordering)
+        for e in q:
+            self.eventlist.append(e)
 

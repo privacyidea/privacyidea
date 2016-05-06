@@ -12,6 +12,47 @@ from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.smtpserver import add_smtpserver
 from flask import Request
 from werkzeug.test import EnvironBuilder
+from privacyidea.lib.event import delete_event, set_event, EventConfiguration
+
+
+class EventHandlerLibTestCase(MyTestCase):
+
+    def test_01_create_update_delete(self):
+        eid = set_event("token_init", "UserNotification", "sendmail",
+                      condition="bla",
+                      options={"emailconfig": "themis"})
+        self.assertEqual(eid, 1)
+
+        # create a new event!
+        r = set_event("token_init, token_assign",
+                      "UserNotification", "sendmail",
+                      condition="",
+                      options={"emailconfig": "themis",
+                               "always": "immer"})
+
+        self.assertEqual(r, 2)
+        # Update the first event
+        r = set_event("token_init, token_assign",
+                      "UserNotification", "sendmail",
+                      condition="",
+                      options={"emailconfig": "themis",
+                               "always": "immer"},
+                      id=eid)
+        self.assertEqual(r, eid)
+
+        event_config = EventConfiguration()
+        self.assertEqual(len(event_config.events), 2)
+        # delete
+        r = delete_event(eid)
+        self.assertTrue(r)
+        event_config = EventConfiguration()
+        self.assertEqual(len(event_config.events), 1)
+
+        r = delete_event(2)
+        self.assertTrue(r)
+        event_config = EventConfiguration()
+        self.assertEqual(len(event_config.events), 0)
+
 
 class BaseEventHandlerTestCase(MyTestCase):
 
@@ -75,3 +116,4 @@ class UserNotificationTestCase(MyTestCase):
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
         self.assertTrue(res)
+

@@ -1514,17 +1514,34 @@ class EventHandler(MethodsMixin, db.Model):
                               backref='eventhandler')
 
     def __init__(self, event, handlermodule, action, condition="",
-                 ordering=0, options=None):
+                 ordering=0, options=None, id=None):
         self.odering = ordering
         self.event = event
         self.handlermodule = handlermodule
         self.condition = condition
         self.action = action
-        id = self.save()
+        self.id = id
+        self.save()
         # add the options to the event handler
         options = options or {}
         for k, v in options.iteritems():
-            EventHandlerOption(eventhandler_id=id, Key=k, Value=v).save()
+            EventHandlerOption(eventhandler_id=self.id, Key=k, Value=v).save()
+
+    def save(self):
+        if self.id is None:
+            # create a new one
+            db.session.add(self)
+            db.session.commit()
+        else:
+            # update
+            EventHandler.query.filter_by(id=self.id).update({
+                "ordering": self.ordering or 0,
+                "event": self.event,
+                "handlermodule": self.handlermodule,
+                "condition": self.condition,
+                "action": self.action
+            })
+        return self.id
 
     def delete(self):
         ret = self.id
