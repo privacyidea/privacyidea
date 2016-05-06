@@ -250,6 +250,7 @@ class ACTION(object):
     SETHSM = "set_hsm_password"
     SMTPSERVERWRITE = "smtpserver_write"
     RADIUSSERVERWRITE = "radiusserver_write"
+    EVENTHANDLINGWRITE = "eventhandling_write"
 
 
 class LOGINMODE(object):
@@ -915,7 +916,11 @@ def get_static_policy_definitions(scope=None):
             ACTION.RADIUSSERVERWRITE: {'type': 'bool',
                                        'desc': _("Admin is allowed to write "
                                                  "new RADIUS server "
-                                                 "definitions.")}
+                                                 "definitions.")},
+            ACTION.EVENTHANDLINGWRITE: {'type': 'bool',
+                                        'desc': _("Admin is allowed to write "
+                                                  "and modify the event "
+                                                  "handling configuration.")}
 
         },
         # 'gettoken': {

@@ -1553,6 +1553,26 @@ class EventHandler(MethodsMixin, db.Model):
         db.session.commit()
         return ret
 
+    def get(self):
+        """
+        Return the serialized policy object including the options
+
+        :return: complete dict
+        :rytpe: dicte
+        """
+        d = {"handlermodule": self.handlermodule,
+             "id": self.id,
+             "ordering": self.ordering,
+             "action": self.action,
+             "condition": self.condition}
+        event_list = [x.strip() for x in self.event.split(",")]
+        d["event"] = event_list
+        option_dict = {}
+        for option in self.options:
+            option_dict[option.Key] = option.Value
+        d["options"] = option_dict
+        return d
+
 
 class EventHandlerOption(db.Model):
     """

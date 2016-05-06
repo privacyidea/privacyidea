@@ -108,6 +108,11 @@ def delete_event(event_id):
 
 
 class EventConfiguration(object):
+    """
+    This class is supposed to contain the event handling configuration during
+    the Request. It can be read initially (in the init method) an can be
+    accessed later during the request.
+    """
 
     def __init__(self):
         self.eventlist = []
@@ -120,5 +125,5 @@ class EventConfiguration(object):
     def _read_events(self):
         q = EventHandler.query.order_by(EventHandler.ordering)
         for e in q:
-            self.eventlist.append(e)
+            self.eventlist.append(e.get())
 
