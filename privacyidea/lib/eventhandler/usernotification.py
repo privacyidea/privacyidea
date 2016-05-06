@@ -97,12 +97,12 @@ class UserNotificationEventHandler(BaseEventHandler):
         g = options.get("g")
         request = options.get("request")
         logged_in_user = g.logged_in_user
+        user = get_user_from_param(request.all_data)
         if action.lower() == "sendmail" and logged_in_user.get("role") == \
-                ROLE.ADMIN:
+                ROLE.ADMIN and not user.is_empty() and user.login:
             emailconfig = options.get("emailconfig")
             if not emailconfig:
                 raise ParameterError("Missing parameter 'emailconfig'")
-            user = get_user_from_param(request.all_data)
             useremail = user.info.get("email")
             subject = "An action was performed on your token."
             body = BODY.format(
@@ -113,9 +113,13 @@ class UserNotificationEventHandler(BaseEventHandler):
                 url=request.url_root,
                 user=user.info.get("givenname")
                 )
-            ret = send_email_identifier(emailconfig,
-                                        recipient=useremail,
-                                        subject=subject, body=body)
+            try:
+                ret = send_email_identifier(emailconfig,
+                                            recipient=useremail,
+                                            subject=subject, body=body)
+            except Exception as exx:
+                log.error("Failed to send email: {0!s}".format(exx))
+                ret = False
             if ret:
                 log.info("Sent a notification email to user {0}".format(user))
             else:
