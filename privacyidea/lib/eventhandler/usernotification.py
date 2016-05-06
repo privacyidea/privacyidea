@@ -93,6 +93,7 @@ class UserNotificationEventHandler(BaseEventHandler):
         :param options:
         :return:
         """
+        ret = True
         g = options.get("g")
         request = options.get("request")
         logged_in_user = g.logged_in_user
