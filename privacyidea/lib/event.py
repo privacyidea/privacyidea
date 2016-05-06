@@ -31,9 +31,10 @@ class event(object):
     module. This event decorator can be used at any API call
     """
 
-    def __init__(self, eventname, request):
+    def __init__(self, eventname, request, g):
         self.eventname = eventname
         self.request = request
+        self.g = g
 
     def __call__(self, func):
         """
@@ -46,7 +47,18 @@ class event(object):
         """
         @functools.wraps(func)
         def event_wrapper(*args, **kwds):
+            # TODO here we have to evaluate the event configuration from the
+            # DB table eventhandler and based on the self.eventname etc...
+            from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
             f_result = func(*args, **kwds)
+            # Post events
+            event_handler = UserNotificationEventHandler()
+            # The "action is determined by the event configuration
+            # In the options we can pass the mailserver configuration
+            event_handler.do("sendmail", options={
+                "request": self.request,
+                "g": self.g,
+                "emailconfig": "themis"})
             return f_result
 
         return event_wrapper

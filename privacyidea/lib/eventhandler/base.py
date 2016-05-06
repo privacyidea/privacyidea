@@ -47,7 +47,6 @@ class BaseEventHandler(object):
     def __init__(self):
         pass
 
-    @classmethod
     @property
     def actions(cls):
         """
@@ -58,7 +57,6 @@ class BaseEventHandler(object):
         actions = ["sample_action_1", "sample_action_2"]
         return actions
 
-    @classmethod
     @property
     def events(cls):
         """
@@ -78,16 +76,16 @@ class BaseEventHandler(object):
         :return:
         """
         # TODO
-        pass
+        return True
 
-    def do(self, action, environment=None, options=None):
+    def do(self, action, options=None):
         """
         This method executes the defined action in the given event.
 
         :param action:
-        :param environment:
         :param options:
         :return:
         """
         log.info("In fact we are doing nothing, be we presume we are doing"
                  "{0!s}".format(action))
+        return True
