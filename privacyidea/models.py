@@ -1520,6 +1520,8 @@ class EventHandler(MethodsMixin, db.Model):
         self.handlermodule = handlermodule
         self.condition = condition
         self.action = action
+        if id == "":
+            id = None
         self.id = id
         self.save()
         # add the options to the event handler
@@ -1541,6 +1543,7 @@ class EventHandler(MethodsMixin, db.Model):
                 "condition": self.condition,
                 "action": self.action
             })
+            db.session.commit()
         return self.id
 
     def delete(self):

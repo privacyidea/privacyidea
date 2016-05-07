@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2016-05-07 Cornelius Kölbel <cornelius@privacyidea.org>
+ *     Add state for event handler
  * 2015-12-18 Cornelius Kölbel <cornelius@privacyidea.org>
  *     Add state for SMTP Servers
  * 2015-01-11 Cornelius Kölbel, <cornelius@privacyidea.org>
@@ -188,6 +190,21 @@ angular.module('privacyideaApp.configStates', ['ui.router']).config(
                     url: "/edit/{identifier:.*}",
                     templateUrl: configpath + "config.radius.edit.html",
                     controller: "radiusServerController"
+                })
+                .state('config.events', {
+                    url: "/events",
+                    templateUrl: configpath + "config.events.html",
+                    controller: "eventController"
+                })
+                .state('config.events.details', {
+                    url: "/details/{eventid:.*}",
+                    templateUrl: configpath + "config.events.details.html",
+                    controller: "eventDetailController"
+                })
+                .state('config.events.list', {
+                    url: "/list",
+                    templateUrl: configpath + "config.events.list.html",
+                    controller: "eventController"
                 })
             ;
         }]);

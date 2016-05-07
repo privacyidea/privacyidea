@@ -1,0 +1,65 @@
+<h2 class="form-signin-heading"
+    ng-show="eventid">
+    <translate>Edit Event Handler {{ eventid }}</translate>
+</h2>
+
+<h2 class="form-signin-heading"
+        ng-hide="eventid" translate>Create a new Event Handler</h2>
+
+<form name="formEventAdd" role="form" validate
+      class="form-horizontal">
+
+    <div class="form-group">
+        <label for="event" class="col-sm-3 control-label" translate>
+            Events</label>
+        <div class="col-sm-6">
+            <input name="event" id="event" class="form-control"
+                   ng-model="form.event" required placeholder="token_init"
+                   autofocus required/>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="handlermodule" class="col-sm-3 control-label" translate>
+            Handlermodule</label>
+        <div class="col-sm-6">
+            <input name="handlermodule" id="handlermodule" class="form-control"
+                   ng-model="form.handlermodule" required
+                   placeholder="UserNotification"
+                   required/>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="condition" class="col-sm-3 control-label" translate>
+            Condition</label>
+        <div class="col-sm-6">
+            <input name="condition" id="condition" class="form-control"
+                   ng-model="form.condition" placeholder=""
+                   />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="action" class="col-sm-3 control-label" translate>
+            Action</label>
+        <div class="col-sm-6">
+            <input name="action" id="actoin" class="form-control"
+                   ng-model="form.action" required placeholder="sendmail"
+                   required/>
+        </div>
+    </div>
+
+    <div class="text-center"
+         ng-show="checkRight('eventhandling_write')">
+        <button ng-click="createEvent()"
+                id="createEventButton"
+                ng-disabled="formEventAdd.$invalid"
+                class="btn btn-primary">
+            <div class="glyphicon glyphicon-plus" translate>
+                Create Event Handler Definition
+            </div>
+        </button>
+    </div>
+
+</form>

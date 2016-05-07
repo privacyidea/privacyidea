@@ -90,8 +90,11 @@ def set_event(event, handlermodule, action, condition="",
     :type options: dict
     :param id: The DB id of the event. If the id is given, the event is
         updated. Otherwiese a new entry is generated.
+    :type id: int
     :return: The id of the event.
     """
+    if id:
+        id = int(id)
     event = EventHandler(event, handlermodule, action, condition=condition,
                  ordering=ordering, options=options, id=id)
     return event.id
@@ -101,9 +104,12 @@ def delete_event(event_id):
     """
     Delete the event configuration with this given ID.
     :param event_id: The database ID of the event.
+    :type event_id: int
     :return:
     """
-    r = EventHandler.query.filter_by(id=event_id).delete()
+    event_id = int(event_id)
+    ev = EventHandler.query.filter_by(id=event_id).first()
+    r = ev.delete()
     return r
 
 
@@ -121,6 +127,22 @@ class EventConfiguration(object):
     @property
     def events(self):
         return self.eventlist
+
+    def get_event(self, eventid):
+        """
+        Return the reduced list with the given eventid. This list should only
+        have one element.
+
+        :param eventid: id of the event
+        :type eventid: int
+        :return: list with one element
+        """
+        if eventid is not None:
+            eventid = int(eventid)
+            eventlist = [e for e in self.eventlist if e.get("id") == eventid]
+            return eventlist
+        else:
+            return self.eventlist
 
     def _read_events(self):
         q = EventHandler.query.order_by(EventHandler.ordering)

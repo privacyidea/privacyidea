@@ -44,12 +44,13 @@ eventhandling_blueprint = Blueprint('eventhandling_blueprint', __name__)
 
 
 @eventhandling_blueprint.route('', methods=['GET'])
+@eventhandling_blueprint.route('/<eventid>', methods=['GET'])
 @log_with(log)
-def get_eventhandling():
+def get_eventhandling(eventid=None):
     """
     returns a json list of the event handling configuration
     """
-    res = g.event_config.events
+    res = g.event_config.get_event(eventid)
     g.audit_object.log({"success": True})
     return send_result(res)
 

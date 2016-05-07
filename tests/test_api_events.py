@@ -81,20 +81,33 @@ class APIEventsTestCase(MyTestCase):
             self.assertEqual(result.get("value")[0].get("condition"),
                              "always")
 
+        # get one single event
+        with self.app.test_request_context('/event/1',
+                                           method='GET',
+                                           headers={
+                                               'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                result = json.loads(res.data).get("result")
+                detail = json.loads(res.data).get("detail")
+                self.assertEqual(result.get("value")[0].get("action"),
+                                 "sendmail")
+                self.assertEqual(result.get("value")[0].get("condition"),
+                                 "always")
+
         # delete event
         with self.app.test_request_context('/event/1',
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
 
-
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
             detail = json.loads(res.data).get("detail")
             self.assertEqual(result.get("value"), 1)
-            # list empty events
 
+        # list empty events
         with self.app.test_request_context('/event',
                                            method='GET',
                                            headers={'Authorization': self.at}):
