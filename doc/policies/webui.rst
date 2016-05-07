@@ -201,3 +201,14 @@ to display the contents in the first step (pre) or in the second step (post).
    your needs the best by defining a variable `PI_CUSTOMIZATION` in the file
    *pi.cfg*. This way you can put all modifications in one place apart from
    the original code.
+
+realm_dropdown
+~~~~~~~~~~~~~~
+
+.. index:: Realmbox
+
+type: bool
+
+If this policy is activated the web UI will display a realm dropdown box.
+Of course this policy can not filter for users or realms, since the
+user is not known at this moment.

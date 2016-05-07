@@ -169,6 +169,9 @@ def get_auth_token():
     validity = timedelta(hours=1)
     username = request.all_data.get("username")
     password = request.all_data.get("password")
+    realm = request.all_data.get("realm")
+    if realm:
+        username = username + "@" + realm
 
     g.audit_object.log({"user": username})
 

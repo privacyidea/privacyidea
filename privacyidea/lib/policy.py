@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-05-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add realm dropdown
 #  2016-04-06 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add time dependency in policy
 #  2016-02-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -250,6 +252,7 @@ class ACTION(object):
     SETHSM = "set_hsm_password"
     SMTPSERVERWRITE = "smtpserver_write"
     RADIUSSERVERWRITE = "radiusserver_write"
+    REALMDROPDOWN = "realm_dropdown"
 
 
 class LOGINMODE(object):
@@ -1233,6 +1236,11 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("This is the default token type in the token "
                           "enrollment dialog."),
                 'value': get_token_types()
+            },
+            ACTION.REALMDROPDOWN: {
+                'type': 'bool',
+                'desc': _("If this is checked, a dropdown combobox with the "
+                          "realms is displayed in the login screen.")
             }
         }
 

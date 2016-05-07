@@ -28,10 +28,13 @@ Other html code is dynamically loaded via angularJS and located in
 """
 __author__ = "Cornelius Kölbel, <cornelius@privacyidea.org>"
 
-from flask import (Blueprint, render_template, request, current_app)
+from flask import (Blueprint, render_template, request,
+                   current_app)
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.lib.passwordreset import is_password_reset
 from privacyidea.lib.error import HSMException
+from privacyidea.lib.realm import get_realms
+from privacyidea.lib.policy import PolicyClass, ACTION, SCOPE
 
 DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
 
@@ -62,6 +65,17 @@ def single_page_application():
     # check if login with REMOTE_USER is allowed.
     remote_user = ""
     password_reset = False
+    # Depending on displaying the realm dropdown, we fill realms or not.
+    policy_object = PolicyClass()
+    realms = ""
+    client_ip = request.access_route[0] if request.access_route else \
+        request.remote_addr
+    realm_dropdown = policy_object.get_policies(action=ACTION.REALMDROPDOWN,
+                                                scope=SCOPE.WEBUI,
+                                                client=client_ip)
+    if realm_dropdown:
+        realms = ",".join(get_realms().keys())
+
     try:
         if is_remote_user_allowed(request):
             remote_user = request.remote_user
@@ -77,5 +91,6 @@ def single_page_application():
                            theme=theme,
                            password_reset=password_reset,
                            hsm_ready=hsm_ready,
-                           customization=customization)
+                           customization=customization,
+                           realms=realms)
 

@@ -18,6 +18,14 @@
  * License along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
+
+//Return an empty array if string is empty.
+//Otherwise return the result of the ordinary split.
+String.prototype.mysplit = function(separator) {
+    return this == "" ? [] : this.split(separator);
+};
+
+
 angular.module("privacyideaApp")
     .controller("mainController",
                             function (Idle,
@@ -43,6 +51,9 @@ angular.module("privacyideaApp")
     $scope.hsmReady = obj.val();
     obj = angular.element(document.querySelector("#CUSTOMIZATION"));
     $scope.piCustomization = obj.val();
+    obj = angular.element(document.querySelector('#REALMS'));
+    $scope.piRealms = obj.val().mysplit(",");
+    console.log($scope.piRealms);
     // Check if registration is allowed
     $scope.registrationAllowed = false;
     RegisterFactory.status(function (data) {
@@ -141,9 +152,11 @@ angular.module("privacyideaApp")
     $scope.authenticate = function () {
         $scope.polling = false;
         $scope.image = false;
+        console.log($scope.login);
         $http.post(authUrl, {
             username: $scope.login.username,
             password: $scope.login.password,
+            realm: $scope.login.realm,
             transaction_id: $scope.transactionid
         }, {
             withCredentials: true
