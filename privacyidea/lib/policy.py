@@ -482,13 +482,19 @@ class PolicyClass(object):
         :param client: The HTTP client IP
         :return: A list of actions
         """
+        from privacyidea.lib.auth import ROLE
+        from privacyidea.lib.token import get_dynamic_policy_definitions
         rights = []
         userealm = None
         adminrealm = None
+        logged_in_user = {"username": username,
+                          "realm": realm}
         if scope == SCOPE.ADMIN:
             adminrealm = realm
+            logged_in_user["role"] = ROLE.ADMIN
         elif scope == SCOPE.USER:
             userealm = realm
+            logged_in_user["role"] = ROLE.USER
         pols = self.get_policies(scope=scope,
                                  adminrealm=adminrealm,
                                  realm=userealm,
@@ -504,7 +510,9 @@ class PolicyClass(object):
             # We do not have any policies in this scope, so we return all
             # possible actions in this scope.
             log.debug("No policies defined, so we set all rights.")
-            rights = get_static_policy_definitions(scope).keys()
+            static_rights = get_static_policy_definitions(scope).keys()
+            enroll_rights = get_dynamic_policy_definitions(scope).keys()
+            rights = static_rights + enroll_rights
         # reduce the list
         rights = list(set(rights))
         log.debug("returning the admin rights: {0!s}".format(rights))
@@ -512,7 +520,7 @@ class PolicyClass(object):
 
     def ui_get_enroll_tokentypes(self, client, logged_in_user):
         """
-        Return a dictioary of the allowed tokentypes for the logged in user.
+        Return a dictionary of the allowed tokentypes for the logged in user.
         This used for the token enrollment UI.
 
         It looks like this:

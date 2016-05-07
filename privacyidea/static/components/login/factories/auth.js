@@ -55,6 +55,17 @@ angular.module("privacyideaAuth", [])
                 var res = (user.rights.indexOf(action) >= 0);
                 //console.log("checking right: " + action + ": " + res);
                 return res;
+            },
+            checkEnroll: function() {
+                // Check if any enroll* action is contained in user.rights
+                var res = false;
+                user.rights.forEach(function(entry){
+                    // check if the action starts with "enroll"
+                    if (entry.indexOf("enroll") === 0) {
+                        res = true;
+                    }
+                });
+                return res;
             }
         };
     });
