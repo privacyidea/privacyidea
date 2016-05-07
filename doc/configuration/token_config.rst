@@ -45,6 +45,9 @@ At the moment the following tokentypes are supported:
   a RADIUS server.
 * :ref:`sms` - A token that sends the OTP value to the mobile phone of the
   user.
+* :ref:`spass` - The simple pass token. A token that has no OTP component and
+  just consists of the OTP pin or (if otppin=userstore is set) of the userstore
+  password.
 * :ref:`tiqr` - A Smartphone token that can be used to login by only scanning
   a QR code.
 * :ref:`u2f` - A U2F device as specified by the FIDO Alliance. This is a USB

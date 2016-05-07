@@ -127,7 +127,7 @@ class SpassTokenClass(TokenClass):
     @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):
         """
-        As we have no otp value we always return true == 0
+        As we have no otp value we always return true. (counter == 0)
         """
         return 0
 
