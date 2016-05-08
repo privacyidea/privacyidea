@@ -50,11 +50,19 @@ eventhandling_blueprint = Blueprint('eventhandling_blueprint', __name__)
 def get_eventhandling(eventid=None):
     """
     returns a json list of the event handling configuration
+
     Or
+
     returns a list of available events when calling as /event/available
+
+    Or
+
+    the available handler modules when calling as /event/handlermodules
     """
     if eventid == "available":
         res = AVAILABLE_EVENTS
+    elif eventid == "handlermodules":
+        res = ["UserNotification"]
     else:
         res = g.event_config.get_event(eventid)
     g.audit_object.log({"success": True})

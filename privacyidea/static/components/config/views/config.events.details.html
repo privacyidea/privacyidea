@@ -10,12 +10,18 @@
       class="form-horizontal">
 
     <div class="form-group">
-        <label for="event" class="col-sm-3 control-label" translate>
-            Events</label>
-        <div class="col-sm-6">
-            <input name="event" id="event" class="form-control"
-                   ng-model="form.event" required placeholder="token_init"
-                   autofocus required/>
+        <label for="event" class="col-sm-3 control-label"
+                translate>Events</label>
+
+        <div class="col-sm-9">
+            <div isteven-multi-select
+                 input-model="availableEvents"
+                 output-model="selectedEvents"
+                 button-label="icon name"
+                 item-label="icon name maker"
+                 tick-property="ticked"
+                    >
+            </div>
         </div>
     </div>
 
@@ -23,12 +29,16 @@
         <label for="handlermodule" class="col-sm-3 control-label" translate>
             Handlermodule</label>
         <div class="col-sm-6">
-            <input name="handlermodule" id="handlermodule" class="form-control"
-                   ng-model="form.handlermodule" required
-                   placeholder="UserNotification"
-                   required/>
+            <select class="form-control"
+                    id="handlermodule"
+                    ng-model="form.handlermodule" required
+                    ng-options="module for module in handlermodules"
+                    >
+            </select>
         </div>
     </div>
+
+
 
     <div class="form-group">
         <label for="condition" class="col-sm-3 control-label" translate>

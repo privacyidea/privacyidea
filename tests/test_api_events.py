@@ -187,3 +187,14 @@ class APIEventsTestCase(MyTestCase):
             self.assertTrue("token_init" in result.get("value"))
             self.assertTrue("token_assign" in result.get("value"))
             self.assertTrue("token_unassign" in result.get("value"))
+
+    def test_04_handler_modules(self):
+        with self.app.test_request_context('/event/handlermodules',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertTrue("UserNotification" in result.get("value"))
+

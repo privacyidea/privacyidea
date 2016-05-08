@@ -48,27 +48,60 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
     // init
     $scope.form = {};
     $scope.eventid = $stateParams.eventid;
+    $scope.availableEvents = Array();
 
     $scope.getEvent = function () {
         ConfigFactory.getEvent($scope.eventid, function(data) {
             console.log("Fetching single event " + $scope.eventid);
             $scope.form = data.result.value[0];
+            for (var i=0; i<$scope.availableEvents.length; i++) {
+                var name = $scope.availableEvents[i].name;
+                if ($scope.form.event.indexOf(name) >= 0) {
+                    $scope.availableEvents[i].ticked = true;
+                }
+            }
+        });
+    };
+
+    $scope.getAvailableEvents = function () {
+        ConfigFactory.getEvent("available", function(data) {
+            console.log("getting available events");
+            var events = data.result.value;
+            $scope.availableEvents = Array();
+            angular.forEach(events, function(event) {
+                $scope.availableEvents.push({"name": event})
+            });
+            console.log($scope.availableEvents);
+        });
+    };
+
+    $scope.getHandlerModules = function () {
+        ConfigFactory.getEvent("handlermodules", function(data) {
+            console.log("getting handlermodules");
+            $scope.handlermodules = data.result.value;
+            console.log($scope.handlermodules );
         });
     };
 
     $scope.createEvent = function () {
         // This is called to save the event handler
         $scope.form.id = $scope.eventid;
-        if( typeof $scope.form.event  === 'string' ) {
-        } else {
-            $scope.form.event = $scope.form.event.join();
-        }
+        var events = Array();
+        angular.forEach($scope.selectedEvents, function(event){
+            if (event.ticked === true) {
+                events.push(event.name);
+            }
+        });
+        $scope.form.event = events.join(",");
+        console.log("saving events " + $scope.form.event);
         ConfigFactory.setEvent($scope.form, function(data) {
             $state.go("config.events.list");
         });
         $('html,body').scrollTop(0);
     };
 
+    $scope.getAvailableEvents();
+    $scope.getHandlerModules();
     if ($scope.eventid) {
         $scope.getEvent();
     }
