@@ -35,8 +35,7 @@ from privacyidea.lib.smtpserver import send_email_identifier
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.user import get_user_from_param
-
-
+import traceback
 import logging
 log = logging.getLogger(__name__)
 
@@ -102,6 +101,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                 ROLE.ADMIN and not user.is_empty() and user.login:
             emailconfig = options.get("emailconfig")
             if not emailconfig:
+                log.error("Missing parameter 'emailconfig'")
                 raise ParameterError("Missing parameter 'emailconfig'")
             useremail = user.info.get("email")
             subject = "An action was performed on your token."

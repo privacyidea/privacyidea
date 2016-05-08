@@ -51,21 +51,48 @@ class event(object):
         """
         @functools.wraps(func)
         def event_wrapper(*args, **kwds):
-            # TODO here we have to evaluate the event configuration from the
+            # here we have to evaluate the event configuration from the
             # DB table eventhandler and based on the self.eventname etc...
-            from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
+            # TODO: do Pre-Event Handling
             f_result = func(*args, **kwds)
-            # Post events
-            event_handler = UserNotificationEventHandler()
-            # The "action is determined by the event configuration
-            # In the options we can pass the mailserver configuration
-            event_handler.do("sendmail", options={
-                "request": self.request,
-                "g": self.g,
-                "emailconfig": "themis"})
+            # Post-Event Handling
+            e_handles = self.g.event_config.get_handled_events(self.eventname)
+            for e_handler_def in e_handles:
+                log.debug("Handling event {eventname} with "
+                          "{eventDef}".format(eventname=self.eventname,
+                                             eventDef=e_handler_def ))
+                event_handler_name = e_handler_def.get("handlermodule")
+                event_handler = get_handler_object(event_handler_name)
+                # The "action is determined by the event configuration
+                # In the options we can pass the mailserver configuration
+                options = {"request": self.request,
+                           "g": self.g,}
+                options.update(e_handler_def.get("options"))
+                log.debug("Handling event {eventname} with options"
+                          "{options}".format(eventname=self.eventname,
+                                             options=options))
+                event_handler.do(e_handler_def.get("action"),
+                                 options=options)
             return f_result
 
         return event_wrapper
+
+
+def get_handler_object(handlername):
+    """
+    Return an event hanlder object based on the Name of the event handler class
+
+    :param handlername: The identifier of the Handler Class
+    :type hanldername: basestring
+    :return:
+    """
+    # TODO: beautify and make this work with several different handlers
+    from privacyidea.lib.eventhandler.usernotification import \
+        UserNotificationEventHandler
+    h_obj = None
+    if handlername == "UserNotification":
+        h_obj = UserNotificationEventHandler()
+    return h_obj
 
 
 def set_event(event, handlermodule, action, condition="",
@@ -130,6 +157,16 @@ class EventConfiguration(object):
     @property
     def events(self):
         return self.eventlist
+
+    def get_handled_events(self, eventname):
+        """
+        Return a list of the event handling definitions for the given eventname
+
+        :param eventname:
+        :return:
+        """
+        eventlist = [e for e in self.eventlist if eventname in e.get("event")]
+        return eventlist
 
     def get_event(self, eventid):
         """

@@ -12,7 +12,8 @@ from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.smtpserver import add_smtpserver
 from flask import Request
 from werkzeug.test import EnvironBuilder
-from privacyidea.lib.event import delete_event, set_event, EventConfiguration
+from privacyidea.lib.event import (delete_event, set_event,
+                                   EventConfiguration, get_handler_object)
 
 
 class EventHandlerLibTestCase(MyTestCase):
@@ -52,6 +53,10 @@ class EventHandlerLibTestCase(MyTestCase):
         self.assertTrue(r)
         event_config = EventConfiguration()
         self.assertEqual(len(event_config.events), 0)
+
+    def test_02_get_handler_object(self):
+        h_obj = get_handler_object("UserNotification")
+        self.assertEqual(type(h_obj), UserNotificationEventHandler)
 
 
 class BaseEventHandlerTestCase(MyTestCase):
