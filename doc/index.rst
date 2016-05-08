@@ -44,6 +44,7 @@ Table of Contents
    tokenview/index
    userview/index
    policies/index
+   eventhandler/index
    audit/index
    machines/index
    workflows_and_tools/index
