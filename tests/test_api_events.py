@@ -174,3 +174,16 @@ class APIEventsTestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             detail = json.loads(res.data).get("detail")
             self.assertEqual(result.get("value"), [])
+
+    def test_03_available_events(self):
+        with self.app.test_request_context('/event/available',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertTrue("token_init" in result.get("value"))
+            self.assertTrue("token_assign" in result.get("value"))
+            self.assertTrue("token_unassign" in result.get("value"))

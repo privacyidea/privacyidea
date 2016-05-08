@@ -25,6 +25,8 @@ import functools
 import logging
 log = logging.getLogger(__name__)
 
+AVAILABLE_EVENTS = []
+
 
 class event(object):
     """
@@ -34,6 +36,7 @@ class event(object):
 
     def __init__(self, eventname, request, g):
         self.eventname = eventname
+        AVAILABLE_EVENTS.append(eventname)
         self.request = request
         self.g = g
 

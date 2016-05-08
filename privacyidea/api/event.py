@@ -35,6 +35,7 @@ from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policy import ACTION
+from privacyidea.lib.event import AVAILABLE_EVENTS
 
 
 log = logging.getLogger(__name__)
@@ -49,8 +50,13 @@ eventhandling_blueprint = Blueprint('eventhandling_blueprint', __name__)
 def get_eventhandling(eventid=None):
     """
     returns a json list of the event handling configuration
+    Or
+    returns a list of available events when calling as /event/available
     """
-    res = g.event_config.get_event(eventid)
+    if eventid == "available":
+        res = AVAILABLE_EVENTS
+    else:
+        res = g.event_config.get_event(eventid)
     g.audit_object.log({"success": True})
     return send_result(res)
 
