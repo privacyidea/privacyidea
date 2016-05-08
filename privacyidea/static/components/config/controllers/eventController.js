@@ -49,17 +49,27 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
     $scope.form = {};
     $scope.eventid = $stateParams.eventid;
     $scope.availableEvents = Array();
+    $scope.opts = {};
 
     $scope.getEvent = function () {
-        ConfigFactory.getEvent($scope.eventid, function(data) {
+        ConfigFactory.getEvent($scope.eventid, function(event) {
             console.log("Fetching single event " + $scope.eventid);
-            $scope.form = data.result.value[0];
-            for (var i=0; i<$scope.availableEvents.length; i++) {
-                var name = $scope.availableEvents[i].name;
-                if ($scope.form.event.indexOf(name) >= 0) {
-                    $scope.availableEvents[i].ticked = true;
-                }
-            }
+            // first we need to fetch the action-list:
+            ConfigFactory.getHandlerActions(event.result.value[0].handlermodule,
+                function(actions){
+                    $scope.handlerOptions = actions.result.value;
+                    $scope.handlerActions = Object.keys($scope.handlerOptions);
+                    $scope.form = event.result.value[0];
+                    for (var i=0; i<$scope.availableEvents.length; i++) {
+                       var name = $scope.availableEvents[i].name;
+                        if ($scope.form.event.indexOf(name) >= 0) {
+                            $scope.availableEvents[i].ticked = true;
+                        }
+                    }
+                    // set the options
+                    $scope.actionChanged();
+                    $scope.opts = event.result.value[0].options;
+                });
         });
     };
 
@@ -87,6 +97,11 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
         // This is called to save the event handler
         $scope.form.id = $scope.eventid;
         var events = Array();
+        // transform the event options to form parameters
+        for (var option in $scope.opts) {
+            $scope.form["option." + option] = $scope.opts[option];
+        }
+        // push all ticked events
         angular.forEach($scope.selectedEvents, function(event){
             if (event.ticked === true) {
                 events.push(event.name);
@@ -98,6 +113,21 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
             $state.go("config.events.list");
         });
         $('html,body').scrollTop(0);
+    };
+
+    $scope.getHandlerActions = function () {
+        console.log("getting handler actions for " + $scope.form.handlermodule);
+        ConfigFactory.getHandlerActions($scope.form.handlermodule,
+            function(actions){
+                $scope.handlerOptions = actions.result.value;
+                $scope.handlerActions = Object.keys($scope.handlerOptions);
+                console.log($scope.handlerActions);
+                console.log($scope.form);
+            });
+    };
+
+    $scope.actionChanged = function () {
+        $scope.options = $scope.handlerOptions[$scope.form.action];
     };
 
     $scope.getAvailableEvents();

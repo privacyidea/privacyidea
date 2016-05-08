@@ -76,11 +76,12 @@ class BaseEventHandlerTestCase(MyTestCase):
         r = base_handler.do("action")
         self.assertTrue(r)
 
+
 class UserNotificationTestCase(MyTestCase):
 
     def test_01_basefunctions(self):
         actions = UserNotificationEventHandler().actions
-        self.assertEqual(actions, ["sendmail"])
+        self.assertTrue("sendmail" in actions)
 
     @smtpmock.activate
     def test_02_sendmail(self):

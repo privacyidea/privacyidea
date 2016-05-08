@@ -35,7 +35,7 @@ from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policy import ACTION
-from privacyidea.lib.event import AVAILABLE_EVENTS
+from privacyidea.lib.event import AVAILABLE_EVENTS, get_handler_object
 
 
 log = logging.getLogger(__name__)
@@ -67,6 +67,23 @@ def get_eventhandling(eventid=None):
         res = g.event_config.get_event(eventid)
     g.audit_object.log({"success": True})
     return send_result(res)
+
+
+@eventhandling_blueprint.route('/actions/<handlermodule>', methods=["GET"])
+@log_with(log)
+def get_module_actions(handlermodule=None):
+    """
+    Return the list of actions a handlermodule provides.
+
+    :param handlermodule: Identidifier of the handler module like
+        "UserNotification"
+    :return: list oft actions
+    """
+    ret = []
+    h_obj = get_handler_object(handlermodule)
+    if h_obj:
+        ret = h_obj.actions
+    return send_result(ret)
 
 
 @eventhandling_blueprint.route('', methods=['POST'])

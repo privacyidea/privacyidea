@@ -37,7 +37,7 @@ msgstr ""
 msgid "About privacyIDEA Web Client"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.events.details.html:44
+#: privacyidea/static/components/config/views/config.events.details.html:53
 #: privacyidea/static/components/config/views/config.events.list.html:9
 #: privacyidea/static/components/config/views/config.policies.details.html:127
 #: privacyidea/static/components/config/views/config.policies.list.html:8
@@ -342,7 +342,7 @@ msgstr ""
 msgid "Community"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.events.details.html:34
+#: privacyidea/static/components/config/views/config.events.details.html:43
 #: privacyidea/static/components/config/views/config.events.list.html:8
 msgid "Condition"
 msgstr ""
@@ -374,7 +374,7 @@ msgid ""
 "                    newly enrolled tokens"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.events.details.html:59
+#: privacyidea/static/components/config/views/config.events.details.html:100
 msgid "Create Event Handler Definition"
 msgstr ""
 
@@ -896,7 +896,7 @@ msgstr ""
 msgid "HOTP: event based One Time Passwords"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.events.details.html:23
+#: privacyidea/static/components/config/views/config.events.details.html:30
 #: privacyidea/static/components/config/views/config.events.list.html:7
 msgid "Handlermodule"
 msgstr ""
@@ -1049,6 +1049,10 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:127
 msgid "Info"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.events.details.html:67
+msgid "Key"
 msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.log.html:14
@@ -1351,6 +1355,7 @@ msgstr ""
 msgid "OpenSSL config file"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.events.details.html:62
 #: privacyidea/static/components/config/views/config.events.list.html:10
 #: privacyidea/static/components/machine/views/machine.details.html:52
 #: privacyidea/static/components/token/views/token.details.html:456
@@ -1948,7 +1953,7 @@ msgid "System Config"
 msgstr ""
 
 #: privacyidea/static/components/config/controllers/configControllers.js:427
-#: privacyidea/static/components/config/controllers/configControllers.js:637
+#: privacyidea/static/components/config/controllers/configControllers.js:639
 msgid "System Config saved."
 msgstr ""
 
@@ -2853,6 +2858,10 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:174
 #: privacyidea/static/components/token/views/token.enroll.html:56
 msgid "Validity Start"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.events.details.html:68
+msgid "Value"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.remote.html:13

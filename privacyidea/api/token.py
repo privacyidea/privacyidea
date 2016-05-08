@@ -913,7 +913,7 @@ def lost_api(serial=None):
 
 @token_blueprint.route('/getserial/<otp>', methods=['GET'])
 @prepolicy(check_base_action, request, action=ACTION.GETSERIAL)
-@event("get_serial", request, g)
+@event("token_getserial", request, g)
 @log_with(log)
 @admin_required
 def get_serial_by_otp_api(otp=None):

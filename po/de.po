@@ -47,7 +47,7 @@ msgstr "API Client ID"
 msgid "About privacyIDEA Web Client"
 msgstr "Über das privacyIDEA WebUI"
 
-#: privacyidea/static/components/config/views/config.events.details.html:44
+#: privacyidea/static/components/config/views/config.events.details.html:53
 #: privacyidea/static/components/config/views/config.events.list.html:9
 #: privacyidea/static/components/config/views/config.policies.details.html:127
 #: privacyidea/static/components/config/views/config.policies.list.html:8
@@ -368,7 +368,7 @@ msgstr "Schließen"
 msgid "Community"
 msgstr "Community"
 
-#: privacyidea/static/components/config/views/config.events.details.html:34
+#: privacyidea/static/components/config/views/config.events.details.html:43
 #: privacyidea/static/components/config/views/config.events.list.html:8
 msgid "Condition"
 msgstr "Bedingung"
@@ -400,7 +400,7 @@ msgid ""
 "                    newly enrolled tokens"
 msgstr "Zählerfenster für neu ausgerollte Token"
 
-#: privacyidea/static/components/config/views/config.events.details.html:59
+#: privacyidea/static/components/config/views/config.events.details.html:100
 msgid "Create Event Handler Definition"
 msgstr "Erstelle eine Ereignisdefinition"
 
@@ -937,7 +937,7 @@ msgstr "HOTP Token Einstellungen"
 msgid "HOTP: event based One Time Passwords"
 msgstr "HOTP: Ereignisbasiertes Einmal-Passwort"
 
-#: privacyidea/static/components/config/views/config.events.details.html:23
+#: privacyidea/static/components/config/views/config.events.details.html:30
 #: privacyidea/static/components/config/views/config.events.list.html:7
 msgid "Handlermodule"
 msgstr "Handlermodul"
@@ -1122,6 +1122,10 @@ msgstr "Den Fehlerzähler erhöhen, wenn eine falsche PIN eingegeben wurde."
 #: privacyidea/static/components/token/views/token.details.html:127
 msgid "Info"
 msgstr "Info"
+
+#: privacyidea/static/components/config/views/config.events.details.html:67
+msgid "Key"
+msgstr "Schlüssel"
 
 #: privacyidea/static/components/audit/views/audit.log.html:14
 #: privacyidea/static/components/machine/views/machine.details.html:42
@@ -1428,6 +1432,7 @@ msgstr "Ein neues Tab öffnen, um die Zertifikatsanforderung zu erstellen."
 msgid "OpenSSL config file"
 msgstr "OpenSSL Konfigurationsdatei"
 
+#: privacyidea/static/components/config/views/config.events.details.html:62
 #: privacyidea/static/components/config/views/config.events.list.html:10
 #: privacyidea/static/components/machine/views/machine.details.html:52
 #: privacyidea/static/components/token/views/token.details.html:456
@@ -2043,7 +2048,7 @@ msgid "System Config"
 msgstr "Systemkonfiguration"
 
 #: privacyidea/static/components/config/controllers/configControllers.js:427
-#: privacyidea/static/components/config/controllers/configControllers.js:637
+#: privacyidea/static/components/config/controllers/configControllers.js:639
 msgid "System Config saved."
 msgstr "Systemkonfiguration gespeichert."
 
@@ -3166,6 +3171,10 @@ msgstr "Ende Gültigkeit"
 #: privacyidea/static/components/token/views/token.enroll.html:56
 msgid "Validity Start"
 msgstr "Begin Gültigkeit"
+
+#: privacyidea/static/components/config/views/config.events.details.html:68
+msgid "Value"
+msgstr "Wert"
 
 #: privacyidea/static/components/config/views/config.token.remote.html:13
 msgid "Verify SSL certificate"

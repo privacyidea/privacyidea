@@ -35,7 +35,8 @@ from privacyidea.lib.smtpserver import send_email_identifier
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.user import get_user_from_param
-import traceback
+from privacyidea.lib.smtpserver import get_smtpservers
+from gettext import gettext as _
 import logging
 log = logging.getLogger(__name__)
 
@@ -66,12 +67,25 @@ class UserNotificationEventHandler(BaseEventHandler):
     @property
     def actions(cls):
         """
-        This method returns a list of available actions, that are provided
-        by this event handler.
-        :return: list of actions
+        This method returns a dictionary of allowed actions and possible
+        options in this handler module.
+
+        :return: dict with actions
         """
-        # TODO: We can add sendsms...
-        actions = ["sendmail"]
+        smtpserver_objs = get_smtpservers()
+        smtpservers = [s.config.identifier for s in smtpserver_objs]
+        actions = {"sendmail": {"emailconfig":
+                                     {"type": "str",
+                                      "required": True,
+                                      "description": _("Send notification "
+                                                       "email via this "
+                                                       "email server."),
+                                      "value": smtpservers}
+                                 },
+                   "sendsms (not implemented)": {"smsconfig":
+                                                      {"type": "str"}
+                                                  }
+                   }
         return actions
 
     def check_condition(self):

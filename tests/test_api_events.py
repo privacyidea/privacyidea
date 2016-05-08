@@ -198,3 +198,12 @@ class APIEventsTestCase(MyTestCase):
             detail = json.loads(res.data).get("detail")
             self.assertTrue("UserNotification" in result.get("value"))
 
+    def test_05_get_handler_actions(self):
+        with self.app.test_request_context('/event/actions/UserNotification',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
