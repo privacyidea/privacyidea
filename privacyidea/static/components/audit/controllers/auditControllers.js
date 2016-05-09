@@ -37,7 +37,7 @@ myApp.controller("auditController", function (AuditFactory, $scope,
     }
 
     if ($location.path() === "/audit/statistics") {
-        $scope.getStatistics;
+        $scope.getStatistics();
     }
 
     // If the state is called with some filter values
