@@ -99,7 +99,9 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
         var events = Array();
         // transform the event options to form parameters
         for (var option in $scope.opts) {
-            $scope.form["option." + option] = $scope.opts[option];
+            if ($scope.opts.hasOwnProperty(option)) {
+                $scope.form["option." + option] = $scope.opts[option];
+            }
         }
         // push all ticked events
         angular.forEach($scope.selectedEvents, function(event){
@@ -109,7 +111,7 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
         });
         $scope.form.event = events.join(",");
         console.log("saving events " + $scope.form.event);
-        ConfigFactory.setEvent($scope.form, function(data) {
+        ConfigFactory.setEvent($scope.form, function() {
             $state.go("config.events.list");
         });
         $('html,body').scrollTop(0);
