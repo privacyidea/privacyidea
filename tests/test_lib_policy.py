@@ -9,7 +9,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy,
                                     import_policies, export_policies,
                                     get_static_policy_definitions,
                                     PolicyClass, SCOPE, enable_policy,
-                                    PolicyError)
+                                    PolicyError, ACTION)
 import datetime
 
 
@@ -387,6 +387,34 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(len(tt), 0)
         delete_policy("tokenEnroll")
 
+        # Two admins:
+        # adminA is allowed to enroll tokens in all realms
+        # adminB is allowed to enroll tokens only in realmB
+
+        set_policy(name="polAdminA", scope=SCOPE.ADMIN, user="adminA",
+                   action="enrollHOTP, enrollTOTP")
+        set_policy(name="polAdminB", scope=SCOPE.ADMIN, user="adminB",
+                   realm="realmB",
+                   action="enrollHOTP")
+        P = PolicyClass()
+        # realm is empty, since in case of an admin, this is the admin realm
+        rights = P.ui_get_enroll_tokentypes(None, {"role": SCOPE.ADMIN,
+                                                   "realm": None,
+                                                   "username": "adminA"})
+        self.assertTrue("hotp" in rights)
+        self.assertTrue("totp" in rights)
+        rights = P.ui_get_enroll_tokentypes(None, {"role": SCOPE.ADMIN,
+                                                   "realm": "",
+                                                   "username": "adminB"})
+        self.assertTrue("totp" not in rights)
+        self.assertTrue("hotp" in rights)
+        rights = P.ui_get_enroll_tokentypes(None, {"role": SCOPE.ADMIN,
+                                                   "realm": "",
+                                                   "username": "adminC"})
+        self.assertEqual(rights, {})
+        delete_policy("polAdminA")
+        delete_policy("polAdminB")
+
     def test_16_admin_realm(self):
         P = PolicyClass()
         logged_in_user = {"username": "admin",
@@ -445,9 +473,6 @@ class PolicyTestCase(MyTestCase):
 
     def test_17_ui_get_rights(self):
         P = PolicyClass()
-        logged_in_user = {"username": "admin",
-                          "role": "admin",
-                          "realm": "realm1"}
         # Without policies, the admin gets all
         rights = P.ui_get_rights(SCOPE.ADMIN, "realm1", "admin")
         self.assertTrue(len(rights) >= 60)
@@ -465,6 +490,29 @@ class PolicyTestCase(MyTestCase):
         rights = P.ui_get_rights(SCOPE.USER, "realm2", "user")
         # there was still another policy...
         self.assertEqual(rights, ["enable", "disable"])
+
+        delete_policy("tokenEnroll")
+        delete_policy("userpol")
+        # Two admins:
+        # adminA is allowed to enroll tokens in all realms
+        # adminB is allowed to enroll tokens only in realmB
+        set_policy(name="polAdminA", scope=SCOPE.ADMIN, user="adminA",
+                   action="enrollHOTP, enrollTOTP")
+        set_policy(name="polAdminB", scope=SCOPE.ADMIN, user="adminB",
+                   realm="realmB",
+                   action="enrollHOTP")
+        P = PolicyClass()
+        # realm is empty, since in case of an admin, this is the admin realm
+        rights = P.ui_get_rights(SCOPE.ADMIN, realm=None, username="adminA")
+        self.assertTrue("enrollTOTP" in rights)
+        self.assertTrue("enrollHOTP" in rights)
+        rights = P.ui_get_rights(SCOPE.ADMIN, realm=None, username="adminB")
+        self.assertTrue("enrollTOTP" not in rights)
+        self.assertTrue("enrollHOTP" in rights)
+        rights = P.ui_get_rights(SCOPE.ADMIN, realm=None, username="adminC")
+        self.assertEqual(rights, [])
+        delete_policy("polAdminA")
+        delete_policy("polAdminB")
 
     def test_18_policy_with_time(self):
         set_policy(name="time1", scope=SCOPE.AUTHZ,

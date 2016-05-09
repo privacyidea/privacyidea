@@ -548,9 +548,15 @@ class PolicyClass(object):
         :type logged_in_user: dict
         :return: list of token types, the user may enroll
         """
+        from privacyidea.lib.auth import ROLE
         enroll_types = {}
         role = logged_in_user.get("role")
-        admin_realm = logged_in_user.get("realm")
+        if role == ROLE.ADMIN:
+            admin_realm = logged_in_user.get("realm")
+            user_realm = None
+        else:
+            admin_realm = None
+            user_realm = logged_in_user.get("realm")
         # check, if we have a policy definition at all.
         pols = self.get_policies(scope=role, active=True)
         tokenclasses = get_token_classes()
@@ -567,7 +573,7 @@ class PolicyClass(object):
                 # determine, if there is a enrollment policy for this very type
                 typepols = self.get_policies(scope=role, client=client,
                                              user=logged_in_user.get("username"),
-                                             realm=logged_in_user.get("realm"),
+                                             realm=user_realm,
                                              active=True,
                                              action="enroll"+tokentype.upper(),
                                              adminrealm=admin_realm)
