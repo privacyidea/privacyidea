@@ -316,3 +316,10 @@ type: bool
 
 To be able to define new :ref:`smtpserver` or delete existing ones, the
 administrator needs this rights ``smtpserver_write``.
+
+eventhandling_write
+~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the adminstrator to configure :ref:`eventhandler`.

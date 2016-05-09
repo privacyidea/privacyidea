@@ -37,6 +37,8 @@ msgstr ""
 msgid "About privacyIDEA Web Client"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.events.details.html:53
+#: privacyidea/static/components/config/views/config.events.list.html:9
 #: privacyidea/static/components/config/views/config.policies.details.html:127
 #: privacyidea/static/components/config/views/config.policies.list.html:8
 msgid "Action"
@@ -74,6 +76,10 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.html:8
 msgid "All CA Connectors"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.events.html:7
+msgid "All Event Handlers"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:7
@@ -241,7 +247,7 @@ msgstr ""
 msgid "CA Key"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.html:56
+#: privacyidea/static/components/config/views/config.html:61
 msgid "CAs"
 msgstr ""
 
@@ -336,6 +342,11 @@ msgstr ""
 msgid "Community"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.events.details.html:43
+#: privacyidea/static/components/config/views/config.events.list.html:8
+msgid "Condition"
+msgstr ""
+
 #: privacyidea/static/templates/menu.html:51
 msgid "Config"
 msgstr ""
@@ -363,9 +374,17 @@ msgid ""
 "                    newly enrolled tokens"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.events.details.html:100
+msgid "Create Event Handler Definition"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.policies.details.html:292
 #: privacyidea/static/components/config/views/config.policies.details.html:85
 msgid "Create Policy"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.events.details.html:6
+msgid "Create a new Event Handler"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:6
@@ -418,6 +437,10 @@ msgstr ""
 msgid "Create new API key"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.events.html:12
+msgid "Create new Event Handler"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.policies.html:12
 msgid "Create new Policy"
 msgstr ""
@@ -465,6 +488,7 @@ msgid "Default Time Window"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:25
+#: privacyidea/static/components/config/views/config.events.list.html:38
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:25
 #: privacyidea/static/components/config/views/config.policies.details.html:17
 #: privacyidea/static/components/config/views/config.policies.list.html:53
@@ -575,6 +599,10 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.html:14
 msgid "Edit CA Connector {{ connectorname }}"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.events.details.html:3
+msgid "Edit Event Handler {{ eventid }}"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:3
@@ -732,6 +760,12 @@ msgstr ""
 msgid "Error in U2F response."
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.events.details.html:13
+#: privacyidea/static/components/config/views/config.events.list.html:6
+#: privacyidea/static/components/config/views/config.html:30
+msgid "Events"
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.challenges.html:43
 msgid "Expiration"
 msgstr ""
@@ -862,6 +896,11 @@ msgstr ""
 msgid "HOTP: event based One Time Passwords"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.events.details.html:30
+#: privacyidea/static/components/config/views/config.events.list.html:7
+msgid "Handlermodule"
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:50
 #: privacyidea/static/components/token/views/token.enroll.totp.html:58
 msgid "Hash algorithm"
@@ -942,6 +981,7 @@ msgstr ""
 msgid "IP/FQDN"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.events.list.html:5
 #: privacyidea/static/components/machine/views/machine.list.html:23
 msgid "Id"
 msgstr ""
@@ -1009,6 +1049,10 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:127
 msgid "Info"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.events.details.html:67
+msgid "Key"
 msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.log.html:14
@@ -1124,7 +1168,7 @@ msgstr ""
 msgid "Machine Resolver"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.html:35
+#: privacyidea/static/components/config/views/config.html:40
 #: privacyidea/static/templates/menu.html:44
 msgid "Machines"
 msgstr ""
@@ -1311,6 +1355,8 @@ msgstr ""
 msgid "OpenSSL config file"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.events.details.html:62
+#: privacyidea/static/components/config/views/config.events.list.html:10
 #: privacyidea/static/components/machine/views/machine.details.html:52
 #: privacyidea/static/components/token/views/token.details.html:456
 msgid "Options"
@@ -1529,7 +1575,7 @@ msgstr ""
 msgid "Realm name"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.html:49
+#: privacyidea/static/components/config/views/config.html:54
 msgid "Realms"
 msgstr ""
 
@@ -1871,7 +1917,7 @@ msgstr ""
 msgid "Statistics"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:166
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:181
 msgid "Successfully authenticated."
 msgstr ""
 
@@ -1907,7 +1953,7 @@ msgid "System Config"
 msgstr ""
 
 #: privacyidea/static/components/config/controllers/configControllers.js:427
-#: privacyidea/static/components/config/controllers/configControllers.js:637
+#: privacyidea/static/components/config/controllers/configControllers.js:639
 msgid "System Config saved."
 msgstr ""
 
@@ -2268,7 +2314,7 @@ msgid ""
 "                        service itself</a>."
 msgstr ""
 
-#: privacyidea/static/app.js:106
+#: privacyidea/static/app.js:107
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
 msgstr ""
 
@@ -2626,11 +2672,11 @@ msgstr ""
 msgid "Token enrollment wizard"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:150
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:165
 msgid "Token resync failed."
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:147
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:162
 msgid "Token resync successful."
 msgstr ""
 
@@ -2638,7 +2684,7 @@ msgstr ""
 msgid "Token {{ selectedToken.serial }} is Lost!"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.html:30
+#: privacyidea/static/components/config/views/config.html:35
 #: privacyidea/static/templates/menu.html:20
 msgid "Tokens"
 msgstr ""
@@ -2787,7 +2833,7 @@ msgstr ""
 msgid "Usernane"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.html:42
+#: privacyidea/static/components/config/views/config.html:47
 #: privacyidea/static/templates/menu.html:27
 msgid "Users"
 msgstr ""
@@ -2812,6 +2858,10 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:174
 #: privacyidea/static/components/token/views/token.enroll.html:56
 msgid "Validity Start"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.events.details.html:68
+msgid "Value"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.remote.html:13

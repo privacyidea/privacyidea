@@ -23,6 +23,11 @@
                     <span class="glyphicon glyphicon-hand-up"
                           aria-hidden="true"></span>
                     <translate>Policies</translate></a></li>
+                <li ng-class="{active: $state.includes('config.events')}">
+                    <a ui-sref="config.events">
+                    <span class="glyphicon glyphicon-flag"
+                          aria-hidden="true"></span>
+                    <translate>Events</translate></a></li>
                 <li ng-class="{active: $state.includes('config.tokens')}">
                     <a ui-sref="config.tokens">
                     <span class="glyphicon glyphicon-phone"

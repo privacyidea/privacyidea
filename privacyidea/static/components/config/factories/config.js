@@ -51,7 +51,7 @@ myApp.factory("PolicyTemplateFactory", function($http, inform, gettextCatalog){
 myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
                                          resolverUrl, realmUrl,
                                          machineResolverUrl,
-                                         policyUrl, smtpServerUrl,
+                                         policyUrl, eventUrl, smtpServerUrl,
                                          radiusServerUrl,
                                          defaultRealmUrl, systemUrl,
                                          CAConnectorUrl, inform) {
@@ -67,6 +67,37 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
     };
 
     return {
+        delEvent: function(eventId, callback) {
+            $http.delete(eventUrl + "/" + eventId, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}}
+            ).success(callback
+            ).error(error_func);
+        },
+        setEvent: function(params, callback) {
+            $http.post(eventUrl, params, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback
+            ).error(error_func);
+        },
+        getEvents: function(callback) {
+            $http.get(eventUrl, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
+        getEvent: function(eventid, callback) {
+            $http.get(eventUrl + "/" + eventid, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
+        getHandlerActions: function(handlername, callback) {
+            $http.get(eventUrl + "/actions/" + handlername, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
         delPolicy: function (policyName, callback) {
             $http.delete(policyUrl + "/" + policyName, {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken()}}

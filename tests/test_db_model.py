@@ -9,7 +9,8 @@ from privacyidea.models import (Token,
                                 Challenge, MachineResolver,
                                 MachineResolverConfig, MachineToken, Admin,
                                 CAConnector, CAConnectorConfig, SMTPServer,
-                                PasswordReset)
+                                PasswordReset, EventHandlerOption,
+                                EventHandler)
 from .base import MyTestCase
 from datetime import datetime
 from datetime import timedelta
@@ -505,3 +506,48 @@ class TokenModelTestCase(MyTestCase):
         p2 = PasswordReset.query.filter_by(username="cornelius",
                                            realm="realm").first()
         self.assertTrue(p2.recoverycode, "recoverycode")
+
+    def test_19_add_update_delete_eventhandler(self):
+        # Bind the module "usernotice" to the enroll event
+        event = "enroll"
+        event_update = "init"
+        handlermodule = "usernotice"
+        action = "email"
+        condition = "always"
+        options = {"mailserver": "blafoo",
+                   "option2": "value2"}
+        eh1 = EventHandler(event, handlermodule=handlermodule,
+                           action=action, condition=condition,
+                           options=options)
+        self.assertTrue(eh1)
+
+        self.assertEqual(eh1.event, event)
+        self.assertEqual(eh1.handlermodule, handlermodule)
+        self.assertEqual(eh1.action, action)
+        self.assertEqual(eh1.condition, condition)
+        self.assertEqual(eh1.option_list[0].Key, "mailserver")
+        self.assertEqual(eh1.option_list[0].Value, "blafoo")
+        self.assertEqual(eh1.option_list[1].Key, "option2")
+        self.assertEqual(eh1.option_list[1].Value, "value2")
+
+        id = eh1.id
+
+        # update eventhandler
+        eh2 = EventHandler(event_update, handlermodule=handlermodule,
+                           action=action, condition=condition,
+                           options=options, ordering=0, id=id)
+        self.assertEqual(eh1.event, event_update)
+
+        # Update option value
+        EventHandlerOption(id, Key="mailserver", Value="mailserver")
+        self.assertEqual(eh1.option_list[0].Value, "mailserver")
+
+        # Add value
+        EventHandlerOption(id, Key="option3", Value="value3")
+        self.assertEqual(eh1.option_list[2].Key, "option3")
+        self.assertEqual(eh1.option_list[2].Value, "value3")
+
+        # Delete event handler
+        eh1.delete()
+
+

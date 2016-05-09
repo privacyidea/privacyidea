@@ -1,0 +1,20 @@
+<div class="row">
+    <div class="col-lg-3">
+        <div class="pa-sidebar panel">
+            <ul class="nav nav-pills nav-stacked">
+                <li role="presentation"
+                    ng-class="{ active: $state.includes('config.events.list')}">
+                    <a ui-sref="config.events.list" translate>
+                        All Event Handlers</a></li>
+                <li role="presentation"
+                    ng-show="checkRight('eventhandling_write')"
+                    ng-class="{ active: $state.includes('config.events.details')}">
+                    <a ui-sref="config.events.details"
+                       translate>Create new Event Handler</a></li>
+            </ul>
+        </div>
+
+    </div>
+    <div ui-view class="col-lg-9 slide panel">
+    </div>
+</div>

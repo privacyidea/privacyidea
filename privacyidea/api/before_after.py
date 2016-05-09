@@ -33,6 +33,7 @@ from flask import request, g
 from privacyidea.lib.audit import getAudit
 from flask import current_app
 from privacyidea.lib.policy import PolicyClass
+from privacyidea.lib.event import EventConfiguration
 from privacyidea.api.auth import (user_required, admin_required)
 from .resolver import resolver_blueprint
 from .policy import policy_blueprint
@@ -50,6 +51,7 @@ from .smtpserver import smtpserver_blueprint
 from .radiusserver import radiusserver_blueprint
 from .recover import recover_blueprint
 from .register import register_blueprint
+from .event import eventhandling_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from ..lib.error import (privacyIDEAError,
                          AuthError,
@@ -77,6 +79,7 @@ def before_user_request():
 @policy_blueprint.before_request
 @application_blueprint.before_request
 @smtpserver_blueprint.before_request
+@eventhandling_blueprint.before_request
 @admin_required
 def before_admin_request():
     before_request()
@@ -96,6 +99,7 @@ def before_request():
 
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
+    g.event_config = EventConfiguration()
     # access_route contains the ip adresses of all clients, hops and proxies.
     g.client_ip = request.access_route[0] if request.access_route else \
         request.remote_addr

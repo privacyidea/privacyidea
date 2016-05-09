@@ -547,7 +547,9 @@ myApp.controller("configController", function ($scope, $location,
 
     $scope.getRealms = function () {
         ConfigFactory.getRealms(function (data) {
+            console.log("getting realms");
             $scope.realms = data.result.value;
+            console.log($scope.realms);
         });
     };
 

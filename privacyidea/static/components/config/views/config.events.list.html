@@ -1,0 +1,47 @@
+<div class="table-responsive">
+    <table class="table table-bordered table-responsive table-striped">
+        <thead>
+        <tr>
+            <th translate>Id</th>
+            <th translate>Events</th>
+            <th translate>Handlermodule</th>
+            <th translate>Condition</th>
+            <th translate>Action</th>
+            <th translate>Options</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="event in events">
+            <td>
+                <a ui-sref="config.events.details({eventid: event.id})">
+                    {{ event.id }}</a>
+            </td>
+            <td>
+                {{ event.event | json}}
+            </td>
+            <td>
+                {{ event.handlermodule }}
+            </td>
+            <td>
+                {{ event.condition }}
+            </td>
+            <td>
+                {{ event.action }}
+            </td>
+            <td>
+                {{ event.options | json }}
+            </td>
+            <td>
+                <button class="btn btn-danger"
+                        ng-show="checkRight('eventhandling_write')"
+                        ng-click="delEvent(event.id)">
+                        <div class="glyphicon glyphicon-trash" translate>
+                        Delete
+                        </div>
+                </button>
+            </td>
+        </tr>
+
+        </tbody>
+    </table>
+</div>

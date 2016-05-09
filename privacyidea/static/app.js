@@ -59,6 +59,7 @@ myApp.constant("machineResolverUrl", backendUrl + instance + "/machineresolver")
 myApp.constant("machineUrl", backendUrl + instance + "/machine");
 myApp.constant("applicationUrl", backendUrl + instance + "/application");
 myApp.constant("realmUrl", backendUrl + instance + "/realm");
+myApp.constant("eventUrl", backendUrl + instance + "/event");
 myApp.constant("defaultRealmUrl", backendUrl + instance + "/defaultrealm");
 myApp.constant("validateUrl", backendUrl + instance + "/validate");
 myApp.constant("systemUrl", backendUrl + instance + "/system");

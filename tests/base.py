@@ -13,6 +13,11 @@ PWFILE = "tests/testdata/passwords"
 
 class FakeFlaskG(object):
     policy_object = None
+    logged_in_user = {}
+    audit_object = None
+
+class FakeAudit(object):
+    audit_data = {}
 
 
 class MyTestCase(unittest.TestCase):
