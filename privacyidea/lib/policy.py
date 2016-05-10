@@ -305,6 +305,7 @@ class PolicyClass(object):
             # read each policy
             self.policies.append(pol.get())
 
+    @log_with(log)
     def get_policies(self, name=None, scope=None, realm=None, active=None,
                      resolver=None, user=None, client=None, action=None,
                      adminrealm=None, time=None, all_times=False):
@@ -415,6 +416,7 @@ class PolicyClass(object):
 
         return reduced_policies
 
+    @log_with(log)
     def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
                           resolver=None, user=None, client=None, unique=False,
                           allow_white_space_in_action=False):
@@ -468,6 +470,7 @@ class PolicyClass(object):
                                   " definitions!" % action)
         return action_values
 
+    @log_with(log)
     def ui_get_rights(self, scope, realm, username, client=None):
         """
         Get the rights derived from the policies for the given realm and user.
@@ -517,6 +520,7 @@ class PolicyClass(object):
         log.debug("returning the admin rights: {0!s}".format(rights))
         return rights
 
+    @log_with(log)
     def ui_get_enroll_tokentypes(self, client, logged_in_user):
         """
         Return a dictionary of the allowed tokentypes for the logged in user.
