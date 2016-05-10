@@ -575,6 +575,7 @@ def check_base_action(request=None, action=None, anonymous=False):
         scope = SCOPE.USER
         # Reset the admin realm
         admin_realm = None
+        realm = realm or g.logged_in_user.get("realm")
 
     # get the realm by the serial:
     if params.get("serial") and not realm:
