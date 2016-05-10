@@ -335,23 +335,18 @@ class PolicyClass(object):
         # filter policy for time. If no time is set or is a time is set and
         # it matches the time_range, then we add this policy
         if not all_times:
-            new_policies = []
-            for policy in reduced_policies:
-                if (policy.get("time") and check_time_in_range(policy.get(
-                        "time"), time)) or not policy.get("time"):
-                    new_policies.append(policy)
-            reduced_policies = new_policies
+            reduced_policies = [policy for policy in reduced_policies if
+                                (policy.get("time") and
+                                 check_time_in_range(policy.get("time"), time))
+                                or not policy.get("time")]
 
         # Do exact matches for "name", "active" and "scope", as these fields
         # can only contain one entry
         p = [("name", name), ("active", active), ("scope", scope)]
         for searchkey, searchvalue in p:
             if searchvalue is not None:
-                new_policies = []
-                for policy in reduced_policies:
-                    if policy.get(searchkey) == searchvalue:
-                        new_policies.append(policy)
-                reduced_policies = new_policies
+                reduced_policies = [policy for policy in reduced_policies if
+                                    policy.get(searchkey) == searchvalue]
 
         p = [("action", action), ("user", user), ("resolver", resolver),
              ("realm", realm)]
