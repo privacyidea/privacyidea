@@ -775,6 +775,82 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         r = check_anonymous_user(req, ACTION.PASSWORDRESET)
         self.assertEqual(r, True)
 
+    def test_16_check_two_admins(self):
+        # We are checking two administrators
+        # adminA: all rights on all realms
+        # adminB: restricted rights on realmB
+        builder = EnvironBuilder(method='POST')
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        req = Request(env)
+        req.all_data = {"name": "newpol",
+                        "scope": SCOPE.WEBUI,
+                        "action": ["loginmode=privacyIDEA"],
+                        "active": True,
+                        "client": [],
+                        "realm": ["realmB"],
+                        "resolver": ["resolverB"],
+                        "time": "",
+                        "user": []
+        }
+        set_policy("polAmdinA", scope=SCOPE.ADMIN,
+                   action="set, revoke, adduser, enrollSMS, policydelete, "
+                          "policywrite, enrollTIQR, configdelete, machinelist, "
+                          "enrollREMOTE, setpin, resync, unassign, tokenrealms,"
+                          " enrollSPASS, auditlog, enrollPAPER, deleteuser, "
+                          "enrollEMAIL, resolverdelete, enrollMOTP, enrollPW, "
+                          "enrollHOTP, enrollQUESTION, enrollCERTIFICATE, "
+                          "copytokenuser, configwrite, enrollTOTP, "
+                          "enrollREGISTRATION, enrollYUBICO, resolverwrite, "
+                          "updateuser, enable, enrollU2F, "
+                          "manage_machine_tokens, getrandom, userlist, "
+                          "getserial, radiusserver_write, system_documentation,"
+                          " caconnectordelete, caconnectorwrite, disable, "
+                          "mresolverdelete, copytokenpin, enrollRADIUS, "
+                          "smtpserver_write, set_hsm_password, reset, "
+                          "getchallenges, enroll4EYES, enrollYUBIKEY, "
+                          "fetch_authentication_items, enrollDAPLUG, "
+                          "mresolverwrite, losttoken, enrollSSHKEY, "
+                          "importtokens, assign, delete",
+                   user="adminA",
+                   realm="realmA, realmB",
+                   resolver="resolverA, resolverB",
+                   )
+        set_policy("polAdminB", scope=SCOPE.ADMIN,
+                   action="set, revoke, adduser, resync, unassign, "
+                          "tokenrealms, deleteuser, enrollTOTP, "
+                          "enrollREGISTRATION, updateuser, enable, userlist, "
+                          "getserial, disable, reset, getchallenges, losttoken,"
+                          " assign, delete ",
+                   realm="realmB",
+                   resolver="resolverB",
+                   user="adminB")
+        g.policy_object = PolicyClass()
+        # Test AdminA
+        g.logged_in_user = {"username": "adminA",
+                            "role": "admin",
+                            "realm": ""}
+        r = check_base_action(req, action=ACTION.POLICYWRITE)
+        self.assertEqual(r, True)
+        # Test AdminB
+        g.logged_in_user = {"username": "adminB",
+                            "role": "admin",
+                            "realm": ""}
+        # AdminB is allowed to add user
+        r = check_base_action(req, action=ACTION.ADDUSER)
+        self.assertEqual(r, True)
+        # But admin b is not allowed to policywrite
+        self.assertRaises(PolicyError, check_base_action, req,
+                          action=ACTION.POLICYWRITE)
+        # Test AdminC: is not allowed to do anything
+        g.logged_in_user = {"username": "adminC",
+                            "role": "admin",
+                            "realm": ""}
+        self.assertRaises(PolicyError, check_base_action, req,
+                          action=ACTION.POLICYWRITE)
+        delete_policy("polAdminA")
+        delete_policy("polAdminB")
+
 
 class PostPolicyDecoratorTestCase(MyTestCase):
 
