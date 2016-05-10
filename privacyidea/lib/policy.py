@@ -340,6 +340,8 @@ class PolicyClass(object):
                                 (policy.get("time") and
                                  check_time_in_range(policy.get("time"), time))
                                 or not policy.get("time")]
+        log.debug("Policies after matching time: {0!s}".format(
+            reduced_policies))
 
         # Do exact matches for "name", "active" and "scope", as these fields
         # can only contain one entry
@@ -348,6 +350,8 @@ class PolicyClass(object):
             if searchvalue is not None:
                 reduced_policies = [policy for policy in reduced_policies if
                                     policy.get(searchkey) == searchvalue]
+                log.debug("Policies after matching {1!s}: {0!s}".format(
+                    reduced_policies, searchkey))
 
         p = [("action", action), ("user", user), ("resolver", resolver),
              ("realm", realm)]
@@ -378,6 +382,8 @@ class PolicyClass(object):
                     if not policy.get(searchkey):
                         new_policies.append(policy)
                 reduced_policies = new_policies
+                log.debug("Policies after matching {1!s}: {0!s}".format(
+                    reduced_policies, searchkey))
 
         # Match the client IP.
         # Client IPs may be direct match, may be located in subnets or may
@@ -413,6 +419,8 @@ class PolicyClass(object):
                 if not policy.get("client"):
                     new_policies.append(policy)
             reduced_policies = new_policies
+            log.debug("Policies after matching client".format(
+                reduced_policies))
 
         return reduced_policies
 
