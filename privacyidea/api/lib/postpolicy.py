@@ -368,6 +368,11 @@ def get_webui_settings(request, response):
             client=client,
             unique=True
         )
+        token_wizard_2nd = bool(role == ROLE.USER and
+            policy_object.get_policies(action=ACTION.TOKENWIZARD2ND,
+                                       scope=SCOPE.WEBUI,
+                                       realm=realm,
+                                       client=client))
         token_wizard = False
         if role == ROLE.USER:
             token_wizard_pol = policy_object.get_policies(
@@ -428,6 +433,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["default_tokentype"] = default_tokentype
         content["result"]["value"]["user_details"] = len(user_details_pol) > 0
         content["result"]["value"]["token_wizard"] = token_wizard
+        content["result"]["value"]["token_wizard_2nd"] = token_wizard_2nd
         response.data = json.dumps(content)
     return response
 

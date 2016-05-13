@@ -241,6 +241,7 @@ class ACTION(object):
     TOKENREALMS = "tokenrealms"
     TOKENTYPE = "tokentype"
     TOKENWIZARD = "tokenwizard"
+    TOKENWIZARD2ND = "tokenwizard_2nd_token"
     UNASSIGN = "unassign"
     USERLIST = "userlist"
     USERPAGESIZE = "user_page_size"
@@ -1248,6 +1249,11 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _("As long as a user has no token, he will only see"
                           " a token wizard in the UI.")
+            },
+            ACTION.TOKENWIZARD2ND: {
+                'type': 'bool',
+                'desc': _("The tokenwizard will be displayed in the token "
+                          "menu, even if the user already has a token.")
             },
             ACTION.DEFAULT_TOKENTYPE: {
                 'type': 'str',
