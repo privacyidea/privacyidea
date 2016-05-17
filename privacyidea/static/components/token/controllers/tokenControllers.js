@@ -23,6 +23,7 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
                                               instanceUrl,
                                               $rootScope, gettextCatalog,
                                               hotkeys) {
+    $scope.tokensPerPage = $scope.token_page_size;
     $scope.params = {page: 1, sortdir: "asc"};
     $scope.reverse = false;
     $scope.loggedInUser = AuthFactory.getUser();
