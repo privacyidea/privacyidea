@@ -40,7 +40,7 @@ from gettext import gettext as _
 import logging
 log = logging.getLogger(__name__)
 
-BODY = """
+DEFAULT_BODY = """
 Hello {user},
 
 the administrator {admin}@{realm} performed the action
@@ -132,8 +132,8 @@ class UserNotificationEventHandler(BaseEventHandler):
             useremail = user.info.get("email")
             subject = options.get("subject") or "An action was performed on " \
                                                 "your token."
-            BODY = options.get("body") or BODY
-            body = BODY.format(
+            body = options.get("body") or DEFAULT_BODY
+            body = body.format(
                 admin=logged_in_user.get("username"),
                 realm=logged_in_user.get("realm"),
                 action=request.path,
