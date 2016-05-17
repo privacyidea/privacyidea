@@ -80,8 +80,20 @@ class UserNotificationEventHandler(BaseEventHandler):
                                       "description": _("Send notification "
                                                        "email via this "
                                                        "email server."),
-                                      "value": smtpservers}
-                                 },
+                                      "value": smtpservers},
+                                "subject": {"type": "str",
+                                            "required": False,
+                                            "description": _("The subject of "
+                                                             "the mail that "
+                                                             "is sent.")
+
+
+                                },
+                                "body": {"type": "str",
+                                         "required": False,
+                                         "description": _("The body of the "
+                                                          "mail that is sent.")}
+                                },
                    "sendsms (not implemented)": {"smsconfig":
                                                       {"type": "str"}
                                                   }
@@ -118,7 +130,9 @@ class UserNotificationEventHandler(BaseEventHandler):
                 log.error("Missing parameter 'emailconfig'")
                 raise ParameterError("Missing parameter 'emailconfig'")
             useremail = user.info.get("email")
-            subject = "An action was performed on your token."
+            subject = options.get("subject") or "An action was performed on " \
+                                                "your token."
+            BODY = options.get("body") or BODY
             body = BODY.format(
                 admin=logged_in_user.get("username"),
                 realm=logged_in_user.get("realm"),
