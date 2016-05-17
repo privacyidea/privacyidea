@@ -77,7 +77,7 @@ class SMTPServer(object):
         if type(recipient) != list:
             recipient = [recipient]
         mail_from = sender or config.sender
-        msg = MIMEText(body)
+        msg = MIMEText(body.encode('utf-8'), 'plain', 'utf-8')
         msg['Subject'] = subject
         msg['From'] = mail_from
         msg['To'] = ",".join(recipient)
