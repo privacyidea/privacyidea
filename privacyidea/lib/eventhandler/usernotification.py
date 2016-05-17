@@ -89,7 +89,7 @@ class UserNotificationEventHandler(BaseEventHandler):
 
 
                                 },
-                                "body": {"type": "str",
+                                "body": {"type": "text",
                                          "required": False,
                                          "description": _("The body of the "
                                                           "mail that is sent.")}

@@ -77,6 +77,12 @@
                         ng-model="opts[optionname]"
                         ng-options="value for value in option.value">
                 </select>
+                <textarea type="text" rows="6"
+                        ng-required="option.required && !option.value"
+                        ng-show="option.type==='text' && !option.value"
+                        class="form-control"
+                        ng-model="opts[optionname]">
+                </textarea>
                 <input class="form-control"
                        ng-required="option.required && !option.value"
                        ng-model="opts[optionname]"
