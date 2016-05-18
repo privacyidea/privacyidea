@@ -1,3 +1,34 @@
+Version 2.12, 2016-05-24
+
+  Features
+  * Event Handler Framework #360
+  * local CA connector can enroll certificates
+    for users. Users can download PKCS12 file. #383
+  * Add and edit users in LDAP resolvers #372
+  * Time dependent policies #358
+
+  Enhancements
+  * Policy for web UI enrollment wizard #402
+  * Realm dropdown box at login screen #400
+  * Apply user policy settings #390
+  * Improve QR Code for TOTP token enrollment #384
+  * Add documentation for enrollment wizard #381
+  * Improve pi-manage backup to use pymysql #375
+  * Use X-Forwarded-For HTTP header as client IP #356
+
+  Fixes
+  * Adduser honors resolver setting in policy #403
+  * Add documentation for SPASS token #399
+  * Hide enrollment link (WebUI) is user can not enroll #398
+  * Fix getSerial for TOTP tokens #393
+  * Fix system config checkboxes #378
+  * Allow a realm to be remove from a token #363
+  * Improve the date handling in emails #352
+  * Sending test emails #350
+  * Authentication with active token not possible if
+    the user has a disabled token #339
+
+ 
 Version 2.11, 2016-03-29
 
   Features
