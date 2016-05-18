@@ -793,7 +793,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
                         "time": "",
                         "user": []
         }
-        set_policy("polAmdinA", scope=SCOPE.ADMIN,
+        set_policy("polAdminA", scope=SCOPE.ADMIN,
                    action="set, revoke, adduser, enrollSMS, policydelete, "
                           "policywrite, enrollTIQR, configdelete, machinelist, "
                           "enrollREMOTE, setpin, resync, unassign, tokenrealms,"
@@ -850,6 +850,37 @@ class PrePolicyDecoratorTestCase(MyTestCase):
                           action=ACTION.POLICYWRITE)
         delete_policy("polAdminA")
         delete_policy("polAdminB")
+
+    def test_17_add_user(self):
+        # Check if adding a user is restricted to the resolver
+        # adminA is allowed to add users to resolverA but not to resolverB
+        set_policy("userAdd", scope=SCOPE.ADMIN,
+                   action="adduser",
+                   user="adminA",
+                   realm="realmA",
+                   resolver="resolverA",
+                   )
+        builder = EnvironBuilder(method='POST')
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        req = Request(env)
+        req.all_data = {"user": "new_user",
+                        "resolver": "resolverA"}
+        g.policy_object = PolicyClass()
+        g.logged_in_user = {"username": "adminA",
+                            "role": "admin",
+                            "realm": ""}
+        # User can be added
+        r = check_base_action(req, action=ACTION.ADDUSER)
+        self.assertEqual(r, True)
+
+        req.all_data = {"user": "new_user",
+                        "resolver": "resolverB"}
+
+        # User can not be added in a different resolver
+        self.assertRaises(PolicyError, check_base_action, req,
+                          action=ACTION.ADDUSER)
+        delete_policy("userAdd")
 
 
 class PostPolicyDecoratorTestCase(MyTestCase):

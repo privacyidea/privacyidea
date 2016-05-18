@@ -373,6 +373,9 @@ class PolicyClass(object):
                         if value and value[0] in ["!", "-"] and \
                                         searchvalue == value[1:]:
                             value_excluded = True
+                        elif type(searchvalue) == list and value in \
+                                        searchvalue + ["*"]:
+                            value_found = True
                         elif value in [searchvalue, "*"]:
                             value_found = True
                     if value_found and not value_excluded:

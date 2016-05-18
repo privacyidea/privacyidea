@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-05-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add resolver to check_base_action
 #  2016-04-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add init_token_defaults to set default parameters
 #             during token init.
@@ -568,6 +570,7 @@ def check_base_action(request=None, action=None, anonymous=False):
     scope = SCOPE.ADMIN
     admin_realm = g.logged_in_user.get("realm")
     realm = params.get("realm")
+    resolver = params.get("resolver")
     if type(realm) == list and len(realm) == 1:
         realm = realm[0]
 
@@ -588,6 +591,7 @@ def check_base_action(request=None, action=None, anonymous=False):
                                         user=username,
                                         realm=realm,
                                         scope=scope,
+                                        resolver=resolver,
                                         client=g.client_ip,
                                         adminrealm=admin_realm,
                                         active=True)
