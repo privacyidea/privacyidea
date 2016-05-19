@@ -103,3 +103,14 @@ Description: 2FA system. This is a meta package to install privacyidea with apac
  privacyIDEA: identity, multifactor authentication, authorization.
  This is the package that installs all requirements to run privacyIDEA in the
  Apache2 Webserver.
+
+
+Package: privacyidea-mysql
+Architecture: all
+Depends: ${misc:Depends}, python-privacyidea, python-mysqldb, mysql-server, mysql-client
+Conflicts: nginx, nginx-full, privacyidea-nginx, privacyidea-apache2
+Description: 2FA system. privacyIDEA application and MySQL configuration
+ privacyIDEA: identity, multifactor authentication, authorization.
+ This package installs privacyIDEA application and the MySQL database
+ to run privacyIDEA. You still need a webserver.
+

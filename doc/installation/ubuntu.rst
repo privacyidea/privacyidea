@@ -33,6 +33,16 @@ administrator and you are done::
 
 Now you may proceed to :ref:`first_steps`.
 
+.. note:: The packages *privacyidea-apache2* and *privacyidea-nginx* assume
+   that you want to run a privacyIDEA system. These packages deactivate all
+   other (default) websites. You can install the package
+   *privacyidea-mysql* to install the privacyIDEA application and setup the
+   database. After this, you need to configure the webserver on your own.
+
+.. note:: To get the latest development snapshots, you can use the repository
+   *ppa:privacyidea/privacyidea-dev*. But these packages might be broken
+   sometimes!
+
 .. _install_ubuntu_freeradius:
 
 FreeRADIUS

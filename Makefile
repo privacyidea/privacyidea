@@ -15,11 +15,11 @@ info:
 	@echo "make ppa-dev      - upload to launchpad development repo"
 	
 #VERSION=1.3~dev5
-SHORT_VERSION=2.12~dev3
+SHORT_VERSION=2.12~dev5
 #SHORT_VERSION=2.10~dev7
 VERSION_JESSIE=${SHORT_VERSION}
 VERSION=${SHORT_VERSION}
-SERIES="trusty precise vivid xenial"
+SERIES="trusty xenial"
 LOCAL_SERIES=`lsb_release -a | grep Codename | cut -f2`
 SRCDIRS=deploy authmodules migrations doc tests tools privacyidea 
 SRCFILES=setup.py MANIFEST.in Makefile Changelog LICENSE pi-manage requirements.txt
@@ -147,7 +147,7 @@ ppa-dev:
 
 ppa-dev-all:
 	make debianize
-	for series in "precise trusty"; do \
+	for series in $(SERIES); do \
 	    cp deploy/debian-ubuntu/changelog DEBUILD/privacyidea.org/debian/ ; \
 	    sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog ; \
 	    (cd DEBUILD/privacyidea.org; debuild) ; \
@@ -167,7 +167,7 @@ ppa:
 
 ppa-all:
 	make debianize
-	for series in "precise trusty"; do \
+	for series in $(SERIES); do \
             cp deploy/debian-ubuntu/changelog DEBUILD/privacyidea.org/debian/ ; \
             sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog ; \
             (cd DEBUILD/privacyidea.org; debuild) ; \

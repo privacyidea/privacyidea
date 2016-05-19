@@ -15,6 +15,7 @@ Version 2.12, 2016-05-24
   * Add documentation for enrollment wizard #381
   * Improve pi-manage backup to use pymysql #375
   * Use X-Forwarded-For HTTP header as client IP #356
+  * Add meta-package privacyidea-mysql #376
 
   Fixes
   * Adduser honors resolver setting in policy #403

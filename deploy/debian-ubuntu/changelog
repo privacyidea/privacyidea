@@ -1,4 +1,4 @@
-python-privacyidea (2.12~dev4-1trusty) trusty; urgency=low
+python-privacyidea (2.12~dev5-1trusty) trusty; urgency=low
 
   Features
   * Event Handler Framework #360
@@ -15,6 +15,7 @@ python-privacyidea (2.12~dev4-1trusty) trusty; urgency=low
   * Add documentation for enrollment wizard #381
   * Improve pi-manage backup to use pymysql #375
   * Use X-Forwarded-For HTTP header as client IP #356
+  * Add meta-package privacyidea-mysql #376
 
   Fixes
   * Adduser honors resolver setting in policy #403
