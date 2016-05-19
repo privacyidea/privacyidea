@@ -1,0 +1,105 @@
+#!/bin/sh
+# see: dh_installdeb(1)
+
+set -e
+
+# source debconf library
+. /usr/share/debconf/confmodule
+
+# Source dbconfig-common functions
+if [ -f /usr/share/dbconfig-common/dpkg/postinst.pgsql  ]; then
+  . /usr/share/dbconfig-common/dpkg/postinst.pgsql
+fi
+
+USERNAME=privacyidea
+
+if test -f /etc/default/privacyidea; then
+    . /etc/default/privacyidea
+    # If the daemon user was changed,
+    # we set other access rights
+    USERNAME=$USER
+fi
+
+
+create_user() {
+        useradd -r $USERNAME -m || true
+}
+
+create_files() {
+        mkdir -p /var/log/privacyidea
+        mkdir -p /var/lib/privacyidea
+        touch /var/log/privacyidea/privacyidea.log
+        pi-manage create_enckey || true > /dev/null
+        pi-manage createdb || true > /dev/null
+        pi-manage create_audit_keys || true > /dev/null
+        chown -R $USERNAME /var/log/privacyidea
+        chown -R $USERNAME /var/lib/privacyidea
+        chown -R $USERNAME /etc/privacyidea
+        chmod 600 /etc/privacyidea/enckey
+        chmod 600 /etc/privacyidea/private.pem
+	# we need to change access right, otherwise each local user could call
+	# pi-manage
+	chgrp root /etc/privacyidea/pi.cfg
+	chmod 640 /etc/privacyidea/pi.cfg
+}
+
+adapt_pi_cfg() {
+	if [ !$(grep "^PI_PEPPER" /etc/privacyidea/pi.cfg) ]; then
+	    # PEPPER does not exist, yet
+	    PEPPER="$(tr -dc A-Za-z0-9_ </dev/urandom | head -c24)"
+	    echo "PI_PEPPER = '$PEPPER'" >> /etc/privacyidea/pi.cfg
+	fi
+	if [ !$(grep "^SECRET_KEY" /etc/privacyidea/pi.cfg || true) ]; then
+	    # SECRET_KEY does not exist, yet
+	    SECRET="$(tr -dc A-Za-z0-9_ </dev/urandom | head -c24)"
+	    echo "SECRET_KEY = '$SECRET'" >> /etc/privacyidea/pi.cfg
+	fi
+}
+
+create_database() {
+	# create the MYSQL database
+	if [ !$(grep "^SQLALCHEMY_DATABASE_URI" /etc/privacyidea/pi.cfg || true) ]; then
+	    USER="debian-sys-maint"
+	    PASSWORD=$(grep "^password" /etc/mysql/debian.cnf | sort -u | cut -d " " -f3)
+	    NPW="$(tr -dc A-Za-z0-9_ </dev/urandom | head -c12)"
+	    mysql -u $USER --password=$PASSWORD -e "create database pi;" || true
+	    mysql -u $USER --password=$PASSWORD -e "grant all privileges on pi.* to 'pi'@'localhost' identified by '$NPW';"
+	    echo "SQLALCHEMY_DATABASE_URI = 'mysql://pi:$NPW@localhost/pi'" >> /etc/privacyidea/pi.cfg
+	fi
+}
+
+
+update_db() {
+	# Set the version to the first PI 2.0 version
+	pi-manage db stamp 4f32a4e1bf33 -d /usr/lib/privacyidea/migrations > /dev/null
+	# Upgrade the database
+	pi-manage db upgrade -d /usr/lib/privacyidea/migrations > /dev/null
+}
+
+case "$1" in
+
+  configure)
+	create_user
+	adapt_pi_cfg
+	create_database
+	create_files
+	update_db
+  ;;
+
+  abort-upgrade|abort-remove|abort-deconfigure)
+    exit 0
+  ;;
+
+  *)
+    echo "postinst called with unknown argument \`$1'" >&2
+    exit 1
+  ;;
+
+esac
+
+
+#DEBHELPER#
+
+db_stop
+
+exit 0
