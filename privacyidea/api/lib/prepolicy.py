@@ -307,7 +307,8 @@ def init_tokenlabel(request=None, action=None):
                                                  user=user_object.login,
                                                  realm=user_object.realm,
                                                  client=g.client_ip,
-                                                 unique=True)
+                                                 unique=True,
+                                                 allow_white_space_in_action=True)
 
     if len(label_pols) == 1:
         # The policy was set, so we need to set the tokenlabel in the request.
@@ -318,7 +319,8 @@ def init_tokenlabel(request=None, action=None):
                                                   user=user_object.login,
                                                   realm=user_object.realm,
                                                   client=g.client_ip,
-                                                  unique=True)
+                                                  unique=True,
+                                                  allow_white_space_in_action=True)
     if len(issuer_pols) == 1:
         request.all_data["tokenissuer"] = issuer_pols[0]
 
