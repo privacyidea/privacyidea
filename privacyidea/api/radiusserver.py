@@ -138,7 +138,7 @@ def test():
     user = getParam(param, "username", required)
     password = getParam(param, "password", required)
     dictionary = getParam(param, "dictionary",
-                          default="/etc/privacyidea/dictinoary")
+                          default="/etc/privacyidea/dictionary")
 
     s = RADIUSServerDB(identifier=identifier, server=server, port=port,
                        secret=secret, dictionary=dictionary)
