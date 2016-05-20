@@ -11,6 +11,9 @@ deploy/nginx/privacyideaapp.py			etc/privacyidea/
 deploy/nginx/sites-available/privacyidea	etc/nginx/sites-available/
 deploy/uwsgi/apps-available/privacyidea.xml	etc/uwsgi/apps-available/
 
+# radius client
+deploy/privacyidea/dictionary                   etc/privacyidea/
+
 # This is needed, when we create more than one binary package
 #debian/tmp/usr/bin/* usr/bin/
 #debian/tmp/usr/share/* usr/share/
