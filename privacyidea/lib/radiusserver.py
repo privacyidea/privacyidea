@@ -22,10 +22,12 @@ from privacyidea.lib.crypto import decryptPassword, encryptPassword
 from privacyidea.lib.config import get_from_config
 import logging
 from privacyidea.lib.log import log_with
-from privacyidea.lib.error import ConfigAdminError
+from privacyidea.lib.error import ConfigAdminError, privacyIDEAError
 import pyrad.packet
 from pyrad.client import Client
 from pyrad.dictionary import Dictionary
+from gettext import gettext as _
+
 __doc__ = """
 This is the library for creating, listing and deleting RADIUS server objects in
 the Database.
@@ -179,6 +181,9 @@ def add_radius(identifier, server, secret, port=1812, description="",
     :return: The Id of the database object
     """
     cryptedSecret = encryptPassword(secret)
+    if len(cryptedSecret) > 255:
+        raise privacyIDEAError(description=_("The RADIUS secret is too long"),
+                               id=2234)
     r = RADIUSServerDB(identifier=identifier, server=server, port=port,
                        secret=cryptedSecret, description=description,
                        dictionary=dictionary).save()
