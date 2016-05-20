@@ -12,9 +12,9 @@ privacyIDEA
 .. image:: https://codecov.io/github/privacyidea/privacyidea/coverage.svg?branch=master
     :target: https://codecov.io/github/privacyidea/privacyidea?branch=master
 
-.. image:: https://img.shields.io/pypi/dm/privacyidea.svg
-    :alt: Downloads
-    :target: https://pypi.python.org/pypi/privacyidea/
+.. .. image:: https://img.shields.io/pypi/dm/privacyidea.svg
+..    :alt: Downloads
+..    :target: https://pypi.python.org/pypi/privacyidea/
     
 .. image:: https://img.shields.io/pypi/v/privacyidea.svg
     :alt: Latest Version
