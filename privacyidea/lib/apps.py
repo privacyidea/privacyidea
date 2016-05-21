@@ -2,6 +2,8 @@
 #
 #  privacyIDEA is a fork of LinOTP
 #
+#  2016-05-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             urlencode token isuuer.
 #  * 2015-07-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #               Add SHA Algorithms to QR Code
 #  * 2014-12-01 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -107,7 +109,8 @@ def create_google_authenticator_url(key=None, user=None,
                                                user).replace("<r>", realm)
 
     label = label[0:allowed_label_len]
-    url_label = quote(label)
+    url_label = quote(label.encode("utf-8"))
+    url_issuer = quote(issuer.encode("utf-8"))
 
     if hash_algo.lower() != "sha1":
         hash_algo = "algorithm={0!s}&".format(hash_algo)
@@ -120,7 +123,7 @@ def create_google_authenticator_url(key=None, user=None,
             "counter=1&%s"
             "digits=%s&"
             "issuer=%s" % (tokentype, url_label, otpkey,
-                           hash_algo, digits, issuer))
+                           hash_algo, digits, url_issuer))
 
 @log_with(log)
 def create_oathtoken_url(otpkey=None, user=None, realm=None,
