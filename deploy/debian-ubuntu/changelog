@@ -1,4 +1,4 @@
-python-privacyidea (2.12~dev6-1trusty) trusty; urgency=low
+python-privacyidea (2.12-1trusty) trusty; urgency=low
 
   Features
   * Event Handler Framework #360
@@ -29,7 +29,7 @@ python-privacyidea (2.12~dev6-1trusty) trusty; urgency=low
   * Authentication with active token not possible if
     the user has a disabled token #339
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 18 May 2016 15:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Tue, 24 May 2016 16:00:00 +0200
 
 python-privacyidea (2.11-1trusty) trusty; urgency=low
 
