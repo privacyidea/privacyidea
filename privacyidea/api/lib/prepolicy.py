@@ -589,6 +589,16 @@ def check_base_action(request=None, action=None, anonymous=False):
             realm = realms[0]
         else:
             realm = None
+
+    # get the realm by the serial, while the serial is part of the URL like
+    # DELETE /token/serial
+    if request.view_args and request.view_args.get("serial"):
+        realms = get_realms_of_token(request.view_args.get("serial"))
+        if realms:
+            realm = realms[0]
+        else:
+            realm = None
+
     action = policy_object.get_policies(action=action,
                                         user=username,
                                         realm=realm,

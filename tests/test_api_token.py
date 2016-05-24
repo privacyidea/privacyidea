@@ -4,7 +4,7 @@ import os
 import datetime
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
                                     PolicyClass)
-from privacyidea.lib.token import get_tokens, init_token
+from privacyidea.lib.token import get_tokens, init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.lib.caconnector import save_caconnector
 from urllib import urlencode
@@ -1087,3 +1087,25 @@ class APITokenTestCase(MyTestCase):
                 self.assertTrue(res.status_code == 403, res)
 
         delete_policy("admin_time")
+
+    def test_22_delete_token_in_foreign_realm(self):
+        # Check if a realm admin can not delete a token in another realm
+        # Admin is only allowed to delete tokens in "testrealm"
+        set_policy("deleteToken", scope=SCOPE.ADMIN,
+                   action="delete",
+                   user="testadmin",
+                   realm="testrealm"
+                   )
+        r = init_token({"type": "SPASS", "serial": "SP001"},
+                       user=User("cornelius", self.realm1))
+
+        # Now testadmin tries to delete a token from realm1, which he can not
+        #  access.
+        with self.app.test_request_context('/token/SP001',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 403, res)
+
+        remove_token("SP001")
+        delete_policy("deleteToken")
