@@ -5,6 +5,7 @@ Version 2.12, 2016-05-24
   * local CA connector can enroll certificates
     for users. Users can download PKCS12 file. #383
   * Add and edit users in LDAP resolvers #372
+  * Hardware Security Module support via PKCS11
   * Time dependent policies #358
 
   Enhancements
