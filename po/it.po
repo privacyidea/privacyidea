@@ -1,0 +1,3251 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"PO-Revision-Date: 2016-05-25 09:28+0200\n"
+"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:11
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:13
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:15
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:17
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:9
+msgid "#"
+msgstr ""
+
+#: privacyidea/static/components/directives/views/directive.csvdownload.html:8
+msgid "45% Complete"
+msgstr ""
+
+#: privacyidea/static/components/login/views/offline.html:1
+msgid ""
+"<p>The privacyIDEA API seems to be offline!</p>\n"
+"    <p>Please try to reload and otherwise contact your system administrator!"
+"</p>"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.yubico.html:25
+#: privacyidea/static/components/config/views/config.token.yubico.html:29
+#: privacyidea/static/components/config/views/config.token.yubikey.html:20
+#: privacyidea/static/components/config/views/config.token.yubikey.html:43
+msgid "API Key"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.yubico.html:16
+msgid "API client ID"
+msgstr ""
+
+#: privacyidea/static/components/dialogs/views/dialog.about.html:12
+msgid "About privacyIDEA Web Client"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.events.details.html:54
+#: privacyidea/static/components/config/views/config.events.list.html:9
+#: privacyidea/static/components/config/views/config.policies.details.html:127
+#: privacyidea/static/components/config/views/config.policies.list.html:8
+msgid "Action"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.list.html:5
+#: privacyidea/static/components/token/views/token.details.html:23
+#: privacyidea/static/components/user/views/user.details.html:127
+msgid "Active"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.add.html:3
+msgid "Add a new user"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.question.html:56
+msgid "Add new question"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.html:40
+msgid "Add user"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.details.html:246
+msgid "Admin"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.details.html:111
+msgid "Admin-Realm"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.stats.html:65
+msgid "Administrative actions"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.html:8
+msgid "All CA Connectors"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.events.html:7
+msgid "All Event Handlers"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.machineresolvers.html:7
+msgid "All Machine Resolvers"
+msgstr ""
+
+#: privacyidea/static/components/machine/views/machine.html:8
+msgid "All Machines"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.html:7
+msgid "All Policies"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.realms.html:7
+msgid "All Realms"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.html:7
+msgid "All Resolvers"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.html:11
+msgid "All tokens"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.html:19
+msgid "All users"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:116
+msgid "An Attribute or the DN to identify the machine"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:147
+msgid "An Attribute that contains the IP address."
+msgstr ""
+
+#: privacyidea/static/components/recovery/controllers/recoveryControllers.js:19
+msgid "An Email to reset the password has been sent to you."
+msgstr ""
+
+#: privacyidea/static/components/machine/views/machine.details.html:127
+#: privacyidea/static/components/machine/views/machine.details.html:51
+#: privacyidea/static/components/token/views/token.details.html:455
+#: privacyidea/static/components/token/views/token.details.html:540
+msgid "Application"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.import.html:66
+msgid ""
+"As the values are encrypted with AES128-CBC, you need to give a\n"
+"            32 characters long hex string."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:365
+msgid "Assgined User"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.assign.html:12
+#: privacyidea/static/components/token/views/token.html:43
+#: privacyidea/static/components/user/views/user.details.html:178
+msgid "Assign Token"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:414
+#: privacyidea/static/components/token/views/token.details.html:426
+msgid "Assign User"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.assign.html:1
+#: privacyidea/static/components/user/views/user.details.html:173
+msgid "Assign a new token {{ newTokenObject.serial }}"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.html:28
+msgid "Assign token to user"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.getserial.html:31
+msgid "Assignment State"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:568
+msgid "Attach Machine"
+msgstr ""
+
+#: privacyidea/static/components/machine/views/machine.details.html:154
+msgid "Attach Token"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:532
+msgid "Attach to a new Machine"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:188
+msgid "Attribute mapping"
+msgstr ""
+
+#: privacyidea/static/templates/menu.html:59
+msgid "Audit"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.scim.html:24
+msgid "Authentication Server URI"
+msgstr ""
+
+#: privacyidea/static/components/login/controllers/loginControllers.js:202
+msgid "Authentication failed."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:101
+msgid "Auto resync timeout"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:97
+msgid "Automatic resync during authentication"
+msgstr ""
+
+#: privacyidea/static/components/login/factories/u2f.js:27
+msgid "Bad U2F Request"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:37
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:34
+msgid "Base DN"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:47
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:57
+msgid "Bind DN"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:57
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:69
+msgid "Bind Password"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:67
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:79
+msgid "Bind Type"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.getserial.html:3
+msgid ""
+"By entering an OTP value you can get the serial number of the token.\n"
+"    You can also enter additional optional parameters, to narrow down the\n"
+"    search for the token. So you can only search within certain token types\n"
+"    or in assigned or unassigned tokens."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:40
+msgid "CA Certificate"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:28
+msgid "CA Connector"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.list.html:5
+msgid "CA Connector name"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:53
+msgid "CA Key"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.html:61
+msgid "CAs"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.realms.list.html:75
+#: privacyidea/static/components/directives/views/directive.tokendata.html:21
+#: privacyidea/static/components/machine/views/machine.details.html:110
+#: privacyidea/static/components/token/views/token.details.html:231
+#: privacyidea/static/components/token/views/token.details.html:273
+#: privacyidea/static/components/token/views/token.details.html:521
+#: privacyidea/static/components/user/views/user.details.html:101
+msgid "Cancel"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:38
+msgid "Certificate (PEM)"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:90
+msgid "Certificate Directory"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:77
+msgid ""
+"Certificate Signing\n"
+"                Request Directory"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:49
+msgid "Certificate Signing Request (PEM)"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:167
+msgid "Certificate: Enroll an x509 Certificate Token."
+msgstr ""
+
+#: privacyidea/static/components/login/controllers/loginControllers.js:174
+msgid ""
+"Challenge Response Authentication. You are not completely authenticated, yet."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.radius.html:18
+#: privacyidea/static/components/token/views/token.enroll.remote.html:12
+msgid "Check the PIN locally"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.realms.html:9
+msgid "Clear default realm"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.hotp.html:13
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:12
+msgid ""
+"Click <a href=\"{{ enrolledToken.googleurl.value }}\">here</a> or scan\n"
+"            the QR Code, if you\n"
+"            want to add the Token to your Google Authenticator."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.motp.html:12
+msgid ""
+"Click <a href=\"{{ enrolledToken.motpurl.value }}\">here</a> or scan\n"
+"            the QR Code, if you\n"
+"            want to add the Token to your mOTP App like Token2."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.tiqr.html:11
+msgid ""
+"Click <a href=\"{{ enrolledToken.tiqrenroll.value }}\">here</a> or\n"
+"            scan\n"
+"            the QR Code, if you\n"
+"            want to add the Token to your TiQR App."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.details.html:262
+#: privacyidea/static/components/config/views/config.policies.list.html:12
+#: privacyidea/static/components/config/views/config.resolvers.scim.html:49
+msgid "Client"
+msgstr ""
+
+#: privacyidea/static/components/login/factories/u2f.js:28
+msgid "Client Configuration is not supported."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.yubikey.html:19
+#: privacyidea/static/components/config/views/config.token.yubikey.html:38
+msgid "Client ID"
+msgstr ""
+
+#: privacyidea/static/components/dialogs/views/dialog.about.html:48
+msgid "Close"
+msgstr ""
+
+#: privacyidea/static/templates/menu.html:91
+msgid "Community"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.events.details.html:44
+#: privacyidea/static/components/config/views/config.events.list.html:8
+msgid "Condition"
+msgstr ""
+
+#: privacyidea/static/templates/menu.html:51
+msgid "Config"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:177
+msgid "Connection Parameters"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:14
+msgid "Connector name"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:92
+msgid "Count"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:97
+#: privacyidea/static/components/token/views/token.getserial.html:48
+msgid "Count Window"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:163
+msgid ""
+"Count Window of\n"
+"                    newly enrolled tokens"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.events.details.html:105
+msgid "Create Event Handler Definition"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.details.html:292
+#: privacyidea/static/components/config/views/config.policies.details.html:85
+msgid "Create Policy"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.events.details.html:6
+msgid "Create a new Event Handler"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:6
+msgid "Create a new LDAP Resolver"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:7
+msgid "Create a new Local CA Connector"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.passwd.html:7
+msgid "Create a new Passwd Resolver"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.details.html:24
+msgid "Create a new Policy"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.radius.edit.html:5
+msgid "Create a new RADIUS server {{ params.identifier }}"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.scim.html:6
+msgid "Create a new SCIM Resolver"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:5
+msgid "Create a new SMTP server {{ params.identifier }}"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:7
+msgid "Create a new SQL Resolver"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.hosts.html:7
+msgid ""
+"Create a new hosts Machine\n"
+"        Resolver"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:7
+msgid "Create a new hosts Machine Resolver"
+msgstr ""
+
+#: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:12
+msgid "Create default realm"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.yubikey.html:51
+msgid "Create new API key"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.events.html:12
+msgid "Create new Event Handler"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.html:12
+msgid "Create new Policy"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.realms.list.html:115
+#: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:22
+msgid "Create realm"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:130
+msgid "DN of a new created user object"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:57
+msgid "Database"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:167
+msgid "Database Encoding"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.realms.list.html:5
+msgid "Default"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.hotp.html:12
+#: privacyidea/static/components/config/views/config.token.totp.html:39
+msgid "Default Hashlib"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.remote.html:17
+msgid "Default Remote Server"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.totp.html:30
+msgid "Default Time Shift"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.totp.html:13
+msgid "Default Time Step"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.totp.html:21
+msgid "Default Time Window"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.list.html:25
+#: privacyidea/static/components/config/views/config.events.list.html:38
+#: privacyidea/static/components/config/views/config.mresolvers.list.html:25
+#: privacyidea/static/components/config/views/config.policies.details.html:17
+#: privacyidea/static/components/config/views/config.policies.list.html:53
+#: privacyidea/static/components/config/views/config.radius.list.html:29
+#: privacyidea/static/components/config/views/config.realms.list.html:64
+#: privacyidea/static/components/config/views/config.resolvers.list.html:24
+#: privacyidea/static/components/config/views/config.smtp.list.html:34
+#: privacyidea/static/components/config/views/config.token.question.html:39
+#: privacyidea/static/components/config/views/config.token.yubikey.html:29
+#: privacyidea/static/components/token/views/token.details.html:16
+msgid "Delete"
+msgstr ""
+
+#: privacyidea/static/components/user/views/dialog.ask_user_delete.html:12
+#: privacyidea/static/components/user/views/dialog.ask_user_delete.html:25
+msgid "Delete User"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.details.html:108
+msgid "Delete user"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.radius.html:7
+msgid "Deprecated configuration"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.radius.edit.html:68
+#: privacyidea/static/components/config/views/config.radius.list.html:8
+#: privacyidea/static/components/config/views/config.smtp.edit.html:87
+#: privacyidea/static/components/config/views/config.smtp.list.html:9
+#: privacyidea/static/components/token/views/token.details.html:118
+#: privacyidea/static/components/token/views/token.enroll.email.html:18
+#: privacyidea/static/components/token/views/token.enroll.sms.html:25
+#: privacyidea/static/components/token/views/token.enroll.sshkey.html:17
+#: privacyidea/static/components/user/views/user.add.html:44
+#: privacyidea/static/components/user/views/user.details.html:46
+#: privacyidea/static/components/user/views/user.password.html:21
+msgid "Description"
+msgstr ""
+
+#: privacyidea/static/components/machine/views/machine.details.html:98
+#: privacyidea/static/components/token/views/token.details.html:507
+msgid "Detach"
+msgstr ""
+
+#: privacyidea/static/components/machine/views/machine.details.html:2
+msgid ""
+"Details for machine {{ machineid }} in Machine Resolver\n"
+"        {{ machineresolver }}"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.details.html:14
+msgid "Details for user {{ username }} in realm"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.radius.edit.html:59
+#: privacyidea/static/components/config/views/config.radius.list.html:7
+#: privacyidea/static/components/config/views/config.token.radius.html:26
+msgid "Dictionary"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.details.html:5
+#: privacyidea/static/components/token/views/token.details.html:38
+msgid "Disable"
+msgstr ""
+
+#: privacyidea/static/components/user/views/dialog.ask_user_delete.html:15
+msgid "Do you really want to delete the user in the user store?"
+msgstr ""
+
+#: privacyidea/static/components/directives/views/directive.csvdownload.html:3
+msgid "Download"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.certificate.html:18
+msgid "Download the PKCS12 file"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.certificate.html:9
+msgid "Download the certificate"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:27
+msgid "Driver"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:119
+msgid "Drupal"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.email.html:1
+msgid "EMail Token settings"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:163
+msgid "EMail: Send a One Time Password to the users email address."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.list.html:19
+#: privacyidea/static/components/config/views/config.mresolvers.list.html:19
+#: privacyidea/static/components/config/views/config.realms.list.html:58
+#: privacyidea/static/components/config/views/config.resolvers.list.html:19
+#: privacyidea/static/components/directives/views/directive.tokendata.html:26
+#: privacyidea/static/components/token/views/token.details.html:219
+#: privacyidea/static/components/token/views/token.details.html:261
+msgid "Edit"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.html:14
+msgid "Edit CA Connector {{ connectorname }}"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.events.details.html:3
+msgid "Edit Event Handler {{ eventid }}"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:3
+msgid ""
+"Edit LDAP Machine Resolver\n"
+"        {{ resolvername }}"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:3
+msgid "Edit LDAP Resolver {{ resolvername }}"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:3
+msgid ""
+"Edit Local CA Connector\n"
+"        {{ connectorname }}"
+msgstr ""
+
+#: privacyidea/static/components/machine/views/machine.html:17
+msgid "Edit Machine Resolvers"
+msgstr ""
+
+#: privacyidea/static/components/machine/views/machine.details.html:94
+#: privacyidea/static/components/token/views/token.details.html:503
+msgid "Edit Options"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.passwd.html:3
+msgid "Edit Passwd Resolver {{ resolvername }}"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.details.html:3
+msgid "Edit Policy {{ existingPolicyname }}"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.radius.edit.html:2
+msgid "Edit RADIUS server {{ identifier }}"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.machineresolvers.html:12
+#: privacyidea/static/components/config/views/config.resolvers.html:12
+msgid "Edit Resolver {{ resolvername }}"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.scim.html:3
+msgid "Edit SCIM Resolver {{ resolvername }}"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:2
+msgid "Edit SMTP server {{ identifier }}"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:3
+msgid "Edit SQL Resolver {{ resolvername }}"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.hosts.html:3
+msgid ""
+"Edit hosts Machine Resolver\n"
+"        {{ resolvername }}"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.html:46
+msgid "Edit realms"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.details.html:93
+msgid "Edit user"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:110
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:88
+msgid "Edit user store"
+msgstr ""
+
+#: privacyidea/static/components/recovery/views/recovery.html:28
+#: privacyidea/static/components/recovery/views/recovery.html:32
+#: privacyidea/static/components/register/views/register.html:48
+#: privacyidea/static/components/register/views/register.html:52
+#: privacyidea/static/components/user/views/user.add.html:51
+#: privacyidea/static/components/user/views/user.details.html:57
+#: privacyidea/static/components/user/views/user.password.html:28
+msgid "Email"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.email.html:12
+msgid "Email Address"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.details.html:10
+#: privacyidea/static/components/token/views/token.details.html:45
+msgid "Enable"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.details.html:166
+msgid "Enroll New Token"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.html:101
+#: privacyidea/static/components/token/views/token.html:25
+msgid "Enroll Token"
+msgstr ""
+
+#: privacyidea/static/components/login/controllers/loginControllers.js:65
+#: privacyidea/static/components/token/controllers/tokenControllers.js:109
+#: privacyidea/static/components/token/views/token.enroll.html:1
+#: privacyidea/static/components/token/views/token.enroll.html:149
+msgid "Enroll a new token"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:27
+msgid "Enter OTP + PIN to check the token."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.totp.html:31
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:45
+msgid "Enter OTP key..."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:319
+msgid "Enter PIN again"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:21
+msgid "Enter PIN and OTP to check the token."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:314
+msgid "Enter PIN for token"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:290
+msgid "Enter first OTP value"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:295
+msgid "Enter second OTP value"
+msgstr ""
+
+#: privacyidea/static/components/login/views/login.html:32
+msgid ""
+"Enter your username and password and click Log In to\n"
+"                authenticate."
+msgstr ""
+
+#: privacyidea/static/components/config/factories/config.js:43
+msgid "Error fetching policy template"
+msgstr ""
+
+#: privacyidea/static/components/config/factories/config.js:33
+msgid "Error fetching policy templates."
+msgstr ""
+
+#: privacyidea/static/components/login/factories/u2f.js:77
+msgid "Error in U2F response."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.events.details.html:13
+#: privacyidea/static/components/config/views/config.events.list.html:6
+#: privacyidea/static/components/config/views/config.html:30
+msgid "Events"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.challenges.html:43
+msgid "Expiration"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.html:54
+msgid "Extended Attributes"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:69
+msgid "Fail counter"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.stats.html:43
+#: privacyidea/static/components/audit/views/audit.stats.html:45
+msgid "Failed authentication requests per token"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.stats.html:54
+#: privacyidea/static/components/audit/views/audit.stats.html:56
+msgid "Failed authentication requests per user"
+msgstr ""
+
+#: privacyidea/static/components/user/controllers/userControllers.js:153
+msgid "Failed to delete user."
+msgstr ""
+
+#: privacyidea/static/components/recovery/controllers/recoveryControllers.js:31
+msgid "Failed to reset your password."
+msgstr ""
+
+#: privacyidea/static/components/user/controllers/userControllers.js:135
+msgid "Failed to update user."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.hosts.html:27
+#: privacyidea/static/components/config/views/config.resolvers.passwd.html:25
+msgid "File name"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:15
+#: privacyidea/static/components/machine/views/machine.details.html:43
+#: privacyidea/static/components/machine/views/machine.list.html:5
+#: privacyidea/static/components/token/views/token.challenges.html:10
+#: privacyidea/static/components/token/views/token.details.html:443
+#: privacyidea/static/components/token/views/token.list.html:6
+msgid "First"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.email.html:6
+msgid ""
+"For Email tokens to work properly you need to set the\n"
+"    <a ui-sref=\"config.tokens({tokentype:'email'})\">Email Token Config</a>!"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.import.html:25
+msgid "For HOTP and TOTP tokens:"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.import.html:33
+msgid "For OCRA tokens:"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.sms.html:7
+msgid ""
+"For SMS tokens to work properly you need to set the\n"
+"    <a ui-sref=\"config.tokens({tokentype:'sms'})\">SMS Token Config</a>!"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.tiqr.html:1
+msgid ""
+"For TiQR tokens to work properly you need to set the\n"
+"    <a ui-sref=\"config.tokens({tokentype:'tiqr'})\">TiQR Token Config</a>!"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.yubico.html:8
+msgid ""
+"For Yubico tokens to work properly you need to set the\n"
+"    <a ui-sref=\"config.tokens({tokentype:'yubico'})\">Yubico Token Config</"
+"a>!"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:169
+msgid "Four Eyes: Two or more users are required to log in."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:15
+#: privacyidea/static/components/token/views/token.enroll.motp.html:11
+#: privacyidea/static/components/token/views/token.enroll.totp.html:14
+msgid "Generate OTP Key on the Server"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:12
+msgid "Generate Request"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:64
+msgid "Generate the Key Pair on the Server"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.html:82
+msgid "Get Serial"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.getserial.html:57
+msgid "Get Serial Number"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.getserial.html:1
+msgid "Get Serial number by OTP value"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:20
+msgid "Get System Documentation"
+msgstr ""
+
+#: privacyidea/static/components/register/views/register.html:38
+#: privacyidea/static/components/register/views/register.html:42
+#: privacyidea/static/components/user/views/user.add.html:34
+#: privacyidea/static/components/user/views/user.details.html:29
+#: privacyidea/static/components/user/views/user.password.html:11
+msgid "Given name"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.hotp.html:1
+msgid "HOTP Token settings"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:150
+msgid "HOTP: event based One Time Passwords"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.events.details.html:30
+#: privacyidea/static/components/config/views/config.events.list.html:7
+msgid "Handlermodule"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:50
+#: privacyidea/static/components/token/views/token.enroll.totp.html:58
+msgid "Hash algorithm"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.sms.html:8
+msgid ""
+"Here you can define how the SMS will be sent - via which kind of gateway."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.hotp.html:7
+msgid ""
+"Here you can define settings, that will be set as default values, when\n"
+"    enrolling a HOTP token."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.totp.html:7
+msgid ""
+"Here you can define settings, that will be set as default values, when\n"
+"    enrolling a TOTP token."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.4eyes.html:23
+msgid ""
+"Here you can select how many tokens of which realm are required to\n"
+"        perform a successful authentication."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.import.html:20
+msgid ""
+"Here you can upload a csv file for your OATH token.\n"
+"            The file is supposed to contain one token per line."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.import.html:47
+msgid ""
+"Here you can upload a csv file for your Yubikey token.\n"
+"            The file is supposed to contain one token per line."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.import.html:13
+msgid ""
+"Here you can upload an XML file from Aladdin or SafeNet as it was\n"
+"            used with Aladdin TMS or SafeNet SAM."
+msgstr ""
+
+#: privacyidea/static/components/register/views/register.html:6
+msgid "Here you may register a new user account"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.details.html:55
+msgid "Hide Policy templates"
+msgstr ""
+
+#: privacyidea/static/components/machine/views/machine.details.html:9
+msgid "Hostname"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:130
+msgid "Hostname Attribute"
+msgstr ""
+
+#: privacyidea/static/components/machine/views/machine.details.html:21
+#: privacyidea/static/components/machine/views/machine.list.html:19
+msgid "IP Address"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:141
+msgid "IP Address Attribute"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.radius.edit.html:27
+#: privacyidea/static/components/config/views/config.smtp.edit.html:27
+msgid "IP or FQDN"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.radius.list.html:6
+#: privacyidea/static/components/config/views/config.smtp.list.html:6
+msgid "IP/FQDN"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.events.list.html:5
+#: privacyidea/static/components/machine/views/machine.list.html:23
+msgid "Id"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.radius.edit.html:14
+#: privacyidea/static/components/config/views/config.radius.list.html:5
+#: privacyidea/static/components/config/views/config.smtp.edit.html:14
+#: privacyidea/static/components/config/views/config.smtp.list.html:5
+msgid "Identifier"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:70
+msgid ""
+"If the SMTP server requires authentication you need to\n"
+"                specify the user."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.lost.html:6
+msgid ""
+"If the token is lost, you can enroll a temporary password based token and\n"
+"    give the password to the user. The OTP PIN of the old token is still "
+"the\n"
+"    same."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.details.html:38
+msgid ""
+"If you change the name of the policy, it will create a new policy\n"
+"                with the new name!"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.import.html:51
+msgid ""
+"If you enrolling the Yubikey in HOTP mode, you should use the\n"
+"            PSKC file format in the newer version of the Yubikey GUI."
+msgstr ""
+
+#: privacyidea/static/components/recovery/views/recovery.html:6
+msgid "If you forgot your password, you may set a new one."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.assign.html:3
+msgid ""
+"If you were handed a token device, you may connect this device to your\n"
+"    account. Turn over the token, you may find a serial number printed on "
+"the\n"
+"    token. Please enter this serial number and make up a token pin."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.html:52
+msgid "Import Tokens"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.import.html:1
+msgid "Import tokens from a file"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:86
+msgid ""
+"Include SAML attributes in the\n"
+"                authentication response."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:67
+msgid "Increase the failcounter if the wrong PIN was entered."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:127
+msgid "Info"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:14
+#: privacyidea/static/components/machine/views/machine.details.html:42
+#: privacyidea/static/components/machine/views/machine.list.html:4
+#: privacyidea/static/components/token/views/token.challenges.html:9
+#: privacyidea/static/components/token/views/token.details.html:442
+#: privacyidea/static/components/token/views/token.list.html:5
+msgid "Last"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:63
+msgid "Leave the Bind DN empty if you want to do anonymous binding."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:30
+msgid "Length of UID"
+msgstr ""
+
+#: privacyidea/static/components/dialogs/views/dialog.about.html:25
+msgid "Licensed under"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:133
+msgid "Limit"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.html:61
+msgid "List Challenges"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.radius.html:7
+msgid "List RADIUS server definitions"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smtp.html:7
+msgid "List SMTP server definitions"
+msgstr ""
+
+#: privacyidea/static/components/login/controllers/loginControllers.js:73
+msgid "List tokens"
+msgstr ""
+
+#: privacyidea/static/components/directives/views/directive.attachmachine.html:10
+msgid "Loading Machines..."
+msgstr ""
+
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:10
+#: privacyidea/static/components/directives/views/directive.attachtoken.html:11
+msgid "Loading serials..."
+msgstr ""
+
+#: privacyidea/static/components/directives/views/directive.assignuser.html:19
+msgid "Loading users..."
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.html:20
+msgid "Log"
+msgstr ""
+
+#: privacyidea/static/components/login/views/enter-response.html:29
+#: privacyidea/static/components/login/views/login.html:16
+#: privacyidea/static/components/login/views/login.html:64
+msgid "Log In"
+msgstr ""
+
+#: privacyidea/static/components/login/controllers/loginControllers.js:80
+msgid "Log out"
+msgstr ""
+
+#: privacyidea/static/templates/menu.html:70
+msgid "Login"
+msgstr ""
+
+#: privacyidea/static/components/login/views/login.html:5
+msgid ""
+"Login as\n"
+"                {{ remoteUser }}"
+msgstr ""
+
+#: privacyidea/static/components/login/views/login.html:19
+msgid "Login with credentials"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.html:153
+#: privacyidea/static/templates/menu.html:98
+msgid "Logout"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.html:72
+msgid "Lost Token"
+msgstr ""
+
+#: privacyidea/static/components/audit/controllers/auditControllers.js:33
+msgid "M/d/yy HH:mm:ss"
+msgstr ""
+
+#: privacyidea/static/components/directives/views/directive.attachmachine.html:5
+msgid "Machine"
+msgstr ""
+
+#: privacyidea/static/components/machine/views/machine.details.html:14
+#: privacyidea/static/components/token/views/token.details.html:453
+msgid "Machine ID"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:109
+msgid "Machine ID Attribute"
+msgstr ""
+
+#: privacyidea/static/components/machine/views/machine.details.html:26
+#: privacyidea/static/components/machine/views/machine.list.html:27
+msgid "Machine Resolver"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.html:40
+#: privacyidea/static/templates/menu.html:44
+msgid "Machines"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:436
+msgid "Machines this token is attached to"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:144
+msgid "Mapping"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.lost.html:23
+msgid "Mark the token to be lost"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:176
+msgid ""
+"Max Failcount of\n"
+"                    newly enrolled tokens"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:59
+msgid "Maxfail"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:153
+msgid "Maximum Authentication Count"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:163
+msgid "Maximum Success Auth Count"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:85
+msgid "Microsoft Internet Explorer is not supported."
+msgstr ""
+
+#: privacyidea/static/components/register/views/register.html:57
+#: privacyidea/static/components/register/views/register.html:60
+#: privacyidea/static/components/user/views/user.add.html:62
+#: privacyidea/static/components/user/views/user.details.html:75
+#: privacyidea/static/components/user/views/user.password.html:40
+msgid "Mobile"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.html:17
+msgid "New Connectors"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.radius.html:11
+msgid "New RADIUS server"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.machineresolvers.html:15
+#: privacyidea/static/components/config/views/config.resolvers.html:15
+msgid "New Resolvers"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smtp.html:11
+msgid "New SMTP server"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.radius.html:33
+msgid "New configuration"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.html:26
+msgid "New {{ connectortype | uppercase }} CA Connector"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.machineresolvers.html:24
+msgid "New {{ mResolvertype | uppercase }} Resolver"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.html:24
+msgid "New {{ resolvertype }}"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:13
+#: privacyidea/static/components/machine/views/machine.details.html:41
+#: privacyidea/static/components/machine/views/machine.list.html:3
+#: privacyidea/static/components/token/views/token.challenges.html:8
+#: privacyidea/static/components/token/views/token.details.html:441
+#: privacyidea/static/components/token/views/token.list.html:4
+msgid "Next"
+msgstr ""
+
+#: privacyidea/static/components/user/views/dialog.ask_user_delete.html:19
+msgid "No"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.getserial.html:72
+msgid "No Serial number could be found for OTP value {{ otp }}."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:106
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:151
+msgid "No anonymous referral chasing"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.question.html:11
+msgid "Number of answers"
+msgstr ""
+
+#: privacyidea/static/components/machine/views/machine.html:20
+msgid "Number of machines: {{ $scope.machinecount }}"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.4eyes.html:34
+msgid "Number of required tokens"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:66
+msgid "OCRA Suite"
+msgstr ""
+
+#: privacyidea/static/components/login/factories/u2f.js:25
+msgid "OK"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:28
+#: privacyidea/static/components/token/views/token.enroll.motp.html:23
+#: privacyidea/static/components/token/views/token.enroll.totp.html:27
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:40
+msgid "OTP Key"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:87
+#: privacyidea/static/components/token/views/token.enroll.radius.html:22
+msgid "OTP Length"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.html:35
+msgid "OTP PINs do not match!"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.getserial.html:12
+msgid "OTP Value"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:37
+#: privacyidea/static/components/token/views/token.enroll.totp.html:36
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:50
+msgid "OTP length"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:149
+msgid ""
+"OTP length of\n"
+"                    newly enrolled tokens"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.email.html:19
+msgid "OTP validity time"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:107
+msgid "OTRS"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:124
+msgid "Object classes of a new created user object"
+msgstr ""
+
+#: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:15
+msgid ""
+"Obviously you have no realms defined. Do you want me to create a\n"
+"          default realm for you from the machines /etc/passwd?"
+msgstr ""
+
+#: privacyidea/static/templates/index.html:38
+#: privacyidea/static/templates/menu.html:88
+msgid "Online Documentation"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:89
+msgid ""
+"Open new tab to create certificate\n"
+"                    request"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:27
+msgid "OpenSSL config file"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.events.details.html:67
+#: privacyidea/static/components/config/views/config.events.list.html:10
+#: privacyidea/static/components/machine/views/machine.details.html:52
+#: privacyidea/static/components/token/views/token.details.html:456
+msgid "Options"
+msgstr ""
+
+#: privacyidea/static/components/login/factories/u2f.js:26
+msgid "Other Error"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.stats.html:76
+msgid "Overall token usage"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:114
+msgid "Override Authorization Clients"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:113
+msgid "Owncloud"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:174
+msgid "PAPER: OTP values on a sheet of paper."
+msgstr ""
+
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:14
+#: privacyidea/static/components/directives/views/directive.assignuser.html:23
+#: privacyidea/static/components/token/views/token.enroll.html:41
+msgid "PIN"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:143
+msgid "PKCS12"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.radius.edit.html:85
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:77
+#: privacyidea/static/components/config/views/config.smtp.edit.html:77
+#: privacyidea/static/components/login/views/login.html:57
+#: privacyidea/static/components/login/views/login.html:61
+#: privacyidea/static/components/recovery/views/recovery.reset.html:9
+#: privacyidea/static/components/register/views/register.html:74
+#: privacyidea/static/components/register/views/register.html:79
+#: privacyidea/static/components/register/views/register.html:84
+#: privacyidea/static/components/token/views/token.import.html:75
+#: privacyidea/static/components/user/views/user.add.html:67
+#: privacyidea/static/components/user/views/user.details.html:83
+#: privacyidea/static/components/user/views/user.password.html:50
+msgid "Password"
+msgstr ""
+
+#: privacyidea/static/components/user/controllers/userControllers.js:74
+msgid "Password set successfully."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.sshkey.html:14
+msgid "Paste the ssh PUBLIC key"
+msgstr ""
+
+#: privacyidea/static/components/register/views/register.html:65
+#: privacyidea/static/components/register/views/register.html:68
+#: privacyidea/static/components/user/views/user.add.html:57
+#: privacyidea/static/components/user/views/user.details.html:67
+#: privacyidea/static/components/user/views/user.password.html:35
+msgid "Phone"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.sms.html:13
+msgid "Phone number"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.question.html:8
+msgid "Please answer at least {{ num_answers }} of the following questions."
+msgstr ""
+
+#: privacyidea/static/components/login/views/login.html:40
+msgid "Please sign in"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.html:25
+msgid "Policies"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.details.html:31
+#: privacyidea/static/components/config/views/config.policies.list.html:6
+msgid "Policy Name"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.details.html:61
+msgid "Policy Templates"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:187
+msgid "Pool size"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:198
+msgid "Pool timeout"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.radius.edit.html:37
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:46
+#: privacyidea/static/components/config/views/config.smtp.edit.html:37
+#: privacyidea/static/components/config/views/config.token.radius.html:22
+msgid "Port"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.import.html:71
+msgid "Pre Shared Key"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:76
+msgid ""
+"Prepend the PIN in front of the OTP value\n"
+"                . Otherwise it will be post pended."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:99
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:144
+msgid "Preset Active Directory"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:141
+msgid "Preset OpenLDAP"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:12
+#: privacyidea/static/components/machine/views/machine.details.html:40
+#: privacyidea/static/components/machine/views/machine.list.html:2
+#: privacyidea/static/components/token/views/token.challenges.html:7
+#: privacyidea/static/components/token/views/token.details.html:440
+#: privacyidea/static/components/token/views/token.list.html:3
+msgid "Previous"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:45
+msgid "Print the OTP list"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.import.html:101
+msgid "Progress: {{ progressPercentage }}%"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.sms.html:30
+msgid "Provider Config"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:19
+msgid "Push Yubikey button here..."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.question.html:31
+#: privacyidea/static/components/config/views/config.token.question.html:48
+msgid "Question"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.question.html:22
+#: privacyidea/static/components/config/views/config.tokens.html:45
+#: privacyidea/static/components/token/views/token.enroll.question.html:7
+msgid "Questionnaire"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.question.html:1
+msgid "Questionnaire Token settings"
+msgstr ""
+
+#: privacyidea/static/components/machine/views/machine.html:15
+#: privacyidea/static/components/user/views/user.html:44
+msgid "Quick links"
+msgstr ""
+
+#: privacyidea/static/components/config/controllers/radiusServerController.js:76
+msgid "RADIUS Config saved."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.radius.html:18
+msgid "RADIUS Server"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.radius.html:1
+msgid "RADIUS Token settings"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.radius.html:45
+msgid "RADIUS User"
+msgstr ""
+
+#: privacyidea/static/components/config/controllers/radiusServerController.js:66
+msgid "RADIUS request successful."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.radius.html:35
+#: privacyidea/static/components/token/views/token.enroll.radius.html:32
+msgid "RADIUS server configuration"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:32
+msgid "RADIUS servers"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:161
+msgid "RADIUS: Forward authentication request to a RADIUS server"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.list.html:9
+#: privacyidea/static/components/directives/views/directive.assignuser.html:5
+#: privacyidea/static/components/login/views/login.html:48
+#: privacyidea/static/components/token/views/token.details.html:385
+msgid "Realm"
+msgstr ""
+
+#: privacyidea/static/components/login/controllers/loginControllers.js:301
+msgid "Realm defrealm created."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.realms.list.html:6
+msgid "Realm name"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.html:54
+msgid "Realms"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.challenges.html:50
+msgid "Received"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:108
+msgid "Recipient for testing"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:6
+#: privacyidea/static/components/audit/views/audit.stats.html:4
+msgid "Refresh"
+msgstr ""
+
+#: privacyidea/static/components/register/views/register.html:14
+#: privacyidea/static/components/register/views/register.html:87
+#: privacyidea/static/templates/menu.html:66
+msgid "Register"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.registration.html:2
+msgid "Registration Code"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.remote.html:43
+msgid "Remote Realm"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.remote.html:49
+msgid "Remote Resolver"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.remote.html:25
+msgid "Remote Serial"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.remote.html:16
+msgid "Remote Server"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.remote.html:1
+msgid "Remote Token settings"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:157
+msgid "Remote Token: Forward authentication request to another server"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.remote.html:35
+msgid "Remote User"
+msgstr ""
+
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:22
+#: privacyidea/static/components/directives/views/directive.assignuser.html:31
+#: privacyidea/static/components/recovery/views/recovery.reset.html:19
+#: privacyidea/static/components/token/views/token.enroll.html:49
+#: privacyidea/static/components/token/views/token.enroll.motp.html:43
+#: privacyidea/static/components/user/views/user.password.html:58
+msgid "Repeat password"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.4eyes.html:22
+msgid "Required Realms"
+msgstr ""
+
+#: privacyidea/static/components/login/views/login.html:69
+#: privacyidea/static/components/recovery/views/recovery.html:14
+#: privacyidea/static/components/recovery/views/recovery.reset.html:23
+msgid "Reset Password"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:77
+msgid "Reset fail counter"
+msgstr ""
+
+#: privacyidea/static/components/recovery/views/recovery.reset.html:5
+msgid "Reset your Password"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.list.html:11
+#: privacyidea/static/components/token/views/token.details.html:390
+#: privacyidea/static/components/token/views/token.details.html:454
+#: privacyidea/static/components/user/views/user.add.html:9
+msgid "Resolver"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.hosts.html:15
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:16
+#: privacyidea/static/components/config/views/config.mresolvers.list.html:5
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:14
+#: privacyidea/static/components/config/views/config.resolvers.list.html:5
+#: privacyidea/static/components/config/views/config.resolvers.passwd.html:14
+#: privacyidea/static/components/config/views/config.resolvers.scim.html:14
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:16
+msgid "Resolver name"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.scim.html:36
+msgid "Resource Server URI"
+msgstr ""
+
+#: privacyidea/static/components/login/views/enter-response.html:14
+#: privacyidea/static/components/login/views/enter-response.html:22
+msgid "Response"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:303
+msgid "Resync Token"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:52
+msgid "Revoke"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:118
+msgid "Roll the token"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.sms.html:13
+msgid "SMS Provider"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.sms.html:1
+msgid "SMS Token settings"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:165
+msgid "SMS: Send a One Time Password to the users mobile phone."
+msgstr ""
+
+#: privacyidea/static/components/config/controllers/smtpServerController.js:75
+msgid "SMTP Config saved."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.email.html:8
+msgid "SMTP server configuration"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:132
+msgid "SMTP server for password recovery"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:25
+msgid "SMTP servers"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:152
+msgid "SPass: Simple Pass token. Static passwords"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:154
+msgid "SSH Public Key: The public SSH key"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.sshkey.html:9
+msgid "SSH public Key"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.realms.list.html:71
+#: privacyidea/static/components/config/views/config.tokens.html:69
+msgid "Save"
+msgstr ""
+
+#: privacyidea/static/components/machine/views/machine.details.html:104
+#: privacyidea/static/components/token/views/token.details.html:514
+msgid "Save Options"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.radius.edit.html:98
+msgid "Save RADIUS server"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:223
+msgid "Save Resolver"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:124
+msgid "Save SMTP server"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:242
+msgid "Save System Config"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:225
+msgid "Save Token Info"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:267
+msgid "Save realms"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:102
+#: privacyidea/static/components/config/views/config.mresolvers.hosts.html:39
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:158
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:219
+#: privacyidea/static/components/config/views/config.resolvers.passwd.html:38
+#: privacyidea/static/components/config/views/config.resolvers.scim.html:86
+msgid "Save resolver"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.add.html:77
+#: privacyidea/static/components/user/views/user.details.html:98
+msgid "Save user"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.list.html:7
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:43
+msgid "Scope"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:120
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:166
+msgid "Search Filter"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.radius.edit.html:49
+#: privacyidea/static/components/config/views/config.resolvers.scim.html:60
+msgid "Secret"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.html:24
+msgid "Select Realm"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:141
+msgid ""
+"Select a predefined\n"
+"                    <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.radius.html:36
+msgid ""
+"Select a predefined\n"
+"        <a ui-sref=\"config.radius\">RADIUS server configuration</a>."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.radius.html:33
+msgid ""
+"Select a predefined\n"
+"        <a ui-sref=\"config.radius\">RADIUS server configuration</a>.\n"
+"        The RADIUS request will be forwarded to this RADIUS server."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.email.html:9
+msgid ""
+"Select a predefined\n"
+"        <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.import.html:93
+msgid "Select file and import"
+msgstr ""
+
+#: privacyidea/static/components/recovery/views/recovery.html:38
+msgid "Send Reset Code"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:115
+msgid "Send Test Email"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.radius.edit.html:90
+msgid "Send test RADIUS request"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smtp.list.html:7
+msgid "Sender"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:48
+msgid "Sender Email"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.4eyes.html:10
+msgid "Separator"
+msgstr ""
+
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:5
+#: privacyidea/static/components/directives/views/directive.attachtoken.html:5
+#: privacyidea/static/components/machine/views/machine.details.html:50
+msgid "Serial"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.getserial.html:41
+msgid "Serial Substring"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:38
+msgid "Server"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:26
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:24
+msgid "Server URI"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:326
+msgid "Set PIN"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:98
+msgid "Set count window"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:119
+msgid "Set description"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:60
+msgid "Set max fail"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:108
+msgid "Set sync window"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.details.html:49
+msgid "Show Policy templates"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:335
+msgid "Show password"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:88
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:100
+msgid "Size Limit"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.sms.html:27
+#: privacyidea/static/components/token/views/token.enroll.sshkey.html:19
+msgid "Some nice words..."
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.html:25
+msgid "Statistics"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:181
+msgid "Successfully authenticated."
+msgstr ""
+
+#: privacyidea/static/templates/index.html:28
+#: privacyidea/static/templates/menu.html:93
+msgid "Support"
+msgstr ""
+
+#: privacyidea/static/components/register/views/register.html:28
+#: privacyidea/static/components/register/views/register.html:32
+#: privacyidea/static/components/user/views/user.add.html:39
+#: privacyidea/static/components/user/views/user.details.html:38
+#: privacyidea/static/components/user/views/user.password.html:16
+msgid "Surname"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:107
+msgid "Sync Window"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:188
+msgid ""
+"Sync Window of\n"
+"                    newly enrolled tokens"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.html:20
+msgid "System"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:13
+msgid "System Config"
+msgstr ""
+
+#: privacyidea/static/components/config/controllers/configControllers.js:427
+#: privacyidea/static/components/config/controllers/configControllers.js:639
+msgid "System Config saved."
+msgstr ""
+
+#: privacyidea/static/components/config/controllers/configControllers.js:436
+msgid "System entry deleted."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smtp.list.html:8
+msgid "TLS"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.totp.html:1
+msgid "TOTP Token settings"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:151
+msgid "TOTP: time based One Time Passwords"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:124
+msgid "Table"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.u2f.html:3
+msgid "Take action on your token"
+msgstr ""
+
+#: privacyidea/static/components/config/controllers/smtpServerController.js:65
+msgid "Test Email sent successfully."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:154
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:214
+msgid "Test LDAP Resolver"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.scim.html:81
+msgid "Test SCIM Resolver"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:219
+msgid "Test SQL Resolver"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:15
+msgid "Test Yubikey"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:354
+msgid "Test token"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.4eyes.html:1
+msgid ""
+"The 4 Eyes token will only authenticate if two or more users are\n"
+"    present at once. You can define how many existing tokens of the given\n"
+"    realms need to be present to perform a successful authentication."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.u2f.html:27
+msgid "The AppID must not end with a \"/\"."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.u2f.html:23
+msgid "The AppID needs to start with \"https\"."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:22
+msgid ""
+"The Authentication Server is this privacyIDEA server. Note that the\n"
+"        privacyIDEA server needs to be accessible from the users smartphone."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:1
+msgid ""
+"The Certificate Token lets you enroll an x509 ceritificate\n"
+"    by the given CA."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.email.html:2
+msgid ""
+"The EMail token is a challenge response token that sends the OTP value to\n"
+"    the given email address, when the correct OTP PIN was presented by the "
+"user."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.email.html:1
+msgid "The Email Token sends the OTP value to the users email address."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.tiqr.html:7
+msgid "The Enrollment URL"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:43
+#: privacyidea/static/components/token/views/token.enroll.totp.html:42
+msgid "The Google Authenticator only supports an OTP length of 6."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:56
+#: privacyidea/static/components/token/views/token.enroll.totp.html:64
+msgid "The Google Authenticator only supports the SHA1 algorithm."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.hotp.html:2
+msgid ""
+"The HOTP Token is a event based one time password token.\n"
+"    It is described in <a href=\"https://tools.ietf.org/html/rfc4226\">RFC\n"
+"    4226</a>."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:1
+msgid ""
+"The HOTP token is an event based token. You can paste a secret key or\n"
+"    have the server generate the secret and scan the QR code with a "
+"smartphone\n"
+"    app like the Google Authenticator turning your\n"
+"    smartphone into an authentication device."
+msgstr ""
+
+#: privacyidea/static/components/login/views/login.html:79
+msgid ""
+"The HSM is not ready. privacyIDEA can not work properly. Please start\n"
+"        the HSM and reload this page."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.hotp.html:8
+#: privacyidea/static/components/token/views/token.enrolled.motp.html:8
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:7
+msgid "The OTP key"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.paper.html:4
+msgid "The OTP values"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.paper.html:1
+msgid ""
+"The Paper token will let you print a list of OTP values.\n"
+"    These OTP values can be used to authenticate. You need to use on value\n"
+"    after the other."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.question.html:1
+msgid ""
+"The Questionnaire token will let you define answers to questions.\n"
+"    When authenticating with this type of token, you will be asked a random\n"
+"    question and then need to provide the previously defined answer."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.radius.html:1
+msgid ""
+"The RADIUS token forwards the authentication request to another\n"
+"    RADIUS server. You can choose if the PIN should be stripped and\n"
+"    checked locally."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.radius.html:2
+msgid ""
+"The RADIUS token forwards the authentication request to another RADIUS\n"
+"    server."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:78
+msgid ""
+"The RSA keys will be generated in the browser.\n"
+"                You will be taken to a new browser window, where you can\n"
+"                create the Certificate Request. The private key remains in\n"
+"                your browser and you will be able to install the "
+"certificate\n"
+"                to the browser."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:9
+msgid ""
+"The Registration Server is this privacyIDEA server. Note that the\n"
+"        privacyIDEA server needs to be accessible from the users smartphone."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.remote.html:2
+msgid ""
+"The Remote token forwards the authentication request to another\n"
+"    privacyIDEA server."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.sms.html:2
+msgid ""
+"The SMS Token is an event based token. After the user has tried to\n"
+"    authenticate with the OTP PIN, an SMS with an OTP value is sent to the\n"
+"    users mobile phone. Then user can authenticate with this OTP value in a\n"
+"    second step."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.sms.html:1
+msgid "The SMS Token sends an OTP value to the mobile phone of the user."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.sshkey.html:1
+msgid ""
+"The SSH Key Token stores the public SSH Key in the server.\n"
+"    This can be used to authenticate to a secure shell."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.getserial.html:67
+msgid ""
+"The Serial number for the OTP value {{ otp }} is\n"
+"    <a ui-sref=\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.spass.html:1
+msgid ""
+"The Simple Pass Token does not take additional arguments. You only need to\n"
+"    specify a OTP PIN."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.totp.html:2
+msgid ""
+"The TOTP Token is a time based one time password token.\n"
+"    It is described in <a href=\"https://tools.ietf.org/html/rfc6238\">RFC\n"
+"    6238</a>."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.totp.html:1
+msgid ""
+"The TOTP token is a time based token. You can paste a secret key or\n"
+"    have the server generate the secret and scan the QR code with a\n"
+"    smartphone app like the Google Authenticator or FreeOTP turning your\n"
+"    smartphone into an authentication device."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:2
+msgid ""
+"The TiQR Token is an OCRA based Smartphone Token, that can be used to\n"
+"    authenticate by just scanning a QR code."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.tiqr.html:6
+msgid ""
+"The TiQR token is a Smartphone App token, which allows easy\n"
+"    authentication by just scanning a QR Code during the authentication "
+"process."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.u2f.html:2
+msgid ""
+"The U2F token is a hardware token, that communicates with the browser.\n"
+"    You need to set the correct appId, which in fact is the URL of your\n"
+"    privacyIDEA installation."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.u2f.html:1
+msgid ""
+"The U2F token is a token defined by the Fido Alliance.\n"
+"    You can register this token with any webservice and with as many web\n"
+"    services you wish to."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.u2f.html:10
+msgid "The URL of your privacyIDEA installation."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:55
+msgid "The URL that contains the logo of the service."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.yubico.html:1
+msgid ""
+"The Yubico Cloud mode forwards the authentication request to the\n"
+"    YubiCloud. The Yubikey needs to be registered with the YubiCloud."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.yubico.html:2
+msgid ""
+"The Yubico Token is a Yubikey that is registered with the YubiCloud\n"
+"    service. The Yubikey emits a 44 character one time password. The first "
+"12\n"
+"    characters are a unique ID which is used to bind the device to the user."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:1
+msgid ""
+"The Yubikey Token is an USB device that emits an event based One Time\n"
+"    Password. You can initialize the Yubikey using the tool ykpersonalize.\n"
+"    Paste the secret hex key here.\n"
+"    For tokens compatible with the Yubico cloud service check \"emit a "
+"public ID\".\n"
+"    When programming the token the prefix must be 6 bytes, which will give\n"
+"    you a UID with 12 characters.\n"
+"    You also need to choose, if the Yubikey emits the additional UID, which\n"
+"    is either 12 or 16 characters long. You can check this in the test field."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.yubikey.html:7
+msgid ""
+"The authentication request can be handled by the default privacyIDEA\n"
+"    <a href=\"http://privacyidea.readthedocs.org/en/latest/modules/api/"
+"validate.html\">\n"
+"        validate API</a> but can also be handled by the\n"
+"    <a href=\"http://privacyidea.readthedocs.org/en/latest/modules/lib/"
+"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
+"YubikeyTokenClass.api_endpoint\">\n"
+"        Yubico Validation Protocol</a>."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.yubico.html:8
+msgid ""
+"The authentication request is forwarded to the YubiCloud. For accessing\n"
+"    the YubiCloud you need to enter an API Client ID and an API Key, which\n"
+"    you can request <a href=\"https://upgrade.yubico.com/getapikey/\" target="
+"\"_extern\">here</a>."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.certificate.html:1
+msgid "The certificate was enrolled successfully."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:201
+msgid "The challenge validity time"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.yubico.html:20
+msgid "The client ID"
+msgstr ""
+
+#: privacyidea/static/components/login/factories/u2f.js:29
+msgid "The client device can not be used for this type of request."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.motp.html:33
+msgid "The mOTP PIN is the PIN that needs to be entered on the mobile device."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.motp.html:1
+msgid ""
+"The mOTP token is a time based OTP token for mobile devices.\n"
+"    You can\n"
+"    have the server generate the secret and scan the QR code."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.getserial.html:52
+msgid "The number of lookahead OTP values. Default 10."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.lost.html:17
+msgid "The old token is disabled and can be deleted or enabled later."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.lost.html:44
+msgid "The password can not be shown again, later!"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.lost.html:40
+msgid ""
+"The password that needs to be combined with the OTP PIN:\n"
+"        <b>{{ lostResult.password }}</b>"
+msgstr ""
+
+#: privacyidea/static/components/dialogs/views/dialog.about.html:34
+msgid ""
+"The privacyIDEA authentication backend is licensed under the\n"
+"                    AGPLv3.\n"
+"                    Some components may be part to other licenses.\n"
+"                    privacyIDEA was originally forked from LinOTP, which "
+"was\n"
+"                    licensed\n"
+"                    by LSE Leading Security Experts GmbH.\n"
+"                    For detailed information please take a look at the\n"
+"                    <a href=\"http://github.com/privacyidea/privacyidea\" "
+"target=\"github\">backend\n"
+"                        service itself</a>."
+msgstr ""
+
+#: privacyidea/static/app.js:107
+msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.question.html:3
+msgid ""
+"The questionnaire lets you define a set of questions. The questionnaire\n"
+"    token needs to define answers to these questions and the user will be\n"
+"    presented with a random questions and needs to provide his previously\n"
+"    defined answer."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.registration.html:1
+msgid ""
+"The registration token is a code, that the user can use to authenticate "
+"once!\n"
+"    After using this code to login, the registration token is deleted and "
+"can\n"
+"    not be used anymore."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.remote.html:20
+msgid "The remote Server URL"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.remote.html:1
+msgid ""
+"The remote token forwards the authentication request to another\n"
+"    privacyIDEA server. You can choose if the PIN should be stripped and\n"
+"    checked locally."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.4eyes.html:15
+msgid ""
+"The separator that is used to separate the passwords of the\n"
+"        different tokens."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.remote.html:27
+msgid "The serial number on the remote server"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.lost.html:34
+msgid ""
+"The serial of the new token is\n"
+"        <a ui-sref=\"token.details({tokenSerial:lostResult.serial})\">\n"
+"        {{ lostResult.serial }}</a>."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:19
+#: privacyidea/static/components/token/views/token.enroll.totp.html:18
+msgid ""
+"The server will create the OTP key\n"
+"            and a QR Code\n"
+"            will be\n"
+"            displayed to you to be scanned."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:67
+msgid ""
+"The server will create the private RSA key and store it in\n"
+"                    the\n"
+"                    database. If want to create the key pair client side,\n"
+"                    uncheck\n"
+"                    this option."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.motp.html:14
+msgid ""
+"The server will create the secret key\n"
+"            and a QR Code\n"
+"            will be\n"
+"            displayed to you to be scanned with the Token2 app."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.email.html:20
+msgid ""
+"The time in seconds for which the sent OTP value is valid for\n"
+"        authentication."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.u2f.html:25
+msgid "The token is enrolled."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.lost.html:48
+msgid "The token is valid till {{ lostResult.end_date }}."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.lost.html:30
+msgid "The token was marked lost successfully."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.html:118
+msgid ""
+"The token was successfully enrolled with serial number\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
+"serial})\">\n"
+"                {{ enrolledToken.serial }}</a>\n"
+"            for user\n"
+"            <a ui-sref=\"user.details({username:newUser.user, realmname:"
+"newUser.realm})\">{{ newUser.user }}</a> in realm\n"
+"            {{ newUser.realm }}."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.html:127
+msgid ""
+"The token was successfully enrolled with serial number\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
+"serial})\">\n"
+"                {{ enrolledToken.serial }}</a>."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:96
+msgid ""
+"The user data in this database can be modified from within\n"
+"                    privacyIDEA."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:118
+msgid ""
+"The user data in this database can be modified from within\n"
+"                privacyIDEA."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.lost.html:12
+msgid ""
+"The user will have to authenticate with the old OTP PIN he knows and this\n"
+"    newly generated password."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.radius.html:52
+msgid "The username on the RADIUS server"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.remote.html:39
+msgid "The username on the remote server"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.question.html:23
+msgid "These are the possible questions, a user may define answers to."
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.add.html:17
+msgid ""
+"These are the resolvers marked as editable. You can add\n"
+"                        a user\n"
+"                        to the resolver. The user will appear in the "
+"realms,\n"
+"                        that\n"
+"                        contain this resolver."
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.stats.html:20
+msgid ""
+"These are the validate-requests (authentication) grouped by\n"
+"                users.\n"
+"                The successful and the failed requests are listed."
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.stats.html:32
+msgid ""
+"These are the validate-requests (authentication) grouped by the\n"
+"                serial number of the token.\n"
+"                The successful and the failed requests are listed."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:124
+msgid ""
+"These client IP addresses or subnets are\n"
+"                    allowed to masquerade as another client."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:42
+msgid ""
+"This documentation contains the current\n"
+"            configuration of your system in restructured text. You can use\n"
+"            this to document your installed system."
+msgstr ""
+
+#: privacyidea/static/components/dialogs/views/dialog.about.html:18
+msgid ""
+"This is a Single Page Application client that acts as a\n"
+"                        frontend for\n"
+"                        privacyIDEA authentication backend."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.yubikey.html:2
+msgid ""
+"This is a Yubikey in the Yubico Mode authenticated against privacyIDEA.\n"
+"    The Yubikey emits a 44 character on time password."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.import.html:58
+msgid ""
+"This is an RFC6030 OATH compliant PSKC file.\n"
+"            Values in the PSKC files may be unencrypted or\n"
+"            <em>either</em> encrypted with a\n"
+"            <em>Pre Shared Key</em> or <em>password</em>. If the values are\n"
+"            encrypted, please specify the Pre Shared Key in hex format or "
+"the\n"
+"            password."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:67
+msgid ""
+"This is the OCRA suite used by the TiQR App.\n"
+"        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.\n"
+"        For more details see the\n"
+"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA"
+"\">RFC\n"
+"            6287</a>."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:33
+msgid "This is the display name of your service in the TiQR app."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:55
+msgid ""
+"This is the email address of the\n"
+"                sender. Usually this should be an email address identifying\n"
+"                your system."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.question.html:12
+msgid "This is the number of answers a user needs to define to enroll a token."
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.stats.html:78
+msgid ""
+"This is the overall token usage with\n"
+"                any\n"
+"                kind of action in regards to the serial number."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:43
+msgid ""
+"This is the service identifier that will be passed to the TiQR app.\n"
+"        This should contain a reverse FQDN (defaults to org.privacyidea)."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.radius.edit.html:21
+msgid ""
+"This is the unique identifying name\n"
+"                of the RADIUS server definition."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:21
+msgid ""
+"This is the unique identifying name\n"
+"                of the SMTP server definition."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.radius.html:46
+msgid ""
+"This is the username that is sent\n"
+"        to the RADIUS server. It can be different from the owner of this\n"
+"        RADIUS token."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.registration.html:6
+msgid ""
+"This is used, so that the user can enroll a token on his own, after\n"
+"    logging in for the first time."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.u2f.html:13
+msgid ""
+"This must be a valid FQDN with also a valid top level domain -\n"
+"        otherwise you might receive a U2F Error 2 (Bad Request)."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.radius.html:13
+msgid "This view will be removed in version 2.12."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:21
+msgid "TiQR Authentication Server"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:54
+msgid "TiQR Logo URL"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:8
+msgid "TiQR Registration Server"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:41
+msgid ""
+"TiQR Service\n"
+"        Identifier"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:32
+msgid "TiQR Service Displayname"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.tiqr.html:1
+msgid "TiQR Token settings"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:171
+msgid "TiQR: Authenticate with Smartphone by scanning a QR code."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.sms.html:21
+msgid "Timeout"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:79
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:91
+msgid "Timeout (seconds)"
+msgstr ""
+
+#: privacyidea/static/components/login/factories/u2f.js:31
+msgid "Timeout while waiting for signing response."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.totp.html:48
+msgid "Timestep"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:110
+msgid "Tine 2.0"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.radius.html:9
+msgid ""
+"To ease the enrolling of RADIUS tokens you can\n"
+"    set default values in the\n"
+"    <a ui-sref=\"config.tokens({tokentype:'radius'})\">RADIUS Token Config</"
+"a>."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.getserial.html:21
+msgid "Token Type"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.4eyes.html:7
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:6
+#: privacyidea/static/components/token/views/token.enroll.email.html:5
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:10
+#: privacyidea/static/components/token/views/token.enroll.motp.html:7
+#: privacyidea/static/components/token/views/token.enroll.radius.html:7
+#: privacyidea/static/components/token/views/token.enroll.remote.html:7
+#: privacyidea/static/components/token/views/token.enroll.sms.html:5
+#: privacyidea/static/components/token/views/token.enroll.sshkey.html:6
+#: privacyidea/static/components/token/views/token.enroll.totp.html:8
+#: privacyidea/static/components/token/views/token.enroll.yubico.html:6
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:12
+msgid "Token data"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:1
+msgid "Token details for {{ tokenSerial }}"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.u2f.html:4
+msgid "Token enrolled"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.html:34
+msgid "Token enrollment wizard"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:165
+msgid "Token resync failed."
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:162
+msgid "Token resync successful."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.lost.html:2
+msgid "Token {{ selectedToken.serial }} is Lost!"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.html:35
+#: privacyidea/static/templates/menu.html:20
+msgid "Tokens"
+msgstr ""
+
+#: privacyidea/static/components/machine/views/machine.details.html:34
+msgid "Tokens and Applications for machine {{ machineid }}"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.details.html:113
+msgid "Tokens for user {{ username }}"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.challenges.html:1
+msgid "Total Challenges:"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.challenges.html:36
+msgid "Transaction ID"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:10
+msgid "Type"
+msgstr ""
+
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:18
+#: privacyidea/static/components/directives/views/directive.assignuser.html:27
+#: privacyidea/static/components/recovery/views/recovery.reset.html:14
+#: privacyidea/static/components/token/views/token.enroll.html:45
+#: privacyidea/static/components/token/views/token.enroll.motp.html:39
+#: privacyidea/static/components/user/views/user.password.html:54
+msgid "Type a password"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:116
+msgid "Typo3"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.u2f.html:1
+msgid "U2F Token settings"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:173
+msgid "U2F: Universal 2nd Factor hardware token."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:200
+msgid "UID Type"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:405
+msgid "Unassign Token"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:378
+msgid "Unassign User"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:22
+msgid "Upload Certificate"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:17
+msgid "Upload Request"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.import.html:104
+msgid "Uploaded File: {{ uploadedFile }}"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.import.html:107
+msgid "Uploaded Tokens: {{ uploadedTokens }}"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.system.html:59
+msgid ""
+"Use @ sign to split the username\n"
+"                and the realm."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:103
+msgid "Use TLS"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.details.html:248
+#: privacyidea/static/components/config/views/config.policies.list.html:10
+#: privacyidea/static/components/config/views/config.radius.edit.html:79
+#: privacyidea/static/templates/menu.html:36
+msgid "User"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:177
+msgid "User Filter"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:395
+msgid "User Id"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.list.html:68
+msgid "User Store"
+msgstr ""
+
+#: privacyidea/static/components/register/controllers/registerControllers.js:15
+msgid "User account created. An Email has been sent to you."
+msgstr ""
+
+#: privacyidea/static/components/user/controllers/userControllers.js:44
+msgid "User created."
+msgstr ""
+
+#: privacyidea/static/components/user/controllers/userControllers.js:147
+msgid "User deleted successfully."
+msgstr ""
+
+#: privacyidea/static/components/user/controllers/userControllers.js:129
+msgid "User updated successfully."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.details.html:216
+msgid "User-Realm"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.details.html:231
+msgid "User-Resolver"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.list.html:58
+msgid "UserId"
+msgstr ""
+
+#: privacyidea/static/components/directives/views/directive.assignuser.html:14
+#: privacyidea/static/components/login/views/login.html:42
+#: privacyidea/static/components/login/views/login.html:46
+#: privacyidea/static/components/recovery/views/recovery.html:18
+#: privacyidea/static/components/recovery/views/recovery.html:22
+#: privacyidea/static/components/register/views/register.html:18
+#: privacyidea/static/components/register/views/register.html:22
+#: privacyidea/static/components/token/views/token.details.html:369
+#: privacyidea/static/components/user/views/user.add.html:28
+#: privacyidea/static/components/user/views/user.details.html:24
+#: privacyidea/static/components/user/views/user.password.html:6
+msgid "Username"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:63
+msgid "Usernane"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.html:47
+#: privacyidea/static/templates/menu.html:27
+msgid "Users"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.details.html:274
+msgid "Valid time"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.stats.html:30
+msgid "Validate Requests per token"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.stats.html:18
+msgid "Validate Requests per users"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:195
+#: privacyidea/static/components/token/views/token.enroll.html:77
+msgid "Validity End"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:174
+#: privacyidea/static/components/token/views/token.enroll.html:56
+msgid "Validity Start"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.remote.html:13
+msgid "Verify SSL certificate"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:3
+#: privacyidea/static/components/token/views/token.lost.html:4
+msgid "View token in Audit log"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.details.html:17
+msgid "View user in Audit log"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:157
+msgid "Where statement"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.stats.html:67
+msgid "Which administrative request where the most popular."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:104
+msgid "Wordpress"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:65
+msgid "Working Directory"
+msgstr ""
+
+#: privacyidea/static/components/login/views/login.html:8
+msgid ""
+"You are authenticated by the web server as user\n"
+"                <b>{{ remoteUser }}</b>.\n"
+"                You may login as this user to privacyIDEA without any "
+"further\n"
+"                credentials."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.import.html:81
+msgid ""
+"You can choose a realm to which the tokens should be imported.\n"
+"            You can also change the realms of each token later."
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.add.html:84
+msgid ""
+"You have no editable resolvers defined. So you can not write\n"
+"                to any user store. If you want to add users, you need to\n"
+"                <a ui-sref=\"config.resolvers.list\">define an editable\n"
+"                    resolver</a>\n"
+"                 (like SQLResolver) and check the\n"
+"                box \"Edit user store\"."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.registration.html:7
+msgid "You may pass this registration code to the user."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.u2f.html:19
+msgid ""
+"You need to confirm the registration with your token\n"
+"                    either by pushing the blinking button or by\n"
+"                    replugging your token. This depends on the actual\n"
+"                    token model."
+msgstr ""
+
+#: privacyidea/static/templates/menu.html:109
+msgid "You will be logged out in {{ myCountdown }} second(s)."
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.html:12
+#: privacyidea/static/components/user/views/user.password.html:2
+msgid "Your details"
+msgstr ""
+
+#: privacyidea/static/components/recovery/controllers/recoveryControllers.js:28
+msgid "Your password has been reset successfully."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.yubico.html:1
+msgid "Yubico Token settings"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.yubico.html:34
+msgid "Yubico URL"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:155
+msgid "Yubikey AES mode: One Time Passwords with Yubikey"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:159
+msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.yubico.html:14
+msgid "Yubikey Identifier"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.yubikey.html:1
+msgid "Yubikey Token settings"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:26
+msgid "action"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:34
+msgid "action detail"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:25
+#: privacyidea/static/components/token/views/token.list.html:32
+#: privacyidea/static/components/token/views/token.list.html:86
+msgid "active"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:46
+msgid "administrator"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.getserial.html:44
+msgid "an optional serial substring"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.token.u2f.html:9
+msgid "appId"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:136
+msgid "certificate"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:59
+msgid "clearance"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:55
+msgid "client"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:25
+msgid "date"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.list.html:39
+#: privacyidea/static/components/user/views/user.details.html:129
+#: privacyidea/static/components/user/views/user.list.html:29
+msgid "description"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:28
+#: privacyidea/static/components/token/views/token.list.html:89
+msgid "disabled"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.list.html:23
+msgid "email"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:27
+msgid "emit a public UID"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.getserial.html:17
+msgid "enter some OTP value"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.list.html:48
+#: privacyidea/static/components/user/views/user.details.html:130
+msgid "failcounter"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.list.html:19
+msgid "givenname"
+msgstr ""
+
+#: privacyidea/static/components/machine/views/machine.list.html:15
+msgid "hostname"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.list.html:30
+msgid "id"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:56
+msgid "info"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:31
+msgid "locked"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:60
+msgid "log level"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.motp.html:32
+msgid "mOTP PIN"
+msgstr ""
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:153
+msgid "mOTP: classical mobile One Time Passwords"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.details.html:131
+msgid "maxfail"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:58
+msgid "missing_line"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.list.html:28
+msgid "mobile"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.realms.list.html:92
+msgid "new realm"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:24
+msgid "number"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.details.html:132
+msgid "otplen"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.list.html:27
+msgid "phone"
+msgstr ""
+
+#: privacyidea/static/components/dialogs/views/dialog.about.html:16
+msgid "privacyIDEA Single Page Web Client"
+msgstr ""
+
+#: privacyidea/static/components/login/controllers/loginControllers.js:254
+msgid "privacyIDEA UI supports hotkeys. Use '?' to get help."
+msgstr ""
+
+#: privacyidea/static/components/dialogs/views/dialog.about.html:33
+msgid "privacyIDEA authentication backend"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:61
+msgid "privacyidea server"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:54
+#: privacyidea/static/components/token/views/token.list.html:55
+msgid "realm"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.realms.list.html:7
+msgid "resolvers"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:33
+msgid "revoked"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:38
+#: privacyidea/static/components/token/views/token.challenges.html:28
+#: privacyidea/static/components/token/views/token.list.html:16
+#: privacyidea/static/components/user/views/user.details.html:125
+msgid "serial"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.import.html:38
+msgid "serial number, seed, type, ocrasuite"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.import.html:30
+msgid "serial number, seed, type, otplen, timeStep"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.realms.list.html:15
+msgid "set Default"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.password.html:65
+msgid "set password"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:57
+msgid "sig_check"
+msgstr ""
+
+#: privacyidea/static/components/directives/views/directive.attachmachine.html:7
+msgid "start typing a machine."
+msgstr ""
+
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:7
+msgid "start typing a serial number of a token that is notassigned, yet."
+msgstr ""
+
+#: privacyidea/static/components/directives/views/directive.attachtoken.html:7
+msgid "start typing a serial number of a token."
+msgstr ""
+
+#: privacyidea/static/components/directives/views/directive.assignuser.html:16
+msgid "start typing a username"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:30
+msgid "success"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.list.html:15
+msgid "surname"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.challenges.html:22
+msgid "timestamp"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:42
+msgid "token type"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.html:87
+msgid "total tokens: {{ tokendata.count }}"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.html:49
+msgid "total users: {{ usercount }}"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.list.html:6
+#: privacyidea/static/components/config/views/config.mresolvers.list.html:6
+#: privacyidea/static/components/config/views/config.resolvers.list.html:6
+#: privacyidea/static/components/token/views/token.list.html:24
+#: privacyidea/static/components/user/views/user.details.html:126
+msgid "type"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.import.html:41
+msgid ""
+"type (default hotp), otplen (default 6), timeStep (default 30) and\n"
+"            ocrasuite are optional."
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:50
+#: privacyidea/static/components/token/views/token.list.html:54
+msgid "user"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.list.html:11
+msgid "username"
+msgstr ""
+
+#: privacyidea/static/components/user/views/user.details.html:128
+msgid "window"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.log.html:18
+msgid "{{ auditdata.count }} entries found."
+msgstr ""
