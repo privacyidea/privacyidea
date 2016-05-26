@@ -1,0 +1,51 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+#
+#  2016-05-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#
+"""
+This script reads the .google_authenticator files from all users in their
+home directories and compiles an import file.
+"""
+import binascii
+import base64
+import os
+import sys
+
+tokens = []
+num_tokens = 0
+for user in os.listdir("/home/"):
+    token_type = None
+    try:
+        num_tokens += 1
+        f = open("/home/" + user + "/.google_authenticator")
+        ga = f.readlines()
+        f.close()
+        seed = ga[0]
+        seed_hex = binascii.hexlify(base64.b32decode(seed.strip()))
+        for line in ga:
+            if line.startswith('" TOTP_AUTH'):
+                token_type = "totp"
+            elif line.startswith('" HOTP_COUNTER'):
+                token_type = "hotp"
+        sys.stderr.write("++ Processing user {0}\n".format(user))
+        if token_type == "totp":
+            print("totp{counter:04d}{user}, {seed}, totp, 6, 30".format(
+                counter=num_tokens,
+                user=user,
+                seed=seed_hex
+            ))
+        elif token_type == "hotp":
+            print("hotp{counter:04d}{user}, {seed}, hotp, 6".format(
+                counter=num_tokens,
+                user=user,
+                seed=seed_hex
+            ))
+
+        else:
+            sys.stderr.write("--- Only TOTP Token suppported at the moment!\n")
+    except IOError:
+        sys.stderr.write("-- Nothing for user {0}\n".format(user))
+
+
+

@@ -20,3 +20,4 @@ For further details see the following modules:
    lib/policy
    lib/apipolicy
    lib/policydecorator
+   lib/eventhandler

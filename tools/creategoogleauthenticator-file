@@ -1,0 +1,34 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+#
+#  2016-05-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#
+"""
+This script creates a .google-authenticator file from the given hex seed
+"""
+import binascii
+import base64
+import sys
+import random
+import string
+
+seed_hex = sys.stdin.read().strip()
+seed = base64.b32encode(binascii.unhexlify(seed_hex))
+
+emergency = []
+
+for _ in range(5):
+    emergency.append(''.join(random.choice(string.digits) for _ in range(8)))
+
+print """{seed}
+" RATE_LIMIT 3 30
+" WINDOW_SIZE 17
+" DISALLOW_REUSE
+" TOTP_AUTH
+" TIME_STEP_SIZE 60
+{emergency[0]}
+{emergency[1]}
+{emergency[2]}
+{emergency[3]}
+{emergency[4]}
+""".format(seed=seed, emergency=emergency)
