@@ -378,14 +378,7 @@ class TotpTokenClass(HotpTokenClass):
         :rtype:  int
         """
         res = -1
-        autosync = False
-
-        async = get_from_config("AutoResync")
-        if async is None:
-            autosync = False
-        elif "true" == async.lower():
-            autosync = True
-
+        autosync = get_from_config("AutoResync", False, return_bool=True)
         # if _autosync is not enabled: do nothing
         if autosync is False:
             return res

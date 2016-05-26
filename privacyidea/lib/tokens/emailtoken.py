@@ -394,7 +394,8 @@ class EmailTokenClass(HotpTokenClass):
             username = get_from_config("email.username")
             password = get_from_config("email.password")
             mail_from = get_from_config("email.mailfrom", "privacyidea@localhost")
-            email_tls = get_from_config("email.tls")
+            email_tls = get_from_config("email.tls", default=False,
+                                        return_bool=True)
             ret = send_email_data(mailserver, subject, message, mail_from,
                                   recipient, username, password, port,
                                   email_tls)

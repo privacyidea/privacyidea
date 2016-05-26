@@ -248,7 +248,7 @@ class RemoteTokenClass(TokenClass):
         remoteResolver = remoteResolver.encode('utf-8')
 
         ssl_verify = get_from_config("remote.verify_ssl_certificate",
-                                        False) or False
+                                     False, return_bool=True) or False
 
         if type(ssl_verify) in [str, unicode]:
             if ssl_verify.lower() in ["true", "1"]:

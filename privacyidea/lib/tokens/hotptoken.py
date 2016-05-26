@@ -324,9 +324,9 @@ class HotpTokenClass(TokenClass):
                            self.get_hashlib(self.hashlib))
         res = hmac2Otp.checkOtp(anOtpVal, window)
 
-        if -1 == res:
+        if res == -1:
             res = self._autosync(hmac2Otp, anOtpVal)
-        else:
+        if res != -1:
             # on success, we save the counter
             self.set_otp_count(res + 1)
             # We could also store it temporarily
@@ -403,16 +403,8 @@ class HotpTokenClass(TokenClass):
         :rtype:  int
         """
         res = -1
-        autosync = False
-
         # get _autosync from config or use False as default
-        async = get_from_config("AutoResync", False)
-        # The SQLite database returns AutoResync as a boolean and not as a
-        # string. So the boolean has no .lower()
-        if isinstance(async, bool):
-            autosync = async
-        elif async.lower() == "true":
-            autosync = True
+        autosync = get_from_config("AutoResync", False, return_bool=True)
 
         # if _autosync is not enabled
         if autosync is False:

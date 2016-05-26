@@ -61,7 +61,7 @@ def get_privacyidea_config():
 
 @log_with(log)
 #@cache.memoize(1)
-def get_from_config(key=None, default=None, role="admin"):
+def get_from_config(key=None, default=None, role="admin", return_bool=False):
     """
     :param key: A key to retrieve
     :type key: string
@@ -70,7 +70,9 @@ def get_from_config(key=None, default=None, role="admin"):
         "admin" or "public". If "public", only values with type="public"
         are returned.
     :type role: string
-    :return: If key is None, then a dictionary is returned. I a certain key
+    :param return_bool: If the a boolean value should be returned. Returns
+        True if value is "True", "true", 1, "1", True...
+    :return: If key is None, then a dictionary is returned. If a certain key
         is given a string/bool is returned.
     """
     default_true_keys = ["PrependPin", "splitAtSign",
@@ -105,6 +107,14 @@ def get_from_config(key=None, default=None, role="admin"):
             for tkey in default_true_keys:
                 if tkey not in rvalue:
                     rvalue[tkey] = "True"
+
+    if return_bool:
+        if isinstance(rvalue, bool):
+            pass
+        if isinstance(rvalue, int):
+            rvalue = rvalue > 0
+        if isinstance(rvalue, basestring):
+            rvalue = rvalue.lower() in ["true", "1"]
 
     return rvalue
 
@@ -698,9 +708,8 @@ def get_inc_fail_count_on_false_pin():
     :return: True of False
     :rtype: bool
     """
-    r = get_from_config(key="IncFailCountOnFalsePin")
-    # The values are strings, so we need to compare:
-    r = (r.lower() == "true" or r == "1")
+    r = get_from_config(key="IncFailCountOnFalsePin",
+                        default=False, return_bool=True)
     return r
 
 
@@ -712,9 +721,7 @@ def get_prepend_pin():
     :return: True or False
     :rtype: bool
     """
-    r = get_from_config(key="PrependPin")
-    # The values are strings, so we need to compare:
-    r = (r.lower() == "true" or r == "1")
+    r = get_from_config(key="PrependPin", default=False, return_bool=True)
     return r
 
 
@@ -728,6 +735,6 @@ def set_prepend_pin(prepend=True):
 
 
 def return_saml_attributes():
-    r = get_from_config(key="ReturnSamlAttributes", default="true")
-    r = (r.lower() == "true" or r == "1")
+    r = get_from_config(key="ReturnSamlAttributes", default= False,
+                        return_bool=True)
     return r

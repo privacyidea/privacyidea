@@ -559,6 +559,11 @@ class HOTPTokenTestCase(MyTestCase):
         # counter = 9, will be autosynced.
         r = token.check_otp(anOtpVal="520489")
         self.assertTrue(r == 9, r)
+        # counter = 10, has also to authenticate! The counter of the token is
+        #  set.
+        r = token.check_otp(anOtpVal="403154")
+        self.assertTrue(r == 10, r)
+        self.assertEqual(token.token.count, 11)
 
         # Autosync with a gap in the next otp value will fail
         token.token.count = 0
@@ -667,6 +672,7 @@ class HOTPTokenTestCase(MyTestCase):
         7         4e5b397         82162583     162583
         8        2823443f        673399871     399871
         9        2679dc69        645520489     520489
+        10                                     403154
         """
         r = token.check_otp("969429")
         self.assertEqual(r, 3)
