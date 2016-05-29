@@ -310,7 +310,7 @@ class User(object):
                                   "resolver %r" % (key, self.resolver))
         return Realms
     
-    @log_with(log)
+    @log_with(log, log_entry=False)
     def check_password(self, password):
         """
         The password of the user is checked against the user source
@@ -371,8 +371,9 @@ class User(object):
     
         return searchFields
 
-    @log_with(log)
-    def update_user_info(self, attributes):
+    # If passwords should not be logged, we hide it from the log entry
+    @log_with(log, hide_kwargs=["password"])
+    def update_user_info(self, attributes, password=None):
         """
         This updates the given attributes of a user.
         The attributes can be "username", "surname", "givenname", "email",
@@ -380,8 +381,11 @@ class User(object):
 
         :param attributes: A dictionary of the attributes to be updated
         :type attributes: dict
+        :param password: The password of the user
         :return: True in case of success
         """
+        if password is not None:
+            attributes["password"] = password
         success = False
         try:
             log.info("User info for user {0!s}@{1!s} about to be updated.".format(self.login, self.realm))
@@ -451,8 +455,9 @@ class User(object):
 
 ####################################################################
 
-@log_with(log)
-def create_user(resolvername, attributes):
+@log_with(log,
+          hide_kwargs=["password"])
+def create_user(resolvername, attributes, password=None):
     """
     This creates a new user in the given resolver. The resolver must be
     editable to do so.
@@ -469,8 +474,11 @@ def create_user(resolvername, attributes):
     :type resolvername: basestring
     :param attributes: Attributes of the user
     :type attributes: dict
+    :param password: The password of the user
     :return: The uid of the user object
     """
+    if password is not None:
+        attributes["password"] = password
     y = get_resolver_object(resolvername)
     uid = y.add_user(attributes)
     return uid

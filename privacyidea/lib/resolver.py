@@ -59,7 +59,8 @@ from privacyidea.lib.utils import sanity_name_check
 log = logging.getLogger(__name__)
 
 
-@log_with(log)
+# Hide the keyswords BINDPW and Password in params
+@log_with(log, hide_args_keywords={0: ["BINDPW", "Password"]})
 def save_resolver(params):
     """
     create a new resolver from request parameters
@@ -159,7 +160,7 @@ def save_resolver(params):
     return resolver_id
 
 
-@log_with(log)
+@log_with(log, log_exit=False)
 #@cache.memoize(10)
 def get_resolver_list(filter_resolver_type=None,
                       filter_resolver_name=None,
@@ -234,7 +235,7 @@ def delete_resolver(resolvername):
     return ret
 
 
-@log_with(log)
+@log_with(log, log_exit=False)
 #@cache.memoize(10)
 def get_resolver_config(resolvername):
     """

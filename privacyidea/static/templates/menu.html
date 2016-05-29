@@ -1,3 +1,14 @@
+<div class="alert alert-warning" role="alert"
+    ng-show="backend_log_level === 10" translate>
+    privacyIDEA is running in DEBUG mode. You can change the debug level in
+    pi.cfg.
+</div>
+<div class="alert alert-danger" role="alert"
+    ng-show="backend_log_level < 10" translate>
+    privacyIDEA is running in DEBUG mode with PASSWORDS being written to the
+    log file. You can change the debug level in
+    pi.cfg. Afterwards be sure to remove the logfile!
+</div>
 <div class="navbar navbar-default navbar-fixed-top">
     <div class="container">
         <a class="navbar-brand" ui-sref="token.list">privacyIDEA</a>

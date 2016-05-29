@@ -28,6 +28,7 @@ from logging import Formatter
 import string
 import logging
 import functools
+from copy import deepcopy
 log = logging.getLogger(__name__)
 
 
@@ -92,10 +93,33 @@ class log_with(object):
     ENTRY_MESSAGE = u'Entering {0} with arguments {1} and keywords {2}'
     EXIT_MESSAGE = 'Exiting {0} with result {1}'
     
-    def __init__(self, logger=None, log_entry=True, log_exit=True):
+    def __init__(self, logger=None, log_entry=True, log_exit=True,
+                 hide_args=None, hide_kwargs=None,
+                 hide_args_keywords=None):
+        """
+        Write the paramters and the result of the function to the log.
+
+        :param logger: The logger object.
+        :param log_entry: Whether the function parameters should be logged
+        :type log_entry: bool
+        :param log_exit: Whether the result of the function should be logged
+        :type log_exit: bool
+        :param hide_args: List of parameters, which should be hidden in the
+            log entries. This is a list of parameter indices.
+        :type hide_args: list of int
+        :param hide_kwargs: list of key word arguments, that should be hidden
+            from the log entry.
+        :type hide_kwargs: list of keywords
+        :param hide_args_keys: Hide the keywords in positional arguments,
+            if the positional argument is a dict
+        :type hide_args_keywords: dict
+        """
         self.logger = logger
         self.log_exit = log_exit
         self.log_entry = log_entry
+        self.hide_args = hide_args or []
+        self.hide_kwargs = hide_kwargs or []
+        self.hide_args_keywords = hide_args_keywords or {}
 
     def __call__(self, func):
         """
@@ -113,11 +137,42 @@ class log_with(object):
             
         @functools.wraps(func)
         def log_wrapper(*args, **kwds):
+            """
+            Wrap the function in log entries. The entry of the function and
+            the exit of the function is logged.
+
+            :param args: The positional arguments starting with index
+            :param kwds: The keyword arguemnts
+            :return: The wrapped function
+            """
+            try:
+                # Hide specific arguments or keyword arguments
+                log_args = deepcopy(args)
+                log_kwds = deepcopy(kwds)
+                level = self.logger.getEffectiveLevel()
+                # Check if we should not do the password logging.
+                # I.e. we only do password logging if log_level < 10.
+                if level != 0 and level >= 10:
+                    for arg_index in self.hide_args:
+                        log_args[arg_index] = "HIDDEN"
+                    for keyword in self.hide_kwargs:
+                        log_kwds[keyword] = "HIDDEN"
+                    for k, v in self.hide_args_keywords.items():
+                        for keyword in v:
+                            if keyword in args[k]:
+                                log_args[k][keyword] = "HIDDEN"
+            except Exception:
+                # Probably the deepcopy fails, due to special objects in the
+                # args
+                log_args = args
+                log_kwds = kwds
             try:
                 if self.log_entry:
-                    self.logger.debug(self.ENTRY_MESSAGE.format(func.__name__, args, kwds))
+                    self.logger.debug(self.ENTRY_MESSAGE.format(
+                        func.__name__, log_args, log_kwds))
                 else:
-                    self.logger.debug(self.ENTRY_MESSAGE.format(func.__name__, "HIDDEN", "HIDDEN"))
+                    self.logger.debug(self.ENTRY_MESSAGE.format(
+                        func.__name__, "HIDDEN", "HIDDEN"))
             except Exception as exx:
                 self.logger.error(exx)
                 self.logger.error("Error during logging of function {0}! {1}".format(func.__name__, exx))

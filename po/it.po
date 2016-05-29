@@ -186,7 +186,7 @@ msgstr ""
 msgid "Attribute mapping"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:59
+#: privacyidea/static/templates/menu.html:70
 msgid "Audit"
 msgstr ""
 
@@ -346,7 +346,7 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:91
+#: privacyidea/static/templates/menu.html:102
 msgid "Community"
 msgstr ""
 
@@ -355,7 +355,7 @@ msgstr ""
 msgid "Condition"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:51
+#: privacyidea/static/templates/menu.html:62
 msgid "Config"
 msgstr ""
 
@@ -1131,7 +1131,7 @@ msgstr ""
 msgid "Log out"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:70
+#: privacyidea/static/templates/menu.html:81
 msgid "Login"
 msgstr ""
 
@@ -1146,7 +1146,7 @@ msgid "Login with credentials"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.html:153
-#: privacyidea/static/templates/menu.html:98
+#: privacyidea/static/templates/menu.html:109
 msgid "Logout"
 msgstr ""
 
@@ -1177,7 +1177,7 @@ msgid "Machine Resolver"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.html:40
-#: privacyidea/static/templates/menu.html:44
+#: privacyidea/static/templates/menu.html:55
 msgid "Machines"
 msgstr ""
 
@@ -1349,7 +1349,7 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/templates/index.html:38
-#: privacyidea/static/templates/menu.html:88
+#: privacyidea/static/templates/menu.html:99
 msgid "Online Documentation"
 msgstr ""
 
@@ -1576,7 +1576,7 @@ msgstr ""
 msgid "Realm"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:301
+#: privacyidea/static/components/login/controllers/loginControllers.js:303
 msgid "Realm defrealm created."
 msgstr ""
 
@@ -1603,7 +1603,7 @@ msgstr ""
 
 #: privacyidea/static/components/register/views/register.html:14
 #: privacyidea/static/components/register/views/register.html:87
-#: privacyidea/static/templates/menu.html:66
+#: privacyidea/static/templates/menu.html:77
 msgid "Register"
 msgstr ""
 
@@ -1931,7 +1931,7 @@ msgid "Successfully authenticated."
 msgstr ""
 
 #: privacyidea/static/templates/index.html:28
-#: privacyidea/static/templates/menu.html:93
+#: privacyidea/static/templates/menu.html:104
 msgid "Support"
 msgstr ""
 
@@ -2715,7 +2715,7 @@ msgid "Token {{ selectedToken.serial }} is Lost!"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.html:35
-#: privacyidea/static/templates/menu.html:20
+#: privacyidea/static/templates/menu.html:31
 msgid "Tokens"
 msgstr ""
 
@@ -2801,7 +2801,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.details.html:248
 #: privacyidea/static/components/config/views/config.policies.list.html:10
 #: privacyidea/static/components/config/views/config.radius.edit.html:79
-#: privacyidea/static/templates/menu.html:36
+#: privacyidea/static/templates/menu.html:47
 msgid "User"
 msgstr ""
 
@@ -2864,7 +2864,7 @@ msgid "Usernane"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.html:47
-#: privacyidea/static/templates/menu.html:27
+#: privacyidea/static/templates/menu.html:38
 msgid "Users"
 msgstr ""
 
@@ -2956,7 +2956,7 @@ msgid ""
 "                    token model."
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:109
+#: privacyidea/static/templates/menu.html:120
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr ""
 
@@ -3127,12 +3127,25 @@ msgstr ""
 msgid "privacyIDEA Single Page Web Client"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:254
+#: privacyidea/static/components/login/controllers/loginControllers.js:256
 msgid "privacyIDEA UI supports hotkeys. Use '?' to get help."
 msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:33
 msgid "privacyIDEA authentication backend"
+msgstr ""
+
+#: privacyidea/static/templates/menu.html:6
+msgid ""
+"privacyIDEA is running in DEBUG mode with PASSWORDS being written to the\n"
+"    log file. You can change the debug level in\n"
+"    pi.cfg. Afterwards be sure to remove the logfile!"
+msgstr ""
+
+#: privacyidea/static/templates/menu.html:1
+msgid ""
+"privacyIDEA is running in DEBUG mode. You can change the debug level in\n"
+"    pi.cfg."
 msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.log.html:61

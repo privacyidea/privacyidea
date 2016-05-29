@@ -271,6 +271,9 @@ def get_auth_token():
         nonce = binascii.hexlify(os.urandom(20))
         rights = []
 
+    # What is the log level?
+    log_level = current_app.config.get("PI_LOGLEVEL", 30)
+
     token = jwt.encode({"username": loginname,
                         "realm": realm,
                         "nonce": nonce,
@@ -286,6 +289,7 @@ def get_auth_token():
                         "role": role,
                         "username": loginname,
                         "realm": realm,
+                        "log_level": log_level,
                         "rights": rights})
 
 

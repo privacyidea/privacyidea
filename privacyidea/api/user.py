@@ -162,7 +162,11 @@ def create_user_api():
     attributes = _get_attributes_from_param(request.all_data)
     username = getParam(request.all_data, "user", optional=False)
     resolvername = getParam(request.all_data, "resolver", optional=False)
-    r = create_user(resolvername, attributes)
+    # Remove the password from the attributes, so that we can hide it in the
+    # logs
+    password = attributes.get("password")
+    del attributes["password"]
+    r = create_user(resolvername, attributes, password=password)
     g.audit_object.log({"success": True,
                         "info": "{0!s}: {1!s}/{2!s}".format(r, username, resolvername)})
     return send_result(r)
@@ -203,7 +207,11 @@ def update_user():
     username = getParam(request.all_data, "user", optional=False)
     resolvername = getParam(request.all_data, "resolver", optional=False)
     user_obj = User(login=username, resolver=resolvername)
-    r = user_obj.update_user_info(attributes)
+    # Remove the password from the attributes, so that we can hide it in the
+    # logs
+    password = attributes.get("password")
+    del attributes["password"]
+    r = user_obj.update_user_info(attributes, password=password)
     g.audit_object.log({"success": True,
                         "info": "{0!s}: {1!s}/{2!s}".format(r, username, resolvername)})
     return send_result(r)

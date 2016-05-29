@@ -299,8 +299,8 @@ class UserTestCase(MyTestCase):
 
         # Create the user
         uid = create_user(resolver, {"username": "achmed3",
-                                     "givenname": "achmed",
-                                     "password": "secret"})
+                                     "givenname": "achmed"},
+                                     password="secret")
         self.assertTrue(uid > 6)
 
         user = User("achmed3", realm=realm)

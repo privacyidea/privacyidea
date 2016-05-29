@@ -15,6 +15,7 @@ class Config(object):
     PI_AUDIT_KEY_PUBLIC = os.path.join(basedir, "tests/testdata/public.pem")
     PI_LOGFILE = "privacyidea.log"
     PI_LOGLEVEL = logging.INFO
+    PI_LOGLEVEL = 9
     # PI_AUDIT_SQL_URI = sqlite://
 
 
@@ -55,6 +56,7 @@ class ProductionConfig(Config):
     PI_AUDIT_KEY_PRIVATE = os.path.join(config_path, "private.pem")
     PI_AUDIT_KEY_PUBLIC = os.path.join(config_path, "public.pem")
     PI_LOGLEVEL = logging.WARNING
+    PI_LOGLEVEL = 9
     SUPERUSER_REALM = ['superuser']
 
 
@@ -75,7 +77,6 @@ class HerokuConfig(Config):
     PI_AUDIT_KEY_PRIVATE = os.path.join(config_path,
                                         "deploy/heroku/private.pem")
     PI_AUDIT_KEY_PUBLIC = os.path.join(config_path, "deploy/heroku/public.pem")
-    PI_LOGLEVEL = logging.INFO
     SUPERUSER_REALM = ['superuser']
 
 

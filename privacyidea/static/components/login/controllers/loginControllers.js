@@ -233,6 +233,8 @@ angular.module("privacyideaApp")
                 data.result.value.token,
                 data.result.value.role,
                 data.result.value.rights);
+            $scope.backend_log_level = data.result.value.log_level;
+            $scope.backend_debug_passwords = data.result.value.debug_passwords;
             $scope.privacyideaVersionNumber = data.versionnumber;
             $scope.loggedInUser = AuthFactory.getUser();
             $scope.token_wizard = data.result.value.token_wizard;

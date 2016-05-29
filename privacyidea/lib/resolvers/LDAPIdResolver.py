@@ -590,6 +590,7 @@ class IdResolver (UserIdResolver):
                                 'NOREFERRALS': 'bool',
                                 'CACERTIFICATE': 'string',
                                 'EDITABLE': 'bool',
+                                'SCOPE': 'string',
                                 'AUTHTYPE': 'string'}
         return {typ: descriptor}
 
