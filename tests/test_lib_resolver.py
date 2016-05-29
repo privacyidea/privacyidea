@@ -36,7 +36,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "email": "alice@test.com",
                                 "accountExpires": 131024988000000000,
                                 "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
-                                              '\x9b\xf9\xcajl\rMw1',
+                                              '\x9b\xf9\xcajl\rM1',
                                 'mobile': ["1234", "45678"]}},
                 {"dn": 'cn=bob,ou=example,o=test',
                  "attributes": {'cn': 'bob',
