@@ -399,7 +399,7 @@ class IdResolver (UserIdResolver):
                 comperator = ">="
                 if searchDict[search_key] in ["1", 1]:
                     comperator = "<="
-                filter += "(|({0!s}{1!s}{2!s})({3!s}!=0))".format(self.userinfo[search_key],
+                filter += "(&({0!s}{1!s}{2!s})(!({3!s}=0)))".format(self.userinfo[search_key],
                                                   comperator,
                                                   get_ad_timestamp_now(),
                                                   self.userinfo[search_key])

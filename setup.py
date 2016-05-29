@@ -100,6 +100,7 @@ setup(
                 "sphinxcontrib-httpdomain>=1.3.0"],
         'test': ["coverage>=3.7.1",
                  "mock>=1.0.1",
+                 "pyparsing>=2.0.3",
                  "nose>=1.3.4",
                  "responses>=0.4.0",
                  "six>=1.8.0"],
