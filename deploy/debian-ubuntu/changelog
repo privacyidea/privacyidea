@@ -1,3 +1,10 @@
+python-privacyidea (2.12.1-1trusty) trusty; urgency=low
+
+  * Configure if passwords are logged in Debug mode
+  * Fix HOTP auto-resync
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 01 Jun 2016 10:30:00 +0200
+
 python-privacyidea (2.12-1trusty) trusty; urgency=low
 
   Features

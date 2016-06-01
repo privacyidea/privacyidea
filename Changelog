@@ -1,3 +1,9 @@
+Version 2.12.1, 2016-06-01
+
+  Fixes
+  * Configure if passwords are logged in Debug mode
+  * Fix HOTP auto-resync
+
 Version 2.12, 2016-05-24
 
   Features
