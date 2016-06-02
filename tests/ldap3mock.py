@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 """
+2016-05-26 Martin Wheldon <martin.wheldon@greenhills-it.co.uk>
+           Rewrite of search functionality to add recursive parsing
+           of ldap search filters
+           Fixed issue searching for attributes with multiple values
+           Added ability to use ~= in searches
+           Created unittests for mock
 2016-02-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
            Add the possibility to check objectGUID
 2015-01-31 Change responses.py to be able to run with SMTP
@@ -30,7 +36,9 @@ import six
 from ast import literal_eval
 import hashlib
 import ldap3
-from ldap3.utils.conv import check_escape
+from ldap3.utils.conv import check_escape, escape_bytes
+import re
+import pyparsing
 
 try:
     from six import cStringIO as BufferIO
@@ -124,6 +132,12 @@ class Connection(object):
         self.directory = copy.deepcopy(directory)
         self.bound = False
         self.extend = self.Extend(self)
+
+        self.operation = {
+                    "!" : self._search_not,
+                    "&" : self._search_and,
+                    "|" : self._search_or,
+            }
 
     def set_directory(self, directory):
         self.directory = directory
@@ -243,77 +257,379 @@ class Connection(object):
 
         return True
 
+    @staticmethod
+    def _match_greater_than_or_equal(search_base, attribute, value, candidates):
+        matches = list()
+        for entry in candidates:
+            dn = entry.get("dn")
+            if not dn.endswith(search_base):
+                continue
+
+            value_from_directory = entry.get("attributes").get(attribute)
+            if str(value_from_directory) >= str(value):
+                entry["type"] = "searchResEntry"
+                matches.append(entry)
+
+        return matches
+
+    @staticmethod
+    def _match_greater_than(search_base, attribute, value, candidates):
+        matches = list()
+        for entry in candidates:
+            dn = entry.get("dn")
+            if not dn.endswith(search_base):
+                continue
+
+            value_from_directory = entry.get("attributes").get(attribute)
+            if str(value_from_directory) > str(value):
+                entry["type"] = "searchResEntry"
+                matches.append(entry)
+
+        return matches
+
+    @staticmethod
+    def _match_less_than_or_equal(search_base, attribute, value, candidates):
+        matches = list()
+        for entry in candidates:
+            dn = entry.get("dn")
+            if not dn.endswith(search_base):
+                continue
+
+            value_from_directory = entry.get("attributes").get(attribute)
+            if str(value_from_directory) <= str(value):
+                entry["type"] = "searchResEntry"
+                matches.append(entry)
+
+        return matches
+
+    @staticmethod
+    def _match_less_than(search_base, attribute, value, candidates):
+        matches = list()
+        for entry in candidates:
+            dn = entry.get("dn")
+            if not dn.endswith(search_base):
+                continue
+
+            value_from_directory = entry.get("attributes").get(attribute)
+            if str(value_from_directory) < str(value):
+                entry["type"] = "searchResEntry"
+                matches.append(entry)
+
+        return matches
+
+    @staticmethod
+    def _match_equal_to(search_base, attribute, value, candidates):
+        matches = list()
+        match_using_regex = False
+
+        if "*" in value:
+            match_using_regex = True
+            #regex = check_escape(value)
+            regex = value.replace('*', '.*')
+            regex = "^{0}$".format(regex)
+
+        for entry in candidates:
+            dn = entry.get("dn")
+
+            if not attribute in entry.get("attributes") \
+                or not dn.endswith(search_base):
+
+                continue
+
+            values_from_directory = entry.get("attributes").get(attribute)
+            if isinstance(values_from_directory, list):
+                for item in values_from_directory:
+                    if attribute == "objectGUID":
+                        item = escape_bytes(item)
+
+                    if match_using_regex:
+                        m = re.match(regex, str(item), re.I)
+                        if m:
+                            entry["type"] = "searchResEntry"
+                            matches.append(entry)
+                    else:
+                        if item == value:
+                            entry["type"] = "searchResEntry"
+                            matches.append(entry)
+
+            else:
+                if attribute == "objectGUID":
+                    values_from_directory = escape_bytes(values_from_directory)
+                if match_using_regex:
+                    m = re.match(regex, str(values_from_directory), re.I)
+                    if m:
+                        entry["type"] = "searchResEntry"
+                        matches.append(entry)
+                else:
+                    if str(value) == str(values_from_directory):
+                        entry["type"] = "searchResEntry"
+                        matches.append(entry)
+
+        return matches
+
+    @staticmethod
+    def _match_notequal_to(search_base, attribute, value, candidates):
+        matches = list()
+        match_using_regex = False
+
+        if "*" in value:
+            match_using_regex = True
+            #regex = check_escape(value)
+            regex = value.replace('*', '.*')
+            regex = "^{0}$".format(regex)
+
+        for entry in candidates:
+            found = False
+            dn = entry.get("dn")
+
+            if not dn.endswith(search_base):
+                continue
+
+            values_from_directory = entry.get("attributes").get(attribute)
+            if isinstance(values_from_directory, list):
+                for item in values_from_directory:
+                    if attribute == "objectGUID":
+                        item = escape_bytes(item)
+
+                    if match_using_regex:
+                        m = re.match(regex, str(item), re.I)
+                        if m:
+                            found = True
+                    else:
+                        if item == value:
+                            found = True
+                if found == False:
+                    entry["type"] = "searchResEntry"
+                    matches.append(entry)
+            else:
+                if attribute == "objectGUID":
+                    values_from_directory = escape_bytes(values_from_directory)
+                if match_using_regex:
+                    m = re.match(regex, str(values_from_directory), re.I)
+                    if not m:
+                        entry["type"] = "searchResEntry"
+                        matches.append(entry)
+                else:
+                    if str(value) != str(values_from_directory):
+                        entry["type"] = "searchResEntry"
+                        matches.append(entry)
+
+        return matches
+
+    @staticmethod
+    def _parse_filter():
+        op = pyparsing.oneOf('! & |')
+        lpar  = pyparsing.Literal('(').suppress()
+        rpar  = pyparsing.Literal(')').suppress()
+
+        k = pyparsing.Word(pyparsing.alphanums)
+        v = pyparsing.Word(pyparsing.alphanums + "*@.\\")
+        rel = pyparsing.oneOf("= ~= >= <=")
+
+        expr = pyparsing.Forward()
+        atom = pyparsing.Group(lpar + op + expr + rpar) \
+                            | pyparsing.Combine(lpar + k + rel + v + rpar)
+        expr << atom + pyparsing.ZeroOrMore( expr )
+
+        return expr
+
+    @staticmethod
+    def _deDuplicate(results):
+        found = dict()
+        deDuped = list()
+        for entry in results:
+            dn = entry.get("dn")
+            if not dn in found.keys():
+                found[dn] = 1
+                deDuped.append(entry)
+
+        return deDuped
+
+    def _invert_results(self, candidates):
+        inverted_candidates = list(self.directory)
+
+        for candidate in candidates:
+            try:
+                inverted_candidates.remove(candidate)
+            except ValueError:
+                pass
+
+        return inverted_candidates
+
+    def _search_not(self, base, search_filter, candidates=None):
+        # Create empty candidates list as we need to use self.directory for
+        # each search
+        candidates = list()
+        this_filter = list()
+
+        index = 0
+        search_filter.remove("!")
+        for condition in search_filter:
+            if not isinstance(condition, list):
+                this_filter.append(condition)
+            index +=1
+
+        # Remove this_filter items from search_filter list
+        for condition in this_filter:
+            search_filter.remove(condition)
+
+        try:
+            search_filter = list(search_filter[0])
+            for sub_filter in search_filter:
+                if not isinstance(sub_filter, list):
+                    candidates = self.operation.get(sub_filter)(base,
+                                                                search_filter,
+                                                                candidates)
+                else:
+                    candidates = self.operation.get(sub_filter[0])(base,
+                                                                   sub_filter,
+                                                                   candidates)
+        except IndexError:
+            pass
+
+        candidates = self._invert_results(candidates)
+
+        for item in this_filter:
+            if ">=" in item:
+                k, v = item.split(">=")
+                candidates = Connection._match_less_than(base, k, v,
+                                                            self.directory)
+            elif "<=" in item:
+                k, v = item.split("<=")
+                candidates = Connection._match_greater_than(base, k, v,
+                                                         self.directory)
+            # Emulate AD functionality, same as "="
+            elif "~=" in item:
+                k, v = item.split("~=")
+                candidates = Connection._match_notequal_to(base, k, v,
+                                                         self.directory)
+            elif "=" in item:
+                k, v = item.split("=")
+                candidates = Connection._match_notequal_to(base, k, v,
+                                                         self.directory)
+        return candidates
+
+    def _search_and(self, base, search_filter, candidates=None):
+        # Load the data from the directory, if we arn't passed any
+        if candidates == [] or candidates == None:
+            candidates = self.directory
+        this_filter = list()
+
+        index = 0
+        search_filter.remove("&")
+        for condition in search_filter:
+            if not isinstance(condition, list):
+                this_filter.append(condition)
+            index +=1
+
+        # Remove this_filter items from search_filter list
+        for condition in this_filter:
+            search_filter.remove(condition)
+
+        try:
+            search_filter = list(search_filter[0])
+            for sub_filter in search_filter:
+                if not isinstance(sub_filter, list):
+                    candidates = self.operation.get(sub_filter)(base,
+                                                                search_filter,
+                                                                candidates)
+                else:
+                    candidates = self.operation.get(sub_filter[0])(base,
+                                                                   sub_filter,
+                                                                   candidates)
+        except IndexError:
+            pass
+
+        for item in this_filter:
+            if ">=" in item:
+                k, v = item.split(">=")
+                candidates = Connection._match_greater_than_or_equal(base, k, v,
+                                                                     candidates)
+            elif "<=" in item:
+                k, v = item.split("<=")
+                candidates = Connection._match_less_than_or_equal(base, k, v,
+                                                                  candidates)
+            # Emulate AD functionality, same as "="
+            elif "~=" in item:
+                k, v = item.split("~=")
+                candidates = Connection._match_equal_to(base, k, v,
+                                                         candidates)
+            elif "=" in item:
+                k, v = item.split("=")
+                candidates = Connection._match_equal_to(base, k, v,
+                                                         candidates)
+        return candidates
+
+    def _search_or(self, base, search_filter, candidates=None):
+        # Create empty candidates list as we need to use self.directory for
+        # each search
+        candidates = list()
+        this_filter = list()
+
+        index = 0
+        search_filter.remove("|")
+        for condition in search_filter:
+            if not isinstance(condition, list):
+                this_filter.append(condition)
+            index +=1
+
+        # Remove this_filter items from search_filter list
+        for condition in this_filter:
+            search_filter.remove(condition)
+
+        try:
+            search_filter = list(search_filter[0])
+            for sub_filter in search_filter:
+                if not isinstance(sub_filter, list):
+                    candidates += self.operation.get(sub_filter)(base,
+                                                                 search_filter,
+                                                                 candidates)
+                else:
+                    candidates += self.operation.get(sub_filter[0])(base,
+                                                                    sub_filter,
+                                                                    candidates)
+        except IndexError:
+            pass
+
+        for item in this_filter:
+            if ">=" in item:
+                k, v = item.split(">=")
+                candidates += Connection._match_greater_than_or_equal(base, k, v,
+                                                             self.directory)
+            elif "<=" in item:
+                k, v = item.split("<=")
+                candidates += Connection._match_less_than_or_equal(base, k, v,
+                                                          self.directory)
+            # Emulate AD functionality, same as "="
+            elif "~=" in item:
+                k, v = item.split("~=")
+                candidates += Connection._match_equal_to(base, k, v,
+                                                         self.directory)
+            elif "=" in item:
+                k, v = item.split("=")
+                candidates += Connection._match_equal_to(base, k, v,
+                                                         self.directory)
+        return candidates
+
     def search(self, search_base=None, search_scope=None,
                search_filter=None, attributes=None, paged_size=5,
                size_limit=0, paged_cookie=None):
-        self.response = []
-        self.result = {}
-        condition = {}
-        # (&(cn=*)(cn=bob)) -> (cn=*)(cn=bob)
-        search_filter = search_filter[2:-1]
-        while search_filter:
-            pos = search_filter.find(')')+1
-            cur = search_filter[0:pos]
-            cur = cur[1:-1]
-            cur = cur.strip("|").strip("(").strip(")")
-            if cur:
-                (k, v) = cur.split("=")
-                if v != "*":
-                    condition[k] = check_escape(v)
-            search_filter = search_filter[pos:]
-        for entry in self.directory:
-            dn = entry.get("dn")
-            if dn.endswith(search_base):
-                # The entry is in the correct search base
-                # NOTE: Checking condition works only for one condition
-                found = True
-                for k, v in condition.iteritems():
-                    try:
-                        lesser = False
-                        unequal = False
-                        if k.endswith("<"):
-                            lesser = True
-                            k = k.strip("<")
-                        if k.endswith("!"):
-                            unequal = True
-                            k = k.strip("!")
-                        if k in entry.get("attributes").keys():
-                            if unequal:
-                                ldap_value = entry.get("attributes").get(k)
-                                requested_value = int(v)
-                                found = found and (ldap_value !=
-                                                   requested_value)
-                            elif lesser:
-                                # first we try <=
-                                ldap_value = entry.get("attributes").get(k)
-                                requested_value = int(v)
-                                # If the LDAP value is greater, then we do not
-                                # return this entry
-                                found = found and (ldap_value < requested_value)
-                            elif entry.get("attributes").get(k) == v:
-                                # exact matching
-                                found = found and True
-                            elif "*" in v:
-                                # rough substring matching
-                                # We assume, that there are only leading and
-                                # trailing asterisks
-                                v = v.replace("*", "")
-                                if v not in entry.get("attributes").get(k, ""):
-                                    found = False
-                            else:
-                                found = found and False
-                        else:
-                            # The entry does not have such an attribute at all!
-                            found = False
-                    except UnicodeDecodeError:
-                        # This happens when we check for a "*" in the binary
-                        # string as it occurs in objectGUID
-                        print("OK, some potential objectGUID exception. But "
-                              "this is OK")
-                        found = False
-                if found:
-                    entry["type"] = "searchResEntry"
-                    self.response.append(entry)
+        s_filter = list()
+        candidates = list()
+        self.response = list()
+        self.result = dict()
+
+        try:
+            expr = Connection._parse_filter()
+            s_filter = expr.parseString(search_filter).asList()[0]
+        except pyparsing.ParseBaseException:
+            pass
+
+        for item in s_filter:
+            if item[0] in self.operation:
+                candidates = self.operation.get(item[0])(search_base,
+                                                         s_filter)
+        self.response = Connection._deDuplicate(candidates)
 
         return True
 
