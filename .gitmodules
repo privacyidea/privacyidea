@@ -10,3 +10,6 @@
 [submodule "authmodules/FreeRADIUS"]
 	path = authmodules/FreeRADIUS
 	url = https://github.com/privacyidea/FreeRADIUS.git
+[submodule "authmodules/owncloud"]
+	path = authmodules/owncloud
+	url = https://github.com/privacyidea/owncloud
