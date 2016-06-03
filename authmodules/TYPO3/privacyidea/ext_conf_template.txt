@@ -11,7 +11,7 @@ privacyIDEAURL = https://localhost
 privacyIDEACertCheck = 0
 
 # cat=Server/Optional; type=string; label=privacyIDEA realm
-privacyIDEARealm = defrealm
+privacyIDEARealm = 
 
 # cat=Debug; type=boolean; label=Devlog: Write Debug Information to devlog
 devlog = 0
