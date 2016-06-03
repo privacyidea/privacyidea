@@ -94,7 +94,7 @@ class PrivacyideaService extends \TYPO3\CMS\Sv\AbstractAuthenticationService {
             }
             $this->privacyIDEAAuth = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance('NetKnightsGmbH\privacyidea\PrivacyideaAuth',
             													$this->extConf["privacyIDEAURL"],
-            													$this->extConf["realm"],
+            													$this->extConf["privacyIDEARealm"],
             													$this->extConf["privacyIDEAsslcheck"]);            
             return $available;
         }
