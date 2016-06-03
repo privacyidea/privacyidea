@@ -1,4 +1,4 @@
-python-privacyidea (2.12.1-1) wheezy; urgency=low
+privacyidea-venv (2.12.1-1) wheezy; urgency=low
 
   * Configure if passwords are logged in Debug mode
   * Fix HOTP auto-resync
@@ -6,7 +6,7 @@ python-privacyidea (2.12.1-1) wheezy; urgency=low
  -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 01 Jun 2016 10:30:00 +0200
 
 
-python-privacyidea (2.12-1) wheezy; urgency=low
+privacyidea-venv (2.12-1) wheezy; urgency=low
 
   Features
   * Event Handler Framework #360
