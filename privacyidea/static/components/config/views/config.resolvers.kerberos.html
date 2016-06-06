@@ -1,0 +1,227 @@
+<div ng-controller="LdapResolverController">
+
+<h2 class="form-signin-heading"
+        ng-show="resolvername"
+        translate>Edit LDAP Resolver {{ resolvername }}</h2>
+<h2 class="form-signin-heading"
+        ng-hide="resolvername"
+        translate>Create a new LDAP Resolver</h2>
+
+<form name="formResolverAddLdap" role="form" validate
+      class="form-horizontal">
+
+    <div class="form-group">
+        <label for="resolvername" class="col-sm-3 control-label"
+                translate>Resolver name</label>
+
+        <div class="col-sm-9">
+            <input name="resolvername" id="resolvername" class="form-control"
+                   ng-model="resolvername" required placeholder="resolver1"
+                   autofocus/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="serveruri" class="col-sm-3 control-label" translate>
+            Server URI</label>
+
+        <div class="col-sm-9">
+            <input name="serveruri" class="form-control"
+                   ng-model="params.LDAPURI" required
+                   placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="basedn" class="col-sm-3 control-label"
+               translate>Base DN</label>
+
+        <div class="col-sm-4">
+            <input name="basedn" class="form-control"
+                   ng-model="params.LDAPBASE" required
+                   placeholder="ou=users,dc=domain,dc=tld"/>
+        </div>
+
+        <label for="ldapscope" class="col-sm-2 control-label"
+               translate>Scope</label>
+
+        <div class="col-sm-3">
+            <select class="form-control"
+                        ng-model="params.SCOPE"
+                        name="ldapscope"
+                        ng-options="select for select in scopes">
+            </select>
+        </div>
+
+
+    </div>
+    <div class="form-group">
+        <label for="binddn" class="col-sm-3 control-label" translate>Bind DN</label>
+
+        <div class="col-sm-9">
+            <input name="binddn" class="form-control"
+                   ng-model="params.BINDDN"
+                   placeholder="cn=admin,ou=users,dc=domain,dc=tld"/>
+            <p class="help-block" translate>
+                Leave the Bind DN empty if you want to do anonymous binding.
+            </p>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="bindpw" class="col-sm-3 control-label"
+               translate>Bind Password</label>
+
+        <div class="col-sm-3">
+            <input name="bindpw" class="form-control"
+                   type="password"
+                   ng-model="params.BINDPW"
+                   placeholder="topsecret"/>
+        </div>
+
+        <label for="authtype" class="col-sm-3 control-label"
+                translate>Bind Type</label>
+
+        <div class="col-sm-3">
+            <select class="form-control"
+                    ng-model="params.AUTHTYPE"
+                    name="authtype"
+                    ng-options="select for select in authtypes">
+            </select>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="timeout" class="col-sm-3 control-label"
+                translate>Timeout (seconds)</label>
+
+        <div class="col-sm-3">
+            <input name="timeout" class="form-control"
+                   ng-model="params.TIMEOUT" required
+                   placeholder="5"/>
+        </div>
+
+        <label for="sizelimit" class="col-sm-3 control-label"
+                translate>Size Limit</label>
+
+        <div class="col-sm-3">
+            <input name="sizelimit" class="form-control"
+                   ng-model="params.SIZELIMIT" required
+                   placeholder="500"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="editable"
+            class="col-sm-3 control-label" translate>
+            Edit user store
+        </label>
+        <div class="col-sm-9">
+        <input name="editable" id="editable"
+               ng-model="params.EDITABLE"
+               type="checkbox"/>
+            <p class="help-block" translate>
+                The user data in this database can be modified from within
+                privacyIDEA.
+            </p>
+
+            <div class="well" ng-show="params.EDITABLE">
+                <label for="object_classes" class="control-label" translate>
+                    Object classes of a new created user object
+                </label>
+                <input name="object_classes" id="object_classes"
+                       class="form-control"
+                       ng-model="params.OBJECT_CLASSES" />
+                <label for="dn_template" class="control-label" translate>
+                    DN of a new created user object
+                </label>
+                <input name="dn_template" id="dn_template"
+                       class="form-control"
+                       placeholder="CN=<username>,<basendn>"
+                       ng-model="params.DN_TEMPLATE" />
+            </div>
+        </div>
+    </div>
+    <div class="well">
+        <button class="btn btn-info" ng-click="presetLDAP()" translate>
+            Preset OpenLDAP
+        </button>
+        <button class="btn btn-info" ng-click="presetAD()" translate>
+            Preset Active Directory
+        </button>
+        <div class="form-group">
+            <input name="noreferrals" id="noreferrals"
+                   ng-model="params.NOREFERRALS"
+                   type="checkbox"/>
+            <label for="noreferrals"
+                    translate>No anonymous referral chasing</label>
+        </div>
+        <div class="form-group">
+            <label for="loginnameattr"
+                   class="col-sm-3 control-label">Loginname Attribute</label>
+
+            <div class="col-sm-9">
+
+                <input name="loginnameattr" class="form-control"
+                       ng-model="params.LOGINNAMEATTRIBUTE" required
+                       placeholder="sAMAccountName"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="ldapsearchfilter"
+                   class="col-sm-3 control-label"
+                    translate>Search Filter</label>
+
+            <div class="col-sm-9">
+                <input name="ldapsearchfilter" class="form-control"
+                       ng-model="params.LDAPSEARCHFILTER" required
+                       placeholder="(sAMAccountName=*)(objectClass=person)"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="userfilter"
+                   class="col-sm-3 control-label"
+                    translate>User Filter</label>
+
+            <div class="col-sm-9">
+                <input name="userfilter" class="form-control"
+                       ng-model="params.LDAPFILTER" required
+                       placeholder="(&(sAMAccountName=%s)(objectClass=person))"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="mapping"
+                   class="col-sm-3 control-label"
+                    translate>Attribute mapping</label>
+
+            <div class="col-sm-9">
+                <input name="mapping" class="form-control"
+                       ng-model="params.USERINFO" required
+                       placeholder='{ "username": "sAMAccountName", "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }'
+                        />
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="uidtype"
+                   class="col-sm-3 control-label"
+                    translate>UID Type</label>
+
+            <div class="col-sm-9">
+                <input name="uidtype" class="form-control"
+                       ng-model="params.UIDTYPE" required
+                       placeholder='DN'
+                        />
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center">
+        <button ng-click="testResolver()"
+                ng-disabled="formResolverAddLdap.$invalid"
+                class="btn btn-success"
+                translate>Test LDAP Resolver
+        </button>
+        <button ng-click="params.type='kerberosresolver'; setLDAPResolver()"
+                ng-disabled="formResolverAddLdap.$invalid"
+                class="btn btn-primary"
+                translate>Save resolver
+        </button>
+    </div>
+
+</form>
+</div>

@@ -390,8 +390,10 @@ def get_resolver_class_dict():
             obj = getattr(module, name)
             # There are other classes like HMAC in the lib.tokens module,
             # which we do not want to load.
+            # issubclass(obj, UserIdResolver)
             if inspect.isclass(obj) and (issubclass(obj, UserIdResolver) or
-                                             obj == UserIdResolver):
+                                             obj == UserIdResolver) and \
+                            obj.__module__ == module.__name__:
                 # We must not process imported classes!
                 # if obj.__module__ == module.__name__:
                 try:
@@ -426,6 +428,7 @@ def get_resolver_list():
     module_list.add("privacyidea.lib.resolvers.LDAPIdResolver")
     module_list.add("privacyidea.lib.resolvers.SCIMIdResolver")
     module_list.add("privacyidea.lib.resolvers.SQLIdResolver")
+    module_list.add("privacyidea.lib.resolvers.KerberosIdResolver")
 
     # Dynamic Resolver modules
     # TODO: Migration
