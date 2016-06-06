@@ -43,19 +43,20 @@ class PrivacyideaAuth {
 
 	public function checkOtp($username, $password) {
 		$curl_instance = curl_init();
-		$escPassword = urlencode($password);
-		$escUsername = urlencode($username);
 		$url = $this->url . '/validate/check';
 		$this->logger->info("authenticating against $url");
 		curl_setopt($curl_instance, CURLOPT_URL, $url);
-		curl_setopt($curl_instance, CURLOPT_POST, 3);
-		$poststring = "user=$username&pass=$password&realm=$this->realm";
+		curl_setopt($curl_instance, CURLOPT_POST, TRUE);
+		$poststring =
+			'user=' . urlencode($username) . '&' .
+			'pass=' . urlencode($password) . '&' .
+			'realm=' . urlencode($this->realm);
 		$this->logger->debug("using the poststring $poststring");
 		curl_setopt($curl_instance, CURLOPT_POSTFIELDS, $poststring);
 		curl_setopt($curl_instance, CURLOPT_HEADER, TRUE);
 		curl_setopt($curl_instance, CURLOPT_RETURNTRANSFER, TRUE);
 		if ($this->sslcheck) {
-			curl_setopt($curl_instance, CURLOPT_SSL_VERIFYHOST, 1);
+			curl_setopt($curl_instance, CURLOPT_SSL_VERIFYHOST, 2);
 			curl_setopt($curl_instance, CURLOPT_SSL_VERIFYPEER, 1);
 		} else {
 			curl_setopt($curl_instance, CURLOPT_SSL_VERIFYHOST, 0);
