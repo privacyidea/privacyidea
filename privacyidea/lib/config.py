@@ -424,6 +424,9 @@ def get_resolver_list():
     """
     module_list = set()
 
+    # Base resolver
+    module_list.add("privacyidea.lib.resolvers.UserIdResolver")
+    # productive resolvers
     module_list.add("privacyidea.lib.resolvers.PasswdIdResolver")
     module_list.add("privacyidea.lib.resolvers.LDAPIdResolver")
     module_list.add("privacyidea.lib.resolvers.SCIMIdResolver")
