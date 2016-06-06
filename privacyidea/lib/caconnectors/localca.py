@@ -170,7 +170,7 @@ class LocalCAConnector(BaseCAConnector):
                                                     file_extension="req")
             certificate_filename = self._filename_from_x509(
                 csr_obj.get_subject(), file_extension="pem")
-            csr_extensions = csr_obj.get_extensions()
+            #csr_extensions = csr_obj.get_extensions()
         csr_filename = csr_filename.replace(" ", "_")
         certificate_filename = certificate_filename.replace(" ", "_")
         # dump the file
