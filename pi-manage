@@ -139,6 +139,8 @@ def create(directory="/var/lib/privacyidea/backup/"):
     # INIFILE = "%s/pi.cfg" % CONF_DIR
     DATE = datetime.datetime.now().strftime("%Y%m%d-%H%M")
     BASE_NAME = "privacyidea-backup"
+    
+    call(["mkdir", "-p", directory])
     sqlfile = "%s/dbdump-%s.sql" % (directory, DATE)
     backup_file = "%s/%s-%s.tgz" % (directory, BASE_NAME, DATE)
 
@@ -166,7 +168,6 @@ def create(directory="/var/lib/privacyidea/backup/"):
         print("unsupported SQL syntax: %s" % sqltype)
         sys.exit(2)
 
-    call(["mkdir", "-p", directory])
     call(["tar", "-zcf", backup_file, CONF_DIR, sqlfile])
     os.unlink(sqlfile)
     os.chmod(backup_file, 0600)
