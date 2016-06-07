@@ -1,20 +1,20 @@
 # cat=Server/enable; type=user[EXT:privacyidea/Classes/Utility/ExtensionManagerConfigurationUtility.php:NetKnightsGmbH\privacyidea\Utility\ExtensionManagerConfigurationUtility->buildBeModeSelector]; label=LLL:EXT:privacyidea/Resources/Private/Language/locallang_em.xlf:privacyidea.config.privacyIDEABackend
 privacyIDEABackend = disabled
 
-# cat=Server/Enable; type=boolean; label=Enable privacyIDEA authentication for TYPO3 frontend users
+# cat=Server/Enable; type=boolean; label=LLL:EXT:privacyidea/Resources/Private/Language/locallang_em.xlf:privacyidea.config.privacyIDEAFrontend
 privacyIDEAFrontend = 0
 
-# cat=Server; type=string; label=privacyIDEA Server URL: This is the base URL part of the privacyIDEA server. You do not need to add the trailing "validate/check" part.
+# cat=Server; type=string; label=LLL:EXT:privacyidea/Resources/Private/Language/locallang_em.xlf:privacyidea.config.privacyIDEAURL
 privacyIDEAURL = https://localhost
 
-# cat=Server; type=boolean; label=Check certificate: We recommend that you always check the certificate in productive environments. Otherwise the authentication could suffer from a MitM attack.
+# cat=Server; type=boolean; label=LLL:EXT:privacyidea/Resources/Private/Language/locallang_em.xlf:privacyidea.config.privacyIDEACertCheck
 privacyIDEACertCheck = 0
 
-# cat=Server/Optional; type=string; label=privacyIDEA realm
+# cat=Server/Optional; type=string; label=LLL:EXT:privacyidea/Resources/Private/Language/locallang_em.xlf:privacyidea.config.privacyIDEARealm
 privacyIDEARealm = 
 
-# cat=Debug; type=boolean; label=Devlog: Write Debug Information to devlog
+# cat=Debug; type=boolean; label=LLL:EXT:privacyidea/Resources/Private/Language/locallang_em.xlf:privacyidea.config.devlog
 devlog = 0
 
-# cat=Authentication; type=boolean; label=Pass to other authentication module:In case that privacyIDEA fails to authenticate the user the authentication request is passed to the next authentication module.
+# cat=Authentication; type=boolean; label=LLL:EXT:privacyidea/Resources/Private/Language/locallang_em.xlf:privacyidea.config.privacyIDEApassthru
 privacyIDEApassthru = 0
