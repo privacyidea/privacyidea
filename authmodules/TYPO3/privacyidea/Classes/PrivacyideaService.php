@@ -82,8 +82,11 @@ class PrivacyideaService extends \TYPO3\CMS\Sv\AbstractAuthenticationService {
 		$this->logger->info("Initialize privacyIDEA");
 		$available = FALSE;
 		$this->extConf = unserialize ($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['privacyidea']);
-		if (isset($this->extConf['privacyIDEABackend']) && (bool)$this->extConf['privacyIDEABackend'] && TYPO3_MODE == 'BE') {
+		if (isset($this->extConf['privacyIDEABackend']) && $this->extConf['privacyIDEABackend'] == 'always' && TYPO3_MODE == 'BE') {
 			$this->logger->info("Authenticating with privacyIDEA at the Backend");
+			$available = TRUE;
+		} elseif (isset($this->extConf['privacyIDEABackend']) && $this->extConf['privacyIDEABackend'] == 'adminOnly' && TYPO3_MODE == 'BE') {
+			$this->logger->info("Authenticating with privacyIDEA at the Backend (Admin Users)");
 			$available = TRUE;
 		} elseif (isset($this->extConf['privacyIDEAFrontend']) && (bool)$this->extConf['privacyIDEAFrontend'] && TYPO3_MODE == 'FE') {
 			$this->logger->info("Authenticating with privacyIDEA at the Frontend");
@@ -110,23 +113,30 @@ class PrivacyideaService extends \TYPO3\CMS\Sv\AbstractAuthenticationService {
 	 * @return int authentication statuscode, one of 0, 100 and 200
 	 */
 	public function authUser(array $user) {
-		// 0 means authentication failure
-		$ret = 0;
-		$username = $this->login['uname'];
-		$password = $this->login['uident_text'];
-		$this->logger->info("try to authenticate user [$username]");
+		if ($this->extConf['privacyIDEABackend'] != 'adminOnly'
+			|| (bool)$user['admin']
+			|| $this->authInfo['loginType'] == 'FE'
+		) {
+			// 0 means authentication failure
+			$ret = 0;
+			$username = $this->login['uname'];
+			$password = $this->login['uident_text'];
+			$this->logger->info("try to authenticate user [$username]");
 
-		$authResult = $this->privacyIDEAAuth->checkOtp($username, $password);
+			$authResult = $this->privacyIDEAAuth->checkOtp($username, $password);
 
-		if ($authResult === TRUE) {
-			$ret = 200;
-		} else {
-			if ($this->extConf['privacyIDEApassthru']) {
-				$ret = 100;
-				$this->logger->info("privacyIDEA authentication failed, but passing to other authentication modules.");
+			if ($authResult === TRUE) {
+				$ret = 200;
 			} else {
-				$this->logger->error("Failed to authenticate $username");
+				if ($this->extConf['privacyIDEApassthru']) {
+					$ret = 100;
+					$this->logger->info("privacyIDEA authentication failed, but passing to other authentication modules.");
+				} else {
+					$this->logger->error("Failed to authenticate $username");
+				}
 			}
+		} else {
+			$ret = 100;
 		}
 		return $ret;
 	}

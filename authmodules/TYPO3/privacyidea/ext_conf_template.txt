@@ -1,5 +1,5 @@
-# cat=Server/Enable; type=boolean; label=Enable privacyIDEA authentication for TYPO3 backend users
-privacyIDEABackend = 1
+# cat=Server/enable; type=user[EXT:privacyidea/Classes/Utility/ExtensionManagerConfigurationUtility.php:NetKnightsGmbH\privacyidea\Utility\ExtensionManagerConfigurationUtility->buildBeModeSelector]; label=LLL:EXT:privacyidea/Resources/Private/Language/locallang_em.xlf:privacyidea.config.privacyIDEABackend
+privacyIDEABackend = always
 
 # cat=Server/Enable; type=boolean; label=Enable privacyIDEA authentication for TYPO3 frontend users
 privacyIDEAFrontend = 0
@@ -16,5 +16,5 @@ privacyIDEARealm =
 # cat=Debug; type=boolean; label=Devlog: Write Debug Information to devlog
 devlog = 0
 
-# cat=Authentication; type=boolean; label=Pass to other authentication module:In case that privacyIDEA fails to authenticate the user the authentication request is passed to the next authentication module. 
+# cat=Authentication; type=boolean; label=Pass to other authentication module:In case that privacyIDEA fails to authenticate the user the authentication request is passed to the next authentication module.
 privacyIDEApassthru = 0

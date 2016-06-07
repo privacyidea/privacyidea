@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.0" xmlns:t3="http://typo3.org/schemas/xliff">
+	<file t3:id="2371932330" source-language="en" datatype="plaintext" original="messages" date="2016-06-07T02:38:00Z" product-name="privacyidea">
+		<header/>
+		<body>
+			<trans-unit id="privacyidea.config.privacyIDEABackend">
+				<source>Enable privacyIDEA authentication for TYPO3 backend users</source>
+			</trans-unit>
+		</body>
+	</file>
+</xliff>
