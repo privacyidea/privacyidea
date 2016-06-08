@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.0" xmlns:t3="http://typo3.org/schemas/xliff">
+	<file t3:id="2371932330" source-language="en" datatype="plaintext" original="messages" date="2016-06-07T02:38:00Z" product-name="privacyidea">
+		<header/>
+		<body>
+			<trans-unit id="privacyidea.config.privacyIDEABackend">
+				<source>Enable privacyIDEA authentication for TYPO3 backend users</source>
+			</trans-unit>
+			<trans-unit id="privacyidea.config.privacyIDEAFrontend">
+				<source>Enable privacyIDEA authentication for TYPO3 frontend users</source>
+			</trans-unit>
+			<trans-unit id="privacyidea.config.privacyIDEAURL">
+				<source>privacyIDEA Server URL: This is the base URL part of the privacyIDEA server. You do not need to add the trailing "validate/check" part.</source>
+			</trans-unit>
+			<trans-unit id="privacyidea.config.privacyIDEACertCheck">
+				<source>Check certificate: We recommend that you always check the certificate in productive environments. Otherwise the authentication could suffer from a MitM attack.</source>
+			</trans-unit>
+			<trans-unit id="privacyidea.config.privacyIDEARealm">
+				<source>privacyIDEA realm</source>
+			</trans-unit>
+			<trans-unit id="privacyidea.config.devlog">
+				<source>Devlog: Write Debug Information to devlog</source>
+			</trans-unit>
+			<trans-unit id="privacyidea.config.privacyIDEApassthru">
+				<source>Pass to other authentication module:In case that privacyIDEA fails to authenticate the user the authentication request is passed to the next authentication module.</source>
+			</trans-unit>
+		</body>
+	</file>
+</xliff>
