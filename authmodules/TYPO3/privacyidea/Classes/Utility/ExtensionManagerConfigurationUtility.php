@@ -40,7 +40,7 @@ class ExtensionManagerConfigurationUtility {
      * @return void
      */
 	private function init() {
-		$this->beModes = array('disabled', 'adminOnly', 'always');
+		$this->beModes = array('disabled', 'adminOnly', 'allUsers');
         $this->getLanguageService()->includeLLFile('EXT:privacyidea/Resources/Private/Language/locallang.xlf');
     }
 

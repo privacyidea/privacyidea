@@ -12,7 +12,7 @@
 			<trans-unit id="ext.privacyidea.beMode.adminOnly">
 				<source>Only for administrators</source>
 			</trans-unit>
-			<trans-unit id="ext.privacyidea.beMode.always">
+			<trans-unit id="ext.privacyidea.beMode.allUsers">
 				<source>All backend users</source>
 			</trans-unit>
 		</body>

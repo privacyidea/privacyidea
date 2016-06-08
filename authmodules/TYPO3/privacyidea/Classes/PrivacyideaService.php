@@ -82,7 +82,7 @@ class PrivacyideaService extends \TYPO3\CMS\Sv\AbstractAuthenticationService {
 		$this->logger->info("Initialize privacyIDEA");
 		$available = FALSE;
 		$this->extConf = unserialize ($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['privacyidea']);
-		if (isset($this->extConf['privacyIDEABackend']) && $this->extConf['privacyIDEABackend'] == 'always' && TYPO3_MODE == 'BE') {
+		if (isset($this->extConf['privacyIDEABackend']) && $this->extConf['privacyIDEABackend'] == 'allUsers' && TYPO3_MODE == 'BE') {
 			$this->logger->info("Authenticating with privacyIDEA at the Backend");
 			$available = TRUE;
 		} elseif (isset($this->extConf['privacyIDEABackend']) && $this->extConf['privacyIDEABackend'] == 'adminOnly' && TYPO3_MODE == 'BE') {
