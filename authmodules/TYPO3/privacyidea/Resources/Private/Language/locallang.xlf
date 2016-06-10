@@ -6,6 +6,15 @@
 			<trans-unit id="tx_privacyidea_domain_model_privacyideaauth">
 				<source>Privacy I D E A Auth</source>
 			</trans-unit>
+			<trans-unit id="ext.privacyidea.beMode.disabled">
+				<source>Disabled</source>
+			</trans-unit>
+			<trans-unit id="ext.privacyidea.beMode.adminOnly">
+				<source>Only for administrators</source>
+			</trans-unit>
+			<trans-unit id="ext.privacyidea.beMode.allUsers">
+				<source>All backend users</source>
+			</trans-unit>
 		</body>
 	</file>
 </xliff>
