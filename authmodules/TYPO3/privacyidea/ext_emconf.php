@@ -16,7 +16,7 @@ privacyIDEA supports many different type of authentication devices like OTP toke
 	'version' => '0.1.4',
 	'constraints' => array(
 		'depends' => array(
-			'typo3' => '6.2.0-6.2.99',
+			'typo3' => '6.2.0-7.6.99',
 		),
 		'conflicts' => array(
 		),

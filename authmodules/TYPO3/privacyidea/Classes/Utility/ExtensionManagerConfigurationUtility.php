@@ -30,47 +30,46 @@ namespace NetKnightsGmbH\privacyidea\Utility;
 class ExtensionManagerConfigurationUtility {
 
 	/**
-     * @var array
-     */
+	 * @var array
+	 */
 	protected $beModes = array();
 
-    /**
-     * Initializes this object.
-     *
-     * @return void
-     */
+	/**
+	 * Initializes this object.
+	 *
+	 * @return void
+	 */
 	private function init() {
 		$this->beModes = array('disabled', 'adminOnly', 'allUsers');
-        $this->getLanguageService()->includeLLFile('EXT:privacyidea/Resources/Private/Language/locallang.xlf');
-    }
+		$this->getLanguageService()->includeLLFile('EXT:privacyidea/Resources/Private/Language/locallang.xlf');
+	}
 
 	/**
 	 * Renders a selector element that allows to select how privacyidea is used in backend
-     *
-     * @param array $params Field information to be rendered
-     * @param \TYPO3\CMS\Core\TypoScript\ConfigurationForm $pObj The calling parent object.
-     * @return string The HTML selector
-     */
+	 *
+	 * @param array $params Field information to be rendered
+	 * @param \TYPO3\CMS\Core\TypoScript\ConfigurationForm $pObj The calling parent object.
+	 * @return string The HTML selector
+	 */
 	public function buildBeModeSelector(array $params, $pObj) {
 		$this->init();
 
-        $propertyName = $params['propertyName'];
-        $pField = '';
-        $registeredMethods = \TYPO3\CMS\Saltedpasswords\Salt\SaltFactory::getRegisteredSaltedHashingMethods();
-        foreach ($this->beModes as $beMode) {
+		$propertyName = $params['propertyName'];
+		$pField = '';
+		foreach ($this->beModes as $beMode) {
 			$sel = ($params['fieldValue'] == $beMode ? ' selected="selected" ' : '');
 			$pField .= '<option value="' . htmlspecialchars($beMode) . '"' . $sel . '>' . $this->getLanguageService()->getLL('ext.privacyidea.beMode.' . $beMode) . '</option>';
-        }
+		}
 		$pField = '<select id="' . $propertyName . '" name="' . $params['fieldName'] . '" >' . $pField . '</select>';
 		return $pField;
 	}
 
-    /**
-     * @return \TYPO3\CMS\Lang\LanguageService
-     */
-    protected function getLanguageService() {
-        return $GLOBALS['LANG'];
-    }
+	/**
+	 * @return \TYPO3\CMS\Lang\LanguageService
+	 */
+	protected function getLanguageService() {
+		return $GLOBALS['LANG'];
+	}
 
 }
 
