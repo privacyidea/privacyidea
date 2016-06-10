@@ -113,30 +113,22 @@ class PrivacyideaService extends \TYPO3\CMS\Sv\AbstractAuthenticationService {
 	 * @return int authentication statuscode, one of 0, 100 and 200
 	 */
 	public function authUser(array $user) {
-		if ($this->extConf['privacyIDEABackend'] != 'adminOnly'
-			|| (bool)$user['admin']
-			|| $this->authInfo['loginType'] == 'FE'
-		) {
-			// 0 means authentication failure
-			$ret = 0;
-			$username = $this->login['uname'];
-			$password = $this->login['uident_text'];
-			$this->logger->info("try to authenticate user [$username]");
+		// 0 means authentication failure
+		$ret = 0;
+		$username = $this->login['uname'];
+		$password = $this->login['uident_text'];
+		$this->logger->info("try to authenticate user [$username]");
 
-			$authResult = $this->privacyIDEAAuth->checkOtp($username, $password);
-
-			if ($authResult === TRUE) {
-				$ret = 200;
-			} else {
-				if ($this->extConf['privacyIDEApassthru']) {
-					$ret = 100;
-					$this->logger->info("privacyIDEA authentication failed, but passing to other authentication modules.");
-				} else {
-					$this->logger->error("Failed to authenticate $username");
-				}
-			}
+		$authResult = $this->privacyIDEAAuth->checkOtp($username, $password);
+		if ($authResult === TRUE) {
+			$ret = 200;
 		} else {
-			$ret = 100;
+			if ($this->extConf['privacyIDEApassthru']) {
+				$ret = 100;
+				$this->logger->info("privacyIDEA authentication failed, but passing to other authentication modules.");
+			} else {
+				$this->logger->error("Failed to authenticate $username");
+			}
 		}
 		return $ret;
 	}
