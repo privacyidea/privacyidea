@@ -1,4 +1,4 @@
-VERSION="0.1.4"
+VERSION="0.2"
 LINE=$(shell grep version privacyidea/ext_emconf.php) 
 #| cut -d "'" -f 4)
 
