@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2016-06-13 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Add otp length to detail response
 #  2015-10-14 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Add timelimit to user auth.
 #  2015-08-31 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -1940,10 +1942,11 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                     log.debug("registration token does not exist anymore and "
                               "cannot be resetted.")
         if len(valid_token_list) == 1:
-            # If only one token was found, we add the serial number and token
-            #  type
+            # If only one token was found, we add the serial number,
+            # the token type and the OTP length
             reply_dict["serial"] = valid_token_list[0].token.serial
             reply_dict["type"] = valid_token_list[0].token.tokentype
+            reply_dict["otplen"] = valid_token_list[0].token.otplen
         reply_dict["message"] = ", ".join(message_list)
 
     elif challenge_response_token_list:
@@ -2002,6 +2005,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
             if len(pin_matching_token_list) == 1:
                 reply_dict["serial"] = pin_matching_token_list[0].token.serial
                 reply_dict["type"] = pin_matching_token_list[0].token.tokentype
+                reply_dict["otplen"] = pin_matching_token_list[0].token.otplen
 
     elif invalid_token_list:
         # There were only tokens, that did not match the OTP value and

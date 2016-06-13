@@ -94,6 +94,8 @@ class ValidateAPITestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(detail.get("otplen"), 6)
 
         # Check that the counter is increased!
         tokenobject_list = get_tokens(serial=self.serials[0])
@@ -134,6 +136,8 @@ class ValidateAPITestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(detail.get("otplen"), 6)
 
         # Check that the counter is increased!
         tokenobject_list = get_tokens(serial=self.serials[0])
