@@ -32,6 +32,7 @@ from flask import (Blueprint,
                    stream_with_context)
 from lib.utils import (send_result, getParam)
 from ..api.lib.prepolicy import prepolicy, check_base_action
+from ..api.auth import admin_required
 from ..lib.policy import ACTION
 from flask import g
 import logging
@@ -90,6 +91,7 @@ def search_audit():
 
 @audit_blueprint.route('/<csvfile>', methods=['GET'])
 @prepolicy(check_base_action, request, ACTION.AUDIT)
+@admin_required
 def download_csv(csvfile=None):
     """
     Download the audit entry as CSV file.
@@ -133,8 +135,10 @@ def download_csv(csvfile=None):
                     headers={"Content-Disposition": ("attachment; "
                                                      "filename=%s" % csvfile)})
 
+
 @audit_blueprint.route('/statistics', methods=['GET'])
 @prepolicy(check_base_action, request, ACTION.AUDIT)
+@admin_required
 def statistics():
     """
     get the statistics values from the audit log

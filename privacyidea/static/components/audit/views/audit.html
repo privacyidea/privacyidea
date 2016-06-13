@@ -18,7 +18,8 @@
                     <span class="glyphicon glyphicon-search"
                           aria-hidden="true"></span>
                     <translate>Log</translate></a></li>
-                <li ng-class="{active: $state.includes('audit.stats')}">
+                <li ng-class="{active: $state.includes('audit.stats')}"
+                    ng-show="loggedInUser.role === 'admin'">
                     <a ui-sref="audit.stats">
                     <span class="glyphicon glyphicon-stats"
                           aria-hidden="true"></span>
