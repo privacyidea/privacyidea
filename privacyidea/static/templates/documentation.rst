@@ -13,6 +13,7 @@ PI.cfg
 {% endif %}
 {% if k == "SUPERUSER_REALM" %}
 SUPERUSER_REALM: **{{v}}**
+
 .. note:: The SUPERUSER_REALM is a list of defined realms where the users
    will have administrative rights when logging in to the web UI.
 {% endif %}
