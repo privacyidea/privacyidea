@@ -252,10 +252,12 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
 
     // Read the the tokentypes from the server
     TokenFactory.getEnrollTokens(function(data){
+        console.log("getEnrollTokens");
         console.log(data);
         $scope.formInit["tokenTypes"] = data.result.value;
         // set the default tokentype
-        if (!$scope.formInit.tokenTypes.hasOwnProperty("hotp")) {
+        if (!$scope.formInit.tokenTypes.hasOwnProperty(
+                $scope.default_tokentype)) {
             // if HOTP does not exist, we set another default type
             for (var tkey in $scope.formInit.tokenTypes) {
                 // set the first key to be the default tokentype
