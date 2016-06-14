@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#   2016-06-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#              Add allowed parameters to the SMS Provider
+#
 #    privacyIDEA is a fork of LinOTP
 #    May 28, 2014 Cornelius Kölbel
 #    E-mail: info@privacyidea.org
@@ -51,25 +54,34 @@ class SmtpSMSProvider(ISMSProvider):
 
         In case of a failure an exception is raised
         """
-        identifier = self.config.get("IDENTIFIER")
-        server = self.config.get("MAILSERVER")
-        sender = self.config.get("MAILSENDER")
-        recipient = self.config.get("MAILTO")
-        subject = self.config.get("SUBJECT", PHONE_TAG)
-        body = self.config.get("BODY", MSG_TAG)
+        if self.smsgateway:
+            identifier = self.smsgateway.option_dict.get("SMTPIDENTIFIER")
+            recipient = self.smsgateway.option_dict.get("MAILTO").format(
+                otp=message, phone=phone)
+            subject = self.smsgateway.option_dict.get("SUBJECT").format(
+                otp=message, phone=phone)
+            body = self.smsgateway.option_dict.get("BODY").format(
+                otp=message, phone=phone)
+        else:
+            identifier = self.config.get("IDENTIFIER")
+            server = self.config.get("MAILSERVER")
+            sender = self.config.get("MAILSENDER")
+            recipient = self.config.get("MAILTO")
+            subject = self.config.get("SUBJECT", PHONE_TAG)
+            body = self.config.get("BODY", MSG_TAG)
 
-        if not (server and recipient and sender) and not (identifier and \
-                recipient):
-            log.error("incomplete config: %s. MAILTO and (IDENTIFIER or "
-                      "MAILSERVER and MAILSENDER) needed" % self.config)
-            raise SMSError(-1, "Incomplete SMS config.")
+            if not (server and recipient and sender) and not (identifier and \
+                    recipient):
+                log.error("incomplete config: %s. MAILTO and (IDENTIFIER or "
+                          "MAILSERVER and MAILSENDER) needed" % self.config)
+                raise SMSError(-1, "Incomplete SMS config.")
 
-        log.debug("submitting message {0!s} to {1!s}".format(body, phone))
-        recipient = string.replace(recipient, PHONE_TAG, phone)
-        subject = string.replace(subject, PHONE_TAG, phone)
-        subject = string.replace(subject, MSG_TAG, message)
-        body = string.replace(body, PHONE_TAG, phone)
-        body = string.replace(body, MSG_TAG, message)
+            log.debug("submitting message {0!s} to {1!s}".format(body, phone))
+            recipient = string.replace(recipient, PHONE_TAG, phone)
+            subject = string.replace(subject, PHONE_TAG, phone)
+            subject = string.replace(subject, MSG_TAG, message)
+            body = string.replace(body, PHONE_TAG, phone)
+            body = string.replace(body, MSG_TAG, message)
 
         if identifier:
             r = send_email_identifier(identifier, recipient, subject, body)
@@ -82,3 +94,38 @@ class SmtpSMSProvider(ISMSProvider):
             raise SMSError(500, "Failed to deliver SMS to SMTP Gateway.")
 
         return True
+
+    @classmethod
+    def parameters(cls):
+        """
+        Return a dictionary, that describes the parameters and options for the
+        SMS provider.
+        Parameters are required keys to values.
+
+        :return: dict
+        """
+        from privacyidea.lib.smtpserver import get_smtpservers
+        params = {"options_allowed": False,
+                  "parameters": {
+                      "MAILTO": {
+                          "required": True,
+                          "description": "The recipient of the email. "
+                                         "Use tags {phone} and {otp}."},
+                      "SMTPIDENTIFIER": {
+                          "required": True,
+                          "description": "Your SMTP configuration, "
+                                         "that should be used to send the "
+                                         "email.",
+                          "values": [
+                              provider.config.identifier for
+                              provider in get_smtpservers()]},
+                      "SUBJECT": {
+                          "description": "The optional subject of the email. "
+                                         "Use tags {phone} and {otp}."},
+                      "BODY": {
+                          "description": "The optional body of the email. "
+                                         "Use tags {phone} and {otp}.",
+                          "type": "text" }
+                  }
+                  }
+        return params

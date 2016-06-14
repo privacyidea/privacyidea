@@ -52,6 +52,7 @@ from .radiusserver import radiusserver_blueprint
 from .recover import recover_blueprint
 from .register import register_blueprint
 from .event import eventhandling_blueprint
+from .smsgateway import smsgateway_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from ..lib.error import (privacyIDEAError,
                          AuthError,
@@ -80,6 +81,7 @@ def before_user_request():
 @application_blueprint.before_request
 @smtpserver_blueprint.before_request
 @eventhandling_blueprint.before_request
+@smsgateway_blueprint.before_request
 @admin_required
 def before_admin_request():
     before_request()

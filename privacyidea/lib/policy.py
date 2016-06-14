@@ -255,6 +255,7 @@ class ACTION(object):
     RADIUSSERVERWRITE = "radiusserver_write"
     REALMDROPDOWN = "realm_dropdown"
     EVENTHANDLINGWRITE = "eventhandling_write"
+    SMSGATEWAYWRITE = "smsgateway_write"
 
 
 class LOGINMODE(object):
@@ -948,7 +949,11 @@ def get_static_policy_definitions(scope=None):
             ACTION.EVENTHANDLINGWRITE: {'type': 'bool',
                                         'desc': _("Admin is allowed to write "
                                                   "and modify the event "
-                                                  "handling configuration.")}
+                                                  "handling configuration.")},
+            ACTION.SMSGATEWAYWRITE: {'type': 'bool',
+                                     'desc': _("Admin is allowed to write "
+                                               "and modify SMS gateway "
+                                               "definitions.")}
 
         },
         # 'gettoken': {

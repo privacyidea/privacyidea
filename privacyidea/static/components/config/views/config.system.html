@@ -32,6 +32,13 @@
                             <translate>RADIUS servers</translate>
                         </a>
                     </li>
+                    <li role="presentation"
+                        ng-class="{ active: $state.includes('config.smsgateway')}">
+                        <a ui-sref="config.smsgateway">
+                            <span class="glyphicon glyphicon-phone"></span>
+                            <translate>SMS Gateways</translate>
+                        </a>
+                    </li>
             </ul>
         </div>
     </div>

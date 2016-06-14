@@ -10,7 +10,7 @@ from privacyidea.models import (Token,
                                 MachineResolverConfig, MachineToken, Admin,
                                 CAConnector, CAConnectorConfig, SMTPServer,
                                 PasswordReset, EventHandlerOption,
-                                EventHandler)
+                                EventHandler, SMSGatewayOption, SMSGateway)
 from .base import MyTestCase
 from datetime import datetime
 from datetime import timedelta
@@ -550,4 +550,23 @@ class TokenModelTestCase(MyTestCase):
         # Delete event handler
         eh1.delete()
 
+    def test_20_add_update_delete_smsgateway(self):
+        name = "myGateway"
+        provider_module = "privacyidea.lib.smsprovider.httpbla"
+        provider_module2 = "module2"
+        gw = SMSGateway(name, provider_module, options={"k": "v"})
 
+        self.assertTrue(gw)
+
+        self.assertEqual(gw.identifier, name)
+        self.assertEqual(gw.providermodule, provider_module)
+
+        # update SMS gateway, key "k" should not exist anymore!
+        SMSGateway(name, provider_module2,
+                   options={"k1": "v1"})
+        self.assertEqual(gw.providermodule, provider_module2)
+        self.assertEqual(gw.ref_option_list[0].Key, "k1")
+        self.assertEqual(gw.ref_option_list[0].Value, "v1")
+
+        # Delete gateway
+        gw.delete()

@@ -3,6 +3,8 @@
 #    E-mail: info@privacyidea.org
 #    Contact: www.privacyidea.org
 #
+#    2016-06-14 Cornelius Kölbel <cornelius@privacyidea.org>
+#               Add properties for new SMS provider model
 #    2016-04-08 Cornelius Kölbel <cornelius@privacyidea.org>
 #               Remote "None" as redundant 2nd argument to get
 #    2016-01-13 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -55,19 +57,32 @@ class HttpSMSProvider(ISMSProvider):
         :param message: the message to submit to the phone
         :return:
         """
-        success = False
-        url = self.config.get('URL')
+        log.debug("submitting message {0!s} to {1!s}".format(message, phone))
+        parameter = {}
+        if self.smsgateway:
+            url = self.smsgateway.option_dict.get("URL")
+            method = self.smsgateway.option_dict.get("HTTP_METHOD", "GET")
+            username = self.smsgateway.option_dict.get("USERNAME")
+            password = self.smsgateway.option_dict.get("PASSWORD")
+            ssl_verify = self.smsgateway.option_dict.get("CHECK_SSL",
+                                                         "yes") == "yes"
+            proxy = self.smsgateway.option_dict.get("PROXY")
+            for k, v in self.smsgateway.option_dict.iteritems():
+                if k not in self.parameters().get("parameters"):
+                    # This is an additional option
+                    parameter[k] = v.format(otp=message, phone=phone)
+        else:
+            url = self.config.get('URL')
+            method = self.config.get('HTTP_Method', 'GET')
+            username = self.config.get('USERNAME')
+            password = self.config.get('PASSWORD')
+            ssl_verify = self.config.get('CHECK_SSL', True)
+            proxy = self.config.get('PROXY')
+            parameter = self._get_parameters(message, phone)
+
         if url is None:
             log.warning("can not submit message. URL is missing.")
             raise SMSError(-1, "No URL specified in the provider config.")
-
-        log.debug("submitting message {0!s} to {1!s}".format(message, phone))
-
-        method = self.config.get('HTTP_Method', 'GET')
-        username = self.config.get('USERNAME')
-        password = self.config.get('PASSWORD')
-        ssl_verify = self.config.get('CHECK_SSL', True)
-        parameter = self._get_parameters(message, phone)
         basic_auth = None
 
         # there might be the basic authentication in the request url
@@ -81,7 +96,6 @@ class HttpSMSProvider(ISMSProvider):
         if username and password is not None:
             basic_auth = (username, password)
 
-        proxy = self.config.get('PROXY')
         proxies = None
         if proxy:
             protocol = proxy.split(":")[0]
@@ -137,23 +151,29 @@ class HttpSMSProvider(ISMSProvider):
         """
         reply = response.text
         ret = False
-        if "RETURN_SUCCESS" in self.config:
-            success = self.config.get("RETURN_SUCCESS")
-            if success in reply:
+        if self.smsgateway:
+            return_success = self.smsgateway.option_dict.get("RETURN_SUCCESS")
+            return_fail = self.smsgateway.option_dict.get("RETURN_FAIL")
+        else:
+            return_success = self.config.get("RETURN_SUCCESS")
+            return_fail = self.config.get("RETURN_FAIL")
+
+        if return_success:
+            if return_success in reply:
                 log.debug("sending sms success")
                 ret = True
             else:
                 log.warning("failed to send sms. Reply %s does not match "
                             "the RETURN_SUCCESS definition" % reply)
                 raise SMSError(response.status_code,
-                               "We received a none success reply from the "
-                               "SMS Gateway: %s" % reply)
+                           "We received a none success reply from the "
+                           "SMS Gateway: {0!s} ({1!s})".format(reply,
+                                                               return_success))
 
-        elif "RETURN_FAIL" in self.config:
-            fail = self.config.get("RETURN_FAIL")
-            if fail in reply:
+        elif return_fail:
+            if return_fail in reply:
                 log.warning("sending sms failed. %s was not found "
-                            "in %s" % (fail, reply))
+                            "in %s" % (return_fail, reply))
                 raise SMSError(response.status_code,
                                "We received the predefined error from the "
                                "SMS Gateway.")
@@ -163,3 +183,50 @@ class HttpSMSProvider(ISMSProvider):
         else:
             ret = True
         return ret
+
+    @classmethod
+    def parameters(cls):
+        """
+        Return a dictionary, that describes the parameters and options for the
+        SMS provider.
+        Parameters are required keys to values.
+
+        :return: dict
+        """
+        params = {"options_allowed": True,
+                  "parameters": {
+                      "URL": {
+                          "required": True,
+                          "description": "The base URL of the HTTP Gateway"},
+                      "HTTP_METHOD": {
+                          "required": True,
+                          "description": "Should the HTTP Gateway be "
+                                         "connected via an HTTP GET or POST "
+                                         "request.",
+                          "values": ["GET", "POST"]},
+                      "RETURN_SUCCESS": {
+                          "description": "Specify a substring, "
+                                         "that indicates, that the SMS was "
+                                         "delivered successfully."},
+                      "RETURN_FAIL": {
+                          "description": "Specify a substring, "
+                                         "that indicates, that the SMS "
+                                         "failed to be delivered."},
+                      "USERNAME": {
+                          "description": "Username in case of basic "
+                                         "authentication."
+                      },
+                      "PASSWORD": {
+                          "description": "Password in case of basic "
+                                         "authentication."
+                      },
+                      "CHECK_SSL": {
+                          "description": "Should the SSL certificate be "
+                                         "verified.",
+                          "values": ["yes", "no"]
+                      },
+                      "PROXY": {"description": "An optional proxy string."},
+                      "TIMEOUT": {"description": "The timeout in seconds."}
+                  }
+                  }
+        return params

@@ -52,7 +52,7 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
                                          resolverUrl, realmUrl,
                                          machineResolverUrl,
                                          policyUrl, eventUrl, smtpServerUrl,
-                                         radiusServerUrl,
+                                         radiusServerUrl, smsgatewayUrl,
                                          defaultRealmUrl, systemUrl,
                                          CAConnectorUrl, inform) {
     /**
@@ -67,6 +67,31 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
     };
 
     return {
+        getSMSProviders: function(callback) {
+            $http.get(smsgatewayUrl + "/providers", {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
+        getSMSGateways: function(gwid, callback) {
+            $http.get(smsgatewayUrl + "/" + gwid, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
+        setSMSGateway: function(params, callback) {
+            $http.post(smsgatewayUrl, params, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback
+            ).error(error_func);
+        },
+        delSMSGateway: function(name, callback) {
+            $http.delete(smsgatewayUrl+ "/" + name, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}}
+            ).success(callback
+            ).error(error_func);
+        },
         delEvent: function(eventId, callback) {
             $http.delete(eventUrl + "/" + eventId, {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken()}}

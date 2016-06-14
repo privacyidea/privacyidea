@@ -48,6 +48,7 @@ from privacyidea.api.smtpserver import smtpserver_blueprint
 from privacyidea.api.radiusserver import radiusserver_blueprint
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.api.event import eventhandling_blueprint
+from privacyidea.api.smsgateway import smsgateway_blueprint
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
 from privacyidea.config import config
 from privacyidea.models import db
@@ -152,6 +153,7 @@ def create_app(config_name="development",
     app.register_blueprint(recover_blueprint, url_prefix='/recover')
     app.register_blueprint(radiusserver_blueprint, url_prefix='/radiusserver')
     app.register_blueprint(eventhandling_blueprint, url_prefix='/event')
+    app.register_blueprint(smsgateway_blueprint, url_prefix='/smsgateway')
     db.init_app(app)
     migrate = Migrate(app, db)
 
