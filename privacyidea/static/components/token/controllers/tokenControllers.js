@@ -80,6 +80,17 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
         });
     }
 
+    // single token function
+    $scope.reset = function (serial) {
+        TokenFactory.reset(serial, $scope.get);
+    };
+    $scope.disable = function (serial) {
+        TokenFactory.disable(serial, $scope.get);
+    };
+    $scope.enable = function (serial) {
+        TokenFactory.enable(serial, $scope.get);
+    };
+
 });
 
 

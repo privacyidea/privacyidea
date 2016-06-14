@@ -84,15 +84,22 @@
             <td>{{ token.tokentype }}</td>
             <td>
                 <span class="label label-success" ng-show="token.active"
-                        translate>active
+                      ng-click="disable(token.serial)"
+                      title="{{ 'Disable token'|translate }}"
+                      translate>active
                 </span>
                 <span class="label label-danger" ng-hide="token.active"
-                        translate>disabled
+                      ng-click="enable(token.serial)"
+                      title="{{ 'Enable token'|translate }}"
+                      translate>disabled
                 </span>
             </td>
             <!--<td>{{ token.count_window }}</td>-->
             <td>{{ token.description }}</td>
+
             <td><span class="label"
+                      title="{{ 'Reset Failcounter'|translate }}"
+                      ng-click="reset(token.serial)"
                       ng-class="{'label-success': token.failcount==0,
                    'label-warning': token.failcount>0,
                    'label-danger': token.failcount>=token.maxfail}">
