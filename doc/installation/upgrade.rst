@@ -3,6 +3,38 @@
 Upgrading
 ---------
 
+If you installed privacyIDEA via DEB or RPM repository you can use the normal
+system ways of *apt-get*, *aptitude* and *rpm* to upgrade privacyIDEA to the
+current version.
+
+Basic pip upgrade process
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you install privacyIDEA into a python virtualenv like */opt/privacyidea*,
+you can follow this basic upgrade process.
+
+First you might want to backup your program directory:
+
+   tar -zcf privacyidea-old.tgz /opt/privacyidea
+
+and your database:
+
+   source /opt/privacyidea/bin/activate
+   pi-manage backup create
+
+Now you can upgrade the installation:
+
+   source /opt/privacyidea/bin/activate
+   pip install --upgrade privacyidea
+
+Usually you will need to upgrade/migrate the database:
+
+   pi-manage db stamp 4f32a4e1bf33 -d /opt/privacyidea/lib/privacyidea/migrations
+   pi-manage db upgrade -d /opt/privacyidea/lib/privacyidea/migrations
+
+Now you need to restart your webserver for the new code to take effect.
+
+
 Upgrade to privacyIDEA 2.12
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
