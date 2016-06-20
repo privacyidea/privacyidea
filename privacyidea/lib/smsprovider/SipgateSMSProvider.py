@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#   2016-06-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#              Add allowed parameters to the SMS Provider
+#
 #    privacyIDEA
 #    (c) 2014 Cornelius Kölbel
 #    E-mail: info@privacyidea.org
@@ -64,9 +67,14 @@ class SipgateSMSProvider(ISMSProvider):
     # They provide the self.config dictionary.
 
     def submit_message(self, phone, message):
-        username = self.config.get("USERNAME")
-        password = self.config.get("PASSWORD")
-        proxy = self.config.get('PROXY')
+        if self.smsgateway:
+            username = self.smsgateway.option_dict.get("USERNAME")
+            password = self.smsgateway.option_dict.get("PASSWORD")
+            proxy = self.smsgateway.option_dict.get("PROXY")
+        else:
+            username = self.config.get("USERNAME")
+            password = self.config.get("PASSWORD")
+            proxy = self.config.get('PROXY')
         proxies = None
         if proxy:
             protocol = proxy.split(":")[0]
@@ -87,3 +95,28 @@ class SipgateSMSProvider(ISMSProvider):
                                           "sent: %s" % r.status_code)
         return True
 
+
+    @classmethod
+    def parameters(cls):
+        """
+        Return a dictionary, that describes the parameters and options for the
+        SMS provider.
+        Parameters are required keys to values.
+
+        :return: dict
+        """
+        from privacyidea.lib.smtpserver import get_smtpservers
+        params = {"options_allowed": False,
+                  "parameters": {
+                      "USERNAME": {
+                          "required": True,
+                          "description": "The sipgate username."},
+                      "PASSWORD": {
+                          "required": True,
+                          "description": "The sipgate password."},
+                      "PROXY": {
+                          "description": "An optional proxy URI."
+                      }
+                  }
+                  }
+        return params

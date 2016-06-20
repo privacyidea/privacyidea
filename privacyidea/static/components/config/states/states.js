@@ -176,6 +176,21 @@ angular.module('privacyideaApp.configStates', ['ui.router']).config(
                     templateUrl: configpath + "config.smtp.edit.html",
                     controller: "smtpServerController"
                 })
+                .state('config.smsgateway', {
+                    url: "/smsgateway",
+                    templateUrl: configpath + "config.smsgateway.html",
+                    controller: "smsgatewayController"
+                })
+                .state('config.smsgateway.list', {
+                    url: "/list",
+                    templateUrl: configpath + "config.smsgateway.list.html",
+                    controller: "smsgatewayController"
+                })
+                .state('config.smsgateway.edit', {
+                    url: "/edit/{gateway_id:.*}",
+                    templateUrl: configpath + "config.smsgateway.edit.html",
+                    controller: "smsgatewayController"
+                })
                 .state('config.radius', {
                     url: "/radius",
                     templateUrl: configpath + "config.radius.html",

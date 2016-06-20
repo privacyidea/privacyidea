@@ -12,7 +12,12 @@ from privacyidea.lib.smsprovider.SipgateSMSProvider import SipgateSMSProvider
 from privacyidea.lib.smsprovider.SipgateSMSProvider import URL
 from privacyidea.lib.smsprovider.SmtpSMSProvider import SmtpSMSProvider
 from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
-                                                     get_sms_provider_class)
+                                                     get_sms_provider_class,
+                                                     set_smsgateway,
+                                                     get_smsgateway,
+                                                     delete_smsgateway,
+                                                     delete_smsgateway_option,
+                                                     create_sms_instance)
 from privacyidea.lib.smtpserver import add_smtpserver
 import responses
 import smtpmock
@@ -54,6 +59,65 @@ class SMSTestCase(MyTestCase):
                           get_sms_provider_class,
                           "privacyidea.lib.smsprovider.SMSProvider",
                           "SMSError")
+
+    def test_02_create_modify_delete_smsgateway_configuration(self):
+        identifier = "myGW"
+        provider_module = "privacyidea.lib.smsprovider.HTTPSmsPrpvoder"
+        id = set_smsgateway(identifier, provider_module, description="test",
+                            options={"HTTP_METHOD": "POST",
+                                     "URL": "example.com"})
+        self.assertTrue(id > 0)
+
+        gw = get_smsgateway(id=id)
+        self.assertEqual(gw[0].description, "test")
+        # update the description
+        set_smsgateway(identifier, provider_module,
+                       description="This is a sensible description")
+        gw = get_smsgateway(id=id)
+        self.assertEqual(gw[0].description, "This is a sensible description")
+
+        # update some options
+        set_smsgateway(identifier, provider_module,
+                       options={"HTTP_METHOD": "POST",
+                                "URL": "example.com",
+                                "new key": "value"})
+        gw = get_smsgateway(id=id)
+        self.assertEqual(len(gw[0].option_dict), 3)
+        self.assertEqual(gw[0].option_dict.get("HTTP_METHOD"), "POST")
+        self.assertEqual(gw[0].option_dict.get("URL"), "example.com")
+        self.assertEqual(gw[0].option_dict.get("new key"), "value")
+
+        # delete a single option
+        r = delete_smsgateway_option(id, "URL")
+        gw = get_smsgateway(id=id)
+        self.assertEqual(len(gw[0].option_dict), 2)
+        self.assertEqual(gw[0].option_dict.get("HTTP_METHOD"), "POST")
+        self.assertEqual(gw[0].option_dict.get("URL"), None)
+        self.assertEqual(gw[0].option_dict.get("new key"), "value")
+
+        # finally delete the gateway definition
+        r = delete_smsgateway(identifier)
+        self.assertEqual(r, id)
+
+        # delete successful?
+        gw = get_smsgateway()
+        self.assertEqual(len(gw), 0)
+
+    def test_03_create_instance_by_identifier(self):
+        # SMS gateway definition
+        identifier = "myGW"
+        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider" \
+                          ".HttpSMSProvider"
+        id = set_smsgateway(identifier, provider_module, description="test",
+                            options={"HTTP_METHOD": "POST",
+                                     "URL": "example.com"})
+        self.assertTrue(id > 0)
+
+        sms = create_sms_instance(identifier)
+
+        self.assertEqual(sms.smsgateway.option_dict.get("URL"), "example.com")
+        self.assertEqual(sms.smsgateway.option_dict.get("HTTP_METHOD"),
+                         "POST")
 
 
 class SmtpSMSTestCase(MyTestCase):
@@ -136,6 +200,25 @@ class SmtpSMSTestCase(MyTestCase):
         r = self.identifier_provider.submit_message("123456", "Halo")
         self.assertTrue(r)
 
+    @smtpmock.activate
+    def test_08_smsgateway_success(self):
+        r = add_smtpserver("myServer", "1.2.3.4", sender="mail@pi.org")
+        self.assertTrue(r > 0)
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")})
+
+        identifier = "myMail"
+        provider_module = "privacyidea.lib.smsprovider.SmtpSMSProvider" \
+                          ".SmtpSMSProvider"
+        id = set_smsgateway(identifier, provider_module, description="test",
+                            options={"SMTPIDENTIFIER": "myServer",
+                                     "MAILTO": "recp@example.com",
+                                     "SUBJECT": "{phone}",
+                                     "BODY": "{otp}"})
+        self.assertTrue(id > 0)
+        sms = create_sms_instance(identifier)
+        r = sms.submit_message("123456", "Halo")
+        self.assertTrue(r)
+
 
 class SipgateSMSTestCase(MyTestCase):
 
@@ -163,6 +246,20 @@ class SipgateSMSTestCase(MyTestCase):
         # Here we need to send the SMS
         self.assertRaises(SMSError, self.provider.submit_message,
                           "123456", "Hello")
+
+    @responses.activate
+    def test_08_smsgateway_success(self):
+        responses.add(responses.POST,
+                      self.url)
+        identifier = "mySMS"
+        provider_module = "privacyidea.lib.smsprovider.SipgateSMSProvider" \
+                          ".SipgateSMSProvider"
+        id = set_smsgateway(identifier, provider_module, description="test",
+                            options=self.config)
+        self.assertTrue(id > 0)
+        sms = create_sms_instance(identifier)
+        r = sms.submit_message("123456", "Hello")
+        self.assertTrue(r)
 
 
 class HttpSMSTestCase(MyTestCase):
@@ -312,3 +409,27 @@ class HttpSMSTestCase(MyTestCase):
                       status=401)
         self.assertRaises(SMSError, self.missing_provider.submit_message,
                           "123456", "Hello")
+
+    @responses.activate
+    def test_10_new_smsgateway(self):
+        identifier = "myGW"
+        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider" \
+                          ".HttpSMSProvider"
+        id = set_smsgateway(identifier, provider_module, description="test",
+                            options={"HTTP_METHOD": "POST",
+                                     "URL": "http://example.com",
+                                     "RETURN_SUCCESS": "ID",
+                                     "text": "{otp}",
+                                     "phone": "{phone}"})
+        self.assertTrue(id > 0)
+
+        sms = create_sms_instance(identifier)
+
+        responses.add(responses.POST,
+                      "http://example.com",
+                      body=self.success_body)
+        # Here we need to send the SMS
+        r = sms.submit_message("123456", "Hello")
+        self.assertTrue(r)
+
+        delete_smsgateway(identifier)

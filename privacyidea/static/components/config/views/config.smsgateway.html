@@ -1,0 +1,20 @@
+<div class="row">
+    <div class="col-lg-3">
+        <div class="pa-sidebar panel">
+            <ul class="nav nav-pills nav-stacked">
+                <li role="presentation"
+                    ng-class="{ active: $state.includes('config.smsgateway.list')}">
+                    <a ui-sref="config.smsgateway.list" translate>
+                        All SMS Gateways</a></li>
+                <li role="presentation"
+                    ng-show="checkRight('smsgateway_write')"
+                    ng-class="{ active: $state.includes('config.smsgateway.edit')}">
+                    <a ui-sref="config.smsgateway.edit"
+                       translate>Create new SMS Gateway definition</a></li>
+            </ul>
+        </div>
+
+    </div>
+    <div ui-view class="col-lg-9 slide panel">
+    </div>
+</div>

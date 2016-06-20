@@ -1561,7 +1561,7 @@ class EventHandler(MethodsMixin, db.Model):
         Return the serialized policy object including the options
 
         :return: complete dict
-        :rytpe: dicte
+        :rytpe: dict
         """
         d = {"handlermodule": self.handlermodule,
              "id": self.id,
@@ -1764,6 +1764,157 @@ def get_machinetoken_id(machine_id, resolver_name, serial, application):
     if mt:
         ret = mt.id
     return ret
+
+
+class SMSGateway(MethodsMixin, db.Model):
+    """
+    This table stores the SMS Gateway definitions.
+    See
+    https://github.com/privacyidea/privacyidea/wiki/concept:-Delivery-Gateway
+
+    It saves the
+    * unique name
+    * a description
+    * the SMS provider module
+
+    All options and parameters are saved in other tables.
+    """
+    __tablename__ = 'smsgateway'
+    id = db.Column(db.Integer, primary_key=True)
+    identifier = db.Column(db.Unicode(255), nullable=False, unique=True)
+    description = db.Column(db.Unicode(1024), default=u"")
+    providermodule = db.Column(db.Unicode(1024), nullable=False)
+    options = db.relationship('SMSGatewayOption',
+                              lazy='dynamic',
+                              backref='ref_smsgateway')
+
+    def __init__(self, identifier, providermodule, description=None,
+                 options=None):
+
+        options = options or {}
+        sql = SMSGateway.query.filter_by(identifier=identifier).first()
+        if sql:
+            self.id = sql.id
+        self.identifier = identifier
+        self.providermodule = providermodule
+        self.description = description
+        self.save()
+        # delete non existing options in case of update
+        if sql:
+            for option in sql.option_dict.keys():
+                # iterate throuhg all existing options
+                if option not in options:
+                    # if the option is not contained anymore
+                    SMSGatewayOption.query.filter_by(gateway_id=self.id,
+                                                     Key=option).delete()
+        # add the options to the SMS Gateway
+        for k, v in options.iteritems():
+            SMSGatewayOption(gateway_id=self.id, Key=k, Value=v).save()
+
+    def save(self):
+        if self.id is None:
+            # create a new one
+            db.session.add(self)
+            db.session.commit()
+        else:
+            # update
+            SMSGateway.query.filter_by(id=self.id).update({
+                "identifier": self.identifier,
+                "providermodule": self.providermodule,
+                "description": self.description
+            })
+            db.session.commit()
+        return self.id
+
+    def delete(self):
+        """
+        When deleting an SMS Gateway we also delete all the options.
+        :return:
+        """
+        ret = self.id
+        db.session.delete(self)
+        # delete all SMSGatewayOptions
+        db.session.query(SMSGatewayOption)\
+                  .filter(SMSGatewayOption.gateway_id == ret)\
+                  .delete()
+        db.session.commit()
+        return ret
+
+    @property
+    def option_dict(self):
+        """
+        Return all connected options as a dictionary
+
+        :return: dict
+        """
+        res = {}
+        for option in self.ref_option_list:
+            res[option.Key] = option.Value
+        return res
+
+    def as_dict(self):
+        """
+        Return the object as a dictionary
+
+        :return: complete dict
+        :rytpe: dict
+        """
+        d = {"id": self.id,
+             "name": self.identifier,
+             "providermodule": self.providermodule,
+             "description": self.description,
+             "options": self.option_dict}
+
+        return d
+
+
+class SMSGatewayOption(MethodsMixin, db.Model):
+    """
+    This table stores the options and parameters for an SMS Gateway definition.
+    """
+    __tablename__ = 'smsgatewayoption'
+    id = db.Column(db.Integer, primary_key=True)
+    Key = db.Column(db.Unicode(255), nullable=False)
+    Value = db.Column(db.UnicodeText(), default=u'')
+    Type = db.Column(db.Unicode(100), default=u'')
+    gateway_id = db.Column(db.Integer(),
+                           db.ForeignKey('smsgateway.id'), index=True)
+    smsgw = db.relationship('SMSGateway',
+                            lazy='joined',
+                            backref='ref_option_list')
+    __table_args__ = (db.UniqueConstraint('gateway_id',
+                                          'Key',
+                                          name='sgix_1'), {})
+
+    def __init__(self, gateway_id, Key, Value, Type=None):
+
+        """
+        Create a new gateway_option for the gateway_id
+        """
+        self.gateway_id = gateway_id
+        self.Key = Key
+        self.Value = Value
+        self.Type = Type
+        self.save()
+
+    def save(self):
+        # See, if there is this option for this this gateway
+        go = SMSGatewayOption.query.filter_by(gateway_id=self.gateway_id,
+                                               Key=self.Key).first()
+        if go is None:
+            # create a new one
+            db.session.add(self)
+            db.session.commit()
+            ret = self.id
+        else:
+            # update
+            SMSGatewayOption.query.filter_by(gateway_id=self.gateway_id,
+                                              Key=self.Key
+                                              ).update({'Value': self.Value,
+                                                        'Type': self.Type})
+            ret = go.id
+        db.session.commit()
+        return ret
 
 
 class RADIUSServer(MethodsMixin, db.Model):

@@ -102,6 +102,10 @@ msgstr ""
 msgid "All Resolvers"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.smsgateway.html:7
+msgid "All SMS Gateways"
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.html:11
 msgid "All tokens"
 msgstr ""
@@ -191,11 +195,11 @@ msgstr ""
 msgid "Authentication failed."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:101
+#: privacyidea/static/components/config/views/config.system.html:108
 msgid "Auto resync timeout"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:97
+#: privacyidea/static/components/config/views/config.system.html:104
 msgid "Automatic resync during authentication"
 msgstr ""
 
@@ -368,7 +372,7 @@ msgstr ""
 msgid "Count Window"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:163
+#: privacyidea/static/components/config/views/config.system.html:170
 msgid ""
 "Count Window of\n"
 "                    newly enrolled tokens"
@@ -411,6 +415,10 @@ msgstr ""
 msgid "Create a new SCIM Resolver"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.smsgateway.edit.html:6
+msgid "Create a new SMS gateway"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.smtp.edit.html:5
 msgid "Create a new SMTP server {{ params.identifier }}"
 msgstr ""
@@ -443,6 +451,10 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.html:12
 msgid "Create new Policy"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smsgateway.html:12
+msgid "Create new SMS Gateway definition"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.realms.list.html:115
@@ -495,6 +507,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.radius.list.html:29
 #: privacyidea/static/components/config/views/config.realms.list.html:64
 #: privacyidea/static/components/config/views/config.resolvers.list.html:24
+#: privacyidea/static/components/config/views/config.smsgateway.list.html:26
 #: privacyidea/static/components/config/views/config.smtp.list.html:34
 #: privacyidea/static/components/config/views/config.token.question.html:39
 #: privacyidea/static/components/config/views/config.token.yubikey.html:29
@@ -517,6 +530,8 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:68
 #: privacyidea/static/components/config/views/config.radius.list.html:8
+#: privacyidea/static/components/config/views/config.smsgateway.edit.html:38
+#: privacyidea/static/components/config/views/config.smsgateway.list.html:6
 #: privacyidea/static/components/config/views/config.smtp.edit.html:87
 #: privacyidea/static/components/config/views/config.smtp.list.html:9
 #: privacyidea/static/components/token/views/token.details.html:118
@@ -653,6 +668,10 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:3
 msgid "Edit SCIM Resolver {{ resolvername }}"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smsgateway.edit.html:3
+msgid "Edit SMS gateway {{ form.name }}"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:2
@@ -1045,13 +1064,13 @@ msgstr ""
 msgid "Import tokens from a file"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:86
+#: privacyidea/static/components/config/views/config.system.html:93
 msgid ""
 "Include SAML attributes in the\n"
 "                authentication response."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:67
+#: privacyidea/static/components/config/views/config.system.html:74
 msgid "Increase the failcounter if the wrong PIN was entered."
 msgstr ""
 
@@ -1189,7 +1208,7 @@ msgstr ""
 msgid "Mark the token to be lost"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:176
+#: privacyidea/static/components/config/views/config.system.html:183
 msgid ""
 "Max Failcount of\n"
 "                    newly enrolled tokens"
@@ -1217,6 +1236,11 @@ msgstr ""
 #: privacyidea/static/components/user/views/user.details.html:75
 #: privacyidea/static/components/user/views/user.password.html:40
 msgid "Mobile"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smsgateway.edit.html:28
+#: privacyidea/static/components/config/views/config.smsgateway.list.html:5
+msgid "Name"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.html:17
@@ -1320,7 +1344,7 @@ msgstr ""
 msgid "OTP length"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:149
+#: privacyidea/static/components/config/views/config.system.html:156
 msgid ""
 "OTP length of\n"
 "                    newly enrolled tokens"
@@ -1361,6 +1385,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.events.details.html:67
 #: privacyidea/static/components/config/views/config.events.list.html:10
+#: privacyidea/static/components/config/views/config.smsgateway.edit.html:81
 #: privacyidea/static/components/machine/views/machine.details.html:52
 #: privacyidea/static/components/token/views/token.details.html:456
 msgid "Options"
@@ -1374,7 +1399,7 @@ msgstr ""
 msgid "Overall token usage"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:114
+#: privacyidea/static/components/config/views/config.system.html:121
 msgid "Override Authorization Clients"
 msgstr ""
 
@@ -1394,6 +1419,10 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:143
 msgid "PKCS12"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smsgateway.edit.html:48
+msgid "Parameters"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:85
@@ -1472,7 +1501,7 @@ msgstr ""
 msgid "Pre Shared Key"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:76
+#: privacyidea/static/components/config/views/config.system.html:83
 msgid ""
 "Prepend the PIN in front of the OTP value\n"
 "                . Otherwise it will be post pended."
@@ -1506,6 +1535,11 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.sms.html:30
 msgid "Provider Config"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smsgateway.edit.html:13
+#: privacyidea/static/components/config/views/config.smsgateway.list.html:7
+msgid "Providermodule"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:19
@@ -1648,7 +1682,7 @@ msgstr ""
 msgid "Required Realms"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.list.html:100
+#: privacyidea/static/components/token/views/token.list.html:101
 msgid "Reset Failcounter"
 msgstr ""
 
@@ -1705,6 +1739,10 @@ msgstr ""
 msgid "Roll the token"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.system.html:39
+msgid "SMS Gateways"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.token.sms.html:13
 msgid "SMS Provider"
 msgstr ""
@@ -1725,7 +1763,7 @@ msgstr ""
 msgid "SMTP server configuration"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:132
+#: privacyidea/static/components/config/views/config.system.html:139
 msgid "SMTP server for password recovery"
 msgstr ""
 
@@ -1763,11 +1801,15 @@ msgstr ""
 msgid "Save Resolver"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.smsgateway.edit.html:121
+msgid "Save SMS gateway"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.smtp.edit.html:124
 msgid "Save SMTP server"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:242
+#: privacyidea/static/components/config/views/config.system.html:249
 msgid "Save System Config"
 msgstr ""
 
@@ -1812,7 +1854,7 @@ msgstr ""
 msgid "Select Realm"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:141
+#: privacyidea/static/components/config/views/config.system.html:148
 msgid ""
 "Select a predefined\n"
 "                    <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
@@ -1947,7 +1989,7 @@ msgstr ""
 msgid "Sync Window"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:188
+#: privacyidea/static/components/config/views/config.system.html:195
 msgid ""
 "Sync Window of\n"
 "                    newly enrolled tokens"
@@ -2269,7 +2311,7 @@ msgstr ""
 msgid "The certificate was enrolled successfully."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:201
+#: privacyidea/static/components/config/views/config.system.html:208
 msgid "The challenge validity time"
 msgstr ""
 
@@ -2323,7 +2365,7 @@ msgid ""
 "                        service itself</a>."
 msgstr ""
 
-#: privacyidea/static/app.js:107
+#: privacyidea/static/app.js:108
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
 msgstr ""
 
@@ -2484,13 +2526,13 @@ msgid ""
 "                The successful and the failed requests are listed."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:124
+#: privacyidea/static/components/config/views/config.system.html:131
 msgid ""
 "These client IP addresses or subnets are\n"
 "                    allowed to masquerade as another client."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:42
+#: privacyidea/static/components/config/views/config.system.html:49
 msgid ""
 "This documentation contains the current\n"
 "            configuration of your system in restructured text. You can use\n"
@@ -2767,7 +2809,7 @@ msgstr ""
 msgid "Uploaded Tokens: {{ uploadedTokens }}"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:59
+#: privacyidea/static/components/config/views/config.system.html:66
 msgid ""
 "Use @ sign to split the username\n"
 "                and the realm."

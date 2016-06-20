@@ -463,6 +463,7 @@ myApp.controller("tokenConfigController", function ($scope, $location,
     */
 
     $scope.getSmtpIdentifiers();
+    $scope.getSMSIdentifiers();
     $scope.loadSystemConfig();
 });
 myApp.controller("configController", function ($scope, $location,
@@ -516,6 +517,19 @@ myApp.controller("configController", function ($scope, $location,
             console.log("SMTP Identifiers");
             console.log(data.result.value);
             $scope.smtpIdentifiers = data.result.value;
+        });
+    };
+
+    $scope.getSMSIdentifiers = function() {
+        ConfigFactory.getSMSGateways(undefined, function(data){
+            console.log("SMS Identifiers");
+            // Argh when will we have array comprehension?
+            // $scope.smsIdentifiers = [sms.name for (sms of data.result.value)];
+            $scope.smsIdentifiers = Array()
+            angular.forEach(data.result.value, function(sms){
+                $scope.smsIdentifiers.push(sms.name);
+            })
+            console.log($scope.smsIdentifiers);
         });
     };
 

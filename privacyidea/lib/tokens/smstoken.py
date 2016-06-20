@@ -5,6 +5,9 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2016-06-20   Cornelius Kölbel <cornelius.koelbel@netkngihts.it>
+#               Use sms.identifier, central SMS gateway definition, to send
+#               the OTP value via SMS.
 #  2015-05-24   Add more detailed description
 #               Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #  2015-01-30   Adapt for migration to flask
@@ -47,7 +50,8 @@ from privacyidea.api.lib.utils import required
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.log import log_with
-from privacyidea.lib.smsprovider.SMSProvider import get_sms_provider_class
+from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
+                                                     create_sms_instance)
 from json import loads
 from gettext import gettext as _
 
@@ -329,7 +333,7 @@ class SmsTokenClass(HotpTokenClass):
         send sms
 
         :param message: the sms submit message - could contain placeholders
-         like <otp> or <serial>
+            like <otp> or <serial>
         :type message: string
 
         :return: submitted message
@@ -343,29 +347,38 @@ class SmsTokenClass(HotpTokenClass):
 
         message = message.replace("<otp>", otp)
         message = message.replace("<serial>", serial)
-
         log.debug("sending SMS to phone number {0!s} ".format(phone))
-        (SMSProvider, SMSProviderClass) = self._get_sms_provider()
-        log.debug("smsprovider: {0!s}, class: {1!s}".format(SMSProvider,
-                                                  SMSProviderClass))
 
-        try:
-            sms = get_sms_provider_class(SMSProvider, SMSProviderClass)()
-        except Exception as exc:
-            log.error("Failed to load SMSProvider: {0!r}".format(exc))
-            log.debug("{0!s}".format(traceback.format_exc()))
-            raise exc
+        # First we try to get the new SMS gateway config style
+        sms_gateway_identifier = get_from_config("sms.identifier")
 
-        try:
-            # now we need the config from the env
-            log.debug("loading SMS configuration for class {0!s}".format(sms))
-            config = self._get_sms_provider_config()
-            log.debug("config: {0!r}".format(config))
-            sms.load_config(config)
-        except Exception as exc:
-            log.error("Failed to load sms.providerConfig: {0!r}".format(exc))
-            log.debug("{0!s}".format(traceback.format_exc()))
-            raise Exception("Failed to load sms.providerConfig: {0!r}".format(exc))
+        if sms_gateway_identifier:
+            # New style
+            sms = create_sms_instance(sms_gateway_identifier)
+
+        else:
+            # Old style
+            (SMSProvider, SMSProviderClass) = self._get_sms_provider()
+            log.debug("smsprovider: {0!s}, class: {1!s}".format(SMSProvider,
+                                                      SMSProviderClass))
+
+            try:
+                sms = get_sms_provider_class(SMSProvider, SMSProviderClass)()
+            except Exception as exc:
+                log.error("Failed to load SMSProvider: {0!r}".format(exc))
+                log.debug("{0!s}".format(traceback.format_exc()))
+                raise exc
+
+            try:
+                # now we need the config from the env
+                log.debug("loading SMS configuration for class {0!s}".format(sms))
+                config = self._get_sms_provider_config()
+                log.debug("config: {0!r}".format(config))
+                sms.load_config(config)
+            except Exception as exc:
+                log.error("Failed to load sms.providerConfig: {0!r}".format(exc))
+                log.debug("{0!s}".format(traceback.format_exc()))
+                raise Exception("Failed to load sms.providerConfig: {0!r}".format(exc))
 
         log.debug("submitMessage: {0!r}, to phone {1!r}".format(message, phone))
         ret = sms.submit_message(phone, message)
@@ -421,7 +434,7 @@ class SmsTokenClass(HotpTokenClass):
         This returns the SMSTEXT from the policy "smstext"
 
         :param options: contains user and g object.
-        :optins type: dict
+        :type options: dict
         :return: Message template
         :rtype: basestring
         """

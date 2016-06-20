@@ -18,5 +18,5 @@ Frequently Asked Questions
    shortcuts
    resolver
    crypto-considerations
-
+   policies
 
