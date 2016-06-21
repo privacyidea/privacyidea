@@ -133,6 +133,8 @@ send the PIN via EMail or print it in a letter.
 
 For more information see the base class :ref:`code_pinhandler`.
 
+.. _change_pin_first_use:
+
 change_pin_on_first_use
 ~~~~~~~~~~~~~~~~~~~~~~~
 .. index:: PIN policies, Change PIN
@@ -149,6 +151,20 @@ trigger the change of the PIN using the API */token/setpin*. See
 
 .. note:: If the application does not honour the "pin_change" attribute, then
    the user can still authenticate with his old PIN.
+
+change_pin_every
+~~~~~~~~~~~~~~~~
+.. index:: PIN policies, Change PIN
+
+type: string
+
+This policy requires the user to change the PIN of his token on a regular
+basis. Enter a value follewed by "d", e.g. change the PIN every 180 days will
+be "180d".
+
+The date, when the PIN needs to be changed, is returned in the API response
+of */validate/check*. For more information see :ref:`change_pin_first_use`.
+To specifiy the contents of the PIN see :ref:`user_policies`.
 
 otp_pin_encrypt
 ~~~~~~~~~~~~~~~

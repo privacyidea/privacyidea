@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-06-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Change PIN policies
 #  2016-05-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add realm dropdown
 #  2016-04-06 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -257,6 +259,7 @@ class ACTION(object):
     EVENTHANDLINGWRITE = "eventhandling_write"
     SMSGATEWAYWRITE = "smsgateway_write"
     CHANGE_PIN_FIRST_USE = "change_pin_on_first_use"
+    CHANGE_PIN_EVERY = "change_pin_every"
 
 
 class LOGINMODE(object):
@@ -1079,6 +1082,12 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("If the administrator sets the OTP PIN during "
                           "enrollment or later, the user will have to change "
                           "the PIN during first use.")
+            },
+            ACTION.CHANGE_PIN_EVERY: {
+                'type': 'bool',
+                'desc': _("The user needs to change his PIN on a regular "
+                          "basis. To change the PIN every 180 days, "
+                          "enter '180d'.")
             },
             ACTION.ENCRYPTPIN: {
                 'type': 'bool',
