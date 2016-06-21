@@ -608,7 +608,7 @@ class TokenBaseTestCase(MyTestCase):
         sshkey = token.get_tokeninfo("sshkey")
         self.assertTrue(sshkey == data, sshkey)
 
-    def test_31_revoke(self):
+    def test_98_revoke(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
         token.revoke()
@@ -630,3 +630,17 @@ class TokenBaseTestCase(MyTestCase):
     def test_34_get_default_settings(self):
         r = TokenClass.get_default_settings({})
         self.assertEqual(r, {})
+
+    def test_35_next_pin_change(self):
+        ndate = (datetime.datetime.now() + datetime.timedelta(12)).strftime(
+            "%d/%m/%y")
+
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = TokenClass(db_token)
+        token.set_next_pin_change("12d")
+        r = token.get_tokeninfo("next_pin_change")
+        self.assertTrue(r.startswith(ndate))
+
+        token.set_next_pin_change("12d", password=True)
+        r = token.get_tokeninfo("next_password_change")
+        self.assertTrue(r.startswith(ndate))

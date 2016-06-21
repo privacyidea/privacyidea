@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2016-06-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add method to set the next_pin_change and next_password_change.
 #  2016-04-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add get_default_settings to change the parameters before
 #             the token is created
@@ -865,6 +867,24 @@ class TokenClass(object):
             datetime.datetime.strptime(start_date, DATE_FORMAT)
 
         self.add_tokeninfo("validity_period_start", start_date)
+
+    def set_next_pin_change(self, diff=None, password=False):
+        """
+        Sets the timestamp for the next_pin_change. Provide a
+        difference like 90d (90 days).
+
+        Either provider the
+        :param diff: The time delta.
+        :type diff: basestring
+        :param password: Do no set next_pin_change but next_password_change
+        :return: None
+        """
+        days = int(diff.lower().strip("d"))
+        key = "next_pin_change"
+        if password:
+            key = "next_password_change"
+        new_date = datetime.datetime.now() + datetime.timedelta(days=days)
+        self.add_tokeninfo(key, new_date.strftime(DATE_FORMAT))
 
     @check_token_locked
     def inc_count_auth_success(self):

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2016-06-21 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Add next pin change response
 #  2016-06-13 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Add otp length to detail response
 #  2015-10-14 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -1947,6 +1949,14 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
             reply_dict["serial"] = valid_token_list[0].token.serial
             reply_dict["type"] = valid_token_list[0].token.tokentype
             reply_dict["otplen"] = valid_token_list[0].token.otplen
+            # If exist, add next pin and next password change
+            next_pin = valid_token_list[0].get_tokeninfo("next_pin_change")
+            if next_pin:
+                reply_dict["next_pin_change"] = next_pin
+            next_passw = valid_token_list[0].get_tokeninfo(
+                "next_password_change")
+            if next_passw:
+                reply_dict["next_password_change"] = next_passw
         reply_dict["message"] = ", ".join(message_list)
 
     elif challenge_response_token_list:
@@ -1980,6 +1990,15 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 if r_chal:
                     reply_dict["transaction_id"] = transaction_id
                     reply_dict["attributes"] = attributes
+                    # If exist, add next pin and next password change
+                    next_pin = challenge_request_token_list[0].get_tokeninfo(
+                            "next_pin_change")
+                    if next_pin:
+                        reply_dict["next_pin_change"] = next_pin
+                    next_passw = challenge_request_token_list[0].get_tokeninfo(
+                            "next_password_change")
+                    if next_passw:
+                        reply_dict["next_password_change"] = next_passw
             reply_dict["message"] = ", ".join(message_list)
         else:
             reply_dict["message"] = "Multiple tokens to create a challenge " \
