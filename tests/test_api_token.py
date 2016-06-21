@@ -1109,3 +1109,50 @@ class APITokenTestCase(MyTestCase):
 
         remove_token("SP001")
         delete_policy("deleteToken")
+
+    def test_23_change_pin_on_first_use(self):
+
+        set_policy("firstuse", scope=SCOPE.ENROLL,
+                   action=ACTION.CHANGE_PIN_FIRST_USE)
+
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data = {"genkey": 1,
+                                                   "pin": "123456"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+
+            serial = detail.get("serial")
+            token = get_tokens(serial=serial)[0]
+            ti = token.get_tokeninfo("next_pin_change")
+            ndate = datetime.datetime.now().strftime("%d/%m/%y")
+            self.assertTrue(ti.startswith(ndate))
+
+        # If the administrator sets a PIN of the user, the next_pin_change
+        # must also be created!
+
+        token = init_token({"serial": "SP001", "type": "spass", "pin":
+            "123456"})
+        ti = token.get_tokeninfo("next_pin_change")
+        self.assertEqual(ti, None)
+        # Now we set the PIN
+        with self.app.test_request_context('/token/setpin/SP001',
+                                           method='POST',
+                                           data={"otppin": "1234"},
+                                           headers={'Authorization': self.at}):
+
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+
+            serial = "SP001"
+            token = get_tokens(serial=serial)[0]
+            ti = token.get_tokeninfo("next_pin_change")
+            ndate = datetime.datetime.now().strftime("%d/%m/%y")
+            self.assertTrue(ti.startswith(ndate))
+
+        delete_policy("firstuse")

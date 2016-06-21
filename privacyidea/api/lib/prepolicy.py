@@ -167,7 +167,7 @@ def check_otp_pin(request=None, action=None):
     raised.
     """
     # This policy is only used for USER roles at the moment:
-    if g.logged_in_user.get("role") == "user":
+    if g.logged_in_user.get("role") == ROLE.USER:
         params = request.all_data
         pin = params.get("otppin", "") or params.get("pin", "")
         serial = params.get("serial")

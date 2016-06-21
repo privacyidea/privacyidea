@@ -24,7 +24,8 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             no_detail_on_success,
                                             no_detail_on_fail, autoassign,
                                             offline_info, sign_response,
-                                            get_webui_settings)
+                                            get_webui_settings,
+                                            save_pin_change_first_use)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token)
 from privacyidea.lib.user import User
@@ -1343,3 +1344,77 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         # finally delete policy
         delete_policy("pol1")
 
+    def test_17_pin_change(self):
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'type': "totp",
+                                       "genkey": "1"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+
+        # Set a policy that defines the default totp settings
+        set_policy(name="pol1",
+                   scope=SCOPE.ENROLL,
+                   action=ACTION.CHANGE_PIN_FIRST_USE)
+        g.policy_object = PolicyClass()
+
+        # request, that matches the policy
+        #
+        # Take the serialnumber from the request data
+        req.all_data = {
+            "type": "spass",
+            "serial": "changePIN1"}
+
+        # The response contains the token serial
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": True},
+               "version": "privacyIDEA test",
+               "id": 1,
+               "detail": {"message": "matching 1 tokens",
+                          "serial": "changePIN1",
+                          "type": "spass"}}
+        resp = Response(json.dumps(res))
+
+        # the token itself
+        token = init_token({"serial": "changePIN1",
+                            "type": "spass"}, tokenrealms=[self.realm1])
+        save_pin_change_first_use(req, resp)
+        ti = token.get_tokeninfo("next_pin_change")
+        ndate = datetime.now().strftime("%d/%m/%y")
+        self.assertTrue(ti.startswith(ndate))
+
+        #
+        # check a token without a given serial
+        #
+        # take the serial number from the response data
+        req.all_data = {
+            "type": "spass"}
+
+        # The response contains the token serial
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": True},
+               "version": "privacyIDEA test",
+               "id": 1,
+               "detail": {"message": "matching 1 tokens",
+                          "serial": "changePIN2",
+                          "type": "spass"}}
+        resp = Response(json.dumps(res))
+
+        token = init_token({"type": "spass",
+                            "serial": "changePIN2"}, tokenrealms=[self.realm1])
+
+        save_pin_change_first_use(req, resp)
+        ti = token.get_tokeninfo("next_pin_change")
+        ndate = datetime.now().strftime("%d/%m/%y")
+        self.assertTrue(ti.startswith(ndate))
+
+        # finally delete policy
+        delete_policy("pol1")

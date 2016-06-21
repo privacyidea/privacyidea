@@ -77,6 +77,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            init_tokenlabel, init_random_pin,
                                            encrypt_pin, check_otp_pin,
                                            check_external, init_token_defaults)
+from privacyidea.api.lib.postpolicy import (save_pin_change_first_use,
+                                            postpolicy)
 from privacyidea.lib.event import event
 from privacyidea.api.auth import admin_required
 
@@ -107,6 +109,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(check_otp_pin, request)
 @prepolicy(check_external, request, action="init")
 @prepolicy(init_token_defaults, request)
+@postpolicy(save_pin_change_first_use, request)
 @event("token_init", request, g)
 @log_with(log, log_entry=False)
 def init():
@@ -543,6 +546,7 @@ def resync_api(serial=None):
 @prepolicy(check_base_action, request, action=ACTION.SETPIN)
 @prepolicy(encrypt_pin, request)
 @prepolicy(check_otp_pin, request)
+@postpolicy(save_pin_change_first_use, request)
 @event("token_setpin", request, g)
 @log_with(log)
 def setpin_api(serial=None):

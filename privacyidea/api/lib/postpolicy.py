@@ -45,7 +45,7 @@ from privacyidea.lib.error import PolicyError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE
 from privacyidea.lib.user import get_user_from_param
-from privacyidea.lib.token import get_tokens, assign_token
+from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token
 from privacyidea.lib.machine import get_hostname, get_auth_items
 from .prepolicy import check_max_token_user, check_max_token_realm
 import functools
@@ -291,6 +291,50 @@ def no_detail_on_fail(request, response):
         del content["detail"]
         response.data = json.dumps(content)
 
+    return response
+
+
+def save_pin_change_first_use(request, response, serial=None):
+    """
+    This policy function checks if the pin_change date should be
+    stored in the tokeninfo table. Check scope:enrollment and
+    ACTION.CHANGE_PIN_FIRST_USE. This action is only valid for administrators.
+
+    This function decorates /token/init and /token/setpin. The parameter
+    "pin" and "otppin" is investigated.
+
+    :param request:
+    :param action:
+    :return:
+    """
+    if g.logged_in_user.get("role") == ROLE.ADMIN:
+        content = json.loads(response.data)
+        policy_object = g.policy_object
+        user_obj = get_user_from_param(request.all_data)
+        serial = serial or request.all_data.get("serial")
+        if not serial:
+            # No serial in request, so we look into the response
+            serial = content.get("detail", {}).get("serial")
+        realm = None
+        if not serial:
+            log.error("Can not determine serial number. Have no idea of any "
+                      "realm!")
+        else:
+            # Determine the realm by the serial
+            realms = get_realms_of_token(serial)
+            log.debug("Token {0!s} in more than one realm: {1!s}".format(serial, realms))
+            if realms:
+                realm = realms[0]
+            realm = realm or get_default_realm()
+
+            pinpol = policy_object.get_policies(action=ACTION.CHANGE_PIN_FIRST_USE,
+                                                scope=SCOPE.ENROLL, realm=realm,
+                                                client=g.client_ip, active=True)
+            if pinpol:
+                token = get_tokens(serial=serial)[0]
+                token.set_next_pin_change(diff="0d")
+
+    # we do not modify the response!
     return response
 
 
