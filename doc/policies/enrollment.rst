@@ -133,6 +133,23 @@ send the PIN via EMail or print it in a letter.
 
 For more information see the base class :ref:`code_pinhandler`.
 
+change_pin_on_first_use
+~~~~~~~~~~~~~~~~~~~~~~~
+.. index:: PIN policies, Change PIN
+
+type: bool
+
+If the administrator enrolls a token or resets a PIN of a token, then the PIN
+of this token is marked to be changed on the first (or next) use.
+When the user authenticates with the old PIN, the user is authenticated
+successfully. But the detail-response contains the keys "next_pin_change" and
+"pin_change". If "pin_change" is *True* the authenticating application must
+trigger the change of the PIN using the API */token/setpin*. See
+:ref:`rest_token`.
+
+.. note:: If the application does not honour the "pin_change" attribute, then
+   the user can still authenticate with his old PIN.
+
 otp_pin_encrypt
 ~~~~~~~~~~~~~~~
 
