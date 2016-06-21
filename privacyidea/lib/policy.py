@@ -256,6 +256,7 @@ class ACTION(object):
     REALMDROPDOWN = "realm_dropdown"
     EVENTHANDLINGWRITE = "eventhandling_write"
     SMSGATEWAYWRITE = "smsgateway_write"
+    CHANGE_PIN_FIRST_USE = "change_pin_on_first_use"
 
 
 class LOGINMODE(object):
@@ -1073,6 +1074,12 @@ def get_static_policy_definitions(scope=None):
                 'type': 'str',
                 'desc': _('In case of a random OTP PIN use this python '
                           'module to process the PIN.')},
+            ACTION.CHANGE_PIN_FIRST_USE: {
+                'type': 'bool',
+                'desc': _("If the administrator sets the OTP PIN during "
+                          "enrollment or later, the user will have to change "
+                          "the PIN during first use.")
+            },
             ACTION.ENCRYPTPIN: {
                 'type': 'bool',
                 "desc": _("The OTP PIN can be hashed or encrypted. Hashing "
