@@ -886,6 +886,22 @@ class TokenClass(object):
         new_date = datetime.datetime.now() + datetime.timedelta(days=days)
         self.add_tokeninfo(key, new_date.strftime(DATE_FORMAT))
 
+    def is_pin_change(self, password=False):
+        """
+        Returns true if the pin of the token needs to be changed.
+        :param password: Whether the password needs to be changed.
+        :type password: bool
+
+        :return: True or False
+        """
+        key = "next_pin_change"
+        if password:
+            key = "next_password_change"
+        sdate = self.get_tokeninfo(key)
+        return datetime.datetime.now() > datetime.datetime.strptime(sdate,
+                                                              DATE_FORMAT)
+
+
     @check_token_locked
     def inc_count_auth_success(self):
         """

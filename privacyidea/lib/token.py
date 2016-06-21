@@ -1953,10 +1953,13 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
             next_pin = valid_token_list[0].get_tokeninfo("next_pin_change")
             if next_pin:
                 reply_dict["next_pin_change"] = next_pin
+                reply_dict["pin_change"] = valid_token_list[0].is_pin_change()
             next_passw = valid_token_list[0].get_tokeninfo(
                 "next_password_change")
             if next_passw:
                 reply_dict["next_password_change"] = next_passw
+                reply_dict["password_change"] = valid_token_list[
+                    0].is_pin_change(password=True)
         reply_dict["message"] = ", ".join(message_list)
 
     elif challenge_response_token_list:
@@ -1995,10 +1998,15 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                             "next_pin_change")
                     if next_pin:
                         reply_dict["next_pin_change"] = next_pin
+                        reply_dict["pin_change"] = \
+                            challenge_request_token_list[0].is_pin_change()
                     next_passw = challenge_request_token_list[0].get_tokeninfo(
                             "next_password_change")
                     if next_passw:
                         reply_dict["next_password_change"] = next_passw
+                        reply_dict["password_change"] = \
+                            challenge_request_token_list[0].is_pin_change(
+                                password=True)
             reply_dict["message"] = ", ".join(message_list)
         else:
             reply_dict["message"] = "Multiple tokens to create a challenge " \

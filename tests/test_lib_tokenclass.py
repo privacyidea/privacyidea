@@ -644,3 +644,15 @@ class TokenBaseTestCase(MyTestCase):
         token.set_next_pin_change("12d", password=True)
         r = token.get_tokeninfo("next_password_change")
         self.assertTrue(r.startswith(ndate))
+        # The password must not be changed
+        r = token.is_pin_change(password=True)
+        self.assertEqual(r, False)
+
+    def test_36_change_pin(self):
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = TokenClass(db_token)
+        # Set a pin change date that is already over.
+        token.set_next_pin_change("-1d")
+        # check that the pin needs to be changed
+        r = token.is_pin_change()
+        self.assertEqual(r, True)
