@@ -1416,5 +1416,13 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         ndate = datetime.now().strftime("%d/%m/%y")
         self.assertTrue(ti.startswith(ndate))
 
+        # Now the user changes the PIN. Afterwards the next_pin_change is empty
+        g.logged_in_user = {"username": "hans",
+                            "role": "user"}
+
+        save_pin_change_first_use(req, resp, serial="changePIN2")
+        ti = token.get_tokeninfo("next_pin_change")
+        self.assertEqual(ti, None)
+
         # finally delete policy
         delete_policy("pol1")

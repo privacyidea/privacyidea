@@ -307,32 +307,37 @@ def save_pin_change_first_use(request, response, serial=None):
     :param action:
     :return:
     """
-    if g.logged_in_user.get("role") == ROLE.ADMIN:
-        content = json.loads(response.data)
-        policy_object = g.policy_object
-        user_obj = get_user_from_param(request.all_data)
-        serial = serial or request.all_data.get("serial")
-        if not serial:
-            # No serial in request, so we look into the response
-            serial = content.get("detail", {}).get("serial")
-        realm = None
-        if not serial:
-            log.error("Can not determine serial number. Have no idea of any "
-                      "realm!")
-        else:
-            # Determine the realm by the serial
-            realms = get_realms_of_token(serial)
-            log.debug("Token {0!s} in more than one realm: {1!s}".format(serial, realms))
-            if realms:
-                realm = realms[0]
-            realm = realm or get_default_realm()
+    content = json.loads(response.data)
+    policy_object = g.policy_object
+    serial = serial or request.all_data.get("serial")
+    if not serial:
+        # No serial in request, so we look into the response
+        serial = content.get("detail", {}).get("serial")
+    realm = None
+    if not serial:
+        log.error("Can not determine serial number. Have no idea of any "
+                  "realm!")
+    else:
+        # Determine the realm by the serial
+        realms = get_realms_of_token(serial)
+        log.debug(
+            "Token {0!s} in more than one realm: {1!s}".format(serial, realms))
+        if realms:
+            realm = realms[0]
+        realm = realm or get_default_realm()
 
+        if g.logged_in_user.get("role") == ROLE.ADMIN:
             pinpol = policy_object.get_policies(action=ACTION.CHANGE_PIN_FIRST_USE,
                                                 scope=SCOPE.ENROLL, realm=realm,
                                                 client=g.client_ip, active=True)
             if pinpol:
                 token = get_tokens(serial=serial)[0]
                 token.set_next_pin_change(diff="0d")
+
+        elif g.logged_in_user.get("role") == ROLE.USER:
+            # The user sets a pin or enrolls a token. -> delete the pin_change
+            token = get_tokens(serial=serial)[0]
+            token.del_tokeninfo("next_pin_change")
 
     # we do not modify the response!
     return response
