@@ -478,12 +478,15 @@ def get_num_tokens_in_realm(realm, active=True):
 
 
 @log_with(log)
-def get_realms_of_token(serial):
+def get_realms_of_token(serial, only_first_realm=False):
     """
     This function returns a list of the realms of a token
 
     :param serial: the serial number of the token
     :type serial: basestring
+
+    :param only_first_realm: Wheather we should only return the first realm
+    :type only_first_realm: bool
 
     :return: list of the realm names
     :rtype: list
@@ -493,6 +496,16 @@ def get_realms_of_token(serial):
     realms = []
     for tokenobject in tokenobject_list:
         realms = tokenobject.get_realms()
+
+    if realms > 1:
+        log.debug(
+            "Token {0!s} in more than one realm: {1!s}".format(serial, realms))
+
+    if only_first_realm:
+        if realms:
+            realms = realms[0]
+        else:
+            realms = None
 
     return realms
 

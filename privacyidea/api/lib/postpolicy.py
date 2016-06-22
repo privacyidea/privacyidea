@@ -319,17 +319,12 @@ def save_pin_change(request, response, serial=None):
     if not serial:
         # No serial in request, so we look into the response
         serial = content.get("detail", {}).get("serial")
-    realm = None
     if not serial:
         log.error("Can not determine serial number. Have no idea of any "
                   "realm!")
     else:
         # Determine the realm by the serial
-        realms = get_realms_of_token(serial)
-        log.debug(
-            "Token {0!s} in more than one realm: {1!s}".format(serial, realms))
-        if realms:
-            realm = realms[0]
+        realm = get_realms_of_token(serial, only_first_realm=True)
         realm = realm or get_default_realm()
 
         if g.logged_in_user.get("role") == ROLE.ADMIN:
