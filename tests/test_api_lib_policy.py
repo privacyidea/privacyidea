@@ -25,7 +25,7 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             no_detail_on_fail, autoassign,
                                             offline_info, sign_response,
                                             get_webui_settings,
-                                            save_pin_change_first_use)
+                                            save_pin_change)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token)
 from privacyidea.lib.user import User
@@ -1385,7 +1385,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         # the token itself
         token = init_token({"serial": "changePIN1",
                             "type": "spass"}, tokenrealms=[self.realm1])
-        save_pin_change_first_use(req, resp)
+        save_pin_change(req, resp)
         ti = token.get_tokeninfo("next_pin_change")
         ndate = datetime.now().strftime("%d/%m/%y")
         self.assertTrue(ti.startswith(ndate))
@@ -1395,7 +1395,8 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         #
         # take the serial number from the response data
         req.all_data = {
-            "type": "spass"}
+            "type": "spass",
+            "pin": "123456"}
 
         # The response contains the token serial
         res = {"jsonrpc": "2.0",
@@ -1411,7 +1412,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         token = init_token({"type": "spass",
                             "serial": "changePIN2"}, tokenrealms=[self.realm1])
 
-        save_pin_change_first_use(req, resp)
+        save_pin_change(req, resp)
         ti = token.get_tokeninfo("next_pin_change")
         ndate = datetime.now().strftime("%d/%m/%y")
         self.assertTrue(ti.startswith(ndate))
@@ -1420,9 +1421,19 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         g.logged_in_user = {"username": "hans",
                             "role": "user"}
 
-        save_pin_change_first_use(req, resp, serial="changePIN2")
+        save_pin_change(req, resp, serial="changePIN2")
         ti = token.get_tokeninfo("next_pin_change")
         self.assertEqual(ti, None)
 
+        # change PIN every day. The next_pin_change will be
+        set_policy(name="pol2", scope=SCOPE.ENROLL,
+                   action="{0!s}=1d".format(ACTION.CHANGE_PIN_EVERY))
+        g.policy_object = PolicyClass()
+        save_pin_change(req, resp)
+        ti = token.get_tokeninfo("next_pin_change")
+        ndate = (datetime.now() + timedelta(1)).strftime("%d/%m/%y")
+        self.assertTrue(ti.startswith(ndate))
+
         # finally delete policy
         delete_policy("pol1")
+        delete_policy("pol2")

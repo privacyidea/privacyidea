@@ -294,11 +294,17 @@ def no_detail_on_fail(request, response):
     return response
 
 
-def save_pin_change_first_use(request, response, serial=None):
+def save_pin_change(request, response, serial=None):
     """
-    This policy function checks if the pin_change date should be
-    stored in the tokeninfo table. Check scope:enrollment and
-    ACTION.CHANGE_PIN_FIRST_USE. This action is only valid for administrators.
+    This policy function checks if the next_pin_change date should be
+    stored in the tokeninfo table.
+
+    1. Check scope:enrollment and
+       ACTION.CHANGE_PIN_FIRST_USE.
+       This action is used, when the administrator enrolls a token or sets a PIN
+
+    2. Check scope:enrollment and
+       ACTION.CHANGE_PIN_EVERY is used, if the user changes the PIN.
 
     This function decorates /token/init and /token/setpin. The parameter
     "pin" and "otppin" is investigated.
@@ -335,9 +341,22 @@ def save_pin_change_first_use(request, response, serial=None):
                 token.set_next_pin_change(diff="0d")
 
         elif g.logged_in_user.get("role") == ROLE.USER:
+            # Check for parameter "pin" or "otppin".
+            otppin = request.all_data.get("otppin")
+            pin = request.all_data.get("pin")
             # The user sets a pin or enrolls a token. -> delete the pin_change
-            token = get_tokens(serial=serial)[0]
-            token.del_tokeninfo("next_pin_change")
+            if otppin or pin:
+                token = get_tokens(serial=serial)[0]
+                token.del_tokeninfo("next_pin_change")
+
+                # If there is a change_pin_every policy, we need to set the PIN
+                # anew.
+                pinpol = policy_object.get_action_values(
+                    ACTION.CHANGE_PIN_EVERY, scope=SCOPE.ENROLL,
+                    realm=realm, client=g.client_ip, unique=True)
+                if pinpol:
+                    token = get_tokens(serial=serial)[0]
+                    token.set_next_pin_change(diff=pinpol[0])
 
     # we do not modify the response!
     return response
