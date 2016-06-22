@@ -170,6 +170,7 @@ def get_auth_token():
     username = request.all_data.get("username")
     password = request.all_data.get("password")
     realm = request.all_data.get("realm")
+    details = {}
     if realm:
         username = username + "@" + realm
 
@@ -195,7 +196,6 @@ def get_auth_token():
 
     loginname, realm = split_user(username)
     realm = realm or get_default_realm()
-    details = None
 
     # Check if the remote user is allowed
     if (request.remote_user == username) and is_remote_user_allowed(request):
@@ -290,7 +290,8 @@ def get_auth_token():
                         "username": loginname,
                         "realm": realm,
                         "log_level": log_level,
-                        "rights": rights})
+                        "rights": rights},
+                       details=details)
 
 
 def admin_required(f):
