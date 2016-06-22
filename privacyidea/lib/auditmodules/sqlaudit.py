@@ -144,7 +144,17 @@ class Audit(AuditBase):
                                         self.config.get(
                                             "SQLALCHEMY_DATABASE_URI"))
         log.debug("using the connect string {0!s}".format(connect_string))
-        self.engine = create_engine(connect_string)
+        try:
+            pool_size = self.config.get("PI_AUDIT_POOL_SIZE", 20)
+            self.engine = create_engine(
+                connect_string,
+                pool_size=pool_size,
+                pool_recycle=self.config.get("PI_AUDIT_POOL_RECYCLE", 600))
+            log.debug("Using SQL pool_size of {0!s}".format(pool_size))
+        except TypeError:
+            # SQLite does not support pool_size
+            self.engine = create_engine(connect_string)
+            log.debug("Using no SQL pool_size.")
 
         # create a configured "Session" class
         Session = sessionmaker(bind=self.engine)
