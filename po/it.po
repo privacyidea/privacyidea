@@ -290,13 +290,18 @@ msgstr ""
 msgid "Certificate Signing Request (PEM)"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:178
+#: privacyidea/static/components/token/controllers/tokenControllers.js:183
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr ""
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:174
 msgid ""
 "Challenge Response Authentication. You are not completely authenticated, yet."
+msgstr ""
+
+#: privacyidea/static/components/login/views/pinchange.html:25
+#: privacyidea/static/components/login/views/pinchange.html:4
+msgid "Change PIN"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:18
@@ -610,7 +615,7 @@ msgstr ""
 msgid "EMail Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:174
+#: privacyidea/static/components/token/controllers/tokenControllers.js:179
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr ""
 
@@ -742,7 +747,7 @@ msgid "Enroll Token"
 msgstr ""
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:65
-#: privacyidea/static/components/token/controllers/tokenControllers.js:120
+#: privacyidea/static/components/token/controllers/tokenControllers.js:125
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:149
 msgid "Enroll a new token"
@@ -882,7 +887,7 @@ msgid ""
 "a>!"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:180
+#: privacyidea/static/components/token/controllers/tokenControllers.js:185
 msgid "Four Eyes: Two or more users are required to log in."
 msgstr ""
 
@@ -928,7 +933,7 @@ msgstr ""
 msgid "HOTP Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:161
+#: privacyidea/static/components/token/controllers/tokenControllers.js:166
 msgid "HOTP: event based One Time Passwords"
 msgstr ""
 
@@ -1259,6 +1264,12 @@ msgstr ""
 msgid "New Connectors"
 msgstr ""
 
+#: privacyidea/static/components/login/views/pinchange.html:10
+#: privacyidea/static/components/login/views/pinchange.html:15
+#: privacyidea/static/components/login/views/pinchange.html:17
+msgid "New PIN"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.radius.html:11
 msgid "New RADIUS server"
 msgstr ""
@@ -1423,7 +1434,7 @@ msgstr ""
 msgid "Owncloud"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:185
+#: privacyidea/static/components/token/controllers/tokenControllers.js:190
 msgid "PAPER: OTP values on a sheet of paper."
 msgstr ""
 
@@ -1431,6 +1442,10 @@ msgstr ""
 #: privacyidea/static/components/directives/views/directive.assignuser.html:23
 #: privacyidea/static/components/token/views/token.enroll.html:41
 msgid "PIN"
+msgstr ""
+
+#: privacyidea/static/components/login/controllers/loginControllers.js:342
+msgid "PIN changed successfully."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:143
@@ -1611,7 +1626,7 @@ msgstr ""
 msgid "RADIUS servers"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:172
+#: privacyidea/static/components/token/controllers/tokenControllers.js:177
 msgid "RADIUS: Forward authentication request to a RADIUS server"
 msgstr ""
 
@@ -1622,7 +1637,7 @@ msgstr ""
 msgid "Realm"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:303
+#: privacyidea/static/components/login/controllers/loginControllers.js:313
 msgid "Realm defrealm created."
 msgstr ""
 
@@ -1677,12 +1692,16 @@ msgstr ""
 msgid "Remote Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:168
+#: privacyidea/static/components/token/controllers/tokenControllers.js:173
 msgid "Remote Token: Forward authentication request to another server"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:35
 msgid "Remote User"
+msgstr ""
+
+#: privacyidea/static/components/login/views/pinchange.html:22
+msgid "Repeat new PIN"
 msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:22
@@ -1751,7 +1770,7 @@ msgstr ""
 msgid "Revoke"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:129
+#: privacyidea/static/components/token/controllers/tokenControllers.js:134
 msgid "Roll the token"
 msgstr ""
 
@@ -1771,7 +1790,7 @@ msgstr ""
 msgid "SMS Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:176
+#: privacyidea/static/components/token/controllers/tokenControllers.js:181
 msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr ""
 
@@ -1791,11 +1810,11 @@ msgstr ""
 msgid "SMTP servers"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:163
+#: privacyidea/static/components/token/controllers/tokenControllers.js:168
 msgid "SPass: Simple Pass token. Static passwords"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:165
+#: privacyidea/static/components/token/controllers/tokenControllers.js:170
 msgid "SSH Public Key: The public SSH key"
 msgstr ""
 
@@ -2046,7 +2065,7 @@ msgstr ""
 msgid "TOTP Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:162
+#: privacyidea/static/components/token/controllers/tokenControllers.js:167
 msgid "TOTP: time based One Time Passwords"
 msgstr ""
 
@@ -2706,7 +2725,7 @@ msgstr ""
 msgid "TiQR Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:182
+#: privacyidea/static/components/token/controllers/tokenControllers.js:187
 msgid "TiQR: Authenticate with Smartphone by scanning a QR code."
 msgstr ""
 
@@ -2824,7 +2843,7 @@ msgstr ""
 msgid "U2F Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:184
+#: privacyidea/static/components/token/controllers/tokenControllers.js:189
 msgid "U2F: Universal 2nd Factor hardware token."
 msgstr ""
 
@@ -3028,6 +3047,10 @@ msgstr ""
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr ""
 
+#: privacyidea/static/components/login/controllers/loginControllers.js:243
+msgid "Your OTP pin expires on"
+msgstr ""
+
 #: privacyidea/static/components/user/views/user.html:12
 #: privacyidea/static/components/user/views/user.password.html:2
 msgid "Your details"
@@ -3035,6 +3058,12 @@ msgstr ""
 
 #: privacyidea/static/components/recovery/controllers/recoveryControllers.js:28
 msgid "Your password has been reset successfully."
+msgstr ""
+
+#: privacyidea/static/components/login/views/pinchange.html:5
+msgid ""
+"Your token PIN has expired. You need to set a new PIN\n"
+"                for token {{ pin_change_serial }}."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:1
@@ -3045,11 +3074,11 @@ msgstr ""
 msgid "Yubico URL"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:166
+#: privacyidea/static/components/token/controllers/tokenControllers.js:171
 msgid "Yubikey AES mode: One Time Passwords with Yubikey"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:170
+#: privacyidea/static/components/token/controllers/tokenControllers.js:175
 msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud"
 msgstr ""
 
@@ -3159,7 +3188,7 @@ msgstr ""
 msgid "mOTP PIN"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:164
+#: privacyidea/static/components/token/controllers/tokenControllers.js:169
 msgid "mOTP: classical mobile One Time Passwords"
 msgstr ""
 
@@ -3193,10 +3222,6 @@ msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:16
 msgid "privacyIDEA Single Page Web Client"
-msgstr ""
-
-#: privacyidea/static/components/login/controllers/loginControllers.js:256
-msgid "privacyIDEA UI supports hotkeys. Use '?' to get help."
 msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:33

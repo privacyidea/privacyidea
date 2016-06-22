@@ -233,6 +233,18 @@ angular.module("privacyideaApp")
                 data.result.value.token,
                 data.result.value.role,
                 data.result.value.rights);
+            // clear old error messages
+            inform.clear();
+            if (data.detail) {
+                $scope.pin_change_serial = data.detail.serial;
+                $scope.pin_change = data.detail.pin_change;
+                $scope.next_pin_change = data.detail.next_pin_change;
+                if ($scope.next_pin_change && !$scope.pin_change_serial) {
+                    inform.add(gettextCatalog.getString("Your OTP pin expires on ")
+                        + $scope.next_pin_change,
+                        {type: "warning", ttl: 5000, html: true});
+                }
+            }
             $scope.backend_log_level = data.result.value.log_level;
             $scope.backend_debug_passwords = data.result.value.debug_passwords;
             $scope.privacyideaVersionNumber = data.versionnumber;
@@ -251,11 +263,9 @@ angular.module("privacyideaApp")
             console.log("successfully authenticated");
             console.log($scope.loggedInUser);
             $location.path("/token");
-            // clear old error messages
-            inform.clear();
-            inform.add(gettextCatalog.getString("privacyIDEA UI supports " +
-                "hotkeys. Use '?' to" +
-                    " get help."), {type: "info", ttl: 10000});
+
+            //inform.add(gettextCatalog.getString("privacyIDEA UI supports " +
+            //    "hotkeys. Use '?' to get help."), {type: "info", ttl: 10000});
             $scope.transactionid = "";
     };
 
@@ -311,5 +321,35 @@ angular.module("privacyideaApp")
 
     };
 
+});
+
+angular.module("privacyideaApp")
+    .controller("pinChangeController",
+                            function (Idle,
+                                      $scope, $http, $location,
+                                      authUrl, AuthFactory, $rootScope,
+                                      $state, ConfigFactory, inform,
+                                      PolicyTemplateFactory, gettextCatalog,
+                                      hotkeys, RegisterFactory,
+                                      U2fFactory, instanceUrl,
+                                      PollingAuthFactory, TokenFactory)
+{
+
+    $scope.newpin = "";
+    $scope.changePin = function () {
+        TokenFactory.setpin($scope.pin_change_serial,
+            "otppin", $scope.newpin, function () {
+            inform.add(gettextCatalog.getString("PIN changed successfully."),
+                {type: "info"});
+            $scope.pin_change = null;
+            $scope.next_pin_change = null;
+            $scope.pin_change_serial = null;
+        });
+
+        $scope.pin_change = null;
+        $scope.next_pin_change = null;
+        $scope.pin_change_serial = null;
+        $scope.logout();
+    }
 
 });

@@ -1,0 +1,31 @@
+<div class="well">
+    <div class="container">
+        <form name="formPinChange" class="form-signin" role="form" novalidate>
+            <h2 class="form-signin-heading" translate>Change PIN</h2>
+            <p class="help help-block" translate>
+                Your token PIN has expired. You need to set a new PIN
+                for token {{ pin_change_serial }}.
+            </p>
+
+            <label for="pin1" class="sr-only" translate>New PIN</label>
+            <input name="pin1" type="password" class="form-control"
+                   ng-model="newpin"
+                   equals="{{ newpin2 }}"
+                   placeholder="{{ 'New PIN' | translate }}" />
+
+            <label for="pin2" class="sr-only" translate>New PIN</label>
+            <input name="pin2" type="password" class="form-control"
+                   ng-model="newpin2"
+                   equals="{{ newpin }}"
+                   placeholder="{{ 'Repeat new PIN' | translate }}"/>
+
+            <div class="text-center">
+                <button ng-click="changePin()"
+                        ng-disabled="formPinChange.$invalid"
+                        class="btn btn-primary btn-block"
+                        translate>Change PIN
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

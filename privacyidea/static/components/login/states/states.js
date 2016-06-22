@@ -44,5 +44,9 @@ angular.module('privacyideaApp.loginStates', ['ui.router']).config(
                     // challenge response.
                     url: "/response",
                     templateUrl: loginpath + "enter-response.html"
-                });
+                }).state('pinchange', {
+                    url: "/pinchange",
+                    templateUrl: loginpath + "pinchange.html",
+                    controller: "pinChangeController"
+            });
         }]);

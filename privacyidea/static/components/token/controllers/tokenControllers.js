@@ -28,13 +28,18 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
     $scope.reverse = false;
     $scope.loggedInUser = AuthFactory.getUser();
     $scope.selectedToken = {serial: null};
-    // go to the list view by default
+        // go to the list view by default
     if ($location.path() == "/token") {
         $location.path("/token/list");
     }
     // go to token.wizard, if the wizard is defined
     if ($scope.token_wizard) {
         $location.path("/token/wizard");
+    }
+
+    // go to change PIN, if we should change the PIN
+    if ($scope.pin_change) {
+        $location.path("/pinchange");
     }
 
     // Change the pagination
