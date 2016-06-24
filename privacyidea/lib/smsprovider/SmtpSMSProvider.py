@@ -58,9 +58,10 @@ class SmtpSMSProvider(ISMSProvider):
             identifier = self.smsgateway.option_dict.get("SMTPIDENTIFIER")
             recipient = self.smsgateway.option_dict.get("MAILTO").format(
                 otp=message, phone=phone)
-            subject = self.smsgateway.option_dict.get("SUBJECT").format(
+            subject = self.smsgateway.option_dict.get("SUBJECT",
+                                                      "{phone}").format(
                 otp=message, phone=phone)
-            body = self.smsgateway.option_dict.get("BODY").format(
+            body = self.smsgateway.option_dict.get("BODY", "{otp}").format(
                 otp=message, phone=phone)
         else:
             identifier = self.config.get("IDENTIFIER")

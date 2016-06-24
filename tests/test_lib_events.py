@@ -10,6 +10,7 @@ from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.smtpserver import add_smtpserver
+from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from flask import Request
 from werkzeug.test import EnvironBuilder
 from privacyidea.lib.event import (delete_event, set_event,
@@ -121,5 +122,49 @@ class UserNotificationTestCase(MyTestCase):
 
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
+        self.assertTrue(res)
+
+    @smtpmock.activate
+    def test_03_sendsms(self):
+        # setup realms
+        self.setUp_user_realms()
+
+        r = set_smsgateway(identifier="myGW",
+                           providermodule="privacyidea.lib.smsprovider."
+                                          "SmtpSMSProvider.SmtpSMSProvider",
+                           options={"SMTPIDENTIFIER": "myserver",
+                                    "MAILTO": "test@example.com"})
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"test@example.com": (200, "OK")},
+                         support_tls=False)
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "123456"
+
+        g.logged_in_user = {"user": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SomeSerial",
+                        "user": "cornelius"}
+
+        options = {"g": g,
+                   "request": req,
+                   "smsconfig": "myGW"}
+
+        un_handler = UserNotificationEventHandler()
+        res = un_handler.do("sendsms", options=options)
         self.assertTrue(res)
 

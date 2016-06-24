@@ -32,10 +32,13 @@ The module is tested in tests/test_lib_events.py
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.smtpserver import send_email_identifier
+from privacyidea.lib.smsprovider.SMSProvider import send_sms_identifier
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.user import get_user_from_param
+from privacyidea.lib.token import get_token_owner
 from privacyidea.lib.smtpserver import get_smtpservers
+from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from gettext import gettext as _
 import logging
 log = logging.getLogger(__name__)
@@ -73,6 +76,8 @@ class UserNotificationEventHandler(BaseEventHandler):
         :return: dict with actions
         """
         smtpserver_objs = get_smtpservers()
+        smsgateway_dicts = get_smsgateway()
+        smsgateways = [sms.identifier for sms in smsgateway_dicts]
         smtpservers = [s.config.identifier for s in smtpserver_objs]
         actions = {"sendmail": {"emailconfig":
                                      {"type": "str",
@@ -94,9 +99,18 @@ class UserNotificationEventHandler(BaseEventHandler):
                                          "description": _("The body of the "
                                                           "mail that is sent.")}
                                 },
-                   "sendsms (not implemented)": {"smsconfig":
-                                                      {"type": "str"}
-                                                  }
+                   "sendsms": {"smsconfig":
+                                   {"type": "str",
+                                    "required": True,
+                                    "description": _("Send the user "
+                                                     "notification via a "
+                                                     "predefined SMS "
+                                                     "gateway."),
+                                    "value": smsgateways},
+                               "body": {"type": "text",
+                                    "required": False,
+                                    "description": _("The text of the SMS.")}
+                               }
                    }
         return actions
 
@@ -114,7 +128,6 @@ class UserNotificationEventHandler(BaseEventHandler):
         This method executes the defined action in the given event.
 
         :param action:
-        :param environment:
         :param options:
         :return:
         """
@@ -123,15 +136,13 @@ class UserNotificationEventHandler(BaseEventHandler):
         request = options.get("request")
         logged_in_user = g.logged_in_user
         user = get_user_from_param(request.all_data)
-        if action.lower() == "sendmail" and logged_in_user.get("role") == \
-                ROLE.ADMIN and not user.is_empty() and user.login:
-            emailconfig = options.get("emailconfig")
-            if not emailconfig:
-                log.error("Missing parameter 'emailconfig'")
-                raise ParameterError("Missing parameter 'emailconfig'")
-            useremail = user.info.get("email")
-            subject = options.get("subject") or "An action was performed on " \
-                                                "your token."
+        serial = request.all_data.get("serial")
+        if user.is_empty() and serial:
+            # maybe the user is empty, but a serial was passed.
+            # Then we determine the user by the serial
+            user = get_token_owner(serial)
+        if not user.is_empty() and user.login and logged_in_user.get("role") ==\
+                ROLE.ADMIN:
             body = options.get("body") or DEFAULT_BODY
             body = body.format(
                 admin=logged_in_user.get("username"),
@@ -140,19 +151,39 @@ class UserNotificationEventHandler(BaseEventHandler):
                 serial=g.audit_object.audit_data.get("serial"),
                 url=request.url_root,
                 user=user.info.get("givenname")
-                )
-            try:
-                ret = send_email_identifier(emailconfig,
-                                            recipient=useremail,
-                                            subject=subject, body=body)
-            except Exception as exx:
-                log.error("Failed to send email: {0!s}".format(exx))
-                ret = False
-            if ret:
-                log.info("Sent a notification email to user {0}".format(user))
-            else:
-                log.warning("Failed to send a notification email to user "
-                            "{0}".format(user))
+            )
+
+            if action.lower() == "sendmail":
+                emailconfig = options.get("emailconfig")
+                useremail = user.info.get("email")
+                subject = options.get("subject") or "An action was performed on " \
+                                                    "your token."
+                try:
+                    ret = send_email_identifier(emailconfig,
+                                                recipient=useremail,
+                                                subject=subject, body=body)
+                except Exception as exx:
+                    log.error("Failed to send email: {0!s}".format(exx))
+                    ret = False
+                if ret:
+                    log.info("Sent a notification email to user {0}".format(user))
+                else:
+                    log.warning("Failed to send a notification email to user "
+                                "{0}".format(user))
+
+            elif action.lower() == "sendsms":
+                smsconfig = options.get("smsconfig")
+                userphone = user.info.get("mobile")
+                try:
+                    ret = send_sms_identifier(smsconfig, userphone, body)
+                except Exception as exx:
+                    log.error("Failed to send sms: {0!s}".format(exx))
+                    ret = False
+                if ret:
+                    log.info("Sent a notification sms to user {0}".format(user))
+                else:
+                    log.warning("Failed to send a notification email to user "
+                                "{0}".format(user))
 
         return ret
 

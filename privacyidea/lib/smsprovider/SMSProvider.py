@@ -244,3 +244,16 @@ def create_sms_instance(identifier):
         gateway_definition.providermodule.split(".")[-1])
     sms_object = sms_klass(smsgateway=gateway_definition)
     return sms_object
+
+
+def send_sms_identifier(identifier, phone, message):
+    """
+    Send an SMS using the SMS Gateway "identifier".
+
+    :param identifier: The name of the SMS Gateway
+    :param phone: The phone number
+    :param message: The message to be sent
+    :return: True in case of success
+    """
+    sms = create_sms_instance(identifier)
+    return sms.submit_message(phone, message)

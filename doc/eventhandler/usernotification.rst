@@ -46,6 +46,32 @@ The body may contain the following tags
   * {user} the given name of the user.
 
 
+sendsms
+.......
+
+The *sendsms* action sends an SMS to the tokenowner. The SMS is sent, if an
+administrator managed the users token.
+
+**smsconfig**
+
+  * *required* Option
+  * The SMS Gateway configuration.
+
+**body**
+
+  * optional
+
+Here the administartor can specify the body of the SMS, that is sent.
+The body may contain the following tags
+
+  * {admin} name of the admin.
+  * {realm} realm of the admin.
+  * {action} the action that the administrator performed.
+  * {serial} the serial number of the token.
+  * {url} the URL of the privacyIDEA system.
+  * {user} the given name of the user.
+
+
 Code
 ~~~~
 
