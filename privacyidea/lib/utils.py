@@ -32,6 +32,7 @@ from privacyidea.lib.crypto import urandom, geturandom
 import string
 import re
 from datetime import timedelta, datetime, time
+from netaddr import IPAddress, IPNetwork
 import traceback
 ENCODING = "utf-8"
 
@@ -356,3 +357,62 @@ def parse_timelimit(limit):
         td = timedelta(hours=time)
 
     return count, td
+
+
+def parse_proxy(proxy_settings):
+    """
+    This parses the string of the system settings
+    OverrideAuthorizationClient.
+
+    This defines, which client IP may act as a proxy and rewrite the client
+    IP to be used in policies and audit log.
+
+    Valid strings are
+    10.0.0.0/24 > 192.168.0.0/24
+        Hosts in 10.0.0.x may specify clients as 192.168.0.x
+    10.0.0.12 > 192.168.0.0/24
+        Only the one host may rewrite the client IP to 192.168.0.x
+    172.16.0.0/16
+        Hosts in 172.16.x.x may rewrite to any client IP
+
+    Such settings may be seperated by comma.
+
+    :param proxy_settings: The OverrideAuthorizationClient config string
+    :type proxy_settings: basestring
+    :return: A dictionary containing the configuration
+    """
+    proxy_dict = {}
+    proxies_list = [s.strip() for s in proxy_settings.split(",")]
+    for proxy in proxies_list:
+        p_list = proxy.split(">")
+        proxynet = IPNetwork(p_list[0])
+        if len(p_list) > 1:
+            clientnet = IPNetwork(p_list[1])
+        else:
+            # No mapping client, so we take the whole network
+            clientnet = IPNetwork("0.0.0.0/0")
+        proxy_dict[proxynet] = clientnet
+
+    return proxy_dict
+
+
+def check_proxy(proxy_ip, rewrite_ip, proxy_settings):
+    """
+    This function checks if the proxy_ip is allowed to rewrite the IP to
+    rewrite_ip. This check is done on the specification in proxy_settings.
+
+    :param proxy_ip: The actual client, the proxy
+    :type proxy_ip: basestring
+    :param rewrite_ip: The client IP, to which it should be mapped
+    :type rewrite_ip: basestring
+    :param proxy_settings: The proxy settings from OverrideAuthorizationClient
+    :return:
+    """
+    proxy_dict = parse_proxy(proxy_settings)
+
+    for proxynet, clientnet in proxy_dict.items():
+        if IPAddress(proxy_ip) in proxynet and IPAddress(rewrite_ip) in \
+                clientnet:
+            return True
+
+    return False

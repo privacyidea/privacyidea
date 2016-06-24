@@ -4,8 +4,10 @@ This tests the file lib.utils
 from .base import MyTestCase
 
 from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
-                                   check_time_in_range)
+                                   check_time_in_range, parse_proxy,
+                                   check_proxy)
 from datetime import timedelta, datetime
+from netaddr import IPAddress, IPNetwork
 
 
 class UtilsTestCase(MyTestCase):
@@ -83,4 +85,26 @@ class UtilsTestCase(MyTestCase):
         r = check_time_in_range("Mon-Wrong: asd-17:30", t)
         self.assertEqual(r, False)
 
+    def test_04_check_overrideclient(self):
+        proxy_def = " 10.0.0.12, 1.2.3.4/16> 192.168.1.0/24, 172.16.0.1 " \
+                    ">10.0.0.0/8   "
+        r = parse_proxy(proxy_def)
+
+        self.assertEqual(len(r), 3)
+        for proxy, clients in r.items():
+            if IPAddress("10.0.0.12") in proxy:
+                self.assertTrue(IPAddress("1.2.3.4") in clients)
+            elif IPAddress("1.2.3.3") in proxy:
+                self.assertTrue(IPAddress("192.168.1.1") in clients)
+            elif IPAddress("172.16.0.1") in proxy:
+                self.assertEqual(clients, IPNetwork("10.0.0.0/8"))
+            else:
+                assert("The proxy {0!s} was not found!".format(proxy))
+
+
+        self.assertTrue(check_proxy("10.0.0.12", "1.2.3.4", proxy_def))
+        self.assertFalse(check_proxy("10.0.0.11", "1.2.3.4", proxy_def))
+        self.assertTrue(check_proxy("1.2.3.10", "192.168.1.12", proxy_def))
+        self.assertFalse(check_proxy("172.16.0.1", "1.2.3.4", proxy_def))
+        self.assertTrue(check_proxy("172.16.0.1", "10.1.2.3", proxy_def))
 
