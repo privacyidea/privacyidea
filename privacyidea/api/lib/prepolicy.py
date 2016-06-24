@@ -52,10 +52,10 @@ from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token)
-from privacyidea.lib.utils import generate_password
+from privacyidea.lib.utils import generate_password, get_client_ip
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam
-from privacyidea.lib.config import get_token_class
+from privacyidea.lib.config import (get_token_class, get_from_config, SYSCONF)
 import functools
 import jwt
 import re
@@ -780,7 +780,8 @@ def is_remote_user_allowed(req):
 
         # Check if the remote user is allowed
         if "client_ip" not in g:
-            g.client_ip = req.remote_user
+            g.client_ip = get_client_ip(req,
+                                        get_from_config(SYSCONF.OVERRIDECLIENT))
         if "policy_object" not in g:
             g.policy_object = PolicyClass()
         ruser_active = g.policy_object.get_action_values(ACTION.REMOTE_USER,

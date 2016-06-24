@@ -53,6 +53,15 @@ log = logging.getLogger(__name__)
 ENCODING = 'utf-8'
 
 
+class SYSCONF(object):
+    __doc__ = """This is a list of system config attributes"""
+    OVERRIDECLIENT = "OverrideAuthorizationClient"
+    PREPENDPIN = "PrependPin"
+    SPLITATSIGN = "splitAtSign"
+    INCFAILCOUNTER = "IncFailCountOnFalsePin"
+    RETURNSAML = "ReturnSamlAttributes"
+
+
 #@cache.memoize(1)
 def get_privacyidea_config():
     # timestamp = Config.query.filter_by(Key="privacyidea.timestamp").first()
@@ -75,8 +84,8 @@ def get_from_config(key=None, default=None, role="admin", return_bool=False):
     :return: If key is None, then a dictionary is returned. If a certain key
         is given a string/bool is returned.
     """
-    default_true_keys = ["PrependPin", "splitAtSign",
-                         "IncFailCountOnFalsePin", "ReturnSamlAttributes"]
+    default_true_keys = [SYSCONF.PREPENDPIN, SYSCONF.SPLITATSIGN,
+                         SYSCONF.INCFAILCOUNTER, SYSCONF.RETURNSAML]
     sql_query = Config.query
     if role != "admin":
         # set the filter to get only public infos!

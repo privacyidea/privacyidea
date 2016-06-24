@@ -58,7 +58,8 @@ from ..lib.decorators import (check_user_or_serial_in_request)
 from lib.utils import required
 from privacyidea.lib.token import (check_user_pass, check_serial_pass)
 from privacyidea.api.lib.utils import get_all_params
-from privacyidea.lib.config import return_saml_attributes
+from privacyidea.lib.config import (return_saml_attributes, get_from_config,
+                                    SYSCONF)
 from privacyidea.lib.audit import getAudit
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle)
@@ -73,6 +74,7 @@ from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from privacyidea.api.auth import jwtauth
 from privacyidea.api.register import register_blueprint
 from privacyidea.api.recover import recover_blueprint
+from privacyidea.lib.utils import get_client_ip
 
 log = logging.getLogger(__name__)
 
@@ -96,8 +98,8 @@ def before_request():
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
     # access_route contains the ip adresses of all clients, hops and proxies.
-    g.client_ip = request.access_route[0] if request.access_route else \
-        request.remote_addr
+    g.client_ip = get_client_ip(request,
+                                get_from_config(SYSCONF.OVERRIDECLIENT))
     g.audit_object.log({"success": False,
                         "action_detail": "",
                         "client": g.client_ip,

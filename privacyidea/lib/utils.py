@@ -416,3 +416,26 @@ def check_proxy(proxy_ip, rewrite_ip, proxy_settings):
             return True
 
     return False
+
+
+def get_client_ip(request, proxy_settings):
+    """
+    Take the request and the proxy_settings and determine the new client IP.
+
+    :param request:
+    :param proxy_settings:
+    :return:
+    """
+    client_ip = request.access_route[0] if request.access_route else \
+        request.remote_addr
+
+    mapped_ip = request.all_data.get("client")
+    if mapped_ip:
+        if check_proxy(client_ip, mapped_ip, proxy_settings):
+            client_ip = mapped_ip
+        else:
+            log.warning("Proxy {client_ip} not allowed to set IP to "
+                        "{mapped_ip}.".format(client_ip=client_ip,
+                                              mapped_ip=mapped_ip))
+
+    return client_ip

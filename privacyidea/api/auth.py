@@ -61,6 +61,8 @@ from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.api.lib.postpolicy import postpolicy, get_webui_settings
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
+from privacyidea.lib.utils import get_client_ip
+from privacyidea.lib.config import get_from_config, SYSCONF
 import logging
 
 log = logging.getLogger(__name__)
@@ -74,13 +76,14 @@ def before_request():
     """
     This is executed before the request
     """
+    request.all_data = get_all_params(request.values, request.data)
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
                          request.host
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
     # access_route contains the ip adresses of all clients, hops and proxies.
-    g.client_ip = request.access_route[0] if request.access_route else \
-        request.remote_addr
+    g.client_ip = get_client_ip(request,
+                                get_from_config(SYSCONF.OVERRIDECLIENT))
     g.audit_object.log({"success": False,
                         "client": g.client_ip,
                         "client_user_agent": request.user_agent.browser,
@@ -88,7 +91,6 @@ def before_request():
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                         "action_detail": "",
                         "info": ""})
-    request.all_data = get_all_params(request.values, request.data)
 
 
 @jwtauth.route('', methods=['POST'])

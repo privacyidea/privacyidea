@@ -35,6 +35,7 @@ from flask import current_app
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.api.auth import (user_required, admin_required)
+from privacyidea.lib.config import get_from_config, SYSCONF
 from .resolver import resolver_blueprint
 from .policy import policy_blueprint
 from .realm import realm_blueprint
@@ -57,6 +58,7 @@ from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from ..lib.error import (privacyIDEAError,
                          AuthError,
                          PolicyError)
+from privacyidea.lib.utils import get_client_ip
 
 log = logging.getLogger(__name__)
 
@@ -103,8 +105,8 @@ def before_request():
     g.audit_object = getAudit(current_app.config)
     g.event_config = EventConfiguration()
     # access_route contains the ip adresses of all clients, hops and proxies.
-    g.client_ip = request.access_route[0] if request.access_route else \
-        request.remote_addr
+    g.client_ip = get_client_ip(request,
+                                get_from_config(SYSCONF.OVERRIDECLIENT))
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
                          request.host
     # Already get some typical parameters to log

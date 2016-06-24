@@ -43,9 +43,10 @@ import logging
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.audit import getAudit
-from privacyidea.lib.config import get_token_class
+from privacyidea.lib.config import (get_token_class, get_from_config, SYSCONF)
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
+from privacyidea.lib.utils import get_client_ip
 
 
 log = logging.getLogger(__name__)
@@ -68,8 +69,8 @@ def before_request():
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
     # access_route contains the ip adresses of all clients, hops and proxies.
-    g.client_ip = request.access_route[0] if request.access_route else \
-        request.remote_addr
+    g.client_ip = get_client_ip(request,
+                                get_from_config(SYSCONF.OVERRIDECLIENT))
     g.audit_object.log({"success": False,
                         "action_detail": "",
                         "client": g.client_ip,
