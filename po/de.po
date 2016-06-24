@@ -309,7 +309,7 @@ msgid ""
 "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr "Challenge-Response Anmeldung. Sie sind noch nicht fertig angemeldet."
 
-#: privacyidea/static/components/login/views/pinchange.html:25
+#: privacyidea/static/components/login/views/pinchange.html:23
 #: privacyidea/static/components/login/views/pinchange.html:4
 msgid "Change PIN"
 msgstr "PIN ändern"
@@ -1327,8 +1327,8 @@ msgid "New Connectors"
 msgstr "Neue Konnektoren"
 
 #: privacyidea/static/components/login/views/pinchange.html:10
-#: privacyidea/static/components/login/views/pinchange.html:15
-#: privacyidea/static/components/login/views/pinchange.html:17
+#: privacyidea/static/components/login/views/pinchange.html:14
+#: privacyidea/static/components/login/views/pinchange.html:16
 msgid "New PIN"
 msgstr "Neue PIN"
 
@@ -1772,7 +1772,7 @@ msgstr ""
 msgid "Remote User"
 msgstr "Remote Benutzer"
 
-#: privacyidea/static/components/login/views/pinchange.html:22
+#: privacyidea/static/components/login/views/pinchange.html:20
 msgid "Repeat new PIN"
 msgstr "PIN wiederholen"
 
@@ -3619,9 +3619,9 @@ msgstr "Zeitstempel"
 msgid "token type"
 msgstr "Tokentyp"
 
-#: privacyidea/static/components/token/views/token.html:87
-msgid "total tokens: {{ tokendata.count }}"
-msgstr "Tokenanzahl: {{ tokendata.count }}"
+#: privacyidea/static/components/token/views/token.html:88
+msgid "total tokens:"
+msgstr "Anzahl der Tokens:"
 
 #: privacyidea/static/components/user/views/user.html:49
 msgid "total users: {{ usercount }}"
@@ -3659,6 +3659,9 @@ msgstr "Fenster"
 #: privacyidea/static/components/audit/views/audit.log.html:20
 msgid "{{ auditdata.count }} entries found."
 msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."
+
+#~ msgid "total tokens: {{ tokendata.count }}"
+#~ msgstr "Tokenanzahl: {{ tokendata.count }}"
 
 #~ msgid "privacyIDEA UI supports hotkeys. Use '?' to get help."
 #~ msgstr "Das privacyIDEA UI unterstützt Hotkeys. Benutzen Sie '?' für Hilfe."

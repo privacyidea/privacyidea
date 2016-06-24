@@ -291,7 +291,7 @@ msgstr ""
 msgid "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr ""
 
-#: privacyidea/static/components/login/views/pinchange.html:25
+#: privacyidea/static/components/login/views/pinchange.html:23
 #: privacyidea/static/components/login/views/pinchange.html:4
 msgid "Change PIN"
 msgstr ""
@@ -1253,8 +1253,8 @@ msgid "New Connectors"
 msgstr ""
 
 #: privacyidea/static/components/login/views/pinchange.html:10
-#: privacyidea/static/components/login/views/pinchange.html:15
-#: privacyidea/static/components/login/views/pinchange.html:17
+#: privacyidea/static/components/login/views/pinchange.html:14
+#: privacyidea/static/components/login/views/pinchange.html:16
 msgid "New PIN"
 msgstr ""
 
@@ -1688,7 +1688,7 @@ msgstr ""
 msgid "Remote User"
 msgstr ""
 
-#: privacyidea/static/components/login/views/pinchange.html:22
+#: privacyidea/static/components/login/views/pinchange.html:20
 msgid "Repeat new PIN"
 msgstr ""
 
@@ -3283,8 +3283,8 @@ msgstr ""
 msgid "token type"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.html:87
-msgid "total tokens: {{ tokendata.count }}"
+#: privacyidea/static/components/token/views/token.html:88
+msgid "total tokens:"
 msgstr ""
 
 #: privacyidea/static/components/user/views/user.html:49

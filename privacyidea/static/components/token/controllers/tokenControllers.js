@@ -62,8 +62,10 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
             $scope.params.sortdir = "asc";
         }
         TokenFactory.getTokens(function (data) {
-            $scope.tokendata = data.result.value;
-            console.log($scope.tokendata);
+            if (data) {
+                $scope.tokendata = data.result.value;
+                console.log($scope.tokendata);
+            }
         }, $scope.params);
     };
 

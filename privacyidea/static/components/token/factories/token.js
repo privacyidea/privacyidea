@@ -96,7 +96,7 @@ angular.module("TokenModule", ["privacyideaAuth"])
                 // We only need ONE getTokens call at once.
                 // If another getTokens call is running, we cancel it.
                 canceller.resolve();
-                canceller = $q.defer(); 
+                canceller = $q.defer();
                 $http.get(tokenUrl + "/", {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()},
                     params: params,
