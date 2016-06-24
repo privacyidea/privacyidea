@@ -88,17 +88,38 @@ provides a wrong OTP value. AutoResync works like this:
 
 .. _override_client:
 
-Override Authentication Client
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Override Authorization Client
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``Override Authentication client`` is important with client specific 
-policies (see :ref:`policies`) and RADIUS servers. In
+.. index:: Override client, map client, proxies, RADIUS server
+
+``Override Authorization client`` is important with client specific
+policies (see :ref:`policies`) and RADIUS servers or other proxies. In
 case of RADIUS the authenticating client
-for the privacyIDEA system will always be the RADIUS serve, which issues 
+for the privacyIDEA system will always be the RADIUS server, which issues
 the authentication request. But you can allow the RADIUS server IP to 
 send another client information (in this case the RADIUS client) so that
-the policy is evaluated for the RADIUS client. This field takes a comma
-separated list of IP addresses.
+the policy is evaluated for the RADIUS client. Such a proxy or RADIUS server
+may add the API parameter *client* with a new IP address.
+
+This field takes a comma separated list of IP Networks mapping to other IP
+Networks.
+
+**Examples**
+
+   10.1.2.0/24 > 192.168.0.0/16*
+
+Proxies in the sub net 10.1.2.0/24 may mask as client IPs 192.168.0.0/16. In
+this case the policies for the corresponding client in 192.168.x.x apply.
+
+   172.16.0.1
+
+The proxy 172.16.0.1 may mask as any arbitrary client IP.
+
+   10.0.0.18 > 10.0.0.0/8
+
+The proxy 10.0.0.18 may mask as any client in the subnet 10.x.x.x.
+
 
 Token default settings
 ......................
