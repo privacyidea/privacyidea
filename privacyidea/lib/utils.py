@@ -431,7 +431,7 @@ def get_client_ip(request, proxy_settings):
 
     mapped_ip = request.all_data.get("client")
     if mapped_ip:
-        if check_proxy(client_ip, mapped_ip, proxy_settings):
+        if proxy_settings and check_proxy(client_ip, mapped_ip, proxy_settings):
             client_ip = mapped_ip
         else:
             log.warning("Proxy {client_ip} not allowed to set IP to "
