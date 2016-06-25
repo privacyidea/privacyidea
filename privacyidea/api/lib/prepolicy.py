@@ -582,16 +582,18 @@ def check_base_action(request=None, action=None, anonymous=False):
         admin_realm = None
         realm = realm or g.logged_in_user.get("realm")
 
-    # get the realm by the serial:
-    if params.get("serial") and not realm:
-        realm = get_realms_of_token(params.get("serial"),
-                                    only_first_realm=True)
+    # In certain cases we can not resolve the user by the serial!
+    if action not in [ACTION.AUDIT]:
+        # get the realm by the serial:
+        if not realm and params.get("serial"):
+            realm = get_realms_of_token(params.get("serial"),
+                                        only_first_realm=True)
 
-    # get the realm by the serial, while the serial is part of the URL like
-    # DELETE /token/serial
-    if request.view_args and request.view_args.get("serial"):
-        realm = get_realms_of_token(request.view_args.get("serial"),
-                                    only_first_realm=True)
+        # get the realm by the serial, while the serial is part of the URL like
+        # DELETE /token/serial
+        if not realm and request.view_args and request.view_args.get("serial"):
+            realm = get_realms_of_token(request.view_args.get("serial"),
+                                        only_first_realm=True)
 
     action = policy_object.get_policies(action=action,
                                         user=username,
