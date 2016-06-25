@@ -28,19 +28,6 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
     $scope.reverse = false;
     $scope.loggedInUser = AuthFactory.getUser();
     $scope.selectedToken = {serial: null};
-        // go to the list view by default
-    if ($location.path() == "/token") {
-        $location.path("/token/list");
-    }
-    // go to token.wizard, if the wizard is defined
-    if ($scope.token_wizard) {
-        $location.path("/token/wizard");
-    }
-
-    // go to change PIN, if we should change the PIN
-    if ($scope.pin_change) {
-        $location.path("/pinchange");
-    }
 
     // Change the pagination
     $scope.pageChanged = function () {
@@ -69,8 +56,6 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
         }, $scope.params);
     };
 
-    $scope.get();
-
     /*
      * Functions to check and to create a default realm. At the moment this is
      * in the tokenview, as the token view is the first view. This could be
@@ -97,6 +82,25 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
     $scope.enable = function (serial) {
         TokenFactory.enable(serial, $scope.get);
     };
+
+
+    if ($location.path() == "/token/list") {
+        $scope.get();
+    }
+    
+    // go to the list view by default
+    if ($location.path() == "/token") {
+        $location.path("/token/list");
+    }
+    // go to token.wizard, if the wizard is defined
+    if ($scope.token_wizard) {
+        $location.path("/token/wizard");
+    }
+
+    // go to change PIN, if we should change the PIN
+    if ($scope.pin_change) {
+        $location.path("/pinchange");
+    }
 
 });
 

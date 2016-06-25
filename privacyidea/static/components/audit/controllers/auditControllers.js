@@ -32,10 +32,6 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         28: "Last 4 Weeks"};
     $scope.dateFormat = gettextCatalog.getString("M/d/yy HH:mm:ss");
 
-    if ($location.path() === "/audit") {
-        $location.path("/audit/log");
-    }
-
     if ($location.path() === "/audit/statistics") {
         $scope.getStatistics();
     }
@@ -89,5 +85,12 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         );
     };
 
-    $scope.getAuditList();
+    if ($location.path() === "/audit/log") {
+        $scope.getAuditList();
+    }
+
+    if ($location.path() === "/audit") {
+        $location.path("/audit/log");
+    }
+
 });
