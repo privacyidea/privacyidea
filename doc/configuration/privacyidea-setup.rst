@@ -5,9 +5,7 @@ privacyIDEA setup tool
 
 .. index:: appliance, setup tool
 
-**(TODO)**: Not yet migrated.
-
-Starting with 1.3.3 privacyIDEA comes with a graphical setup tool 
+privacyIDEA comes with a graphical setup tool 
 to manage your token administrators and RADIUS clients.
 Thus you will get a kind of appliance experience.
 To install all necessary components read :ref:`appliance`.
@@ -15,7 +13,7 @@ To install all necessary components read :ref:`appliance`.
 To configure the system, login as the user root on your machine and
 run the command::
 
-   privacyidea-setup-tui
+   privacyidea-setup
 
 This will bring you to this start screen.
 
