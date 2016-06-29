@@ -1,6 +1,31 @@
-Version 2.13, TBD
+Version 2.13, 2016-06-30
 
-  * Configure if passwords are logged in Debug mode
+  Features
+  * Allow central definition of SMS gateways 
+    to be used with tokens. #392
+  * User SMS for User Notificaton Event Handler. #435
+  * Add PIN change setting for each token. #429
+  * Force PIN change in web UI. #432
+
+  Enhancements
+  * Performence enhancements
+    * speed up loading of audit log in web UI.
+    * avoid double loadin of tokens and audit entries in web UI. #436
+  * Additional log level (enhanced Debug) to even log passwords in 
+    debug mode.
+  * Add new logo. #430
+  * Add quick actions in the token list: reset failcounter, 
+    toggle active. #426
+  * REST API returns OTP length on successful authentication. #407
+  * Add intelligent OverrideAuthorizationClient system setting,
+    that allows defined proxies to reset the client IP. #395
+
+  Fixes
+  * Display token count in web UI. #437
+  * Use correct default_tokentype in token enrollment. #427
+  * Fix HOTP resync problems. #412
+  
+
 
 Version 2.12, 2016-05-24
 
