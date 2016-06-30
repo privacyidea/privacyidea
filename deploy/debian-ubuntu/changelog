@@ -1,3 +1,9 @@
+python-privacyidea (2.14~dev1-1trusty) trusty; urgency=low
+ 
+  * The show must go on.
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 01 Jul 2016 00:03:00 +0200
+
 python-privacyidea (2.13-1trusty) trusty; urgency=low
 
   Features
