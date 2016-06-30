@@ -283,7 +283,7 @@ msgstr ""
 msgid "Certificate Signing Request (PEM)"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:185
+#: privacyidea/static/components/token/controllers/tokenControllers.js:189
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr ""
 
@@ -607,7 +607,7 @@ msgstr ""
 msgid "EMail Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:181
+#: privacyidea/static/components/token/controllers/tokenControllers.js:185
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr ""
 
@@ -739,7 +739,7 @@ msgid "Enroll Token"
 msgstr ""
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:65
-#: privacyidea/static/components/token/controllers/tokenControllers.js:127
+#: privacyidea/static/components/token/controllers/tokenControllers.js:131
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:149
 msgid "Enroll a new token"
@@ -878,7 +878,7 @@ msgid ""
 "    <a ui-sref=\"config.tokens({tokentype:'yubico'})\">Yubico Token Config</a>!"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:187
+#: privacyidea/static/components/token/controllers/tokenControllers.js:191
 msgid "Four Eyes: Two or more users are required to log in."
 msgstr ""
 
@@ -924,7 +924,7 @@ msgstr ""
 msgid "HOTP Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:168
+#: privacyidea/static/components/token/controllers/tokenControllers.js:172
 msgid "HOTP: event based One Time Passwords"
 msgstr ""
 
@@ -1422,7 +1422,7 @@ msgstr ""
 msgid "Owncloud"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:192
+#: privacyidea/static/components/token/controllers/tokenControllers.js:196
 msgid "PAPER: OTP values on a sheet of paper."
 msgstr ""
 
@@ -1614,7 +1614,7 @@ msgstr ""
 msgid "RADIUS servers"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:179
+#: privacyidea/static/components/token/controllers/tokenControllers.js:183
 msgid "RADIUS: Forward authentication request to a RADIUS server"
 msgstr ""
 
@@ -1680,7 +1680,7 @@ msgstr ""
 msgid "Remote Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:175
+#: privacyidea/static/components/token/controllers/tokenControllers.js:179
 msgid "Remote Token: Forward authentication request to another server"
 msgstr ""
 
@@ -1758,7 +1758,7 @@ msgstr ""
 msgid "Revoke"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:136
+#: privacyidea/static/components/token/controllers/tokenControllers.js:140
 msgid "Roll the token"
 msgstr ""
 
@@ -1778,7 +1778,7 @@ msgstr ""
 msgid "SMS Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:183
+#: privacyidea/static/components/token/controllers/tokenControllers.js:187
 msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr ""
 
@@ -1798,11 +1798,11 @@ msgstr ""
 msgid "SMTP servers"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:170
+#: privacyidea/static/components/token/controllers/tokenControllers.js:174
 msgid "SPass: Simple Pass token. Static passwords"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:172
+#: privacyidea/static/components/token/controllers/tokenControllers.js:176
 msgid "SSH Public Key: The public SSH key"
 msgstr ""
 
@@ -2053,7 +2053,7 @@ msgstr ""
 msgid "TOTP Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:169
+#: privacyidea/static/components/token/controllers/tokenControllers.js:173
 msgid "TOTP: time based One Time Passwords"
 msgstr ""
 
@@ -2693,7 +2693,7 @@ msgstr ""
 msgid "TiQR Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:189
+#: privacyidea/static/components/token/controllers/tokenControllers.js:193
 msgid "TiQR: Authenticate with Smartphone by scanning a QR code."
 msgstr ""
 
@@ -2810,7 +2810,7 @@ msgstr ""
 msgid "U2F Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:191
+#: privacyidea/static/components/token/controllers/tokenControllers.js:195
 msgid "U2F: Universal 2nd Factor hardware token."
 msgstr ""
 
@@ -3040,11 +3040,11 @@ msgstr ""
 msgid "Yubico URL"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:173
+#: privacyidea/static/components/token/controllers/tokenControllers.js:177
 msgid "Yubikey AES mode: One Time Passwords with Yubikey"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:177
+#: privacyidea/static/components/token/controllers/tokenControllers.js:181
 msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud"
 msgstr ""
 
@@ -3154,7 +3154,7 @@ msgstr ""
 msgid "mOTP PIN"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:171
+#: privacyidea/static/components/token/controllers/tokenControllers.js:175
 msgid "mOTP: classical mobile One Time Passwords"
 msgstr ""
 
