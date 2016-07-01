@@ -963,7 +963,7 @@ class LDAPResolverTestCase(MyTestCase):
 
         user = "achmed"
 
-        # First we add the user with add_user 
+        # First we add the user with add_user
         r = y.add_user({"username" : user,
                         "surname" : "Ali",
                         "email" : "achmed.ali@example.com",
@@ -1055,7 +1055,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'mobile': ["1234", "45678"],
                       "givenname": "Achmed"}
 
-        # First we add the user with add_user 
+        # First we add the user with add_user
         r = y.add_user(attributes)
         self.assertTrue(r)
 
