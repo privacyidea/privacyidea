@@ -1,4 +1,4 @@
-python-privacyidea (2.13-1) wheezy; urgeny=low
+privacyidea-venv (2.13-1) wheezy; urgency=low
 
   Features
   * Allow central definition of SMS gateways 
@@ -28,7 +28,7 @@ python-privacyidea (2.13-1) wheezy; urgeny=low
 
  -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 30 Jun 2016 12:00:00 +0200
 
-python-privacyidea (2.12-1) wheezy; urgency=low
+privacyidea-venv (2.12-1) wheezy; urgency=low
 
   Features
   * Event Handler Framework #360
