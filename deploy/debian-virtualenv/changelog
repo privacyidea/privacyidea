@@ -1,4 +1,4 @@
-privacyidea-venv (2.13-1) wheezy; urgeny=low
+privacyidea-venv (2.13-1) wheezy; urgency=low
 
   Features
   * Allow central definition of SMS gateways 
