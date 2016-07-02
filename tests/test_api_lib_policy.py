@@ -1102,6 +1102,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         jresult = json.loads(new_response.data)
         self.assertTrue(jresult.get("result").get("value"), jresult)
         self.assertEqual(jresult.get("detail").get("serial"), "UASSIGN1")
+        self.assertEqual(jresult.get("detail").get("otplen"), 6)
 
         # test the token with test287082 will fail
         res, dict = check_user_pass(User("autoassignuser", self.realm1),
@@ -1161,6 +1162,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         jresult = json.loads(new_response.data)
         self.assertEqual(jresult.get("result").get("value"), True)
         self.assertEqual(jresult.get("detail").get("serial"), "UASSIGN2")
+        self.assertEqual(jresult.get("detail").get("otplen"), 6)
 
         # authenticate with 287082 a second time will fail
         res, dict = check_user_pass(User("autoassignuser", self.realm1),
