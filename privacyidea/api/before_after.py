@@ -113,7 +113,7 @@ def before_request():
     serial = getParam(request.all_data, "serial")
     realm = getParam(request.all_data, "realm")
     user_loginname = ""
-    if "blueprint_token" in request.endpoint:
+    if "token_blueprint" in request.endpoint:
         # In case of token endpoint we evaluate the user in the request.
         # Note: In policy-endpoint "user" is part of the policy configuration
         #  and will cause an exception
