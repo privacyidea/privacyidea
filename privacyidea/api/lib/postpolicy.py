@@ -574,6 +574,12 @@ def autoassign(request, response):
                                                                    "user via " \
                                                                    "Autoassignment"
                                 response.data = json.dumps(content)
+
+                                g.audit_object.log(
+                                    {"success": True,
+                                     "action_info":
+                                         "Token assigned via auto assignment",
+                                     "serial": token_obj.token.serial})
                                 break
 
     return response
