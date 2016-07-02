@@ -6,7 +6,7 @@ python:
   - 3.4
 # command to install dependencies
 install:
-  - "travis_wait 21 mvn install"
+  - "travis_wait 21 install"
   - "pip install ."
   - "pip install mock"
   - "pip install coveralls"
