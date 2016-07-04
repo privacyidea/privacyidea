@@ -8,7 +8,7 @@
 #  2016-04-10 Martin Wheldon <martin.wheldon@greenhills-it.co.uk>
 #             Allow user accounts held in LDAP to be edited, providing
 #             that the account they are using has permission to edit
-#             those attributes in the LDAP directory  
+#             those attributes in the LDAP directory
 #  2016-02-22 Salvo Rapisarda
 #             Allow objectGUID to be a users attribute
 #  2016-02-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -123,7 +123,7 @@ class IdResolver (UserIdResolver):
         This function checks the password for a given uid.
         - returns true in case of success
         -         false if password does not match
-        
+
         """
         if self.authtype == AUTHTYPE.NTLM:  # pragma: no cover
             # fetch the PreWindows 2000 Domain from the self.binddn
@@ -164,7 +164,7 @@ class IdResolver (UserIdResolver):
         except Exception as e:
             log.warning("failed to check password for {0!r}/{1!r}: {2!r}".format(uid, bind_user, e))
             return False
-        
+
         return True
 
     def _trim_result(self, result_list):
@@ -224,15 +224,15 @@ class IdResolver (UserIdResolver):
             if uidtype == "objectGUID":
                 uid = str(uuid.UUID(bytes_le=uid))
         return uid
-        
+
     def _getDN(self, userId):
         """
         This function returns the DN of a userId.
         Therefor it evaluates the self.uidtype.
-        
+
         :param userId: The userid of a user
         :type userId: string
-        
+
         :return: The DN of the object.
         """
         dn = ""
@@ -257,7 +257,7 @@ class IdResolver (UserIdResolver):
                 dn = r[0].get("dn")
 
         return dn
-        
+
     def _bind(self):
         if not self.i_am_bound:
             server_pool = self.get_serverpool(self.uri, self.timeout)
@@ -275,7 +275,7 @@ class IdResolver (UserIdResolver):
     def getUserInfo(self, userId):
         """
         This function returns all user info for a given userid/object.
-        
+
         :param userId: The userid of the object
         :type userId: string
         :return: A dictionary with the keys defined in self.userinfo
@@ -283,7 +283,7 @@ class IdResolver (UserIdResolver):
         """
         ret = {}
         self._bind()
-        
+
         if self.uidtype.lower() == "dn":
             # encode utf8, so that also german ulauts work in the DN
             self.l.search(search_base=to_utf8(userId),
@@ -333,7 +333,7 @@ class IdResolver (UserIdResolver):
                     else:
                         ret[map_k] = ldap_v
         return ret
-    
+
     def getUsername(self, user_id):
         """
         Returns the username/loginname for a given user_id
@@ -344,11 +344,11 @@ class IdResolver (UserIdResolver):
         """
         info = self.getUserInfo(user_id)
         return info.get('username', "")
-   
+
     def getUserId(self, LoginName):
         """
         resolve the loginname to the userid.
-        
+
         :param LoginName: The login name from the credentials
         :type LoginName: string
         :return: UserId as found for the LoginName
@@ -362,7 +362,7 @@ class IdResolver (UserIdResolver):
         attributes = self.userinfo.values()
         if self.uidtype.lower() != "dn":
             attributes.append(str(self.uidtype))
-            
+
         self.l.search(search_base=self.basedn,
                       search_scope=self.scope,
                       search_filter=filter,
@@ -373,7 +373,7 @@ class IdResolver (UserIdResolver):
         if len(r) > 1:  # pragma: no cover
             raise Exception("Found more than one object for Loginname {0!r}".format(
                             LoginName))
-        
+
         for entry in r:
             userid = self._get_uid(entry, self.uidtype)
 
@@ -391,7 +391,7 @@ class IdResolver (UserIdResolver):
         ad_timestamp = get_ad_timestamp_now()
         if self.uidtype.lower() != "dn":
             attributes.append(str(self.uidtype))
-            
+
         # do the filter depending on the searchDict
         filter = "(&" + self.searchfilter
         for search_key in searchDict.keys():
@@ -429,7 +429,7 @@ class IdResolver (UserIdResolver):
                 log.debug("{0!s}".format(traceback.format_exc()))
 
         return ret
-    
+
     def getResolverId(self):
         """
         Returns the resolver Id
@@ -449,11 +449,11 @@ class IdResolver (UserIdResolver):
     @staticmethod
     def getResolverType():
         return IdResolver.getResolverClassType()
-    
+
     def loadConfig(self, config):
         """
         Load the config from conf.
-        
+
         :param config: The configuration from the Config Table
         :type config: dict
 
@@ -472,7 +472,7 @@ class IdResolver (UserIdResolver):
         '#ldap_noreferrals' : 'NOREFERRALS',
         '#ldap_editable' : 'EDITABLE',
         '#ldap_certificate': 'CACERTIFICATE',
-                    
+
         """
         self.uri = config.get("LDAPURI")
         self.basedn = config.get("LDAPBASE")
@@ -497,7 +497,7 @@ class IdResolver (UserIdResolver):
         self.scope = config.get("SCOPE") or ldap3.SUBTREE
         self.resolverId = self.uri
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
-        
+
         return self
 
     @staticmethod
@@ -598,16 +598,16 @@ class IdResolver (UserIdResolver):
     def testconnection(cls, param):
         """
         This function lets you test the to be saved LDAP connection.
-        
+
         This is taken from controllers/admin.py
-        
+
         :param param: A dictionary with all necessary parameter to test
                         the connection.
         :type param: dict
-        
+
         :return: Tuple of success and a description
         :rtype: (bool, string)
-        
+
         Parameters are:
             BINDDN, BINDPW, LDAPURI, TIMEOUT, LDAPBASE, LOGINNAMEATTRIBUTE,
             LDAPSEARCHFILTER,
@@ -659,10 +659,10 @@ class IdResolver (UserIdResolver):
 
             l.unbind()
             success = True
-            
+
         except Exception as e:
             desc = "{0!r}".format(e)
-        
+
         return success, desc
 
     def add_user(self, attributes=None):
@@ -747,7 +747,7 @@ class IdResolver (UserIdResolver):
                         pw_hash = self._create_ssha(value)
                         ldap_attributes[self.map.get(fieldname)] = pw_hash
                 else:
-                    ldap_attributes[self.map.get(fieldname)] = value 
+                    ldap_attributes[self.map.get(fieldname)] = value
 
         return ldap_attributes
 
@@ -755,9 +755,9 @@ class IdResolver (UserIdResolver):
     def _create_ssha(password):
         """
         Encodes the given password as a base64 SSHA hash
-        :param password: string to hash 
+        :param password: string to hash
         :type password: basestring
-        :return: string encoded as a base64 SSHA hash 
+        :return: string encoded as a base64 SSHA hash
         """
 
         salt = geturandom(4)
@@ -773,7 +773,7 @@ class IdResolver (UserIdResolver):
         # Tag it with SSHA
         tagged_digest = '{{SSHA}}{}'.format(digest_b64)
 
-        return tagged_digest 
+        return tagged_digest
 
     def _create_ldap_modify_changes(self, attributes, uid):
         """
