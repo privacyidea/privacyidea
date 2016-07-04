@@ -20,7 +20,7 @@ funcparserlib==0.3.6
 gunicorn==19.3.0
 itsdangerous==0.24
 Jinja2==2.7.3
-ldap3==0.9.8.4
+ldap3>=0.9.8.4
 Mako==1.0.0
 MarkupSafe==0.23
 matplotlib==1.4.3
@@ -33,7 +33,7 @@ pandas==0.16.2
 passlib==1.6.2
 Pillow==2.6.1
 py==1.4.30
-pyasn1==0.1.7
+pyasn1>=0.1.7
 pycparser==2.10
 pycrypto==2.6.1
 Pygments==2.0.2
