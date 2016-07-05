@@ -178,9 +178,10 @@ class YubicoTokenClass(TokenClass):
                     # check signature:
                     signature_valid = yubico_check_api_signature(data, apiKey)
 
-                    if signature_valid:
-                        log.error("The hash of the return from the Yubico "
-                                  "Cloud server does not match the data!")
+                    if not signature_valid:
+                        log.error("The hash of the return from the yubico "
+                                  "authentication server ({0!s}) "
+                                  "does not match the data!".format(yubico_url))
 
                     if nonce != return_nonce:
                         log.error("The returned nonce does not match "
