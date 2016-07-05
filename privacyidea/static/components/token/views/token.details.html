@@ -13,9 +13,8 @@
                 <button class="btn btn-danger" ng-click="delete()"
                         id="deleteButton"
                         ng-disabled="!checkRight('delete')">
-                    <div class="glyphicon glyphicon-trash"
-                            translate>Delete
-                    </div>
+                    <span class="glyphicon glyphicon-trash"></span>
+                    <span translate>Delete</span>
                 </button>
             </td>
         </tr>
@@ -133,14 +132,14 @@
                                ng-href="{{ certificateBlob }}">
                                 <span class="glyphicon glyphicon-bookmark"
                                       aria-hidden="true"></span>
-                                <translate>certificate</translate></a>.
+                                <span translate>certificate</span></a>.
                         </span>
                         <span ng-show="k=='pkcs12'">
                             <a download="{{ token.serial }}.p12"
                                ng-href="{{ pkcs12Blob }}">
                                 <span class="glyphicon glyphicon-bookmark"
                                       aria-hidden="true"></span>
-                                <translate>PKCS12</translate></a>.
+                                <span translate>PKCS12</span></a>.
                         </span>
                         <span ng-hide="['certificate', 'pkcs12']
                         .indexOf(k)!=-1">
@@ -300,9 +299,8 @@
                         ng-disabled="(!otp1 || !otp2)"
                         ng-click="resyncToken()"
                         ng-disabled="!checkRight('resync')">
-                    <div class="glyphicon glyphicon-refresh" translate>
-                        Resync Token
-                    </div>
+                    <span class="glyphicon glyphicon-refresh"></span>
+                    <span translate>Resync Token</span>
                 </button>
             </td>
         </tr>
@@ -323,9 +321,8 @@
                         id="setPinButton"
                         ng-disabled="pin1 != pin2"
                         ng-click="setPin()">
-                    <div class="glyphicon glyphicon-pushpin" translate>
-                        Set PIN
-                    </div>
+                    <span class="glyphicon glyphicon-pushpin"></span>
+                    <span translate>Set PIN</span>
                 </button>
             </td>
         </tr>
@@ -351,9 +348,8 @@
                 <button class="btn btn-primary" ng-disabled="!testPassword"
                         id="testOtpButton"
                         ng-click="testOtp()">
-                    <div class="glyphicon glyphicon-question-sign" translate>
-                        Test token
-                    </div>
+                    <span class="glyphicon glyphicon-question-sign"></span>
+                    <span translate>Test token</span>
                 </button>
             </td>
         </tr>
@@ -375,9 +371,8 @@
                             id="unassignAdminButton"
                             ng-click="unassign()"
                             class="btn btn-warning">
-                        <div class="glyphicon glyphicon-resize-full"
-                                translate>Unassign User
-                        </div>
+                        <span class="glyphicon glyphicon-resize-full"></span>
+                        <span translate>Unassign User</span>
                     </button>
                 </td>
             </tr>
@@ -402,9 +397,8 @@
         <button ng-click="unassign()"
                 id="unassignUserButton"
                 class="btn btn-warning">
-            <div class="glyphicon glyphicon-resize-full"
-                    translate>Unassign Token
-            </div>
+            <span class="glyphicon glyphicon-resize-full"></span>
+            <span translate>Unassign Token</span>
         </button>
     </div>
 </div>
@@ -423,9 +417,8 @@
                 id="assignButton"
                 ng-disabled="formAssignToken.$invalid"
                 class="btn btn-primary">
-            <div clas="glyphicon glyphicon-resize-small"
-                    translate>Assign User
-            </div>
+            <span class="glyphicon glyphicon-resize-small"></span>
+            <span translate>Assign User</span>
         </button>
     </div>
 </form>

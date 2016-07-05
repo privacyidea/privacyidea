@@ -8,7 +8,7 @@
                         ng-class="{active: $state.includes('token.list')}">
                         <a ui-sref="token.list">
                             <span class="glyphicon glyphicon-list"></span>
-                            <translate>All tokens</translate>
+                            <span translate>All tokens</span>
                         </a>
                     </li>
                     <li role="presentation"
@@ -22,7 +22,7 @@
                         ng-class="{active: $state.includes('token.enroll')}">
                         <a ui-sref="token.enroll">
                             <span class="glyphicon glyphicon-edit"></span>
-                            <translate>Enroll Token</translate>
+                            <span translate>Enroll Token</span>
                         </a>
                     </li>
                     <li role="presentation"
@@ -31,7 +31,8 @@
                         ng-class="{active: $state.includes('token.wizard')}">
                         <a ui-sref="token.wizard">
                             <span class="glyphicon glyphicon-star"></span>
-                            <translate>Token enrollment wizard</translate>
+                            <span translate>Token enrollment
+                                wizard</span>
                         </a>
                     </li>
                     <li role="presentation"
@@ -40,7 +41,7 @@
                             checkRight('assign')">
                         <a ui-sref="token.assign">
                             <span class="glyphicon glyphicon-plus"></span>
-                            <translate>Assign Token</translate>
+                            <span translate>Assign Token</span>
                         </a>
                     </li>
                     <li role="presentation"
@@ -49,7 +50,7 @@
                             checkRight('importtokens')">
                         <a ui-sref="token.import">
                             <span class="glyphicon glyphicon-upload"></span>
-                            <translate>Import Tokens</translate>
+                            <span translate>Import Tokens</span>
                         </a>
                     </li>
                     <li role="presentation"
@@ -58,7 +59,7 @@
                             checkRight('getchallenges')">
                         <a ui-sref="token.challenges">
                             <span class="glyphicon glyphicon-repeat"></span>
-                            <translate>List Challenges</translate>
+                            <span translate>List Challenges</span>
                         </a>
                     </li>
                     <hr>
@@ -69,7 +70,7 @@
                         checkRight('losttoken')">
                         <a ui-sref="token.lost({tokenSerial:selectedToken.serial})">
                             <span class="glyphicon glyphicon-eye-open"></span>
-                            <translate>Lost Token</translate>
+                            <span translate>Lost Token</span>
                         </a>
                     </li>
                     <li role="presentation"
@@ -79,7 +80,7 @@
                         <a ui-sref="token.getserial">
                             <span class="glyphicon glyphicon-question-sign">
                             </span>
-                            <translate>Get Serial</translate>
+                            <span translate>Get Serial</span>
                         </a>
                     </li>
                 </ul>

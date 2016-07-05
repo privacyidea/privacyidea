@@ -14,9 +14,8 @@
     </button>
     <button class="btn btn-danger"
         ng-click="delPolicy(existingPolicyname)">
-        <span class="glyphicon glyphicon-trash" translate>
-                        Delete
-        </span>
+        <span class="glyphicon glyphicon-trash"></span>
+        <span translate>Delete</span>
     </button>
     </span>
 </h2>
@@ -46,13 +45,13 @@
                 ng-hide="existingPolicyname || viewPolicyTemplates"
                 ng-click="viewPolicyTemplates=true">
                 <span class="glyphicon glyphicon-leaf"></span>
-            <translate>Show Policy templates</translate>
+                <span translate>Show Policy templates</span>
         </button>
         <button class="btn btn-warning"
                 ng-hide="existingPolicyname || !viewPolicyTemplates"
                 ng-click="viewPolicyTemplates=false">
                 <span class="glyphicon glyphicon-leaf"></span>
-                <translate>Hide Policy templates</translate>
+                <span translate>Hide Policy templates</span>
         </button>
         </div>
     </div>
@@ -82,9 +81,8 @@
                 id="createPolicyButton"
                 ng-disabled="formPolicyAdd.$invalid"
                 class="btn btn-primary">
-            <div class="glyphicon glyphicon-plus" translate>
-                Create Policy
-            </div>
+            <span class="glyphicon glyphicon-plus"></span>
+            <span translate>Create Policy</span>
         </button>
     </div>
 
@@ -289,9 +287,8 @@
                 id="createPolicyButton"
                 ng-disabled="formPolicyAdd.$invalid"
                 class="btn btn-primary">
-            <div class="glyphicon glyphicon-plus" translate>
-                Create Policy
-            </div>
+            <span class="glyphicon glyphicon-plus"></span>
+            <span translate>Create Policy</span>
         </button>
     </div>
 

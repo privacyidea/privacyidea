@@ -6,7 +6,7 @@
        ng-href="{{ certificateBlob }}">
         <span class="glyphicon glyphicon-bookmark"
                           aria-hidden="true"></span>
-        <translate>Download the certificate</translate></a>.
+        <span translate>Download the certificate</span></a>.
 </p>
 <!-- If the keys were generated on the server,
      we can download a PKCS12 file -->
@@ -15,7 +15,7 @@
        ng-href="{{ pkcs12Blob }}">
         <span class="glyphicon glyphicon-bookmark"
                           aria-hidden="true"></span>
-        <translate>Download the PKCS12 file</translate></a>.
+        <span translate>Download the PKCS12 file</span></a>.
 </p>
 <pre>
 {{ enrolledToken.certificate }}

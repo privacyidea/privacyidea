@@ -10,33 +10,33 @@
                         ng-class="{ active: $state.includes('config.system')}">
                         <a ui-sref="config.system">
                             <span class="glyphicon glyphicon-wrench"></span>
-                            <translate>System Config</translate></a></li>
+                            <span translate>System Config</span></a></li>
                     <li role="presentation"
                         ng-show="checkRight('system_documentation')"
                         ng-class="{ active: $state.includes('config.sysdoc')}">
                     <a ng-click="getSystemDocumentation()"
                             ui-sref="config.sysdoc"><span
                             class="glyphicon glyphicon-download"></span>
-                        <translate>Get System Documentation</translate></a></li>
+                        <span translate>Get System Documentation</span></a></li>
                     <li role="presentation"
                         ng-class="{ active: $state.includes('config.smtp')}">
                         <a ui-sref="config.smtp">
                             <span class="glyphicon glyphicon-envelope"></span>
-                            <translate>SMTP servers</translate>
+                            <span translate>SMTP servers</span>
                         </a>
                     </li>
                     <li role="presentation"
                         ng-class="{ active: $state.includes('config.radius')}">
                         <a ui-sref="config.radius">
                             <span class="glyphicon glyphicon-off"></span>
-                            <translate>RADIUS servers</translate>
+                            <span translate>RADIUS servers</span>
                         </a>
                     </li>
                     <li role="presentation"
                         ng-class="{ active: $state.includes('config.smsgateway')}">
                         <a ui-sref="config.smsgateway">
                             <span class="glyphicon glyphicon-phone"></span>
-                            <translate>SMS Gateways</translate>
+                            <span translate>SMS Gateways</span>
                         </a>
                     </li>
             </ul>
