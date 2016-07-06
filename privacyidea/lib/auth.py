@@ -22,7 +22,6 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from privacyidea.models import Admin
-from flask import current_app
 from privacyidea.lib.token import check_user_pass
 from privacyidea.lib.policydecorators import libpolicy, login_mode
 from privacyidea.lib.crypto import hash_with_pepper, verify_with_pepper
