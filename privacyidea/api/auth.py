@@ -321,13 +321,13 @@ def user_required(f):
 def check_auth_token(required_role=None):
     """
     This checks the authentication token
-    
+
     You need to pass an authentication header:
-    
+
         PI-Authorization: <token>
-        
+
     You can do this using httpie like this:
-    
+
         http -j POST http://localhost:5000/system/getConfig Authorization:ewrt
     """
     auth_token = request.headers.get('PI-Authorization')
