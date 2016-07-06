@@ -43,6 +43,9 @@ Now run::
    apt-get update
    apt-get install privacyidea-apache2
 
+As an alternative you can find a complete guideline how to setup privacyIDEA
+including RADIUS here [#jessieHowto]_.
+
 
 Running privacyIDEA with Apache2 and MySQL
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -170,4 +173,5 @@ The files in ``/etc/privacyidea`` and the logfiles in
 .. rubric:: Footnotes
 
 .. [#ppa] https://launchpad.net/~privacyidea
-.. [#simpleSAML]  https://github.com/privacyidea/privacyidea/tree/master/authmodules/simpleSAMLphp
+.. [#simpleSAML] https://github.com/privacyidea/privacyidea/tree/master/authmodules/simpleSAMLphp
+.. [#jessieHowto] http://www.routerperformance.net/howtos/install-privacyidea-2-13-on-a-clean-debian-8-jessie/
