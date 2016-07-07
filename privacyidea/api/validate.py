@@ -69,6 +69,7 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
                                             no_detail_on_success, autoassign,
                                             offline_info)
 from privacyidea.lib.policy import PolicyClass
+from privacyidea.lib.event import EventConfiguration
 import logging
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from privacyidea.api.auth import jwtauth
@@ -99,6 +100,7 @@ def before_request():
     # can be passed to the innerpolicies.
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
+    g.event_config = EventConfiguration()
     # access_route contains the ip adresses of all clients, hops and proxies.
     g.client_ip = get_client_ip(request,
                                 get_from_config(SYSCONF.OVERRIDECLIENT))

@@ -134,7 +134,10 @@ class UserNotificationEventHandler(BaseEventHandler):
         ret = True
         g = options.get("g")
         request = options.get("request")
-        logged_in_user = g.logged_in_user
+        try:
+            logged_in_user = g.logged_in_user
+        except Exception:
+            logged_in_user = {}
         user = get_user_from_param(request.all_data)
         serial = request.all_data.get("serial")
         if user.is_empty() and serial:

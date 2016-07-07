@@ -81,7 +81,7 @@ class event(object):
 
 def get_handler_object(handlername):
     """
-    Return an event hanlder object based on the Name of the event handler class
+    Return an event handler object based on the Name of the event handler class
 
     :param handlername: The identifier of the Handler Class
     :type hanldername: basestring
