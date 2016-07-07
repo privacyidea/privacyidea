@@ -75,6 +75,8 @@ from privacyidea.api.auth import jwtauth
 from privacyidea.api.register import register_blueprint
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.utils import get_client_ip
+from privacyidea.lib.event import event
+
 
 log = logging.getLogger(__name__)
 
@@ -140,6 +142,7 @@ def after_request(response):
 @prepolicy(mangle, request=request)
 @check_user_or_serial_in_request
 @prepolicy(api_key_required, request=request)
+@event("validate_check", request, g)
 def check():
     """
     check the authentication for a user or a serial number.
@@ -214,6 +217,7 @@ def check():
 @prepolicy(mangle, request=request)
 @check_user_or_serial_in_request
 @prepolicy(api_key_required, request=request)
+@event("validate_check", request, g)
 def samlcheck():
     """
     Authenticate the user and return the SAML user information.
