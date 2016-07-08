@@ -646,10 +646,16 @@ class IdResolver (UserIdResolver):
             count = 0
             uidtype_count = 0
             for entry in g:
-                userid = cls._get_uid(entry, uidtype)
-                count += 1
-                if userid:
-                    uidtype_count += 1
+                try:
+                    userid = cls._get_uid(entry, uidtype)
+                    count += 1
+                    if userid:
+                        uidtype_count += 1
+                except Exception as exx:  # pragma: no cover
+                    log.warning("Error during fetching LDAP objects:"
+                                " {0!r}".format(exx))
+                    log.debug("{0!s}".format(traceback.format_exc()))
+
             if uidtype_count < count:  # pragma: no cover
                 desc = _("Your LDAP config found %i user objects, but only %i "
                          "with the specified uidtype" % (count, uidtype_count))
