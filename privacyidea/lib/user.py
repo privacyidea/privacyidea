@@ -172,7 +172,6 @@ class User(object):
             return [self.resolver]
         
         resolvers = []
-        resolver_with_highest_priority = None
         resolvers_in_realm = self.get_realm_resolvers()
         highest_priority = 1000
         for resolvername in resolvers_in_realm.keys():
@@ -192,13 +191,14 @@ class User(object):
                     log.debug("The highest priority is {0!s}".format(highest_priority))
                     if priority < highest_priority:
                         highest_priority = priority
-                        resolver_with_highest_priority = resolvername
+                        # set the memeber resolver name to the one with the
+                        # highest priority
+                        self.resolver = resolvername
                 else:
                     log.debug("user %r not found"
                               " in resolver %r" % (self.login,
                                                    resolvername))
-        if resolver_with_highest_priority:
-            self.resolver = resolver_with_highest_priority
+        if self.resolver:
             resolvers = [self.resolver]
         return resolvers
     
