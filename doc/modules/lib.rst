@@ -21,3 +21,4 @@ For further details see the following modules:
    lib/apipolicy
    lib/policydecorator
    lib/eventhandler
+   lib/smsprovider

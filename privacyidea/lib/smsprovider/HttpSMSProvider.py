@@ -53,6 +53,7 @@ class HttpSMSProvider(ISMSProvider):
     def submit_message(self, phone, message):
         """
         send a message to a phone via an http sms gateway
+
         :param phone: the phone number
         :param message: the message to submit to the phone
         :return:

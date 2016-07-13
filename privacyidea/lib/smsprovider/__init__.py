@@ -26,9 +26,10 @@
 """
 SMSProvider is the base class for submitting SMS.
 It provides 3 different imlementations:
-- HTTP: submitting SMS via an HTTP gateway of an SMS provider
-- SMTP: submitting SMS via an SMTP gateway of an SMS provider
-- Sipgate: submitting SMS via Sipgate service
+
+ * HTTP: submitting SMS via an HTTP gateway of an SMS provider
+ * SMTP: submitting SMS via an SMTP gateway of an SMS provider
+ * Sipgate: submitting SMS via Sipgate service
 """
 
 __license__ = "GNU AGPLv3"
