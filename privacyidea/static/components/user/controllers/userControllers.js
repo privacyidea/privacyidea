@@ -2,6 +2,11 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2016-04-10 Martin Wheldon <martin.wheldon@greenhills-it.co.uk>
+ *           On initialisation generate object describing the fields
+ *           required by the add user form for each resolver.
+ *           Add function to update form on switching of resolver
+ *           on the add user form.
  * 2015-01-11 Cornelius Kölbel, <cornelius@privacyidea.org>
  *
  * This code is free software; you can redistribute it and/or
@@ -25,9 +30,11 @@ angular.module("privacyideaApp")
                                                gettextCatalog){
 
         $scope.formInit = {};
+
         ConfigFactory.getEditableResolvers(function (data){
             var resolvers = data.result.value;
             var resolvernames = [];
+            var userAttributes = [];
             for (var rname in resolvers) {
                 resolvernames.push(rname);
             }
@@ -35,9 +42,90 @@ angular.module("privacyideaApp")
             if (resolvernames.length > 0) {
                 $scope.resolvername = resolvernames[0];
             }
+
+            userAttributes = getUserAttributes(data);
+            $scope.userAttributes = userAttributes;
+            $scope.getAddUserAttributes($scope.resolvername);
+
         });
 
+        function getUserAttributes(data) {
+            var resolvers = data.result.value;
+            var allResolverAttributes = [];
+
+            for (var rname in resolvers) {
+                var resolver = resolvers[rname];
+                switch (resolver.type){
+                    case "ldapresolver":
+                        var userinfo = JSON.parse(gettextCatalog.getString(resolver.data.USERINFO));
+                        break;
+                    case "sqlresolver":
+                        var userinfo = JSON.parse(gettextCatalog.getString(resolver.data.Map));
+                        delete userinfo["userid"];
+                        break;
+                }
+                var fields = [];
+                var r ={};
+                angular.forEach(userinfo, function (value, key) {
+                    switch(key){
+                        case "username":
+                            field = {"type" : "text",
+                                     "name" : key,
+                                     "label" : key,
+                                     "data" : "",
+                                     "required": true};
+                            this.push(field);
+                            break;
+                        case "email":
+                            field = {"type" : "email",
+                                     "name" : key,
+                                     "label" : key,
+                                     "data" : "",
+                                     "required": true};
+                            this.push(field);
+                            break;
+                        case "password":
+                            field = {"type" : "password",
+                                     "name" : key,
+                                     "label" : key,
+                                     "data" : "",
+                                     "required": true};
+                            this.push(field);
+                            break;
+                        default:
+                            field = {"type" : "text",
+                                     "name" : key,
+                                     "label" : key,
+                                     "data" : "",
+                                     "required": false};
+                            this.push(field);
+                            break;
+                    }
+                }, fields);
+                r[rname] = fields;
+                allResolverAttributes.push(r);
+           }
+           return allResolverAttributes;
+        };
+
+       $scope.getAddUserAttributes = function(resolvername){
+
+           var userFields = [];
+           angular.forEach($scope.userAttributes, function(value, key){
+               if (value.hasOwnProperty(resolvername)){
+                   userFields = value[resolvername];
+               }
+            });
+
+            var start = 0;
+            var middle = Math.ceil(userFields.length / 2);
+            var end = userFields.length + 1;
+            $scope.leftColumn = userFields.slice(start, middle);
+            $scope.rightColumn = userFields.slice(middle, end);
+        };
+
         $scope.createUser = function () {
+            console.log($scope.User);
             UserFactory.createUser($scope.resolvername, $scope.User,
                 function (data) {
                     console.log(data.result);
@@ -67,7 +155,7 @@ angular.module("privacyideaApp")
 
         // Set the password
         $scope.setPassword = function () {
-            console.log($scope.User);
+            //console.log($scope.User);
             UserFactory.updateUser($scope.User.resolver,
                 {username: $scope.User.username,
                  password: $scope.User.password}, function (data) {
