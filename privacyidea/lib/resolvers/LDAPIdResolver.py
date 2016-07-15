@@ -2,6 +2,8 @@
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
+#  2016-07-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Adding getUserId cache.
 #  2016-04-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add object_classes and dn_composition to configuration
 #             to allow flexible user_add
@@ -63,6 +65,7 @@ from gettext import gettext as _
 from privacyidea.lib.utils import to_utf8
 from privacyidea.lib.error import privacyIDEAError
 
+CACHE = {}
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
@@ -117,6 +120,7 @@ class IdResolver (UserIdResolver):
         self.certificate = ""
         self.resolverId = self.uri
         self.scope = ldap3.SUBTREE
+        self.cache_timeout = 120
 
     def checkPass(self, uid, password):
         """
@@ -353,6 +357,10 @@ class IdResolver (UserIdResolver):
         :type LoginName: string
         :return: UserId as found for the LoginName
         """
+        if LoginName in CACHE and datetime.datetime.now() < CACHE[LoginName][
+            "timestamp"] + datetime.timedelta(seconds=self.cache_timeout):
+            log.debug("Reading user {0!s} from cache".format(LoginName))
+            return CACHE[LoginName]["name"]
         userid = ""
         self._bind()
         filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter, self.loginname_attribute,
@@ -363,6 +371,7 @@ class IdResolver (UserIdResolver):
         if self.uidtype.lower() != "dn":
             attributes.append(str(self.uidtype))
 
+        log.debug("Searching user {0!s} in LDAP.".format(LoginName))
         self.l.search(search_base=self.basedn,
                       search_scope=self.scope,
                       search_filter=filter,
@@ -377,6 +386,8 @@ class IdResolver (UserIdResolver):
         for entry in r:
             userid = self._get_uid(entry, self.uidtype)
 
+        CACHE[LoginName] = {"name": userid,
+                            "timestamp": datetime.datetime.now()}
         return userid
 
     def getUserList(self, searchDict):
@@ -483,6 +494,7 @@ class IdResolver (UserIdResolver):
         self.dn_template = config.get("DN_TEMPLATE", "")
         self.bindpw = config.get("BINDPW")
         self.timeout = float(config.get("TIMEOUT", 5))
+        self.cache_timeout = int(config.get("CACHE_TIMEOUT", 120))
         self.sizelimit = int(config.get("SIZELIMIT", 500))
         self.loginname_attribute = config.get("LOGINNAMEATTRIBUTE")
         self.searchfilter = config.get("LDAPSEARCHFILTER")

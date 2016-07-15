@@ -96,7 +96,16 @@
                    ng-model="params.TIMEOUT" required
                    placeholder="5"/>
         </div>
+        <label for="cachetimeout" class="col-sm-3 control-label"
+                translate>Cache Timeout (seconds)</label>
 
+        <div class="col-sm-3">
+            <input name="cachetimeout" class="form-control"
+                   ng-model="params.CACHE_TIMEOUT" required
+                   placeholder="120"/>
+        </div>
+    </div>
+    <div class="form-group">
         <label for="sizelimit" class="col-sm-3 control-label"
                 translate>Size Limit</label>
 
