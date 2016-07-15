@@ -594,6 +594,7 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"surname" : "sn", '
                                   '"givenname" : "givenName" }',
                       'UIDTYPE': 'unknownType',
+                      'CACHE_TIMEOUT': 0
         })
 
         result = y.getUserList({'username': '*'})
@@ -632,6 +633,7 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"surname" : "sn", '
                                   '"givenname" : "givenName" }',
                       'UIDTYPE': 'oid',
+                      'CACHE_TIMEOUT': 0
         })
 
         result = y.getUserList({'username': '*'})
@@ -685,6 +687,7 @@ class LDAPResolverTestCase(MyTestCase):
                                             '"surname" : "sn", '
                                             '"givenname" : "givenName" }',
                                 'UIDTYPE': 'oid',
+                                'CACHE_TIMEOUT': 0
         })
 
         self.assertTrue(res[0], res)
@@ -708,6 +711,7 @@ class LDAPResolverTestCase(MyTestCase):
                                             '"surname" : "sn", '
                                             '"givenname" : "givenName" }',
                                 'UIDTYPE': 'oid',
+                                'CACHE_TIMEOUT': 0
         })
 
         self.assertTrue(res[0], res)
@@ -732,6 +736,7 @@ class LDAPResolverTestCase(MyTestCase):
                                             '"surname" : "sn", '
                                             '"givenname" : "givenName" }',
                                 'UIDTYPE': 'oid',
+                                'CACHE_TIMEOUT': 0
         })
 
         self.assertFalse(res[0], res)
@@ -756,6 +761,7 @@ class LDAPResolverTestCase(MyTestCase):
                                             '"surname" : "sn", '
                                             '"givenname" : "givenName" }',
                                 'UIDTYPE': 'oid',
+                                'CACHE_TIMEOUT': 0
         })
 
         self.assertFalse(res[0], res)
@@ -831,7 +837,8 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"surname" : "sn", '
                                   '"givenname" : "givenName" }',
                       'UIDTYPE': 'oid',
-                      'NOREFERRALS': True
+                      'NOREFERRALS': True,
+                      'CACHE_TIMEOUT': 0
         })
         r = y._trim_result([{"type": "searchResEntry",
                              "DN": "blafoo"},
@@ -861,7 +868,8 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"surname" : "sn",'
                                   '"givenname" : "givenName" }',
                       'UIDTYPE': 'objectGUID',
-                      'NOREFERRALS': True
+                      'NOREFERRALS': True,
+                      'CACHE_TIMEOUT': 0
         })
         user_id = y.getUserId("bob")
         res = y.checkPass(user_id, "bobpwééé")
@@ -903,7 +911,8 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"givenname" : "givenName",'
                                   '"additionalAttr": "homeDirectory" }',
                       'UIDTYPE': 'DN',
-                      'NOREFERRALS': True}
+                      'NOREFERRALS': True,
+                      'CACHE_TIMEOUT': 0}
                      )
         uid = y.getUserId("bob")
         self.assertEqual(uid, 'cn=bob,ou=example,o=test')
@@ -929,7 +938,8 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"givenname" : "givenName", '
                                   '"accountExpires": "accountExpires" }',
                       'UIDTYPE': 'DN',
-                      'NOREFERRALS': True
+                      'NOREFERRALS': True,
+                      'CACHE_TIMEOUT': 0
         })
         res = y.getUserList({"accountExpires": 1})
         self.assertEqual(len(res), 1)
@@ -958,7 +968,8 @@ class LDAPResolverTestCase(MyTestCase):
                       'OBJECT_CLASSES': classes,
                       'DN_TEMPLATE': "cn=<username>,ou=example,o=test",
                       'UIDTYPE': 'DN',
-                      'NOREFERRALS': True
+                      'NOREFERRALS': True,
+                      'CACHE_TIMEOUT': 0
         })
 
         user = "achmed"
@@ -1040,7 +1051,8 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'objectGUID',
                       'DN_TEMPLATE': 'cn=<username>,ou=example,o=test',
                       'OBJECT_CLASSES': classes,
-                      'NOREFERRALS': True
+                      'NOREFERRALS': True,
+                      'CACHE_TIMEOUT': 0
         })
 
         user = "achmed"
@@ -1083,7 +1095,8 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"surname" : "sn", '
                                   '"givenname" : "givenName" }',
                       'UIDTYPE': 'objectGUID',
-                      'NOREFERRALS': True
+                      'NOREFERRALS': True,
+                      'CACHE_TIMEOUT': 0
                       })
         user_id = y.getUserId("bob")
         user_info = y.getUserInfo(user_id)
@@ -1350,7 +1363,8 @@ class ResolverTestCase(MyTestCase):
                                            ', "email" : "mail", '
                                            '"surname" : "sn", '
                                            '"givenname" : "givenName" }',
-                               'UIDTYPE': 'DN'
+                               'UIDTYPE': 'DN',
+                               'CACHE_TIMEOUT': 0
         })
 
         self.assertTrue(rid > 0, rid)
@@ -1376,7 +1390,8 @@ class ResolverTestCase(MyTestCase):
                                            '"phone" : "telephoneNumber", '
                                            '"surname" : "sn", '
                                            '"givenname" : "givenName" }',
-                               'UIDTYPE': 'DN'
+                               'UIDTYPE': 'DN',
+                             'CACHE_TIMEOUT': 0
         })
         self.assertTrue(rid > 0, rid)
         reso_list = get_resolver_list(filter_resolver_name="myLDAPres")
