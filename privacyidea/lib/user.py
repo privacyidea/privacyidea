@@ -518,6 +518,7 @@ def split_user(username):
     return user, realm
 
 
+@log_with(log)
 def get_user_from_param(param, optionalOrRequired=optional):
     """
     Find the parameters user, realm and resolver and
