@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2016-07-12 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Add decorator for checking realmadmin realms during userlist
 # 2014-12-08 Cornelius Kölbel, <cornelius@privacyidea.org>
 #            Complete rewrite during flask migration
 #            Try to provide REST API
@@ -25,7 +27,7 @@ from flask import (Blueprint,
                    request)
 from lib.utils import (getParam,
                        send_result)
-from ..api.lib.prepolicy import prepolicy, check_base_action
+from ..api.lib.prepolicy import prepolicy, check_base_action, realmadmin
 from ..lib.policy import ACTION
 from privacyidea.api.auth import admin_required, user_required
 from privacyidea.lib.user import create_user, get_user_from_param, User
@@ -42,6 +44,7 @@ user_blueprint = Blueprint('user_blueprint', __name__)
 
 
 @user_blueprint.route('/', methods=['GET'])
+@prepolicy(realmadmin, request, ACTION.USERLIST)
 @prepolicy(check_base_action, request, ACTION.USERLIST)
 @user_required
 def get_users():
@@ -168,7 +171,8 @@ def create_user_api():
     del attributes["password"]
     r = create_user(resolvername, attributes, password=password)
     g.audit_object.log({"success": True,
-                        "info": "{0!s}: {1!s}/{2!s}".format(r, username, resolvername)})
+                        "info": "{0!s}: {1!s}/{2!s}".format(r, username,
+                                                            resolvername)})
     return send_result(r)
 
 

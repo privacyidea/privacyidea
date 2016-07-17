@@ -114,6 +114,31 @@ class APIAuthTestCase(MyTestCase):
 
         delete_policy("remote")
 
+    def test_03_realmadmin_get_user(self):
+        # check issue #480
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        self.setUp_user_realm3()
+        # testadmin is only allowed to view users in realm2
+        set_policy(name="realmadmin", scope=SCOPE.ADMIN,
+                   action=ACTION.USERLIST, realm=self.realm3, user="testadmin")
+
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           data={},
+                                           headers={'Authorization':
+                                                        self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            # In the result list should only be users from reso3.
+            for user in result.get("value"):
+                self.assertEqual(user.get("resolver"), self.resolvername3)
+
+        delete_policy("realmadmin")
+
+
+
 
 class APISelfserviceTestCase(MyTestCase):
 

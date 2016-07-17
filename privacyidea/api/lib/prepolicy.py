@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-07-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add realmadmin decorator
 #  2016-05-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add resolver to check_base_action
 #  2016-04-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -150,6 +152,38 @@ def init_random_pin(request=None, action=None):
                              user_object,
                              tokentype=request.all_data.get("type", "hotp"),
                              logged_in_user=g.logged_in_user)
+
+    return True
+
+
+def realmadmin(request=None, action=None):
+    """
+    This decorator adds the first REALM to the parameters if the
+    administrator, calling this API is a realm admin.
+    This way, if the admin calls e.g. GET /user without realm parameter,
+    he will not see all users, but only users in one of his realms.
+
+    TODO: If a realm admin is allowed to see more than one realm,
+          this is not handled at the moment. We need to change the underlying
+          library functions!
+
+    :param request: The HTTP reqeust
+    :param action: The action like ACTION.USERLIST
+    """
+    # This decorator is only valid for admins
+    if g.logged_in_user.get("role") == ROLE.ADMIN:
+        params = request.all_data
+        if not "realm" in params:
+            # add the realm to params
+            policy_object = g.policy_object
+            po = policy_object.get_policies(
+                action=action, scope=SCOPE.ADMIN,
+                user=g.logged_in_user.get("username"),
+                adminrealm=g.logged_in_user.get("realm"), client=g.client_ip)
+            # TODO: fix this: there could be a list of policies with a list
+            # of realms!
+            if po and po[0].get("realm"):
+                request.all_data["realm"] = po[0].get("realm")[0]
 
     return True
 

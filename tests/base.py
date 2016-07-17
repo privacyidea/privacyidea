@@ -9,12 +9,14 @@ from privacyidea.lib.auth import create_db_admin
 
 
 PWFILE = "tests/testdata/passwords"
+PWFILE2 = "tests/testdata/passwd"
 
 
 class FakeFlaskG(object):
     policy_object = None
     logged_in_user = {}
     audit_object = None
+
 
 class FakeAudit(object):
     audit_data = {}
@@ -26,6 +28,7 @@ class MyTestCase(unittest.TestCase):
     resolvername3 = "reso3"
     realm1 = "realm1"
     realm2 = "realm2"
+    realm3 = "realm3"
     serials = ["SE1", "SE2", "SE3"]
     otpkey = "3132333435363738393031323334353637383930"
 
@@ -88,6 +91,32 @@ class MyTestCase(unittest.TestCase):
 
         user_repr = "{0!r}".format(user)
         expected = "User(login='root', realm='realm2', resolver='resolver1')"
+        self.assertTrue(user_repr == expected, user_repr)
+
+    def setUp_user_realm3(self):
+        # create user realm
+        rid = save_resolver({"resolver": self.resolvername3,
+                             "type": "passwdresolver",
+                             "fileName": PWFILE2})
+        self.assertTrue(rid > 0, rid)
+
+        (added, failed) = set_realm(self.realm3,
+                                    [self.resolvername3])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+
+        user = User(login="root",
+                    realm=self.realm3,
+                    resolver=self.resolvername3)
+
+        user_str = "{0!s}".format(user)
+        self.assertTrue(user_str == "<root.reso3@realm3>", user_str)
+
+        self.assertFalse(user.is_empty())
+        self.assertTrue(User().is_empty())
+
+        user_repr = "{0!r}".format(user)
+        expected = "User(login='root', realm='realm3', resolver='reso3')"
         self.assertTrue(user_repr == expected, user_repr)
 
     @classmethod
