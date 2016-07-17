@@ -39,6 +39,7 @@ class TestingConfig(Config):
     # This is only for testing encrypted files
     PI_ENCFILE_ENC = "tests/testdata/enckey.enc"
     PI_LOGLEVEL = logging.DEBUG
+    PI_GNUPG_HOME = "tests/testdata/gpg"
 
 
 class ProductionConfig(Config):

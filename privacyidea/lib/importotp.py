@@ -511,11 +511,12 @@ class GPGImport(object):
 
     Create the keypair like this:
 
-    GNUPGHOME=/etc/privacyidea/ gpg --gen-key
+    GNUPGHOME=/etc/privacyidea/gpg gpg --gen-key
     """
     def __init__(self, config=None):
         self.config = config or {}
-        self.gnupg_home = self.config.get("PI_GNUPG_HOME")
+        self.gnupg_home = self.config.get("PI_GNUPG_HOME",
+                                          "/etc/privacyidea/gpg")
         self.gpg = gnupg.GPG(gnupghome=self.gnupg_home)
         self.private_keys = self.gpg.list_keys(True)
 

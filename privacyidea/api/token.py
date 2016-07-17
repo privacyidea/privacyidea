@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2016-07-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add decryption of import file
 # 2016-05-06 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add eventhandler
 # 2016-04-28 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -44,7 +46,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from flask import Blueprint
+from flask import (Blueprint, request, g, current_app)
 from ..lib.log import log_with
 from lib.utils import (optional,
                        send_result, send_error,
@@ -64,10 +66,9 @@ from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
 from privacyidea.lib.error import (ParameterError, TokenAdminError)
 from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
-                                       parseYubicoCSV, parsePSKCdata)
+                                       parseYubicoCSV, parsePSKCdata, GPGImport)
 import logging
 from lib.utils import getParam
-from flask import request, g
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.challenge import get_challenges_paginate
 from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
@@ -786,6 +787,11 @@ def loadtokens_api(filename=None):
         raise TokenAdminError("Unknown file type: >>%s<<. We only know the "
                               "types: %s" % (file_type,
                                              ', '.join(known_types)))
+
+    # Decrypt file, if necessary
+    if file_contents.startswith("-----BEGIN PGP MESSAGE-----"):
+        GPG = GPGImport(current_app.config)
+        file_contents = GPG.decrypt(file_contents)
 
     # Parse the tokens from file and get dictionary
     if file_type == "aladdin-xml":

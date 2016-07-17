@@ -12,6 +12,7 @@ from privacyidea.lib.token import check_serial_pass
 
 PWFILE = "tests/testdata/passwords"
 IMPORTFILE = "tests/testdata/import.oath"
+IMPORTFILE_GPG = "tests/testdata/import.oath.asc"
 IMPORTFILE2 = "tests/testdata/empty.oath"
 IMPORTPSKC = "tests/testdata/pskc-aes.xml"
 IMPORTPSKC_PASS = "tests/testdata/pskc-password.xml"
@@ -648,6 +649,20 @@ class APITokenTestCase(MyTestCase):
                                                   "file": (IMPORTFILE,
                                                            "import.oath")},
                                             headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            self.assertTrue(value == 3, result)
+
+        # Load GPG encrypted OATH CSV
+        with self.app.test_request_context('/token/load/import.oath.asc',
+                                           method="POST",
+                                           data={"type": "oathcsv",
+                                                 "file": (IMPORTFILE_GPG,
+                                                          "import.oath.asc")},
+                                           headers={
+                                               'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
