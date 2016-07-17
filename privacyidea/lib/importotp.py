@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-07-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add GPG encrpyted import
 #  2016-01-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add PSKC import with pre shared key
 #  2015-05-28 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -49,6 +51,7 @@ from bs4 import BeautifulSoup
 import traceback
 from passlib.utils.pbkdf2 import pbkdf2
 from privacyidea.lib.utils import to_utf8
+import gnupg
 
 import logging
 log = logging.getLogger(__name__)
@@ -498,3 +501,52 @@ def parsePSKCdata(xml_data,
 
         tokens[serial] = token
     return tokens
+
+
+class GPGImport(object):
+    """
+    This class is used to decrypt GPG encrypted import files.
+
+    The decrypt method returns the unencrpyted files.
+
+    Create the keypair like this:
+
+    GNUPGHOME=/etc/privacyidea/ gpg --gen-key
+    """
+    def __init__(self, config=None):
+        self.config = config or {}
+        self.gnupg_home = self.config.get("PI_GNUPG_HOME")
+        self.gpg = gnupg.GPG(gnupghome=self.gnupg_home)
+        self.private_keys = self.gpg.list_keys(True)
+
+    def get_publickeys(self):
+        """
+        This returns the public GPG key to be displayed in the Import Dialog.
+        The administrator can send this public key to his token vendor and
+        the token vendor can use this public key to encrypt the token import
+        file.
+        :return: a dictionary of public keys with fingerprint
+        """
+        public_keys = {}
+        keys = self.gpg.list_keys(secret=True)
+        for key in keys:
+            ascii_armored_public_key = self.gpg.export_keys(key.get("keyid"))
+            public_keys[key.get("keyid")] = {"armor": ascii_armored_public_key,
+                                             "fingerprint": key.get(
+                                                 "fingerprint")}
+        return public_keys
+
+    def decrypt(self, input_data):
+        """
+        Decrypts the input data with one of the private keys
+        :param input_data:
+        :return:
+        """
+        decrypted = self.gpg.decrypt(message=input_data)
+
+        if not decrypted.ok:
+            log.error(u"Decrpytion failed: {0!s}. {1!s}".format(
+                decrypted.status, decrypted.stderr))
+            raise Exception(decrypted.stderr)
+
+        return decrypted.data

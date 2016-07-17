@@ -7,7 +7,7 @@ This test file tests the lib.importotp
 from .base import MyTestCase
 from privacyidea.lib.importotp import (parseOATHcsv, parseYubicoCSV,
                                        parseSafeNetXML, ImportException,
-                                       parsePSKCdata)
+                                       parsePSKCdata, GPGImport)
 import binascii
 
 
@@ -449,6 +449,45 @@ OATHCSV = '''
         serialX
         '''
 
+
+# Encrypted Hallo
+HALLO_PAYLOAD = """-----BEGIN PGP MESSAGE-----
+Version: GnuPG v1
+
+hQEMA30gYwsHth71AQgA37PwDQgkOsg5jQ/PBTn1sqpLg4mwN/H2H1zXHEbF2h4U
+c4RnXqn7WI+07aJPDMDq8t65WZ5Idh1OoLy0jBWYkuH9Ke6WUAi1tqxIdymFaOhB
+eG1ij9TvS6BmAqnTUsTthLcbKSwypTL0E+VPPHm8UwuKsiHbru7uA5G7qQttL+LO
+Pyeq0iCGdyUJ9jJJxBn5mS6FjL93YRy6Fl+G4FoOskH+6wMGfvk4oJjdj57en60b
+Xx+6C37LJJu4KdzYzNyNUCLN/CRZNYjHNQr0ESd+j4GF6Yfk0xpNBCN/HrylV5Mv
+tcPmJEfH90j8xqkesk2BCPYIAsYnO8StXY7hp8C8f9JBAYGAx9RU13m5QO3KEe1A
+NkF2Y4A+4SAnwNz++4sdlv4js5WWqt5rFy77AvxipqdP0R9DTctHLOKE22n3wVIx
+aU8=
+=7t48
+-----END PGP MESSAGE-----
+"""
+
+WRONG_PAYLOAD = """-----BEGIN PGP MESSAGE-----
+Version: GnuPG v1
+
+hQIMA6VkLMJdIi3UARAAyBqTWHnWBEXXoD3EyiikfXFCi7SyxyxwxhpYtFiqgDSw
+YrQh0Lyz7F+S8YFeiJGqXtecfnEl4eN4S5RPl+PCHk+UknyAvGXDWhptsBrmLWpO
+UqcrSYXTN7bVL1s0gLTVci/8SOQwnYVz/DfOt9jOp7/t8h392pmJQ2OqiMy124ir
+Sijmgwcl349JV2XieyUYEap7IYTjBv0ZlVVtTHgAfOua8wgM6RRwYNn5jd6k74pk
+vDRRVNWgE7xHXz+oZDcH+L/qd2nF9aRZuWIlKvRk2P/7IJAnY6alP3bezBfT7oeJ
++WiPXO3j45NzYcmf/KwwP6fsBkVfh5GlJ/5ty3yghb3qXO9ZIDJ3cdmYhnACSDGt
+tq9yE0e89nTcfdexHQe9SlS6+2RpCUyNFeqFo4nGLLP3n4zV+TPAQbxFvTPjSCCC
+1pUx4W+1Ni5kQQiwTcTafFcHC40NiRG6i/rEE9FpL+lInxMjz2JWoWG4QFuRgkKV
+6Nd+94m3fBbE4hLBPLKwizYQOZ3mgFiib+49BUBJ4TzMIz1PGKSnEtv6JokBRHXU
+Kt96dCmFCU/ZLqisVNEaavAO2xlhyAvL2y6NRddxx7l8bwcsdqyfKwEPq6/Lwh5r
+/op4uA37cnsKb/q7DEtCT0YhAi6Qp2thz+zEIV2V5tY8KBlKreGA4U8cTtFIiqbS
+QQE2XQNVA91btRjdLJLEE4tSYVMVj77nfncF7fdkSXvfCCbaWo4fZhLKHV12pu0O
+OvZnz1B26AngXLfkXPL7IHof
+=u+I4
+-----END PGP MESSAGE-----
+"""
+
+
+
 class ImportOTPTestCase(MyTestCase):
 
     def test_00_import_oath(self):
@@ -505,3 +544,17 @@ class ImportOTPTestCase(MyTestCase):
                          binascii.hexlify("12345678901234567890"))
         self.assertEqual(tokens["987654321"].get("description"),
                          "TokenVendorAcme")
+
+
+class GPGTestCase(MyTestCase):
+
+    def test_00_gpg_decrypt(self):
+        GPG = GPGImport({"PI_GNUPG_HOME": "tests/testdata/gpg"})
+        pubkeys = GPG.get_publickeys()
+        self.assertEqual(len(pubkeys), 1)
+        self.assertTrue("2F25BAF8645350BB" in pubkeys)
+
+        r = GPG.decrypt(str(HALLO_PAYLOAD))
+        self.assertEqual(r, "Hallo\n")
+
+        self.assertRaises(Exception, GPG.decrypt, WRONG_PAYLOAD)
