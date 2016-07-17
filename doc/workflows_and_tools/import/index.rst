@@ -12,6 +12,30 @@ The default import options are to import *SafeNet XML* file,
 *OATH CSV* files, *Yubikey CSV* files or
 *PSKC* files.
 
+GPG Encryption
+--------------
+
+.. index:: GPG encryption, Encrypted Seed File
+
+Starting with privacyIDEA 2.14 you can import GPG encrypted seed files.
+All files mentioned below can be encrypted this way.
+
+privacyIDEA needs its own GPG key. You may create one like this:
+
+   mkdir /etc/privacyidea/gpg
+   GNUPGHOME=/etc/privacyidea/gpg gpg --gen-key
+
+Then make sure, that the directory /etc/privacyidea/gpg is *chown 700* for
+the user *privacyidea*.
+
+Now you can export the public key and hand it to your token vendor.
+
+   GNUPGHOME=/etc/privacyidea/gpg gpg -a --export <keyid>
+
+Now the token vendor can send the seed file GPG encrypted. You do not need to
+decrypt the file and store the decrypted file on a network folder. Just
+import the GPG encrypted file to privacyIDEA!
+
 
 OATH CSV
 --------
