@@ -52,10 +52,18 @@ class BaseEventHandler(object):
         """
         This method returns a list of available actions, that are provided
         by this event handler.
-        :return: list of actions
+        :return: dictionary of actions.
         """
         actions = ["sample_action_1", "sample_action_2"]
         return actions
+
+    @property
+    def conditions(cls):
+        """
+        Return a dictionary of possible conditions of an event handler
+        :return: dictionary of conditions
+        """
+        return {}
 
     @property
     def events(cls):

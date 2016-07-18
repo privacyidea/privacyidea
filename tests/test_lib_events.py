@@ -168,3 +168,7 @@ class UserNotificationTestCase(MyTestCase):
         res = un_handler.do("sendsms", options=options)
         self.assertTrue(res)
 
+    def test_04_conditions(self):
+        c = UserNotificationEventHandler().conditions
+        self.assertTrue("logged_in_user" in c)
+        self.assertTrue("value_result" in c)

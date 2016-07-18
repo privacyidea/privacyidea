@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-07-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add notification conditions
 #  2016-05-06 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Initial writup
 #
@@ -24,9 +26,7 @@ __doc__ = """This is the event handler module for user notifications.
 It can be bound to each event and can perform the action:
 
   * sendmail: Send an email to the user/token owner
-
-TODO:
-  * sendsms: We could also notify the user with an SMS.
+  * sendsms: We can also notify the user with an SMS.
 
 The module is tested in tests/test_lib_events.py
 """
@@ -113,6 +113,30 @@ class UserNotificationEventHandler(BaseEventHandler):
                                }
                    }
         return actions
+
+    @property
+    def conditions(cls):
+        """
+        The UserNotification can filter for conditions like
+        * type of logged in user and
+        * successful or failed value.success
+
+        :return: dict
+        """
+        cond = {
+            "logged_in_user": {
+                "type": "str",
+                "desc": _("The logged in user is of the following type."),
+                "value": ("admin", "user")
+            },
+            "value_result": {
+                "type": "str",
+                "desc": _("The value.result within the response is "
+                          "True or False."),
+                "value": ("True", "False")
+            }
+        }
+        return cond
 
     def check_condition(self):
         """
