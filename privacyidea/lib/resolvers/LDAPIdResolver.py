@@ -56,6 +56,7 @@ from ldap3.utils.conv import escape_bytes
 import traceback
 
 import hashlib
+import binascii
 from privacyidea.lib.crypto import urandom, geturandom
 
 import uuid
@@ -357,8 +358,11 @@ class IdResolver (UserIdResolver):
         :type LoginName: string
         :return: UserId as found for the LoginName
         """
-        if LoginName in CACHE and datetime.datetime.now() < CACHE[LoginName][
-            "timestamp"] + datetime.timedelta(seconds=self.cache_timeout):
+        # get the portion of the cache for this very LDAP resolver
+        r_cache = CACHE.get(self.getResolverId(), {})
+        if LoginName in r_cache and \
+            datetime.datetime.now() < r_cache[LoginName]["timestamp"] + \
+                        datetime.timedelta(seconds=self.cache_timeout):
             log.debug("Reading user {0!s} from cache".format(LoginName))
             return CACHE[LoginName]["name"]
         userid = ""
@@ -386,8 +390,9 @@ class IdResolver (UserIdResolver):
         for entry in r:
             userid = self._get_uid(entry, self.uidtype)
 
-        CACHE[LoginName] = {"name": userid,
-                            "timestamp": datetime.datetime.now()}
+        CACHE[self.getResolverId()][LoginName] = {"name": userid,
+                                                  "timestamp":
+                                                      datetime.datetime.now()}
         return userid
 
     def getUserList(self, searchDict):
@@ -447,7 +452,10 @@ class IdResolver (UserIdResolver):
         This should be an Identifier of the resolver, preferable the type
         and the name of the resolver.
         """
-        return self.uri
+        s = "{0!s}{1!s}{2!s}".format(self.uri, self.basedn,
+                                     self.searchfilter)
+        r = binascii.hexlify(hashlib.sha1(s).digest())
+        return r
 
     @staticmethod
     def getResolverClassType():
@@ -509,6 +517,7 @@ class IdResolver (UserIdResolver):
         self.scope = config.get("SCOPE") or ldap3.SUBTREE
         self.resolverId = self.uri
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
+        CACHE[self.getResolverId()] = {}
 
         return self
 

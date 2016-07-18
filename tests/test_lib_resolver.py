@@ -62,6 +62,31 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                               '\x9b\xf9\xcajl\rMT',
                                 'oid': "1"}}]
 
+LDAPDirectory_small = [{"dn": 'cn=bob,ou=example,o=test',
+                 "attributes": {'cn': 'bob',
+                                "sn": "Marley",
+                                "givenName": "Robert",
+                                "email": "bob@example.com",
+                                "mobile": "123456",
+                                "homeDirectory": "/home/bob",
+                                'userPassword': 'bobpwééé',
+                                "accountExpires": 9223372036854775807,
+                                "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
+                                              '\x9b\xf9\xcajl\rMw',
+                                'oid': "3"}},
+                {"dn": 'cn=manager,ou=example,o=test',
+                 "attributes": {'cn': 'manager',
+                                "givenName": "Corny",
+                                "sn": "keule",
+                                "email": "ck@o",
+                                "mobile": "123354",
+                                'userPassword': 'ldaptest',
+                                "accountExpires": 9223372036854775807,
+                                "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
+                                              '\x9b\xf9\xcajl\rMT',
+                                'oid': "1"}}
+                       ]
+
 
 class SQLResolverTestCase(MyTestCase):
     """
@@ -494,7 +519,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue(user_id == "cn=bob,ou=example,o=test", user_id)
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "ldap://localhost", rid)
+        self.assertTrue(rid == "b5d1048497a91b9890a3f1544b64659d59511bdd", rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -548,7 +573,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue(user_id == "cn=bob,ou=example,o=test", user_id)
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "ldap://localhost", rid)
+        self.assertTrue(rid == "b5d1048497a91b9890a3f1544b64659d59511bdd", rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -601,7 +626,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(len(result), 3)
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "ldap://localhost", rid)
+        self.assertTrue(rid == "b5d1048497a91b9890a3f1544b64659d59511bdd", rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -644,7 +669,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue(user_id == "3", "{0!s}".format(user_id))
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "ldap://localhost", rid)
+        self.assertTrue(rid == "b5d1048497a91b9890a3f1544b64659d59511bdd", rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -1103,6 +1128,62 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(user_info.get("username"), "bob")
         self.assertEqual(user_info.get("surname"), "Marley")
         self.assertEqual(user_info.get("givenname"), "Robert")
+
+    @ldap3mock.activate
+    def test_22_caching_two_ldaps(self):
+        # This test checks, if the cached values are seperated for two
+        # different resolvers. Alice is cached as not found in the first
+        # resolver but alice will be found in the other resolver.
+        ldap3mock.setLDAPDirectory(LDAPDirectory_small)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'LDAPFILTER': '(&(cn=%s))',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'NOREFERRALS': True,
+                      'CACHE_TIMEOUT': 120
+                      })
+
+        # in the small LDAP there is no user "alice"!
+        user_id = y.getUserId("alice")
+        self.assertEqual(user_id, "")
+
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'LDAPFILTER': '(&(cn=%s))',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'NOREFERRALS': True,
+                      'CACHE_TIMEOUT': 120
+                      })
+
+        # but in the full LDAP there is a "alice". We need to find it, since it
+        # will not be cached.
+        user_id = y.getUserId("alice")
+        user_info = y.getUserInfo(user_id)
+        self.assertEqual(user_info.get("username"), "alice")
+        self.assertEqual(user_info.get("surname"), "Cooper")
+        self.assertEqual(user_info.get("givenname"), "Alice")
 
 
 class BaseResolverTestCase(MyTestCase):
