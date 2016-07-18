@@ -15,19 +15,27 @@ you can follow this basic upgrade process.
 
 First you might want to backup your program directory:
 
+.. code-block:: bash
+
    tar -zcf privacyidea-old.tgz /opt/privacyidea
 
 and your database:
+
+.. code-block:: bash
 
    source /opt/privacyidea/bin/activate
    pi-manage backup create
 
 Now you can upgrade the installation:
 
+.. code-block:: bash
+
    source /opt/privacyidea/bin/activate
    pip install --upgrade privacyidea
 
 Usually you will need to upgrade/migrate the database:
+
+.. code-block:: bash
 
    pi-manage db stamp 4f32a4e1bf33 -d /opt/privacyidea/lib/privacyidea/migrations
    pi-manage db upgrade -d /opt/privacyidea/lib/privacyidea/migrations
@@ -41,7 +49,9 @@ Upgrade to privacyIDEA 2.12
 In privacyIDEA 2.12 the Event Handler framework was added.
 Two new tables "eventhandler" and "eventhandleroption" were added.
 
-You need to update the database models::
+You need to update the database models:
+
+.. code-block:: bash
 
    pi-manage db stamp 4f32a4e1bf33 -d path/to/migrations
    pi-manage db upgrade -d path/to/migrations
@@ -56,7 +66,9 @@ RADIUS passthru policy.
 
 A new database table "radiusserver" was added.
 
-You need to update the database models::
+You need to update the database models:
+
+.. code-block:: bash
 
    pi-manage db stamp 4f32a4e1bf33 -d path/to/migrations
    pi-manage db upgrade -d path/to/migrations
@@ -70,7 +82,9 @@ notifications, registration and also for Email token and SMS token.
 
 SMTP servers need a new database table "smtpserver".
 
-You need to update the database models::
+You need to update the database models:
+
+.. code-block:: bash
 
    pi-manage db stamp 4f32a4e1bf33 -d path/to/migrations
    pi-manage db upgrade -d path/to/migrations
@@ -85,7 +99,9 @@ Upgrade From privacyIDEA 2.x to 2.3
 
 In 2.3 the priority of resolvers in realms was added.
 
-You need to update the database models::
+You need to update the database models:
+
+.. code-block:: bash
 
    pi-manage db stamp 4f32a4e1bf33 -d path/to/migrations
    pi-manage db upgrade -d path/to/migrations
@@ -110,7 +126,9 @@ Be sure to stop your privacyIDEA server.
 Upgrade Software
 ................
 
-To upgrade the code enter your python virtualenv and run::
+To upgrade the code enter your python virtualenv and run:
+
+.. code-block:: bash
 
    pip install --upgrade privacyidea
 
@@ -123,7 +141,9 @@ You can use the old `enckey`, the old `signing keys` and the
 old `database uri`. The values can be found in your old ini-file 
 as ``privacyideaSecretFile``, ``privacyideaAudit.key.private``, 
 ``privacyideaAudit.key.public`` and ``sqlalchemy.url``. Your new 
-config file might look like this::
+config file might look like this:
+
+.. code-block:: python
 
    config_path = "/home/cornelius/tmp/pi20/etc/privacyidea/"
    # This is your old database URI
@@ -142,7 +162,9 @@ config file might look like this::
    PI_AUDIT_KEY_PRIVATE = config_path + 'private.pem'
    PI_AUDIT_KEY_PUBLIC = config_path + 'public.pem'
 
-To verify the new configuration run::
+To verify the new configuration run:
+
+.. code-block:: bash
 
    pi-manage create_enckey
 
@@ -151,7 +173,9 @@ It should say, that the enckey already exists!
 Migrate The Database
 ....................
 
-You need to upgrade the database to the new database schema::
+You need to upgrade the database to the new database schema:
+
+.. code-block:: bash
 
    pi-manage db upgrade -d lib/privacyidea/migrations
 
@@ -165,14 +189,18 @@ With privacyIDEA 2.0 the administrators are stored in the database.
 The password of the administrator is salted and also peppered, to avoid
 having a database administrator slip in a rogue password.
 
-You need to create new administrator accounts::
+You need to create new administrator accounts:
+
+.. code-block:: bash
 
    pi-manage addadmin <email-address> <admin-name>
 
 Start The Server
 ................
 
-Run the server::
+Run the server:
+
+.. code-block:: bash
 
    pi-manage runserver
 

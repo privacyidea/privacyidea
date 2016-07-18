@@ -5,7 +5,7 @@ Debugging and Logging
 
 .. index:: Debugging, Logging
 
-You can set ``PI_LOGLEVEL`` to a value 10 (Debug), 20 (Info), 30 (Warngin),
+You can set ``PI_LOGLEVEL`` to a value 10 (Debug), 20 (Info), 30 (Warning),
 40 (Error) or 50 (Critical).
 If you experience problems, set ``PI_LOGLEVEL = 10`` restart the web service
 and resume the operation. The log file ``privacyidea.log`` should contain
