@@ -27,6 +27,7 @@ from ...lib.error import (ParameterError,
                           AuthError)
 from ...lib.log import log_with
 import time
+import threading
 import pkg_resources
 import logging
 import json
@@ -117,6 +118,7 @@ def send_result(obj, rid=1, details=None):
            "time": time.time()}
 
     if details is not None and len(details) > 0:
+        details["threadid"] = threading.current_thread().ident
         res["detail"] = details
 
     return jsonify(res)
@@ -149,6 +151,8 @@ def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
     :rtype: string
 
     """
+    if details:
+        details["threadid"] = threading.current_thread().ident
     res = {"jsonrpc": "2.0",
            "detail": details,
            "result": {"status": False,
