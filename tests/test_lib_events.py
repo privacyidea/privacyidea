@@ -171,4 +171,4 @@ class UserNotificationTestCase(MyTestCase):
     def test_04_conditions(self):
         c = UserNotificationEventHandler().conditions
         self.assertTrue("logged_in_user" in c)
-        self.assertTrue("value_result" in c)
+        self.assertTrue("result_value" in c)

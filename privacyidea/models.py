@@ -1512,9 +1512,12 @@ class EventHandler(MethodsMixin, db.Model):
     options = db.relationship('EventHandlerOption',
                               lazy='dynamic',
                               backref='eventhandler')
+    conditions = db.relationship('EventHandlerCondition',
+                                 lazy='dynamic',
+                                 backref='eventhandler')
 
     def __init__(self, event, handlermodule, action, condition="",
-                 ordering=0, options=None, id=None):
+                 ordering=0, options=None, id=None, conditions=None):
         self.odering = ordering
         self.event = event
         self.handlermodule = handlermodule
@@ -1528,6 +1531,9 @@ class EventHandler(MethodsMixin, db.Model):
         options = options or {}
         for k, v in options.iteritems():
             EventHandlerOption(eventhandler_id=self.id, Key=k, Value=v).save()
+        conditions = conditions or {}
+        for k, v in conditions.iteritems():
+            EventHandlerCondition(eventhandler_id=self.id, Key=k, Value=v).save()
 
     def save(self):
         if self.id is None:
@@ -1553,6 +1559,10 @@ class EventHandler(MethodsMixin, db.Model):
         db.session.query(EventHandlerOption) \
             .filter(EventHandlerOption.eventhandler_id == ret) \
             .delete()
+        # delete all Conditions
+        db.session.query(EventHandlerCondition) \
+            .filter(EventHandlerCondition.eventhandler_id == ret) \
+            .delete()
         db.session.commit()
         return ret
 
@@ -1574,7 +1584,56 @@ class EventHandler(MethodsMixin, db.Model):
         for option in self.options:
             option_dict[option.Key] = option.Value
         d["options"] = option_dict
+        condition_dict = {}
+        for cond in self.conditions:
+            condition_dict[cond.Key] = cond.Value
+        d["conditions"] = condition_dict
         return d
+
+
+class EventHandlerCondition(db.Model):
+    """
+    Each EventHandler entry can have additional conditions according to the
+    handler module
+    """
+    __tablename__ = "eventhandlercondition"
+    id = db.Column(db.Integer, primary_key=True)
+    eventhandler_id = db.Column(db.Integer,
+                                db.ForeignKey('eventhandler.id'))
+    Key = db.Column(db.Unicode(255), nullable=False)
+    Value = db.Column(db.Unicode(2000), default=u'')
+    comparator = db.Column(db.Unicode(255), default=u'equal')
+    evhdl = db.relationship('EventHandler',
+                            lazy='joined',
+                            backref='condition_list')
+    __table_args__ = (db.UniqueConstraint('eventhandler_id',
+                                          'Key',
+                                          name='ehcix_1'), {})
+
+    def __init__(self, eventhandler_id, Key, Value, comparator="equal"):
+        self.eventhandler_id = eventhandler_id
+        self.Key = Key
+        self.Value = Value
+        self.comparator = comparator
+        self.save()
+
+    def save(self):
+        ehc = EventHandlerCondition.query.filter_by(
+            eventhandler_id=self.eventhandler_id, Key=self.Key).first()
+        if ehc is None:
+            # create a new one
+            db.session.add(self)
+            db.session.commit()
+            ret = self.id
+        else:
+            # update
+            EventHandlerCondition.query.filter_by(
+                eventhandler_id=self.eventhandler_id, Key=self.Key) \
+                .update({'Value': self.Value,
+                         'comparator': self.comparator})
+            ret = ehc.id
+        db.session.commit()
+        return ret
 
 
 class EventHandlerOption(db.Model):

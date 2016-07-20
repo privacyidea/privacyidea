@@ -4,6 +4,8 @@
 #  License:  AGPLv3
 #  contact:  cornelius@privacyidea.org
 #
+#  2016-07-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add sha512 PHP hash as suggested by Rick Romero
 #  2016-04-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Simplifying out of bounds check
 #             Avoid repetition in comparison
@@ -360,6 +362,8 @@ class IdResolver (UserIdResolver):
             PH = PasswordHash()
             res = PH.check_password(password, userinfo.get("password"))
         # check salted hashed passwords
+#        elif database_pw[:2] == "$6":
+#            res = sha512_crypt.verify(password, userinfo.get("password"))
         elif database_pw[:6].upper() == "{SSHA}":
             res = _check_ssha(database_pw, password, hashlib.sha1, 20)
         elif database_pw[:9].upper() == "{SSHA256}":

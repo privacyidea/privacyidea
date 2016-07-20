@@ -10,7 +10,8 @@ from privacyidea.models import (Token,
                                 MachineResolverConfig, MachineToken, Admin,
                                 CAConnector, CAConnectorConfig, SMTPServer,
                                 PasswordReset, EventHandlerOption,
-                                EventHandler, SMSGatewayOption, SMSGateway)
+                                EventHandler, SMSGatewayOption, SMSGateway,
+                                EventHandlerCondition)
 from .base import MyTestCase
 from datetime import datetime
 from datetime import timedelta
@@ -516,9 +517,10 @@ class TokenModelTestCase(MyTestCase):
         condition = "always"
         options = {"mailserver": "blafoo",
                    "option2": "value2"}
+        conditions = {"user_type": "admin"}
         eh1 = EventHandler(event, handlermodule=handlermodule,
                            action=action, condition=condition,
-                           options=options)
+                           options=options, conditions=conditions)
         self.assertTrue(eh1)
 
         self.assertEqual(eh1.event, event)
@@ -529,6 +531,8 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(eh1.option_list[0].Value, "blafoo")
         self.assertEqual(eh1.option_list[1].Key, "option2")
         self.assertEqual(eh1.option_list[1].Value, "value2")
+        self.assertEqual(eh1.condition_list[0].Key, "user_type")
+        self.assertEqual(eh1.condition_list[0].Value, "admin")
 
         id = eh1.id
 
@@ -542,10 +546,21 @@ class TokenModelTestCase(MyTestCase):
         EventHandlerOption(id, Key="mailserver", Value="mailserver")
         self.assertEqual(eh1.option_list[0].Value, "mailserver")
 
-        # Add value
+        # Add Option
         EventHandlerOption(id, Key="option3", Value="value3")
         self.assertEqual(eh1.option_list[2].Key, "option3")
         self.assertEqual(eh1.option_list[2].Value, "value3")
+
+        # Update condition value
+        EventHandlerCondition(id, Key="user_type", Value="user")
+        self.assertEqual(eh1.condition_list[0].Value, "user")
+
+        # Add condition
+        EventHandlerCondition(id, Key="result_value", Value="True")
+        self.assertEqual(eh1.condition_list[0].Key, "result_value")
+        self.assertEqual(eh1.condition_list[0].Value, "True")
+        self.assertEqual(eh1.condition_list[1].Key, "user_type")
+        self.assertEqual(eh1.condition_list[1].Value, "user")
 
         # Delete event handler
         eh1.delete()
