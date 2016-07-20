@@ -123,6 +123,12 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
             }).success(callback
             ).error(error_func);
         },
+        getHandlerConditions: function(handlername, callback) {
+            $http.get(eventUrl + "/conditions/" + handlername, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
         delPolicy: function (policyName, callback) {
             $http.delete(policyUrl + "/" + policyName, {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken()}}

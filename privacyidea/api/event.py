@@ -75,7 +75,7 @@ def get_module_actions(handlermodule=None):
     """
     Return the list of actions a handlermodule provides.
 
-    :param handlermodule: Identidifier of the handler module like
+    :param handlermodule: Identifier of the handler module like
         "UserNotification"
     :return: list oft actions
     """
@@ -83,6 +83,23 @@ def get_module_actions(handlermodule=None):
     h_obj = get_handler_object(handlermodule)
     if h_obj:
         ret = h_obj.actions
+    return send_result(ret)
+
+
+@eventhandling_blueprint.route('/conditions/<handlermodule>', methods=["GET"])
+@log_with(log)
+def get_module_conditions(handlermodule=None):
+    """
+    Return the list of conditions a handlermodule provides.
+
+    :param handlermodule: Identifier of the handler module like
+        "UserNotification"
+    :return: list oft actions
+    """
+    ret = []
+    h_obj = get_handler_object(handlermodule)
+    if h_obj:
+        ret = h_obj.conditions
     return send_result(ret)
 
 

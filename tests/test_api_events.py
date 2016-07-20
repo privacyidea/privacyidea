@@ -206,4 +206,17 @@ class APIEventsTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
+            self.assertTrue("sendmail" in result.get("value"))
+            self.assertTrue("sendsms" in result.get("value"))
+            detail = json.loads(res.data).get("detail")
+
+    def test_05_get_handler_conditions(self):
+        with self.app.test_request_context('/event/conditions/UserNotification',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue("logged_in_user" in result.get("value"))
+            self.assertTrue("result_value" in result.get("value"))
             detail = json.loads(res.data).get("detail")

@@ -34,22 +34,53 @@
                     id="handlermodule"
                     ng-model="form.handlermodule" required
                     ng-options="module for module in handlermodules"
-                    ng-change="getHandlerActions()"
+                    ng-change="handlerModuleChanged()"
                     >
             </select>
         </div>
     </div>
 
-    <div class="form-group">
-        <label for="condition" class="col-sm-3 control-label" translate>
-            Condition</label>
-        <div class="col-sm-6">
-            <input name="condition" id="condition" class="form-control"
-                   ng-model="form.condition" placeholder=""
-                   />
-        </div>
-    </div>
+    <h3 translate>Condition</h3>
+    <table class="table table-hover">
+        <tr ng-repeat="(conditionname, condition) in handlerConditions">
+            <td>
+                <label for="cb_{{ conditionname }}">
+                    <input type="checkbox" name="{{ conditionname }}"
+                           ng-model="conditionCheckBox[conditionname]"
+                            id="cb_{{ conditionname }}">
+                        {{ conditionname }}
+                    </label>
+            </td>
+            <td>
+                <select class="form-control"
+                        ng-show="condition.value"
+                        ng-disabled="!conditionCheckBox[conditionname]"
+                        ng-required="condition.required && condition.value"
+                        ng-model="conds[conditionname]"
+                        ng-options="value for value in condition.value">
+                </select>
+                <textarea type="text" rows="6"
+                          ng-disabled="!conditionCheckBox[conditionname]"
+                        ng-required="condition.required && !condition.value"
+                        ng-show="condition.type==='text' && !condition.value"
+                        class="form-control"
+                        ng-model="conds[conditionname]">
+                </textarea>
+                <input class="form-control"
+                       ng-disabled="!conditionCheckBox[conditionname]"
+                       ng-required="condition.required && !condition.value"
+                       ng-model="conds[conditionname]"
+                       ng-show="condition.type==='str' && !condition.value">
+                <p class="help help-block"
+                    ng-disabled="!conditionCheckBox[conditionname]">
+                    {{ condition.desc }}
+                </p>
+            </td>
+        </tr>
+    </table>
 
+
+    <h3 translate>Action</h3>
     <div class="form-group">
         <label for="action" class="col-sm-3 control-label" translate>
             Action</label>
@@ -64,7 +95,7 @@
         </div>
     </div>
     <!-- options -->
-    <h3 translate>Options</h3>
+    <h4 translate>Options</h4>
     <table class="table table-hover">
         <tr ng-repeat="(optionname, option) in options">
             <td>

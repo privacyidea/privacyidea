@@ -50,6 +50,8 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
     $scope.eventid = $stateParams.eventid;
     $scope.availableEvents = Array();
     $scope.opts = {};
+    $scope.conds = {};
+    $scope.actionCheckBox = {};
 
     $scope.getEvent = function () {
         ConfigFactory.getEvent($scope.eventid, function(event) {
@@ -126,6 +128,19 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
                 console.log($scope.handlerActions);
                 console.log($scope.form);
             });
+    };
+
+    $scope.getHandlerConditions = function () {
+        console.log("getting handler conditions for " + $scope.form.handlermodule);
+        ConfigFactory.getHandlerConditions($scope.form.handlermodule,
+            function (conditions) {
+                $scope.handlerConditions = conditions.result.value;
+            });
+    };
+
+    $scope.handlerModuleChanged = function () {
+        $scope.getHandlerActions();
+        $scope.getHandlerConditions();
     };
 
     $scope.actionChanged = function () {

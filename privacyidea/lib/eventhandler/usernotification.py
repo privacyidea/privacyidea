@@ -129,9 +129,9 @@ class UserNotificationEventHandler(BaseEventHandler):
                 "desc": _("The logged in user is of the following type."),
                 "value": ("admin", "user")
             },
-            "value_result": {
+            "result_value": {
                 "type": "str",
-                "desc": _("The value.result within the response is "
+                "desc": _("The result.value within the response is "
                           "True or False."),
                 "value": ("True", "False")
             }
