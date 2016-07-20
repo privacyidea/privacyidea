@@ -359,12 +359,14 @@ class IdResolver (UserIdResolver):
         :return: UserId as found for the LoginName
         """
         # get the portion of the cache for this very LDAP resolver
-        r_cache = CACHE.get(self.getResolverId(), {})
+        if not self.getResolverId() in CACHE:
+            CACHE[self.getResolverId()] = {}
+        r_cache = CACHE.get(self.getResolverId())
         if LoginName in r_cache and \
             datetime.datetime.now() < r_cache[LoginName]["timestamp"] + \
                         datetime.timedelta(seconds=self.cache_timeout):
             log.debug("Reading user {0!s} from cache".format(LoginName))
-            return CACHE[LoginName]["name"]
+            return r_cache[LoginName]["name"]
         userid = ""
         self._bind()
         filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter, self.loginname_attribute,
@@ -452,8 +454,8 @@ class IdResolver (UserIdResolver):
         This should be an Identifier of the resolver, preferable the type
         and the name of the resolver.
         """
-        s = "{0!s}{1!s}{2!s}".format(self.uri, self.basedn,
-                                     self.searchfilter)
+        s = "{0!s}{1!s}{2!s}{3!s}".format(self.uri, self.basedn,
+                                          self.searchfilter, self.userinfo)
         r = binascii.hexlify(hashlib.sha1(s).digest())
         return r
 
@@ -517,7 +519,6 @@ class IdResolver (UserIdResolver):
         self.scope = config.get("SCOPE") or ldap3.SUBTREE
         self.resolverId = self.uri
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
-        CACHE[self.getResolverId()] = {}
 
         return self
 

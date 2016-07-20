@@ -519,7 +519,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue(user_id == "cn=bob,ou=example,o=test", user_id)
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "b5d1048497a91b9890a3f1544b64659d59511bdd", rid)
+        self.assertTrue(rid == "d6ce19abbc3c23e24e1cefa41cbe6f9f118613b9", rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -573,7 +573,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue(user_id == "cn=bob,ou=example,o=test", user_id)
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "b5d1048497a91b9890a3f1544b64659d59511bdd", rid)
+        self.assertTrue(rid == "c623ad4ec00e6f7249939de633fe94339bb4580d", rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -626,7 +626,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(len(result), 3)
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "b5d1048497a91b9890a3f1544b64659d59511bdd", rid)
+        self.assertTrue(rid == "d6ce19abbc3c23e24e1cefa41cbe6f9f118613b9", rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -669,7 +669,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue(user_id == "3", "{0!s}".format(user_id))
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "b5d1048497a91b9890a3f1544b64659d59511bdd", rid)
+        self.assertTrue(rid == "d6ce19abbc3c23e24e1cefa41cbe6f9f118613b9", rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -1178,7 +1178,7 @@ class LDAPResolverTestCase(MyTestCase):
                       })
 
         # but in the full LDAP there is a "alice". We need to find it, since it
-        # will not be cached.
+        # is not cached yet in the new resolver cache
         user_id = y.getUserId("alice")
         user_info = y.getUserInfo(user_id)
         self.assertEqual(user_info.get("username"), "alice")
