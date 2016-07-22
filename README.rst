@@ -81,15 +81,16 @@ https://groups.google.com/forum/#!forum/privacyidea
 Setup
 =====
 
-You can setup the system in a virtual environment::
-    
+For setting up the system to *run* it, please read install instructions 
+at http://privacyidea.readthedocs.io.
+
+If you want to setup a development environment start like this::
+
     git clone https://github.com/privacyidea/privacyidea.git
     cd privacyidea
     virtualenv venv
     source venv/bin/activate
     pip install -r requirements.txt
-
-Read the install instructions at http://privacyidea.readthedocs.org.
 
 Running it
 ==========
