@@ -46,6 +46,7 @@ The file is tested in tests/test_lib_resolver.py
 
 import logging
 import yaml
+import functools
 
 from UserIdResolver import UserIdResolver
 
@@ -89,6 +90,44 @@ def get_ad_timestamp_now():
     total_seconds = elapsed_time.total_seconds()
     # convert this to (100 nanoseconds)
     return int(MS_AD_MULTIPLYER * total_seconds)
+
+
+def cache(func):
+    """
+    Decorator to check if a token is locked or not.
+    The decorator is to be used in token class methods.
+    It can be used to avoid performing an action on a locked token.
+
+    If the token is locked, a TokenAdminError is raised.
+    """
+    @functools.wraps(func)
+    def cache_wrapper(self, *args, **kwds):
+        # If it does not exist, create the node for this instance
+        resolver_id = self.getResolverId()
+        if not resolver_id in CACHE:
+            CACHE[resolver_id] = {"getUserId": {},
+                                  "getUserInfo": {},
+                                  "_getDN": {}}
+
+        # get the portion of the cache for this very LDAP resolver
+        r_cache = CACHE.get(resolver_id).get(func.func_name)
+        if args[0] in r_cache and \
+                        datetime.datetime.now() < r_cache[args[0]][
+                    "timestamp"] + \
+                        datetime.timedelta(seconds=self.cache_timeout):
+            log.debug("Reading {0!s} from cache for {1!s}".format(args[0],
+                                                              func.func_name))
+            return r_cache[args[0]]["value"]
+
+        f_result = func(self, *args, **kwds)
+        # now we cache the result
+        CACHE[resolver_id][func.func_name][args[0]] = {
+            "value": f_result,
+            "timestamp": datetime.datetime.now()}
+
+        return f_result
+
+    return cache_wrapper
 
 
 class AUTHTYPE(object):
@@ -230,6 +269,7 @@ class IdResolver (UserIdResolver):
                 uid = str(uuid.UUID(bytes_le=uid))
         return uid
 
+    @cache
     def _getDN(self, userId):
         """
         This function returns the DN of a userId.
@@ -277,6 +317,7 @@ class IdResolver (UserIdResolver):
                 raise Exception("Wrong credentials")
             self.i_am_bound = True
 
+    @cache
     def getUserInfo(self, userId):
         """
         This function returns all user info for a given userid/object.
@@ -350,6 +391,7 @@ class IdResolver (UserIdResolver):
         info = self.getUserInfo(user_id)
         return info.get('username', "")
 
+    @cache
     def getUserId(self, LoginName):
         """
         resolve the loginname to the userid.
@@ -358,15 +400,6 @@ class IdResolver (UserIdResolver):
         :type LoginName: string
         :return: UserId as found for the LoginName
         """
-        # get the portion of the cache for this very LDAP resolver
-        if not self.getResolverId() in CACHE:
-            CACHE[self.getResolverId()] = {}
-        r_cache = CACHE.get(self.getResolverId())
-        if LoginName in r_cache and \
-            datetime.datetime.now() < r_cache[LoginName]["timestamp"] + \
-                        datetime.timedelta(seconds=self.cache_timeout):
-            log.debug("Reading user {0!s} from cache".format(LoginName))
-            return r_cache[LoginName]["name"]
         userid = ""
         self._bind()
         filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter, self.loginname_attribute,
@@ -392,9 +425,6 @@ class IdResolver (UserIdResolver):
         for entry in r:
             userid = self._get_uid(entry, self.uidtype)
 
-        CACHE[self.getResolverId()][LoginName] = {"name": userid,
-                                                  "timestamp":
-                                                      datetime.datetime.now()}
         return userid
 
     def getUserList(self, searchDict):
