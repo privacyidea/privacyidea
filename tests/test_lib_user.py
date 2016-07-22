@@ -8,7 +8,7 @@ PWFILE2 = "tests/testdata/passwords"
 
 from .base import MyTestCase
 from privacyidea.lib.resolver import (save_resolver)
-from privacyidea.lib.realm import (set_realm)
+from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User, create_user,
                                   get_username,
                                   get_user_info,
@@ -70,10 +70,7 @@ class UserTestCase(MyTestCase):
     def test_01_resolvers_of_user(self):
         user = User(login="root",
                     realm=self.realm1)
-        resolvers = user.get_realm_resolvers()
-        self.assertTrue(self.resolvername1 in resolvers, resolvers)
-        self.assertFalse(self.resolvername2 in resolvers, resolvers)
-        
+
         resolvers = user.get_resolvers()
         self.assertTrue(self.resolvername1 in resolvers, resolvers)
         self.assertFalse(self.resolvername2 in resolvers, resolvers)
@@ -313,3 +310,31 @@ class UserTestCase(MyTestCase):
     def test_15_user_exist(self):
         root = User("root", resolver=self.resolvername1, realm=self.realm1)
         self.assertTrue(root.exist())
+
+    def test_16_ordered_resolver(self):
+        rid = save_resolver({"resolver": "resolver2",
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
+        rid = save_resolver({"resolver": "reso4",
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
+
+        (added, failed) = set_realm("sort_realm",
+                                    ["resolver1", "resolver2", "reso3",
+                                     "reso4"],
+                                    priority={"resolver1": 30,
+                                              "resolver2": 10,
+                                              "reso3": 27,
+                                              "reso4": 5})
+
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 4)
+
+        root = User("root", "sort_realm")
+        r = root.get_ordererd_resolvers()
+        self.assertEqual(r[0], "reso4")
+        self.assertEqual(r[1], "resolver2")
+        self.assertEqual(r[2], "reso3")
+        self.assertEqual(r[3], "resolver1")
+
+        delete_realm("sort_realm")

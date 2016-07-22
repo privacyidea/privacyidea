@@ -135,23 +135,25 @@ class User(object):
         return ret
     
     @log_with(log)
-    def get_realm_resolvers(self):
+    def get_ordererd_resolvers(self):
         """
-        This returns a dictionary of the resolvernames in the realm.
-        It does not take into account, the self.login (username)!
-        The key is the resolvername.
-    
-        :return: dict of resolvers in self.realm
-        :rtype: dict
+        returns a list of resolvernames ordered by priority.
+        The resolver with the lowest priority is the first. Then in
+        alphabetical order
+        :return: list or resolvernames
         """
-        resolvers = {}
+        resolver_tuples = []
         realm_config = get_realms(self.realm)
         resolvers_in_realm = realm_config.get(self.realm, {})\
                                          .get("resolver", {})
         for resolver in resolvers_in_realm:
-            resolvername = resolver.get("name")
-            resolvers[resolvername] = {"priority": resolver.get("priority"),
-                                       "type": resolver.get("type")}
+            # append a tuple
+            resolver_tuples.append((resolver.get("name"),
+                             resolver.get("priority") or 1000))
+
+        # sort the resolvers by the 2nd entry in the tuple, the priority
+        resolvers = sorted(resolver_tuples, key=lambda resolver: resolver[1])
+        resolvers = [r[0] for r in resolvers]
         return resolvers
     
     def get_resolvers(self):
@@ -172,9 +174,7 @@ class User(object):
             return [self.resolver]
         
         resolvers = []
-        resolvers_in_realm = self.get_realm_resolvers()
-        highest_priority = 1000
-        for resolvername in resolvers_in_realm.keys():
+        for resolvername in self.get_ordererd_resolvers():
             # test, if the user is contained in this resolver
             y = get_resolver_object(resolvername)
             if y is None:  # pragma: no cover
@@ -185,15 +185,9 @@ class User(object):
                     log.info("user {0!r} found in resolver {1!r}".format(self.login,
                                                                resolvername))
                     log.info("userid resolved to {0!r} ".format(uid))
-                    priority = resolvers_in_realm.get(resolvername).get(
-                        "priority", 999)
-                    log.debug("priority of the resolver is {0!s}".format(priority))
-                    log.debug("The highest priority is {0!s}".format(highest_priority))
-                    if priority < highest_priority:
-                        highest_priority = priority
-                        # set the memeber resolver name to the one with the
-                        # highest priority
-                        self.resolver = resolvername
+                    self.resolver = resolvername
+                    # We do not need to search other resolvers!
+                    break
                 else:
                     log.debug("user %r not found"
                               " in resolver %r" % (self.login,
