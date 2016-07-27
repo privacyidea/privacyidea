@@ -26,6 +26,25 @@ The entered password is sent to privacyIDEA. Thus you can require the user to
 enter a password consisting of a static part he knows and the OTP part which
 the user needs to generate with the OTP token he possesses.
 
+Another addition you most probably want to make is adding the following option
+to both the client and the server configuration:
+
+   reneg-sec 0
+
+By default, the channel key gets renegotiated after 3600 seconds, either
+partner can request a renegotiation. If only one partner disables this
+option, the other one will request it. This works fine for static password
+or dual-factor authentication where both factors are static (e.g. password
+and certificate/smartcard).
+
+When using OTP authentication, note that this default value may cause the
+end user to be challenged to reauthorize once per hour. The OpenVPN client
+with the option --auth-user-pass prompts for username and password for
+every renegotiation.
+
+Network-Manager does not rechallenge the user and the VPN connection hangs,
+so you'll need to disabled the renegotiation.
+
 If you are also requiring client certificates, the user needs
 
    1. a machine certificate
