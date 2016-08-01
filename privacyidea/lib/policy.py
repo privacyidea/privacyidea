@@ -1084,7 +1084,7 @@ def get_static_policy_definitions(scope=None):
                           "the PIN during first use.")
             },
             ACTION.CHANGE_PIN_EVERY: {
-                'type': 'bool',
+                'type': 'str',
                 'desc': _("The user needs to change his PIN on a regular "
                           "basis. To change the PIN every 180 days, "
                           "enter '180d'.")
