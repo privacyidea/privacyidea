@@ -17,10 +17,9 @@ def usage():
 
 def fix_rights(file, user):
 
-    PI_ENCFILE = None
-    PI_AUDIT_KEY_PRIVATE = None
     # READ the configs
-    execfile(file)
+    conf = {}
+    execfile(file, conf)
 
     # Create the user
     try:
@@ -39,19 +38,19 @@ def fix_rights(file, user):
 
     # Fix the encryption file
     try:
-        call("chmod 400 %s" % PI_ENCFILE, shell=True)
-        call("chown %s %s" % (user, PI_ENCFILE), shell=True)
-        print "Fixed access rights for %s" % PI_ENCFILE
+        call("chmod 400 %s" % conf.get("PI_ENCFILE"), shell=True)
+        call("chown %s %s" % (user, conf.get("PI_ENCFILE")), shell=True)
+        print "Fixed access rights for %s" % conf.get("PI_ENCFILE")
     except Exception, e:
-        print "Failed to fix access rights for %s" % PI_ENCFILE
+        print "Failed to fix access rights for %s" % conf.get("PI_ENCFILE")
 
     # fix the audit key
     try:
-        call("chmod 400 %s" % PI_AUDIT_KEY_PRIVATE, shell=True)
-        call("chown %s %s" % (user, PI_AUDIT_KEY_PRIVATE), shell=True)
-        print "Fixed access rights for %s" % PI_AUDIT_KEY_PRIVATE
+        call("chmod 400 %s" % conf.get("PI_AUDIT_KEY_PRIVATE"), shell=True)
+        call("chown %s %s" % (user, conf.get("PI_AUDIT_KEY_PRIVATE")), shell=True)
+        print "Fixed access rights for %s" % conf.get("PI_AUDIT_KEY_PRIVATE")
     except Exception, e:
-        print "Failed to fix access rights for %s" % PI_AUDIT_KEY_PRIVATE
+        print "Failed to fix access rights for %s" % conf.get("PI_AUDIT_KEY_PRIVATE")
 
     # TODO: logfile
 
