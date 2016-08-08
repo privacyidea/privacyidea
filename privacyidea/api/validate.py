@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2016-08-09 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Add possiblity to check OTP only
 # 2015-11-19 Cornelius Kölbel <cornelius@privacyidea.org>
 #            Add support for transaction_id to saml_check
 # 2015-06-17 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -56,7 +58,8 @@ from privacyidea.lib.user import get_user_from_param
 from lib.utils import send_result, getParam
 from ..lib.decorators import (check_user_or_serial_in_request)
 from lib.utils import required
-from privacyidea.lib.token import (check_user_pass, check_serial_pass)
+from privacyidea.lib.token import (check_user_pass, check_serial_pass,
+                                   check_otp)
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     SYSCONF)
@@ -156,6 +159,8 @@ def check():
     :param realm: The realm of the user, who tries to authenticate. If the
         realm is omitted, the user is looked up in the default realm.
     :param pass: The password, that consists of the OTP PIN and the OTP value.
+    :param otponly: If set to 1, only the OTP value is verified. This is used
+        in the management UI. Only used with the parameter serial.
     :param transaction_id: The transaction ID for a response to a challenge
         request
     :param state: The state ID for a response to a challenge request
@@ -187,6 +192,7 @@ def check():
     user = get_user_from_param(request.all_data)
     serial = getParam(request.all_data, "serial")
     password = getParam(request.all_data, "pass", required)
+    otp_only = getParam(request.all_data, "otponly")
     options = {"g": g,
                "clientip": g.client_ip}
     # Add all params to the options
@@ -198,7 +204,11 @@ def check():
                         "realm": user.realm})
 
     if serial:
-        result, details = check_serial_pass(serial, password, options=options)
+        if not otp_only:
+            result, details = check_serial_pass(serial, password, options=options)
+        else:
+            result, details = check_otp(serial, password)
+
     else:
         result, details = check_user_pass(user, password, options=options)
 

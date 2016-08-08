@@ -169,11 +169,15 @@ myApp.controller("tokenDetailController", function ($scope,
         });
     };
 
-    $scope.testOtp = function () {
-        ValidateFactory.check({
+    $scope.testOtp = function (otponly) {
+        var params = {
             serial: $scope.tokenSerial,
             pass: $scope.testPassword
-        }, function (data) {
+        };
+        if (otponly) {
+            params["otponly"] = "1";
+        }
+        ValidateFactory.check(params, function (data) {
             console.log(data);
             // refresh the token data
             $scope.get();

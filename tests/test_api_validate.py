@@ -218,6 +218,22 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
+    def test_05a_check_otp_only(self):
+        # Check the OTP of the token without PIN
+        init_token({"serial": "otponly",
+                    "otpkey": self.otpkey,
+                    "pin": "pin"})
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": "otponly",
+                                                 "otponly": "1",
+                                                 "pass": "359152"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("status"), True)
+            self.assertEqual(result.get("value"), True)
+
     def test_06_fail_counter(self):
         # test if a user has several tokens that the fail counter is increased
         # reset the failcounter
