@@ -1,0 +1,89 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# 2016-08-09 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#
+# Copyright (c) 2016, Cornelius Kölbel
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+# contributors may be used to endorse or promote products derived from this
+# software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+__doc__ = """
+This script searches the OTP value in a given list of tokens.
+The searched tokens are determined by tokentype, substring of the serial,
+assigned status...
+
+The serial number of the token is returned.
+
+You can call the script like this:
+
+    privacyidea-get-serial byotp --otp <otp> --type <type> --serial <serial>
+        --unassigned --assigned --window <window>
+
+"""
+__version__ = "0.1"
+
+from privacyidea.lib.token import get_tokens, get_serial_by_otp
+from privacyidea.app import create_app
+from flask.ext.script import Manager
+
+app = create_app(config_name='production', silent=True)
+manager = Manager(app)
+
+
+@manager.command
+def byotp(otp=None, type=None, serial="", window=10, unassigned=False,
+          assigned=False):
+    """
+    This searches the list of the specified tokens for the given OTP value.
+    :param otp: the OTP value, which the token generates
+    :param type: The tokentype like hotp, totp, ...
+    :param serial: A part of the serial number
+    :param window: The OTP window for calculating OTP values. Default=10
+    :param unassigned: If set, searches only unassigned tokens
+    :param assigned: If set, searches only assigned tokens
+    :return: The serial number of the token
+    """
+    print
+    if not assigned and not unassigned:
+        assigned=None
+    count = get_tokens(tokentype=type, serial="*{0!s}*".format(
+            serial), assigned=assigned, count=True)
+    print("Searching in {0!s} tokens.".format(count))
+
+    tokenobj_list = get_tokens(tokentype=type,
+                               serial="*{0!s}*".format(serial),
+                               assigned=assigned)
+    serial = get_serial_by_otp(tokenobj_list, otp=otp, window=window)
+    if serial:
+        print("Found the token with serial {0!s}".format(serial))
+    else:
+        print("No token found.")
+
+if __name__ == '__main__':
+    print
+    manager.run()
+
