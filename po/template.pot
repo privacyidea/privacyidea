@@ -164,7 +164,7 @@ msgstr ""
 msgid "Assign token to user"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.getserial.html:31
+#: privacyidea/static/components/token/views/token.getserial.html:33
 msgid "Assignment State"
 msgstr ""
 
@@ -266,6 +266,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:230
 #: privacyidea/static/components/token/views/token.details.html:272
 #: privacyidea/static/components/token/views/token.details.html:522
+#: privacyidea/static/components/token/views/token.getserial.html:83
 #: privacyidea/static/components/user/views/user.details.html:101
 msgid "Cancel"
 msgstr ""
@@ -386,7 +387,7 @@ msgid "Count"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:96
-#: privacyidea/static/components/token/views/token.getserial.html:48
+#: privacyidea/static/components/token/views/token.getserial.html:52
 msgid "Count Window"
 msgstr ""
 
@@ -908,7 +909,7 @@ msgstr ""
 msgid "Get Serial"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.getserial.html:57
+#: privacyidea/static/components/token/views/token.getserial.html:62
 msgid "Get Serial Number"
 msgstr ""
 
@@ -1304,7 +1305,7 @@ msgstr ""
 msgid "No"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.getserial.html:72
+#: privacyidea/static/components/token/views/token.getserial.html:105
 msgid "No Serial number could be found for OTP value {{ otp }}."
 msgstr ""
 
@@ -1330,6 +1331,8 @@ msgid "OCRA Suite"
 msgstr ""
 
 #: privacyidea/static/components/login/factories/u2f.js:25
+#: privacyidea/static/components/token/views/token.getserial.html:108
+#: privacyidea/static/components/token/views/token.getserial.html:99
 msgid "OK"
 msgstr ""
 
@@ -1761,6 +1764,10 @@ msgstr ""
 msgid "Roll the token"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.getserial.html:79
+msgid "Run search"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.token.sms.html:13
 msgid "SMS Gateway configuration"
 msgstr ""
@@ -1871,6 +1878,10 @@ msgstr ""
 msgid "Search Filter"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.getserial.html:89
+msgid "Searching token..."
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.radius.edit.html:49
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:60
 msgid "Secret"
@@ -1945,7 +1956,7 @@ msgstr ""
 msgid "Serial"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.getserial.html:41
+#: privacyidea/static/components/token/views/token.getserial.html:44
 msgid "Serial Substring"
 msgstr ""
 
@@ -2241,7 +2252,7 @@ msgid ""
 "    This can be used to authenticate to a secure shell."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.getserial.html:67
+#: privacyidea/static/components/token/views/token.getserial.html:95
 msgid ""
 "The Serial number for the OTP value {{ otp }} is\n"
 "    <a ui-sref=\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
@@ -2370,7 +2381,7 @@ msgid ""
 "    have the server generate the secret and scan the QR code."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.getserial.html:52
+#: privacyidea/static/components/token/views/token.getserial.html:57
 msgid "The number of lookahead OTP values. Default 10."
 msgstr ""
 
@@ -2724,7 +2735,7 @@ msgid ""
 "    <a ui-sref=\"config.tokens({tokentype:'radius'})\">RADIUS Token Config</a>."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.getserial.html:21
+#: privacyidea/static/components/token/views/token.getserial.html:22
 msgid "Token Type"
 msgstr ""
 
@@ -3027,6 +3038,13 @@ msgstr ""
 msgid "Your password has been reset successfully."
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.getserial.html:75
+msgid ""
+"Your search would include {{ count }} tokens. This can take a lot of\n"
+"        time and could even timeout. Do you want to run the search? You\n"
+"            might also cancel this and narrow down the search!"
+msgstr ""
+
 #: privacyidea/static/components/login/views/pinchange.html:5
 msgid ""
 "Your token PIN has expired. You need to set a new PIN\n"
@@ -3075,7 +3093,7 @@ msgstr ""
 msgid "administrator"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.getserial.html:44
+#: privacyidea/static/components/token/views/token.getserial.html:48
 msgid "an optional serial substring"
 msgstr ""
 
@@ -3118,7 +3136,7 @@ msgstr ""
 msgid "emit a public UID"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.getserial.html:17
+#: privacyidea/static/components/token/views/token.getserial.html:18
 msgid "enter some OTP value"
 msgstr ""
 

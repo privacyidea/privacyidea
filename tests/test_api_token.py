@@ -843,6 +843,16 @@ class APITokenTestCase(MyTestCase):
         init_token({"serial": "GETSERIAL",
                     "otpkey": OTPKEY})
 
+        # Only get the number of tokens, which would be searched: 28
+        with self.app.test_request_context('/token/getserial/162583?count=1',
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            self.assertEqual(value.get("count"), 28)
+            self.assertEqual(value.get("serial"), None)
 
         # multiple tokens are matching!
         with self.app.test_request_context('/token/getserial/162583',

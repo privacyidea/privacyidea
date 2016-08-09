@@ -1,6 +1,8 @@
 myApp.controller("tokenGetSerialController", function ($scope,
                                                   TokenFactory) {
     $scope.params = {};
+    // possible steps: init, count, searching, found
+    $scope.step = "init";
 
     // TODO: Read this from an object "serverConfig", that is returned
     // after authentication
@@ -23,6 +25,11 @@ myApp.controller("tokenGetSerialController", function ($scope,
     $scope.getSerial = function() {
         $scope.params.assigned = null;
         $scope.params.unassigned = null;
+        if ($scope.step === "count") {
+            $scope.params.count = "1";
+        } else {
+            $scope.params.count = null;
+        }
         if ($scope.assigned === "assigned") {
             $scope.params.assigned = 1;
         }
@@ -31,6 +38,10 @@ myApp.controller("tokenGetSerialController", function ($scope,
         }
         TokenFactory.getserial($scope.otp, $scope.params, function (data) {
             $scope.serial = data.result.value.serial;
+            $scope.count = data.result.value["count"];
+            if ($scope.step==="searching") {
+                $scope.step = "found";
+            }
             $scope.newOtp = false;
         });
     };

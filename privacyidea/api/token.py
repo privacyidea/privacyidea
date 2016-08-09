@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2016-08-09 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add number of tokens, searched by get_serial_by_otp
 # 2016-07-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add decryption of import file
 # 2016-05-06 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -937,6 +939,8 @@ def get_serial_by_otp_api(otp=None):
     :query type: Limit the search to this token type
     :query unassigned: If set=1, only search in unassigned tokens
     :query assigned: If set=1, only search in assigned tokens
+    :query count: if set=1, only return the number of tokens, that will be
+        searched
     :query serial: This can be a substring of serial numbers to search in.
     :query window: The number of OTP look ahead (default=10)
     :return: The serial number of the token found
@@ -945,22 +949,29 @@ def get_serial_by_otp_api(otp=None):
     unassigned_param = getParam(request.all_data, "unassigned")
     assigned_param = getParam(request.all_data, "assigned")
     serial_substr = getParam(request.all_data, "serial")
+    count_only = getParam(request.all_data, "count")
     window = int(getParam(request.all_data, "window", default=10))
 
     serial_substr = serial_substr or ""
 
+    serial = None
     assigned = None
     if unassigned_param:
         assigned = False
     if assigned_param:
         assigned = True
 
-    tokenobj_list = get_tokens(tokentype=ttype,
-                               serial="*{0!s}*".format(serial_substr),
-                               assigned=assigned)
-    serial = get_serial_by_otp(tokenobj_list, otp=otp, window=window)
+    count = get_tokens(tokentype=ttype, serial="*{0!s}*".format(
+            serial_substr), assigned=assigned, count=True)
+    if not count_only:
+        tokenobj_list = get_tokens(tokentype=ttype,
+                                   serial="*{0!s}*".format(serial_substr),
+                                   assigned=assigned)
+        serial = get_serial_by_otp(tokenobj_list, otp=otp, window=window)
 
     g.audit_object.log({"success": True,
-                        "info": "get {0!s} by OTP".format(serial)})
+                        "info": "get {0!s} by OTP. {1!s} tokens".format(
+                            serial, count)})
 
-    return send_result({"serial": serial})
+    return send_result({"serial": serial,
+                        "count": count})
