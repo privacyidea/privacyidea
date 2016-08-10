@@ -77,6 +77,22 @@ class LdapMachineResolver(BaseMachineResolver):
             uid = entry.get(self.id_attribute)
         return uid
 
+
+    def _get_hostname(self, entry):
+        if type(entry.get(self.id_attribute)) == list:
+            hostname = entry.get(self.hostname_attribute)[0]
+        else:
+            hostname = entry.get(self.hostname_attribute)
+        return hostname
+
+    def _get_ip(self, entry):
+        if type(entry.get(self.ip_attribute)) == list:
+            ip = entry.get(self.ip_attribute)[0]
+        else:
+            ip = entry.get(self.ip_attribute)
+        return ip
+
+
     @staticmethod
     def _create_ldap_filter(search_filter,
                             id_attribute, machine_id,
@@ -85,6 +101,11 @@ class LdapMachineResolver(BaseMachineResolver):
         filter = "(&" + search_filter
 
         if not any:
+            if machine_id:
+                if substring:
+                    filter += "({0!s}=*{1!s}*)".format(id_attribute, machine_id)
+                else:
+                    filter += "({0!s}={1!s})".format(id_attribute, machine_id)
             if hostname:
                 if substring:
                     filter += "({0!s}=*{1!s}*)".format(hostname_attribute, hostname)
@@ -135,6 +156,8 @@ class LdapMachineResolver(BaseMachineResolver):
             attributes.append(self.ip_attribute)
         if self.hostname_attribute:
             attributes.append(self.hostname_attribute)
+
+
         # do the filter depending on the searchDict
         filter = self._create_ldap_filter(self.search_filter,
                                           self.id_attribute, machine_id,
@@ -147,27 +170,29 @@ class LdapMachineResolver(BaseMachineResolver):
                       search_filter=filter,
                       attributes=attributes,
                       paged_size=self.sizelimit)
+
         # returns a list of dictionaries
         for entry in self.l.response:
+
             dn = entry.get("dn")
             attributes = entry.get("attributes")
             try:
                 if entry.get("type") == "searchResEntry":
                     machine = {}
+
                     if self.id_attribute.lower() == "dn":
                         machine['machineid'] = dn
                     else:
                         machine['machineid'] = self._get_uid(attributes)
-                    for k, v in attributes.items():
-                        key = self.reverse_map.get(k)
-                        if key:
-                            if type(v) == list:
-                                machine[key] = v[0]
-                            else:
-                                machine[key] = v
+
+                    machine['hostname'] = self._get_hostname(attributes)
+                    machine['ip'] = self._get_ip(attributes)
+
                     machine_ip = None
-                    if machine.get("ip"):
-                        machine_ip = netaddr.IPAddress(machine.get("ip"))
+
+                    if machine['ip']:
+                        machine_ip = netaddr.IPAddress(machine['ip'])
+
                     machines.append(Machine(self.name,
                                             machine['machineid'],
                                             hostname=machine['hostname'],

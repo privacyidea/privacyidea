@@ -71,8 +71,9 @@ def get_machines(hostname=None, ip=None, id=None, resolver=None, any=None):
         reso_obj = get_resolver_object(reso)
         resolver_machines = reso_obj.get_machines(hostname=hostname,
                                                   ip=ip,
-                                                  machine_id=id, any=any,
-                                                  substring=True)
+                                                  machine_id=id,
+                                                  any=any,
+                                                  substring=False)
         all_machines += resolver_machines
 
     return all_machines
