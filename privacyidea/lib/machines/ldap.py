@@ -70,7 +70,8 @@ class LdapMachineResolver(BaseMachineResolver):
                 raise Exception("Wrong credentials")
             self.i_am_bound = True
 
-    def _get_entry(self, entry_attribute, entries):
+    @staticmethod
+    def _get_entry(entry_attribute, entries):
         if type(entries.get(entry_attribute)) == list:
             entry = entries.get(entry_attribute)[0]
         else:
