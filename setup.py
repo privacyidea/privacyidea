@@ -64,8 +64,8 @@ install_requires = ["Flask>=0.10.1",
                     "requests>=2.7.0",
                     "sqlsoup>=0.9.0",
                     "ecdsa>=0.13",
-		    "lxml>=3.3",
-		    "python-gnupg>=0.3.8"
+                    "lxml>=3.3",
+                    "python-gnupg>=0.3.8"
                     ]
 
 # For python 2.6 we need additional dependency importlib
@@ -94,7 +94,8 @@ setup(
              'tools/privacyidea-fix-access-rights',
              'tools/privacyidea-create-ad-users',
              'tools/privacyidea-fetchssh',
-             'tools/privacyidea-create-userdb'
+             'tools/privacyidea-create-userdb',
+             'tools/privacyidea-get-serial'
              ],
     extras_require={
         'dev': ["Sphinx>=1.3.1",
