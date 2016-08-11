@@ -73,7 +73,7 @@ def get_machines(hostname=None, ip=None, id=None, resolver=None, any=None):
                                                   ip=ip,
                                                   machine_id=id,
                                                   any=any,
-                                                  substring=False)
+                                                  substring=True)
         all_machines += resolver_machines
 
     return all_machines
