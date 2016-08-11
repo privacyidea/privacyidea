@@ -135,15 +135,15 @@ def set_eventhandling():
         eid = int(eid)
     handlermodule = getParam(param, "handlermodule", optional=False)
     action = getParam(param, "action", optional=False)
-    condition = getParam(param, "condition", optional=True)
     ordering = getParam(param, "ordering", optional=True, default=0)
+    conditions = getParam(param, "conditions", optional=True, default={})
     options = {}
     for k, v in param.iteritems():
         if k.startswith("option."):
             options[k[7:]] = v
 
     res = set_event(event, handlermodule=handlermodule,
-                    action=action, condition=condition,
+                    action=action, conditions=conditions,
                     ordering=ordering, id=eid, options=options)
     g.audit_object.log({"success": True,
                         "info": res})

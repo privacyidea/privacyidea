@@ -374,8 +374,11 @@ msgid "Community"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.events.details.html:43
-#: privacyidea/static/components/config/views/config.events.list.html:8
 msgid "Condition"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.events.list.html:8
+msgid "Conditions"
 msgstr ""
 
 #: privacyidea/static/templates/menu.html:65

@@ -52,6 +52,7 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
     $scope.opts = {};
     $scope.conds = {};
     $scope.actionCheckBox = {};
+    $scope.conditionCheckBox = {};
 
     $scope.getEvent = function () {
         ConfigFactory.getEvent($scope.eventid, function(event) {
@@ -71,6 +72,14 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
                     // set the options
                     $scope.actionChanged();
                     $scope.opts = event.result.value[0].options;
+                    // get the available conditions
+                    $scope.getHandlerConditions();
+                    // get the configured conditions
+                    $scope.conds = event.result.value[0].conditions;
+                    angular.forEach($scope.conds, function(value, cond){
+                        console.log("[Condition] " + cond + ": " + value);
+                        $scope.conditionCheckBox[cond] = true;
+                    });
                 });
         });
     };
@@ -113,6 +122,12 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
         });
         $scope.form.event = events.join(",");
         console.log("saving events " + $scope.form.event);
+        // Add the activated conditions
+        angular.forEach($scope.conditionCheckBox, function(activated, value){
+            if (activated===true) {
+                $scope.form.conditions[value] = $scope.conds[value];
+            }
+        });
         ConfigFactory.setEvent($scope.form, function() {
             $state.go("config.events.list");
         });

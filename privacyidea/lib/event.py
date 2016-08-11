@@ -96,7 +96,7 @@ def get_handler_object(handlername):
     return h_obj
 
 
-def set_event(event, handlermodule, action, condition="",
+def set_event(event, handlermodule, action, conditions=None,
               ordering=0, options=None, id=None):
 
     """
@@ -112,8 +112,9 @@ def set_event(event, handlermodule, action, condition="",
     :param action: The action to perform. This is an action defined by the
         handler module
     :type action: basestring
-    :param condition: A condition. Only if this condition is met, the action is
+    :param conditions: A condition. Only if this condition is met, the action is
         performed.
+    :type conditions: dict
     :param ordering: An optional ordering of the event definitions.
     :type ordering: integer
     :param options: Additional options, that are needed as parameters for the
@@ -124,9 +125,10 @@ def set_event(event, handlermodule, action, condition="",
     :type id: int
     :return: The id of the event.
     """
+    conditions = conditions or {}
     if id:
         id = int(id)
-    event = EventHandler(event, handlermodule, action, condition=condition,
+    event = EventHandler(event, handlermodule, action, conditions=conditions,
                  ordering=ordering, options=options, id=id)
     return event.id
 
