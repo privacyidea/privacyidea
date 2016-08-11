@@ -123,6 +123,7 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
         $scope.form.event = events.join(",");
         console.log("saving events " + $scope.form.event);
         // Add the activated conditions
+        $scope.form.conditions = {};
         angular.forEach($scope.conditionCheckBox, function(activated, value){
             if (activated===true) {
                 $scope.form.conditions[value] = $scope.conds[value];

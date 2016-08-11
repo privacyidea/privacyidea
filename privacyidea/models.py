@@ -1534,6 +1534,14 @@ class EventHandler(MethodsMixin, db.Model):
         conditions = conditions or {}
         for k, v in conditions.iteritems():
             EventHandlerCondition(eventhandler_id=self.id, Key=k, Value=v).save()
+        # Delete event handler conditions, that ar not used anymore.
+        ev_conditions = EventHandlerCondition.query.filter_by(
+            eventhandler_id=self.id).all()
+        for cond in ev_conditions:
+            if cond.Key not in conditions.keys():
+                EventHandlerCondition.query.filter_by(
+                    eventhandler_id=self.id, Key=cond.Key).delete()
+                db.session.commit()
 
     def save(self):
         if self.id is None:
