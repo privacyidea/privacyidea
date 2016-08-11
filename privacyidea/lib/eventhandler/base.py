@@ -78,12 +78,12 @@ class BaseEventHandler(object):
         events = ["*"]
         return events
 
-    def check_condition(self):
+    def check_condition(self, action=None, options=None):
         """
-        TODO
-        :return:
+        Check if the conditions allow the requested action.
+
+        :return: True, if conditions allow the action
         """
-        # TODO
         return True
 
     def do(self, action, options=None):

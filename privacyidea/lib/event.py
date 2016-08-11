@@ -69,11 +69,13 @@ class event(object):
                 options = {"request": self.request,
                            "g": self.g,}
                 options.update(e_handler_def.get("options"))
-                log.debug("Handling event {eventname} with options"
-                          "{options}".format(eventname=self.eventname,
-                                             options=options))
-                event_handler.do(e_handler_def.get("action"),
-                                 options=options)
+                if event_handler.check_condition(e_handler_def.get("action"),
+                                                 options=options):
+                    log.debug("Handling event {eventname} with options"
+                              "{options}".format(eventname=self.eventname,
+                                                 options=options))
+                    event_handler.do(e_handler_def.get("action"),
+                                     options=options)
             return f_result
 
         return event_wrapper

@@ -36,6 +36,7 @@ import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policy import ACTION
 from privacyidea.lib.event import AVAILABLE_EVENTS, get_handler_object
+import json
 
 
 log = logging.getLogger(__name__)
@@ -137,6 +138,8 @@ def set_eventhandling():
     action = getParam(param, "action", optional=False)
     ordering = getParam(param, "ordering", optional=True, default=0)
     conditions = getParam(param, "conditions", optional=True, default={})
+    if type(conditions) is not dict:
+        conditions = json.loads(conditions)
     options = {}
     for k, v in param.iteritems():
         if k.startswith("option."):

@@ -138,14 +138,16 @@ class UserNotificationEventHandler(BaseEventHandler):
         }
         return cond
 
-    def check_condition(self):
+    def check_condition(self, action=None, options=None):
         """
-        Check if all conditions are met and if the action should be executed
+        Check if all conditions are met and if the action should be executed.
+        The the conditions are met, we return "True"
         :return: True
         """
-        # TODO: Only do this, if someone else performs an action on the token
-        # Maybe only perform, if the admin is in a certain realm...
+        g = options.get("g")
+        request = options.get("request")
         pass
+        return True
 
     def do(self, action, options=None):
         """

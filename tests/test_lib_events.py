@@ -21,14 +21,14 @@ class EventHandlerLibTestCase(MyTestCase):
 
     def test_01_create_update_delete(self):
         eid = set_event("token_init", "UserNotification", "sendmail",
-                      condition="bla",
+                      conditions={"bla": "yes"},
                       options={"emailconfig": "themis"})
         self.assertEqual(eid, 1)
 
         # create a new event!
         r = set_event("token_init, token_assign",
                       "UserNotification", "sendmail",
-                      condition="",
+                      conditions={},
                       options={"emailconfig": "themis",
                                "always": "immer"})
 
@@ -36,7 +36,7 @@ class EventHandlerLibTestCase(MyTestCase):
         # Update the first event
         r = set_event("token_init, token_assign",
                       "UserNotification", "sendmail",
-                      condition="",
+                      conditions={},
                       options={"emailconfig": "themis",
                                "always": "immer"},
                       id=eid)

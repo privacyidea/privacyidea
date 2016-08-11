@@ -22,7 +22,7 @@ class APIEventsTestCase(MyTestCase):
             "event": "token_init",
             "action": "sendmail",
             "handlermodule": "UserNotification",
-            "condition": "blabla"
+            "conditions": '{"blabla": "yes"}'
         }
         with self.app.test_request_context('/event',
                                            data=param,
@@ -45,15 +45,15 @@ class APIEventsTestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             detail = json.loads(res.data).get("detail")
             self.assertEqual(result.get("value")[0].get("action"), "sendmail")
-            self.assertEqual(result.get("value")[0].get("condition"),
-                             "blabla")
+            self.assertEqual(result.get("value")[0].get("conditions"),
+                             {"blabla": "yes"})
 
         # update event config
         param = {
             "event": "token_init",
             "action": "sendmail",
             "handlermodule": "UserNotification",
-            "condition": "always",
+            "conditions": '{"always": "yes"}',
             "id": 1
         }
         with self.app.test_request_context('/event',
@@ -78,8 +78,8 @@ class APIEventsTestCase(MyTestCase):
             detail = json.loads(res.data).get("detail")
             self.assertEqual(result.get("value")[0].get("action"),
                              "sendmail")
-            self.assertEqual(result.get("value")[0].get("condition"),
-                             "always")
+            self.assertEqual(result.get("value")[0].get("conditions"),
+                             {"always": "yes"})
 
         # get one single event
         with self.app.test_request_context('/event/1',
@@ -92,8 +92,8 @@ class APIEventsTestCase(MyTestCase):
                 detail = json.loads(res.data).get("detail")
                 self.assertEqual(result.get("value")[0].get("action"),
                                  "sendmail")
-                self.assertEqual(result.get("value")[0].get("condition"),
-                                 "always")
+                self.assertEqual(result.get("value")[0].get("conditions"),
+                                 {"always": "yes"})
 
         # delete event
         with self.app.test_request_context('/event/1',
@@ -124,7 +124,7 @@ class APIEventsTestCase(MyTestCase):
             "event": "token_init",
             "action": "sendmail",
             "handlermodule": "UserNotification",
-            "condition": "blabla",
+            "conditions": '{"blabla": "yes"}',
             "option.emailconfig": "themis",
             "option.2": "value2"
         }
