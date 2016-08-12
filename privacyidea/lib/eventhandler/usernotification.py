@@ -134,6 +134,12 @@ class UserNotificationEventHandler(BaseEventHandler):
                 "desc": _("The result.value within the response is "
                           "True or False."),
                 "value": ("True", "False")
+            },
+            "token_locked": {
+                "type": "str",
+                "desc": _("Check if the max failcounter of the token is "
+                          "reached."),
+                "value": ("True", "False")
             }
         }
         return cond
@@ -167,6 +173,8 @@ class UserNotificationEventHandler(BaseEventHandler):
         if "result_value" in conditions and res:
             res = content.get("result", {}).get("value") == conditions.get(
                 "result_value")
+
+        # TODO: Add checking of max-failcounter state of the token
 
         return res
 
