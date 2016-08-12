@@ -35,7 +35,7 @@ from privacyidea.lib.smtpserver import send_email_identifier
 from privacyidea.lib.smsprovider.SMSProvider import send_sms_identifier
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.user import get_user_from_param
-from privacyidea.lib.token import get_token_owner
+from privacyidea.lib.token import get_token_owner, get_tokens
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from gettext import gettext as _
@@ -174,7 +174,18 @@ class UserNotificationEventHandler(BaseEventHandler):
             res = content.get("result", {}).get("value") == conditions.get(
                 "result_value")
 
-        # TODO: Add checking of max-failcounter state of the token
+        # checking of max-failcounter state of the token
+        if "token_locked" in conditions and res:
+            serial = request.all_data.get("serial") or \
+                     content.get("detail", {}).get("serial")
+            if serial:
+                tokens = get_tokens(serial=serial)
+                if tokens:
+                    token_obj = tokens[0]
+                    locked = token_obj.get_failcount() >= \
+                             token_obj.get_max_failcount()
+                    res = (conditions.get("token_locked") in ["True", True]) \
+                          == locked
 
         return res
 

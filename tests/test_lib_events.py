@@ -13,6 +13,7 @@ from privacyidea.lib.smtpserver import add_smtpserver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from flask import Request, Response
 from werkzeug.test import EnvironBuilder
+from privacyidea.lib.token import init_token
 from privacyidea.lib.event import (delete_event, set_event,
                                    EventConfiguration, get_handler_object)
 
@@ -189,3 +190,39 @@ class UserNotificationTestCase(MyTestCase):
              "handler_def": {"conditions": {"result_value": True}},
              "response": resp})
         self.assertEqual(r, False)
+
+        # check a locked token with maxfail = failcount
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius"}
+        resp.data = """{"result": {"value": false},
+            "detail": {"serial": "lockedtoken"}
+            }
+        """
+        tok = init_token({"serial": "lockedtoken", "type": "spass"})
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"token_locked": "True"}},
+             "response": resp,
+             "request": req
+             }
+        )
+        # not yet locked
+        self.assertEqual(r, False)
+
+        # lock it
+        tok.set_failcount(10)
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"token_locked": "True"}},
+             "response": resp,
+             "request": req
+             }
+        )
+        # not yet locked
+        self.assertEqual(r, True)
+
