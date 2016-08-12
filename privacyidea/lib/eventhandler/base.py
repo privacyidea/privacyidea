@@ -78,7 +78,7 @@ class BaseEventHandler(object):
         events = ["*"]
         return events
 
-    def check_condition(self, action=None, options=None):
+    def check_condition(self, options):
         """
         Check if the conditions allow the requested action.
 
@@ -91,7 +91,9 @@ class BaseEventHandler(object):
         This method executes the defined action in the given event.
 
         :param action:
-        :param options:
+        :param options: Contains the flask parameters g and request and the
+            handler_def configuration
+        :type options: dict
         :return:
         """
         log.info("In fact we are doing nothing, be we presume we are doing"

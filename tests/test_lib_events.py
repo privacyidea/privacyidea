@@ -11,7 +11,7 @@ from privacyidea.lib.eventhandler.usernotification import UserNotificationEventH
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.smtpserver import add_smtpserver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
-from flask import Request
+from flask import Request, Response
 from werkzeug.test import EnvironBuilder
 from privacyidea.lib.event import (delete_event, set_event,
                                    EventConfiguration, get_handler_object)
@@ -70,7 +70,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertEqual(events, ["*"])
 
         base_handler =  BaseEventHandler()
-        r = base_handler.check_condition()
+        r = base_handler.check_condition({})
         self.assertTrue(r)
 
         base_handler = BaseEventHandler()
@@ -118,7 +118,7 @@ class UserNotificationTestCase(MyTestCase):
 
         options = {"g": g,
                    "request": req,
-                   "emailconfig": "myserver"}
+                   "handler_def": {"emailconfig": "myserver"}}
 
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
@@ -162,7 +162,7 @@ class UserNotificationTestCase(MyTestCase):
 
         options = {"g": g,
                    "request": req,
-                   "smsconfig": "myGW"}
+                   "handler_def": {"smsconfig": "myGW"}}
 
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendsms", options=options)
@@ -172,3 +172,20 @@ class UserNotificationTestCase(MyTestCase):
         c = UserNotificationEventHandler().conditions
         self.assertTrue("logged_in_user" in c)
         self.assertTrue("result_value" in c)
+
+    def test_05_check_conditions(self):
+
+        uhandler = UserNotificationEventHandler()
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"logged_in_user": "admin"}},
+             "response": resp})
+        self.assertEqual(r, False)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"result_value": True}},
+             "response": resp})
+        self.assertEqual(r, False)

@@ -33,13 +33,13 @@ The module is tested in tests/test_lib_events.py
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.smtpserver import send_email_identifier
 from privacyidea.lib.smsprovider.SMSProvider import send_sms_identifier
-from privacyidea.lib.error import ParameterError
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.token import get_token_owner
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from gettext import gettext as _
+import json
 import logging
 log = logging.getLogger(__name__)
 
@@ -127,7 +127,7 @@ class UserNotificationEventHandler(BaseEventHandler):
             "logged_in_user": {
                 "type": "str",
                 "desc": _("The logged in user is of the following type."),
-                "value": ("admin", "user")
+                "value": (ROLE.ADMIN, ROLE.USER)
             },
             "result_value": {
                 "type": "str",
@@ -138,28 +138,52 @@ class UserNotificationEventHandler(BaseEventHandler):
         }
         return cond
 
-    def check_condition(self, action=None, options=None):
+    def check_condition(self, options):
         """
         Check if all conditions are met and if the action should be executed.
         The the conditions are met, we return "True"
         :return: True
         """
+        res = True
         g = options.get("g")
         request = options.get("request")
-        pass
-        return True
+        response = options.get("response")
+        e_handler_def = options.get("handler_def")
+        # conditions can be correspnding to the property conditions
+        conditions = e_handler_def.get("conditions")
+        content = json.loads(response.data)
+
+        if "logged_in_user" in conditions:
+            # Determine the role of the user
+            try:
+                logged_in_user = g.logged_in_user
+                user_role = logged_in_user.get("role")
+            except Exception:
+                # A non-logged-in-user is a User, not an admin
+                user_role = ROLE.USER
+            res = user_role == conditions.get("logged_in_user")
+
+        # Check result_value only if the check condition is still True
+        if "result_value" in conditions and res:
+            res = content.get("result", {}).get("value") == conditions.get(
+                "result_value")
+
+        return res
 
     def do(self, action, options=None):
         """
         This method executes the defined action in the given event.
 
         :param action:
-        :param options:
+        :param options: Contains the flask parameters g and request and the
+            handler_def configuration
+        :type options: dict
         :return:
         """
         ret = True
         g = options.get("g")
         request = options.get("request")
+        handler_def = options.get("handler_def")
         try:
             logged_in_user = g.logged_in_user
         except Exception:
@@ -172,7 +196,7 @@ class UserNotificationEventHandler(BaseEventHandler):
             user = get_token_owner(serial)
         if not user.is_empty() and user.login and logged_in_user.get("role") ==\
                 ROLE.ADMIN:
-            body = options.get("body") or DEFAULT_BODY
+            body = handler_def.get("body") or DEFAULT_BODY
             body = body.format(
                 admin=logged_in_user.get("username"),
                 realm=logged_in_user.get("realm"),
@@ -183,10 +207,10 @@ class UserNotificationEventHandler(BaseEventHandler):
             )
 
             if action.lower() == "sendmail":
-                emailconfig = options.get("emailconfig")
+                emailconfig = handler_def.get("emailconfig")
                 useremail = user.info.get("email")
-                subject = options.get("subject") or "An action was performed on " \
-                                                    "your token."
+                subject = handler_def.get("subject") or \
+                          "An action was performed on your token."
                 try:
                     ret = send_email_identifier(emailconfig,
                                                 recipient=useremail,
@@ -201,7 +225,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                                 "{0}".format(user))
 
             elif action.lower() == "sendsms":
-                smsconfig = options.get("smsconfig")
+                smsconfig = handler_def.get("smsconfig")
                 userphone = user.info.get("mobile")
                 try:
                     ret = send_sms_identifier(smsconfig, userphone, body)

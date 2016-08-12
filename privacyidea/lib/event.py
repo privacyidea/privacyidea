@@ -67,10 +67,10 @@ class event(object):
                 # The "action is determined by the event configuration
                 # In the options we can pass the mailserver configuration
                 options = {"request": self.request,
-                           "g": self.g,}
-                options.update(e_handler_def.get("options"))
-                if event_handler.check_condition(e_handler_def.get("action"),
-                                                 options=options):
+                           "g": self.g,
+                           "response": f_result,
+                           "handler_def": e_handler_def}
+                if event_handler.check_condition(options=options):
                     log.debug("Handling event {eventname} with options"
                               "{options}".format(eventname=self.eventname,
                                                  options=options))
