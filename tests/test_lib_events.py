@@ -179,16 +179,22 @@ class UserNotificationTestCase(MyTestCase):
         uhandler = UserNotificationEventHandler()
         resp = Response()
         resp.data = """{"result": {"value": false}}"""
+        builder = EnvironBuilder(method='POST')
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {}
         r = uhandler.check_condition(
             {"g": {},
              "handler_def": {"conditions": {"logged_in_user": "admin"}},
-             "response": resp})
+             "response": resp,
+             "request": req})
         self.assertEqual(r, False)
 
         r = uhandler.check_condition(
             {"g": {},
              "handler_def": {"conditions": {"result_value": True}},
-             "response": resp})
+             "response": resp,
+             "request": req})
         self.assertEqual(r, False)
 
         # check a locked token with maxfail = failcount
@@ -196,8 +202,6 @@ class UserNotificationTestCase(MyTestCase):
                                  data={'serial': "OATH123456"},
                                  headers={})
 
-        env = builder.get_environ()
-        req = Request(env)
         req.all_data = {"user": "cornelius"}
         resp.data = """{"result": {"value": false},
             "detail": {"serial": "lockedtoken"}
@@ -226,3 +230,24 @@ class UserNotificationTestCase(MyTestCase):
         # not yet locked
         self.assertEqual(r, True)
 
+    def test_06_check_conditions_realm(self):
+        uhandler = UserNotificationEventHandler()
+        # check a locked token with maxfail = failcount
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1"},
+                                 headers={})
+
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1"}
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"realm": "realm2"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # wrong realm
+        self.assertEqual(r, False)

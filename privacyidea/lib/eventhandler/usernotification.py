@@ -36,6 +36,7 @@ from privacyidea.lib.smsprovider.SMSProvider import send_sms_identifier
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.token import get_token_owner, get_tokens
+from privacyidea.lib.realm import get_realms
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from gettext import gettext as _
@@ -123,7 +124,13 @@ class UserNotificationEventHandler(BaseEventHandler):
 
         :return: dict
         """
+        realms = get_realms()
         cond = {
+            "realm": {
+                "type": "str",
+                "desc": _("The user realm, for which this event should aply."),
+                "value": realms.keys()
+            },
             "logged_in_user": {
                 "type": "str",
                 "desc": _("The logged in user is of the following type."),
@@ -144,6 +151,16 @@ class UserNotificationEventHandler(BaseEventHandler):
         }
         return cond
 
+    @staticmethod
+    def _get_user(request):
+        user = get_user_from_param(request.all_data)
+        serial = request.all_data.get("serial")
+        if user.is_empty() and serial:
+            # maybe the user is empty, but a serial was passed.
+            # Then we determine the user by the serial
+            user = get_token_owner(serial)
+        return user
+
     def check_condition(self, options):
         """
         Check if all conditions are met and if the action should be executed.
@@ -158,8 +175,11 @@ class UserNotificationEventHandler(BaseEventHandler):
         # conditions can be correspnding to the property conditions
         conditions = e_handler_def.get("conditions")
         content = json.loads(response.data)
+        user = self._get_user(request)
+        if "realm" in conditions:
+            res = user.realm == conditions.get("realm")
 
-        if "logged_in_user" in conditions:
+        if "logged_in_user" in conditions and res:
             # Determine the role of the user
             try:
                 logged_in_user = g.logged_in_user
@@ -207,12 +227,7 @@ class UserNotificationEventHandler(BaseEventHandler):
             logged_in_user = g.logged_in_user
         except Exception:
             logged_in_user = {}
-        user = get_user_from_param(request.all_data)
-        serial = request.all_data.get("serial")
-        if user.is_empty() and serial:
-            # maybe the user is empty, but a serial was passed.
-            # Then we determine the user by the serial
-            user = get_token_owner(serial)
+        user = self._get_user(request)
         if not user.is_empty() and user.login and logged_in_user.get("role") ==\
                 ROLE.ADMIN:
             body = handler_def.get("body") or DEFAULT_BODY
