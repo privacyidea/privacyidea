@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-08-12 Sebastian Plattner
+#             Allow hostname and machine ID being the same
+#             LDAP attribute.
 #  2015-03-02 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Initial writup
 #
