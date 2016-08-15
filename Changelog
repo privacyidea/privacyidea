@@ -1,3 +1,24 @@
+Version 2.14, 2016-08-17
+
+  Features
+  * Import PGP encrypted seed files
+  * Allow UserNotification for user actions
+  * Allow UserNotification on validate/check events,
+    to notify the user on a failed authentication or
+    a locked token.
+
+  Enhancements
+  * Add thread ID in REST API Response
+  * Performence improvement: Cache LDAP Requests #473
+  * Performance improvement: Optimize resolver iteration #474
+  * Add "Check OTP only" in WebUI
+  * Improve "get serial by OTP" in WebUI
+  * Add script to get serial by OTP
+
+  Fixes
+  * Restrict GET /user for corresponding admins #460
+
+
 Version 2.13, 2016-06-30
 
   Features

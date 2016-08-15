@@ -1,3 +1,26 @@
+python-privacyidea (2.14-1) wheezy; urgency=low
+
+  Features
+  * Import PGP encrypted seed files
+  * Allow UserNotification for user actions
+  * Allow UserNotification on validate/check events,
+    to notify the user on a failed authentication or
+    a locked token.
+
+  Enhancements
+  * Add thread ID in REST API Response
+  * Performence improvement: Cache LDAP Requests #473
+  * Performance improvement: Optimize resolver iteration #474
+  * Add "Check OTP only" in WebUI
+  * Improve "get serial by OTP" in WebUI
+  * Add script to get serial by OTP
+
+  Fixes
+  * Restrict GET /user for corresponding admins #460
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 17 Aug 2016 00:03:00 +0200
+
+
 privacyidea-venv (2.13-1) wheezy; urgency=low
 
   Features
