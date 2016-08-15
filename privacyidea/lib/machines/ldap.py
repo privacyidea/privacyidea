@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-08-12 Sebastian Plattner
+#             Allow hostname and machine ID being the same
+#             LDAP attribute.
 #  2015-03-02 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Initial writup
 #
@@ -70,12 +73,14 @@ class LdapMachineResolver(BaseMachineResolver):
                 raise Exception("Wrong credentials")
             self.i_am_bound = True
 
-    def _get_uid(self, entry):
-        if type(entry.get(self.id_attribute)) == list:
-            uid = entry.get(self.id_attribute)[0]
+    @staticmethod
+    def _get_entry(entry_attribute, entries):
+        if type(entries.get(entry_attribute)) == list:
+            entry = entries.get(entry_attribute)[0]
         else:
-            uid = entry.get(self.id_attribute)
-        return uid
+            entry = entries.get(entry_attribute)
+        return entry
+
 
     @staticmethod
     def _create_ldap_filter(search_filter,
@@ -85,6 +90,11 @@ class LdapMachineResolver(BaseMachineResolver):
         filter = "(&" + search_filter
 
         if not any:
+            if id_attribute.lower() != "dn" and machine_id:
+                if substring:
+                    filter += "({0!s}=*{1!s}*)".format(id_attribute, machine_id)
+                else:
+                    filter += "({0!s}={1!s})".format(id_attribute, machine_id)
             if hostname:
                 if substring:
                     filter += "({0!s}=*{1!s}*)".format(hostname_attribute, hostname)
@@ -135,6 +145,7 @@ class LdapMachineResolver(BaseMachineResolver):
             attributes.append(self.ip_attribute)
         if self.hostname_attribute:
             attributes.append(self.hostname_attribute)
+
         # do the filter depending on the searchDict
         filter = self._create_ldap_filter(self.search_filter,
                                           self.id_attribute, machine_id,
@@ -142,36 +153,43 @@ class LdapMachineResolver(BaseMachineResolver):
                                           self.ip_attribute, ip,
                                           substring, any)
 
-        self.l.search(search_base=self.basedn,
-                      search_scope=ldap3.SUBTREE,
-                      search_filter=filter,
-                      attributes=attributes,
-                      paged_size=self.sizelimit)
+        if self.id_attribute.lower() == "dn" and machine_id:
+            self.l.search(search_base=machine_id,
+                          search_scope=ldap3.BASE,
+                          search_filter=filter,
+                          attributes=attributes,
+                          paged_size=self.sizelimit)
+        else:
+            self.l.search(search_base=self.basedn,
+                          search_scope=ldap3.SUBTREE,
+                          search_filter=filter,
+                          attributes=attributes,
+                          paged_size=self.sizelimit)
+
         # returns a list of dictionaries
         for entry in self.l.response:
             dn = entry.get("dn")
             attributes = entry.get("attributes")
+
             try:
                 if entry.get("type") == "searchResEntry":
                     machine = {}
+
                     if self.id_attribute.lower() == "dn":
                         machine['machineid'] = dn
                     else:
-                        machine['machineid'] = self._get_uid(attributes)
-                    for k, v in attributes.items():
-                        key = self.reverse_map.get(k)
-                        if key:
-                            if type(v) == list:
-                                machine[key] = v[0]
-                            else:
-                                machine[key] = v
-                    machine_ip = None
-                    if machine.get("ip"):
-                        machine_ip = netaddr.IPAddress(machine.get("ip"))
+                        machine['machineid'] = self._get_entry(self.id_attribute, attributes)
+
+                    machine['hostname'] = self._get_entry(self.hostname_attribute, attributes)
+                    machine['ip'] = self._get_entry(self.ip_attribute, attributes)
+
+                    if machine['ip']:
+                        machine['ip'] = netaddr.IPAddress(machine['ip'])
+
                     machines.append(Machine(self.name,
                                             machine['machineid'],
                                             hostname=machine['hostname'],
-                                            ip=machine_ip))
+                                            ip=machine['ip']))
             except Exception as exx:  # pragma: no cover
                 log.error("Error during fetching LDAP objects: {0!r}".format(exx))
                 log.debug("{0!s}".format(traceback.format_exc()))
@@ -179,6 +197,7 @@ class LdapMachineResolver(BaseMachineResolver):
         return machines
 
     def get_machine_id(self, hostname=None, ip=None):
+
         """
         Returns the machine id for a given hostname or IP address.
 
@@ -233,9 +252,7 @@ class LdapMachineResolver(BaseMachineResolver):
         self.ip_attribute = config.get("IPATTRIBUTE")
         self.search_filter = config.get("SEARCHFILTER",
                                         "(objectClass=computer)")
-        self.reverse_map = {self.ip_attribute: "ip",
-                            self.hostname_attribute: "hostname",
-                            self.id_attribute: "id"}
+
         self.noreferrals = config.get("NOREFERRALS", False)
         self.editable = config.get("EDITABLE", False)
         self.certificate = config.get("CACERTIFICATE")

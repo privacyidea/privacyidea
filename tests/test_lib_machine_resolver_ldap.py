@@ -115,7 +115,10 @@ class LdapMachineTestCase(MyTestCase):
 
 
     def test_05_get_single_machine(self):
-        machine = self.mreso.get_machines(machine_id="cn=machine1,ou=example,o=test")[0]
+
+        machines = self.mreso.get_machines(machine_id="cn=machine1,ou=example,o=test")
+        self.assertEqual(len(machines), 1)
+        machine = machines[0]
         self.assertEqual(machine.id, "cn=machine1,ou=example,o=test")
         self.assertTrue(machine.has_hostname("machine1.example.test"))
 
