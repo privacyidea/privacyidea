@@ -9,7 +9,7 @@ Version 2.14, 2016-08-17
 
   Enhancements
   * Add thread ID in REST API Response
-  * Performence improvement: Cache LDAP Requests #473
+  * Performance improvement: Cache LDAP Requests #473
   * Performance improvement: Optimize resolver iteration #474
   * Add "Check OTP only" in WebUI
   * Improve "get serial by OTP" in WebUI

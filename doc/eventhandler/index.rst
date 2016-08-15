@@ -49,6 +49,19 @@ module can require additional options.
 
    *The event* sendmail *requires the option* emailconfig.
 
+Conditions
+----------
+
+.. index:: Event Handler, conditions
+
+Added in version 2.14
+
+And event handler module may also contain conditions. Only if all conditions
+are fullfilled, the action is triggered. Conditions are defined in the class
+property *conditions* and checked in the method *check_condition*. The
+UserNotification Event Handler defines such conditions.
+
+
 Available Handler Modules
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
