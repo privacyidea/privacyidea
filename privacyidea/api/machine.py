@@ -118,7 +118,7 @@ def list_machines_api():
     machines = [mobject.get_dict() for mobject in machines]
     g.audit_object.log({'success': True,
                         'info': "hostname: {0!s}, ip: {1!s}".format(hostname, ip)})
-    
+
     return send_result(machines)
 
 
