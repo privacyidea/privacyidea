@@ -1,4 +1,4 @@
-python-privacyidea (2.14~dev2-1trusty) trusty; urgency=low
+python-privacyidea (2.14-1trusty) trusty; urgency=low
 
   Features
   * Import PGP encrypted seed files
