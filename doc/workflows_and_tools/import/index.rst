@@ -36,6 +36,9 @@ Now the token vendor can send the seed file GPG encrypted. You do not need to
 decrypt the file and store the decrypted file on a network folder. Just
 import the GPG encrypted file to privacyIDEA!
 
+.. note:: Using the key *PI_GNUPG_HOME* in pi.cfg you can change the default
+   above mentioned *GNUPGHOME* directory.
+
 
 OATH CSV
 --------
