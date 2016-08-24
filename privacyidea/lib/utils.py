@@ -426,10 +426,10 @@ def get_client_ip(request, proxy_settings):
     :param proxy_settings:
     :return:
     """
-    client_ip = request.access_route[0] if request.access_route else \
-        request.remote_addr
-
-    mapped_ip = request.all_data.get("client")
+    client_ip = request.remote_addr
+    # The "client" parameter should should overrule a possible X-Forwarded-For
+    mapped_ip = request.all_data.get("client") or request.access_route[0] if \
+        request.access_route else None
     if mapped_ip:
         if proxy_settings and check_proxy(client_ip, mapped_ip, proxy_settings):
             client_ip = mapped_ip
