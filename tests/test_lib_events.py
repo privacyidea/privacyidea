@@ -174,6 +174,7 @@ class UserNotificationTestCase(MyTestCase):
         self.assertTrue("logged_in_user" in c)
         self.assertTrue("result_value" in c)
 
+    @smtpmock.activate
     def test_05_check_conditions(self):
 
         uhandler = UserNotificationEventHandler()
@@ -220,14 +221,33 @@ class UserNotificationTestCase(MyTestCase):
 
         # lock it
         tok.set_failcount(10)
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {"token_locked": "True"}},
-             "response": resp,
-             "request": req
-             }
-        )
-        # not yet locked
+        options = {"g": {},
+                   "handler_def": {"conditions": {"token_locked": "True"}},
+                   "response": resp,
+                   "request": req
+                   }
+        r = uhandler.check_condition(options)
+        # now locked
+        self.assertEqual(r, True)
+
+        # check the do action.
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "123456"
+        g.audit_object = audit_object
+        options = {"g": g,
+                   "handler_def": {"conditions": {"token_locked": "True"}},
+                   "response": resp,
+                   "request": req
+                   }
+
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=False)
+
+        r = uhandler.do("sendmail", options=options)
         self.assertEqual(r, True)
 
     def test_06_check_conditions_realm(self):

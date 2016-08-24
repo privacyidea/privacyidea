@@ -230,8 +230,13 @@ class UserNotificationEventHandler(BaseEventHandler):
         user = self._get_user(request)
         log.debug("Executing event for action {0!s}, user {1!s},"
                   "logged_in_user {2!s}".format(action, user, logged_in_user))
-        if not user.is_empty() and user.login and logged_in_user.get("role") ==\
-                ROLE.ADMIN:
+
+        user_type = True
+        if logged_in_user.get("role"):
+            # If there is a logged_in_user, it should be the admin
+            user_type = logged_in_user.get("role") == ROLE.ADMIN
+
+        if not user.is_empty() and user.login and user_type:
             handler_options = handler_def.get("options", {})
             body = handler_options.get("body") or DEFAULT_BODY
             body = body.format(
