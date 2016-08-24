@@ -14,6 +14,7 @@ from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from flask import Request, Response
 from werkzeug.test import EnvironBuilder
 from privacyidea.lib.token import init_token
+from privacyidea.lib.user import User
 from privacyidea.lib.event import (delete_event, set_event,
                                    EventConfiguration, get_handler_object)
 
@@ -271,3 +272,36 @@ class UserNotificationTestCase(MyTestCase):
         )
         # wrong realm
         self.assertEqual(r, False)
+
+    @smtpmock.activate
+    def test_07_locked_token_wrong_pin(self):
+        tok = init_token({"serial": "lock2", "type": "spass",
+                          "pin": "pin"}, user=User("cornelius", "realm1"))
+        # lock it
+        tok.set_failcount(10)
+
+        uhandler = UserNotificationEventHandler()
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+        builder = EnvironBuilder(method='POST')
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius", "pass": "wrong"}
+        # check the do action.
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        g.audit_object = audit_object
+        options = {"g": g,
+                   "handler_def": {"conditions": {"token_locked": "True"}},
+                   "response": resp,
+                   "request": req
+                   }
+
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=False)
+
+        r = uhandler.check_condition(options)
+        self.assertEqual(r, True)

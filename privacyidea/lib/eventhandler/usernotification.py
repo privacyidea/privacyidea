@@ -198,6 +198,14 @@ class UserNotificationEventHandler(BaseEventHandler):
         if "token_locked" in conditions and res:
             serial = request.all_data.get("serial") or \
                      content.get("detail", {}).get("serial")
+            if not serial:
+                # check all tokens of the user, if any token is maxfail
+                token_objects = get_tokens(user=user)
+                serial_list = []
+                for token_obj in token_objects:
+                    if not token_obj.check_failcount():
+                        serial_list.append(token_obj.get_serial())
+                serial = ', '.join(serial_list)
             if serial:
                 tokens = get_tokens(serial=serial)
                 if tokens:
@@ -206,6 +214,8 @@ class UserNotificationEventHandler(BaseEventHandler):
                              token_obj.get_max_failcount()
                     res = (conditions.get("token_locked") in ["True", True]) \
                           == locked
+            else:
+                res = False
 
         return res
 
