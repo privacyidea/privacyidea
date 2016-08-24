@@ -228,9 +228,12 @@ class UserNotificationEventHandler(BaseEventHandler):
         except Exception:
             logged_in_user = {}
         user = self._get_user(request)
+        log.debug("Executing event for action {0!s}, user {1!s},"
+                  "logged_in_user {2!s}".format(action, user, logged_in_user))
         if not user.is_empty() and user.login and logged_in_user.get("role") ==\
                 ROLE.ADMIN:
-            body = handler_def.get("body") or DEFAULT_BODY
+            handler_options = handler_def.get("options", {})
+            body = handler_options.get("body") or DEFAULT_BODY
             body = body.format(
                 admin=logged_in_user.get("username"),
                 realm=logged_in_user.get("realm"),
@@ -241,9 +244,9 @@ class UserNotificationEventHandler(BaseEventHandler):
             )
 
             if action.lower() == "sendmail":
-                emailconfig = handler_def.get("emailconfig")
+                emailconfig = handler_options.get("emailconfig")
                 useremail = user.info.get("email")
-                subject = handler_def.get("subject") or \
+                subject = handler_options.get("subject") or \
                           "An action was performed on your token."
                 try:
                     ret = send_email_identifier(emailconfig,
@@ -259,7 +262,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                                 "{0}".format(user))
 
             elif action.lower() == "sendsms":
-                smsconfig = handler_def.get("smsconfig")
+                smsconfig = handler_options.get("smsconfig")
                 userphone = user.info.get("mobile")
                 try:
                     ret = send_sms_identifier(smsconfig, userphone, body)
