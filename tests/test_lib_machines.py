@@ -119,9 +119,9 @@ class MachineResolverTestCase(MyTestCase):
     def test_06_get_all_machines(self):
         # get machines from all resolvers
         machines = get_machines()
-        self.assertEqual(len(machines), 4)
+        self.assertEqual(len(machines), 5)
         machines = get_machines(hostname="n")
-        self.assertEqual(len(machines), 3)
+        self.assertEqual(len(machines), 4)
 
         for machine in machines:
             # check if each machines is in resolver "testresolver"
@@ -167,7 +167,7 @@ class HostsMachineTestCase(MyTestCase):
 
     def test_02_get_machines(self):
         machines = self.mreso.get_machines()
-        self.assertEqual(len(machines), 4)
+        self.assertEqual(len(machines), 5)
 
         machines = self.mreso.get_machines(hostname="gandalf")
         self.assertEqual(len(machines), 1)
@@ -179,12 +179,12 @@ class HostsMachineTestCase(MyTestCase):
         # THere are 3 machines, whose name contains an "n"
         machines = self.mreso.get_machines(hostname="n",
                                            substring=True)
-        self.assertEqual(len(machines), 3)
+        self.assertEqual(len(machines), 4)
 
     def test_02_get_machines_any(self):
         machines = self.mreso.get_machines(any="19")
         # 3 machines with IP 192...
-        self.assertEqual(len(machines), 3)
+        self.assertEqual(len(machines), 4)
 
         machines = self.mreso.get_machines(any="in")
         # 3 machines: pippIN and borodIN
@@ -192,12 +192,11 @@ class HostsMachineTestCase(MyTestCase):
 
         machines = self.mreso.get_machines(any="0")
         # 4 machines: all IP addresses
-        self.assertEqual(len(machines), 4)
+        self.assertEqual(len(machines), 5)
 
         machines = self.mreso.get_machines(any="gandalf")
         # Only one machine
-        self.assertEqual(len(machines), 1)
-
+        self.assertEqual(len(machines), 2)
 
     def test_03_get_single_machine(self):
         machine = self.mreso.get_machines(machine_id="192.168.0.1")[0]

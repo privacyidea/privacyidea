@@ -3082,7 +3082,7 @@ msgstr "Token ausgerollt"
 msgid ""
 "Token enrollment\n"
 "                                wizard"
-msgstr ""
+msgstr "Assistent zum Ausrollen von Token"
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:165
 msgid "Token resync failed."

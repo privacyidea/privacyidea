@@ -44,7 +44,8 @@ from privacyidea.lib.applications.base import get_auth_item
 
 
 @log_with(log)
-def get_machines(hostname=None, ip=None, id=None, resolver=None, any=None):
+def get_machines(hostname=None, ip=None, id=None, resolver=None, any=None,
+                 substring=True):
     """
     This returns a list of machines from ALL resolvers matching this criterion.
 
@@ -58,6 +59,8 @@ def get_machines(hostname=None, ip=None, id=None, resolver=None, any=None):
     :type resolver: basestring
     :param any: a substring, that matches EITHER of hostname, ip or resolver
     :type any: basestring
+    :param substring: If True, machines are search with the parameters as
+        substrings
     :return: list of Machine Objects.
     """
     resolver_list = get_resolver_list()
@@ -73,7 +76,7 @@ def get_machines(hostname=None, ip=None, id=None, resolver=None, any=None):
                                                   ip=ip,
                                                   machine_id=id,
                                                   any=any,
-                                                  substring=True)
+                                                  substring=substring)
         all_machines += resolver_machines
 
     return all_machines
@@ -112,7 +115,7 @@ def get_machine_id(hostname, ip=None):
     """
     machine_id = None
     resolver_name = None
-    machines = get_machines(hostname=hostname, ip=ip)
+    machines = get_machines(hostname=hostname, ip=ip, substring=False)
     if len(machines) > 1:
         raise Exception("Can not get unique ID for hostname=%r and IP=%r. "
                         "More than one machine found." % (hostname, ip))
