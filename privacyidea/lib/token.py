@@ -123,7 +123,7 @@ def create_tokenclass_object(db_token):
 def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                         serial=None, active=None, resolver=None,
                         rollout_state=None, description=None, revoked=None,
-                        locked=None, userid=None, tokeninfo=None):
+                        locked=None, userid=None, tokeninfo=None, maxfail=None):
     """
     This function create the sql query for getting tokens. It is used by
     get_tokens and get_tokens_paginate.
@@ -230,6 +230,13 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
         else:
             sql_query = sql_query.filter(Token.locked == False)
 
+    if maxfail is not None:
+        # Filter tokens, that reached maxfail
+        if maxfail is True:
+            sql_query = sql_query.filter(Token.maxfail <= Token.failcount)
+        else:
+            sql_query = sql_query.filter(Token.maxfail > Token.failcount)
+
     if rollout_state is not None:
         # Filter for tokens with the given rollout state
         sql_query = sql_query.filter(Token.rollout_state == rollout_state)
@@ -250,7 +257,8 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
 #@cache.memoize(10)
 def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
                serial=None, active=None, resolver=None, rollout_state=None,
-               count=False, revoked=None, locked=None, tokeninfo=None):
+               count=False, revoked=None, locked=None, tokeninfo=None,
+               maxfail=None):
     """
     (was getTokensOfType)
     This function returns a list of token objects of a
@@ -292,6 +300,8 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     :param tokeninfo: Return tokens with the given tokeninfo. The tokeninfo
         is a key/value dictionary
     :type tokeninfo: dict
+    :param maxfail: If only tokens should be returned, which failcounter
+        reached maxfail
 
     :return: A list of tokenclasses (lib.tokenclass)
     :rtype: list
@@ -303,7 +313,7 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
                                     resolver=resolver,
                                     rollout_state=rollout_state,
                                     revoked=revoked, locked=locked,
-                                    tokeninfo=tokeninfo)
+                                    tokeninfo=tokeninfo, maxfail=maxfail)
 
     # Decide, what we are supposed to return
     if count is True:

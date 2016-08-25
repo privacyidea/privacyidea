@@ -290,6 +290,7 @@ class UserNotificationTestCase(MyTestCase):
         # check the do action.
         g = FakeFlaskG()
         audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = None
         g.audit_object = audit_object
         options = {"g": g,
                    "handler_def": {"conditions": {"token_locked": "True"}},
@@ -304,4 +305,7 @@ class UserNotificationTestCase(MyTestCase):
                          support_tls=False)
 
         r = uhandler.check_condition(options)
+        self.assertEqual(r, True)
+
+        r = uhandler.do("sendmail", options=options)
         self.assertEqual(r, True)

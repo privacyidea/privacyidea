@@ -198,15 +198,8 @@ class UserNotificationEventHandler(BaseEventHandler):
         if "token_locked" in conditions and res:
             serial = request.all_data.get("serial") or \
                      content.get("detail", {}).get("serial")
-            if not serial:
-                # check all tokens of the user, if any token is maxfail
-                token_objects = get_tokens(user=user)
-                serial_list = []
-                for token_obj in token_objects:
-                    if not token_obj.check_failcount():
-                        serial_list.append(token_obj.get_serial())
-                serial = ', '.join(serial_list)
             if serial:
+                # There is a distinct serial number
                 tokens = get_tokens(serial=serial)
                 if tokens:
                     token_obj = tokens[0]
@@ -215,6 +208,10 @@ class UserNotificationEventHandler(BaseEventHandler):
                     res = (conditions.get("token_locked") in ["True", True]) \
                           == locked
             else:
+                # check all tokens of the user, if any token is maxfail
+                token_objects = get_tokens(user=user, maxfail=True)
+                serial = ','.join([tok.get_serial() for tok in token_objects])
+            if not serial:
                 res = False
 
         return res
@@ -249,11 +246,15 @@ class UserNotificationEventHandler(BaseEventHandler):
         if not user.is_empty() and user.login and user_type:
             handler_options = handler_def.get("options", {})
             body = handler_options.get("body") or DEFAULT_BODY
+            serial = g.audit_object.audit_data.get("serial")
+            if not serial:
+                token_objects = get_tokens(user=user, maxfail=True)
+                serial = ','.join([tok.get_serial() for tok in token_objects])
             body = body.format(
                 admin=logged_in_user.get("username"),
                 realm=logged_in_user.get("realm"),
                 action=request.path,
-                serial=g.audit_object.audit_data.get("serial"),
+                serial=serial,
                 url=request.url_root,
                 user=user.info.get("givenname")
             )
