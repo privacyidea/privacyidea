@@ -409,7 +409,9 @@ class SMSTokenTestCase(MyTestCase):
         self.assertTrue(c[3].get("state"), transactionid)
 
         # check for the challenges response
-        r = token.check_challenge_response(passw=otp)
+        r = token.check_challenge_response(passw=otp,
+                                           options={"transaction_id":
+                                                        transactionid})
         self.assertTrue(r, r)
 
     @responses.activate
