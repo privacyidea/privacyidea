@@ -126,6 +126,13 @@ Run tests
 
     nosetests -v --with-coverage --cover-package=privacyidea --cover-html
 
+Contributing
+============
+
+You are very welcome to contribute to privacyIDEA:
+
+https://github.com/privacyidea/privacyidea/blob/master/CONTRIBUTING.rst
+
 Code structure
 ==============
 
