@@ -2,13 +2,13 @@ Source: python-privacyidea
 Maintainer: Cornelius Kölbel <cornelius@privacyidea.org>
 Section: python
 Priority: optional
-Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.7), debhelper (>= 7.4.3), python-setuptools
+Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.7), debhelper (>= 7.4.3), python-setuptools, dh-python
 Standards-Version: 3.9.6
 
 Package: python-privacyidea
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, python-flask-migrate, python-qrcode, python-netaddr,
- python-pyrad, python-yaml, python-configobj, python-bs4, python-pandas, python-matplotlib, python-ecdsa, python-pyjwt, python-gnupg
+ python-pyrad, python-yaml, python-configobj, python-bs4, python-pandas, python-matplotlib, python-ecdsa, python-gnupg
 Replaces: privacyidea (<< 2.0)
 Breaks: privacyidea (<< 2.0)
 X-Python-Version: >= 2.7
