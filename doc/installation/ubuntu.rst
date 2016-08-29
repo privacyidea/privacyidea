@@ -6,7 +6,7 @@ Ubuntu Packages
 
 .. index:: ubuntu
 
-There are ready made packages for Ubuntu 14.04 LTS.
+There are ready made packages for Ubuntu 14.04 LTS and 16.04 LTS [#ubuntu1604]_.
 These are available in a public ppa repository [#ppa]_,
 so that the installation
 will automatically resolve all dependencies.
@@ -109,3 +109,5 @@ For further details and configuration see :ref:`otrs_plugin`.
 .. [#ppa] https://launchpad.net/~privacyidea
 .. [#simpleSAML] https://github.com/privacyidea/privacyidea/tree/master/authmodules/simpleSAMLphp
 .. [#otrs] http://www.otrs.com/
+.. [#ubuntu1604] Starting with privacyIDEA 2.15 Ubuntu 16.04 packages are
+   provided
