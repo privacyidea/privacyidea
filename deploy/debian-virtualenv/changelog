@@ -1,4 +1,4 @@
-python-privacyidea (2.14-1) wheezy; urgency=low
+privacyidea-venv (2.14-1) wheezy; urgency=low
 
   Features
   * Import PGP encrypted seed files
