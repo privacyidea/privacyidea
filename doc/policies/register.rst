@@ -50,7 +50,7 @@ In the scope *register* several settings define the behaviour of the
 registration process.
 
 .. figure:: register-policy.png
-   :widht: 500
+   :width: 500
 
    *Creating a new registration policy*
 
