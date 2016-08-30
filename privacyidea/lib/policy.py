@@ -260,6 +260,7 @@ class ACTION(object):
     SMSGATEWAYWRITE = "smsgateway_write"
     CHANGE_PIN_FIRST_USE = "change_pin_on_first_use"
     CHANGE_PIN_EVERY = "change_pin_every"
+    CLIENTTYPE = "clienttype"
 
 
 class LOGINMODE(object):
@@ -957,7 +958,11 @@ def get_static_policy_definitions(scope=None):
             ACTION.SMSGATEWAYWRITE: {'type': 'bool',
                                      'desc': _("Admin is allowed to write "
                                                "and modify SMS gateway "
-                                               "definitions.")}
+                                               "definitions.")},
+            ACTION.CLIENTTYPE: {'type': 'bool',
+                                'desc': _("Admin is allowed to get the list "
+                                          "of authenticated clients and their "
+                                          "types.")}
 
         },
         # 'gettoken': {
