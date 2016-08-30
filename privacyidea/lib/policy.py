@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-08-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add registration body
 #  2016-06-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Change PIN policies
 #  2016-05-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -261,6 +263,7 @@ class ACTION(object):
     CHANGE_PIN_FIRST_USE = "change_pin_on_first_use"
     CHANGE_PIN_EVERY = "change_pin_every"
     CLIENTTYPE = "clienttype"
+    REGISTERBODY = "registration_body"
 
 
 class LOGINMODE(object):
@@ -779,7 +782,11 @@ def get_static_policy_definitions(scope=None):
                                    'desc': _('Only users with this email '
                                              'address are allowed to '
                                              'register. This is a regular '
-                                             'expression.')}
+                                             'expression.')},
+            ACTION.REGISTERBODY: {'type': 'text',
+                                  'desc': _("The body of the registration "
+                                            "email. Use '{regkey}' as tag"
+                                            "for the registration key.")}
         },
         SCOPE.ADMIN: {
             ACTION.ENABLE: {'type': 'bool',

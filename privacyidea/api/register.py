@@ -42,6 +42,9 @@ from privacyidea.lib.error import RegistrationError
 from privacyidea.api.lib.prepolicy import required_email, prepolicy
 from privacyidea.lib.smtpserver import get_smtpserver, send_email_identifier
 
+DEFAULT_BODY="""
+Your registration token is {regkey}.
+"""
 
 log = logging.getLogger(__name__)
 
@@ -160,10 +163,14 @@ def register_post():
 
     smtpconfig = smtpconfig[0]
     # Send the registration key via email
-    email_sent = send_email_identifier(smtpconfig, email,
-                                       "Your privacyIDEA registration",
-                                       "Your registration token is {0!s}".format(
-                                       registration_key))
+    body = g.policy_object.get_action_values(ACTION.REGISTERBODY,
+                                             scope=SCOPE.REGISTER,
+                                             unique=True)
+    body = body or DEFAULT_BODY
+    email_sent = send_email_identifier(
+        smtpconfig, email,
+        "Your privacyIDEA registration",
+        body.format(regkey=registration_key))
     if not email_sent:
         log.warning("Failed to send registration email to {0!s}".format(email))
         # delete registration token
