@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2016-08-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            save client application type to database
 # 2016-08-09 Cornelius Kölbel <cornelius@privacyidea.org>
 #            Add possiblity to check OTP only
 # 2015-11-19 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -65,7 +67,8 @@ from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     SYSCONF)
 from privacyidea.lib.audit import getAudit
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
-                                           api_key_required, mangle)
+                                           api_key_required, mangle,
+                                           save_client_application_type)
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
                                             no_detail_on_fail,
@@ -145,6 +148,7 @@ def after_request(response):
 @postpolicy(autoassign, request=request)
 @prepolicy(set_realm, request=request)
 @prepolicy(mangle, request=request)
+@prepolicy(save_client_application_type, request=request)
 @check_user_or_serial_in_request
 @prepolicy(api_key_required, request=request)
 @event("validate_check", request, g)
@@ -227,6 +231,7 @@ def check():
 @postpolicy(autoassign, request=request)
 @prepolicy(set_realm, request=request)
 @prepolicy(mangle, request=request)
+@prepolicy(save_client_application_type, request=request)
 @check_user_or_serial_in_request
 @prepolicy(api_key_required, request=request)
 @event("validate_check", request, g)

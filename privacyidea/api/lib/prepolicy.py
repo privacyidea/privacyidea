@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-08-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add decorator to save the client type to the database
 #  2016-07-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add realmadmin decorator
 #  2016-05-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -57,6 +59,7 @@ from privacyidea.lib.token import (get_tokens, get_realms_of_token)
 from privacyidea.lib.utils import generate_password, get_client_ip
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam
+from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import (get_token_class, get_from_config, SYSCONF)
 import functools
 import jwt
@@ -829,3 +832,22 @@ def is_remote_user_allowed(req):
         res = ruser_active
 
     return res
+
+
+def save_client_application_type(request, action):
+    """
+    This decorator is used to write the client IP and the HTTP user agent (
+    clienttype) to the database.
+
+    In fact this is not a **policy** decorator, as it checks no policy. In
+    fact, we could however one day
+    define this as a policy, too.
+    :param req:
+    :return:
+    """
+    # retrieve the IP. This will also be the mapped IP!
+    client_ip = g.client_ip or "0.0.0.0"
+    # ...and the user agent.
+    ua = request.user_agent
+    save_clientapplication(client_ip, ua.browser or "unknown")
+    return True
