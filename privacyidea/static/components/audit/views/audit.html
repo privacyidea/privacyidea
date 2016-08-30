@@ -24,6 +24,12 @@
                     <span class="glyphicon glyphicon-stats"
                           aria-hidden="true"></span>
                     <span translate>Statistics</span></a></li>
+                <li ng-class="{active: $state.includes('audit.clienttype')}"
+                    ng-show="loggedInUser.role === 'admin'">
+                    <a ui-sref="audit.clienttype">
+                    <span class="glyphicon glyphicon-calendar"
+                          aria-hidden="true"></span>
+                    <span translate>Client Application Type</span></a></li>
             </ul>
 
         </div>

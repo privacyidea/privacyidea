@@ -44,5 +44,9 @@ angular.module('privacyideaApp.auditStates', ['ui.router']).config(
                     url: "/stats",
                     templateUrl: auditpath + "audit.stats.html",
                     controller: "auditController"
+                }).state('audit.clienttype', {
+                    url: "/clienttype",
+                    templateUrl: auditpath + "audit.clienttype.html",
+                    controller: "auditController"
                 });
         }]);

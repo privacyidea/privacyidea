@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2016-08-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+ *     Add client application type
  * 2015-07-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
  *     Add statistics
  * 2015-01-20 Cornelius Kölbel, <cornelius@privacyidea.org>
@@ -52,6 +54,14 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         });
     };
 
+    $scope.getClientType = function () {
+        console.log("Requesting client application types.");
+        AuditFactory.getClientType(function(data) {
+            $scope.clientdata = data.result.value;
+            console.log($scope.clientdata);
+        });
+    };
+
     $scope.getAuditList = function () {
         $scope.params.serial = "*" + ($scope.serialFilter || "") + "*";
         $scope.params.user = "*" + ($scope.userFilter || "") + "*";
@@ -87,6 +97,10 @@ myApp.controller("auditController", function (AuditFactory, $scope,
 
     if ($location.path() === "/audit/log") {
         $scope.getAuditList();
+    }
+
+    if ($location.path() === "/audit/clienttype") {
+        $scope.getClientType();
     }
 
     if ($location.path() === "/audit") {

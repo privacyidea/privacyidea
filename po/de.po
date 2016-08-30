@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 1.5.4\n"
+"X-Generator: Poedit 1.8.7.1\n"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:11
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:13
@@ -143,6 +143,10 @@ msgstr "Eine Email wurde an Sie gesendet, um Ihr Passwort zurückzusetzen."
 #: privacyidea/static/components/token/views/token.details.html:541
 msgid "Application"
 msgstr "Applikationen"
+
+#: privacyidea/static/components/audit/views/audit.clienttype.html:10
+msgid "Application Type"
+msgstr "Applikationstyp"
 
 #: privacyidea/static/components/token/views/token.import.html:66
 msgid ""
@@ -368,11 +372,16 @@ msgstr ""
 "Klicken Sie <a href=\"{{ enrolledToken.tiqrenroll.value }}\">hier</a> oder "
 "scannen  Sie den QR-Code, um den Token Ihrer TiQR-App hinzuzufügen."
 
+#: privacyidea/static/components/audit/views/audit.clienttype.html:11
 #: privacyidea/static/components/config/views/config.policies.details.html:260
 #: privacyidea/static/components/config/views/config.policies.list.html:12
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:49
 msgid "Client"
 msgstr "Client "
+
+#: privacyidea/static/components/audit/views/audit.html:32
+msgid "Client Application Type"
+msgstr "Applikationstyp des Clients"
 
 #: privacyidea/static/components/login/factories/u2f.js:28
 msgid "Client Configuration is not supported."
@@ -1176,6 +1185,10 @@ msgstr "Info"
 msgid "Last"
 msgstr "Ende"
 
+#: privacyidea/static/components/audit/views/audit.clienttype.html:22
+msgid "Last seen:"
+msgstr "Zuletzt gesehen: "
+
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:63
 msgid "Leave the Bind DN empty if you want to do anonymous binding."
 msgstr ""
@@ -1260,7 +1273,7 @@ msgstr "Abmelden"
 msgid "Lost Token"
 msgstr "Verlorener Token"
 
-#: privacyidea/static/components/audit/controllers/auditControllers.js:33
+#: privacyidea/static/components/audit/controllers/auditControllers.js:35
 msgid "M/d/yy HH:mm:ss"
 msgstr "d.M.yy HH:mm:ss"
 
@@ -1732,6 +1745,7 @@ msgstr "Empfangen"
 msgid "Recipient for testing"
 msgstr "Empfänger für Test-Emails"
 
+#: privacyidea/static/components/audit/views/audit.clienttype.html:4
 #: privacyidea/static/components/audit/views/audit.log.html:8
 #: privacyidea/static/components/audit/views/audit.stats.html:4
 msgid "Refresh"
@@ -2634,7 +2648,7 @@ msgstr ""
 "bitte beim  <a href=\"http://github.com/privacyidea/privacyidea\" target="
 "\"github\">Backend Service</a>."
 
-#: privacyidea/static/app.js:108
+#: privacyidea/static/app.js:109
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
 msgstr ""
 "Das privacyIDEA System scheint offline zu sein. Die API ist nicht erreichbar."

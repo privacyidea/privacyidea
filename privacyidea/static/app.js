@@ -65,6 +65,7 @@ myApp.constant("defaultRealmUrl", backendUrl + instance + "/defaultrealm");
 myApp.constant("validateUrl", backendUrl + instance + "/validate");
 myApp.constant("systemUrl", backendUrl + instance + "/system");
 myApp.constant("auditUrl", backendUrl + instance + "/audit");
+myApp.constant("clientUrl", backendUrl + instance + "/client");
 myApp.constant("policyUrl", backendUrl + instance + "/policy");
 myApp.constant("registerUrl", backendUrl + instance + "/register");
 myApp.constant("CAConnectorUrl", backendUrl + instance + "/caconnector");

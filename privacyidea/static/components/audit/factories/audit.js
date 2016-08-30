@@ -23,7 +23,7 @@
 
 myApp.factory("AuditFactory", function (AuthFactory,
                                         $http, $state, $rootScope, auditUrl,
-                                        inform) {
+                                        clientUrl, inform) {
         /**
          Each service - just like this service factory - is a singleton.
          */
@@ -54,6 +54,12 @@ myApp.factory("AuditFactory", function (AuthFactory,
                 $http.get(auditUrl + "/statistics", {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()},
                     params: params
+                }).success(callback
+                ).error(error_func);
+            },
+            getClientType: function(callback) {
+                $http.get(clientUrl + "/", {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).success(callback
                 ).error(error_func);
             }

@@ -134,6 +134,10 @@ msgstr ""
 msgid "Application"
 msgstr ""
 
+#: privacyidea/static/components/audit/views/audit.clienttype.html:10
+msgid "Application Type"
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.import.html:66
 msgid ""
 "As the values are encrypted with AES128-CBC, you need to give a\n"
@@ -342,10 +346,15 @@ msgid ""
 "            want to add the Token to your TiQR App."
 msgstr ""
 
+#: privacyidea/static/components/audit/views/audit.clienttype.html:11
 #: privacyidea/static/components/config/views/config.policies.details.html:260
 #: privacyidea/static/components/config/views/config.policies.list.html:12
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:49
 msgid "Client"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.html:32
+msgid "Client Application Type"
 msgstr ""
 
 #: privacyidea/static/components/login/factories/u2f.js:28
@@ -1104,6 +1113,10 @@ msgstr ""
 msgid "Last"
 msgstr ""
 
+#: privacyidea/static/components/audit/views/audit.clienttype.html:22
+msgid "Last seen:"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:63
 msgid "Leave the Bind DN empty if you want to do anonymous binding."
 msgstr ""
@@ -1186,7 +1199,7 @@ msgstr ""
 msgid "Lost Token"
 msgstr ""
 
-#: privacyidea/static/components/audit/controllers/auditControllers.js:33
+#: privacyidea/static/components/audit/controllers/auditControllers.js:35
 msgid "M/d/yy HH:mm:ss"
 msgstr ""
 
@@ -1650,6 +1663,7 @@ msgstr ""
 msgid "Recipient for testing"
 msgstr ""
 
+#: privacyidea/static/components/audit/views/audit.clienttype.html:4
 #: privacyidea/static/components/audit/views/audit.log.html:8
 #: privacyidea/static/components/audit/views/audit.stats.html:4
 msgid "Refresh"
@@ -2415,7 +2429,7 @@ msgid ""
 "                        service itself</a>."
 msgstr ""
 
-#: privacyidea/static/app.js:108
+#: privacyidea/static/app.js:109
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
 msgstr ""
 
