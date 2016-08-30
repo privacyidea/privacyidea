@@ -2091,3 +2091,45 @@ class SMTPServer(MethodsMixin, db.Model):
             ret = smtp.id
         db.session.commit()
         return ret
+
+
+class ClientApplication(MethodsMixin, db.Model):
+    """
+    This table stores the clients, which sent an authentication request to
+    privacyIDEA.
+    This table is filled automatically by authentication requests.
+    """
+    __tablename__ = 'clientapplication'
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    ip = db.Column(db.Unicode(255), nullable=False, index=True)
+    hostname = db.Column(db.Unicode(255))
+    clienttype = db.Column(db.Unicode(255), nullable=False, index=True)
+    lastseen = db.Column(db.DateTime)
+    __table_args__ = (db.UniqueConstraint('ip',
+                                          'clienttype',
+                                          name='caix'), {})
+
+    def save(self):
+        clientapp = ClientApplication.query.filter(
+            ClientApplication.ip == self.ip,
+            ClientApplication.clienttype == self.clienttype).first()
+        self.lastseen = datetime.now()
+        if clientapp is None:
+            # create a new one
+            db.session.add(self)
+            db.session.commit()
+            ret = self.id
+        else:
+            # update
+            values = {"lastseen": self.lastseen}
+            if self.hostname is not None:
+                values["hostname"] = self.hostname
+            ClientApplication.query.filter(
+                ClientApplication.id == clientapp.id).update(values)
+            ret = clientapp.id
+        db.session.commit()
+        return ret
+
+    def __repr__(self):
+        return "<ClientApplication [{0!s}][{1!s}:{2!s}]>".format(
+            self.id, self.ip, self.clienttype)

@@ -11,7 +11,8 @@ from privacyidea.models import (Token,
                                 CAConnector, CAConnectorConfig, SMTPServer,
                                 PasswordReset, EventHandlerOption,
                                 EventHandler, SMSGatewayOption, SMSGateway,
-                                EventHandlerCondition)
+                                EventHandlerCondition,
+                                ClientApplication)
 from .base import MyTestCase
 from datetime import datetime
 from datetime import timedelta
@@ -585,3 +586,21 @@ class TokenModelTestCase(MyTestCase):
 
         # Delete gateway
         gw.delete()
+
+    def test_21_add_update_delete_clientapp(self):
+        cid = ClientApplication(ip="1.2.3.4", hostname="host1",
+                                clienttype="PAM").save()
+        c = ClientApplication.query.filter(ClientApplication.id == cid).first()
+        self.assertEqual(c.hostname, "host1")
+        self.assertEqual(c.ip, "1.2.3.4")
+        self.assertEqual(c.clienttype, "PAM")
+        t1 = c.lastseen
+
+        cid = ClientApplication(ip="1.2.3.4", hostname="host1",
+                              clienttype="PAM").save()
+        c = ClientApplication.query.filter(ClientApplication.id == cid).first()
+        self.assertTrue(c.lastseen > t1)
+
+        ClientApplication.query.filter(ClientApplication.id == cid).delete()
+        c = ClientApplication.query.filter(ClientApplication.id == cid).first()
+        self.assertEqual(c, None)
