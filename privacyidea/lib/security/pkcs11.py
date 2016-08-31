@@ -137,7 +137,10 @@ class PKCS11SecurityModule(SecurityModule):  # pragma: no cover
         return encrypted
 
     def decrypt(self, value, iv=None):
-        self.session.login("123456")
+        if not PASSWORD:
+            log.error("empty PASSWORD. Your security module is probably not "
+                      "initialized.")
+        self.session.login(PASSWORD)
         objs = self.session.findObjects([(PyKCS11.CKA_CLASS, PyKCS11.CKO_PRIVATE_KEY),
                                          (PyKCS11.CKA_ID, (self.key_id,))])
 
