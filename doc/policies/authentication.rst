@@ -248,3 +248,11 @@ For more information on configuring U2F see :ref:`u2f_otp_token`.
 
 .. [#pythonre] https://docs.python.org/2/library/re.html
 
+
+reset_all_user_tokens
+~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+If a user authenticates successfully all failcounter of all of his tokens
+will be reset. This can be important, if using empty PINs or *otppin=None*.

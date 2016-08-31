@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2016-08-31 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Reset failcounter of all user tokens.
 #  2016-06-21 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Add next pin change response
 #  2016-06-13 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -75,6 +77,7 @@ from privacyidea.lib.config import (get_token_class, get_token_prefix,
 from privacyidea.lib.user import get_user_info
 from gettext import gettext as _
 from privacyidea.lib.realm import realm_is_defined
+from privacyidea.lib.policy import ACTION, SCOPE
 from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_does_not_exist,
                                               auth_user_has_no_token,
@@ -1955,7 +1958,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
     10 invalid
     0 challenge
 
-    AND incFailCountOnFalsePin is True, then the failcounter off the
+    AND incFailCountOnFalsePin is True, then the failcounter of the
     10 invalid tokens need to be increased. And return False
 
     If there is
@@ -1979,14 +1982,14 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
             if token_obj.check_all(message_list):
                 # The token is active and the auth counters are ok.
                 res = True
-                # reset the failcounter
+                # reset the failcounter of valid token
                 try:
                     token_obj.reset()
                 except Exception:
                     # In some cases (Registration Token) the token does not
                     # exist anymore. So this would bail an exception!
                     log.debug("registration token does not exist anymore and "
-                              "cannot be resetted.")
+                              "cannot be reset.")
         if len(valid_token_list) == 1:
             # If only one token was found, we add the serial number,
             # the token type and the OTP length
@@ -2005,6 +2008,29 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 reply_dict["password_change"] = valid_token_list[
                     0].is_pin_change(password=True)
         reply_dict["message"] = ", ".join(message_list)
+
+        # Check if we should reset ALL tokens of the user.
+        g = options.get("g")
+        if g:
+            clientip = options.get("clientip")
+            policy_object = g.policy_object
+            token_owner = valid_token_list[0].user
+            reset_all = policy_object.get_policies(
+                action=ACTION.RESETALLTOKENS,
+                scope=SCOPE.AUTH,
+                realm=token_owner.login if token_owner else None,
+                user=token_owner.realm if token_owner else None,
+                client=clientip, active=True)
+            if reset_all:
+                log.debug("Reset failcounter of all tokens of {0!s}".format(
+                    token_owner))
+                for tok_obj_reset in tokenobject_list:
+                    try:
+                        tok_obj_reset.reset()
+                    except Exception:
+                        log.debug(
+                            "registration token does not exist anymore and "
+                            "cannot be reset.")
 
     elif challenge_response_token_list:
         # A challenge token was found.

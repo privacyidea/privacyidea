@@ -264,6 +264,7 @@ class ACTION(object):
     CHANGE_PIN_EVERY = "change_pin_every"
     CLIENTTYPE = "clienttype"
     REGISTERBODY = "registration_body"
+    RESETALLTOKENS = "reset_all_user_tokens"
 
 
 class LOGINMODE(object):
@@ -1172,6 +1173,11 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('Can be used to modify the parameters pass, '
                           'user and realm in an authentication request. See '
                           'the documentation for an example.')
+            },
+            ACTION.RESETALLTOKENS: {
+                'type': 'bool',
+                'desc': _('If a user authenticates successfully reset the '
+                          'failcounter of all of his tokens.')
             }
             # 'qrtanurl': {
             #     'type': 'str',

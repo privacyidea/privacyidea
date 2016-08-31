@@ -51,7 +51,7 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_dynamic_policy_definitions,
                                    get_tokens_paginate,
                                    set_validity_period_end,
-                                   set_validity_period_start)
+                                   set_validity_period_start, remove_token)
 
 from privacyidea.lib.error import (TokenAdminError, ParameterError,
                                    privacyIDEAError)
@@ -1166,4 +1166,57 @@ class TokenFailCounterTestCase(MyTestCase):
 
         self.assertEqual(token1.token.failcount, 2)
         self.assertEqual(token2.token.failcount, 1)
+        remove_token(pin1)
+        remove_token(pin2)
 
+    def test_04_reset_all_failcounters(self):
+        from privacyidea.lib.policy import (set_policy, PolicyClass, SCOPE,
+            ACTION)
+        from flask import g
+
+        set_policy("reset_all", scope=SCOPE.AUTH,
+                   action=ACTION.RESETALLTOKENS)
+
+        user = User(login="cornelius", realm=self.realm1)
+        pin1 = "pin1"
+        pin2 = "pin2"
+        token1 = init_token({"serial": pin1, "pin": pin1,
+                             "type": "spass"}, user=user)
+        token2 = init_token({"serial": pin2, "pin": pin2,
+                             "type": "spass"}, user=user)
+
+        token1.inc_failcount()
+        token2.inc_failcount()
+        token2.inc_failcount()
+        self.assertEqual(token1.token.failcount, 1)
+        self.assertEqual(token2.token.failcount, 2)
+
+        g.policy_object = PolicyClass()
+        options = {"g": g}
+
+        check_token_list([token1, token2], pin1, user=user,
+                         options=options)
+
+        self.assertEqual(token1.token.failcount, 0)
+        self.assertEqual(token2.token.failcount, 0)
+
+        # check with tokens without users
+        unassign_token(pin1)
+        unassign_token(pin1)
+        # After unassigning we need to set the PIN again
+        token1.set_pin(pin1)
+        token2.set_pin(pin2)
+        token1.inc_failcount()
+        token2.inc_failcount()
+        token2.inc_failcount()
+        self.assertEqual(token1.token.failcount, 1)
+        self.assertEqual(token2.token.failcount, 2)
+
+        check_token_list([token1, token2], pin1, options=options)
+
+        self.assertEqual(token1.token.failcount, 0)
+        self.assertEqual(token2.token.failcount, 0)
+
+        # Clean up
+        remove_token(pin1)
+        remove_token(pin2)
