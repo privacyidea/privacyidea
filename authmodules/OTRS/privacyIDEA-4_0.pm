@@ -1,6 +1,9 @@
 # --
 # Kernel/System/Auth/privacyIDEA.pm - provides the OTP authentication
 # Copyright (C) 2015 Cornelius Koelbel
+#
+#  2016-08-31 Cornelius Koelbel <cornelius.koelbel@netknights.it>
+#             Add user-agent OTRS to request.
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
 # the enclosed file COPYING for license information (AGPL). If you
@@ -112,6 +115,8 @@ sub Auth {
     }
 
     my $ua = LWP::UserAgent->new();
+    # Set the user-agent to be fetched in privacyIDEA Client Application Type
+    $ua->agent("OTRS");
     if ($Self->{disableSSL}) {
         $ua->ssl_opts( verify_hostname => 0, SSL_verify_mode => 0x00 );
     }
