@@ -65,6 +65,8 @@ def single_page_application():
     # check if login with REMOTE_USER is allowed.
     remote_user = ""
     password_reset = False
+    if not hasattr(request, "all_data"):
+        request.all_data = {}
     # Depending on displaying the realm dropdown, we fill realms or not.
     policy_object = PolicyClass()
     realms = ""
