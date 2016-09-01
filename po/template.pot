@@ -135,6 +135,7 @@ msgid "Application"
 msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.clienttype.html:10
+#: privacyidea/static/components/components/views/component.clienttype.html:10
 msgid "Application Type"
 msgstr ""
 
@@ -347,6 +348,7 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.clienttype.html:11
+#: privacyidea/static/components/components/views/component.clienttype.html:11
 #: privacyidea/static/components/config/views/config.policies.details.html:260
 #: privacyidea/static/components/config/views/config.policies.list.html:12
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:49
@@ -354,6 +356,7 @@ msgid "Client"
 msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.html:32
+#: privacyidea/static/components/components/views/component.html:20
 msgid "Client Application Type"
 msgstr ""
 
@@ -370,8 +373,12 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:105
+#: privacyidea/static/templates/menu.html:113
 msgid "Community"
+msgstr ""
+
+#: privacyidea/static/templates/menu.html:81
+msgid "Components"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.events.details.html:43
@@ -1114,6 +1121,7 @@ msgid "Last"
 msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.clienttype.html:22
+#: privacyidea/static/components/components/views/component.clienttype.html:22
 msgid "Last seen:"
 msgstr ""
 
@@ -1176,7 +1184,7 @@ msgstr ""
 msgid "Log out"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:84
+#: privacyidea/static/templates/menu.html:92
 msgid "Login"
 msgstr ""
 
@@ -1191,7 +1199,7 @@ msgid "Login with credentials"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.html:153
-#: privacyidea/static/templates/menu.html:112
+#: privacyidea/static/templates/menu.html:120
 msgid "Logout"
 msgstr ""
 
@@ -1407,7 +1415,7 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/templates/index.html:38
-#: privacyidea/static/templates/menu.html:102
+#: privacyidea/static/templates/menu.html:110
 msgid "Online Documentation"
 msgstr ""
 
@@ -1666,12 +1674,13 @@ msgstr ""
 #: privacyidea/static/components/audit/views/audit.clienttype.html:4
 #: privacyidea/static/components/audit/views/audit.log.html:8
 #: privacyidea/static/components/audit/views/audit.stats.html:4
+#: privacyidea/static/components/components/views/component.clienttype.html:4
 msgid "Refresh"
 msgstr ""
 
 #: privacyidea/static/components/register/views/register.html:14
 #: privacyidea/static/components/register/views/register.html:87
-#: privacyidea/static/templates/menu.html:80
+#: privacyidea/static/templates/menu.html:88
 msgid "Register"
 msgstr ""
 
@@ -2033,7 +2042,7 @@ msgid "Successfully authenticated."
 msgstr ""
 
 #: privacyidea/static/templates/index.html:28
-#: privacyidea/static/templates/menu.html:107
+#: privacyidea/static/templates/menu.html:115
 msgid "Support"
 msgstr ""
 
@@ -2429,7 +2438,7 @@ msgid ""
 "                        service itself</a>."
 msgstr ""
 
-#: privacyidea/static/app.js:109
+#: privacyidea/static/app.js:110
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
 msgstr ""
 
@@ -3038,7 +3047,7 @@ msgid ""
 "                    token model."
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:123
+#: privacyidea/static/templates/menu.html:131
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr ""
 

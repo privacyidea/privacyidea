@@ -30,6 +30,7 @@ myApp = angular.module("privacyideaApp",
         'privacyideaApp.registerStates',
         'privacyideaApp.recoveryStates',
         'privacyideaApp.loginStates',
+        'privacyideaApp.componentStates',
         'isteven-multi-select', 'angularFileUpload',
         'inform', 'gettext', 'cfp.hotkeys']);
 myApp.config(function ($urlRouterProvider) {

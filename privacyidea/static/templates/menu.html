@@ -73,6 +73,14 @@
                         <translate>Audit</translate>
                     </a>
                 </li>
+                <li ng-class="{active: $state.includes('components')}"
+                    ng-show="loggedInUser.role && checkRight('clienttype')">
+                    <a ui-sref="component">
+                        <span class="glyphicon glyphicon-calendar"
+                              aria-hidden="true"></span>
+                        <translate>Components</translate>
+                    </a>
+                </li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
                 <li ng-class="{active: $state.includes('register')}"

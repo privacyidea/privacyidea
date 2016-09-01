@@ -2,9 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
- * 2015-07-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
- *     Add state for audit.log and audit.stats
- * 2015-01-11 Cornelius Kölbel, <cornelius@privacyidea.org>
+ * 2016-09-01  Cornelius Kölbel <cornelius.koelbel@netknights.it>
+ *             Add component. Move from client application type
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -21,7 +20,7 @@
  *
  */
 
-angular.module('privacyideaApp.auditStates', ['ui.router']).config(
+angular.module('privacyideaApp.componentStates', ['ui.router']).config(
     ['$stateProvider',
         function ($stateProvider) {
             // get the instance, the pathname part
@@ -29,20 +28,16 @@ angular.module('privacyideaApp.auditStates', ['ui.router']).config(
             if (instance === "/") {
                instance = "";
             }
-            var auditpath = instance + "/static/components/audit/views/";
+            var auditpath = instance + "/static/components/components/views/";
             $stateProvider
-                .state('audit', {
-                    url: "/audit",
-                    templateUrl: auditpath + "audit.html",
-                    controller: "auditController"
+                .state('component', {
+                    url: "/component",
+                    templateUrl: auditpath + "component.html",
+                    controller: "componentController"
                 })
-                .state('audit.log', {
-                    url: "/log?serial&user",
-                    templateUrl: auditpath + "audit.log.html",
-                    controller: "auditController"
-                }).state('audit.stats', {
-                    url: "/stats",
-                    templateUrl: auditpath + "audit.stats.html",
-                    controller: "auditController"
+                .state('component.clienttype', {
+                    url: "/clienttype",
+                    templateUrl: auditpath + "component.clienttype.html",
+                    controller: "componentController"
                 });
         }]);

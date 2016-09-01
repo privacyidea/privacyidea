@@ -13,17 +13,11 @@
 
         <div class="navbar-collapse collapse myConfigNavbar">
             <ul class="nav navbar-nav">
-                <li ng-class="{active: $state.includes('audit.log')}">
-                    <a ui-sref="audit.log">
-                    <span class="glyphicon glyphicon-search"
+                <li ng-class="{active: $state.includes('component.clienttype')}">
+                    <a ui-sref="component.clienttype">
+                    <span class="glyphicon glyphicon-calendat"
                           aria-hidden="true"></span>
-                    <span translate>Log</span></a></li>
-                <li ng-class="{active: $state.includes('audit.stats')}"
-                    ng-show="loggedInUser.role === 'admin'">
-                    <a ui-sref="audit.stats">
-                    <span class="glyphicon glyphicon-stats"
-                          aria-hidden="true"></span>
-                    <span translate>Statistics</span></a></li>
+                    <span translate>Client Application Type</span></a></li>
             </ul>
 
         </div>

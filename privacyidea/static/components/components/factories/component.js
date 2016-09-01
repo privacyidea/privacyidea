@@ -2,9 +2,7 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
- * 2015-07-16 Cornelius Kölbel, <cornelius.koelbel@netknights.it>
- *     Add statistics endpoint
- * 2015-01-20 Cornelius Kölbel, <cornelius@privacyidea.org>
+ * 2016-09-01 Cornelius Kölbel, <cornelius.koelbel@netknights.it>
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -21,9 +19,9 @@
  *
  */
 
-myApp.factory("AuditFactory", function (AuthFactory,
-                                        $http, $state, $rootScope, auditUrl,
-                                        inform) {
+myApp.factory("ComponentFactory", function (AuthFactory,
+                                        $http, $state, $rootScope,
+                                        clientUrl, inform) {
         /**
          Each service - just like this service factory - is a singleton.
          */
@@ -36,24 +34,9 @@ myApp.factory("AuditFactory", function (AuthFactory,
         };
 
         return {
-            get: function (params, callback) {
-                $http.get(auditUrl + "/", {
-                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
-                    params: params
-                }).success(callback
-                ).error(error_func);
-            },
-            download: function(params, filename, callback) {
-                $http.get(auditUrl + "/" + filename, {
-                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
-                    params: params
-                }).success(callback
-                ).error(error_func);
-            },
-            statistics: function(params, callback) {
-                $http.get(auditUrl + "/statistics", {
-                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
-                    params: params
+            getClientType: function(callback) {
+                $http.get(clientUrl + "/", {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).success(callback
                 ).error(error_func);
             }

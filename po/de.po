@@ -145,6 +145,7 @@ msgid "Application"
 msgstr "Applikationen"
 
 #: privacyidea/static/components/audit/views/audit.clienttype.html:10
+#: privacyidea/static/components/components/views/component.clienttype.html:10
 msgid "Application Type"
 msgstr "Applikationstyp"
 
@@ -373,6 +374,7 @@ msgstr ""
 "scannen  Sie den QR-Code, um den Token Ihrer TiQR-App hinzuzufügen."
 
 #: privacyidea/static/components/audit/views/audit.clienttype.html:11
+#: privacyidea/static/components/components/views/component.clienttype.html:11
 #: privacyidea/static/components/config/views/config.policies.details.html:260
 #: privacyidea/static/components/config/views/config.policies.list.html:12
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:49
@@ -380,6 +382,7 @@ msgid "Client"
 msgstr "Client "
 
 #: privacyidea/static/components/audit/views/audit.html:32
+#: privacyidea/static/components/components/views/component.html:20
 msgid "Client Application Type"
 msgstr "Applikationstyp des Clients"
 
@@ -396,9 +399,13 @@ msgstr "Client ID"
 msgid "Close"
 msgstr "Schließen"
 
-#: privacyidea/static/templates/menu.html:105
+#: privacyidea/static/templates/menu.html:113
 msgid "Community"
 msgstr "Community"
+
+#: privacyidea/static/templates/menu.html:81
+msgid "Components"
+msgstr "Komponenten"
 
 #: privacyidea/static/components/config/views/config.events.details.html:43
 msgid "Condition"
@@ -1186,6 +1193,7 @@ msgid "Last"
 msgstr "Ende"
 
 #: privacyidea/static/components/audit/views/audit.clienttype.html:22
+#: privacyidea/static/components/components/views/component.clienttype.html:22
 msgid "Last seen:"
 msgstr "Zuletzt gesehen: "
 
@@ -1250,7 +1258,7 @@ msgstr "Anmelden"
 msgid "Log out"
 msgstr "Abmelden"
 
-#: privacyidea/static/templates/menu.html:84
+#: privacyidea/static/templates/menu.html:92
 msgid "Login"
 msgstr "Anmelden"
 
@@ -1265,7 +1273,7 @@ msgid "Login with credentials"
 msgstr "Als anderer Benutzer anmelden"
 
 #: privacyidea/static/components/token/views/token.enroll.html:153
-#: privacyidea/static/templates/menu.html:112
+#: privacyidea/static/templates/menu.html:120
 msgid "Logout"
 msgstr "Abmelden"
 
@@ -1484,7 +1492,7 @@ msgstr ""
 "wird?"
 
 #: privacyidea/static/templates/index.html:38
-#: privacyidea/static/templates/menu.html:102
+#: privacyidea/static/templates/menu.html:110
 msgid "Online Documentation"
 msgstr "Online Dokumentation"
 
@@ -1748,12 +1756,13 @@ msgstr "Empfänger für Test-Emails"
 #: privacyidea/static/components/audit/views/audit.clienttype.html:4
 #: privacyidea/static/components/audit/views/audit.log.html:8
 #: privacyidea/static/components/audit/views/audit.stats.html:4
+#: privacyidea/static/components/components/views/component.clienttype.html:4
 msgid "Refresh"
 msgstr "Aktualisieren"
 
 #: privacyidea/static/components/register/views/register.html:14
 #: privacyidea/static/components/register/views/register.html:87
-#: privacyidea/static/templates/menu.html:80
+#: privacyidea/static/templates/menu.html:88
 msgid "Register"
 msgstr "Registrieren"
 
@@ -2130,7 +2139,7 @@ msgid "Successfully authenticated."
 msgstr "Erfolgreich authentisiert."
 
 #: privacyidea/static/templates/index.html:28
-#: privacyidea/static/templates/menu.html:107
+#: privacyidea/static/templates/menu.html:115
 msgid "Support"
 msgstr "Support"
 
@@ -2648,7 +2657,7 @@ msgstr ""
 "bitte beim  <a href=\"http://github.com/privacyidea/privacyidea\" target="
 "\"github\">Backend Service</a>."
 
-#: privacyidea/static/app.js:109
+#: privacyidea/static/app.js:110
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
 msgstr ""
 "Das privacyIDEA System scheint offline zu sein. Die API ist nicht erreichbar."
@@ -3366,7 +3375,7 @@ msgstr ""
 "Drücken des blinkenden Knopfes oder durch neu Einstecken des Tokens.  Dies "
 "hängt von dem konkreten Tokentyp an."
 
-#: privacyidea/static/templates/menu.html:123
+#: privacyidea/static/templates/menu.html:131
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr "Sie werden nach {{ myCountdown }} Sekunden abgemeldet."
 
