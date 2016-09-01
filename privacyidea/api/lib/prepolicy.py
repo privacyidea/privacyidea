@@ -849,5 +849,5 @@ def save_client_application_type(request, action):
     client_ip = g.client_ip or "0.0.0.0"
     # ...and the user agent.
     ua = request.user_agent
-    save_clientapplication(client_ip, ua.browser or "unknown")
+    save_clientapplication(client_ip, "{0!s}".format(ua) or "unknown")
     return True
