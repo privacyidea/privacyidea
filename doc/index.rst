@@ -41,6 +41,7 @@ Table of Contents
    installation/index
    firststeps/index
    configuration/index
+   components/index
    tokenview/index
    userview/index
    policies/index
