@@ -15,7 +15,7 @@ info:
 	@echo "make ppa-dev      - upload to launchpad development repo"
 	
 #VERSION=1.3~dev5
-SHORT_VERSION=2.15~dev1
+SHORT_VERSION=2.15~dev9
 #SHORT_VERSION=2.10~dev7
 VERSION_JESSIE=${SHORT_VERSION}
 VERSION=${SHORT_VERSION}
@@ -94,6 +94,8 @@ debianize:
 	make doc-man
 	mkdir -p DEBUILD/privacyidea.org/debian
 	cp -r ${SRCDIRS} ${SRCFILES} DEBUILD/privacyidea.org || true
+	# remove the requirement for pyOpenSSL otherwise we get a breaking dependency for trusty
+	grep -v pyOpenSSL setup.py > DEBUILD/privacyidea.org/setup.py
 	# We need to touch this, so that our config files 
 	# are written to /etc
 	touch DEBUILD/privacyidea.org/PRIVACYIDEA_PACKAGE

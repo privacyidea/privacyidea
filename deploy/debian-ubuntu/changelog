@@ -1,8 +1,10 @@
-python-privacyidea (2.15~dev1-1trusty) trusty; urgency=low
+python-privacyidea (2.15~dev9-1trusty) trusty; urgency=low
  
   * Build for xenial
+  * remove python-cryptography in requirements.txt
+  * Add python-openssl to force to not use python-pyopenssl
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 29 Aug 2016 13:15:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 01 Sep 2016 14:15:00 +0200
 
 python-privacyidea (2.14-1trusty) trusty; urgency=low
 
