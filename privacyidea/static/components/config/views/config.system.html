@@ -97,6 +97,18 @@
         </div>
 
         <div class="form-group col-sm-12">
+            <input name="ReturnSamlAttributesOnFail"
+                   id="ReturnSamlAttributesOnFail"
+                   ng-model="params.ReturnSamlAttributesOnFail"
+                   ng-disabled="!isChecked(params.ReturnSamlAttributes)"
+                   type="checkbox"
+                   ng-checked="isChecked(params.ReturnSamlAttributesOnFail)"/>
+            <label for="ReturnSamlAttributesOnFail" translate>
+                Include SAML attributes even if the user failed to authenticate.
+            </label>
+        </div>
+
+        <div class="form-group col-sm-12">
             <input name="AutoResync" id="AutoResync"
                    ng-model="params.AutoResync"
                    type="checkbox"

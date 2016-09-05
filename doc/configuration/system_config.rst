@@ -43,6 +43,10 @@ attribute mapping e.g. of the LDAP resolver like *email*, *phone*,
 *givenname*, *surname* or any other attributes you fetch from the LDAP
 directory. For more information read :ref:`ldap_resolver`.
 
+In addition you can set the parameter ``ReturnSamlAttributesOnFail``. In this
+case the response contains the SAML attributes of the user, even if the user
+failed to authenticate.
+
 
 FailCounterIncOnFalsePin
 ~~~~~~~~~~~~~~~~~~~~~~~~

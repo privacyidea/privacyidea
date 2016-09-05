@@ -29,8 +29,8 @@ msgid ""
 "    <p>Please try to reload and otherwise contact your system administrator!"
 "</p>"
 msgstr ""
-"<p>Die privacyIDEA API scheint offline zu sein!</p><p>Bitte laden Sie die "
-"Seite neu. Ansonsten wenden Sie sich an Ihren System Administrator!</p>"
+"<p>Die privacyIDEA-API scheint offline zu sein!</p><p>Bitte laden Sie die "
+"Seite neu. Ansonsten wenden Sie sich an Ihren Systemadministrator!</p>"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:25
 #: privacyidea/static/components/config/views/config.token.yubico.html:29
@@ -111,11 +111,11 @@ msgstr "Alle Realms"
 
 #: privacyidea/static/components/config/views/config.resolvers.html:7
 msgid "All Resolvers"
-msgstr "Alle Resolver"
+msgstr "Alle Auflöser"
 
 #: privacyidea/static/components/config/views/config.smsgateway.html:7
 msgid "All SMS Gateways"
-msgstr "Alle SMS Gateways"
+msgstr "Alle SMS-Gateways"
 
 #: privacyidea/static/components/token/views/token.html:11
 msgid "All tokens"
@@ -215,15 +215,15 @@ msgstr "Authentisierung fehlgeschlagen."
 
 #: privacyidea/static/components/config/views/config.system.html:108
 msgid "Auto resync timeout"
-msgstr "Timeout für Auto Resynchronisation"
+msgstr "Zeitüberschreitung der automatischen Neusynchronisation"
 
 #: privacyidea/static/components/config/views/config.system.html:104
 msgid "Automatic resync during authentication"
-msgstr "Automatische Resynchronisation während der Authentifizierung"
+msgstr "Automatische Neusynchronisation während der Authentifizierung"
 
 #: privacyidea/static/components/login/factories/u2f.js:27
 msgid "Bad U2F Request"
-msgstr "Fehlerhafter U2F-Request"
+msgstr "Fehlerhafte U2F-Anfrage"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:37
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:34
@@ -280,7 +280,7 @@ msgstr "Zertifizierungsstellen"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:99
 msgid "Cache Timeout (seconds)"
-msgstr "Cache Time-out (Sekunden)"
+msgstr "Cache-Zeitüberschreitung (Sekunden)"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:73
 #: privacyidea/static/components/directives/views/directive.tokendata.html:21
@@ -379,7 +379,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.list.html:12
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:49
 msgid "Client"
-msgstr "Client "
+msgstr "Client"
 
 #: privacyidea/static/components/audit/views/audit.html:32
 #: privacyidea/static/components/components/views/component.html:20
@@ -425,7 +425,7 @@ msgstr "Verbindungsparameter"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:14
 msgid "Connector name"
-msgstr "Konnektor-Name"
+msgstr "Konnektorname"
 
 #: privacyidea/static/components/token/views/token.details.html:91
 msgid "Count"

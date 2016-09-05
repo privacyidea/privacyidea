@@ -747,3 +747,9 @@ def return_saml_attributes():
     r = get_from_config(key="ReturnSamlAttributes", default= False,
                         return_bool=True)
     return r
+
+
+def return_saml_attributes_on_fail():
+    r = get_from_config(key="ReturnSamlAttributesOnFail", default=False,
+                        return_bool=True)
+    return r

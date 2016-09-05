@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2016-09-05 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            SAML attributes on fail
 # 2016-08-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            save client application type to database
 # 2016-08-09 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -64,6 +66,7 @@ from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp)
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
+                                    return_saml_attributes_on_fail,
                                     SYSCONF)
 from privacyidea.lib.audit import getAudit
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
@@ -296,19 +299,20 @@ def samlcheck():
     result_obj = {"auth": auth,
                   "attributes": {}}
     if return_saml_attributes():
-        # privacyIDEA's own attribute map
-        result_obj["attributes"] = {"username": ui.get("username"),
-                                    "realm": user.realm,
-                                    "resolver": user.resolver,
-                                    "email": ui.get("email"),
-                                    "surname": ui.get("surname"),
-                                    "givenname": ui.get("givenname"),
-                                    "mobile": ui.get("mobile"),
-                                    "phone": ui.get("phone")
-                                    }
-        # additional attributes
-        for k, v in ui.iteritems():
-            result_obj["attributes"][k] = v
+        if auth or return_saml_attributes_on_fail():
+            # privacyIDEA's own attribute map
+            result_obj["attributes"] = {"username": ui.get("username"),
+                                        "realm": user.realm,
+                                        "resolver": user.resolver,
+                                        "email": ui.get("email"),
+                                        "surname": ui.get("surname"),
+                                        "givenname": ui.get("givenname"),
+                                        "mobile": ui.get("mobile"),
+                                        "phone": ui.get("phone")
+                                        }
+            # additional attributes
+            for k, v in ui.iteritems():
+                result_obj["attributes"][k] = v
 
     g.audit_object.log({"info": details.get("message"),
                         "success": auth,

@@ -419,6 +419,45 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(attributes.get("realm"),  "realm1")
             self.assertEqual(attributes.get("username"),  "cornelius")
 
+        # Return SAML attributes On Fail
+        with self.app.test_request_context('/validate/samlcheck',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "pin254676"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            value = result.get("value")
+            attributes = value.get("attributes")
+            self.assertEqual(value.get("auth"), False)
+            self.assertEqual(attributes.get("email"), None)
+            self.assertEqual(attributes.get("givenname"), None)
+            self.assertEqual(attributes.get("mobile"), None)
+            self.assertEqual(attributes.get("phone"), None)
+            self.assertEqual(attributes.get("realm"), None)
+            self.assertEqual(attributes.get("username"), None)
+
+        set_privacyidea_config("ReturnSamlAttributesOnFail", "1")
+        with self.app.test_request_context('/validate/samlcheck',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "pin254676"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            value = result.get("value")
+            attributes = value.get("attributes")
+            self.assertEqual(value.get("auth"), False)
+            self.assertEqual(attributes.get("email"),
+                             "user@localhost.localdomain")
+            self.assertEqual(attributes.get("givenname"), "Cornelius")
+            self.assertEqual(attributes.get("mobile"), "+491111111")
+            self.assertEqual(attributes.get("phone"), "+491234566")
+            self.assertEqual(attributes.get("realm"), "realm1")
+            self.assertEqual(attributes.get("username"), "cornelius")
+
     def test_11_challenge_response_hotp(self):
         # set a chalresp policy for HOTP
         with self.app.test_request_context('/policy/pol_chal_resp',
