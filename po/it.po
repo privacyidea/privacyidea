@@ -141,7 +141,6 @@ msgstr ""
 msgid "Application"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.clienttype.html:10
 #: privacyidea/static/components/components/views/component.clienttype.html:10
 msgid "Application Type"
 msgstr ""
@@ -208,11 +207,11 @@ msgstr ""
 msgid "Authentication failed."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:108
+#: privacyidea/static/components/config/views/config.system.html:120
 msgid "Auto resync timeout"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:104
+#: privacyidea/static/components/config/views/config.system.html:116
 msgid "Automatic resync during authentication"
 msgstr ""
 
@@ -355,7 +354,6 @@ msgid ""
 "            want to add the Token to your TiQR App."
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.clienttype.html:11
 #: privacyidea/static/components/components/views/component.clienttype.html:11
 #: privacyidea/static/components/config/views/config.policies.details.html:260
 #: privacyidea/static/components/config/views/config.policies.list.html:12
@@ -363,7 +361,6 @@ msgstr ""
 msgid "Client"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.html:32
 #: privacyidea/static/components/components/views/component.html:20
 msgid "Client Application Type"
 msgstr ""
@@ -418,7 +415,7 @@ msgstr ""
 msgid "Count Window"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:170
+#: privacyidea/static/components/config/views/config.system.html:182
 msgid ""
 "Count Window of\n"
 "                    newly enrolled tokens"
@@ -1109,6 +1106,10 @@ msgstr ""
 msgid "Import tokens from a file"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.system.html:106
+msgid "Include SAML attributes even if the user failed to authenticate."
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.system.html:93
 msgid ""
 "Include SAML attributes in the\n"
@@ -1132,7 +1133,6 @@ msgstr ""
 msgid "Last"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.clienttype.html:22
 #: privacyidea/static/components/components/views/component.clienttype.html:22
 msgid "Last seen:"
 msgstr ""
@@ -1219,7 +1219,7 @@ msgstr ""
 msgid "Lost Token"
 msgstr ""
 
-#: privacyidea/static/components/audit/controllers/auditControllers.js:35
+#: privacyidea/static/components/audit/controllers/auditControllers.js:33
 msgid "M/d/yy HH:mm:ss"
 msgstr ""
 
@@ -1258,7 +1258,7 @@ msgstr ""
 msgid "Mark the token to be lost"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:183
+#: privacyidea/static/components/config/views/config.system.html:195
 msgid ""
 "Max Failcount of\n"
 "                    newly enrolled tokens"
@@ -1398,7 +1398,7 @@ msgstr ""
 msgid "OTP length"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:156
+#: privacyidea/static/components/config/views/config.system.html:168
 msgid ""
 "OTP length of\n"
 "                    newly enrolled tokens"
@@ -1457,7 +1457,7 @@ msgstr ""
 msgid "Overall token usage"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:121
+#: privacyidea/static/components/config/views/config.system.html:133
 msgid "Override Authorization Clients"
 msgstr ""
 
@@ -1683,7 +1683,6 @@ msgstr ""
 msgid "Recipient for testing"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.clienttype.html:4
 #: privacyidea/static/components/audit/views/audit.log.html:8
 #: privacyidea/static/components/audit/views/audit.stats.html:4
 #: privacyidea/static/components/components/views/component.clienttype.html:4
@@ -1834,7 +1833,7 @@ msgstr ""
 msgid "SMTP server configuration"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:139
+#: privacyidea/static/components/config/views/config.system.html:151
 msgid "SMTP server for password recovery"
 msgstr ""
 
@@ -1880,7 +1879,7 @@ msgstr ""
 msgid "Save SMTP server"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:249
+#: privacyidea/static/components/config/views/config.system.html:261
 msgid "Save System Config"
 msgstr ""
 
@@ -1929,7 +1928,7 @@ msgstr ""
 msgid "Select Realm"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:148
+#: privacyidea/static/components/config/views/config.system.html:160
 msgid ""
 "Select a predefined\n"
 "                    <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
@@ -2070,7 +2069,7 @@ msgstr ""
 msgid "Sync Window"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:195
+#: privacyidea/static/components/config/views/config.system.html:207
 msgid ""
 "Sync Window of\n"
 "                    newly enrolled tokens"
@@ -2406,7 +2405,7 @@ msgstr ""
 msgid "The certificate was enrolled successfully."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:208
+#: privacyidea/static/components/config/views/config.system.html:220
 msgid "The challenge validity time"
 msgstr ""
 
@@ -2629,7 +2628,7 @@ msgid ""
 "                The successful and the failed requests are listed."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.html:131
+#: privacyidea/static/components/config/views/config.system.html:143
 msgid ""
 "These client IP addresses or subnets are\n"
 "                    allowed to masquerade as another client."
