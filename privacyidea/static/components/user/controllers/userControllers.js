@@ -3,10 +3,10 @@
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
  * 2016-04-10 Martin Wheldon <martin.wheldon@greenhills-it.co.uk>
- *           On initialisation generate object describing the fields
- *           required by the add user form for each resolver.
- *           Add function to update form on switching of resolver
- *           on the add user form.
+ *            On initialisation generate object describing the fields
+ *            required by the add user form for each resolver.
+ *            Add function to update form on switching of resolver
+ *            on the add user form.
  * 2015-01-11 Cornelius Kölbel, <cornelius@privacyidea.org>
  *
  * This code is free software; you can redistribute it and/or
@@ -30,11 +30,11 @@ angular.module("privacyideaApp")
                                                gettextCatalog){
 
         $scope.formInit = {};
+        $scope.User = {};
 
         ConfigFactory.getEditableResolvers(function (data){
             var resolvers = data.result.value;
             var resolvernames = [];
-            var userAttributes = [];
             for (var rname in resolvers) {
                 resolvernames.push(rname);
             }
@@ -43,13 +43,12 @@ angular.module("privacyideaApp")
                 $scope.resolvername = resolvernames[0];
             }
 
-            userAttributes = getUserAttributes(data);
-            $scope.userAttributes = userAttributes;
+            $scope.userAttributes = $scope.getUserAttributes(data);
             $scope.getAddUserAttributes($scope.resolvername);
 
         });
 
-        function getUserAttributes(data) {
+        $scope.getUserAttributes = function(data) {
             var resolvers = data.result.value;
             var allResolverAttributes = [];
 
@@ -57,10 +56,10 @@ angular.module("privacyideaApp")
                 var resolver = resolvers[rname];
                 switch (resolver.type){
                     case "ldapresolver":
-                        var userinfo = JSON.parse(gettextCatalog.getString(resolver.data.USERINFO));
+                        var userinfo = JSON.parse(resolver.data.USERINFO);
                         break;
                     case "sqlresolver":
-                        var userinfo = JSON.parse(gettextCatalog.getString(resolver.data.Map));
+                        var userinfo = JSON.parse(resolver.data.Map);
                         delete userinfo["userid"];
                         break;
                 }
@@ -108,7 +107,10 @@ angular.module("privacyideaApp")
            return allResolverAttributes;
         };
 
-       $scope.getAddUserAttributes = function(resolvername){
+        $scope.getAddUserAttributes = function(resolvername){
+            /*
+            This function returns the display information of the user attributes
+             */
 
            var userFields = [];
            angular.forEach($scope.userAttributes, function(value, key){
