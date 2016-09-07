@@ -152,7 +152,7 @@ def after_request(response):
 @prepolicy(set_realm, request=request)
 @prepolicy(mangle, request=request)
 @prepolicy(save_client_application_type, request=request)
-@check_user_or_serial_in_request
+@check_user_or_serial_in_request(request)
 @prepolicy(api_key_required, request=request)
 @event("validate_check", request, g)
 def check():
@@ -235,7 +235,7 @@ def check():
 @prepolicy(set_realm, request=request)
 @prepolicy(mangle, request=request)
 @prepolicy(save_client_application_type, request=request)
-@check_user_or_serial_in_request
+@check_user_or_serial_in_request(request)
 @prepolicy(api_key_required, request=request)
 @event("validate_check", request, g)
 def samlcheck():

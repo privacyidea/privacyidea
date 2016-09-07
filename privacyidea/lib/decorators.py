@@ -22,7 +22,6 @@ import logging
 import functools
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.error import ParameterError
-from flask import request
 from gettext import gettext as _
 log = logging.getLogger(__name__)
 
@@ -73,23 +72,26 @@ def check_user_or_serial(func):
     return user_or_serial_wrapper
 
 
-def check_user_or_serial_in_request(func):
+class check_user_or_serial_in_request(object):
     """
     Decorator to check user and serial in a request.
     If the request does not contain a serial number (serial) or a user
     (user) it will throw a ParameterError.
     """
+    def __init__(self, request):
+        self.request = request
 
-    @functools.wraps(func)
-    def check_user_or_serial_in_request_wrapper(*args, **kwds):
-        user = request.all_data.get("user")
-        serial = request.all_data.get("serial")
-        if not serial and not user:
-            raise ParameterError(_("You need to specify a serial or a user."))
-        f_result = func(*args, **kwds)
-        return f_result
+    def __call__(self, func):
+        @functools.wraps(func)
+        def check_user_or_serial_in_request_wrapper(*args, **kwds):
+            user = self.request.all_data.get("user")
+            serial = self.request.all_data.get("serial")
+            if not serial and not user:
+                raise ParameterError(_("You need to specify a serial or a user."))
+            f_result = func(*args, **kwds)
+            return f_result
 
-    return check_user_or_serial_in_request_wrapper
+        return check_user_or_serial_in_request_wrapper
 
 
 def check_copy_serials(func):
