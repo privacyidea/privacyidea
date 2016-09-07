@@ -64,3 +64,9 @@ body {
 .policyaction {
     min-width: 150px;
 }
+
+/* User Add
+*/
+.css-form input.ng-invalid {
+   background-color: #FA787E;
+}

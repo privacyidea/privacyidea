@@ -11,6 +11,7 @@
                                 name="resolvername"
                                 id="resolvername"
                                 ng-model="resolvername"
+                                ng-change="getAddUserAttributes(resolvername)"
                                 ng-options="resolvername for resolvername in formInit.resolvernames">
                         </select>
                     </div>
@@ -23,52 +24,20 @@
                     </div>
                 </div>
 
-                <div class="col-xs-6">
-                    <div class="form-group">
-                        <label for="username" translate>Username</label>
-                        <input name="givenname" class="form-control"
-                               required
-                               ng-model="User.username">
-                    </div>
-                    <div class="form-group">
-                        <label for="givenname" translate>Given name</label>
-                        <input name="givenname" class="form-control"
-                               ng-model="User.givenname">
-                    </div>
-                    <div class="form-group">
-                        <label for="surname" translate>Surname</label>
-                        <input name="surname" class="form-control"
-                               ng-model="User.surname">
-                    </div>
-                    <div class="form-group">
-                        <label for="description" translate>Description</label>
-                        <input name="description" class="form-control"
-                               ng-model="User.description">
-                    </div>
-                </div>
-                <div class="col-xs-6">
-                    <div class="form-group">
-                        <label for="email" translate>Email</label>
-                        <input name="email" class="form-control"
-                               type="email"
-                               ng-model="User.email">
-                    </div>
-                    <div class="form-group">
-                        <label for="phone" translate>Phone</label>
-                        <input name="phone" class="form-control"
-                               ng-model="User.phone">
-                    </div>
-                    <div class="form-group">
-                        <label for="mobile" translate>Mobile</label>
-                        <input name="mobile" class="form-control"
-                               ng-model="User.mobile">
-                    </div>
-                    <div class="form-group">
-                        <label for="password" translate>Password</label>
-                        <input type="password" name="password"
-                               class="form-control" ng-model="User.password">
-                    </div>
-                </div>
+             <div class="col-xs-6">
+                 <div ng-repeat="field in leftColumn">
+                     <ng-form name="formLeft" class="css-form">
+                         <ng-include src="instanceUrl+'/static/components/user/views/user.add.dynamic.form.fields.html'"></ng-include>
+                     </ng-form>
+                 </div>
+             </div>
+             <div class="col-xs-6">
+                 <div ng-repeat="field in rightColumn">
+                     <ng-form name="formLeft" class="css-form">
+                         <ng-include src="instanceUrl+'/static/components/user/views/user.add.dynamic.form.fields.html'"></ng-include>
+                     </ng-form>
+                 </div>
+            </div>
             </div>
 
             <div class="text-center">
