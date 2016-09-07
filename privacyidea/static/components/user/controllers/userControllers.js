@@ -32,6 +32,9 @@ angular.module("privacyideaApp")
         $scope.formInit = {};
         $scope.User = {};
 
+        /// Translation in dynamic user creation
+        var myString = gettextCatalog.getString("password");
+
         ConfigFactory.getEditableResolvers(function (data){
             var resolvers = data.result.value;
             var resolvernames = [];
@@ -66,37 +69,25 @@ angular.module("privacyideaApp")
                 var fields = [];
                 var r ={};
                 angular.forEach(userinfo, function (value, key) {
+                    field = {"type" : "text",
+                             "name" : key,
+                             "label" : gettextCatalog.getString(key),
+                             "data" : "",
+                             "required": true};
                     switch(key){
                         case "username":
-                            field = {"type" : "text",
-                                     "name" : key,
-                                     "label" : key,
-                                     "data" : "",
-                                     "required": true};
                             this.push(field);
                             break;
                         case "email":
-                            field = {"type" : "email",
-                                     "name" : key,
-                                     "label" : key,
-                                     "data" : "",
-                                     "required": true};
+                            field["type"] = "email";
                             this.push(field);
                             break;
                         case "password":
-                            field = {"type" : "password",
-                                     "name" : key,
-                                     "label" : key,
-                                     "data" : "",
-                                     "required": true};
+                            field["type"] = "password";
                             this.push(field);
                             break;
                         default:
-                            field = {"type" : "text",
-                                     "name" : key,
-                                     "label" : key,
-                                     "data" : "",
-                                     "required": false};
+                            field["required"] = false;
                             this.push(field);
                             break;
                     }
