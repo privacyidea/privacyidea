@@ -1,15 +1,5 @@
-<style type="text/css">
-  .css-form input.ng-invalid.ng-touched {
-    background-color: #FA787E;
-  }
-
-  .css-form input.ng-valid.ng-touched {
-    background-color: #78FA89;
-  }
-</style>
-
 <div class="panel" ng-controller="userAddController">
-    <form name="User" role="form" novalidate>
+    <form name="formAddUser" role="form" validate>
         <h2 translate>Add a new user</h2>
 
         <div ng-show="formInit.resolvernames.length">
@@ -52,7 +42,7 @@
 
             <div class="text-center">
                 <button ng-click="createUser()" class="btn btn-primary"
-                        ng-disabled="User.$invalid">
+                        ng-disabled="formAddUser.$invalid">
                     <span class="glyphicon glyphicon-edit"></span>
                     <span translate>Save user</span>
                 </button>
