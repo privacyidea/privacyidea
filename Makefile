@@ -13,13 +13,13 @@ info:
 	@echo "make translate    - translate WebUI"
 	@echo "                    This is to be used with debian Wheezy"
 	@echo "make ppa-dev      - upload to launchpad development repo"
+	@echo "make ppa          - upload to launchpad stable repo"
 	
 #VERSION=1.3~dev5
 SHORT_VERSION=2.15~dev9
 #SHORT_VERSION=2.10~dev7
 VERSION_JESSIE=${SHORT_VERSION}
 VERSION=${SHORT_VERSION}
-SERIES="trusty xenial"
 LOCAL_SERIES=`lsb_release -a | grep Codename | cut -f2`
 SRCDIRS=deploy authmodules migrations doc tests tools privacyidea 
 SRCFILES=setup.py MANIFEST.in Makefile Changelog LICENSE pi-manage requirements.txt
@@ -138,18 +138,6 @@ lintian:
 	(cd DEBUILD; lintian -i -I --show-overrides python-privacyidea_2.*_amd64.changes)
 
 ppa-dev:
-	################### Check for the series
-	@echo "You need to specify a parameter series like $(SERIES)"
-	echo $(SERIES) | grep $(series)
-	################## Renew the changelog
-	cp deploy/debian-ubuntu/changelog DEBUILD/privacyidea.org/debian/
-	sed -e s/"trusty) trusty; urgency"/"$(series)) $(series); urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
-	################# Build
-	(cd DEBUILD/privacyidea.org; debuild -sa -S)
-	################ Upload to launchpad:
-	dput ppa:privacyidea/privacyidea-dev DEBUILD/python-privacyidea_${VERSION}*_source.changes
-
-ppa-dev-all:
 	make debianize
 	# trusty
 	cp -r deploy/debian-ubuntu/* DEBUILD/privacyidea.org/debian/
@@ -161,21 +149,13 @@ ppa-dev-all:
 
 
 ppa:
-	cp deploy/debian-ubuntu/changelog DEBUILD/privacyidea.org/debian/
-	sed -e s/"trusty) trusty; urgency"/"$(series)) $(series); urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
-	################# Build
-	(cd DEBUILD/privacyidea.org; debuild -sa -S)
-	 ################ Upload to launchpad:
-	dput ppa:privacyidea/privacyidea DEBUILD/python-privacyidea_${VERSION}*_source.changes
-
-
-
-ppa-all:
 	make debianize
-	for series in $(SERIES); do \
-            cp deploy/debian-ubuntu/changelog DEBUILD/privacyidea.org/debian/ ; \
-            sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog ; \
-            (cd DEBUILD/privacyidea.org; debuild) ; \
-	    dput ppa:privacyidea/privacyidea DEBUILD/python-privacyidea_${VERSION}-*_source.changes; \
-        done
+	# trusty
+	cp deploy/debian-ubuntu/changelog DEBUILD/privacyidea.org/debian/
+	cp -r deploy/debian-ubuntu/* DEBUILD/privacyidea.org/debian/
+	(cd DEBUILD/privacyidea.org; debuild -sa -S)
+	# xenial
+	sed -e s/"trusty) trusty; urgency"/"xenial) xenial; urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
+	(cd DEBUILD/privacyidea.org; debuild -sa -S)
+	dput ppa:privacyidea/privacyidea-dev DEBUILD/python-privacyidea_${VERSION}*_source.changes
 	
