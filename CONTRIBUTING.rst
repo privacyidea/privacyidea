@@ -11,6 +11,17 @@ You are using privacyIDEA in your network? Tell about it!
 Write a blog post, tell your friends or simply twitter about it.
 This will make privacyIDEA wider known and attract new contributors.
 
+Talk to us
+----------
+
+You may join talking in the Google Group or
+the newly setup Gitter Chat Root:
+
+https://groups.google.com/forum/#!forum/privacyidea
+
+https://gitter.im/privacyidea/Lobby
+
+
 Tell us your ideas
 ------------------
 
