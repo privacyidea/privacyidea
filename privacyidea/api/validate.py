@@ -101,6 +101,7 @@ def before_request():
     This is executed before the request
     """
     request.all_data = get_all_params(request.values, request.data)
+    request.User = get_user_from_param(request.all_data)
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
                          request.host
     # Create a policy_object, that reads the database audit settings
@@ -196,7 +197,8 @@ def check():
               "version": "privacyIDEA unknown"
             }
     """
-    user = get_user_from_param(request.all_data)
+    #user = get_user_from_param(request.all_data)
+    user = request.User
     serial = getParam(request.all_data, "serial")
     password = getParam(request.all_data, "pass", required)
     otp_only = getParam(request.all_data, "otponly")

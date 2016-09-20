@@ -449,8 +449,7 @@ class User(object):
 
 ####################################################################
 
-@log_with(log,
-          hide_kwargs=["password"])
+@log_with(log, hide_kwargs=["password"])
 def create_user(resolvername, attributes, password=None):
     """
     This creates a new user in the given resolver. The resolver must be

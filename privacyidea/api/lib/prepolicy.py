@@ -456,7 +456,8 @@ def set_realm(request=None, action=None):
     :type action: basestring
     :returns: Always true. Modified the parameter request
     """
-    user_object = get_user_from_param(request.all_data)
+    #user_object = get_user_from_param(request.all_data)
+    user_object = request.User
     # At the moment a realm parameter with no user parameter returns a user
     # object like "@realm". If this is changed one day, we need to also fetch
     #  the realm
@@ -530,7 +531,8 @@ def mangle(request=None, action=None):
     :type action: basestring
     :returns: Always true. Modified the parameter request
     """
-    user_object = get_user_from_param(request.all_data)
+    #user_object = get_user_from_param(request.all_data)
+    user_object = request.User
 
     policy_object = g.policy_object
     mangle_pols = policy_object.get_action_values(ACTION.MANGLE,
@@ -753,7 +755,8 @@ def api_key_required(request=None, action=None):
             "but no key was passed."
     params = request.all_data
     policy_object = g.policy_object
-    user_object = get_user_from_param(params)
+    #user_object = get_user_from_param(params)
+    user_object = request.User
 
     # Get the policies
     action = policy_object.get_policies(action=ACTION.APIKEY,

@@ -515,7 +515,8 @@ def autoassign(request, response):
     content = json.loads(response.data)
     # check, if the authentication was successful, then we need to do nothing
     if content.get("result").get("value") is False:
-        user_obj = get_user_from_param(request.all_data)
+        user_obj = request.User
+        #user_obj = get_user_from_param(request.all_data)
         password = request.all_data.get("pass", "")
         if user_obj.login and user_obj.realm:
             # If there is no user in the request (because it is a serial

@@ -61,15 +61,18 @@ class SYSCONF(object):
     INCFAILCOUNTER = "IncFailCountOnFalsePin"
     RETURNSAML = "ReturnSamlAttributes"
 
+from flask.ext.cache import Cache
+cache = Cache()
 
-#@cache.memoize(1)
+
+@cache.cached(key_prefix="allConfig")
 def get_privacyidea_config():
     # timestamp = Config.query.filter_by(Key="privacyidea.timestamp").first()
     return get_from_config()
 
 
 @log_with(log)
-#@cache.memoize(1)
+@cache.cached(key_prefix="singleConfig")
 def get_from_config(key=None, default=None, role="admin", return_bool=False):
     """
     :param key: A key to retrieve
@@ -128,7 +131,7 @@ def get_from_config(key=None, default=None, role="admin", return_bool=False):
     return rvalue
 
 
-#@cache.memoize(1)
+@cache.cached(key_prefix="resolver")
 def get_resolver_types():
     """
     Return a simple list of the type names of the resolvers.
@@ -154,7 +157,7 @@ def get_caconnector_types():
     return ["local"]
 
 
-#@cache.memoize(1)
+@cache.cached(key_prefix="classes")
 def get_resolver_classes():
     """
     Returns a list of the available resolver classes like:
@@ -175,7 +178,7 @@ def get_resolver_classes():
     return resolver_classes
 
 
-#@cache.memoize(1)
+@cache.cached(key_prefix="classes")
 def get_token_class_dict():
     """
     get a dictionary of the token classes and a dictionary of the
@@ -215,7 +218,7 @@ def get_token_class_dict():
     return tokenclass_dict, tokentype_dict
 
 
-#@cache.memoize(1)
+@cache.cached(key_prefix="classes")
 def get_token_class(tokentype):
     """
     This takes a token type like "hotp" and returns a class
@@ -238,7 +241,7 @@ def get_token_class(tokentype):
     return tokenclass
 
 
-#@cache.memoize(1)
+@cache.cached(key_prefix="types")
 def get_token_types():
     """
     Return a simple list of the type names of the tokens.
@@ -256,7 +259,7 @@ def get_token_types():
     return tokentypes
 
 
-#@cache.memoize(1)
+@cache.cached(key_prefix="prefix")
 def get_token_prefix(tokentype=None, default=None):
     """
     Return the token prefix for a tokentype as it is defined in the
@@ -280,7 +283,7 @@ def get_token_prefix(tokentype=None, default=None):
     return ret
 
 
-#@cache.memoize(1)
+@cache.cached(key_prefix="classes")
 def get_token_classes():
     """
     Returns a list of the available token classes like:
@@ -370,7 +373,7 @@ def get_caconnector_class_dict():
     return class_dict, type_dict
 
 
-#@cache.memoize(1)
+@cache.cached(key_prefix="resolver")
 def get_resolver_class_dict():
     """
     get a dictionary of the resolver classes and a dictionary
@@ -420,7 +423,7 @@ def get_resolver_class_dict():
 
 
 @log_with(log)
-#@cache.memoize(1)
+@cache.cached(key_prefix="resolver")
 def get_resolver_list():
     """
     get the list of the module names of the resolvers like
@@ -474,7 +477,7 @@ def get_machine_resolver_class_list():
 
 
 @log_with(log)
-#@cache.memoize(1)
+@cache.cached(key_prefix="token")
 def get_token_list():
     """
     get the list of the tokens
@@ -527,7 +530,7 @@ def get_token_list():
 
 
 @log_with(log)
-#@cache.memoize(1)
+@cache.cached(key_prefix="modules")
 def get_token_module_list():
     """
     return the list of modules of the available token classes
@@ -560,7 +563,7 @@ def get_token_module_list():
     return modules
 
 
-#@cache.memoize(1)
+@cache.cached(key_prefix="modules")
 def get_resolver_module_list():
     """
     return the list of modules of the available resolver classes
@@ -592,7 +595,7 @@ def get_resolver_module_list():
     return modules
 
 
-#@cache.memoize(1)
+@cache.cached(key_prefix="module")
 def get_caconnector_module_list():
     """
     return the list of modules of the available CA connector classes
@@ -620,7 +623,7 @@ def get_caconnector_module_list():
     return modules
 
 
-#@cache.memoize(1)
+@cache.cached(key_prefix="module")
 def get_machine_resolver_module_list():
     """
     return the list of modules of the available machines resolver classes
@@ -709,7 +712,7 @@ def delete_privacyidea_config(key):
     return ret
 
 
-#@cache.memoize(1)
+@cache.cached(key_prefix="pin")
 def get_inc_fail_count_on_false_pin():
     """
     Return if the Failcounter should be increased if only tokens
@@ -722,7 +725,7 @@ def get_inc_fail_count_on_false_pin():
     return r
 
 
-#@cache.memoize(1)
+@cache.cached(key_prefix="pin")
 def get_prepend_pin():
     """
     Get the status of the "PrependPin" Config
