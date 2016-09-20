@@ -43,19 +43,20 @@ Authentication workflow is like this:
 
 In case of authenticating a user:
 
- * lib/token/check_user_pass (user, passw, options)
- * lib/token/check_token_list(list, passw, user, options)
- * lib/tokenclass/authenticate(pass, user, options)
- * lib/tokenclass/check_pin(pin, user, options)
- * lib/tokenclass/check_otp(otpval, options)
+ * :func:`privacyidea.lib.token.check_user_pass`
+ * :func:`privacyidea.lib.token.check_token_list`
+ * :func:`privacyidea.lib.tokenclass.TokenClass.authenticate`
+ * :func:`privacyidea.lib.tokenclass.TokenClass.check_pin`
+ * :func:`privacyidea.lib.tokenclass.TokenClass.check_otp`
 
-IN case if authenitcating a serial number:
+In case if authenitcating a serial number:
 
- * lib/token/check_serial_pass(serial, passw, options)
- * lib/token/check_token_list(list, passw, user, options)
- * lib/tokenclass/authenticate(pass, user, options)
- * lib/tokenclass/check_pin(pin, user, options)
- * lib/tokenclass/check_otp(otpval, options)
+ * :func:`privacyidea.lib.token.check_serial_pass`
+ * :func:`privacyidea.lib.token.check_token_list`
+ * :func:`privacyidea.lib.tokenclass.TokenClass.authenticate`
+ * :func:`privacyidea.lib.tokenclass.TokenClass.check_pin`
+ * :func:`privacyidea.lib.tokenclass.TokenClass.check_otp`
+
 """
 from flask import (Blueprint, request, g, current_app)
 from privacyidea.lib.user import get_user_from_param
@@ -160,6 +161,7 @@ def check():
     check the authentication for a user or a serial number.
     Either a ``serial`` or a ``user`` is required to authenticate.
     The PIN and OTP value is sent in the parameter ``pass``.
+    In case of successful authentication it returns ``result->value: true``.
 
     :param serial: The serial number of the token, that tries to authenticate.
     :param user: The loginname/username of the user, who tries to authenticate.
@@ -173,6 +175,18 @@ def check():
     :param state: The state ID for a response to a challenge request
 
     :return: a json result with a boolean "result": true
+
+    **Example Validation Request**:
+
+        .. sourcecode:: http
+
+           POST /validate/check HTTP/1.1
+           Host: example.com
+           Accept: application/json
+
+           user=user
+           realm=realm1
+           pass=s3cret123456
 
     **Example response** for a successful authentication:
 
