@@ -118,12 +118,6 @@ Run it::
 Now you can connect to http://localhost:5000 with your browser and login
 as administrator.
 
-Run in virtualenv
-=================
-
-For running the server in a virtual env see documentation at
-http://privacyidea.readthedocs.org/en/latest/installation/index.html#python-package-index.
-
 Run tests
 =========
 
@@ -154,12 +148,6 @@ for the database table ``realm``. Several resolvers are combined into a realm.
 Based on the realm there is the library ``lib/user.py`` which provides functions 
 for users. There is no database table user, since users are dynamically read 
 from the user sources like SQL, LDAP, SCIM or flat files.
-
-Upgrading
-=========
-In certain cases the database structure has changed (1.5->2.0).
-Read http://privacyidea.readthedocs.org/en/latest/installation/upgrade.html 
-for upgrade instructions.
 
 Versioning
 ==========
