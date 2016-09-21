@@ -481,7 +481,8 @@ class Token(MethodsMixin, db.Model):
         for k, v in info.items():
             if not k.endswith(".type"):
                 TokenInfo(self.id, k, v,
-                          Type=types.get(k)).save()
+                          Type=types.get(k)).save(persistent=False)
+        db.session.commit()
 
     def del_info(self, key=None):
         """
@@ -581,7 +582,7 @@ class TokenInfo(MethodsMixin, db.Model):
         self.Type = Type
         self.Description = Description
 
-    def save(self):
+    def save(self, persistent=True):
         ti = TokenInfo.query.filter_by(token_id=self.token_id,
                                            Key=self.Key).first()
         if ti is None:
@@ -598,7 +599,8 @@ class TokenInfo(MethodsMixin, db.Model):
                                                      'tion': self.Description,
                                                      'Type': self.Type})
             ret = ti.id
-        db.session.commit()
+        if persistent:
+            db.session.commit()
         return ret
 
 

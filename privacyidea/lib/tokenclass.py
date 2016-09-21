@@ -212,8 +212,10 @@ class TokenClass(object):
         """
         Reset the failcounter
         """
-        self.token.failcount = 0
-        self.token.save()
+        if self.token.failcount:
+            # reset the failcounter and write to database
+            self.token.failcount = 0
+            self.token.save()
 
     @check_token_locked
     def add_init_details(self, key, value):
@@ -906,11 +908,15 @@ class TokenClass(object):
     def inc_count_auth_success(self):
         """
         Increase the counter, that counts successful authentications
+        Also increase the auth counter
         """
-        count = self.get_count_auth_success()
-        count += 1
-        self.set_count_auth_success(count)
-        return count
+        succcess_counter = self.get_count_auth_success()
+        succcess_counter += 1
+        auth_counter = self.get_count_auth()
+        auth_counter += 1
+        self.token.set_info({"count_auth_success": int(succcess_counter),
+                             "count_auth": int(auth_counter)})
+        return succcess_counter
 
     @check_token_locked
     def inc_count_auth(self):

@@ -133,6 +133,9 @@ class User(object):
     def __repr__(self):
         ret = ('User(login={0!r}, realm={1!r}, resolver={2!r})'.format(self.login, self.realm, self.resolver))
         return ret
+
+    def __nonzero__(self):
+        return not self.is_empty()
     
     @log_with(log)
     def get_ordererd_resolvers(self):

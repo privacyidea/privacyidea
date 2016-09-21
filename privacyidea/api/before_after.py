@@ -102,6 +102,7 @@ def before_request():
     # remove session from param and gather all parameters, either
     # from the Form data or from JSON in the request body.
     request.all_data = get_all_params(request.values, request.data)
+    request.User = get_user_from_param(request.all_data)
 
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
