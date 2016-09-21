@@ -92,6 +92,9 @@ If you want to setup a development environment start like this::
     source venv/bin/activate
     pip install -r requirements.txt
 
+You may also want to read the blog post about development and debugging at
+https://www.privacyidea.org/privacyidea-development-howto/
+
 Running it
 ==========
 
