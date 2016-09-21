@@ -369,6 +369,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
 
         # request, that matches the policy
         req.all_data = {"realm": "somerealm"}
+        req.User = None
         set_realm(req)
         # Check, if the realm was modified to the realm specified in the policy
         self.assertTrue(req.all_data.get("realm") == self.realm1)
@@ -602,6 +603,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
 
         # No policy and no Auth token
         req.all_data = {}
+        req.User = User()
         r = api_key_required(req)
         # The request was not modified
         self.assertTrue(r)
@@ -655,6 +657,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
 
         # request, that matches the policy
         req.all_data = {"user": "Thiswillbesplit_user"}
+        req.User = User("Thiswillbesplit_user")
         mangle(req)
         # Check if the user was modified
         self.assertEqual(req.all_data.get("user"), "user")
@@ -1082,6 +1085,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         req = Request(env)
         req.all_data = {"user": "autoassignuser", "realm": self.realm1,
                         "pass": "test287082"}
+        req.User = User("autoassignuser", self.realm1)
         # The response with a failed request
         res = {"jsonrpc": "2.0",
                "result": {"status": True,
@@ -1141,6 +1145,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         req = Request(env)
         req.all_data = {"user": "autoassignuser", "realm": self.realm1,
                         "pass": "password287082"}
+        req.User = User("autoassignuser", self.realm1)
         # The response with a failed request
         res = {"jsonrpc": "2.0",
                "result": {"status": True,

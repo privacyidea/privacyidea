@@ -117,6 +117,7 @@ class UserNotificationTestCase(MyTestCase):
         req = Request(env)
         req.all_data = {"serial": "SomeSerial",
                         "user": "cornelius"}
+        req.User = User("cornelius", self.realm1)
 
         options = {"g": g,
                    "request": req,
@@ -161,6 +162,7 @@ class UserNotificationTestCase(MyTestCase):
         req = Request(env)
         req.all_data = {"serial": "SomeSerial",
                         "user": "cornelius"}
+        req.User = User("cornelius", self.realm1)
 
         options = {"g": g,
                    "request": req,
@@ -185,6 +187,7 @@ class UserNotificationTestCase(MyTestCase):
         env = builder.get_environ()
         req = Request(env)
         req.all_data = {}
+        req.User = User()
         r = uhandler.check_condition(
             {"g": {},
              "handler_def": {"conditions": {"logged_in_user": "admin"}},
@@ -261,6 +264,7 @@ class UserNotificationTestCase(MyTestCase):
         env = builder.get_environ()
         req = Request(env)
         req.all_data = {"user": "cornelius@realm1"}
+        req.User = User("cornelius", "realm1")
         resp = Response()
         resp.data = """{"result": {"value": false}}"""
         r = uhandler.check_condition(
@@ -287,6 +291,7 @@ class UserNotificationTestCase(MyTestCase):
         env = builder.get_environ()
         req = Request(env)
         req.all_data = {"user": "cornelius", "pass": "wrong"}
+        req.User = User("cornelius", self.realm1)
         # check the do action.
         g = FakeFlaskG()
         audit_object = FakeAudit()
