@@ -86,6 +86,7 @@ from privacyidea.api.register import register_blueprint
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.event import event
+from privacyidea.lib.cache import get_policy_cache, set_policy_cache
 
 
 log = logging.getLogger(__name__)
@@ -108,7 +109,12 @@ def before_request():
     # and contains the complete policy definition during the request.
     # This audit_object can be used in the postpolicy and prepolicy and it
     # can be passed to the innerpolicies.
-    g.policy_object = PolicyClass()
+    if get_policy_cache():
+        g.policy_object = get_policy_cache()
+    else:
+        g.policy_object = PolicyClass()
+        set_policy_cache(g.policy_object)
+
     g.audit_object = getAudit(current_app.config)
     g.event_config = EventConfiguration()
     # access_route contains the ip adresses of all clients, hops and proxies.
