@@ -192,6 +192,13 @@ You can test the RADIUS setup using a command like this::
 
 Read more about :ref:`radius_and_realms` or :ref:`rlm_perl_ini`.
 
+Microsoft NPS server
+--------------------
+You can also use the Microsoft Network Protection Server with privacyIDEA.
+A full featured integration guide can be found at the NetKnights webpage
+[#NPS]_.
+
+
 .. _simplesaml_plugin:
 
 simpleSAMLphp Plugin
@@ -456,3 +463,4 @@ Dokuwiki, Wordpress, Contao and Django at [#cornelinuxGithub]_.
 .. [#privacyideaGithub] https://github.com/privacyidea/privacyidea/tree/master/authmodules
 .. [#cornelinuxGithub] https://github.com/cornelinux?tab=repositories
 .. [#nginxPlugin] https://github.com/dhoffend/lua-nginx-privacyidea
+.. [#NPS] https://netknights.it/en/nps-2012-for-two-factor-authentication-with-privacyidea/
