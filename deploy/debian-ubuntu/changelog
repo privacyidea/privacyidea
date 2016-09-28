@@ -1,4 +1,4 @@
-python-privacyidea (2.15~dev9-1trusty) trusty; urgency=low
+python-privacyidea (2.15~dev12-1trusty) trusty; urgency=low
  
   * Build for xenial
   * remove python-cryptography in requirements.txt

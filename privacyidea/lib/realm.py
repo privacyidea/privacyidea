@@ -41,6 +41,8 @@ from ..models import (Realm,
                       Resolver,
                       db)
 from log import log_with
+from flask import g
+from privacyidea.lib.config import ConfigClass, save_config_timestamp
 import logging
 from privacyidea.lib.utils import sanity_name_check
 log = logging.getLogger(__name__)
@@ -59,7 +61,17 @@ def get_realms(realmname=""):
     :return: a dict with realm description like
     :rtype: dict
     '''
-    result = {}
+    # TODO: filter for realmname
+    # TODO: We need to check, if we need to update the Config Object. Either
+    # due to not existing or due to expired
+    g.config_object = ConfigClass()
+    realms = g.config_object.realm
+    if realmname:
+        if realmname in realms:
+            realms = {realmname: realms.get(realmname)}
+        else:
+            realms = {}
+    return realms
 
     if realmname:
         realm_q = Realm.query.filter_by(name=realmname)
@@ -122,7 +134,8 @@ def set_default_realm(default_realm=None):
     r = Realm.query.filter_by(default=True).update({"default": False})
     if default_realm:
         r = Realm.query.filter_by(name=default_realm).update({"default": True})
-    db.session.commit()
+    #db.session.commit()
+    save_config_timestamp()
     return r
 
 
@@ -136,11 +149,8 @@ def get_default_realm():
     @return: the realm name
     @rtype : string
     """
-    r = Realm.query.filter_by(default=True).first()
-    if r:
-        return r.name
-    else:
-        return None
+    g.config_object = ConfigClass()
+    return g.config_object.default_realm
 
 
 @log_with(log)
@@ -171,6 +181,7 @@ def delete_realm(realmname):
                 for key in realms:
                     set_default_realm(key)
 
+    save_config_timestamp()
     return ret
 
 
@@ -239,4 +250,5 @@ def set_realm(realm, resolvers=None, priority=None):
         Realm.query.filter_by(name=realm).update({'default': True})
         db.session.commit()
 
+    save_config_timestamp()
     return (added, failed)

@@ -35,22 +35,164 @@ The code is tested in tests/test_lib_config
 
 import logging
 import inspect
-from flask import current_app
+from flask import current_app, g
 
 from .log import log_with
-from ..models import Config, db
+from ..models import Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP
 
 from .crypto import encryptPassword
 from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver
 from .machines.base import BaseMachineResolver
 from .caconnectors.localca import BaseCAConnector
-from datetime import datetime
 import importlib
+import datetime
 
 log = logging.getLogger(__name__)
 
 ENCODING = 'utf-8'
+
+
+class Singleton(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        else:
+            # If the singleton already exist, we check in the timestamp in
+            # the database if we need to reread the configuration from the
+            # database.
+            log.debug("The singleton {0!s} already exists.".format(cls))
+            if hasattr(cls._instances[cls], "reload_from_db"):
+                cls._instances[cls].reload_from_db()
+
+        return cls._instances[cls]
+
+
+class ConfigClass(object):
+    """
+    The Config_Object will contain all database configuration of system
+    config, resolvers and realm.
+    It will be created at the beginning of the request and is supposed to stay
+    alive unchanged during the request.
+    """
+    __metaclass__ = Singleton
+
+    def __init__(self):
+        """
+        Create a config object from the whole database, tables config,
+        resolver and realm.
+        """
+        self.config = {}
+        self.resolver = {}
+        self.realm = {}
+        self.default_realm = None
+        self.timestamp = None
+        self.reload_from_db()
+
+    def reload_from_db(self):
+        """
+        Read the timestamp from the database. If the timestamp is newer than
+        the internal timestamp, then read the complete data
+        :return:
+        """
+        if not self.timestamp or \
+            self.timestamp + datetime.timedelta(seconds=current_app.config.get(
+                "PI_CHECK_RELOAD_CONFIG", 0)) < datetime.datetime.now():
+
+            timestamp = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
+            if not (self.timestamp and timestamp) or \
+                    (timestamp and
+                             timestamp.Value >= self.timestamp.strftime("%s")):
+                self.config = {}
+                self.resolver = {}
+                self.realm = {}
+                self.default_realm = None
+                log.debug("timestamp in DB newer. We need to reread config from "
+                          "DB.")
+                for sysconf in Config.query.all():
+                    self.config[sysconf.Key] = {
+                        "Value": sysconf.Value,
+                        "Type": sysconf.Type,
+                        "Description": sysconf.Description}
+                for resolver in Resolver.query.all():
+                    self.resolver[resolver.name] = {"type": resolver.rtype,
+                                                    "resolvername": resolver.name}
+                    data = {}
+                    for rconf in resolver.config_list:
+                        if rconf.Type == "password":
+                            value = decryptPassword(rconf.Value)
+                        else:
+                            value = rconf.Value
+                        data[rconf.Key] = value
+                    self.resolver[resolver.name]["data"] = data
+
+                for realm in Realm.query.all():
+                    if realm.default:
+                        self.default_realm = realm.name
+                    self.realm[realm.name] = {"option": realm.option,
+                                              "default": realm.default}
+                    self.realm[realm.name]["resolver"] = [
+                        {"priority": x.priority,
+                         "name": x.resolver.name,
+                         "type": x.resolver.rtype} for x in
+                         realm.resolver_list
+                    ]
+            self.timestamp = datetime.datetime.now()
+
+    def get_config(self, key=None, default=None, role="admin",
+                   return_bool=False):
+        """
+        :param key: A key to retrieve
+        :type key: string
+        :param default: The default value, if it does not exist in the database
+        :param role: The role which wants to retrieve the system config. Can be
+            "admin" or "public". If "public", only values with type="public"
+            are returned.
+        :type role: string
+        :param return_bool: If the a boolean value should be returned. Returns
+            True if value is "True", "true", 1, "1", True...
+        :return: If key is None, then a dictionary is returned. If a certain key
+            is given a string/bool is returned.
+        """
+        default_true_keys = [SYSCONF.PREPENDPIN, SYSCONF.SPLITATSIGN,
+                             SYSCONF.INCFAILCOUNTER, SYSCONF.RETURNSAML]
+
+        r_config = {}
+
+        # reduce the dictionary to only public keys!
+        reduced_config = {}
+        for ckey, cvalue in self.config.iteritems():
+            if role == "admin" or cvalue.get("Type") == "public":
+                reduced_config[ckey] = self.config[ckey]
+        if not reduced_config and role=="admin":
+            reduced_config = self.config
+
+        for ckey, cvalue in reduced_config.iteritems():
+            if cvalue.get("Type") == "password":
+                # decrypt the password
+                r_config[ckey] = decryptPassword(cvalue.get("Value"))
+            else:
+                r_config[ckey] = cvalue.get("Value")
+
+        for t_key in default_true_keys:
+            if t_key not in r_config:
+                r_config[t_key] = "True"
+
+        if key:
+            # We only return a single key
+            r_config = r_config.get(key, default)
+
+        if return_bool:
+            if isinstance(r_config, bool):
+                pass
+            if isinstance(r_config, int):
+                r_config = r_config > 0
+            if isinstance(r_config, basestring):
+                r_config = r_config.lower() in ["true", "1"]
+
+        return r_config
 
 
 class SYSCONF(object):
@@ -61,13 +203,9 @@ class SYSCONF(object):
     INCFAILCOUNTER = "IncFailCountOnFalsePin"
     RETURNSAML = "ReturnSamlAttributes"
 
-#from flask.ext.cache import Cache
-#cache = Cache()
-
 
 #@cache.cached(key_prefix="allConfig")
 def get_privacyidea_config():
-    # timestamp = Config.query.filter_by(Key="privacyidea.timestamp").first()
     return get_from_config()
 
 
@@ -87,48 +225,9 @@ def get_from_config(key=None, default=None, role="admin", return_bool=False):
     :return: If key is None, then a dictionary is returned. If a certain key
         is given a string/bool is returned.
     """
-    default_true_keys = [SYSCONF.PREPENDPIN, SYSCONF.SPLITATSIGN,
-                         SYSCONF.INCFAILCOUNTER, SYSCONF.RETURNSAML]
-    sql_query = Config.query
-    if role != "admin":
-        # set the filter to get only public infos!
-        # We could match for "public", but matching for not "admin" seems to
-        # be safer
-        sql_query = sql_query.filter_by(Type="public")
-
-    if key:
-        sql_query = sql_query.filter_by(Key=key).first()
-        if sql_query:
-            rvalue = sql_query.Value
-            if sql_query.Type == "password":
-                rvalue = decryptPassword(rvalue)
-        else:
-            if key in default_true_keys:
-                rvalue = "True"
-            else:
-                rvalue = default
-    else:
-        rvalue = {}
-        sql_query.all()
-        for entry in sql_query:
-            value = entry.Value
-            if entry.Type == "password":
-                value = decryptPassword(value)
-            rvalue[entry.Key] = value
-        if role == "admin":
-            for tkey in default_true_keys:
-                if tkey not in rvalue:
-                    rvalue[tkey] = "True"
-
-    if return_bool:
-        if isinstance(rvalue, bool):
-            pass
-        if isinstance(rvalue, int):
-            rvalue = rvalue > 0
-        if isinstance(rvalue, basestring):
-            rvalue = rvalue.lower() in ["true", "1"]
-
-    return rvalue
+    g.config_object = ConfigClass()
+    return g.config_object.get_config(key=key, default=default, role=role,
+                                      return_bool=return_bool)
 
 
 #@cache.cached(key_prefix="resolver")
@@ -686,16 +785,26 @@ def set_privacyidea_config(key, value, typ="", desc=""):
         new_entry = Config(key, value, typ, desc)
         db.session.add(new_entry)
         ret = "insert"
-        
+
+    save_config_timestamp()
+    return ret
+
+
+def save_config_timestamp():
+    """
+    Save the new timestamp to the config database table
+    :return:
+    """
     # Do the timestamp
-    if Config.query.filter_by(Key="__timestamp__").count() > 0:
-        Config.query.filter_by(Key="__timestamp__")\
-            .update({'Value': datetime.now()})
+    if Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).count() > 0:
+        Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP)\
+            .update({'Value': datetime.datetime.now().strftime("%s")})
     else:
-        new_timestamp = Config("__timestamp__", datetime.now())
+        new_timestamp = Config(PRIVACYIDEA_TIMESTAMP,
+                               datetime.datetime.now().strftime("%s"),
+                               Description="config timestamp. last changed.")
         db.session.add(new_timestamp)
     db.session.commit()
-    return ret
 
 
 def delete_privacyidea_config(key):
@@ -709,6 +818,7 @@ def delete_privacyidea_config(key):
         db.session.delete(q)
         db.session.commit()
         ret = True
+        save_config_timestamp()
     return ret
 
 
@@ -733,6 +843,7 @@ def get_prepend_pin():
     :return: True or False
     :rtype: bool
     """
+    from flask import g
     r = get_from_config(key="PrependPin", default=False, return_bool=True)
     return r
 

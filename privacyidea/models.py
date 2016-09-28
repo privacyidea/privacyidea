@@ -25,8 +25,7 @@
 #
 import binascii
 import logging
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from json import loads, dumps
 from flask.ext.sqlalchemy import SQLAlchemy
 from .lib.crypto import (encrypt,
@@ -42,6 +41,7 @@ from .lib.log import log_with
 log = logging.getLogger(__name__)
 
 implicit_returning = True
+PRIVACYIDEA_TIMESTAMP = "__timestamp__"
 
 db = SQLAlchemy()
 
@@ -828,7 +828,7 @@ class Resolver(MethodsMixin, db.Model):
     rtype = db.Column(db.Unicode(255), default=u"",
                       nullable=False)
     rconfig = db.relationship('ResolverConfig',
-                              lazy='dynamic',
+                              lazy='joined',
                               backref='resolver')
     
     def __init__(self, name, rtype):

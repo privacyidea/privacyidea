@@ -78,6 +78,7 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
                                             no_detail_on_success, autoassign,
                                             offline_info)
 from privacyidea.lib.policy import PolicyClass
+from privacyidea.lib.config import ConfigClass
 from privacyidea.lib.event import EventConfiguration
 import logging
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
@@ -86,7 +87,8 @@ from privacyidea.api.register import register_blueprint
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.event import event
-from privacyidea.lib.cache import get_policy_cache, set_policy_cache
+from privacyidea.lib.cache import (get_policy_cache, set_policy_cache,
+                                   get_config_cache, set_config_cache)
 
 
 log = logging.getLogger(__name__)
@@ -101,6 +103,7 @@ def before_request():
     """
     This is executed before the request
     """
+    g.config_object = ConfigClass()
     request.all_data = get_all_params(request.values, request.data)
     request.User = get_user_from_param(request.all_data)
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
@@ -109,17 +112,13 @@ def before_request():
     # and contains the complete policy definition during the request.
     # This audit_object can be used in the postpolicy and prepolicy and it
     # can be passed to the innerpolicies.
-    if get_policy_cache():
-        g.policy_object = get_policy_cache()
-    else:
-        g.policy_object = PolicyClass()
-        set_policy_cache(g.policy_object)
+
+    g.policy_object = PolicyClass()
 
     g.audit_object = getAudit(current_app.config)
     g.event_config = EventConfiguration()
-    # access_route contains the ip adresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request,
-                                get_from_config(SYSCONF.OVERRIDECLIENT))
+    # access_route contains the ip addresses of all clients, hops and proxies.
+    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
     g.audit_object.log({"success": False,
                         "action_detail": "",
                         "client": g.client_ip,

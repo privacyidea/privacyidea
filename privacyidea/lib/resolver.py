@@ -54,6 +54,8 @@ from .error import ConfigAdminError
 from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
 from privacyidea.lib.utils import sanity_name_check
+from flask import g
+from privacyidea.lib.config import ConfigClass, save_config_timestamp
 #from privacyidea.lib.cache import cache
 
 log = logging.getLogger(__name__)
@@ -157,6 +159,7 @@ def save_resolver(params):
                        Value=value,
                        Type=types.get(key, ""),
                        Description=desc.get(key, "")).save()
+    save_config_timestamp()
     return resolver_id
 
 
@@ -176,6 +179,38 @@ def get_resolver_list(filter_resolver_type=None,
     :type editable: bool
     :rtype: Dictionary of the resolvers and their configuration
     """
+    # TODO: We need to check if we need to update the config object
+    g.config_object = ConfigClass()
+    resolvers = g.config_object.resolver
+    if filter_resolver_type:
+        reduced_resolvers = {}
+        for reso_name, reso in resolvers.iteritems():
+            if reso.get("type") == filter_resolver_type:
+                reduced_resolvers[reso_name] = resolvers[reso_name]
+        resolvers = reduced_resolvers
+    if filter_resolver_name:
+        reduced_resolvers = {}
+        for reso_name in resolvers:
+            if reso_name.lower() == filter_resolver_name.lower():
+                reduced_resolvers[reso_name] = resolvers[reso_name]
+        resolvers = reduced_resolvers
+    if editable is not None:
+        reduced_resolvers = {}
+        if editable is True:
+            for reso_name, reso in resolvers.iteritems():
+                if reso["data"].get("Editable") or reso["data"].get(
+                        "EDITABLE"):
+                    reduced_resolvers[reso_name] = resolvers[reso_name]
+        elif editable is False:
+            for reso_name, reso in resolvers.iteritems():
+                if not (reso["data"].get("Editable") or reso["data"].get(
+                        "EDITABLE")):
+                    reduced_resolvers[reso_name] = resolvers[reso_name]
+        resolvers = reduced_resolvers
+
+    return resolvers
+    # TODO: Implement the filtering!
+
     Resolvers = {}
     if filter_resolver_name:
         resolvers = Resolver.query\
@@ -232,6 +267,7 @@ def delete_resolver(resolvername):
                                    "realm %r." % (resolvername, realmname))
         reso.delete()
         ret = reso.id
+    save_config_timestamp()
     return ret
 
 
