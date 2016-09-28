@@ -675,17 +675,30 @@ class Config(db.Model):
 
     def __unicode__(self):
         return "<{0!s} ({1!s})>".format(self.Key, self.Type)
-    
+
     def save(self):
         db.session.add(self)
+        save_config_timestamp()
         db.session.commit()
         return self.Key
-    
+
     def delete(self):
         ret = self.Key
         db.session.delete(self)
+        save_config_timestamp()
         db.session.commit()
         return ret
+
+
+def save_config_timestamp():
+    if Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).count() > 0:
+        Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP) \
+            .update({'Value': datetime.now().strftime("%s")})
+    else:
+        new_timestamp = Config(PRIVACYIDEA_TIMESTAMP,
+                               datetime.now().strftime("%s"),
+                               Description="config timestamp. last changed.")
+        db.session.add(new_timestamp)
 
 
 class Realm(MethodsMixin, db.Model):
@@ -715,10 +728,18 @@ class Realm(MethodsMixin, db.Model):
         db.session.query(ResolverRealm)\
                   .filter(ResolverRealm.realm_id == ret)\
                   .delete()
-        # delete the token
+        # delete the realm
         db.session.delete(self)
+        save_config_timestamp()
         db.session.commit()
         return ret
+
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+        save_config_timestamp()
+        return self.id
+
 
 
 class CAConnector(MethodsMixin, db.Model):
@@ -842,8 +863,15 @@ class Resolver(MethodsMixin, db.Model):
         db.session.query(ResolverConfig)\
                   .filter(ResolverConfig.resolver_id == ret)\
                   .delete()
+        save_config_timestamp()
         db.session.commit()
         return ret
+
+    def save(self):
+        db.session.add(self)
+        save_config_timestamp()
+        db.session.commit()
+        return self.id
 
 
 class ResolverConfig(db.Model):
@@ -904,6 +932,7 @@ class ResolverConfig(db.Model):
                                                      'Descrip'
                                                      'tion': self.Description})
             ret = c.id
+        save_config_timestamp()
         db.session.commit()
         return ret
 
@@ -954,6 +983,19 @@ class ResolverRealm(MethodsMixin, db.Model):
             self.realm_id = Realm.query\
                                  .filter_by(name=realm_name)\
                                  .first().id
+
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+        save_config_timestamp()
+        return self.id
+
+    def delete(self):
+        ret = self.id
+        db.session.delete(self)
+        db.session.commit()
+        save_config_timestamp()
+        return ret
     
 
 class TokenRealm(MethodsMixin, db.Model):

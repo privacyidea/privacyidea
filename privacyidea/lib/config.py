@@ -45,6 +45,7 @@ from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver
 from .machines.base import BaseMachineResolver
 from .caconnectors.localca import BaseCAConnector
+from datetime import datetime
 import importlib
 import datetime
 
@@ -100,11 +101,11 @@ class ConfigClass(object):
         if not self.timestamp or \
             self.timestamp + datetime.timedelta(seconds=current_app.config.get(
                 "PI_CHECK_RELOAD_CONFIG", 0)) < datetime.datetime.now():
-
-            timestamp = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
-            if not (self.timestamp and timestamp) or \
-                    (timestamp and
-                             timestamp.Value >= self.timestamp.strftime("%s")):
+            db_ts = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
+            if self.timestamp:
+                internal_timestamp = self.timestamp.strftime("%s")
+            if not (self.timestamp and db_ts) or \
+                    (db_ts and db_ts.Value >= internal_timestamp):
                 self.config = {}
                 self.resolver = {}
                 self.realm = {}
@@ -206,6 +207,7 @@ class SYSCONF(object):
 
 #@cache.cached(key_prefix="allConfig")
 def get_privacyidea_config():
+    # timestamp = Config.query.filter_by(Key="privacyidea.timestamp").first()
     return get_from_config()
 
 
@@ -782,29 +784,14 @@ def set_privacyidea_config(key, value, typ="", desc=""):
         Config.query.filter_by(Key=key).update(data)
         ret = "update"
     else:
-        new_entry = Config(key, value, typ, desc)
-        db.session.add(new_entry)
+        #new_entry = Config(key, value, typ, desc)
+        Config(key, value, typ, desc).save()
+        #db.session.add(new_entry)
         ret = "insert"
 
-    save_config_timestamp()
+    #save_config_timestamp()
+    #db.session.commit()
     return ret
-
-
-def save_config_timestamp():
-    """
-    Save the new timestamp to the config database table
-    :return:
-    """
-    # Do the timestamp
-    if Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).count() > 0:
-        Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP)\
-            .update({'Value': datetime.datetime.now().strftime("%s")})
-    else:
-        new_timestamp = Config(PRIVACYIDEA_TIMESTAMP,
-                               datetime.datetime.now().strftime("%s"),
-                               Description="config timestamp. last changed.")
-        db.session.add(new_timestamp)
-    db.session.commit()
 
 
 def delete_privacyidea_config(key):
@@ -813,12 +800,13 @@ def delete_privacyidea_config(key):
     """
     ret = 0
     # We need to check, if the value already exist
-    q = Config.query.filter_by(Key=key).first()
-    if q:
-        db.session.delete(q)
-        db.session.commit()
+    if Config.query.filter_by(Key=key).first().delete():
         ret = True
-        save_config_timestamp()
+    #if q:
+    #    db.session.delete(q)
+    #    db.session.commit()
+    #    ret = True
+    #    save_config_timestamp()
     return ret
 
 

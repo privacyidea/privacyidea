@@ -35,9 +35,11 @@ class APIConfigTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertTrue('"key1": "insert"' in res.data, res.data)
-            self.assertTrue('"key2": "insert"' in res.data, res.data)
-            self.assertTrue('"key3": "insert"' in res.data, res.data)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            self.assertEqual(value.get("key1"), "insert")
+            self.assertEqual(value.get("key2"), "insert")
+            self.assertEqual(value.get("key3"), "insert")
 
     def test_02_update_config(self):
         with self.app.test_request_context('/system/setConfig',

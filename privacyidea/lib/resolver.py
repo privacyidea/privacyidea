@@ -55,7 +55,7 @@ from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
 from privacyidea.lib.utils import sanity_name_check
 from flask import g
-from privacyidea.lib.config import ConfigClass, save_config_timestamp
+from privacyidea.lib.config import ConfigClass
 #from privacyidea.lib.cache import cache
 
 log = logging.getLogger(__name__)
@@ -159,7 +159,6 @@ def save_resolver(params):
                        Value=value,
                        Type=types.get(key, ""),
                        Description=desc.get(key, "")).save()
-    save_config_timestamp()
     return resolver_id
 
 
@@ -267,7 +266,6 @@ def delete_resolver(resolvername):
                                    "realm %r." % (resolvername, realmname))
         reso.delete()
         ret = reso.id
-    save_config_timestamp()
     return ret
 
 

@@ -38,11 +38,10 @@ in tests/test_lib_realm.py
 '''
 from ..models import (Realm,
                       ResolverRealm,
-                      Resolver,
-                      db)
+                      Resolver)
 from log import log_with
 from flask import g
-from privacyidea.lib.config import ConfigClass, save_config_timestamp
+from privacyidea.lib.config import ConfigClass
 import logging
 from privacyidea.lib.utils import sanity_name_check
 log = logging.getLogger(__name__)
@@ -134,8 +133,7 @@ def set_default_realm(default_realm=None):
     r = Realm.query.filter_by(default=True).update({"default": False})
     if default_realm:
         r = Realm.query.filter_by(name=default_realm).update({"default": True})
-    #db.session.commit()
-    save_config_timestamp()
+    db.session.commit()
     return r
 
 
@@ -181,7 +179,6 @@ def delete_realm(realmname):
                 for key in realms:
                     set_default_realm(key)
 
-    save_config_timestamp()
     return ret
 
 
@@ -219,7 +216,7 @@ def set_realm(realm, resolvers=None, priority=None):
     nameExp = "^[A-Za-z0-9_\-\.]*$"
     sanity_name_check(realm, nameExp)
 
-    # get / create realm
+    # create new realm if it does not exist
     R = Realm.query.filter_by(name=realm).first()
     if not R:
         R = Realm(realm)
@@ -230,25 +227,23 @@ def set_realm(realm, resolvers=None, priority=None):
         # delete old resolvers
         oldResos = ResolverRealm.query.filter_by(realm_id=R.id)
         for oldReso in oldResos:
-            db.session.delete(oldReso)
+            oldReso.delete()
         
     # assign the resolvers
     for reso_name in resolvers:
         reso_name = reso_name.strip()
         Reso = Resolver.query.filter_by(name=reso_name).first()
         if Reso:
-            ResRealm = ResolverRealm(Reso.id, R.id,
-                                     priority=priority.get(reso_name))
-            db.session.add(ResRealm)
+            ResolverRealm(Reso.id, R.id,
+                          priority=priority.get(reso_name)).save()
             added.append(reso_name)
         else:
             failed.append(reso_name)
-    db.session.commit() 
+
     
     # if this is the first realm, make it the default
     if Realm.query.count() == 1:
         Realm.query.filter_by(name=realm).update({'default': True})
-        db.session.commit()
 
-    save_config_timestamp()
+
     return (added, failed)
