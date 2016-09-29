@@ -89,8 +89,6 @@ from privacyidea.api.register import register_blueprint
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.event import event
-from privacyidea.lib.cache import (get_policy_cache, set_policy_cache,
-                                   get_config_cache, set_config_cache)
 
 
 log = logging.getLogger(__name__)

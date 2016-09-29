@@ -25,7 +25,8 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             no_detail_on_fail, autoassign,
                                             offline_info, sign_response,
                                             get_webui_settings,
-                                            save_pin_change)
+                                            save_pin_change,
+                                            add_user_detail_to_response)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token)
 from privacyidea.lib.user import User
@@ -1058,6 +1059,47 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         self.assertTrue("detail" in jresult, jresult)
 
         delete_policy("pol2")
+
+    def test_04_add_user_in_response(self):
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius",
+                                       "pass": "test"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        self.setUp_user_realms()
+        req.User = User("autoassignuser", self.realm1)
+        # The response contains the token type SPASS
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": True},
+               "version": "privacyIDEA test",
+               "id": 1,
+               "detail": {"message": "matching 1 tokens",
+                          "serial": "HOTP123456",
+                          "type": "hotp"}}
+        resp = Response(json.dumps(res))
+
+        g.policy_object = PolicyClass()
+
+        new_response = add_user_detail_to_response(req, resp)
+        jresult = json.loads(new_response.data)
+        self.assertTrue("user" not in jresult.get("detail"), jresult)
+
+        # A successful get a user added
+        # Set a policy, that does not allow the detail on success
+        set_policy(name="pol_add_user",
+                   scope=SCOPE.AUTHZ,
+                   action=ACTION.ADDUSERINRESPONSE, client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+
+        new_response = add_user_detail_to_response(req, resp)
+        jresult = json.loads(new_response.data)
+        self.assertTrue("user" in jresult.get("detail"), jresult)
+        delete_policy("pol_add_user")
 
     def test_05_autoassign_any_pin(self):
         # init a token, that does has no uwser
