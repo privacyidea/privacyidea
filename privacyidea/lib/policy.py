@@ -209,6 +209,7 @@ class ACTION(object):
     MAXTOKENREALM = "max_token_per_realm"
     MAXTOKENUSER = "max_token_per_user"
     NODETAILSUCCESS = "no_detail_on_success"
+    ADDUSERINRESPONSE = "add_user_in_response"
     NODETAILFAIL = "no_detail_on_fail"
     OTPPIN = "otppin"
     OTPPINRANDOM = "otp_pin_random"
@@ -1235,6 +1236,11 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _('In case of failed authentication additional '
                           'no detail information will be returned.')},
+            ACTION.ADDUSERINRESPONSE: {
+                'type': 'bool',
+                'desc': _('In case of successful authentication user data '
+                          'will be added in the detail branch of the '
+                          'authentication response.')},
             ACTION.APIKEY: {
                 'type': 'bool',
                 'desc': _('The sending of an API Auth Key is required during'

@@ -77,7 +77,8 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
                                             no_detail_on_fail,
                                             no_detail_on_success, autoassign,
-                                            offline_info)
+                                            offline_info,
+                                            add_user_detail_to_response)
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.event import EventConfiguration
 import logging
@@ -146,6 +147,7 @@ def after_request(response):
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
 @postpolicy(no_detail_on_fail, request=request)
 @postpolicy(no_detail_on_success, request=request)
+@postpolicy(add_user_detail_to_response, request=request)
 @postpolicy(offline_info, request=request)
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
@@ -243,6 +245,7 @@ def check():
 @validate_blueprint.route('/samlcheck', methods=['POST', 'GET'])
 @postpolicy(no_detail_on_fail, request=request)
 @postpolicy(no_detail_on_success, request=request)
+@postpolicy(add_user_detail_to_response, request=request)
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)

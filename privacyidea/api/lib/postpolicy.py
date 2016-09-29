@@ -265,6 +265,32 @@ def no_detail_on_success(request, response):
     return response
 
 
+def add_user_detail_to_response(request, response):
+    """
+    This policy decorated is used in the AUTHZ scope.
+    If the boolean value add_user_in_response is set,
+    the details will contain a dictionary "user" with all user details.
+
+    :param request:
+    :param response:
+    :return:
+    """
+    content = json.loads(response.data)
+    policy_object = g.policy_object
+
+    detailPol = policy_object.get_policies(action=ACTION.ADDUSERINRESPONSE,
+                                           scope=SCOPE.AUTHZ,
+                                           client=g.client_ip,
+                                           active=True)
+
+    if detailPol and content.get("result", {}).get("value") and request.User:
+        # The policy was set, we need to add the user details
+        content["detail"]["user"] = request.User.info
+        response.data = json.dumps(content)
+
+    return response
+
+
 def no_detail_on_fail(request, response):
     """
     This policy function is used with the AUTHZ scope.
