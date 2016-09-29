@@ -129,11 +129,13 @@ def set_default_realm(default_realm=None):
     :return: success or not
     :rtype: boolean
     """
-    # delete the old entry
     r = Realm.query.filter_by(default=True).first()
-    r.default = False
-    r.update()
+    if r:
+        # delete the old entry
+        r.default = False
+        r.update()
     if default_realm:
+        # set the new realm as default realm
         r = Realm.query.filter_by(name=default_realm).first()
         r.default = True
         r.update()

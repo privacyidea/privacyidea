@@ -19,4 +19,5 @@ Frequently Asked Questions
    resolver
    crypto-considerations
    policies
+   performance
 
