@@ -16,6 +16,7 @@ class Config(object):
     PI_LOGFILE = "privacyidea.log"
     PI_LOGLEVEL = logging.INFO
     PI_LOGLEVEL = 9
+    CACHE_TYPE = "simple"
     # PI_AUDIT_SQL_URI = sqlite://
 
 
@@ -40,6 +41,7 @@ class TestingConfig(Config):
     PI_ENCFILE_ENC = "tests/testdata/enckey.enc"
     PI_LOGLEVEL = logging.DEBUG
     PI_GNUPG_HOME = "tests/testdata/gpg"
+    CACHE_TYPE = "None"
 
 
 class ProductionConfig(Config):

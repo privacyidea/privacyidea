@@ -35,7 +35,7 @@ from flask import current_app
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.api.auth import (user_required, admin_required)
-from privacyidea.lib.config import get_from_config, SYSCONF
+from privacyidea.lib.config import get_from_config, SYSCONF, ConfigClass
 from .resolver import resolver_blueprint
 from .policy import policy_blueprint
 from .realm import realm_blueprint
@@ -101,7 +101,9 @@ def before_request():
     """
     # remove session from param and gather all parameters, either
     # from the Form data or from JSON in the request body.
+    g.config_object = ConfigClass()
     request.all_data = get_all_params(request.values, request.data)
+    request.User = get_user_from_param(request.all_data)
 
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)

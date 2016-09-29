@@ -153,7 +153,8 @@ class UserNotificationEventHandler(BaseEventHandler):
 
     @staticmethod
     def _get_user(request):
-        user = get_user_from_param(request.all_data)
+        #user = get_user_from_param(request.all_data)
+        user = request.User
         serial = request.all_data.get("serial")
         if user.is_empty() and serial:
             # maybe the user is empty, but a serial was passed.

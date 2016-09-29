@@ -38,9 +38,10 @@ in tests/test_lib_realm.py
 '''
 from ..models import (Realm,
                       ResolverRealm,
-                      Resolver,
-                      db)
+                      Resolver)
 from log import log_with
+from flask import g
+from privacyidea.lib.config import ConfigClass
 import logging
 from privacyidea.lib.utils import sanity_name_check
 log = logging.getLogger(__name__)
@@ -59,7 +60,17 @@ def get_realms(realmname=""):
     :return: a dict with realm description like
     :rtype: dict
     '''
-    result = {}
+    # TODO: filter for realmname
+    # TODO: We need to check, if we need to update the Config Object. Either
+    # due to not existing or due to expired
+    g.config_object = ConfigClass()
+    realms = g.config_object.realm
+    if realmname:
+        if realmname in realms:
+            realms = {realmname: realms.get(realmname)}
+        else:
+            realms = {}
+    return realms
 
     if realmname:
         realm_q = Realm.query.filter_by(name=realmname)
@@ -118,12 +129,17 @@ def set_default_realm(default_realm=None):
     :return: success or not
     :rtype: boolean
     """
-    # delete the old entry
-    r = Realm.query.filter_by(default=True).update({"default": False})
+    r = Realm.query.filter_by(default=True).first()
+    if r:
+        # delete the old entry
+        r.default = False
+        r.update()
     if default_realm:
-        r = Realm.query.filter_by(name=default_realm).update({"default": True})
-    db.session.commit()
-    return r
+        # set the new realm as default realm
+        r = Realm.query.filter_by(name=default_realm).first()
+        r.default = True
+        r.update()
+    return r.id
 
 
 @log_with(log)
@@ -136,11 +152,8 @@ def get_default_realm():
     @return: the realm name
     @rtype : string
     """
-    r = Realm.query.filter_by(default=True).first()
-    if r:
-        return r.name
-    else:
-        return None
+    g.config_object = ConfigClass()
+    return g.config_object.default_realm
 
 
 @log_with(log)
@@ -208,7 +221,7 @@ def set_realm(realm, resolvers=None, priority=None):
     nameExp = "^[A-Za-z0-9_\-\.]*$"
     sanity_name_check(realm, nameExp)
 
-    # get / create realm
+    # create new realm if it does not exist
     R = Realm.query.filter_by(name=realm).first()
     if not R:
         R = Realm(realm)
@@ -219,24 +232,23 @@ def set_realm(realm, resolvers=None, priority=None):
         # delete old resolvers
         oldResos = ResolverRealm.query.filter_by(realm_id=R.id)
         for oldReso in oldResos:
-            db.session.delete(oldReso)
+            oldReso.delete()
         
     # assign the resolvers
     for reso_name in resolvers:
         reso_name = reso_name.strip()
         Reso = Resolver.query.filter_by(name=reso_name).first()
         if Reso:
-            ResRealm = ResolverRealm(Reso.id, R.id,
-                                     priority=priority.get(reso_name))
-            db.session.add(ResRealm)
+            ResolverRealm(Reso.id, R.id,
+                          priority=priority.get(reso_name)).save()
             added.append(reso_name)
         else:
             failed.append(reso_name)
-    db.session.commit() 
+
     
     # if this is the first realm, make it the default
     if Realm.query.count() == 1:
         Realm.query.filter_by(name=realm).update({'default': True})
-        db.session.commit()
+
 
     return (added, failed)

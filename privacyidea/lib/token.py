@@ -1976,7 +1976,6 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
         message_list = ["matching {0:d} tokens".format(len(valid_token_list))]
         # write serial numbers or something to audit log
         for token_obj in valid_token_list:
-            token_obj.inc_count_auth()
             token_obj.inc_count_auth_success()
             # Check if the max auth is succeeded
             if token_obj.check_all(message_list):
@@ -2039,7 +2038,6 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                                                     options=options) >= 0:
                 # OTP matches
                 res = True
-                tokenobject.inc_count_auth()
                 tokenobject.inc_count_auth_success()
                 reply_dict["message"] = "Found matching challenge"
                 reply_dict["serial"] = challenge_response_token_list[0].token.serial

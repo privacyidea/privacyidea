@@ -141,14 +141,18 @@ from netaddr import IPNetwork
 from gettext import gettext as _
 
 import logging
-from ..models import (Policy, db)
-from privacyidea.lib.config import (get_token_classes, get_token_types)
+from ..models import (Policy, Config, PRIVACYIDEA_TIMESTAMP)
+from flask import current_app
+from privacyidea.lib.config import (get_token_classes, get_token_types,
+                                    Singleton)
 from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import check_time_in_range
+import datetime
+
 log = logging.getLogger(__name__)
 
 optional = True
@@ -304,6 +308,7 @@ class PolicyClass(object):
     It will be created at the beginning of the request and is supposed to stay
     alive unchanged during the request.
     """
+    __metaclass__ = Singleton
 
     def __init__(self):
         """
@@ -311,11 +316,32 @@ class PolicyClass(object):
 
         """
         self.policies = []
+        self.timestamp = None
         # read the policies from the database and store it in the object
-        policies = Policy.query.all()
-        for pol in policies:
-            # read each policy
-            self.policies.append(pol.get())
+        self.reload_from_db()
+
+    def reload_from_db(self):
+        """
+        Read the timestamp from the database. If the timestamp is newer than
+        the internal timestamp, then read the complete data
+        :return:
+        """
+        if not self.timestamp or self.timestamp + datetime.timedelta(
+                seconds=current_app.config.get(
+                    "PI_CHECK_RELOAD_CONFIG", 0)) < datetime.datetime.now():
+            db_ts = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
+            if self.timestamp:
+                internal_timestamp = self.timestamp.strftime("%s")
+            if not (self.timestamp and db_ts) or \
+                    (db_ts and db_ts.Value >= internal_timestamp):
+                self.policies = []
+                log.debug("timestamp in DB newer. We need to reread policies "
+                          "from DB.")
+                policies = Policy.query.all()
+                for pol in policies:
+                    # read each policy
+                    self.policies.append(pol.get())
+            self.timestamp = datetime.datetime.now()
 
     @log_with(log)
     def get_policies(self, name=None, scope=None, realm=None, active=None,
@@ -657,10 +683,34 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         resolver = ", ".join(resolver)
     if type(client) == list:
         client = ", ".join(client)
-    p = Policy(name, action=action, scope=scope, realm=realm,
+    p1 = Policy.query.filter_by(name=name).first()
+    if p1:
+        # The policy already exist, we need to update
+        if action is not None:
+            p1.action = action
+        if scope is not None:
+            p1.scope = scope
+        if realm is not None:
+            p1.realm = realm
+        if adminrealm is not None:
+            p1.adminrealm = adminrealm
+        if resolver is not None:
+            p1.resolver = resolver
+        if user is not None:
+            p1.user = user
+        if client is not None:
+            p1.client = client
+        if time is not None:
+            p1.time = time
+        p1.active = active
+        p1.update()
+        ret = p1.id
+    else:
+        # Create a new policy
+        ret = Policy(name, action=action, scope=scope, realm=realm,
                user=user, time=time, client=client, active=active,
                resolver=resolver, adminrealm=adminrealm).save()
-    return p
+    return ret
 
 
 @log_with(log)
@@ -689,7 +739,6 @@ def delete_policy(name):
     """
     p = Policy.query.filter_by(name=name)
     res = p.delete()
-    db.session.commit()
     return res
 
 

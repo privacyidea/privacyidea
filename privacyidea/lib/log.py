@@ -131,9 +131,11 @@ class log_with(object):
         :return: function
         """
         # set logger if it was not set earlier
-        if not self.logger:
-            logging.basicConfig()
-            self.logger = logging.getLogger(func.__module__)
+        # TODO: Remove me
+        # CKO: Performance: I think we always set the logger!
+        #if not self.logger:
+        #    logging.basicConfig()
+        #    self.logger = logging.getLogger(func.__module__)
             
         @functools.wraps(func)
         def log_wrapper(*args, **kwds):
@@ -145,27 +147,32 @@ class log_with(object):
             :param kwds: The keyword arguemnts
             :return: The wrapped function
             """
-            try:
-                # Hide specific arguments or keyword arguments
-                log_args = deepcopy(args)
-                log_kwds = deepcopy(kwds)
-                level = self.logger.getEffectiveLevel()
-                # Check if we should not do the password logging.
-                # I.e. we only do password logging if log_level < 10.
-                if level != 0 and level >= 10:
-                    for arg_index in self.hide_args:
-                        log_args[arg_index] = "HIDDEN"
-                    for keyword in self.hide_kwargs:
-                        log_kwds[keyword] = "HIDDEN"
-                    for k, v in self.hide_args_keywords.items():
-                        for keyword in v:
-                            if keyword in args[k]:
-                                log_args[k][keyword] = "HIDDEN"
-            except Exception:
-                # Probably the deepcopy fails, due to special objects in the
-                # args
-                log_args = args
-                log_kwds = kwds
+            log_args = args
+            log_kwds = kwds
+            if self.hide_args or self.hide_kwargs or \
+                    self.hide_args_keywords:
+                try:
+                    level = self.logger.getEffectiveLevel()
+                    # Check if we should not do the password logging.
+                    # I.e. we only do password logging if log_level < 10.
+                    if level != 0 and level >= 10:
+                        # Hide specific arguments or keyword arguments
+                        log_args = deepcopy(args)
+                        log_kwds = deepcopy(kwds)
+                        for arg_index in self.hide_args:
+                            log_args[arg_index] = "HIDDEN"
+                        for keyword in self.hide_kwargs:
+                            log_kwds[keyword] = "HIDDEN"
+                        for k, v in self.hide_args_keywords.items():
+                            for keyword in v:
+                                if keyword in args[k]:
+                                    log_args[k][keyword] = "HIDDEN"
+                except Exception:
+                    # Probably the deepcopy fails, due to special objects in the
+                    # args But as we are asked to hide a parameter, we hide
+                    # them all!
+                    log_args = ()
+                    log_kwds = {}
             try:
                 if self.log_entry:
                     self.logger.debug(self.ENTRY_MESSAGE.format(

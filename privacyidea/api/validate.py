@@ -80,6 +80,7 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
                                             offline_info,
                                             add_user_detail_to_response)
 from privacyidea.lib.policy import PolicyClass
+from privacyidea.lib.config import ConfigClass
 from privacyidea.lib.event import EventConfiguration
 import logging
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
@@ -88,6 +89,8 @@ from privacyidea.api.register import register_blueprint
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.event import event
+from privacyidea.lib.cache import (get_policy_cache, set_policy_cache,
+                                   get_config_cache, set_config_cache)
 
 
 log = logging.getLogger(__name__)
@@ -102,19 +105,22 @@ def before_request():
     """
     This is executed before the request
     """
+    g.config_object = ConfigClass()
     request.all_data = get_all_params(request.values, request.data)
+    request.User = get_user_from_param(request.all_data)
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
                          request.host
     # Create a policy_object, that reads the database audit settings
     # and contains the complete policy definition during the request.
     # This audit_object can be used in the postpolicy and prepolicy and it
     # can be passed to the innerpolicies.
+
     g.policy_object = PolicyClass()
+
     g.audit_object = getAudit(current_app.config)
     g.event_config = EventConfiguration()
-    # access_route contains the ip adresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request,
-                                get_from_config(SYSCONF.OVERRIDECLIENT))
+    # access_route contains the ip addresses of all clients, hops and proxies.
+    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
     g.audit_object.log({"success": False,
                         "action_detail": "",
                         "client": g.client_ip,
@@ -212,7 +218,8 @@ def check():
               "version": "privacyIDEA unknown"
             }
     """
-    user = get_user_from_param(request.all_data)
+    #user = get_user_from_param(request.all_data)
+    user = request.User
     serial = getParam(request.all_data, "serial")
     password = getParam(request.all_data, "pass", required)
     otp_only = getParam(request.all_data, "otponly")

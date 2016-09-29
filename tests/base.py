@@ -1,7 +1,7 @@
 import unittest
 import json
 from privacyidea.app import create_app
-from privacyidea.models import db
+from privacyidea.models import db, save_config_timestamp
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import User
@@ -38,6 +38,10 @@ class MyTestCase(unittest.TestCase):
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
         db.create_all()
+        # save the current timestamp to the database to avoid hanging cached
+        # data
+        save_config_timestamp()
+        db.session.commit()
         # Create an admin for tests.
         create_db_admin(cls.app, "testadmin", "admin@test.tld", "testpw")
 
