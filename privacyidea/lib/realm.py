@@ -130,10 +130,14 @@ def set_default_realm(default_realm=None):
     :rtype: boolean
     """
     # delete the old entry
-    r = Realm.query.filter_by(default=True).update({"default": False})
+    r = Realm.query.filter_by(default=True).first()
+    r.default = False
+    r.update()
     if default_realm:
-        r = Realm.query.filter_by(name=default_realm).update({"default": True})
-    return r
+        r = Realm.query.filter_by(name=default_realm).first()
+        r.default = True
+        r.update()
+    return r.id
 
 
 @log_with(log)
