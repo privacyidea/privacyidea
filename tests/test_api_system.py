@@ -37,7 +37,10 @@ class APIConfigTestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
             value = result.get("value")
-            self.assertEqual(value.get("key1"), "insert")
+            self.assertEqual(value.get("key1"),
+                             "insert",
+                             "This sometimes happens when test database was "
+                             "not empty!")
             self.assertEqual(value.get("key2"), "insert")
             self.assertEqual(value.get("key3"), "insert")
 

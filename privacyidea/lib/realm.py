@@ -133,7 +133,6 @@ def set_default_realm(default_realm=None):
     r = Realm.query.filter_by(default=True).update({"default": False})
     if default_realm:
         r = Realm.query.filter_by(name=default_realm).update({"default": True})
-    db.session.commit()
     return r
 
 

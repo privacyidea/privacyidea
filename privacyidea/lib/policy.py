@@ -141,8 +141,7 @@ from netaddr import IPNetwork
 from gettext import gettext as _
 
 import logging
-from ..models import (Policy, Config, PRIVACYIDEA_TIMESTAMP,
-                      save_config_timestamp)
+from ..models import (Policy, Config, PRIVACYIDEA_TIMESTAMP)
 from flask import current_app
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     Singleton)
@@ -335,8 +334,8 @@ class PolicyClass(object):
             if not (self.timestamp and db_ts) or \
                     (db_ts and db_ts.Value >= internal_timestamp):
                 self.policies = []
-                log.debug("timestamp in DB newer. We need to reread policies from "
-                          "DB.")
+                log.debug("timestamp in DB newer. We need to reread policies "
+                          "from DB.")
                 policies = Policy.query.all()
                 for pol in policies:
                     # read each policy
@@ -683,11 +682,34 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         resolver = ", ".join(resolver)
     if type(client) == list:
         client = ", ".join(client)
-    p = Policy(name, action=action, scope=scope, realm=realm,
+    p1 = Policy.query.filter_by(name=name).first()
+    if p1:
+        # The policy already exist, we need to update
+        if action is not None:
+            p1.action = action
+        if scope is not None:
+            p1.scope = scope
+        if realm is not None:
+            p1.realm = realm
+        if adminrealm is not None:
+            p1.adminrealm = adminrealm
+        if resolver is not None:
+            p1.resolver = resolver
+        if user is not None:
+            p1.user = user
+        if client is not None:
+            p1.client = client
+        if time is not None:
+            p1.time = time
+        p1.active = active
+        p1.update()
+        ret = p1.id
+    else:
+        # Create a new policy
+        ret = Policy(name, action=action, scope=scope, realm=realm,
                user=user, time=time, client=client, active=active,
                resolver=resolver, adminrealm=adminrealm).save()
-    save_config_timestamp()
-    return p
+    return ret
 
 
 @log_with(log)
@@ -716,7 +738,6 @@ def delete_policy(name):
     """
     p = Policy.query.filter_by(name=name)
     res = p.delete()
-    save_config_timestamp()
     return res
 
 

@@ -110,8 +110,8 @@ class ConfigClass(object):
                 self.resolver = {}
                 self.realm = {}
                 self.default_realm = None
-                log.debug("timestamp in DB newer. We need to reread config from "
-                          "DB.")
+                log.debug("timestamp in DB newer. We need to reload config "
+                          "from DB.")
                 for sysconf in Config.query.all():
                     self.config[sysconf.Key] = {
                         "Value": sysconf.Value,
@@ -773,15 +773,15 @@ def set_privacyidea_config(key, value, typ="", desc=""):
         # store value in encrypted way
         value = encryptPassword(value)
     # We need to check, if the value already exist
-    q1 = Config.query.filter_by(Key=key).count()
-    if q1 > 0:
+    c1 = Config.query.filter_by(Key=key).first()
+    if c1:
         # The value already exist, we need to update
-        data = {'Value': value}
+        c1.Value = value
         if typ:
-            data.update({'Type': typ})
+            c1.Type = typ
         if desc:
-            data.update({'Description': desc})
-        Config.query.filter_by(Key=key).update(data)
+            c1.Description = desc
+        c1.update()
         ret = "update"
     else:
         #new_entry = Config(key, value, typ, desc)

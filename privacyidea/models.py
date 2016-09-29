@@ -64,6 +64,41 @@ class MethodsMixin(object):
         return ret
 
 
+def save_config_timestamp():
+    if Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).count() > 0:
+        Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP) \
+            .update({'Value': datetime.now().strftime("%s")})
+    else:
+        new_timestamp = Config(PRIVACYIDEA_TIMESTAMP,
+                               datetime.now().strftime("%s"),
+                               Description="config timestamp. last changed.")
+        db.session.add(new_timestamp)
+
+
+class TimestampMethodsMixin(object):
+    """
+    This class mixes in the table functions including update of the timestamp
+    """
+
+    def save(self):
+        db.session.add(self)
+        save_config_timestamp()
+        db.session.commit()
+        return self.id
+
+    def delete(self):
+        ret = self.id
+        db.session.delete(self)
+        save_config_timestamp()
+        db.session.commit()
+        return ret
+
+    def update(self):
+        save_config_timestamp()
+        db.session.commit()
+        return self
+
+
 class Token(MethodsMixin, db.Model):
     """
     The table "token" contains the basic token data like
@@ -651,7 +686,7 @@ class Admin(db.Model):
         db.session.commit()
 
 
-class Config(db.Model):
+class Config(TimestampMethodsMixin, db.Model):
     """
     The config table holds all the system configuration in key value pairs.
 
@@ -690,18 +725,7 @@ class Config(db.Model):
         return ret
 
 
-def save_config_timestamp():
-    if Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).count() > 0:
-        Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP) \
-            .update({'Value': datetime.now().strftime("%s")})
-    else:
-        new_timestamp = Config(PRIVACYIDEA_TIMESTAMP,
-                               datetime.now().strftime("%s"),
-                               Description="config timestamp. last changed.")
-        db.session.add(new_timestamp)
-
-
-class Realm(MethodsMixin, db.Model):
+class Realm(TimestampMethodsMixin, db.Model):
     """
     The realm table contains the defined realms. User Resolvers can be
     grouped to realms. This very table contains just contains the names of
@@ -733,13 +757,6 @@ class Realm(MethodsMixin, db.Model):
         save_config_timestamp()
         db.session.commit()
         return ret
-
-    def save(self):
-        db.session.add(self)
-        db.session.commit()
-        save_config_timestamp()
-        return self.id
-
 
 
 class CAConnector(MethodsMixin, db.Model):
@@ -867,14 +884,8 @@ class Resolver(MethodsMixin, db.Model):
         db.session.commit()
         return ret
 
-    def save(self):
-        db.session.add(self)
-        save_config_timestamp()
-        db.session.commit()
-        return self.id
 
-
-class ResolverConfig(db.Model):
+class ResolverConfig(TimestampMethodsMixin, db.Model):
     """
     Each Resolver can have multiple configuration entries.
     Each Resolver type can have different required config values. Therefor
@@ -937,7 +948,7 @@ class ResolverConfig(db.Model):
         return ret
 
 
-class ResolverRealm(MethodsMixin, db.Model):
+class ResolverRealm(TimestampMethodsMixin, db.Model):
     """
     This table stores which Resolver is located in which realm
     This is a N:M relation
@@ -984,19 +995,6 @@ class ResolverRealm(MethodsMixin, db.Model):
                                  .filter_by(name=realm_name)\
                                  .first().id
 
-    def save(self):
-        db.session.add(self)
-        db.session.commit()
-        save_config_timestamp()
-        return self.id
-
-    def delete(self):
-        ret = self.id
-        db.session.delete(self)
-        db.session.commit()
-        save_config_timestamp()
-        return ret
-    
 
 class TokenRealm(MethodsMixin, db.Model):
     """
@@ -1233,7 +1231,7 @@ def cleanup_challenges():
 #
 
 
-class Policy(db.Model):
+class Policy(TimestampMethodsMixin, db.Model):
     """
     The policy table contains policy definitions which control
     the behaviour during
@@ -1324,41 +1322,6 @@ class Policy(db.Model):
             ret = d.get(key)
         else:
             ret = d
-        return ret
-    
-    def save(self):
-        p = Policy.query.filter_by(name=self.name).first()
-        if p is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            ret = self.id
-        else:
-            update_param = {}
-            if self.action is not None:
-                update_param["action"] = self.action
-            if self.scope is not None:
-                update_param["scope"] = self.scope
-            if self.realm is not None:
-                update_param["realm"] = self.realm
-            if self.adminrealm is not None:
-                update_param["adminrealm"] = self.adminrealm
-            if self.resolver is not None:
-                update_param["resolver"] = self.resolver
-            if self.user is not None:
-                update_param["user"] = self.user
-            if self.client is not None:
-                update_param["client"] = self.client
-            if self.time is not None:
-                update_param["time"] = self.time
-            update_param["active"] = self.active
-            if self.condition is not None:
-                update_param["condition"] = self.condition
-            # update
-            Policy.query.filter_by(name=self.name,
-                                   ).update(update_param)
-            ret = p.id
-        db.session.commit()
         return ret
 
 # ------------------------------------------------------------------
