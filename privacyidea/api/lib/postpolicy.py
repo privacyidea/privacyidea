@@ -278,12 +278,12 @@ def add_user_detail_to_response(request, response):
     content = json.loads(response.data)
     policy_object = g.policy_object
 
-    detailPol = policy_object.get_policies(action=ACTION.ADDUSERINRESPONSE,
+    detail_pol = policy_object.get_policies(action=ACTION.ADDUSERINRESPONSE,
                                            scope=SCOPE.AUTHZ,
                                            client=g.client_ip,
                                            active=True)
 
-    if detailPol and content.get("result", {}).get("value") and request.User:
+    if detail_pol and content.get("result", {}).get("value") and request.User:
         # The policy was set, we need to add the user
         #  details
         ui = request.User.info

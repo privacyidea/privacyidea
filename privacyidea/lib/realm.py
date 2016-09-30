@@ -60,9 +60,6 @@ def get_realms(realmname=""):
     :return: a dict with realm description like
     :rtype: dict
     '''
-    # TODO: filter for realmname
-    # TODO: We need to check, if we need to update the Config Object. Either
-    # due to not existing or due to expired
     g.config_object = ConfigClass()
     realms = g.config_object.realm
     if realmname:
@@ -71,20 +68,6 @@ def get_realms(realmname=""):
         else:
             realms = {}
     return realms
-
-    if realmname:
-        realm_q = Realm.query.filter_by(name=realmname)
-    else:
-        realm_q = Realm.query.all()
-    for realm in realm_q:
-        useridresolvers = []
-        for res in realm.resolver_list:
-            useridresolvers.append({"name": res.resolver.name,
-                                    "type": res.resolver.rtype,
-                                    "priority": res.priority})
-        result[realm.name] = {"resolver": useridresolvers,
-                              "default": realm.default}
-    return result
 
 
 #@cache.memoize(10)

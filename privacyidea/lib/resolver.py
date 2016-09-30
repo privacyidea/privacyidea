@@ -178,7 +178,7 @@ def get_resolver_list(filter_resolver_type=None,
     :type editable: bool
     :rtype: Dictionary of the resolvers and their configuration
     """
-    # TODO: We need to check if we need to update the config object
+    # We need to check if we need to update the config object
     g.config_object = ConfigClass()
     resolvers = g.config_object.resolver
     if filter_resolver_type:
@@ -208,40 +208,6 @@ def get_resolver_list(filter_resolver_type=None,
         resolvers = reduced_resolvers
 
     return resolvers
-    # TODO: Implement the filtering!
-
-    Resolvers = {}
-    if filter_resolver_name:
-        resolvers = Resolver.query\
-                            .filter(func.lower(Resolver.name) ==
-                                    filter_resolver_name.lower())
-    elif filter_resolver_type:
-        resolvers = Resolver.query\
-                            .filter(Resolver.rtype == filter_resolver_type)
-    else:
-        resolvers = Resolver.query.all()
-    
-    for reso in resolvers:
-        r = {"resolvername": reso.name,
-             "type": reso.rtype}
-        # Add resolver config data
-        data = {}
-        for conf in reso.rconfig:
-            value = conf.Value
-            if conf.Type == "password":
-                value = decryptPassword(value)
-            data[conf.Key] = value
-        r["data"] = data
-        if editable is None:
-            Resolvers[reso.name] = r
-        else:
-            if editable is True and (r["data"].get("Editable") or r["data"].get("EDITABLE"))== "1":
-                Resolvers[reso.name] = r
-            elif editable is False and (r["data"].get("Editable") or r["data"].get("EDTIABLE")) != "1":
-                Resolvers[reso.name] = r
-
-
-    return Resolvers
 
 
 @log_with(log)

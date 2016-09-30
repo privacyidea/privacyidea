@@ -46,7 +46,6 @@ from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver
 from .machines.base import BaseMachineResolver
 from .caconnectors.localca import BaseCAConnector
-from datetime import datetime
 import importlib
 import datetime
 
@@ -56,6 +55,10 @@ ENCODING = 'utf-8'
 
 
 class Singleton(type):
+    """
+    This singleton acts as metaclass for the Caching Objects "ConfigClass"
+    and "PolicyClass".
+    """
     _instances = {}
 
     def __call__(cls, *args, **kwargs):
