@@ -737,8 +737,10 @@ def delete_policy(name):
     :return: the count of the deleted policies.
     :rtype: int
     """
-    p = Policy.query.filter_by(name=name)
-    res = p.delete()
+    res = False
+    p = Policy.query.filter_by(name=name).first()
+    if p:
+        res = p.delete()
     return res
 
 

@@ -20,45 +20,50 @@
 
     <div class="panel-body">
 
-             <div class="col-xs-6">
-                 <div ng-repeat="field in leftColumn">
-                     <ng-form name="formLeft" class="css-form">
-                         <ng-include src="instanceUrl+'/static/components/user/views/user.add.dynamic.form.fields.html'"></ng-include>
-                     </ng-form>
-                 </div>
-             </div>
-             <div class="col-xs-6">
-                 <div ng-repeat="field in rightColumn">
-                     <ng-form name="formLeft" class="css-form">
-                         <ng-include src="instanceUrl+'/static/components/user/views/user.add.dynamic.form.fields.html'"></ng-include>
-                     </ng-form>
-                 </div>
+        <div class="col-xs-6">
+            <div ng-repeat="field in leftColumn">
+                <ng-form name="formLeft" class="css-form">
+                    <ng-include
+                            src="instanceUrl+'/static/components/user/views/user.add.dynamic.form.fields.html'"></ng-include>
+                </ng-form>
             </div>
+        </div>
+        <div class="col-xs-6">
+            <div ng-repeat="field in rightColumn">
+                <ng-form name="formLeft" class="css-form">
+                    <ng-include
+                            src="instanceUrl+'/static/components/user/views/user.add.dynamic.form.fields.html'"></ng-include>
+                </ng-form>
+            </div>
+        </div>
 
+    </div>
 
-    <div class="text-center" ng-show="editable">
-        <button ng-click="editUser=true; getUserDetails()"
-                class="btn btn-primary"
-                ng-show="!editUser && checkRight('updateuser')">
-            <span class="glyphicon glyphicon-edit"></span>
-            <span translate>Edit user</span>
-        </button>
-        <button ng-click="editUser=false; updateUser()"
-                class="btn btn-primary"
-                ng-show="editUser">
-            <span class="glyphicon glyphicon-save"></span>
-            <span translate>Save user</span>
-        </button>
-        <button ng-click="editUser=false; getUserDetails()"
-                class="btn btn-danger"
-                ng-show="editUser" translate>Cancel
-        </button>
-        <button ng-click="deleteUserAsk()"
-                class="btn btn-danger"
-                ng-show="!editUser && checkRight('deleteuser')">
-            <span class="glyphicon glyphicon-trash"></span>
-            <span translate>Delete user</span>
-        </button>
+    <div class="panel-body">
+        <div class="text-center" ng-show="editable">
+            <button ng-click="editUser=true; getUserDetails()"
+                    class="btn btn-primary"
+                    ng-show="!editUser && checkRight('updateuser')">
+                <span class="glyphicon glyphicon-edit"></span>
+                <span translate>Edit user</span>
+            </button>
+            <button ng-click="editUser=false; updateUser()"
+                    class="btn btn-primary"
+                    ng-show="editUser">
+                <span class="glyphicon glyphicon-save"></span>
+                <span translate>Save user</span>
+            </button>
+            <button ng-click="editUser=false; getUserDetails()"
+                    class="btn btn-danger"
+                    ng-show="editUser" translate>Cancel
+            </button>
+            <button ng-click="deleteUserAsk()"
+                    class="btn btn-danger"
+                    ng-show="!editUser && checkRight('deleteuser')">
+                <span class="glyphicon glyphicon-trash"></span>
+                <span translate>Delete user</span>
+            </button>
+        </div>
     </div>
 
     <h3 translate>Tokens for user {{ username }}</h3>
