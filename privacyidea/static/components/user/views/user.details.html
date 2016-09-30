@@ -19,81 +19,32 @@
     </h2>
 
     <div class="panel-body">
-        <div class="col-xs-6">
-            <div class="form-group">
-                <label for="username" translate>Username</label>
 
-                <div name="username">{{ User.username }}</div>
+             <div class="col-xs-6">
+                 <div ng-repeat="field in leftColumn">
+                     <ng-form name="formLeft" class="css-form">
+                         <ng-include src="instanceUrl+'/static/components/user/views/user.add.dynamic.form.fields.html'"></ng-include>
+                     </ng-form>
+                 </div>
+             </div>
+             <div class="col-xs-6">
+                 <div ng-repeat="field in rightColumn">
+                     <ng-form name="formLeft" class="css-form">
+                         <ng-include src="instanceUrl+'/static/components/user/views/user.add.dynamic.form.fields.html'"></ng-include>
+                     </ng-form>
+                 </div>
             </div>
-            <div class="form-group">
-                <label for="givenname" translate>Given name</label>
 
-                <div name="givenname"
-                     ng-hide="editUser">{{ User.givenname }}</div>
-                <input name="givenname" class="form-control"
-                       ng-model="User.givenname"
-                       ng-show="editUser">
-            </div>
-            <div class="form-group">
-                <label for="surname" translate>Surname</label>
-
-                <div name="surname" ng-hide="editUser">{{ User.surname }}</div>
-                <input name="surname" class="form-control"
-                       ng-model="User.surname"
-                       ng-show="editUser">
-            </div>
-            <div class="form-group">
-                <label for="description" translate>Description</label>
-
-                <div name="description"
-                     ng-hide="editUser">{{ User.description }}</div>
-                <input name="description" class="form-control"
-                       ng-model="User.description"
-                       ng-show="editUser">
-            </div>
-        </div>
-        <div class="col-xs-6">
-            <div class="form-group">
-                <label for="email" translate>Email</label>
-
-                <div name="email" ng-hide="editUser">
-                    <a href="mailto:{{ User.email }}">
-                        {{ User.email }}</a></div>
-                <input name="email" class="form-control"
-                       ng-model="User.email"
-                       ng-show="editUser">
-            </div>
-            <div class="form-group">
-                <label for="phone" translate>Phone</label>
-
-                <div name="phone" ng-hide="editUser">{{ User.phone }}</div>
-                <input name="phone" class="form-control"
-                       ng-model="User.phone"
-                       ng-show="editUser">
-            </div>
-            <div class="form-group">
-                <label for="mobile" translate>Mobile</label>
-
-                <div name="mobile" ng-hide="editUser">{{ User.mobile }}</div>
-                <input name="mobile" class="form-control"
-                       ng-model="User.mobile"
-                       ng-show="editUser">
-            </div>
-            <div class="form-group" ng-show="editUser">
-                <label for="password" translate>Password</label>
-                <input type="password" name="password" class="form-control"
-                       ng-model="User.password">
-            </div>
-        </div>
-    </div>
 
     <div class="text-center" ng-show="editable">
-        <button ng-click="editUser=true" class="btn btn-primary"
+        <button ng-click="editUser=true; getUserDetails()"
+                class="btn btn-primary"
                 ng-show="!editUser && checkRight('updateuser')">
             <span class="glyphicon glyphicon-edit"></span>
             <span translate>Edit user</span>
         </button>
-        <button ng-click="editUser=false; updateUser()" class="btn btn-primary"
+        <button ng-click="editUser=false; updateUser()"
+                class="btn btn-primary"
                 ng-show="editUser">
             <span class="glyphicon glyphicon-save"></span>
             <span translate>Save user</span>

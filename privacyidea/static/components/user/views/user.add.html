@@ -11,7 +11,7 @@
                                 name="resolvername"
                                 id="resolvername"
                                 ng-model="resolvername"
-                                ng-change="getAddUserAttributes(resolvername)"
+                                ng-change="getUserAttributesView(resolvername)"
                                 ng-options="resolvername for resolvername in formInit.resolvernames">
                         </select>
                     </div>
@@ -24,20 +24,22 @@
                     </div>
                 </div>
 
-             <div class="col-xs-6">
-                 <div ng-repeat="field in leftColumn">
-                     <ng-form name="formLeft" class="css-form">
-                         <ng-include src="instanceUrl+'/static/components/user/views/user.add.dynamic.form.fields.html'"></ng-include>
-                     </ng-form>
-                 </div>
-             </div>
-             <div class="col-xs-6">
-                 <div ng-repeat="field in rightColumn">
-                     <ng-form name="formLeft" class="css-form">
-                         <ng-include src="instanceUrl+'/static/components/user/views/user.add.dynamic.form.fields.html'"></ng-include>
-                     </ng-form>
-                 </div>
-            </div>
+                <div class="col-xs-6">
+                    <div ng-repeat="field in leftColumn">
+                        <ng-form name="formLeft" class="css-form">
+                            <ng-include
+                                    src="instanceUrl+'/static/components/user/views/user.add.dynamic.form.fields.html'"></ng-include>
+                        </ng-form>
+                    </div>
+                </div>
+                <div class="col-xs-6">
+                    <div ng-repeat="field in rightColumn">
+                        <ng-form name="formLeft" class="css-form">
+                            <ng-include
+                                    src="instanceUrl+'/static/components/user/views/user.add.dynamic.form.fields.html'"></ng-include>
+                        </ng-form>
+                    </div>
+                </div>
             </div>
 
             <div class="text-center">
@@ -54,7 +56,7 @@
                 to any user store. If you want to add users, you need to
                 <a ui-sref="config.resolvers.list">define an editable
                     resolver</a>
-                 (like SQLResolver) and check the
+                (like SQLResolver) and check the
                 box "Edit user store".
             </div>
         </div>

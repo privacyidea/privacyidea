@@ -31,6 +31,7 @@ angular.module("privacyideaApp")
 
         $scope.formInit = {};
         $scope.User = {};
+        $scope.editUser = true;
 
         /// Translation in dynamic user creation
         var myString = gettextCatalog.getString("password");
@@ -44,78 +45,11 @@ angular.module("privacyideaApp")
             $scope.formInit.resolvernames = resolvernames;
             if (resolvernames.length > 0) {
                 $scope.resolvername = resolvernames[0];
+                $scope.userAttributes = $scope.getUserAttributes(resolvers);
+                console.log("Getting View Attributes for " + $scope.resolvername);
+                $scope.getUserAttributesView($scope.resolvername, $scope.userAttributes);
             }
-
-            $scope.userAttributes = $scope.getUserAttributes(data);
-            $scope.getAddUserAttributes($scope.resolvername);
-
         });
-
-        $scope.getUserAttributes = function(data) {
-            var resolvers = data.result.value;
-            var allResolverAttributes = [];
-
-            for (var rname in resolvers) {
-                var resolver = resolvers[rname];
-                switch (resolver.type){
-                    case "ldapresolver":
-                        var userinfo = JSON.parse(resolver.data.USERINFO);
-                        break;
-                    case "sqlresolver":
-                        var userinfo = JSON.parse(resolver.data.Map);
-                        delete userinfo["userid"];
-                        break;
-                }
-                var fields = [];
-                var r ={};
-                angular.forEach(userinfo, function (value, key) {
-                    field = {"type" : "text",
-                             "name" : key,
-                             "label" : gettextCatalog.getString(key),
-                             "data" : "",
-                             "required": true};
-                    switch(key){
-                        case "username":
-                            this.push(field);
-                            break;
-                        case "email":
-                            field["type"] = "email";
-                            this.push(field);
-                            break;
-                        case "password":
-                            field["type"] = "password";
-                            this.push(field);
-                            break;
-                        default:
-                            field["required"] = false;
-                            this.push(field);
-                            break;
-                    }
-                }, fields);
-                r[rname] = fields;
-                allResolverAttributes.push(r);
-           }
-           return allResolverAttributes;
-        };
-
-        $scope.getAddUserAttributes = function(resolvername){
-            /*
-            This function returns the display information of the user attributes
-             */
-
-           var userFields = [];
-           angular.forEach($scope.userAttributes, function(value, key){
-               if (value.hasOwnProperty(resolvername)){
-                   userFields = value[resolvername];
-               }
-            });
-
-            var start = 0;
-            var middle = Math.ceil(userFields.length / 2);
-            var end = userFields.length + 1;
-            $scope.leftColumn = userFields.slice(start, middle);
-            $scope.rightColumn = userFields.slice(middle, end);
-        };
 
         $scope.createUser = function () {
             console.log($scope.User);
@@ -165,12 +99,15 @@ angular.module("privacyideaApp")
                                                    realmUrl, tokenUrl,
                                                    $rootScope, TokenFactory,
                                                    UserFactory, $state,
+                                                   ConfigFactory,
                                                    instanceUrl,  $location,
                                                    inform, gettextCatalog) {
         $scope.tokensPerPage = 5;
         $scope.newToken = {"serial": "", pin: ""};
         $scope.params = {page: 1};
         $scope.instanceUrl = instanceUrl;
+        $scope.editUser = false;
+        $scope.hideUsernmae = true;
         // scroll to the top of the page
         document.body.scrollTop = document.documentElement.scrollTop = 0;
 
@@ -193,6 +130,14 @@ angular.module("privacyideaApp")
             $scope._getUserToken();
         };
 
+        $scope.getResolverDetails = function(resolvername) {
+            ConfigFactory.getResolver(resolvername, function (data){
+                var resolvers = data.result.value;
+                $scope.userAttributes = $scope.getUserAttributes(resolvers);
+                $scope.getUserAttributesView(resolvername, $scope.userAttributes);
+            });
+        };
+
         $scope.getUserDetails = function () {
             UserFactory.getUserDetails({
                 username: $scope.username,
@@ -200,6 +145,7 @@ angular.module("privacyideaApp")
             }, function (data) {
                 $scope.User = data.result.value[0];
                 $scope.User.password = "";
+                $scope.getResolverDetails($scope.User.resolver);
             });
         };
 
@@ -212,6 +158,8 @@ angular.module("privacyideaApp")
                                 {type: "info"});
                     // we also need to update the user list
                     $scope._getUsers();
+                    // ...and update the user details
+                    $scope.getUserDetails();
                 } else {
                     inform.add(gettextCatalog.getString("Failed to update user."), {type: "danger"});
                 }
@@ -248,21 +196,22 @@ angular.module("privacyideaApp")
             });
         };
 
-        $scope.getUserDetails();
-        $scope._getUserToken();
-
         $scope.enrollToken = function() {
             // go to token.enroll with the users data
             $state.go("token.enroll", {realmname:$scope.realmname,
                                        username:$scope.username});
             $rootScope.returnTo="user.details({realmname:$scope.realmname, username:$scope.username})";
         };
+
+        $scope.getUserDetails();
+        $scope._getUserToken();
     });
 
 angular.module("privacyideaApp")
     .controller("userController", function ($scope, $location, userUrl,
                                             realmUrl, $rootScope,
                                             ConfigFactory, UserFactory,
+                                            gettextCatalog,
                                             AuthFactory) {
 
         $scope.usersPerPage = $scope.user_page_size;
@@ -336,6 +285,76 @@ angular.module("privacyideaApp")
         $scope.changeRealm = function () {
             $scope.params = {page: 1};
             $scope._getUsers();
+        };
+
+        $scope.getUserAttributes = function(resolvers) {
+            /*
+             This function returns a list with all possible user attributes
+             in these resolvers. Possible attributes are a dictionary with
+              the keys data, label, name, required, type.
+            */
+            var allResolverAttributes = [];
+
+            for (var rname in resolvers) {
+                var resolver = resolvers[rname];
+                switch (resolver.type){
+                    case "ldapresolver":
+                        var userinfo = JSON.parse(resolver.data.USERINFO);
+                        break;
+                    case "sqlresolver":
+                        var userinfo = JSON.parse(resolver.data.Map);
+                        delete userinfo["userid"];
+                        break;
+                }
+                var fields = [];
+                var r ={};
+                angular.forEach(userinfo, function (value, key) {
+                    field = {"type" : "text",
+                             "name" : key,
+                             "label" : gettextCatalog.getString(key),
+                             "data" : "",
+                             "required": true};
+                    switch(key){
+                        case "username":
+                            this.push(field);
+                            break;
+                        case "email":
+                            field["type"] = "email";
+                            this.push(field);
+                            break;
+                        case "password":
+                            field["type"] = "password";
+                            this.push(field);
+                            break;
+                        default:
+                            field["required"] = false;
+                            this.push(field);
+                            break;
+                    }
+                }, fields);
+                r[rname] = fields;
+                allResolverAttributes.push(r);
+           }
+           return allResolverAttributes;
+        };
+
+        $scope.getUserAttributesView = function(resolvername, userAttributes){
+           /*
+           This function returns the display information of the user attributes
+           */
+
+           var userFields = [];
+           angular.forEach(userAttributes, function(value, key){
+               if (value.hasOwnProperty(resolvername)){
+                   userFields = value[resolvername];
+               }
+            });
+
+            var start = 0;
+            var middle = Math.ceil(userFields.length / 2);
+            var end = userFields.length + 1;
+            $scope.leftColumn = userFields.slice(start, middle);
+            $scope.rightColumn = userFields.slice(middle, end);
         };
 
     });
