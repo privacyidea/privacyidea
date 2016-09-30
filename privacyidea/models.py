@@ -65,9 +65,9 @@ class MethodsMixin(object):
 
 
 def save_config_timestamp():
-    if Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).count() > 0:
-        Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP) \
-            .update({'Value': datetime.now().strftime("%s")})
+    c1 = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
+    if c1:
+        c1.Value = datetime.now().strftime("%s")
     else:
         new_timestamp = Config(PRIVACYIDEA_TIMESTAMP,
                                datetime.now().strftime("%s"),
@@ -92,11 +92,6 @@ class TimestampMethodsMixin(object):
         save_config_timestamp()
         db.session.commit()
         return ret
-
-    def update(self):
-        save_config_timestamp()
-        db.session.commit()
-        return self
 
 
 class Token(MethodsMixin, db.Model):
@@ -853,7 +848,7 @@ class CAConnectorConfig(db.Model):
         return ret
 
 
-class Resolver(MethodsMixin, db.Model):
+class Resolver(TimestampMethodsMixin, db.Model):
     """
     The table "resolver" contains the names and types of the defined User
     Resolvers. As each Resolver can have different required config values the

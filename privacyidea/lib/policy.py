@@ -141,7 +141,8 @@ from netaddr import IPNetwork
 from gettext import gettext as _
 
 import logging
-from ..models import (Policy, Config, PRIVACYIDEA_TIMESTAMP)
+from ..models import (Policy, Config, PRIVACYIDEA_TIMESTAMP, db,
+                      save_config_timestamp)
 from flask import current_app
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     Singleton)
@@ -661,6 +662,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :return: The database ID od the the policy
     :rtype: int
     """
+    if type(active) in [str, unicode]:
+        active = active.lower() == "true"
     if type(action) == dict:
         action_list = []
         for k, v in action.items():
@@ -703,7 +706,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         if time is not None:
             p1.time = time
         p1.active = active
-        p1.update()
+        save_config_timestamp()
+        db.session.commit()
         ret = p1.id
     else:
         # Create a new policy

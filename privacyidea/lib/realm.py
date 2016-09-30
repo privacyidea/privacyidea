@@ -38,7 +38,7 @@ in tests/test_lib_realm.py
 '''
 from ..models import (Realm,
                       ResolverRealm,
-                      Resolver)
+                      Resolver, db, save_config_timestamp)
 from log import log_with
 from flask import g
 from privacyidea.lib.config import ConfigClass
@@ -133,12 +133,13 @@ def set_default_realm(default_realm=None):
     if r:
         # delete the old entry
         r.default = False
-        r.update()
     if default_realm:
         # set the new realm as default realm
         r = Realm.query.filter_by(name=default_realm).first()
         r.default = True
-        r.update()
+    if db.session.dirty or db.session.new:
+        save_config_timestamp()
+        db.session.commit()
     return r.id
 
 
@@ -245,10 +246,11 @@ def set_realm(realm, resolvers=None, priority=None):
         else:
             failed.append(reso_name)
 
-    
     # if this is the first realm, make it the default
     if Realm.query.count() == 1:
-        Realm.query.filter_by(name=realm).update({'default': True})
-
+        r = Realm.query.filter_by(name=realm).first()
+        r.default = True
+        save_config_timestamp()
+        db.session.commit()
 
     return (added, failed)

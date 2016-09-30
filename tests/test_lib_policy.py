@@ -77,7 +77,7 @@ class PolicyTestCase(MyTestCase):
                        resolver="*",
                        user="*",
                        client="0.0.0.0/0",
-                       active="False")
+                       active=False)
         self.assertTrue(p > 0)
 
         p = set_policy(name="pol2",
@@ -248,7 +248,7 @@ class PolicyTestCase(MyTestCase):
         set_policy(name="pol1", scope="s", realm="r1")
         set_policy(name="pol2", scope="s", realm="r1", resolver="reso1")
         set_policy(name="pol3", scope="s", realm="", resolver="reso2")
-        set_policy(name="pol4", scope="s", realm="r2", active="true")
+        set_policy(name="pol4", scope="s", realm="r2", active=True)
 
         P = PolicyClass()
         p = P.get_policies(realm="r1")

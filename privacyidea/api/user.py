@@ -168,7 +168,7 @@ def create_user_api():
     # Remove the password from the attributes, so that we can hide it in the
     # logs
     password = attributes.get("password")
-    del attributes["username"]
+    del attributes["password"]
     r = create_user(resolvername, attributes, password=password)
     g.audit_object.log({"success": True,
                         "info": "{0!s}: {1!s}/{2!s}".format(r, username,

@@ -38,7 +38,8 @@ import inspect
 from flask import current_app, g
 
 from .log import log_with
-from ..models import Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP
+from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
+                      save_config_timestamp)
 
 from .crypto import encryptPassword
 from .crypto import decryptPassword
@@ -781,7 +782,8 @@ def set_privacyidea_config(key, value, typ="", desc=""):
             c1.Type = typ
         if desc:
             c1.Description = desc
-        c1.update()
+        save_config_timestamp()
+        db.session.commit()
         ret = "update"
     else:
         #new_entry = Config(key, value, typ, desc)

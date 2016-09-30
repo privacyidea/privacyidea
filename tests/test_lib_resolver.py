@@ -1326,7 +1326,7 @@ class ResolverTestCase(MyTestCase):
 
     def test_11_base_resolver_class(self):
         save_resolver({"resolver": "baseresolver",
-                         "type": "UserIdResolver"})
+                       "type": "UserIdResolver"})
         y = get_resolver_object("baseresolver")
         self.assertTrue(y, y)
         rtype = y.getResolverType()
