@@ -465,14 +465,7 @@ class IdResolver (UserIdResolver):
             log.error("Failed to convert user: {0!r}".format(r))
             log.debug("{0!s}".format(traceback.format_exc()))
         
-        for key in ["username",
-                    "surname",
-                    "givenname",
-                    "email",
-                    "mobile",
-                    "description",
-                    "phone",
-                    "password"]:
+        for key in self.map.keys():
             try:
                 raw_value = r.get(self.map.get(key))
                 if raw_value:

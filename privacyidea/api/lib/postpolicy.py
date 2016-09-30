@@ -284,8 +284,11 @@ def add_user_detail_to_response(request, response):
                                            active=True)
 
     if detailPol and content.get("result", {}).get("value") and request.User:
-        # The policy was set, we need to add the user details
-        content["detail"]["user"] = request.User.info
+        # The policy was set, we need to add the user
+        #  details
+        ui = request.User.info
+        ui["password"] = ""
+        content["detail"]["user"] = ui
         response.data = json.dumps(content)
 
     return response

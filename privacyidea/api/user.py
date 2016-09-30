@@ -168,7 +168,7 @@ def create_user_api():
     # Remove the password from the attributes, so that we can hide it in the
     # logs
     password = attributes.get("password")
-    del attributes["password"]
+    del attributes["username"]
     r = create_user(resolvername, attributes, password=password)
     g.audit_object.log({"success": True,
                         "info": "{0!s}: {1!s}/{2!s}".format(r, username,
@@ -222,30 +222,15 @@ def update_user():
 
 
 def _get_attributes_from_param(param):
+    from privacyidea.lib.resolver import get_resolver_object
+    map = get_resolver_object(getParam(param, "resolver", optional=False)).map
     username = getParam(param, "user", optional=False)
-    surname = getParam(param, "surname")
-    givenname = getParam(param, "givenname")
-    email = getParam(param, "email")
-    phone = getParam(param, "phone")
-    mobile = getParam(param, "mobile")
-    password = getParam(param, "password")
-    description = getParam(param, "description")
 
     # Add attributes
     attributes = {"username": username}
-    if surname:
-        attributes["surname"] = surname
-    if givenname:
-        attributes["givenname"] = givenname
-    if email:
-        attributes["email"] = email
-    if phone:
-        attributes["phone"] = phone
-    if mobile:
-        attributes["mobile"] = mobile
-    if password:
-        attributes["password"] = password
-    if description:
-        attributes["description"] = description
+    for attribute in map.keys():
+        value = getParam(param, attribute)
+        if value:
+            attributes[attribute] = getParam(param, attribute)
 
     return attributes
