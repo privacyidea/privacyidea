@@ -214,7 +214,8 @@ def update_user():
     # Remove the password from the attributes, so that we can hide it in the
     # logs
     password = attributes.get("password")
-    del attributes["password"]
+    if password:
+        del attributes["password"]
     r = user_obj.update_user_info(attributes, password=password)
     g.audit_object.log({"success": True,
                         "info": "{0!s}: {1!s}/{2!s}".format(r, username, resolvername)})
