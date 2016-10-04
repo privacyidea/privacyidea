@@ -118,8 +118,8 @@ class ConfigClass(object):
                         "Type": sysconf.Type,
                         "Description": sysconf.Description}
                 for resolver in Resolver.query.all():
-                    self.resolver[resolver.name] = {"type": resolver.rtype,
-                                                    "resolvername": resolver.name}
+                    resolverdef = {"type": resolver.rtype,
+                                   "resolvername": resolver.name}
                     data = {}
                     for rconf in resolver.config_list:
                         if rconf.Type == "password":
@@ -127,7 +127,8 @@ class ConfigClass(object):
                         else:
                             value = rconf.Value
                         data[rconf.Key] = value
-                    self.resolver[resolver.name]["data"] = data
+                    resolverdef["data"] = data
+                    self.resolver[resolver.name] = resolverdef
 
                 for realm in Realm.query.all():
                     if realm.default:
