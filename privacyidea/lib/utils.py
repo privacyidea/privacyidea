@@ -439,3 +439,39 @@ def get_client_ip(request, proxy_settings):
                                               mapped_ip=mapped_ip))
 
     return client_ip
+
+
+def reload_db(timestamp, db_ts):
+    """
+    Check if the configuration database should be reloaded. This is verified
+    by comparing the chache timestamp and the database timestamp
+
+    :param timestamp: cache timestamp
+    :type timestamp: timestamp
+    :param db_ts: database timestamp
+    :type db_ts: Config Object with timestamp str in .Value
+
+    :return: bool
+    """
+    rdb = False
+    internal_timestamp = None
+    if timestamp:
+        internal_timestamp = timestamp.strftime("%s")
+    rdb = False
+    # Reason to reload
+    if db_ts and db_ts.Value.startswith("2"):
+        # If there is an old timestamp in the database
+        rdb = True
+        log.debug("Old timestamp. We need to reread policies "
+                  "from DB.")
+    if not (timestamp and db_ts):
+        # If values are not initialized
+        rdb = True
+        log.debug("Values are not initialized. We need to reread "
+                  "policies from DB.")
+    if db_ts and db_ts.Value >= internal_timestamp:
+        # If the DB contents is newer
+        rdb = True
+        log.debug("timestamp in DB newer. We need to reread policies "
+                  "from DB.")
+    return rdb

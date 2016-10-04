@@ -151,7 +151,7 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
-from privacyidea.lib.utils import check_time_in_range
+from privacyidea.lib.utils import check_time_in_range, reload_db
 import datetime
 
 log = logging.getLogger(__name__)
@@ -331,13 +331,8 @@ class PolicyClass(object):
                 seconds=current_app.config.get(
                     "PI_CHECK_RELOAD_CONFIG", 0)) < datetime.datetime.now():
             db_ts = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
-            if self.timestamp:
-                internal_timestamp = self.timestamp.strftime("%s")
-            if not (self.timestamp and db_ts) or \
-                    (db_ts and db_ts.Value >= internal_timestamp):
+            if reload_db(self.timestamp, db_ts):
                 self.policies = []
-                log.debug("timestamp in DB newer. We need to reread policies "
-                          "from DB.")
                 policies = Policy.query.all()
                 for pol in policies:
                     # read each policy

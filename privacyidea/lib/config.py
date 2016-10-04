@@ -46,6 +46,7 @@ from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver
 from .machines.base import BaseMachineResolver
 from .caconnectors.localca import BaseCAConnector
+from .utils import reload_db
 import importlib
 import datetime
 
@@ -106,16 +107,11 @@ class ConfigClass(object):
             self.timestamp + datetime.timedelta(seconds=current_app.config.get(
                 "PI_CHECK_RELOAD_CONFIG", 0)) < datetime.datetime.now():
             db_ts = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
-            if self.timestamp:
-                internal_timestamp = self.timestamp.strftime("%s")
-            if not (self.timestamp and db_ts) or \
-                    (db_ts and db_ts.Value >= internal_timestamp):
+            if reload_db(self.timestamp, db_ts):
                 self.config = {}
                 self.resolver = {}
                 self.realm = {}
                 self.default_realm = None
-                log.debug("timestamp in DB newer. We need to reload config "
-                          "from DB.")
                 for sysconf in Config.query.all():
                     self.config[sysconf.Key] = {
                         "Value": sysconf.Value,
