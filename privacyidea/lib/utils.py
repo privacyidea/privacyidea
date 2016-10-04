@@ -459,7 +459,7 @@ def reload_db(timestamp, db_ts):
         internal_timestamp = timestamp.strftime("%s")
     rdb = False
     # Reason to reload
-    if db_ts and db_ts.Value.startswith("2"):
+    if db_ts and db_ts.Value.startswith("2016-"):
         # If there is an old timestamp in the database
         rdb = True
         log.debug("Old timestamp. We need to reread policies "

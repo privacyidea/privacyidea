@@ -132,14 +132,15 @@ class ConfigClass(object):
                 for realm in Realm.query.all():
                     if realm.default:
                         self.default_realm = realm.name
-                    self.realm[realm.name] = {"option": realm.option,
-                                              "default": realm.default}
-                    self.realm[realm.name]["resolver"] = [
-                        {"priority": x.priority,
-                         "name": x.resolver.name,
-                         "type": x.resolver.rtype} for x in
-                         realm.resolver_list
-                    ]
+                    realmdef = {"option": realm.option,
+                                "default": realm.default,
+                                "resolver": []}
+                    for x in realm.resolver_list:
+                        realmdef["resolver"].append({"priority": x.priority,
+                                                     "name": x.resolver.name,
+                                                     "type": x.resolver.rtype})
+                    self.realm[realm.name] = realmdef
+
             self.timestamp = datetime.datetime.now()
 
     def get_config(self, key=None, default=None, role="admin",
