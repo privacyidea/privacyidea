@@ -16,7 +16,7 @@ info:
 	@echo "make ppa          - upload to launchpad stable repo"
 	
 #VERSION=1.3~dev5
-SHORT_VERSION=2.15~dev12
+SHORT_VERSION=2.15~dev14
 #SHORT_VERSION=2.10~dev7
 VERSION_JESSIE=${SHORT_VERSION}
 VERSION=${SHORT_VERSION}
@@ -158,4 +158,3 @@ ppa:
 	sed -e s/"trusty) trusty; urgency"/"xenial) xenial; urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
 	(cd DEBUILD/privacyidea.org; debuild -sa -S)
 	dput ppa:privacyidea/privacyidea-dev DEBUILD/python-privacyidea_${VERSION}*_source.changes
-	

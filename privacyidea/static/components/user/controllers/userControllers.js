@@ -120,7 +120,6 @@ angular.module("privacyideaApp")
             }, function (data) {
                 $scope.tokendata = data.result.value;
                 console.log("Token for user " + $scope.username);
-                console.log($scope.tokens);
             });
         };
 
@@ -192,6 +191,7 @@ angular.module("privacyideaApp")
                 pin: $scope.newToken.pin
             }, function () {
                 $scope._getUserToken();
+                $('html,body').scrollTop(0);
                 $scope.newToken = {"serial": "", pin: ""};
             });
         };

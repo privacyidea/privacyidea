@@ -1,8 +1,27 @@
-python-privacyidea (2.15~dev12-1trusty) trusty; urgency=low
+python-privacyidea (2.15~dev14-1trusty) trusty; urgency=low
  
-  * Build for xenial
-  * remove python-cryptography in requirements.txt
-  * Add python-openssl to force to not use python-pyopenssl
+  Features
+  * Client Overview. Display the type of the requesting
+    authenticating clients (#489)
+  * Support for NitroKey OTP mode (admin client)
+
+  Enhancements
+  * Builds on Ubuntu 16.04 Xenial
+  * Performance enhancements using Caching singletons for
+    Config, Realm, Resolver and Policies
+  * Allow configuration of the registration email text (#494)
+  * Return SAML attributes only in case of successful
+    authentication (#500)
+  * Policy "reset_all_user_tokens" allow to reset all
+    failcounters on successful authentication (#471)
+  * Client rewrite mapping also checks for
+    X-Forwarded-For (#395, #495)
+
+  Fixes
+  * Fixing RemoteUser fails to display WebUI (#499)
+  * String comparison in HOSTS resolver (#484)
+
+
 
  -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 01 Sep 2016 14:15:00 +0200
 

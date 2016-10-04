@@ -103,7 +103,12 @@ def before_request():
     # from the Form data or from JSON in the request body.
     g.config_object = ConfigClass()
     request.all_data = get_all_params(request.values, request.data)
-    request.User = get_user_from_param(request.all_data)
+    try:
+        request.User = get_user_from_param(request.all_data)
+    except AttributeError:
+        # Some endpoints do not need users OR e.g. the setPolicy endpoint
+        # takes a list as the userobject
+        request.User = None
 
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)

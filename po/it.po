@@ -54,7 +54,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.list.html:5
 #: privacyidea/static/components/token/views/token.details.html:22
-#: privacyidea/static/components/user/views/user.details.html:127
+#: privacyidea/static/components/user/views/user.details.html:83
 msgid "Active"
 msgstr ""
 
@@ -157,7 +157,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.assign.html:12
 #: privacyidea/static/components/token/views/token.html:44
-#: privacyidea/static/components/user/views/user.details.html:178
+#: privacyidea/static/components/user/views/user.details.html:134
 msgid "Assign Token"
 msgstr ""
 
@@ -167,7 +167,7 @@ msgid "Assign User"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.assign.html:1
-#: privacyidea/static/components/user/views/user.details.html:173
+#: privacyidea/static/components/user/views/user.details.html:129
 msgid "Assign a new token {{ newTokenObject.serial }}"
 msgstr ""
 
@@ -278,7 +278,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:272
 #: privacyidea/static/components/token/views/token.details.html:522
 #: privacyidea/static/components/token/views/token.getserial.html:83
-#: privacyidea/static/components/user/views/user.details.html:101
+#: privacyidea/static/components/user/views/user.details.html:56
 msgid "Cancel"
 msgstr ""
 
@@ -563,7 +563,7 @@ msgstr ""
 msgid "Delete User"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.details.html:109
+#: privacyidea/static/components/user/views/user.details.html:64
 msgid "Delete user"
 msgstr ""
 
@@ -577,7 +577,6 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.email.html:18
 #: privacyidea/static/components/token/views/token.enroll.sms.html:25
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:17
-#: privacyidea/static/components/user/views/user.details.html:46
 #: privacyidea/static/components/user/views/user.password.html:21
 msgid "Description"
 msgstr ""
@@ -729,7 +728,7 @@ msgstr ""
 msgid "Edit realms"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.details.html:94
+#: privacyidea/static/components/user/views/user.details.html:48
 msgid "Edit user"
 msgstr ""
 
@@ -742,7 +741,6 @@ msgstr ""
 #: privacyidea/static/components/recovery/views/recovery.html:32
 #: privacyidea/static/components/register/views/register.html:48
 #: privacyidea/static/components/register/views/register.html:52
-#: privacyidea/static/components/user/views/user.details.html:57
 #: privacyidea/static/components/user/views/user.password.html:28
 msgid "Email"
 msgstr ""
@@ -760,7 +758,7 @@ msgstr ""
 msgid "Enable token"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.details.html:166
+#: privacyidea/static/components/user/views/user.details.html:122
 msgid "Enroll New Token"
 msgstr ""
 
@@ -851,7 +849,7 @@ msgstr ""
 msgid "Failed authentication requests per user"
 msgstr ""
 
-#: privacyidea/static/components/user/controllers/userControllers.js:234
+#: privacyidea/static/components/user/controllers/userControllers.js:182
 msgid "Failed to delete user."
 msgstr ""
 
@@ -859,7 +857,7 @@ msgstr ""
 msgid "Failed to reset your password."
 msgstr ""
 
-#: privacyidea/static/components/user/controllers/userControllers.js:216
+#: privacyidea/static/components/user/controllers/userControllers.js:164
 msgid "Failed to update user."
 msgstr ""
 
@@ -946,7 +944,6 @@ msgstr ""
 
 #: privacyidea/static/components/register/views/register.html:38
 #: privacyidea/static/components/register/views/register.html:42
-#: privacyidea/static/components/user/views/user.details.html:29
 #: privacyidea/static/components/user/views/user.password.html:11
 msgid "Given name"
 msgstr ""
@@ -1279,7 +1276,6 @@ msgstr ""
 
 #: privacyidea/static/components/register/views/register.html:57
 #: privacyidea/static/components/register/views/register.html:60
-#: privacyidea/static/components/user/views/user.details.html:75
 #: privacyidea/static/components/user/views/user.password.html:40
 msgid "Mobile"
 msgstr ""
@@ -1493,12 +1489,11 @@ msgstr ""
 #: privacyidea/static/components/register/views/register.html:79
 #: privacyidea/static/components/register/views/register.html:84
 #: privacyidea/static/components/token/views/token.import.html:75
-#: privacyidea/static/components/user/views/user.details.html:83
 #: privacyidea/static/components/user/views/user.password.html:50
 msgid "Password"
 msgstr ""
 
-#: privacyidea/static/components/user/controllers/userControllers.js:155
+#: privacyidea/static/components/user/controllers/userControllers.js:89
 msgid "Password set successfully."
 msgstr ""
 
@@ -1508,7 +1503,6 @@ msgstr ""
 
 #: privacyidea/static/components/register/views/register.html:65
 #: privacyidea/static/components/register/views/register.html:68
-#: privacyidea/static/components/user/views/user.details.html:67
 #: privacyidea/static/components/user/views/user.password.html:35
 msgid "Phone"
 msgstr ""
@@ -1894,8 +1888,8 @@ msgstr ""
 msgid "Save resolver"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.add.html:47
-#: privacyidea/static/components/user/views/user.details.html:99
+#: privacyidea/static/components/user/views/user.add.html:49
+#: privacyidea/static/components/user/views/user.details.html:54
 msgid "Save user"
 msgstr ""
 
@@ -2053,7 +2047,6 @@ msgstr ""
 
 #: privacyidea/static/components/register/views/register.html:28
 #: privacyidea/static/components/register/views/register.html:32
-#: privacyidea/static/components/user/views/user.details.html:38
 #: privacyidea/static/components/user/views/user.password.html:16
 msgid "Surname"
 msgstr ""
@@ -2840,7 +2833,7 @@ msgstr ""
 msgid "Tokens and Applications for machine {{ machineid }}"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.details.html:113
+#: privacyidea/static/components/user/views/user.details.html:69
 msgid "Tokens for user {{ username }}"
 msgstr ""
 
@@ -2938,15 +2931,15 @@ msgstr ""
 msgid "User account created. An Email has been sent to you."
 msgstr ""
 
-#: privacyidea/static/components/user/controllers/userControllers.js:125
+#: privacyidea/static/components/user/controllers/userControllers.js:59
 msgid "User created."
 msgstr ""
 
-#: privacyidea/static/components/user/controllers/userControllers.js:228
+#: privacyidea/static/components/user/controllers/userControllers.js:176
 msgid "User deleted successfully."
 msgstr ""
 
-#: privacyidea/static/components/user/controllers/userControllers.js:210
+#: privacyidea/static/components/user/controllers/userControllers.js:156
 msgid "User updated successfully."
 msgstr ""
 
@@ -2970,7 +2963,6 @@ msgstr ""
 #: privacyidea/static/components/register/views/register.html:18
 #: privacyidea/static/components/register/views/register.html:22
 #: privacyidea/static/components/token/views/token.details.html:373
-#: privacyidea/static/components/user/views/user.details.html:24
 #: privacyidea/static/components/user/views/user.password.html:6
 msgid "Username"
 msgstr ""
@@ -3050,13 +3042,13 @@ msgid ""
 "            You can also change the realms of each token later."
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.add.html:52
+#: privacyidea/static/components/user/views/user.add.html:54
 msgid ""
 "You have no editable resolvers defined. So you can not write\n"
 "                to any user store. If you want to add users, you need to\n"
 "                <a ui-sref=\"config.resolvers.list\">define an editable\n"
 "                    resolver</a>\n"
-"                 (like SQLResolver) and check the\n"
+"                (like SQLResolver) and check the\n"
 "                box \"Edit user store\"."
 msgstr ""
 
@@ -3169,7 +3161,7 @@ msgid "date"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.list.html:42
-#: privacyidea/static/components/user/views/user.details.html:129
+#: privacyidea/static/components/user/views/user.details.html:85
 #: privacyidea/static/components/user/views/user.list.html:29
 msgid "description"
 msgstr ""
@@ -3192,7 +3184,7 @@ msgid "enter some OTP value"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.list.html:51
-#: privacyidea/static/components/user/views/user.details.html:130
+#: privacyidea/static/components/user/views/user.details.html:86
 msgid "failcounter"
 msgstr ""
 
@@ -3228,7 +3220,7 @@ msgstr ""
 msgid "mOTP: classical mobile One Time Passwords"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.details.html:131
+#: privacyidea/static/components/user/views/user.details.html:87
 msgid "maxfail"
 msgstr ""
 
@@ -3248,12 +3240,12 @@ msgstr ""
 msgid "number"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.details.html:132
+#: privacyidea/static/components/user/views/user.details.html:88
 msgid "otplen"
 msgstr ""
 
 #. Translation in dynamic user creation
-#: privacyidea/static/components/user/controllers/userControllers.js:36
+#: privacyidea/static/components/user/controllers/userControllers.js:37
 msgid "password"
 msgstr ""
 
@@ -3302,7 +3294,7 @@ msgstr ""
 #: privacyidea/static/components/audit/views/audit.log.html:40
 #: privacyidea/static/components/token/views/token.challenges.html:28
 #: privacyidea/static/components/token/views/token.list.html:19
-#: privacyidea/static/components/user/views/user.details.html:125
+#: privacyidea/static/components/user/views/user.details.html:81
 msgid "serial"
 msgstr ""
 
@@ -3370,7 +3362,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:6
 #: privacyidea/static/components/config/views/config.resolvers.list.html:6
 #: privacyidea/static/components/token/views/token.list.html:27
-#: privacyidea/static/components/user/views/user.details.html:126
+#: privacyidea/static/components/user/views/user.details.html:82
 msgid "type"
 msgstr ""
 
@@ -3389,7 +3381,7 @@ msgstr ""
 msgid "username"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.details.html:128
+#: privacyidea/static/components/user/views/user.details.html:84
 msgid "window"
 msgstr ""
 

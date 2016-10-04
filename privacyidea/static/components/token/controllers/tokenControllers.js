@@ -310,6 +310,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             $scope.register_u2f($scope.enrolledToken.u2fRegisterRequest);
             $scope.click_wait=true;
         }
+        $('html,body').scrollTop(0);
     };
 
     $scope.enrollToken = function () {

@@ -57,7 +57,7 @@ msgstr "Aktion "
 
 #: privacyidea/static/components/config/views/config.policies.list.html:5
 #: privacyidea/static/components/token/views/token.details.html:22
-#: privacyidea/static/components/user/views/user.details.html:127
+#: privacyidea/static/components/user/views/user.details.html:83
 msgid "Active"
 msgstr "Aktiv"
 
@@ -162,7 +162,7 @@ msgstr "Zugewiesener Benutzer"
 
 #: privacyidea/static/components/token/views/token.assign.html:12
 #: privacyidea/static/components/token/views/token.html:44
-#: privacyidea/static/components/user/views/user.details.html:178
+#: privacyidea/static/components/user/views/user.details.html:134
 msgid "Assign Token"
 msgstr "Token zuweisen"
 
@@ -172,7 +172,7 @@ msgid "Assign User"
 msgstr "Benutzer zuweisen"
 
 #: privacyidea/static/components/token/views/token.assign.html:1
-#: privacyidea/static/components/user/views/user.details.html:173
+#: privacyidea/static/components/user/views/user.details.html:129
 msgid "Assign a new token {{ newTokenObject.serial }}"
 msgstr "Einen neuen Token {{ newTokenObject.serial }} zuweisen"
 
@@ -288,7 +288,7 @@ msgstr "Cache-Zeitüberschreitung (Sekunden)"
 #: privacyidea/static/components/token/views/token.details.html:272
 #: privacyidea/static/components/token/views/token.details.html:522
 #: privacyidea/static/components/token/views/token.getserial.html:83
-#: privacyidea/static/components/user/views/user.details.html:101
+#: privacyidea/static/components/user/views/user.details.html:56
 msgid "Cancel"
 msgstr "Abbrechen"
 
@@ -581,7 +581,7 @@ msgstr "Löschen"
 msgid "Delete User"
 msgstr "Benutzer löschen"
 
-#: privacyidea/static/components/user/views/user.details.html:109
+#: privacyidea/static/components/user/views/user.details.html:64
 msgid "Delete user"
 msgstr "Benutzer löschen"
 
@@ -595,7 +595,6 @@ msgstr "Benutzer löschen"
 #: privacyidea/static/components/token/views/token.enroll.email.html:18
 #: privacyidea/static/components/token/views/token.enroll.sms.html:25
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:17
-#: privacyidea/static/components/user/views/user.details.html:46
 #: privacyidea/static/components/user/views/user.password.html:21
 msgid "Description"
 msgstr "Beschreibung"
@@ -751,7 +750,7 @@ msgstr "Bearbeite Hosts-Maschinen-Resolver {{ resolvername }}"
 msgid "Edit realms"
 msgstr "Realms bearbeiten"
 
-#: privacyidea/static/components/user/views/user.details.html:94
+#: privacyidea/static/components/user/views/user.details.html:48
 msgid "Edit user"
 msgstr "Benutzer bearbeiten"
 
@@ -764,7 +763,6 @@ msgstr "Benutzerquelle editierbar"
 #: privacyidea/static/components/recovery/views/recovery.html:32
 #: privacyidea/static/components/register/views/register.html:48
 #: privacyidea/static/components/register/views/register.html:52
-#: privacyidea/static/components/user/views/user.details.html:57
 #: privacyidea/static/components/user/views/user.password.html:28
 msgid "Email"
 msgstr "EMail"
@@ -782,7 +780,7 @@ msgstr "Aktivieren"
 msgid "Enable token"
 msgstr "Token aktivieren"
 
-#: privacyidea/static/components/user/views/user.details.html:166
+#: privacyidea/static/components/user/views/user.details.html:122
 msgid "Enroll New Token"
 msgstr "Neuen Token ausrollen"
 
@@ -875,7 +873,7 @@ msgstr "Fehlgeschlagene Authentisierungen pro Token"
 msgid "Failed authentication requests per user"
 msgstr "Fehlgeschlagene Authentisierungen pro Benutzer"
 
-#: privacyidea/static/components/user/controllers/userControllers.js:234
+#: privacyidea/static/components/user/controllers/userControllers.js:182
 msgid "Failed to delete user."
 msgstr "Löschen des Benutzers fehlgeschlagen."
 
@@ -883,7 +881,7 @@ msgstr "Löschen des Benutzers fehlgeschlagen."
 msgid "Failed to reset your password."
 msgstr "Zurücksetzen des Passworts fehlgeschlagen."
 
-#: privacyidea/static/components/user/controllers/userControllers.js:216
+#: privacyidea/static/components/user/controllers/userControllers.js:164
 msgid "Failed to update user."
 msgstr "Aktualisieren des Benutzers fehlgeschlagen."
 
@@ -978,7 +976,6 @@ msgstr "System Dokumentation"
 
 #: privacyidea/static/components/register/views/register.html:38
 #: privacyidea/static/components/register/views/register.html:42
-#: privacyidea/static/components/user/views/user.details.html:29
 #: privacyidea/static/components/user/views/user.password.html:11
 msgid "Given name"
 msgstr "Vorname"
@@ -1343,7 +1340,6 @@ msgstr "Der Microsoft Internet Explorer wird nicht unterstützt."
 
 #: privacyidea/static/components/register/views/register.html:57
 #: privacyidea/static/components/register/views/register.html:60
-#: privacyidea/static/components/user/views/user.details.html:75
 #: privacyidea/static/components/user/views/user.password.html:40
 msgid "Mobile"
 msgstr "Mobiltelefon"
@@ -1560,12 +1556,11 @@ msgstr "Parameter"
 #: privacyidea/static/components/register/views/register.html:79
 #: privacyidea/static/components/register/views/register.html:84
 #: privacyidea/static/components/token/views/token.import.html:75
-#: privacyidea/static/components/user/views/user.details.html:83
 #: privacyidea/static/components/user/views/user.password.html:50
 msgid "Password"
 msgstr "Passwort"
 
-#: privacyidea/static/components/user/controllers/userControllers.js:155
+#: privacyidea/static/components/user/controllers/userControllers.js:89
 msgid "Password set successfully."
 msgstr "Passwort erfolgreich gesetzt."
 
@@ -1575,7 +1570,6 @@ msgstr "Fügen Sie hier den öffentlichen SSH-Schlüssel ein."
 
 #: privacyidea/static/components/register/views/register.html:65
 #: privacyidea/static/components/register/views/register.html:68
-#: privacyidea/static/components/user/views/user.details.html:67
 #: privacyidea/static/components/user/views/user.password.html:35
 msgid "Phone"
 msgstr "Telefon"
@@ -1969,8 +1963,8 @@ msgstr "Realms speichern"
 msgid "Save resolver"
 msgstr "Resolver speichern"
 
-#: privacyidea/static/components/user/views/user.add.html:47
-#: privacyidea/static/components/user/views/user.details.html:99
+#: privacyidea/static/components/user/views/user.add.html:49
+#: privacyidea/static/components/user/views/user.details.html:54
 msgid "Save user"
 msgstr "Benutzer speichern"
 
@@ -2140,7 +2134,6 @@ msgstr "Support"
 
 #: privacyidea/static/components/register/views/register.html:28
 #: privacyidea/static/components/register/views/register.html:32
-#: privacyidea/static/components/user/views/user.details.html:38
 #: privacyidea/static/components/user/views/user.password.html:16
 msgid "Surname"
 msgstr "Nachname"
@@ -3122,7 +3115,7 @@ msgstr "Token"
 msgid "Tokens and Applications for machine {{ machineid }}"
 msgstr "Token und Applikationen zur Maschine {{ machineid }}"
 
-#: privacyidea/static/components/user/views/user.details.html:113
+#: privacyidea/static/components/user/views/user.details.html:69
 msgid "Tokens for user {{ username }}"
 msgstr "Token des Benutzers {{ username }}"
 
@@ -3221,15 +3214,15 @@ msgstr "Benutzer Quelle"
 msgid "User account created. An Email has been sent to you."
 msgstr "Benutzerkonto wurde angelegt. Eine Email wurde an Sie gesendet."
 
-#: privacyidea/static/components/user/controllers/userControllers.js:125
+#: privacyidea/static/components/user/controllers/userControllers.js:59
 msgid "User created."
 msgstr "Benutzer angelegt."
 
-#: privacyidea/static/components/user/controllers/userControllers.js:228
+#: privacyidea/static/components/user/controllers/userControllers.js:176
 msgid "User deleted successfully."
 msgstr "Benutzer erfolgreich gelöscht."
 
-#: privacyidea/static/components/user/controllers/userControllers.js:210
+#: privacyidea/static/components/user/controllers/userControllers.js:156
 msgid "User updated successfully."
 msgstr "Benutzer erfolgreich aktualisiert."
 
@@ -3253,7 +3246,6 @@ msgstr "Benutzer-ID"
 #: privacyidea/static/components/register/views/register.html:18
 #: privacyidea/static/components/register/views/register.html:22
 #: privacyidea/static/components/token/views/token.details.html:373
-#: privacyidea/static/components/user/views/user.details.html:24
 #: privacyidea/static/components/user/views/user.password.html:6
 msgid "Username"
 msgstr "Benutzer"
@@ -3338,13 +3330,14 @@ msgstr ""
 "Hier wählen Sie den Realm, in den die Token importiert werden. Sie können "
 "später die die Realms der Token ändern."
 
-#: privacyidea/static/components/user/views/user.add.html:52
+#: privacyidea/static/components/user/views/user.add.html:54
+#, fuzzy
 msgid ""
 "You have no editable resolvers defined. So you can not write\n"
 "                to any user store. If you want to add users, you need to\n"
 "                <a ui-sref=\"config.resolvers.list\">define an editable\n"
 "                    resolver</a>\n"
-"                 (like SQLResolver) and check the\n"
+"                (like SQLResolver) and check the\n"
 "                box \"Edit user store\"."
 msgstr ""
 "Sie haben keine editierbaren Resolver definiert. Daher können Sie in keine "
@@ -3472,7 +3465,7 @@ msgid "date"
 msgstr "Datum"
 
 #: privacyidea/static/components/token/views/token.list.html:42
-#: privacyidea/static/components/user/views/user.details.html:129
+#: privacyidea/static/components/user/views/user.details.html:85
 #: privacyidea/static/components/user/views/user.list.html:29
 msgid "description"
 msgstr "Beschreibung"
@@ -3495,7 +3488,7 @@ msgid "enter some OTP value"
 msgstr "Geben Sie einen OTP-Wert ein..."
 
 #: privacyidea/static/components/token/views/token.list.html:51
-#: privacyidea/static/components/user/views/user.details.html:130
+#: privacyidea/static/components/user/views/user.details.html:86
 msgid "failcounter"
 msgstr "Fehlerzähler"
 
@@ -3531,7 +3524,7 @@ msgstr "mOTP-PIN"
 msgid "mOTP: classical mobile One Time Passwords"
 msgstr "mOTP: Klassischer Mobiles Einmal-Passwort."
 
-#: privacyidea/static/components/user/views/user.details.html:131
+#: privacyidea/static/components/user/views/user.details.html:87
 msgid "maxfail"
 msgstr "Max. Fehlerzähler"
 
@@ -3551,12 +3544,12 @@ msgstr "Neuer Realm"
 msgid "number"
 msgstr "Nr."
 
-#: privacyidea/static/components/user/views/user.details.html:132
+#: privacyidea/static/components/user/views/user.details.html:88
 msgid "otplen"
 msgstr "OTP Länge"
 
 #. Translation in dynamic user creation
-#: privacyidea/static/components/user/controllers/userControllers.js:36
+#: privacyidea/static/components/user/controllers/userControllers.js:37
 msgid "password"
 msgstr "Passwort"
 
@@ -3609,7 +3602,7 @@ msgstr "widerrufen"
 #: privacyidea/static/components/audit/views/audit.log.html:40
 #: privacyidea/static/components/token/views/token.challenges.html:28
 #: privacyidea/static/components/token/views/token.list.html:19
-#: privacyidea/static/components/user/views/user.details.html:125
+#: privacyidea/static/components/user/views/user.details.html:81
 msgid "serial"
 msgstr "Seriennummer"
 
@@ -3677,7 +3670,7 @@ msgstr "Benutzeranzahl: {{ usercount }}"
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:6
 #: privacyidea/static/components/config/views/config.resolvers.list.html:6
 #: privacyidea/static/components/token/views/token.list.html:27
-#: privacyidea/static/components/user/views/user.details.html:126
+#: privacyidea/static/components/user/views/user.details.html:82
 msgid "type"
 msgstr "Typ"
 
@@ -3698,7 +3691,7 @@ msgstr "Benutzer"
 msgid "username"
 msgstr "Benutzername"
 
-#: privacyidea/static/components/user/views/user.details.html:128
+#: privacyidea/static/components/user/views/user.details.html:84
 msgid "window"
 msgstr "Fenster"
 

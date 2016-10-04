@@ -95,6 +95,14 @@ If you want to setup a development environment start like this::
 You may also want to read the blog post about development and debugging at
 https://www.privacyidea.org/privacyidea-development-howto/
 
+Getting and updating submodules
+===============================
+
+Some authentication modules and the admin client are located in git submodules.
+To fetch the latest release of these run::
+
+   git pull --recurse-submodules
+
 Running it
 ==========
 
