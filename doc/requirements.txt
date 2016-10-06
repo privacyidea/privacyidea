@@ -21,7 +21,7 @@ funcparserlib==0.3.6
 gunicorn==19.3.0
 itsdangerous==0.24
 Jinja2==2.7.3
-ldap3==0.9.8.4
+ldap3>=0.9.8.4
 Mako>=0.9.1
 MarkupSafe==0.23
 mock==1.0.1
