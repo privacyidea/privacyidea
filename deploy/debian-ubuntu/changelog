@@ -1,4 +1,4 @@
-python-privacyidea (2.15~dev17-1trusty) trusty; urgency=low
+python-privacyidea (2.15-1trusty) trusty; urgency=low
  
   Features
   * Client Overview. Display the type of the requesting
@@ -21,9 +21,7 @@ python-privacyidea (2.15~dev17-1trusty) trusty; urgency=low
   * Fixing RemoteUser fails to display WebUI (#499)
   * String comparison in HOSTS resolver (#484)
 
-
-
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 01 Sep 2016 14:15:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 06 Oct 2016 08:30:00 +0200
 
 python-privacyidea (2.14-1trusty) trusty; urgency=low
 
