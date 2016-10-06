@@ -372,8 +372,11 @@
             <tr>
                 <td translate>Username</td>
                 <td><a ui-sref="user.details({username: token.username,
-            realmname: token.user_realm})">
-                    {{ token.username }}</a></td>
+            realmname: token.user_realm,
+            resolvername: token.resolver,
+            editable: token.user_editable})">
+                    {{ token.username }}
+                </a></td>
                 <td>
                     <button ng-hide="token.locked"
                             id="unassignAdminButton"

@@ -138,6 +138,7 @@ class AUTHTYPE(object):
 
 class IdResolver (UserIdResolver):
 
+    # If the resolver could be configured editable
     updateable = True
 
     def __init__(self):
@@ -156,7 +157,7 @@ class IdResolver (UserIdResolver):
         self.userinfo = {}
         self.uidtype = ""
         self.noreferrals = False
-        self.editable = False
+        self._editable = False
         self.certificate = ""
         self.resolverId = self.uri
         self.scope = ldap3.SUBTREE
@@ -544,7 +545,7 @@ class IdResolver (UserIdResolver):
         self.map = yaml.load(userinfo)
         self.uidtype = config.get("UIDTYPE", "DN")
         self.noreferrals = config.get("NOREFERRALS", False)
-        self.editable = config.get("EDITABLE", False)
+        self._editable = config.get("EDITABLE", False)
         self.certificate = config.get("CACERTIFICATE")
         self.scope = config.get("SCOPE") or ldap3.SUBTREE
         self.resolverId = self.uri
@@ -940,3 +941,13 @@ class IdResolver (UserIdResolver):
             raise Exception("Authtype {0!s} not supported".format(authtype))
 
         return l
+
+    @property
+    def editable(self):
+        """
+        Return true, if the instance of the resolver is configured editable
+        :return:
+        """
+        # Depending on the database this might look different
+        # Usually this is "1"
+        return self._editable in [1, "1", True]

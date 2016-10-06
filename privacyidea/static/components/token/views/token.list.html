@@ -112,7 +112,9 @@
             <!--<td>{{ token.otplen }}</td>-->
             <td ng-show="loggedInUser.role == 'admin'">
                 <a ui-sref="user.details({username: token.username,
-                            realmname: token.user_realm})">
+                            realmname: token.user_realm,
+                            resolvername: token.resolver,
+                            editable: token.user_editable})">
                 {{ token.username }}</a>
             </td>
             <td ng-show="loggedInUser.role == 'admin'">

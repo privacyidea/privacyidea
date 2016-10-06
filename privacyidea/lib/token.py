@@ -77,6 +77,7 @@ from privacyidea.lib.config import (get_token_class, get_token_prefix,
 from privacyidea.lib.user import get_user_info
 from gettext import gettext as _
 from privacyidea.lib.realm import realm_is_defined
+from privacyidea.lib.resolver import get_resolver_object
 from privacyidea.lib.policy import ACTION, SCOPE
 from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_does_not_exist,
@@ -415,6 +416,8 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                 if userobject:
                     token_dict["username"] = userobject.login
                     token_dict["user_realm"] = userobject.realm
+                    token_dict["user_editable"] = get_resolver_object(
+                        userobject.resolver).editable
             except Exception as exx:
                 log.error("User information can not be retrieved: {0!s}".format(exx))
                 token_dict["username"] = "**resolver error**"

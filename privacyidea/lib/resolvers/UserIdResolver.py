@@ -60,6 +60,8 @@ class UserIdResolver(object):
               }
     name = ""
     id = "baseid"
+
+    # If the resolver could be configured editable
     updateable = False
 
     def close(self):
@@ -266,3 +268,11 @@ class UserIdResolver(object):
         success = False
         desc = "Not implemented"
         return success, desc
+
+    @property
+    def editable(self):
+        """
+        Return true, if the Instance! of this resolver is configured editable.
+        :return:
+        """
+        return False

@@ -266,6 +266,7 @@ class IdResolver (UserIdResolver):
                     "description": "text",
                     }
 
+    # If the resolver could be configured editable
     updateable = True
 
     @staticmethod
@@ -278,7 +279,7 @@ class IdResolver (UserIdResolver):
         :type  config: the privacyidea config dict
         """
         log.info("Setting up the SQLResolver")
-    
+
     def __init__(self):
         self.resolverId = ""
         self.server = ""
@@ -299,6 +300,7 @@ class IdResolver (UserIdResolver):
         self.pool_size = 10
         self.pool_timeout = 120
         self.engine = None
+        self._editable = False
         return
 
     def getSearchFields(self):
@@ -332,7 +334,7 @@ class IdResolver (UserIdResolver):
         This function checks the password for a given uid.
         - returns true in case of success
         -         false if password does not match
-        
+
         """
         def _check_ssha(pw_hash, password, hashfunc, length):
             pw_hash_bin = b64decode(pw_hash.split("}")[1])
@@ -341,21 +343,21 @@ class IdResolver (UserIdResolver):
             hr = hashfunc(password)
             hr.update(salt)
             return digest == hr.digest()
-        
+
         def _check_sha(pw_hash, password):
             b64_db_password = pw_hash[5:]
             hr = hashlib.sha1(password).digest()
             b64_password = b64encode(hr)
             return b64_password == b64_db_password
-        
+
         def _otrs_sha256(pw_hash, password):
             hr = hashlib.sha256(password)
             digest = binascii.hexlify(hr.digest())
             return pw_hash == digest
-       
+
         res = False
         userinfo = self.getUserInfo(uid)
-        
+
         database_pw = userinfo.get("password", "XXXXXXX")
         if database_pw[:2] in ["$P", "$S"]:
             # We have a phpass (wordpress) password
@@ -376,20 +378,20 @@ class IdResolver (UserIdResolver):
         elif len(userinfo.get("password")) == 64:
             # OTRS sha256 password
             res = _otrs_sha256(database_pw, password)
-        
+
         return res
-    
+
     def getUserInfo(self, userId):
         """
         This function returns all user info for a given userid/object.
-        
+
         :param userId: The userid of the object
         :type userId: string
         :return: A dictionary with the keys defined in self.map
         :rtype: dict
         """
         userinfo = {}
-        
+
         try:
             conditions = []
             column = self.map.get("userid")
@@ -398,16 +400,16 @@ class IdResolver (UserIdResolver):
                                                    self.where)
             filter_condition = and_(*conditions)
             result = self.session.query(self.TABLE).filter(filter_condition)
-                                                      
+
             for r in result:
                 if userinfo.keys():  # pragma: no cover
                     raise Exception("More than one user with userid {0!s} found!".format(userId))
                 userinfo = self._get_user_from_mapped_object(r)
         except Exception as exx:  # pragma: no cover
             log.error("Could not get the userinformation: {0!r}".format(exx))
-        
+
         return userinfo
-    
+
     def getUsername(self, userId):
         """
         Returns the username/loginname for a given userid
@@ -418,17 +420,17 @@ class IdResolver (UserIdResolver):
         """
         info = self.getUserInfo(userId)
         return info.get('username', "")
-   
+
     def getUserId(self, LoginName):
         """
         resolve the loginname to the userid.
-        
+
         :param LoginName: The login name from the credentials
         :type LoginName: string
         :return: UserId as found for the LoginName
         """
         userid = ""
-        
+
         try:
             conditions = []
             column = self.map.get("username")
@@ -437,7 +439,7 @@ class IdResolver (UserIdResolver):
                                                    self.where)
             filter_condition = and_(*conditions)
             result = self.session.query(self.TABLE).filter(filter_condition)
-                                                      
+
             for r in result:
                 if userid != "":    # pragma: no cover
                     raise Exception("More than one user with loginname"
@@ -446,9 +448,9 @@ class IdResolver (UserIdResolver):
                 userid = user["id"]
         except Exception as exx:    # pragma: no cover
             log.error("Could not get the userinformation: {0!r}".format(exx))
-        
+
         return userid
-    
+
     def _get_user_from_mapped_object(self, ro):
         """
         :param ro: row
@@ -464,7 +466,7 @@ class IdResolver (UserIdResolver):
         except UnicodeEncodeError:  # pragma: no cover
             log.error("Failed to convert user: {0!r}".format(r))
             log.debug("{0!s}".format(traceback.format_exc()))
-        
+
         for key in self.map.keys():
             try:
                 raw_value = r.get(self.map.get(key))
@@ -479,7 +481,7 @@ class IdResolver (UserIdResolver):
                 user[key] = "decoding_error"
                 log.error("Failed to convert user: {0!r}".format(r))
                 log.debug("{0!s}".format(traceback.format_exc()))
-        
+
         return user
 
     def getUserList(self, searchDict=None):
@@ -505,14 +507,14 @@ class IdResolver (UserIdResolver):
         result = self.session.query(self.TABLE).\
             filter(filter_condition).\
             limit(self.limit)
-                                                      
+
         for r in result:
             user = self._get_user_from_mapped_object(r)
             if "id" in user:
                 users.append(user)
 
         return users
-    
+
     def getResolverId(self):
         """
         Returns the resolver Id
@@ -528,11 +530,11 @@ class IdResolver (UserIdResolver):
     @staticmethod
     def getResolverType():
         return IdResolver.getResolverClassType()
-    
+
     def loadConfig(self, config):
         """
         Load the config from conf.
-        
+
         :param config: The configuration from the Config Table
         :type config: dict
         """
@@ -545,6 +547,7 @@ class IdResolver (UserIdResolver):
         self.user = config.get('User', "")
         self.password = config.get('Password', "")
         self.table = config.get('Table', "")
+        self._editable = config.get("Editable", False)
         usermap = config.get('Map', {})
         self.map = yaml.load(usermap)
         self.reverse_map = dict([[v, k] for k, v in self.map.items()])
@@ -553,7 +556,7 @@ class IdResolver (UserIdResolver):
         self.conParams = config.get('conParams', "")
         self.pool_size = int(config.get('poolSize') or 5)
         self.pool_timeout = int(config.get('poolTimeout') or 10)
-        
+
         # create the connectstring like
         params = {'Port': self.port,
                   'Password': self.password,
@@ -586,7 +589,7 @@ class IdResolver (UserIdResolver):
         self.session._model_changes = {}
         self.db = SQLSoup(self.engine)
         self.TABLE = self.db.entity(self.table)
-        
+
         return self
 
     @classmethod
@@ -617,7 +620,7 @@ class IdResolver (UserIdResolver):
     def _create_connect_string(param):
         """
         create the connectstring
-        
+
         Port, Password, conParams, Driver, User,
         Server, Database
         """
@@ -645,27 +648,27 @@ class IdResolver (UserIdResolver):
             connect_string = str(connect_string)
         log.debug("SQL connectstring: {0!r}".format(connect_string))
         return connect_string
-            
+
     @classmethod
     def testconnection(cls, param):
         """
         This function lets you test the to be saved SQL connection.
-              
+
         :param param: A dictionary with all necessary parameter
                         to test the connection.
         :type param: dict
-        
+
         :return: Tuple of success and a description
         :rtype: (bool, string)
-        
+
         Parameters are: Server, Driver, Database, User, Password, Port,
                         Limit, Table, Map
                         Where, Encoding, conParams
-            
+
         """
         num = -1
         desc = None
-        
+
         connect_string = cls._create_connect_string(param)
         log.info("using the connect string {0!s}".format(connect_string))
         engine = create_engine(connect_string)
@@ -683,7 +686,7 @@ class IdResolver (UserIdResolver):
             desc = "Found {0:d} users.".format(num)
         except Exception as exx:
             desc = "failed to retrieve users: {0!s}".format(exx)
-            
+
         return num, desc
 
     def add_user(self, attributes=None):
@@ -778,3 +781,12 @@ class IdResolver (UserIdResolver):
         self.db.commit()
         return r
 
+    @property
+    def editable(self):
+        """
+        Return true, if the instance of the resolver is configured editable
+        :return:
+        """
+        # Depending on the database this might look different
+        # Usually this is "1"
+        return self._editable in [1, "1", True]
