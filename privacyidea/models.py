@@ -535,8 +535,7 @@ class Token(MethodsMixin, db.Model):
         :return: The token info as dictionary
         """
         ret = {}
-        tokeninfos = TokenInfo.query.filter_by(token_id=self.id)
-        for ti in tokeninfos:
+        for ti in self.info_list:
             if ti.Type:
                 ret[ti.Key + ".type"] = ti.Type
             ret[ti.Key] = ti.Value
