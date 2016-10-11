@@ -114,7 +114,8 @@ def token(ttype=None):
     serial = getParam(request.all_data, "serial")
     user = get_user_from_param(request.all_data)
     g.audit_object.log({"success": 1,
-                        "user": user,
+                        "user": user.login,
+                        "realm": user.realm,
                         "serial": serial,
                         "tokentype": ttype})
     if res[0] == "json":
