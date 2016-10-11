@@ -66,3 +66,7 @@ sheet to customize the look and fell. Read more at :ref:`themes`.
 .. note:: If you ever need passwords being logged in the log file, you may
    set ``PI_LOGLEVEL = 9``, which is a lower log level than ``logging.DEBUG``.
    Use this setting with caution and always delete the logfiles!
+
+privacyIDEA digitally signs the responses. You can disable this using the
+parameter ``PI_NO_RESPONSE_SIGN``. Set this to *True* to suppress the
+response signature.

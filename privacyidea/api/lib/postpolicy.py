@@ -142,6 +142,9 @@ def sign_response(request, response):
     :param request: The Request object
     :param response: The Response object
     """
+    if current_app.config.get("PI_NO_RESPONSE_SIGN"):
+        return response
+
     priv_file = current_app.config.get("PI_AUDIT_KEY_PRIVATE")
     pub_file = current_app.config.get("PI_AUDIT_KEY_PUBLIC")
     sign_object = Sign(priv_file, pub_file)
