@@ -178,13 +178,20 @@ class Audit(AuditBase):
             # We do not search if the search value only consists of '*'
             if search_value.strip() != '' and search_value.strip('*') != '':
                 try:
-                    search_value = search_value.replace('*', '%')
-                    if '%' in search_value:
-                        conditions.append(getattr(LogEntry,
-                                                  search_key).like(search_value))
-                    else:
+                    if search_key == "success":
+                        # "success" is the only integer.
+                        search_value = search_value.strip("*")
                         conditions.append(getattr(LogEntry, search_key) ==
-                                          search_value)
+                                          int(search_value))
+                    else:
+                        # All other keys are strings
+                        search_value = search_value.replace('*', '%')
+                        if '%' in search_value:
+                            conditions.append(getattr(LogEntry,
+                                                      search_key).like(search_value))
+                        else:
+                            conditions.append(getattr(LogEntry, search_key) ==
+                                              search_value)
                 except Exception as exx:
                     # The search_key was no search key but some
                     # bullshit stuff in the param
