@@ -208,15 +208,6 @@ myApp.controller("tokenDetailController", function ($scope,
                 $scope.realms = data.result.value;
         });
 
-
-        // read the application definition from the server
-        MachineFactory.getApplicationDefinition(function(data){
-            $scope.Applications = data.result.value;
-            var applications = [];
-            for(var k in $scope.Applications) applications.push(k);
-            $scope.formInit = { application: applications};
-        });
-
         $scope.attachMachine = function () {
             // newToken.serial, application
             var params = $scope.form.options;
@@ -275,7 +266,17 @@ myApp.controller("tokenDetailController", function ($scope,
             $scope.getMachines();
         };
 
-        $scope.getMachines();
+        if (AuthFactory.checkRight("manage_machine_tokens")) {
+            // read the application definition from the server
+            MachineFactory.getApplicationDefinition(function (data) {
+                $scope.Applications = data.result.value;
+                var applications = [];
+                for (var k in $scope.Applications) applications.push(k);
+                $scope.formInit = {application: applications};
+            });
+            $scope.getMachines();
+        }
+
     }  // End of admin functions
 
 

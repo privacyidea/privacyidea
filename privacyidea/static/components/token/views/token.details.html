@@ -436,7 +436,8 @@
 </div>
 
 <!-- ============ Machines ======================= -->
-<div ng-show="loggedInUser.role == 'admin'">
+<div ng-show="loggedInUser.role == 'admin' &&
+                checkRight('manage_machine_tokens')">
     <h4 translate>Machines this token is attached to</h4>
 
 
