@@ -1360,7 +1360,7 @@ def get_static_policy_definitions(scope=None):
                 'value': get_token_types()
             },
             ACTION.REALMDROPDOWN: {
-                'type': 'bool',
+                'type': 'str',
                 'desc': _("If this is checked, a dropdown combobox with the "
                           "realms is displayed in the login screen.")
             }

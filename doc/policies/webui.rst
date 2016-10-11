@@ -207,8 +207,14 @@ realm_dropdown
 
 .. index:: Realmbox
 
-type: bool
+type: str
 
 If this policy is activated the web UI will display a realm dropdown box.
 Of course this policy can not filter for users or realms, since the
 user is not known at this moment.
+
+The type of this action was changed to "string" in version 2.16. You can set
+a space separated list of realm names. Only these realmnames are displayed in
+the dropdown box.
+
+.. note:: The realm names in the policy are not checked, if they realy exist!

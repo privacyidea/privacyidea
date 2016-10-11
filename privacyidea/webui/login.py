@@ -76,7 +76,17 @@ def single_page_application():
                                                 scope=SCOPE.WEBUI,
                                                 client=client_ip)
     if realm_dropdown:
-        realms = ",".join(get_realms().keys())
+        try:
+            realm_dropdown_values = policy_object.get_action_values(
+                action=ACTION.REALMDROPDOWN,
+                scope=SCOPE.WEBUI,
+                client=client_ip)
+            # Use the realms from the policy.
+            realms = ",".join(realm_dropdown_values)
+        except AttributeError as ex:
+            # The policy is still a boolean realm_dropdown action
+            # Thus we display ALL realms
+            realms = ",".join(get_realms().keys())
 
     try:
         if is_remote_user_allowed(request):
