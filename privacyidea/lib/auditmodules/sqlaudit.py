@@ -78,7 +78,7 @@ logentry = Table(TABLE_NAME,
                  Column('action_detail', String(50)),
                  Column('info', String(50)),
                  Column('privacyidea_server', String(255)),
-                 Column('client', String(20)),
+                 Column('client', String(50)),
                  Column('loglevel', String(12)),
                  Column('clearance_level', String(12))
                  )
