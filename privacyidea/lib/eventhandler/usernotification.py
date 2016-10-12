@@ -34,11 +34,11 @@ from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.smtpserver import send_email_identifier
 from privacyidea.lib.smsprovider.SMSProvider import send_sms_identifier
 from privacyidea.lib.auth import ROLE
-from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.token import get_token_owner, get_tokens
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
+from privacyidea.lib.config import get_token_types
 from gettext import gettext as _
 import json
 import logging
@@ -128,8 +128,18 @@ class UserNotificationEventHandler(BaseEventHandler):
         cond = {
             "realm": {
                 "type": "str",
-                "desc": _("The user realm, for which this event should aply."),
+                "desc": _("The user realm, for which this event should apply."),
                 "value": realms.keys()
+            },
+            "tokenrealm": {
+                "type": "multi",
+                "desc": _("The token realm, for which this event shoud apply."),
+                "value": [{"name": r} for r in realms.keys()]
+            },
+            "tokentype": {
+                "type": "multi",
+                "desc": _("The type of the token."),
+                "value": [{"name": r} for r in get_token_types()]
             },
             "logged_in_user": {
                 "type": "str",
@@ -222,8 +232,8 @@ class UserNotificationEventHandler(BaseEventHandler):
         This method executes the defined action in the given event.
 
         :param action:
-        :param options: Contains the flask parameters g and request and the
-            handler_def configuration
+        :param options: Contains the flask parameters g, request, response
+            and the handler_def configuration
         :type options: dict
         :return:
         """

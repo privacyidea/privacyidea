@@ -63,6 +63,7 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
                     $scope.handlerOptions = actions.result.value;
                     $scope.handlerActions = Object.keys($scope.handlerOptions);
                     $scope.form = event.result.value[0];
+                    // tick the checked events
                     for (var i=0; i<$scope.availableEvents.length; i++) {
                        var name = $scope.availableEvents[i].name;
                         if ($scope.form.event.indexOf(name) >= 0) {
@@ -72,14 +73,14 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
                     // set the options
                     $scope.actionChanged();
                     $scope.opts = event.result.value[0].options;
-                    // get the available conditions
-                    $scope.getHandlerConditions();
                     // get the configured conditions
                     $scope.conds = event.result.value[0].conditions;
                     angular.forEach($scope.conds, function(value, cond){
                         console.log("[Condition] " + cond + ": " + value);
                         $scope.conditionCheckBox[cond] = true;
                     });
+                    // get the available conditions
+                    $scope.getHandlerConditions();
                 });
         });
     };
@@ -126,7 +127,18 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
         $scope.form.conditions = {};
         angular.forEach($scope.conditionCheckBox, function(activated, value){
             if (activated===true) {
-                $scope.form.conditions[value] = $scope.conds[value];
+                if (typeof $scope.conds[value] === "object") {
+                    // push all ticked values
+                    var multivalue = Array();
+                    angular.forEach($scope.conds[value], function(mval){
+                        if (mval.ticked === true) {
+                            multivalue.push(mval.name);
+                        }
+                    });
+                    $scope.form.conditions[value] = multivalue.join(",")
+                } else {
+                    $scope.form.conditions[value] = $scope.conds[value];
+                }
             }
         });
         ConfigFactory.setEvent($scope.form, function() {
@@ -151,6 +163,24 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
         ConfigFactory.getHandlerConditions($scope.form.handlermodule,
             function (conditions) {
                 $scope.handlerConditions = conditions.result.value;
+                // tick selected handlerConditions, if type===multi
+                angular.forEach($scope.handlerConditions, function(condition, name){
+                     if (condition.type === "multi" && Object.keys($scope.conds).indexOf(name) >= 0) {
+                        console.log("The multi condition " + name + " is" +
+                            " configured! We need to tick the values.");
+                        var tickedConditions = $scope.conds[name].split(",");
+                        // Now we iterate over the possible values of this
+                        // condition
+                        var possibleValues = $scope.handlerConditions[name].value;
+                        for (var i=0; i<possibleValues.length; i++) {
+                            console.log("check " + possibleValues[i].name);
+                            if (tickedConditions.indexOf(
+                                $scope.handlerConditions[name].value[i].name) >= 0) {
+                                $scope.handlerConditions[name].value[i].ticked = true;
+                            }
+                        }
+                    }
+                });
             });
     };
 

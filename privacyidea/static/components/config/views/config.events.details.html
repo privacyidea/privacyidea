@@ -53,12 +53,21 @@
             </td>
             <td>
                 <select class="form-control"
-                        ng-show="condition.value"
+                        ng-show="condition.type!=='multi' && condition.value"
                         ng-disabled="!conditionCheckBox[conditionname]"
                         ng-required="condition.required && condition.value"
                         ng-model="conds[conditionname]"
                         ng-options="value for value in condition.value">
                 </select>
+                <div isteven-multi-select
+                     ng-show="condition.type==='multi'"
+                     ng-disabled="!conditionCheckBox[conditionname]"
+                     input-model="condition.value"
+                     output-model="conds[conditionname]"
+                     button-label="icon name"
+                     item-label="icon name maker"
+                     tick-property="ticked">
+                </div>
                 <textarea type="text" rows="6"
                           ng-disabled="!conditionCheckBox[conditionname]"
                         ng-required="condition.required && !condition.value"
