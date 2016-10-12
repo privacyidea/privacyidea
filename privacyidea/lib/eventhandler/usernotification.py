@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-10-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add tokentype, tokenrealm and serial
+#             Add multi and regexp
 #  2016-07-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add notification conditions
 #  2016-05-06 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -42,6 +45,7 @@ from privacyidea.lib.config import get_token_types
 from gettext import gettext as _
 import json
 import logging
+import re
 log = logging.getLogger(__name__)
 
 DEFAULT_BODY = """
@@ -122,6 +126,8 @@ class UserNotificationEventHandler(BaseEventHandler):
         * type of logged in user and
         * successful or failed value.success
 
+        allowed types are str, multi, text, regexp
+
         :return: dict
         """
         realms = get_realms()
@@ -133,7 +139,8 @@ class UserNotificationEventHandler(BaseEventHandler):
             },
             "tokenrealm": {
                 "type": "multi",
-                "desc": _("The token realm, for which this event shoud apply."),
+                "desc": _("The token realm, for which this event should "
+                          "apply."),
                 "value": [{"name": r} for r in realms.keys()]
             },
             "tokentype": {
@@ -157,13 +164,17 @@ class UserNotificationEventHandler(BaseEventHandler):
                 "desc": _("Check if the max failcounter of the token is "
                           "reached."),
                 "value": ("True", "False")
+            },
+            "serial": {
+                "type": "regexp",
+                "desc": _("Action is triggered, if the serial matches this "
+                          "regular expression.")
             }
         }
         return cond
 
     @staticmethod
     def _get_user(request):
-        #user = get_user_from_param(request.all_data)
         user = request.User
         serial = request.all_data.get("serial")
         if user.is_empty() and serial:
@@ -187,6 +198,16 @@ class UserNotificationEventHandler(BaseEventHandler):
         conditions = e_handler_def.get("conditions")
         content = json.loads(response.data)
         user = self._get_user(request)
+
+        serial = request.all_data.get("serial") or \
+                 content.get("detail", {}).get("serial")
+        token_obj_list = get_tokens(serial=serial)
+        tokenrealms = []
+        tokentype = None
+        if token_obj_list:
+            tokenrealms = token_obj_list[0].get_realms()
+            tokentype = token_obj_list[0].get_tokentype()
+
         if "realm" in conditions:
             res = user.realm == conditions.get("realm")
 
@@ -207,8 +228,6 @@ class UserNotificationEventHandler(BaseEventHandler):
 
         # checking of max-failcounter state of the token
         if "token_locked" in conditions and res:
-            serial = request.all_data.get("serial") or \
-                     content.get("detail", {}).get("serial")
             if serial:
                 # There is a distinct serial number
                 tokens = get_tokens(serial=serial)
@@ -221,9 +240,27 @@ class UserNotificationEventHandler(BaseEventHandler):
             else:
                 # check all tokens of the user, if any token is maxfail
                 token_objects = get_tokens(user=user, maxfail=True)
-                serial = ','.join([tok.get_serial() for tok in token_objects])
-            if not serial:
+                if not ','.join([tok.get_serial() for tok in token_objects]):
+                    res = False
+
+        if "tokenrealm" in conditions and res:
+            if tokenrealms:
                 res = False
+                for trealm in tokenrealms:
+                    if trealm in conditions.get("tokenrealm").split(","):
+                        res = True
+                        break
+
+        if "tokentype" in conditions and res:
+            if tokentype:
+                res = False
+                if tokentype in conditions.get("tokentype").split(","):
+                    res = True
+
+        if "serial" in conditions and res:
+            serial_match = conditions.get("serial")
+            if serial:
+                res = bool(re.match(serial_match, serial))
 
         return res
 

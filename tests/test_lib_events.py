@@ -314,3 +314,83 @@ class UserNotificationTestCase(MyTestCase):
 
         r = uhandler.do("sendmail", options=options)
         self.assertEqual(r, True)
+
+    @smtpmock.activate
+    def test_08_check_conditions_serial(self):
+        uhandler = UserNotificationEventHandler()
+        # check a serial with regexp
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1"},
+                                 headers={})
+
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "serial": "OATH123456"}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"serial": "^OATH.*"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # Serial matches the regexp
+        self.assertEqual(r, True)
+
+    def test_09_check_conditions_tokenrealm(self):
+        uhandler = UserNotificationEventHandler()
+        # check if tokenrealm is contained
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1"},
+                                 headers={})
+
+        tok = init_token({"serial": "oath1234", "type": "spass"},
+                         user=User("cornelius", "realm1"))
+
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "serial": "oath1234"}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"tokenrealm": "realm1,realm2,"
+                                                          "realm3"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # Serial matches the regexp
+        self.assertEqual(r, True)
+
+    def test_10_check_conditions_tokentype(self):
+        uhandler = UserNotificationEventHandler()
+        # check if tokenrealm is contained
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1"},
+                                 headers={})
+
+        tok = init_token({"serial": "oath1234", "type": "spass"},
+                         user=User("cornelius", "realm1"))
+
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "serial": "oath1234"}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"tokentype": "totp,spass,oath,"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # Serial matches the regexp
+        self.assertEqual(r, True)

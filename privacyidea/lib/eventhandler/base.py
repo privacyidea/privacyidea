@@ -61,6 +61,9 @@ class BaseEventHandler(object):
     def conditions(cls):
         """
         Return a dictionary of possible conditions of an event handler
+
+        allowed types are str, multi, text, regexp
+
         :return: dictionary of conditions
         """
         return {}

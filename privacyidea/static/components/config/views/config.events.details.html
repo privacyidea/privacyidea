@@ -79,7 +79,8 @@
                        ng-disabled="!conditionCheckBox[conditionname]"
                        ng-required="condition.required && !condition.value"
                        ng-model="conds[conditionname]"
-                       ng-show="condition.type==='str' && !condition.value">
+                       ng-show="(condition.type==='str' && !condition.value)
+                            || condition.type==='regexp'">
                 <p class="help help-block"
                     ng-disabled="!conditionCheckBox[conditionname]">
                     {{ condition.desc }}
