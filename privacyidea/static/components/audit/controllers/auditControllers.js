@@ -60,6 +60,11 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         $scope.params.action = "*" + ($scope.actionFilter || "") + "*";
         $scope.params.success = "*" + ($scope.successFilter || "") + "*";
         $scope.params.action_detail = "*" + ($scope.action_detailFilter || "") + "*";
+        $scope.params.realm = "*" + ($scope.realmFilter || "") + "*";
+        $scope.params.client = "*" + ($scope.clientFilter || "") + "*";
+        $scope.params.privacyidea_server = "*" + ($scope.serverFilter || "") + "*";
+        $scope.params.info = "*" + ($scope.infoFilter || "") + "*";
+        $scope.params.date = "*" + ($scope.dateFilter || "") + "*";
         console.log("Request Audit Trail with params");
         console.log($scope.params);
         AuditFactory.get($scope.params, function(data) {
