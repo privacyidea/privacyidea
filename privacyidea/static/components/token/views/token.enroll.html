@@ -37,7 +37,9 @@
         </div>
         <!-- Token PIN -->
         <div class="form-group"
-             ng-show="loggedInUser.role == 'user' && !hidePin && !$state.includes('token.wizard')">
+             ng-show="loggedInUser.role == 'user' && !hidePin &&
+                    !$state.includes('token.wizard') &&
+                    checkRight('enrollpin')">
             <label for="otppin" translate>PIN</label>
             <input name="otppin" ng-model="newUser.pin"
                    type=password class="form-control"
@@ -50,7 +52,8 @@
         </div>
 
         <!-- Extended attributes -->
-        <accordion ng-hide="$state.includes('token.wizard')">
+        <accordion ng-hide="$state.includes('token.wizard') ||
+                        loggedInUser.role=='user'">
             <accordion-group heading="{{ 'Extended Attributes'|translate }}">
                 <div class="form-group col-sm-6">
                     <label for="validity_start"

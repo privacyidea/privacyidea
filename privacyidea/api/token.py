@@ -79,7 +79,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            check_max_token_realm,
                                            init_tokenlabel, init_random_pin,
                                            encrypt_pin, check_otp_pin,
-                                           check_external, init_token_defaults)
+                                           check_external, init_token_defaults,
+                                           enroll_pin)
 from privacyidea.api.lib.postpolicy import (save_pin_change,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -107,6 +108,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(check_max_token_user, request)
 @prepolicy(check_token_init, request)
 @prepolicy(init_tokenlabel, request)
+@prepolicy(enroll_pin, request)
 @prepolicy(init_random_pin, request)
 @prepolicy(encrypt_pin, request)
 @prepolicy(check_otp_pin, request)
@@ -125,7 +127,7 @@ def init():
     :jsonparam keysize: the size (byte) of the key. Either 20 or 32. Default is 20
     :jsonparam serial: required: the serial number/identifier of the token
     :jsonparam description: A description for the token
-    :jsonparam pin: the pin of the user pass
+    :jsonparam pin: the pin of the token. "OTP PIN"
     :jsonparam user: the login user name. This user gets the token assigned
     :jsonparam realm: the realm of the user.
     :jsonparam type: the type of the token

@@ -17,6 +17,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            init_tokenlabel, init_random_pin,
                                            init_token_defaults,
                                            encrypt_pin, check_otp_pin,
+                                           enroll_pin,
                                            check_external, api_key_required,
                                            mangle, is_remote_user_allowed,
                                            required_email)
@@ -491,6 +492,64 @@ class PrePolicyDecoratorTestCase(MyTestCase):
 
         # Check, if the tokenlabel was added
         self.assertEqual(req.all_data.get("encryptpin"), "True")
+        # finally delete policy
+        delete_policy("pol1")
+
+    def test_08a_enroll_pin_admin(self):
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+
+        # Set a policy that defines the PIN to be encrypted
+        set_policy(name="pol1",
+                   scope=SCOPE.ADMIN,
+                   action="enrollHOTP")
+        g.policy_object = PolicyClass()
+
+        # request, that matches the policy
+        req.all_data = {"pin": "test",
+                        "user": "cornelius",
+                        "realm": "home"}
+        enroll_pin(req)
+
+        # Check, if the PIN was removed
+        self.assertTrue("pin" not in req.all_data)
+        # finally delete policy
+        delete_policy("pol1")
+
+    def test_08b_enroll_pin_user(self):
+        g.logged_in_user = {"username": "user1",
+                            "role": "user"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+
+        # Set a policy that defines the PIN to be encrypted
+        set_policy(name="pol1",
+                   scope=SCOPE.USER,
+                   action="enrollHOTP, enrollpin")
+        g.policy_object = PolicyClass()
+
+        # request, that matches the policy
+        req.all_data = {"pin": "test",
+                        "user": "cornelius",
+                        "realm": "home"}
+        enroll_pin(req)
+
+        # Check, if the PIN was removed
+        self.assertEqual(req.all_data.get("pin"), "test")
         # finally delete policy
         delete_policy("pol1")
 

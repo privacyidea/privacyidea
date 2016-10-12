@@ -302,6 +302,42 @@ def encrypt_pin(request=None, action=None):
     return True
 
 
+def enroll_pin(request=None, action=None):
+    """
+    This policy function is used as decorator for init token.
+    It checks, if the user or the admin is allowed to set a token PIN during
+    enrollment. If not, it deleted the PIN from the request.
+    """
+    policy_object = g.policy_object
+    role = g.logged_in_user.get("role")
+    if role == ROLE.USER:
+        scope = SCOPE.USER
+        username = g.logged_in_user.get("username")
+        realm = g.logged_in_user.get("realm")
+        adminrealm = None
+    else:
+        scope = SCOPE.ADMIN
+        username = g.logged_in_user.get("username")
+        realm = getParam(request.all_data, "realm")
+        adminrealm = g.logged_in_user.get("realm")
+    pin_pols = policy_object.get_policies(action=ACTION.ENROLLPIN,
+                                          scope=scope,
+                                          user=username,
+                                          realm=realm,
+                                          adminrealm=adminrealm,
+                                          client=g.client_ip,
+                                          active=True)
+    action_at_all = policy_object.get_policies(scope=scope,
+                                               active=True,
+                                               all_times=True)
+
+    if action_at_all and not pin_pols:
+        # Not allowed to set a PIN during enrollment!
+        if "pin" in request.all_data:
+            del request.all_data["pin"]
+    return True
+
+
 def init_token_defaults(request=None, action=None):
     """
     This policy function is used as a decorator for the API init function.
@@ -615,7 +651,7 @@ def check_base_action(request=None, action=None, anonymous=False):
     if type(realm) == list and len(realm) == 1:
         realm = realm[0]
 
-    if role == "user":
+    if role == ROLE.USER:
         scope = SCOPE.USER
         # Reset the admin realm
         admin_realm = None
@@ -696,7 +732,7 @@ def check_token_init(request=None, action=None):
     role = g.logged_in_user.get("role")
     admin_realm = g.logged_in_user.get("realm")
     scope = SCOPE.ADMIN
-    if role == "user":
+    if role == ROLE.USER:
         scope = SCOPE.USER
         admin_realm = None
     tokentype = params.get("type", "HOTP")

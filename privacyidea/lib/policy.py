@@ -271,6 +271,7 @@ class ACTION(object):
     CLIENTTYPE = "clienttype"
     REGISTERBODY = "registration_body"
     RESETALLTOKENS = "reset_all_user_tokens"
+    ENROLLPIN = "enrollpin"
 
 
 class LOGINMODE(object):
@@ -852,6 +853,9 @@ def get_static_policy_definitions(scope=None):
                             'desc': _(
                                 'Admin is allowed to set the OTP PIN of '
                                 'tokens.')},
+            ACTION.ENROLLPIN: {'type': 'bool',
+                               "desc": _("Admin is allowed to set the OTP "
+                                         "PIN during enrollment.")},
             ACTION.RESYNC: {'type': 'bool',
                             'desc': _('Admin is allowed to resync tokens.')},
             ACTION.RESET: {'type': 'bool',
@@ -1072,8 +1076,10 @@ def get_static_policy_definitions(scope=None):
                                      'failcounter of his tokens.')},
             ACTION.SETPIN: {'type': 'bool',
                             "desc": _("The user is allowed to set the OTP "
-                                      "PIN "
-                                      "of his tokens.")},
+                                      "PIN of his tokens.")},
+            ACTION.ENROLLPIN: {'type': 'bool',
+                               "desc": _("The user is allowed to set the OTP "
+                                         "PIN during enrollment.")},
             ACTION.OTPPINMAXLEN: {'type': 'int',
                                   'value': range(0, 32),
                                   "desc": _("Set the maximum allowed length "

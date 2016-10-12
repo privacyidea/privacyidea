@@ -91,21 +91,23 @@ viewed in the :ref:`token_details`.
 If the ``set`` action is defined, the administrator allowed
 to set those token information.
 
-setOTPPIN
+setpin
+~~~~~~
+
+type: bool
+
+If the ``setpin`` action is defined, the administrator
+is allowed to set the OTP PIN of a token.
+
+enrollpin
 ~~~~~~~~~
 
 type: bool
 
-If the ``setOTPPIN`` action is defined, the administrator
-is allowed to set the OTP PIN of a token.
-
-setMOTPPIN
-~~~~~~~~~~
-
-type: bool
-
-If the ``setMOTPPIN`` action is defined,  the administrator
-is allowed to set the mOTP PIN of an mOTP token.
+If the action ``enrollpin`` is defined, the administrator
+can set a token PIN during enrollment. If the action is not defined and
+the administrator tries to set a PIN during enrollment, this PIN is deleted
+from the request.
 
 resync
 ~~~~~~

@@ -99,20 +99,22 @@ type: bool
 
 The user is allowed to reset the failcounter of the token.
 
-setOTPPIN
-~~~~~~~~~
+setpin
+~~~~~~
 
 type: bool 
 
 The user ist allowed to set the OTP PIN for his tokens.
 
-setMOTPPIN
-~~~~~~~~~~
+enrollpin
+~~~~~~~~~
 
-type: bool 
+type: bool
 
-The user is allowed to set the mOTP PIN of mOTP tokens.
-
+If the action ``enrollpin`` is defined, the user
+can set a token PIN during enrollment. If the action is not defined and
+the user tries to set a PIN during enrollment, this PIN is deleted
+from the request.
 
 otp_pin_maxlength
 ~~~~~~~~~~~~~~~~~

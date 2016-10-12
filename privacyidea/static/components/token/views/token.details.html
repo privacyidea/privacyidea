@@ -305,7 +305,7 @@
             </td>
         </tr>
 
-        <tr ng-hide="token.locked">
+        <tr ng-hide="token.locked || !checkRight('setpin')">
             <td>
                 <input type="password" ng-model="pin1"
                        class="form-control"
