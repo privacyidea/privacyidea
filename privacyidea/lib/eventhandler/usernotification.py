@@ -277,6 +277,8 @@ class UserNotificationEventHandler(BaseEventHandler):
         ret = True
         g = options.get("g")
         request = options.get("request")
+        response = options.get("response")
+        content = json.loads(response.data)
         handler_def = options.get("handler_def")
         try:
             logged_in_user = g.logged_in_user
@@ -286,27 +288,38 @@ class UserNotificationEventHandler(BaseEventHandler):
         log.debug("Executing event for action {0!s}, user {1!s},"
                   "logged_in_user {2!s}".format(action, user, logged_in_user))
 
-        user_type = True
-        if logged_in_user.get("role"):
-            # If there is a logged_in_user, it should be the admin
-            user_type = logged_in_user.get("role") == ROLE.ADMIN
-
-        if not user.is_empty() and user.login and user_type:
+        if not user.is_empty() and user.login:
+            # Collect all data
             handler_options = handler_def.get("options", {})
             body = handler_options.get("body") or DEFAULT_BODY
-            serial = g.audit_object.audit_data.get("serial")
-            if not serial:
-                token_objects = get_tokens(user=user, maxfail=True)
+            serial = request.all_data.get("serial") or \
+                     content.get("detail", {}).get("serial") or \
+                     g.audit_object.audit_data.get("serial")
+            registrationcode = content.get("detail", {}).get("registrationcode")
+            tokentype = None
+            if serial:
+                tokens = get_tokens(serial=serial)
+                if tokens:
+                    tokentype = tokens[0].get_tokentype()
+            else:
+                token_objects = get_tokens(user=user)
                 serial = ','.join([tok.get_serial() for tok in token_objects])
+
             body = body.format(
                 admin=logged_in_user.get("username"),
                 realm=logged_in_user.get("realm"),
                 action=request.path,
                 serial=serial,
                 url=request.url_root,
-                user=user.info.get("givenname")
+                user=user.info.get("givenname"),
+                givenname=user.info.get("givenname"),
+                username=user.login,
+                userrealm=user.realm,
+                tokentype=tokentype,
+                registrationcode=registrationcode
             )
 
+            # Send notification
             if action.lower() == "sendmail":
                 emailconfig = handler_options.get("emailconfig")
                 useremail = user.info.get("email")

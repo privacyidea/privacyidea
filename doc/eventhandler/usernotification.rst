@@ -38,12 +38,18 @@ The subject line of the mail that is sent.
 Here the administartor can specify the body of the email, that is sent.
 The body may contain the following tags
 
-  * {admin} name of the admin.
-  * {realm} realm of the admin.
-  * {action} the action that the administrator performed.
+  * {admin} name of the logged in user.
+  * {realm} realm of the logged in user.
+  * {action} the action that the logged in user performed.
   * {serial} the serial number of the token.
   * {url} the URL of the privacyIDEA system.
   * {user} the given name of the user.
+  * {givenname} the given name of the user.
+  * {surname} the surname of the user.
+  * {username} the loginname of the user (token owner).
+  * {userrealm} the realm of the user (token owner)
+  * {tokentyp} the type of the token.
+  * {registrationcode} the registration code in the detail response.
 
 
 sendsms
@@ -62,14 +68,7 @@ administrator managed the users token.
   * optional
 
 Here the administartor can specify the body of the SMS, that is sent.
-The body may contain the following tags
-
-  * {admin} name of the admin.
-  * {realm} realm of the admin.
-  * {action} the action that the administrator performed.
-  * {serial} the serial number of the token.
-  * {url} the URL of the privacyIDEA system.
-  * {user} the given name of the user.
+The body may contain the same tags as with *sendmail*.
 
 
 Code

@@ -118,9 +118,11 @@ class UserNotificationTestCase(MyTestCase):
         req.all_data = {"serial": "SomeSerial",
                         "user": "cornelius"}
         req.User = User("cornelius", self.realm1)
-
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
         options = {"g": g,
                    "request": req,
+                   "response": resp,
                    "handler_def": {"emailconfig": "myserver"}}
 
         un_handler = UserNotificationEventHandler()
@@ -163,9 +165,11 @@ class UserNotificationTestCase(MyTestCase):
         req.all_data = {"serial": "SomeSerial",
                         "user": "cornelius"}
         req.User = User("cornelius", self.realm1)
-
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
         options = {"g": g,
                    "request": req,
+                   "response": resp,
                    "handler_def": {"smsconfig": "myGW"}}
 
         un_handler = UserNotificationEventHandler()
@@ -394,3 +398,52 @@ class UserNotificationTestCase(MyTestCase):
         )
         # Serial matches the regexp
         self.assertEqual(r, True)
+
+    @smtpmock.activate
+    def test_11_extended_body_tags(self):
+        # setup realms
+        self.setUp_user_realms()
+
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=False)
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "123456"
+
+        g.logged_in_user = {"user": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SomeSerial",
+                        "user": "cornelius"}
+        req.User = User("cornelius", self.realm1)
+        resp = Response()
+        resp.data = """{"result": {"value": true},
+        "detail": {"registrationcode": "12345678910"}
+        }
+        """
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "conditions": {"serial": "123.*"},
+                       "options": {"body": "your {registrationcode}",
+                                   "emailconfig": "myserver"}}}
+
+        un_handler = UserNotificationEventHandler()
+        res = un_handler.do("sendmail", options=options)
+        self.assertTrue(res)
