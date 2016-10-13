@@ -5,7 +5,7 @@ from .base import MyTestCase
 
 from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
                                    check_time_in_range, parse_proxy,
-                                   check_proxy)
+                                   check_proxy, reduce_realms)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork
 
@@ -101,10 +101,58 @@ class UtilsTestCase(MyTestCase):
             else:
                 assert("The proxy {0!s} was not found!".format(proxy))
 
-
         self.assertTrue(check_proxy("10.0.0.12", "1.2.3.4", proxy_def))
         self.assertFalse(check_proxy("10.0.0.11", "1.2.3.4", proxy_def))
         self.assertTrue(check_proxy("1.2.3.10", "192.168.1.12", proxy_def))
         self.assertFalse(check_proxy("172.16.0.1", "1.2.3.4", proxy_def))
         self.assertTrue(check_proxy("172.16.0.1", "10.1.2.3", proxy_def))
 
+    def test_05_reduce_realms(self):
+        realms = {'defrealm': {'default': False,
+                               'option': '',
+                               'resolver': [
+                                    {'priority': None,
+                                     'type': 'passwdresolver',
+                                     'name': 'deflocal'}]},
+                  'localsql': {'default': True,
+                               'option': '',
+                               'resolver': [
+                                    {'priority': None,
+                                     'type': 'sqlresolver',
+                                     'name': 'localusers2'}]}}
+        # The policy dictionary contains much more entries, but for us only
+        # the realm is relevant
+        policies = [{'realm': []}]
+        r = reduce_realms(realms, policies)
+        self.assertTrue("defrealm" in r)
+        self.assertTrue("localsql" in r)
+
+        policies = [{'realm': []},
+                    {'realm': ["defrealm"]}]
+        r = reduce_realms(realms, policies)
+        self.assertTrue("defrealm" in r)
+        self.assertTrue("localsql" in r)
+
+        policies = [{'realm': ["defrealm"]},
+                    {'realm': []}]
+        r = reduce_realms(realms, policies)
+        self.assertTrue("defrealm" in r)
+        self.assertTrue("localsql" in r)
+
+        policies = [{'realm': ["localsql"]},
+                    {'realm': ["defrealm"]}]
+        r = reduce_realms(realms, policies)
+        self.assertTrue("defrealm" in r, r)
+        self.assertTrue("localsql" in r, r)
+
+        policies = [{'realm': ["localsql"]},
+                    {'realm': ["localsql", "defrealm"]}]
+        r = reduce_realms(realms, policies)
+        self.assertTrue("defrealm" in r)
+        self.assertTrue("localsql" in r)
+
+        policies = [{'realm': ["realm1", "localsql", "realm2"]},
+                    {'realm': ["localsql", "realm1"]}]
+        r = reduce_realms(realms, policies)
+        self.assertTrue("defrealm" not in r)
+        self.assertTrue("localsql" in r)

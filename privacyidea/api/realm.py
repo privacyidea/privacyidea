@@ -55,7 +55,9 @@ from ..lib.realm import (set_default_realm,
                          delete_realm)
 from ..lib.policy import ACTION
 from ..api.lib.prepolicy import prepolicy, check_base_action
+from ..lib.utils import reduce_realms
 from flask import g
+from privacyidea.lib.auth import ROLE
 from gettext import gettext as _
 import logging
 
@@ -190,19 +192,17 @@ def get_realms_api():
           "version": "privacyIDEA unknown"
         }
     """
-    realms = get_realms()
+    all_realms = get_realms()
     g.audit_object.log({"success": True})
+    # This endpoint is called by admins anyways
+    luser = g.logged_in_user
+    policies = g.policy_object.get_policies(scope=luser.get("role", ROLE.ADMIN),
+                                            client=g.client_ip,
+                                            adminrealm=luser.get("realm"),
+                                            user=luser.get("username"),
+                                            active=True)
+    realms = reduce_realms(all_realms, policies)
 
-    # If the admin is not allowed to see all realms,
-    # (policy scope=system, action=read)
-    # the realms, where he has no administrative rights need,
-    # to be stripped.
-    '''
-        polPost = self.Policy.checkPolicyPost('system',
-                                              'getRealms',
-                                              {'realms': realms})
-        res = polPost['realms']
-    '''
     return send_result(realms)
 
 

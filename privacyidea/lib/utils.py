@@ -475,3 +475,29 @@ def reload_db(timestamp, db_ts):
         log.debug("timestamp in DB newer. We need to reread policies "
                   "from DB.")
     return rdb
+
+
+def reduce_realms(all_realms, policies):
+    """
+    This function reduces the realm list based on the policies
+    If there is a policy, that acts for all realms, all realms are returned.
+    Otherwise only realms are returned, that are contained in the policies.
+    """
+    realms = {}
+    if not policies:
+        # if there are no policies at all, this works for all realms
+        realms = all_realms
+    else:
+        for pol in policies:
+            pol_realm = pol.get("realm")
+            if not pol_realm:
+                # If there is ANY empty realm, this means the policy acts for
+                # ALL realms
+                realms = all_realms
+                break
+            else:
+                for r in pol_realm:
+                    if r not in realms:
+                        # Attach each realm in the policy
+                        realms[r] = all_realms.get(r)
+    return realms
