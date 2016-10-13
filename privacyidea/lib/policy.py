@@ -816,6 +816,13 @@ def get_static_policy_definitions(scope=None):
     radiusconfigs = [radius.config.identifier for radius in
                      get_radiusservers()]
     radiusconfigs.insert(0, "userstore")
+    # "type": allowed values str, bool, int
+    # "desc": description of this action
+    # "value": list of allowed values of this action, works with int and str. A
+    #          dropdown box will be displayed
+    # "group": ment to be used for grouping actions for better finding
+    # "enables_menu": list of enabled Menus. If this action is set, this menu
+    #                 is visible in the WebUI
     pol = {
         SCOPE.REGISTER: {
             ACTION.RESOLVER: {'type': 'str',
@@ -867,7 +874,8 @@ def get_static_policy_definitions(scope=None):
             ACTION.ASSIGN: {'type': 'bool',
                             'desc': _(
                                 'Admin is allowed to assign a token to a '
-                                'user.')},
+                                'user.'),
+                            'enables_menu': ["user", "token"]},
             ACTION.UNASSIGN: {'type': 'bool',
                               'desc': _(
                                   'Admin is allowed to remove the token from '

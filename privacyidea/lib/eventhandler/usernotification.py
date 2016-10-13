@@ -43,6 +43,8 @@ from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.config import get_token_types
 from gettext import gettext as _
+from flask import current_app
+from privacyidea.lib.auth import get_db_admins
 import json
 import logging
 import re
@@ -102,7 +104,33 @@ class UserNotificationEventHandler(BaseEventHandler):
                                 "body": {"type": "text",
                                          "required": False,
                                          "description": _("The body of the "
-                                                          "mail that is sent.")}
+                                                          "mail that is "
+                                                          "sent.")},
+                                "To": {"type": "str",
+                                       "required": True,
+                                       "description": _("Send notification to "
+                                                        "this user."),
+                                       "value": ["tokenowner",
+                                                 "logged_in_user",
+                                                 "internal admin",
+                                                 "admin realm",
+                                                 "email"]},
+                                "To admin realm": {"type": "str",
+                                                "value":
+                                                    current_app.config.get("SUPERUSER_REALM", []),
+                                                "visibleIf": "To",
+                                                "visibleValue": "admin realm"},
+                                "To internal admin": {"type": "str",
+                                                   "value": [
+                                                       a.username for a in
+                                                       get_db_admins()],
+                                                   "visibleIf": "To",
+                                                   "visibleValue": "internal " \
+                                                                   "admin"},
+                                "To email address": {"type": "str",
+                                                  "description": _("Any email address, to which the notification should be sent."),
+                                                  "visibleIf": "To",
+                                                  "visibleValue": "email"}
                                 },
                    "sendsms": {"smsconfig":
                                    {"type": "str",
@@ -113,8 +141,14 @@ class UserNotificationEventHandler(BaseEventHandler):
                                                      "gateway."),
                                     "value": smsgateways},
                                "body": {"type": "text",
-                                    "required": False,
-                                    "description": _("The text of the SMS.")}
+                                        "required": False,
+                                        "description": _("The text of the "
+                                                         "SMS.")},
+                               "To": {"type": "str",
+                                      "required": True,
+                                      "description": _("Send notification to "
+                                                       "this user."),
+                                      "value": ["tokenowner"]}
                                }
                    }
         return actions
@@ -284,6 +318,9 @@ class UserNotificationEventHandler(BaseEventHandler):
             logged_in_user = g.logged_in_user
         except Exception:
             logged_in_user = {}
+        # TODO: We need to create a USER_TO_NOTIFY. This is either the
+        # tokenowner
+        #  or user or the administrator.
         user = self._get_user(request)
         log.debug("Executing event for action {0!s}, user {1!s},"
                   "logged_in_user {2!s}".format(action, user, logged_in_user))

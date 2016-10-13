@@ -89,7 +89,6 @@
         </tr>
     </table>
 
-
     <h3 translate>Action</h3>
     <div class="form-group">
         <label for="action" class="col-sm-3 control-label" translate>
@@ -107,7 +106,9 @@
     <!-- options -->
     <h4 translate>Options</h4>
     <table class="table table-hover">
-        <tr ng-repeat="(optionname, option) in options">
+        <tr ng-repeat="(optionname, option) in options"
+            ng-show="!option.visibleIf ||
+                     opts[option.visibleIf]===option.visibleValue">
             <td>
                 <b>{{ optionname }}</b>
             </td>
