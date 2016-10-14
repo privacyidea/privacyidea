@@ -2127,7 +2127,7 @@ def get_dynamic_policy_definitions(scope=None):
     this scope.
     :return: The policy definition for the token or only for the scope.
     """
-    from privacyidea.lib.policy import SCOPE
+    from privacyidea.lib.policy import SCOPE, MAIN_MENU
 
     pol = {SCOPE.ADMIN: {},
            SCOPE.USER: {},
@@ -2138,13 +2138,15 @@ def get_dynamic_policy_definitions(scope=None):
         pol[SCOPE.ADMIN]["enroll{0!s}".format(ttype.upper())] \
             = {'type': 'bool',
                'desc': _('Admin is allowed to initalize %s tokens.') %
-                       ttype.upper()}
+                       ttype.upper(),
+               'mainmenu': [MAIN_MENU.TOKENS]}
 
         conf = get_tokenclass_info(ttype, section='user')
         if 'enroll' in conf:
             pol[SCOPE.USER]["enroll{0!s}".format(ttype.upper())] = {
                 'type': 'bool',
-                'desc': _("The user is allowed to enroll a %s token.") % ttype}
+                'desc': _("The user is allowed to enroll a %s token.") % ttype,
+                'mainmenu': [MAIN_MENU.TOKENS]}
 
         # now merge the dynamic Token policy definition
         # into the global definitions

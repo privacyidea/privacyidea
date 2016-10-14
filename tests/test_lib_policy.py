@@ -9,7 +9,8 @@ from privacyidea.lib.policy import (set_policy, delete_policy,
                                     import_policies, export_policies,
                                     get_static_policy_definitions,
                                     PolicyClass, SCOPE, enable_policy,
-                                    PolicyError, ACTION)
+                                    PolicyError, ACTION, MAIN_MENU,
+                                    delete_all_policies)
 import datetime
 
 
@@ -533,3 +534,64 @@ class PolicyTestCase(MyTestCase):
         else:
             self.assertEqual(len(policies), 0)
         delete_policy("time1")
+
+    def test_19_ui_get_menus(self):
+        delete_all_policies()
+        luser = {"username": "admin", "role": "admin"}
+
+        # Without policies, the admin gets all
+        P = PolicyClass()
+        menus = P.ui_get_main_menus(luser)
+        self.assertTrue(MAIN_MENU.USERS in menus)
+        self.assertTrue(MAIN_MENU.TOKENS in menus)
+        self.assertTrue(MAIN_MENU.COMPONENTS in menus)
+        self.assertTrue(MAIN_MENU.CONFIG in menus)
+        self.assertTrue(MAIN_MENU.MACHINES in menus)
+
+        # Admin has only right to enroll HOTP! :-)
+        set_policy("pol1", scope=SCOPE.ADMIN, user="admin",
+                   action="enrollHOTP")
+        P = PolicyClass()
+        menus = P.ui_get_main_menus(luser)
+        # Thus he can only see the token menu
+        self.assertTrue(MAIN_MENU.USERS not in menus)
+        self.assertTrue(MAIN_MENU.TOKENS in menus)
+        self.assertTrue(MAIN_MENU.COMPONENTS not in menus)
+        self.assertTrue(MAIN_MENU.CONFIG not in menus)
+        self.assertTrue(MAIN_MENU.MACHINES not in menus)
+
+        set_policy("pol2", scope=SCOPE.ADMIN, user="admin",
+                   action=ACTION.USERLIST)
+        P = PolicyClass()
+        menus = P.ui_get_main_menus(luser)
+        # Thus he can only see the token menu
+        self.assertTrue(MAIN_MENU.USERS in menus)
+        self.assertTrue(MAIN_MENU.TOKENS in menus)
+        self.assertTrue(MAIN_MENU.COMPONENTS not in menus)
+        self.assertTrue(MAIN_MENU.CONFIG not in menus)
+        self.assertTrue(MAIN_MENU.MACHINES not in menus)
+
+        set_policy("pol3", scope=SCOPE.ADMIN, user="admin",
+                   action=ACTION.MACHINELIST)
+        P = PolicyClass()
+        menus = P.ui_get_main_menus(luser)
+        # Thus he can only see the token menu
+        self.assertTrue(MAIN_MENU.USERS in menus)
+        self.assertTrue(MAIN_MENU.TOKENS in menus)
+        self.assertTrue(MAIN_MENU.COMPONENTS not in menus)
+        self.assertTrue(MAIN_MENU.CONFIG not in menus)
+        self.assertTrue(MAIN_MENU.MACHINES in menus)
+
+        set_policy("pol4", scope=SCOPE.ADMIN, user="admin",
+                   action=ACTION.SYSTEMDELETE)
+        P = PolicyClass()
+        menus = P.ui_get_main_menus(luser)
+        # Thus he can only see the token menu
+        self.assertTrue(MAIN_MENU.USERS in menus)
+        self.assertTrue(MAIN_MENU.TOKENS in menus)
+        self.assertTrue(MAIN_MENU.COMPONENTS not in menus)
+        self.assertTrue(MAIN_MENU.CONFIG in menus)
+        self.assertTrue(MAIN_MENU.MACHINES in menus)
+
+        delete_all_policies()
+

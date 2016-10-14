@@ -274,6 +274,18 @@ class ACTION(object):
     ENROLLPIN = "enrollpin"
 
 
+class MAIN_MENU(object):
+    __doc__ = """These are the allowed top level menu items. These are used
+    to toggle the visibility of the menu items depending on the rights of the
+    user"""
+    TOKENS = "tokens"
+    USERS = "users"
+    MACHINES = "machines"
+    CONFIG = "config"
+    AUDIT = "audit"
+    COMPONENTS = "components"
+
+
 class LOGINMODE(object):
     __doc__ = """This is the list of possible values for the login mode."""
     USERSTORE = "userstore"
@@ -517,6 +529,36 @@ class PolicyClass(object):
         return action_values
 
     @log_with(log)
+    def ui_get_main_menus(self, logged_in_user, client=None):
+        """
+        Get the list of allowed main menus derived from the policies for the
+        given user - admin or normal user.
+        It fetches all policies for this user and compiles a list of allowed
+        menus to display or hide in the UI.
+
+        :param logged_in_user: The logged in user, a dictionary with keys
+            "username", "realm" and "role".
+        :param client: The IP address of the client
+        :return: A list of MENUs to be displayed
+        """
+        from privacyidea.lib.token import get_dynamic_policy_definitions
+        role = logged_in_user.get("role")
+        user_rights = self.ui_get_rights(role,
+                                         logged_in_user.get("realm"),
+                                         logged_in_user.get("username"),
+                                         client)
+        main_menus = []
+        static_rights = get_static_policy_definitions(role)
+        enroll_rights = get_dynamic_policy_definitions(role)
+        static_rights.update(enroll_rights)
+        for r in user_rights:
+            menus = static_rights.get(r, {}).get("mainmenu", [])
+            main_menus.extend(menus)
+
+        main_menus = list(set(main_menus))
+        return main_menus
+
+    @log_with(log)
     def ui_get_rights(self, scope, realm, username, client=None):
         """
         Get the rights derived from the policies for the given realm and user.
@@ -533,7 +575,7 @@ class PolicyClass(object):
         from privacyidea.lib.auth import ROLE
         from privacyidea.lib.token import get_dynamic_policy_definitions
         rights = []
-        userealm = None
+        userrealm = None
         adminrealm = None
         logged_in_user = {"username": username,
                           "realm": realm}
@@ -541,11 +583,11 @@ class PolicyClass(object):
             adminrealm = realm
             logged_in_user["role"] = ROLE.ADMIN
         elif scope == SCOPE.USER:
-            userealm = realm
+            userrealm = realm
             logged_in_user["role"] = ROLE.USER
         pols = self.get_policies(scope=scope,
                                  adminrealm=adminrealm,
-                                 realm=userealm,
+                                 realm=userrealm,
                                  user=username, active=True,
                                  client=client)
         for pol in pols:
@@ -745,6 +787,13 @@ def delete_policy(name):
 
 
 @log_with(log)
+def delete_all_policies():
+    policies = Policy.query.all()
+    for p in policies:
+        p.delete()
+
+
+@log_with(log)
 def export_policies(policies):
     """
     This function takes a policy list and creates an export file from it
@@ -850,76 +899,86 @@ def get_static_policy_definitions(scope=None):
         },
         SCOPE.ADMIN: {
             ACTION.ENABLE: {'type': 'bool',
-                            'desc': _('Admin is allowed to enable tokens.')},
+                            'desc': _('Admin is allowed to enable tokens.'),
+                            'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.DISABLE: {'type': 'bool',
-                             'desc': _('Admin is allowed to disable tokens.')},
+                             'desc': _('Admin is allowed to disable tokens.'),
+                             'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.SET: {'type': 'bool',
                          'desc': _(
-                             'Admin is allowed to set token properties.')},
+                             'Admin is allowed to set token properties.'),
+                         'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.SETPIN: {'type': 'bool',
                             'desc': _(
                                 'Admin is allowed to set the OTP PIN of '
-                                'tokens.')},
+                                'tokens.'),
+                            'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.ENROLLPIN: {'type': 'bool',
                                "desc": _("Admin is allowed to set the OTP "
-                                         "PIN during enrollment.")},
+                                         "PIN during enrollment."),
+                               'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.RESYNC: {'type': 'bool',
-                            'desc': _('Admin is allowed to resync tokens.')},
+                            'desc': _('Admin is allowed to resync tokens.'),
+                            'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.RESET: {'type': 'bool',
                            'desc': _(
                                'Admin is allowed to reset the Failcounter of '
-                               'a token.')},
+                               'a token.'),
+                           'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.REVOKE: {'tpye': 'bool',
-                            'desc': _("Admin is allowed to revoke a token")},
+                            'desc': _("Admin is allowed to revoke a token"),
+                            'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.ASSIGN: {'type': 'bool',
                             'desc': _(
                                 'Admin is allowed to assign a token to a '
                                 'user.'),
-                            'enables_menu': ["user", "token"]},
+                            'mainmenu': [MAIN_MENU.TOKENS, MAIN_MENU.USERS]},
             ACTION.UNASSIGN: {'type': 'bool',
                               'desc': _(
                                   'Admin is allowed to remove the token from '
                                   'a user, '
-                                  'i.e. unassign a token.')},
+                                  'i.e. unassign a token.'),
+                              'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.IMPORT: {'type': 'bool',
                             'desc': _(
-                                'Admin is allowed to import token files.')},
+                                'Admin is allowed to import token files.'),
+                            'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.DELETE: {'type': 'bool',
                             'desc': _(
                                 'Admin is allowed to remove tokens from the '
-                                'database.')},
+                                'database.'),
+                            'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.USERLIST: {'type': 'bool',
                               'desc': _(
                                   'Admin is allowed to view the list of the '
-                                  'users.')},
+                                  'users.'),
+                              'mainmenu': [MAIN_MENU.USERS]},
             ACTION.MACHINELIST: {'type': 'bool',
                                  'desc': _('The Admin is allowed to list '
-                                           'the machines.')},
+                                           'the machines.'),
+                                 'mainmenu': [MAIN_MENU.MACHINES]},
             ACTION.MACHINETOKENS: {'type': 'bool',
                                    'desc': _('The Admin is allowed to attach '
-                                             'and detach tokens to machines.')},
+                                             'and detach tokens to '
+                                             'machines.'),
+                                   'mainmenu': [MAIN_MENU.TOKENS,
+                                                MAIN_MENU.MACHINES]},
             ACTION.AUTHITEMS: {'type': 'bool',
                                'desc': _('The Admin is allowed to fetch '
                                          'authentication items of tokens '
                                          'assigned to machines.')},
-            # 'checkstatus': {'type': 'bool',
-            #                 'desc' : _('Admin is allowed to check the
-            # status of a challenge'
-            #                 "group": "tools"},
             ACTION.TOKENREALMS: {'type': 'bool',
                                  'desc': _('Admin is allowed to manage the '
-                                           'realms of a token.')},
+                                           'realms of a token.'),
+                                 'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.GETSERIAL: {'type': 'bool',
                                'desc': _('Admin is allowed to retrieve a serial'
                                          ' for a given OTP value.'),
+                               'mainmenu': [MAIN_MENU.TOKENS],
                                "group": "tools"},
             ACTION.GETRANDOM: {'type': 'bool',
                                'desc': _('Admin is allowed to retrieve '
                                          'random keys from privacyIDEA.')},
-            # 'checkserial': {'type': 'bool',
-            #                 'desc': _('Admin is allowed to check if a serial '
-            #                           'is unique'),
-            #                 "group": "tools"},
             ACTION.COPYTOKENPIN: {'type': 'bool',
                                   'desc': _(
                                       'Admin is allowed to copy the PIN of '
@@ -936,155 +995,168 @@ def get_static_policy_definitions(scope=None):
             ACTION.LOSTTOKEN: {'type': 'bool',
                                'desc': _('Admin is allowed to trigger the '
                                          'lost token workflow.'),
-                               "group": "tools"},
-            # 'getotp': {
-            #     'type': 'bool',
-            #     'desc': _('Allow the administrator to retrieve OTP values
-            # for tokens.'),
-            #     "group": "tools"},
+                               "group": "tools",
+                               'mainmenu': [MAIN_MENU.TOKENS]},
+
             ACTION.SYSTEMWRITE: {'type': 'bool',
                                  "desc": _("Admin is allowed to write and "
                                            "modify the system configuration."),
-                                 "group": "system"},
+                                 "group": "system",
+                                 'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.SYSTEMDELETE: {'type': 'bool',
                                   "desc": _("Admin is allowed to delete "
                                             "keys in the system "
                                             "configuration."),
-                                  "group": "system"},
+                                  "group": "system",
+                                  'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.CONFIGDOCUMENTATION: {'type': 'bool',
                                          'desc': _('Admin is allowed to '
                                                    'export a documentation '
                                                    'of the complete '
                                                    'configuration including '
                                                    'resolvers and realm.'),
-                                         'group': 'system'},
+                                         'group': 'system',
+                                         'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.POLICYWRITE: {'type': 'bool',
                                  "desc": _("Admin is allowed to write and "
                                            "modify the policies."),
-                                 "group": "system"},
+                                 "group": "system",
+                                 'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.POLICYDELETE: {'type': 'bool',
                                   "desc": _("Admin is allowed to delete "
                                             "policies."),
-                                  "group": "system"},
+                                  "group": "system",
+                                  'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.RESOLVERWRITE: {'type': 'bool',
                                    "desc": _("Admin is allowed to write and "
                                              "modify the "
                                              "resolver and realm "
                                              "configuration."),
-                                   "group": "system"},
+                                   "group": "system",
+                                   'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.RESOLVERDELETE: {'type': 'bool',
                                     "desc": _("Admin is allowed to delete "
                                               "resolvers and realms."),
-                                    "group": "system"},
+                                    "group": "system",
+                                    'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.CACONNECTORWRITE: {'type': 'bool',
                                       "desc": _("Admin is allowed to create new"
                                                 " CA Connector definitions "
                                                 "and modify existing ones."),
-                                      "group": "system"},
+                                      "group": "system",
+                                      'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.CACONNECTORDELETE: {'type': 'bool',
                                        "desc": _("Admin is allowed to delete "
                                                  "CA Connector definitions."),
-                                       "group": "system"},
+                                       "group": "system",
+                                       'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.MACHINERESOLVERWRITE: {'type': 'bool',
                                           'desc': _("Admin is allowed to "
                                                     "write and modify the "
                                                     "machine resolvers."),
-                                          'group': "system"},
+                                          'group': "system",
+                                          'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.MACHINERESOLVERDELETE: {'type': 'bool',
                                            'desc': _("Admin is allowed to "
                                                      "delete "
                                                      "machine resolvers."),
-                                           'group': "system"},
+                                           'group': "system",
+                                           'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.AUDIT: {'type': 'bool',
                            "desc": _("Admin is allowed to view the Audit log."),
-                           "group": "system"},
+                           "group": "system",
+                           'mainmenu': [MAIN_MENU.AUDIT]},
             ACTION.ADDUSER: {'type': 'bool',
                              "desc": _("Admin is allowed to add users in a "
                                        "userstore/UserIdResolver."),
-                             "group": "system"},
+                             "group": "user",
+                             'mainmenu': [MAIN_MENU.USERS]},
             ACTION.UPDATEUSER: {'type': 'bool',
                                 "desc": _("Admin is allowed to update the "
                                           "users data in a userstore."),
-                                "group": "system"},
+                                "group": "user",
+                                'mainmenu': [MAIN_MENU.USERS]},
             ACTION.DELETEUSER: {'type': 'bool',
                                 "desc": _("Admin is allowed to delete a user "
-                                          "object in a userstore.")},
+                                          "object in a userstore."),
+                                'mainmenu': [MAIN_MENU.USERS]},
             ACTION.SETHSM: {'type': 'bool',
                             'desc': _("Admin is allowed to set the password "
                                       "of the HSM/Security Module.")},
             ACTION.GETCHALLENGES: {'type': 'bool',
                                    'desc': _("Admin is allowed to retrieve "
-                                             "the list of active challenges.")},
+                                             "the list of active "
+                                             "challenges."),
+                                   'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.SMTPSERVERWRITE: {'type': 'bool',
                                      'desc': _("Admin is allowed to write new "
-                                               "SMTP server definitions.")},
+                                               "SMTP server definitions."),
+                                     'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.RADIUSSERVERWRITE: {'type': 'bool',
                                        'desc': _("Admin is allowed to write "
                                                  "new RADIUS server "
-                                                 "definitions.")},
+                                                 "definitions."),
+                                       'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.EVENTHANDLINGWRITE: {'type': 'bool',
                                         'desc': _("Admin is allowed to write "
                                                   "and modify the event "
-                                                  "handling configuration.")},
+                                                  "handling configuration."),
+                                        'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.SMSGATEWAYWRITE: {'type': 'bool',
                                      'desc': _("Admin is allowed to write "
                                                "and modify SMS gateway "
-                                               "definitions.")},
+                                               "definitions."),
+                                     'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.CLIENTTYPE: {'type': 'bool',
                                 'desc': _("Admin is allowed to get the list "
                                           "of authenticated clients and their "
-                                          "types.")}
+                                          "types."),
+                                'mainmenu': [MAIN_MENU.COMPONENTS]}
 
         },
-        # 'gettoken': {
-        #     'max_count_dpw': {'type': 'int',
-        #                       'desc' : _('When OTP values are retrieved for
-        #  a DPW token, '
-        #                                  'this is the maximum number of
-        # retrievable OTP values.')},
-        #     'max_count_hotp': {'type': 'int',
-        #                        'desc' : _('When OTP values are retrieved
-        # for a HOTP token, '
-        #                                   'this is the maximum number of
-        # retrievable OTP values.')},
-        #     'max_count_totp': {'type': 'int',
-        #                        'desc' : _('When OTP values are retrieved
-        # for a TOTP token, '
-        #                                   'this is the maximum number of
-        # retrievable OTP values.')},
-        # },
+
         SCOPE.USER: {
             ACTION.ASSIGN: {
                 'type': 'bool',
                 'desc': _("The user is allowed to assign an existing token"
                           " that is not yet assigned"
-                          " using the token serial number.")},
+                          " using the token serial number."),
+                'mainmenu': [MAIN_MENU.TOKENS, MAIN_MENU.USERS]},
             ACTION.DISABLE: {'type': 'bool',
                              'desc': _(
                                  'The user is allowed to disable his own '
-                                 'tokens.')},
+                                 'tokens.'),
+                             'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.ENABLE: {'type': 'bool',
                             'desc': _(
                                 "The user is allowed to enable his own "
-                                "tokens.")},
+                                "tokens."),
+                            'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.DELETE: {'type': 'bool',
                             "desc": _(
                                 "The user is allowed to delete his own "
-                                "tokens.")},
+                                "tokens."),
+                            'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.UNASSIGN: {'type': 'bool',
                               "desc": _("The user is allowed to unassign his "
-                                        "own tokens.")},
+                                        "own tokens."),
+                              'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.RESYNC: {'type': 'bool',
                             "desc": _("The user is allowed to resyncronize his "
-                                      "tokens.")},
+                                      "tokens."),
+                            'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.REVOKE: {'type': 'bool',
-                            'desc': _("The user is allowed to revoke a token")},
+                            'desc': _("The user is allowed to revoke a "
+                                      "token"),
+                            'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.RESET: {'type': 'bool',
                            'desc': _('The user is allowed to reset the '
-                                     'failcounter of his tokens.')},
+                                     'failcounter of his tokens.'),
+                           'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.SETPIN: {'type': 'bool',
                             "desc": _("The user is allowed to set the OTP "
-                                      "PIN of his tokens.")},
+                                      "PIN of his tokens."),
+                            'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.ENROLLPIN: {'type': 'bool',
                                "desc": _("The user is allowed to set the OTP "
                                          "PIN during enrollment.")},
@@ -1101,42 +1173,26 @@ def get_static_policy_definitions(scope=None):
                                               "contents of the OTP PIN. "
                                               "(c)haracters, (n)umeric, "
                                               "(s)pecial, (o)thers. [+/-]!")},
-            # 'setMOTPPIN': {'type': 'bool',
-            #                "desc": _("The user is allowed to set the mOTP
-            # PIN of his mOTP tokens.")},
-            # 'getotp': {'type': 'bool',
-            #            "desc": _("The user is allowed to retrieve OTP
-            # values for his own tokens.")},
-            # 'activateQR': {'type': 'bool',
-            #                "desc": _("The user is allowed to enroll a QR
-            # token.")},
-            # 'max_count_dpw': {'type': 'int',
-            #                   "desc": _("This is the maximum number of OTP
-            # values, the user is allowed to retrieve for a DPW token.")},
-            # 'max_count_hotp': {'type': 'int',
-            #                    "desc": _("This is the maximum number of OTP
-            #  values, the user is allowed to retrieve for a HOTP token.")},
-            # 'max_count_totp': {'type': 'int',
-            #                    "desc": _("This is the maximum number of OTP
-            #  values, the user is allowed to retrieve for a TOTP token.")},
+
             ACTION.AUDIT: {
                 'type': 'bool',
-                'desc': _('Allow the user to view his own token history.')},
+                'desc': _('Allow the user to view his own token history.'),
+                'mainmenu': [MAIN_MENU.AUDIT]},
             ACTION.USERLIST: {'type': 'bool',
-                                'desc': _("The user is allowed to view his "
-                                          "own user information.")},
+                              'desc': _("The user is allowed to view his "
+                                        "own user information."),
+                              'mainmenu': [MAIN_MENU.USERS]},
             ACTION.UPDATEUSER: {'type': 'bool',
                                 'desc': _("The user is allowed to update his "
                                           "own user information, like changing "
-                                          "his password.")},
+                                          "his password."),
+                                'mainmenu': [MAIN_MENU.USERS]},
             ACTION.PASSWORDRESET: {'type': 'bool',
                                    'desc': _("The user is allowed to do a "
                                              "password reset in an editable "
-                                             "UserIdResolver.")}
-            # 'getserial': {
-            #     'type': 'bool',
-            #     'desc': _('Allow the user to search an unassigned token by
-            # OTP value.')},
+                                             "UserIdResolver."),
+                                   'mainmenu': [MAIN_MENU.USERS]}
+
         },
         SCOPE.ENROLL: {
             ACTION.MAXTOKENREALM: {
@@ -1244,17 +1300,7 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('If a user authenticates successfully reset the '
                           'failcounter of all of his tokens.')
             }
-            # 'qrtanurl': {
-            #     'type': 'str',
-            #     'desc': _('The URL for the half automatic mode that should
-            # be '
-            #             'used in a QR Token')
-            #     },
-            # 'challenge_response': {
-            #     'type': 'str',
-            #     'desc': _('A list of tokentypes for which challenge response '
-            #               'should be used.')
-            #     }
+
         },
         SCOPE.AUTHZ: {
             ACTION.AUTHMAXSUCCESS: {
@@ -1380,20 +1426,7 @@ def get_static_policy_definitions(scope=None):
             }
         }
 
-        # 'ocra': {
-        #     'request': {
-        #         'type': 'bool',
-        #         'desc': _('Allow to do a ocra/request.')},
-        #     'status': {
-        #         'type': 'bool',
-        #         'desc': _('Allow to check the transaction status.')},
-        #     'activationcode': {
-        #         'type': 'bool',
-        #         'desc': _('Allow to do an ocra/getActivationCode.')},
-        #     'calcOTP': {
-        #         'type': 'bool',
-        #         'desc': _('Allow to do an ocra/calculateOtp.')}
-        # },
+
     }
     if scope:
         ret = pol.get(scope, {})
