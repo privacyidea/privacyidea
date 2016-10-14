@@ -7,7 +7,8 @@ lib/event.py (the decorator)
 
 import smtpmock
 from .base import MyTestCase, FakeFlaskG, FakeAudit
-from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
+from privacyidea.lib.eventhandler.usernotification import (
+    UserNotificationEventHandler, NOTIFY_TYPE)
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.smtpserver import add_smtpserver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
@@ -443,6 +444,129 @@ class UserNotificationTestCase(MyTestCase):
                        "conditions": {"serial": "123.*"},
                        "options": {"body": "your {registrationcode}",
                                    "emailconfig": "myserver"}}}
+
+        un_handler = UserNotificationEventHandler()
+        res = un_handler.do("sendmail", options=options)
+        self.assertTrue(res)
+
+    @smtpmock.activate
+    def test_12_send_to_email(self):
+        # setup realms
+        self.setUp_user_realms()
+
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=False)
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "123456"
+
+        g.logged_in_user = {"user": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SomeSerial",
+                        "user": "cornelius"}
+        req.User = User("cornelius", self.realm1)
+        resp = Response()
+        resp.data = """{"result": {"value": true},
+        "detail": {"registrationcode": "12345678910"}
+        }
+        """
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "conditions": {"serial": "123.*"},
+                       "options": {"body": "your {registrationcode}",
+                                   "emailconfig": "myserver",
+                                   "To": NOTIFY_TYPE.EMAIL,
+                                   "To "+NOTIFY_TYPE.EMAIL:
+                                       "recp@example.com"}}}
+
+        un_handler = UserNotificationEventHandler()
+        res = un_handler.do("sendmail", options=options)
+        self.assertTrue(res)
+
+
+    @smtpmock.activate
+    def test_12_send_to_internal_admin(self):
+        # setup realms
+        self.setUp_user_realms()
+
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=False)
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "123456"
+
+        g.logged_in_user = {"user": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SomeSerial",
+                        "user": "cornelius"}
+        req.User = User("cornelius", self.realm1)
+        resp = Response()
+        resp.data = """{"result": {"value": true},
+        "detail": {"registrationcode": "12345678910"}
+        }
+        """
+
+        # Test with non existing admin
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "conditions": {"serial": "123.*"},
+                       "options": {"body": "your {registrationcode}",
+                                   "emailconfig": "myserver",
+                                   "To": NOTIFY_TYPE.INTERNAL_ADMIN,
+                                   "To " + NOTIFY_TYPE.INTERNAL_ADMIN:
+                                       "super"}}}
+
+        un_handler = UserNotificationEventHandler()
+        res = un_handler.do("sendmail", options=options)
+        self.assertTrue(res)
+
+        # Test with existing admin
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "conditions": {"serial": "123.*"},
+                       "options": {"body": "your {registrationcode}",
+                                   "emailconfig": "myserver",
+                                   "To": NOTIFY_TYPE.INTERNAL_ADMIN,
+                                   "To " + NOTIFY_TYPE.INTERNAL_ADMIN:
+                                       "testadmin"}}}
 
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)

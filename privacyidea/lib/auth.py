@@ -57,7 +57,7 @@ def db_admin_exist(username):
     :param username: The username of the admin
     :return: True, if exist
     """
-    return bool(Admin.query.filter(Admin.username == username).first())
+    return bool(get_db_admin(username))
 
 
 def create_db_admin(app, username, email=None, password=None):
@@ -79,6 +79,10 @@ def list_db_admin():
 def get_db_admins():
     admins = Admin.query.all()
     return admins
+
+
+def get_db_admin(username):
+    return Admin.query.filter(Admin.username == username).first()
 
 
 def delete_db_admin(username):

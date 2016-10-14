@@ -36,7 +36,7 @@ The module is tested in tests/test_lib_events.py
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.smtpserver import send_email_identifier
 from privacyidea.lib.smsprovider.SMSProvider import send_sms_identifier
-from privacyidea.lib.auth import ROLE
+from privacyidea.lib.auth import ROLE, get_db_admins, get_db_admin
 from privacyidea.lib.token import get_token_owner, get_tokens
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.smtpserver import get_smtpservers
@@ -44,7 +44,6 @@ from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.config import get_token_types
 from gettext import gettext as _
 from flask import current_app
-from privacyidea.lib.auth import get_db_admins
 import json
 import logging
 import re
@@ -59,6 +58,17 @@ the administrator {admin}@{realm} performed the action
 To check your tokens you may login to the Web UI:
 {url}
 """
+
+
+class NOTIFY_TYPE(object):
+    """
+    Allowed token owner
+    """
+    TOKENOWNER = "tokenowner"
+    LOGGED_IN_USER = "logged_in_user"
+    INTERNAL_ADMIN = "internal admin"
+    ADMIN_REALM = "admin realm"
+    EMAIL = "email"
 
 
 class UserNotificationEventHandler(BaseEventHandler):
@@ -110,27 +120,32 @@ class UserNotificationEventHandler(BaseEventHandler):
                                        "required": True,
                                        "description": _("Send notification to "
                                                         "this user."),
-                                       "value": ["tokenowner",
-                                                 "logged_in_user",
-                                                 "internal admin",
-                                                 "admin realm",
-                                                 "email"]},
-                                "To admin realm": {"type": "str",
-                                                "value":
-                                                    current_app.config.get("SUPERUSER_REALM", []),
-                                                "visibleIf": "To",
-                                                "visibleValue": "admin realm"},
-                                "To internal admin": {"type": "str",
-                                                   "value": [
-                                                       a.username for a in
-                                                       get_db_admins()],
-                                                   "visibleIf": "To",
-                                                   "visibleValue": "internal " \
-                                                                   "admin"},
-                                "To email address": {"type": "str",
-                                                  "description": _("Any email address, to which the notification should be sent."),
-                                                  "visibleIf": "To",
-                                                  "visibleValue": "email"}
+                                       "value": [
+                                           NOTIFY_TYPE.TOKENOWNER,
+                                           NOTIFY_TYPE.LOGGED_IN_USER,
+                                           NOTIFY_TYPE.INTERNAL_ADMIN,
+                                           NOTIFY_TYPE.ADMIN_REALM,
+                                           NOTIFY_TYPE.EMAIL]},
+                                "To "+NOTIFY_TYPE.ADMIN_REALM: {
+                                    "type": "str",
+                                    "value": current_app.config.get(
+                                        "SUPERUSER_REALM", []),
+                                    "visibleIf": "To",
+                                    "visibleValue": NOTIFY_TYPE.ADMIN_REALM},
+                                "To "+NOTIFY_TYPE.INTERNAL_ADMIN: {
+                                    "type": "str",
+                                    "value": [a.username for a in
+                                              get_db_admins()],
+                                    "visibleIf": "To",
+                                    "visibleValue":
+                                         NOTIFY_TYPE.INTERNAL_ADMIN},
+                                "To "+NOTIFY_TYPE.EMAIL: {
+                                    "type": "str",
+                                    "description": _("Any email address, to "
+                                                     "which the notification "
+                                                     "should be sent."),
+                                    "visibleIf": "To",
+                                    "visibleValue": NOTIFY_TYPE.EMAIL}
                                 },
                    "sendsms": {"smsconfig":
                                    {"type": "str",
@@ -148,7 +163,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                                       "required": True,
                                       "description": _("Send notification to "
                                                        "this user."),
-                                      "value": ["tokenowner"]}
+                                      "value": [NOTIFY_TYPE.TOKENOWNER]}
                                }
                    }
         return actions
@@ -208,7 +223,7 @@ class UserNotificationEventHandler(BaseEventHandler):
         return cond
 
     @staticmethod
-    def _get_user(request):
+    def _get_tokenowner(request):
         user = request.User
         serial = request.all_data.get("serial")
         if user.is_empty() and serial:
@@ -231,7 +246,7 @@ class UserNotificationEventHandler(BaseEventHandler):
         # conditions can be correspnding to the property conditions
         conditions = e_handler_def.get("conditions")
         content = json.loads(response.data)
-        user = self._get_user(request)
+        user = self._get_tokenowner(request)
 
         serial = request.all_data.get("serial") or \
                  content.get("detail", {}).get("serial")
@@ -314,20 +329,52 @@ class UserNotificationEventHandler(BaseEventHandler):
         response = options.get("response")
         content = json.loads(response.data)
         handler_def = options.get("handler_def")
+        handler_options = handler_def.get("options", {})
+        notify_type = handler_options.get("To", NOTIFY_TYPE.TOKENOWNER)
         try:
             logged_in_user = g.logged_in_user
         except Exception:
             logged_in_user = {}
-        # TODO: We need to create a USER_TO_NOTIFY. This is either the
-        # tokenowner
-        #  or user or the administrator.
-        user = self._get_user(request)
-        log.debug("Executing event for action {0!s}, user {1!s},"
-                  "logged_in_user {2!s}".format(action, user, logged_in_user))
 
-        if not user.is_empty() and user.login:
+        tokenowner = self._get_tokenowner(request)
+        log.debug("Executing event for action {0!s}, user {1!s},"
+                  "logged_in_user {2!s}".format(action, tokenowner,
+                                                logged_in_user))
+
+        recipient = None
+
+        if notify_type == NOTIFY_TYPE.TOKENOWNER and not tokenowner.is_empty():
+            recipient = {
+                "givenname": tokenowner.info.get("givenname"),
+                "surname": tokenowner.info.get("surname"),
+                "username": tokenowner.login,
+                "userrealm": tokenowner.realm,
+                "email": tokenowner.info.get("email"),
+                "mobile": tokenowner.info.get("mobile")
+            }
+        elif notify_type == NOTIFY_TYPE.INTERNAL_ADMIN:
+            username = handler_options.get("To "+NOTIFY_TYPE.INTERNAL_ADMIN)
+            internal_admin = get_db_admin(username)
+            recipient = {
+                "givenname": username,
+                "email": internal_admin.email if internal_admin else ""
+            }
+        elif notify_type == NOTIFY_TYPE.ADMIN_REALM:
+            pass
+        elif notify_type == NOTIFY_TYPE.LOGGED_IN_USER:
+            # can be an internal admin!
+            pass
+        elif notify_type == NOTIFY_TYPE.EMAIL:
+            recipient = {
+                "email": handler_options.get("To "+NOTIFY_TYPE.EMAIL,
+                                             "").split(",")
+            }
+        else:
+            log.warning("Was not able to determine the recipient for the user "
+                        "notification: {0!s}".format(handler_def))
+
+        if recipient:
             # Collect all data
-            handler_options = handler_def.get("options", {})
             body = handler_options.get("body") or DEFAULT_BODY
             serial = request.all_data.get("serial") or \
                      content.get("detail", {}).get("serial") or \
@@ -339,7 +386,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                 if tokens:
                     tokentype = tokens[0].get_tokentype()
             else:
-                token_objects = get_tokens(user=user)
+                token_objects = get_tokens(user=tokenowner)
                 serial = ','.join([tok.get_serial() for tok in token_objects])
 
             body = body.format(
@@ -348,18 +395,21 @@ class UserNotificationEventHandler(BaseEventHandler):
                 action=request.path,
                 serial=serial,
                 url=request.url_root,
-                user=user.info.get("givenname"),
-                givenname=user.info.get("givenname"),
-                username=user.login,
-                userrealm=user.realm,
+                user=tokenowner.info.get("givenname"),
+                surname=tokenowner.info.get("surname"),
+                givenname=recipient.get("givenname"),
+                username=tokenowner.login,
+                userrealm=tokenowner.realm,
                 tokentype=tokentype,
-                registrationcode=registrationcode
+                registrationcode=registrationcode,
+                recipient_givenname=recipient.get("givenname"),
+                recipient_surname=recipient.get("surname")
             )
 
             # Send notification
             if action.lower() == "sendmail":
                 emailconfig = handler_options.get("emailconfig")
-                useremail = user.info.get("email")
+                useremail = recipient.get("email")
                 subject = handler_options.get("subject") or \
                           "An action was performed on your token."
                 try:
@@ -370,24 +420,26 @@ class UserNotificationEventHandler(BaseEventHandler):
                     log.error("Failed to send email: {0!s}".format(exx))
                     ret = False
                 if ret:
-                    log.info("Sent a notification email to user {0}".format(user))
+                    log.info("Sent a notification email to user {0}".format(
+                        recipient))
                 else:
                     log.warning("Failed to send a notification email to user "
-                                "{0}".format(user))
+                                "{0}".format(recipient))
 
             elif action.lower() == "sendsms":
                 smsconfig = handler_options.get("smsconfig")
-                userphone = user.info.get("mobile")
+                userphone = recipient.get("mobile")
                 try:
                     ret = send_sms_identifier(smsconfig, userphone, body)
                 except Exception as exx:
                     log.error("Failed to send sms: {0!s}".format(exx))
                     ret = False
                 if ret:
-                    log.info("Sent a notification sms to user {0}".format(user))
+                    log.info("Sent a notification sms to user {0}".format(
+                        recipient))
                 else:
                     log.warning("Failed to send a notification email to user "
-                                "{0}".format(user))
+                                "{0}".format(recipient))
 
         return ret
 
