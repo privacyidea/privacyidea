@@ -42,7 +42,7 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.config import get_token_types
-from privacyidea.lib.user import User
+from privacyidea.lib.user import User, get_user_list
 from gettext import gettext as _
 from flask import current_app
 import json
@@ -362,9 +362,17 @@ class UserNotificationEventHandler(BaseEventHandler):
                 "email": internal_admin.email if internal_admin else ""
             }
         elif notify_type == NOTIFY_TYPE.ADMIN_REALM:
-            # TODO
-            pass
+            # Send emails to all the users in the specified admin realm
+            admin_realm = handler_options.get("To "+NOTIFY_TYPE.ADMIN_REALM)
+            ulist = get_user_list({"realm": admin_realm})
+            # create a list of all user-emails, if the user has an email
+            emails = [u.get("email") for u in ulist if u.get("email")]
+            recipient = {
+                "givenname": "admin of realm {0!s}".format(admin_realm),
+                "email": emails
+            }
         elif notify_type == NOTIFY_TYPE.LOGGED_IN_USER:
+            # Send notification to the logged in user
             if logged_in_user.get("user") and not logged_in_user.get("realm"):
                 # internal admins have no realm
                 internal_admin = get_db_admin(logged_in_user.get("user"))
@@ -386,9 +394,9 @@ class UserNotificationEventHandler(BaseEventHandler):
                     }
 
         elif notify_type == NOTIFY_TYPE.EMAIL:
+            email = handler_options.get("To "+NOTIFY_TYPE.EMAIL, "").split(",")
             recipient = {
-                "email": handler_options.get("To "+NOTIFY_TYPE.EMAIL,
-                                             "").split(",")
+                "email": email
             }
         else:
             log.warning("Was not able to determine the recipient for the user "

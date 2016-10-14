@@ -639,3 +639,58 @@ class UserNotificationTestCase(MyTestCase):
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
         self.assertTrue(res)
+
+    @smtpmock.activate
+    def test_14_send_to_adminrealm(self):
+        # setup realms
+        self.setUp_user_realms()
+
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=False)
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "123456"
+
+        g.logged_in_user = {"user": "testadmin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SomeSerial",
+                        "user": "cornelius"}
+        req.User = User("cornelius", self.realm1)
+        resp = Response()
+        resp.data = """{"result": {"value": true},
+        "detail": {"registrationcode": "12345678910"}
+        }
+        """
+
+        # send email to user in adminrealm "realm1"
+        # Although this is no admin realm, but this realm contains some email
+        #  addresses.
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "conditions": {"serial": "123.*"},
+                       "options": {"body": "your {registrationcode}",
+                                   "emailconfig": "myserver",
+                                   "To": NOTIFY_TYPE.ADMIN_REALM,
+                                   "To "+NOTIFY_TYPE.ADMIN_REALM:
+                                       "realm1"}}}
+        un_handler = UserNotificationEventHandler()
+        res = un_handler.do("sendmail", options=options)
+        self.assertTrue(res)
