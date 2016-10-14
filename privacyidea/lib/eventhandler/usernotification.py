@@ -42,6 +42,7 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.config import get_token_types
+from privacyidea.lib.user import User
 from gettext import gettext as _
 from flask import current_app
 import json
@@ -341,6 +342,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                   "logged_in_user {2!s}".format(action, tokenowner,
                                                 logged_in_user))
 
+        # Determine recipient
         recipient = None
 
         if notify_type == NOTIFY_TYPE.TOKENOWNER and not tokenowner.is_empty():
@@ -360,10 +362,29 @@ class UserNotificationEventHandler(BaseEventHandler):
                 "email": internal_admin.email if internal_admin else ""
             }
         elif notify_type == NOTIFY_TYPE.ADMIN_REALM:
+            # TODO
             pass
         elif notify_type == NOTIFY_TYPE.LOGGED_IN_USER:
-            # can be an internal admin!
-            pass
+            if logged_in_user.get("user") and not logged_in_user.get("realm"):
+                # internal admins have no realm
+                internal_admin = get_db_admin(logged_in_user.get("user"))
+                if internal_admin:
+                    recipient = {
+                        "givenname": logged_in_user.get("user"),
+                        "email": internal_admin.email if internal_admin else ""
+                    }
+            else:
+                # Try to find the user in the specified realm
+                user_obj = User(logged_in_user.get("user"),
+                                logged_in_user.get("realm"))
+                if user_obj:
+                    recipient = {
+                        "givenname": user_obj.info.get("givenname"),
+                        "surname": user_obj.info.get("surname"),
+                        "email": user_obj.info.get("email"),
+                        "mobile": user_obj.info.get("mobile")
+                    }
+
         elif notify_type == NOTIFY_TYPE.EMAIL:
             recipient = {
                 "email": handler_options.get("To "+NOTIFY_TYPE.EMAIL,

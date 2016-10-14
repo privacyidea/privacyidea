@@ -5,11 +5,8 @@ User Notification Handler Module
 
 .. index:: User Notification, Handler Modules
 
-The user notification handler module is used to send emails to the owner of a
-token.
-
-This module can be used to inform users, whenever the administrator manages
-any aspect of their tokens.
+The user notification handler module is used to send emails token owners or
+administrators in case of any event.
 
 Possible Actions
 ~~~~~~~~~~~~~~~~
@@ -31,6 +28,23 @@ sent, if an administrator managed the users token.
 
 The subject line of the mail that is sent.
 
+sendsms
+.......
+
+The *sendsms* action sends an SMS to the tokenowner. The SMS is sent, if an
+administrator managed the users token.
+
+**smsconfig**
+
+  * *required* Option
+  * The SMS Gateway configuration.
+
+
+Options for both actions
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Both actions **sendmail** and **sendsms** take several common options.
+
 **body**
 
   * optional
@@ -43,33 +57,31 @@ The body may contain the following tags
   * {action} the action that the logged in user performed.
   * {serial} the serial number of the token.
   * {url} the URL of the privacyIDEA system.
-  * {user} the given name of the user.
-  * {givenname} the given name of the user.
-  * {surname} the surname of the user.
-  * {username} the loginname of the user (token owner).
-  * {userrealm} the realm of the user (token owner)
+  * {user} the given name of the token owner.
+  * {givenname} the given name of the token owner.
+  * {surname} the surname of the token owner.
+  * {username} the loginname of the token owner.
+  * {userrealm} the realm of the token owner.
   * {tokentyp} the type of the token.
   * {registrationcode} the registration code in the detail response.
+  * {recipient_givenname} the given name of the recipient.
+  * {recipient_surname} the surname of the recipient.
 
+**To**
 
-sendsms
-.......
+  * required
 
-The *sendsms* action sends an SMS to the tokenowner. The SMS is sent, if an
-administrator managed the users token.
+This specifies to which type of user the notification should be sent.
+Possible recipient types are:
 
-**smsconfig**
+  * token owner,
+  * logged in user,
+  * admin realm,
+  * internal admin,
+  * email address.
 
-  * *required* Option
-  * The SMS Gateway configuration.
-
-**body**
-
-  * optional
-
-Here the administartor can specify the body of the SMS, that is sent.
-The body may contain the same tags as with *sendmail*.
-
+Depending on the recipient type you can enter additional information. The
+recipient type *email* takes a comma separated list of email addresses.
 
 Code
 ~~~~
