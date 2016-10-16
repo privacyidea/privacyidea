@@ -37,10 +37,10 @@ from privacyidea.models import (MachineToken, db, MachineTokenOptions,
 from netaddr import IPAddress
 from sqlalchemy import and_
 import logging
+
 log = logging.getLogger(__name__)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.applications.base import get_auth_item
-
 
 
 @log_with(log)
@@ -169,7 +169,7 @@ def attach_token(serial, application, hostname=None, machine_id=None,
     # Add options to the machine token
     if options:
         add_option(machinetoken_id=machinetoken.id,
-                  options=options)
+                   options=options)
 
     return machinetoken
 
@@ -209,9 +209,9 @@ def detach_token(serial, application, hostname=None, machine_id=None,
     # Delete MachineToken
     MachineTokenOptions.query.filter(MachineTokenOptions.machinetoken_id == mtid).delete()
     r = MachineToken.query.filter(and_(MachineToken.token_id == token_id,
-                    MachineToken.machine_id == machine_id,
-                    MachineToken.machineresolver_id == machineresolver_id,
-                    MachineToken.application == application)).delete()
+                                       MachineToken.machine_id == machine_id,
+                                       MachineToken.machineresolver_id == machineresolver_id,
+                                       MachineToken.application == application)).delete()
     db.session.commit()
     return r
 
@@ -242,7 +242,7 @@ def add_option(machinetoken_id=None, machine_id=None, resolver_name=None,
                                               application)
 
     for option_name, option_value in options.items():
-            MachineTokenOptions(machinetoken_id, option_name, option_value)
+        MachineTokenOptions(machinetoken_id, option_name, option_value)
     return len(options)
 
 
@@ -294,10 +294,9 @@ def list_machine_tokens(hostname=None,
                                                      resolver_name)
     machineresolver_id = get_machineresolver_id(resolver_name)
 
-
     sql_query = MachineToken.query.filter(and_(MachineToken.machine_id ==
-                                          machine_id,
-                    MachineToken.machineresolver_id == machineresolver_id))
+                                               machine_id,
+                                               MachineToken.machineresolver_id == machineresolver_id))
     if application:
         sql_query = sql_query.filter(MachineToken.application == application)
     if serial:
@@ -339,7 +338,23 @@ def list_token_machines(serial):
         options = {}
         for option in option_list:
             options[option.mt_key] = option.mt_value
+
+        machines = get_machines(id=machine.machine_id, resolver=resolver_name)
+        hostname = "unknown"
+        """
+        if len(machines) > 1:
+            raise Exception("Can not get unique ID for IP=%r. "
+                            "More than one machine found." % ip)
+        """
+        if len(machines) == 1:
+            # There is only one machine in the list and we get its ID
+            hostname = machines[0].hostname
+            # return the first hostname
+            if type(hostname) == list:
+                hostname = hostname[0]
+
         res.append({"machine_id": machine.machine_id,
+                    "hostname": hostname,
                     "application": machine.application,
                     "resolver": resolver_name,
                     "options": options,
