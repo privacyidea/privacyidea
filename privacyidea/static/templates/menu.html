@@ -27,14 +27,16 @@
         <div class="navbar-collapse collapse myMainNavbar">
             <ul class="nav navbar-nav" ng-hide="token_wizard">
                 <li ng-class="{active: $state.includes('token')}"
-                    ng-show="loggedInUser.role">
+                    ng-show="loggedInUser.role &&
+                            checkMainMenu('tokens')">
                     <a ui-sref="token.list">
                     <span class="glyphicon glyphicon-phone"
                           aria-hidden="true"></span>
                         <translate>Tokens</translate>
                     </a></li>
                 <li ng-class="{active: $state.includes('user')}"
-                    ng-show="loggedInUser.role == 'admin'">
+                    ng-show="loggedInUser.role == 'admin' &&
+                            checkMainMenu('users')">
                     <a ui-sref="user.list">
                     <span class="glyphicon glyphicon-user"
                           aria-hidden="true"></span>
@@ -43,7 +45,7 @@
 
                 <li ng-class="{active: $state.includes('user')}"
                     ng-show="loggedInUser.role == 'user' &&
-                        checkRight('userlist')">
+                            checkMainMenu('users')">
                     <a ui-sref="user.password">
                     <span class="glyphicon glyphicon-user"
                           aria-hidden="true"></span>
@@ -51,14 +53,16 @@
                     </a></li>
 
                 <li ng-class="{active: $state.includes('machine')}"
-                    ng-show="loggedInUser.role == 'admin'">
+                    ng-show="loggedInUser.role == 'admin' &&
+                            checkMainMenu('machines')">
                     <a ui-sref="machine.list">
                     <span class="glyphicon glyphicon-tasks"
                           aria-hidden="true"></span>
                         <translate>Machines</translate>
                     </a></li>
                 <li ng-class="{active: $state.includes('config')}"
-                    ng-show="loggedInUser.role == 'admin'">
+                    ng-show="loggedInUser.role == 'admin' &&
+                            checkMainMenu('config')">
                     <a ui-sref="config.system">
                         <span class="glyphicon glyphicon-cog"
                               aria-hidden="true"></span>
@@ -66,7 +70,8 @@
                     </a>
                 </li>
                 <li ng-class="{active: $state.includes('audit')}"
-                    ng-show="loggedInUser.role && checkRight('auditlog')">
+                    ng-show="loggedInUser.role &&
+                            checkMainMenu('audit')">
                     <a ui-sref="audit">
                         <span class="glyphicon glyphicon-search"
                               aria-hidden="true"></span>
@@ -74,7 +79,8 @@
                     </a>
                 </li>
                 <li ng-class="{active: $state.includes('components')}"
-                    ng-show="loggedInUser.role && checkRight('clienttype')">
+                    ng-show="loggedInUser.role == 'admin' &&
+                            checkMainMenu('components')">
                     <a ui-sref="component">
                         <span class="glyphicon glyphicon-calendar"
                               aria-hidden="true"></span>

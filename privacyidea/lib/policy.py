@@ -1121,7 +1121,7 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("The user is allowed to assign an existing token"
                           " that is not yet assigned"
                           " using the token serial number."),
-                'mainmenu': [MAIN_MENU.TOKENS, MAIN_MENU.USERS]},
+                'mainmenu': [MAIN_MENU.TOKENS]},
             ACTION.DISABLE: {'type': 'bool',
                              'desc': _(
                                  'The user is allowed to disable his own '
@@ -1191,7 +1191,7 @@ def get_static_policy_definitions(scope=None):
                                    'desc': _("The user is allowed to do a "
                                              "password reset in an editable "
                                              "UserIdResolver."),
-                                   'mainmenu': [MAIN_MENU.USERS]}
+                                   'mainmenu': []}
 
         },
         SCOPE.ENROLL: {

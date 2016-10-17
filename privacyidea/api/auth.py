@@ -268,11 +268,16 @@ def get_auth_token():
         # definitions
         rights = g.policy_object.ui_get_rights(role, realm, loginname,
                                                g.client_ip)
+        menus = g.policy_object.ui_get_main_menus({"username": loginname,
+                                                   "role": role,
+                                                   "realm": realm},
+                                                  g.client_ip)
     else:
         import os
         import binascii
         nonce = binascii.hexlify(os.urandom(20))
         rights = []
+        menus = []
 
     # What is the log level?
     log_level = current_app.config.get("PI_LOGLEVEL", 30)
@@ -293,7 +298,8 @@ def get_auth_token():
                         "username": loginname,
                         "realm": realm,
                         "log_level": log_level,
-                        "rights": rights},
+                        "rights": rights,
+                        "menus": menus},
                        details=details)
 
 

@@ -28,12 +28,13 @@ angular.module("privacyideaAuth", [])
         var user = {};
 
         return {
-            setUser: function (username, realm, auth_token, role, rights) {
+            setUser: function (username, realm, auth_token, role, rights, menus) {
                 user.username = username;
                 user.realm = realm;
                 user.auth_token = auth_token;
                 user.role = role;
                 user.rights = rights;
+                user.menus = menus;
             },
             dropUser: function () {
                     user = {};
@@ -54,6 +55,10 @@ angular.module("privacyideaAuth", [])
                 // check if the action is contained in user.rights
                 var res = (user.rights.indexOf(action) >= 0);
                 //console.log("checking right: " + action + ": " + res);
+                return res;
+            },
+            checkMainMenu: function (menu) {
+                var res = (user.menus.indexOf(menu) >= 0);
                 return res;
             },
             checkEnroll: function() {

@@ -39,6 +39,7 @@ angular.module("privacyideaApp")
 
     $scope.instanceUrl = instanceUrl;
     $scope.checkRight = AuthFactory.checkRight;
+    $scope.checkMainMenu = AuthFactory.checkMainMenu;
     $scope.checkEnroll = AuthFactory.checkEnroll;
     var obj = angular.element(document.querySelector("#REMOTE_USER"));
     $scope.remoteUser = obj.val();
@@ -232,7 +233,8 @@ angular.module("privacyideaApp")
                 data.result.value.realm,
                 data.result.value.token,
                 data.result.value.role,
-                data.result.value.rights);
+                data.result.value.rights,
+                data.result.value.menus);
             // clear old error messages
             inform.clear();
             if (data.detail) {
