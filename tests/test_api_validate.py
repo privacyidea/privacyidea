@@ -569,7 +569,8 @@ class ValidateAPITestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             detail = json.loads(res.data).get("detail")
             self.assertFalse(result.get("value"))
-            self.assertEqual(detail.get("message"), "Token is disabled")
+            self.assertEqual(detail.get("message"),
+                             "No active challenge response token found")
 
         # delete the token
         remove_token(serial=serial)
