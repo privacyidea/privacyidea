@@ -5,7 +5,7 @@ from .base import MyTestCase
 
 from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
                                    check_time_in_range, parse_proxy,
-                                   check_proxy, reduce_realms)
+                                   check_proxy, reduce_realms, is_true)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork
 
@@ -156,3 +156,16 @@ class UtilsTestCase(MyTestCase):
         r = reduce_realms(realms, policies)
         self.assertTrue("defrealm" not in r)
         self.assertTrue("localsql" in r)
+
+    def test_06_is_true(self):
+        self.assertFalse(is_true(None))
+        self.assertFalse(is_true(0))
+        self.assertFalse(is_true("0"))
+        self.assertFalse(is_true(False))
+        self.assertFalse(is_true("false"))
+
+        self.assertTrue(is_true(1))
+        self.assertTrue(is_true("1"))
+        self.assertTrue(is_true("True"))
+        self.assertTrue(is_true("TRUE"))
+        self.assertTrue(is_true(True))

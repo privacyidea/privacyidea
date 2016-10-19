@@ -505,3 +505,12 @@ def reduce_realms(all_realms, policies):
                         # Attach each realm in the policy
                         realms[r] = all_realms.get(r)
     return realms
+
+
+def is_true(value):
+    """
+    Returns True is the value is 1, "1", True or "true"
+    :param value: string or integer
+    :return: Boolean
+    """
+    return value in [1, "1", True, "True", "true", "TRUE"]

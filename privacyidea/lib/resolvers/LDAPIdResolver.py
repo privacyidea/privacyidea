@@ -59,6 +59,7 @@ import traceback
 import hashlib
 import binascii
 from privacyidea.lib.crypto import urandom, geturandom
+from privacyidea.lib.utils import is_true
 
 import uuid
 import datetime
@@ -950,4 +951,4 @@ class IdResolver (UserIdResolver):
         """
         # Depending on the database this might look different
         # Usually this is "1"
-        return self._editable in [1, "1", True]
+        return is_true(self._editable)

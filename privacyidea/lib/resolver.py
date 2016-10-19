@@ -56,6 +56,7 @@ from .crypto import encryptPassword, decryptPassword
 from privacyidea.lib.utils import sanity_name_check
 from flask import g
 from privacyidea.lib.config import ConfigClass
+from privacyidea.lib.utils import is_true
 #from privacyidea.lib.cache import cache
 
 log = logging.getLogger(__name__)
@@ -197,14 +198,14 @@ def get_resolver_list(filter_resolver_type=None,
         reduced_resolvers = {}
         if editable is True:
             for reso_name, reso in resolvers.iteritems():
-                check_editable = int(reso["data"].get("Editable", 0)) or \
-                                 int(reso["data"].get("EDITABLE", 0))
+                check_editable = is_true(reso["data"].get("Editable")) or \
+                                 is_true(reso["data"].get("EDITABLE"))
                 if check_editable:
                     reduced_resolvers[reso_name] = resolvers[reso_name]
         elif editable is False:
             for reso_name, reso in resolvers.iteritems():
-                check_editable = int(reso["data"].get("Editable", 0)) or \
-                                 int(reso["data"].get("EDITABLE", 0))
+                check_editable = is_true(reso["data"].get("Editable")) or \
+                                 is_true(reso["data"].get("EDITABLE"))
                 if not check_editable:
                     reduced_resolvers[reso_name] = resolvers[reso_name]
         resolvers = reduced_resolvers
