@@ -2035,7 +2035,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                             "cannot be reset.")
 
     elif challenge_response_token_list:
-        # A challenge token was found.
+        # The RESPONSE for a previous request of a challenge response token was
+        # found.
         for tokenobject in challenge_response_token_list:
             if tokenobject.check_challenge_response(passw=passw,
                                                     options=options) >= 0:
@@ -2049,16 +2050,16 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 tokenobject.reset()
 
     elif challenge_request_token_list:
-        # A challenge token was found.
-        if len(challenge_request_token_list) == 1:
+        # This is the initial REQUEST of a challenge response token
+        active_challenge_token = [t for t in challenge_request_token_list
+                                  if t.token.active ]
+        if len(active_challenge_token) == 1:
             message_list = []
-            token_obj = challenge_request_token_list[0]
+            token_obj = active_challenge_token[0]
             # Check if the max auth is succeeded
             if token_obj.check_all(message_list):
-                # One token that can create challenge
-                tokenobject = challenge_request_token_list[0]
                 r_chal, message, transaction_id, \
-                attributes = tokenobject.create_challenge(options=options)
+                attributes = token_obj.create_challenge(options=options)
                 # Add the reply to the response
                 message_list.append(message)
                 if r_chal:
@@ -2079,6 +2080,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                             challenge_request_token_list[0].is_pin_change(
                                 password=True)
             reply_dict["message"] = ", ".join(message_list)
+        elif len(active_challenge_token) == 0:
+            reply_dict["message"] = "No active challenge response token found"
         else:
             reply_dict["message"] = "Multiple tokens to create a challenge " \
                                     "found!"

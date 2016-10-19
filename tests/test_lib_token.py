@@ -21,6 +21,7 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.models import (Token, Challenge, TokenRealm)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types)
+from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 import datetime
 from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokens,
@@ -1062,6 +1063,32 @@ class TokenTestCase(MyTestCase):
         r = check_user_pass(user, "pin47888888")
         self.assertEqual(r[0], False)
         self.assertEqual(r[1].get('message'), "wrong otp value")
+
+    def test_48_challenge_request_two_tokens(self):
+        # test the challenge request of two tokens. One token is active,
+        # the other is disabled
+        user = User("cornelius", self.realm1)
+        pin = "test48"
+        token_a = init_token({"serial": "CR2A",
+                              "type": "hotp",
+                              "otpkey": self.otpkey,
+                              "pin": pin}, user)
+        token_b = init_token({"serial": "CR2B",
+                              "type": "hotp",
+                              "otpkey": self.otpkey,
+                              "pin": pin}, user)
+        # disable token_b
+        enable_token("CR2B", False)
+        # Allow HOTP for chalresp
+        set_policy("test48", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
+            ACTION.CHALLENGERESPONSE))
+        r, r_dict = check_token_list([token_a, token_b], pin, user)
+        self.assertFalse(r)
+        self.assertTrue("message" in r_dict)
+        self.assertTrue("transaction_id" in r_dict)
+        remove_token("CR2A")
+        remove_token("CR2B")
+        delete_policy("test48")
 
 
 class TokenFailCounterTestCase(MyTestCase):
