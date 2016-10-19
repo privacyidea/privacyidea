@@ -456,6 +456,7 @@
             <thead>
             <tr>
                 <th translate>Machine ID</th>
+                <th translate>Hostname</th>
                 <th translate>Resolver</th>
                 <th translate>Application</th>
                 <th translate>Options</th>
@@ -469,6 +470,7 @@
                     machineresolver:machine.resolver})"
                        ng-click="$rootScope.returnTo=token.list;">
                         {{ machine.machine_id }}</a></td>
+                <td>{{ machine.hostname }}</td>
                 <td>{{ machine.resolver }}</td>
                 <td>{{ machine.application }}</td>
                 <!-- Options -->

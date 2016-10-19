@@ -15,7 +15,7 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.selectedRealms = {};
     $scope.newUser = {user: "", realm: $scope.defaultRealm};
     $scope.loggedInUser = AuthFactory.getUser();
-    $scope.machinesPerPage = 5;
+    $scope.machinesPerPage = 15;
     $scope.params = {page: 1};
     $scope.form = {options: {}};
     $scope.testTokenPlaceholder = gettextCatalog.getString('Enter PIN and OTP to check the' +
