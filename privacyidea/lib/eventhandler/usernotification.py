@@ -230,7 +230,7 @@ class UserNotificationEventHandler(BaseEventHandler):
         if user.is_empty() and serial:
             # maybe the user is empty, but a serial was passed.
             # Then we determine the user by the serial
-            user = get_token_owner(serial)
+            user = get_token_owner(serial) or User()
         return user
 
     def check_condition(self, options):
