@@ -87,6 +87,8 @@ def single_page_application():
             # The policy is still a boolean realm_dropdown action
             # Thus we display ALL realms
             realms = ",".join(get_realms().keys())
+        if realms:
+            realms = "," + realms
 
     try:
         if is_remote_user_allowed(request):
