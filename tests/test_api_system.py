@@ -3,6 +3,8 @@ from .base import MyTestCase
 from privacyidea.lib.error import (ParameterError, ConfigAdminError,
                                    HSMException)
 from privacyidea.lib.policy import PolicyClass
+from privacyidea.lib.config import (set_privacyidea_config,
+                                    delete_privacyidea_config, SYSCONF)
 from urllib import urlencode
 
 PWFILE = "tests/testdata/passwords"
@@ -114,6 +116,28 @@ class APIConfigTestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue('"setPolicy pol1": 1' in res.data, res.data)
+
+        # Set a policy with a more complicated client which might interfere
+        # with override client
+        set_privacyidea_config(SYSCONF.OVERRIDECLIENT, "10.0.0.1")
+        with self.app.test_request_context('/policy/pol1',
+                                           data={'action': "enroll",
+                                                 'scope': "selfservice",
+                                                 'realm': "r1",
+                                                 'resolver': "test",
+                                                 'user': ["admin"],
+                                                 'time': "",
+                                                 'client': "10.0.0.0/8, "
+                                                           "172.16.200.1",
+                                                 'active': True},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result["status"] is True, result)
+            self.assertTrue('"setPolicy pol1": 1' in res.data, res.data)
+        delete_privacyidea_config(SYSCONF.OVERRIDECLIENT)
 
         # setting policy with invalid name fails
         with self.app.test_request_context('/policy/invalid policy name',
