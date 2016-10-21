@@ -53,3 +53,14 @@ Then you can call ``pi-manage`` like this::
 
 This will read the configuration (only the database uri) from the config file
 ``audit.cfg``.
+
+Table size
+~~~~~~~~~~
+
+Sometimes the entires to be written to the database may be longer than the
+column in the database. You can either enlarge the columns in the database or
+you can set
+
+   PI_AUDIT_SQL_TRUNCATE = True
+
+in ``pi.cfg``. This will truncate each entry to the defined column length.

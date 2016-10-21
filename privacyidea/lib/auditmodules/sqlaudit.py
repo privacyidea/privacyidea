@@ -32,6 +32,7 @@ The SQL Audit Module is configured like this:
 
     Optional:
     PI_AUDIT_SQL_URI = "sqlite://"
+    PI_AUDIT_SQL_TRUNCATE = True | False
 
 If the PI_AUDIT_SQL_URI is omitted the Audit data is written to the
 token database.
@@ -62,25 +63,43 @@ except Exception as exx:
 
 metadata = MetaData()
 
+column_length = {"signature": 620,
+                 "action": 50,
+                 "serial": 20,
+                 "token_type": 12,
+                 "user": 20,
+                 "realm": 20,
+                 "administrator": 20,
+                 "action_detail": 50,
+                 "info": 50,
+                 "privacyidea_server": 255,
+                 "client": 50,
+                 "loglevel": 12,
+                 "clearance_level": 12}
+
 TABLE_NAME = 'pidea_audit'
 logentry = Table(TABLE_NAME,
                  metadata,
                  Column('id', Integer, primary_key=True),
                  Column('date', DateTime),
-                 Column('signature', String(620)),
-                 Column('action', String(50)),
+                 Column('signature', String(column_length.get("signature"))),
+                 Column('action', String(column_length.get("action"))),
                  Column('success', Integer),
-                 Column('serial', String(20)),
-                 Column('token_type', String(12)),
-                 Column('user', String(20)),
-                 Column('realm', String(20)),
-                 Column('administrator', String(20)),
-                 Column('action_detail', String(50)),
-                 Column('info', String(50)),
-                 Column('privacyidea_server', String(255)),
-                 Column('client', String(50)),
-                 Column('loglevel', String(12)),
-                 Column('clearance_level', String(12))
+                 Column('serial', String(column_length.get("serial"))),
+                 Column('token_type', String(column_length.get("token_type"))),
+                 Column('user', String(column_length.get("user"))),
+                 Column('realm', String(column_length.get("realm"))),
+                 Column('administrator',
+                        String(column_length.get("administrator"))),
+                 Column('action_detail',
+                        String(column_length.get("action_detail"))),
+                 Column('info', String(column_length.get("info"))),
+                 Column('privacyidea_server',
+                        String(column_length.get("privacyidea_server"))),
+                 Column('client', String(column_length.get("client"))),
+                 Column('loglevel', String(column_length.get("loglevel"))),
+                 Column('clearance_level',
+                        String(column_length.get("clearance_level")))
                  )
 
 
@@ -167,6 +186,15 @@ class Audit(AuditBase):
         except OperationalError as exx:  # pragma: no cover
             log.info("{0!r}".format(exx))
 
+    def _truncate_data(self):
+        """
+        Truncate self.audit_data according to the column_length.
+        :return: None
+        """
+        for column, l in column_length.iteritems():
+            if column in self.audit_data:
+                self.audit_data[column] = self.audit_data[column][:l]
+
     @staticmethod
     def _create_filter(param):
         """
@@ -245,6 +273,8 @@ class Audit(AuditBase):
         It should hash the data and do a hash chain and sign the data
         """
         try:
+            if self.config.get("PI_AUDIT_SQL_TRUNCATE"):
+                self._truncate_data()
             le = LogEntry(action=self.audit_data.get("action"),
                           success=int(self.audit_data.get("success", 0)),
                           serial=self.audit_data.get("serial"),

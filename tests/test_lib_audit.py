@@ -6,6 +6,7 @@ This tests the files
 
 from .base import MyTestCase
 from privacyidea.lib.audit import getAudit, search
+from privacyidea.lib.auditmodules.sqlaudit import column_length
 import datetime
 import time
 
@@ -186,3 +187,13 @@ class AuditTestCase(MyTestCase):
         self.assertEqual(series.values[0], 2)
         self.assertEqual(series.values[1], 1)
 
+    def test_06_truncate_data(self):
+        long_serial = "This serial is much to long, you know it!"
+        token_type = "12345678901234567890"
+        self.Audit.log({"serial": long_serial,
+                        "token_type": token_type})
+        self.Audit._truncate_data()
+        self.assertEqual(len(self.Audit.audit_data.get("serial")),
+                         column_length.get("serial"))
+        self.assertEqual(len(self.Audit.audit_data.get("token_type")),
+                         column_length.get("token_type"))
