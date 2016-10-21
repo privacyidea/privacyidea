@@ -12,7 +12,7 @@ from privacyidea.models import (Token,
                                 PasswordReset, EventHandlerOption,
                                 EventHandler, SMSGatewayOption, SMSGateway,
                                 EventHandlerCondition,
-                                ClientApplication)
+                                ClientApplication, Subscription)
 from .base import MyTestCase
 from datetime import datetime
 from datetime import timedelta
@@ -604,3 +604,34 @@ class TokenModelTestCase(MyTestCase):
         ClientApplication.query.filter(ClientApplication.id == cid).delete()
         c = ClientApplication.query.filter(ClientApplication.id == cid).first()
         self.assertEqual(c, None)
+
+    def test_22_subscription(self):
+        sid = Subscription(application="otrs", for_name="customer",
+                           for_email="customer@example.com", for_phone="12345",
+                           by_name="provider", by_email="p@example.com").save()
+        s = Subscription.query.filter(Subscription.application == "otrs").first()
+        self.assertEqual(s.application, "otrs")
+        self.assertEqual(s.for_name, "customer")
+        self.assertEqual(s.for_email, "customer@example.com")
+        self.assertEqual(s.for_phone, "12345")
+        self.assertEqual(s.by_name, "provider")
+        self.assertEqual(s.by_email, "p@example.com")
+
+        # Update the entry
+        sid = Subscription(application="otrs", for_phone="11111",
+                           by_url="https://support.com").save()
+        s = Subscription.query.filter(
+            Subscription.application == "otrs").first()
+        self.assertEqual(s.application, "otrs")
+        self.assertEqual(s.for_name, "customer")
+        self.assertEqual(s.for_email, "customer@example.com")
+        self.assertEqual(s.for_phone, "11111")
+        self.assertEqual(s.by_name, "provider")
+        self.assertEqual(s.by_email, "p@example.com")
+        self.assertEqual(s.by_url, "https://support.com")
+
+        # delete entry
+        Subscription.query.filter(Subscription.application == "otrs").delete()
+        s = Subscription.query.filter(
+            Subscription.application == "otrs").first()
+        self.assertEqual(s, None)

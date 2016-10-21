@@ -2134,3 +2134,55 @@ class ClientApplication(MethodsMixin, db.Model):
     def __repr__(self):
         return "<ClientApplication [{0!s}][{1!s}:{2!s}]>".format(
             self.id, self.ip, self.clienttype)
+
+
+class Subscription(MethodsMixin, db.Model):
+    """
+    This table stores the imported subscription files.
+    """
+    __tablename__ = 'subscription'
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    application = db.Column(db.Unicode(30), index=True)
+    for_name = db.Column(db.Unicode(50), nullable=False)
+    for_address = db.Column(db.Unicode(128))
+    for_email = db.Column(db.Unicode(128), nullable=False)
+    for_phone = db.Column(db.Unicode(50), nullable=False)
+    for_url = db.Column(db.Unicode(80))
+    for_comment = db.Column(db.Unicode(255))
+    by_name = db.Column(db.Unicode(50), nullable=False)
+    by_email = db.Column(db.Unicode(128), nullable=False)
+    by_address = db.Column(db.Unicode(128))
+    by_phone = db.Column(db.Unicode(50))
+    by_url = db.Column(db.Unicode(80))
+    date_from = db.Column(db.DateTime)
+    date_till = db.Column(db.DateTime)
+    num_users = db.Column(db.Integer)
+    num_tokens = db.Column(db.Integer)
+    num_clients = db.Column(db.Integer)
+
+    def save(self):
+        subscription = Subscription.query.filter(
+            Subscription.application == self.application).first()
+        if subscription is None:
+            # create a new one
+            db.session.add(self)
+            db.session.commit()
+            ret = self.id
+        else:
+            # update
+            values = {}
+            for attr in ["for_name", "for_address", "for_email", "for_phone",
+                         "for_url", "for_comment", "by_name", "by_email",
+                         "by_address", "by_phone", "by_url", "date_from",
+                         "date_till", "num_users", "num_tokens", "num_clients"]:
+                if getattr(self, attr) is not None:
+                    values[attr] = getattr(self, attr)
+            Subscription.query.filter(
+                Subscription.id == subscription.id).update(values)
+            ret = subscription.id
+        db.session.commit()
+        return ret
+
+    def __repr__(self):
+        return "<Subscription [{0!s}][{1!s}:{2!s}:{3!s}]>".format(
+            self.id, self.application, self.for_name, self.by_name)
