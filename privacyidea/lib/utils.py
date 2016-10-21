@@ -32,7 +32,7 @@ from privacyidea.lib.crypto import urandom, geturandom
 import string
 import re
 from datetime import timedelta, datetime, time
-from netaddr import IPAddress, IPNetwork
+from netaddr import IPAddress, IPNetwork, AddrFormatError
 import traceback
 ENCODING = "utf-8"
 
@@ -375,7 +375,7 @@ def parse_proxy(proxy_settings):
     172.16.0.0/16
         Hosts in 172.16.x.x may rewrite to any client IP
 
-    Such settings may be seperated by comma.
+    Such settings may be separated by comma.
 
     :param proxy_settings: The OverrideAuthorizationClient config string
     :type proxy_settings: basestring
@@ -408,7 +408,14 @@ def check_proxy(proxy_ip, rewrite_ip, proxy_settings):
     :param proxy_settings: The proxy settings from OverrideAuthorizationClient
     :return:
     """
-    proxy_dict = parse_proxy(proxy_settings)
+    try:
+        proxy_dict = parse_proxy(proxy_settings)
+    except AddrFormatError:
+        log.error("Error parsing the OverrideAuthorizationClient setting: {"
+                  "0!s}! The IP addresses need to be comma separated. Fix "
+                  "this. The client IP will not be mapped!")
+        log.debug("{0!s}".format(traceback.format_exc()))
+        return False
 
     for proxynet, clientnet in proxy_dict.items():
         if IPAddress(proxy_ip) in proxynet and IPAddress(rewrite_ip) in \

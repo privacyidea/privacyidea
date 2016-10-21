@@ -7,7 +7,7 @@ from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
                                    check_time_in_range, parse_proxy,
                                    check_proxy, reduce_realms, is_true)
 from datetime import timedelta, datetime
-from netaddr import IPAddress, IPNetwork
+from netaddr import IPAddress, IPNetwork, AddrFormatError
 
 
 class UtilsTestCase(MyTestCase):
@@ -106,6 +106,12 @@ class UtilsTestCase(MyTestCase):
         self.assertTrue(check_proxy("1.2.3.10", "192.168.1.12", proxy_def))
         self.assertFalse(check_proxy("172.16.0.1", "1.2.3.4", proxy_def))
         self.assertTrue(check_proxy("172.16.0.1", "10.1.2.3", proxy_def))
+
+        # Wrong proxy setting. No commas (issue 526)
+        proxy_def = " 10.0.0.12 1.2.3.4/16> 192.168.1.0/24 172.16.0.1 " \
+                    ">10.0.0.0/8   "
+        self.assertRaises(AddrFormatError, parse_proxy, proxy_def)
+        self.assertFalse(check_proxy("10.0.0.12", "1.2.3.4", proxy_def))
 
     def test_05_reduce_realms(self):
         realms = {'defrealm': {'default': False,
