@@ -2159,6 +2159,13 @@ class Subscription(MethodsMixin, db.Model):
     num_users = db.Column(db.Integer)
     num_tokens = db.Column(db.Integer)
     num_clients = db.Column(db.Integer)
+    signature = db.Column(db.Unicode(640))
+
+    columns = ["for_name", "for_address", "for_email", "for_phone",
+                     "for_url", "for_comment", "by_name", "by_email",
+                     "by_address", "by_phone", "by_url", "date_from",
+                     "date_till", "num_users", "num_tokens",
+                     "num_clients", "signature"]
 
     def save(self):
         subscription = Subscription.query.filter(
@@ -2170,13 +2177,7 @@ class Subscription(MethodsMixin, db.Model):
             ret = self.id
         else:
             # update
-            values = {}
-            for attr in ["for_name", "for_address", "for_email", "for_phone",
-                         "for_url", "for_comment", "by_name", "by_email",
-                         "by_address", "by_phone", "by_url", "date_from",
-                         "date_till", "num_users", "num_tokens", "num_clients"]:
-                if getattr(self, attr) is not None:
-                    values[attr] = getattr(self, attr)
+            values = self.get()
             Subscription.query.filter(
                 Subscription.id == subscription.id).update(values)
             ret = subscription.id
@@ -2186,3 +2187,14 @@ class Subscription(MethodsMixin, db.Model):
     def __repr__(self):
         return "<Subscription [{0!s}][{1!s}:{2!s}:{3!s}]>".format(
             self.id, self.application, self.for_name, self.by_name)
+
+    def get(self):
+        """
+        Return the database object as dict
+        :return:
+        """
+        d = {}
+        for attr in Subscription.__table__.columns.keys():
+            if getattr(self, attr) is not None:
+                d[attr] = getattr(self, attr)
+        return d

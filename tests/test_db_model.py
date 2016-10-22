@@ -619,7 +619,8 @@ class TokenModelTestCase(MyTestCase):
 
         # Update the entry
         sid = Subscription(application="otrs", for_phone="11111",
-                           by_url="https://support.com").save()
+                           by_url="https://support.com",
+                           signature="1234567890").save()
         s = Subscription.query.filter(
             Subscription.application == "otrs").first()
         self.assertEqual(s.application, "otrs")

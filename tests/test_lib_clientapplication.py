@@ -4,7 +4,10 @@ This test file tests the lib.clientapplicaton.py
 from .base import MyTestCase
 from datetime import datetime
 from privacyidea.lib.clientapplication import (get_clientapplication,
-                                               save_clientapplication)
+                                               save_clientapplication,
+                                               save_subscription,
+                                               delete_subscription,
+                                               get_subscription)
 
 
 class ClientApplicationTestCase(MyTestCase):
@@ -39,4 +42,35 @@ class ClientApplicationTestCase(MyTestCase):
         self.assertTrue(r["RADIUS"][0]["lastseen"] < datetime.now())
         self.assertTrue(r["SAML"][0]["lastseen"] < datetime.now())
 
+    def test_02_subscriptions(self):
+        r = save_subscription({"application": "otrs",
+                               "for_name": "customer",
+                               "for_email": "cust@example.com",
+                               "for_phone": "123456",
+                               "by_name": "NetKnights",
+                               "by_email": "provider@example.com"})
+        self.assertTrue(r)
+
+        # Update
+        r = save_subscription({"application": "otrs",
+                               "for_name": "customer2",
+                               "for_email": "cust@example.com"})
+
+        # Get
+        subs = get_subscription()
+        self.assertEqual(len(subs), 1)
+        subs = get_subscription("otrs")
+        self.assertEqual(len(subs), 1)
+        otrs_sub = subs[0]
+        self.assertEqual(otrs_sub.get("application"), "otrs")
+        self.assertEqual(otrs_sub.get("for_name"), "customer2")
+        self.assertEqual(otrs_sub.get("for_email"), "cust@example.com")
+
+        # delete
+        s = delete_subscription("otrs")
+        self.assertTrue(s)
+
+        # get
+        subs = get_subscription("otrs")
+        self.assertEqual(len(subs), 0)
 
