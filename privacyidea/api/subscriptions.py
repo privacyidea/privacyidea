@@ -15,9 +15,9 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.event import event
 from privacyidea.api.lib.prepolicy import check_base_action, prepolicy
 from privacyidea.lib.policy import ACTION
-from privacyidea.lib.clientapplication import (get_subscription,
-                                               delete_subscription,
-                                               save_subscription)
+from privacyidea.lib.subscriptions import (get_subscription,
+                                           delete_subscription,
+                                           save_subscription)
 import logging
 import yaml
 
