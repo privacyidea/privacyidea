@@ -51,6 +51,7 @@ from privacyidea.api.recover import recover_blueprint
 from privacyidea.api.event import eventhandling_blueprint
 from privacyidea.api.smsgateway import smsgateway_blueprint
 from privacyidea.api.clienttype import client_blueprint
+from privacyidea.api.subscriptions import subscriptions_blueprint
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
 from privacyidea.config import config
 from privacyidea.models import db
@@ -157,6 +158,7 @@ def create_app(config_name="development",
     app.register_blueprint(eventhandling_blueprint, url_prefix='/event')
     app.register_blueprint(smsgateway_blueprint, url_prefix='/smsgateway')
     app.register_blueprint(client_blueprint, url_prefix='/client')
+    app.register_blueprint(subscriptions_blueprint, url_prefix='/subscriptions')
     db.init_app(app)
     migrate = Migrate(app, db)
 

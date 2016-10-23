@@ -26,6 +26,7 @@ The code is tested in tests/test_lib_clientapplication.py.
 """
 
 import logging
+import datetime
 from log import log_with
 from ..models import ClientApplication, Subscription
 from netaddr import IPAddress
@@ -106,6 +107,13 @@ def save_subscription(subscription):
     :return: True in case of success
     """
     # TODO verify the signature of the subscriptions
+    if type(subscription.get("date_from") == str):
+        subscription["date_from"] = datetime.datetime.strptime(
+            subscription.get("date_from"), "%Y-%m-%d")
+    if type(subscription.get("date_till") == str):
+        subscription["date_till"] = datetime.datetime.strptime(
+            subscription.get("date_till"), "%Y-%m-%d")
+
     s = Subscription(application=subscription.get("application"),
                      for_name=subscription.get("for_name"),
                      for_address=subscription.get("for_address"),
@@ -118,7 +126,7 @@ def save_subscription(subscription):
                      by_address=subscription.get("by_addresss"),
                      by_phone=subscription.get("by_phone"),
                      by_url=subscription.get("by_url"),
-                     date_from=subscription.get("data_from"),
+                     date_from=subscription.get("date_from"),
                      date_till=subscription.get("date_till"),
                      num_users=subscription.get("num_users"),
                      num_tokens=subscription.get("num_tokens"),
