@@ -43,3 +43,31 @@ myApp.factory("ComponentFactory", function (AuthFactory,
         }
     });
 
+
+myApp.factory("SubscriptionFactory", function (AuthFactory, $http, $state,
+                                               $rootScope, subscriptionsUrl,
+                                               inform){
+    var error_func = function (error) {
+        if (error.result.error.code === -401) {
+            $state.go('login');
+        } else {
+            inform.add(error.result.error.message, {type: "danger", ttl: 10000});
+        }
+    };
+
+    return {
+        get: function(callback) {
+            $http.get(subscriptionsUrl + "/", {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
+        delete: function(application, callback) {
+            $http.delete(subscriptionsUrl + "/" + application, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+
+        }
+    }
+});

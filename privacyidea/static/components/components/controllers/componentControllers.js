@@ -21,12 +21,13 @@
 myApp.controller("componentController", function (ComponentFactory, $scope,
                                               $stateParams, $http,
                                               AuthFactory, instanceUrl,
-                                              $location) {
+                                              SubscriptionFactory, subscriptionsUrl,
+                                              $location, $upload, inform) {
     $scope.instanceUrl = instanceUrl;
 
     $scope.getClientType = function () {
         console.log("Requesting client application types.");
-        ComponentFactory.getClientType(function(data) {
+        ComponentFactory.getClientType(function (data) {
             $scope.clientdata = data.result.value;
             console.log($scope.clientdata);
         });
@@ -41,5 +42,49 @@ myApp.controller("componentController", function (ComponentFactory, $scope,
         $location.path("/component/clienttype");
     }
 
+    /*
+    Functions for subscriptions
+     */
+     $scope.upload = function (files) {
+        if (files && files.length) {
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                $upload.upload({
+                    url: subscriptionsUrl + "/",
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                    file: file
+                }).success(function (data, status, headers, config) {
+                    inform.add("File uploaded successfully.",
+                        {type: "success", ttl: 3000});
+                    $scope.getSubscriptions();
+                }).error(function (error) {
+                    if (error.result.error.code === -401) {
+                        $state.go('login');
+                    } else {
+                        inform.add(error.result.error.message,
+                                {type: "danger", ttl: 10000});
+                    }
+                });
+            }
+        }
+     };
 
+     $scope.getSubscriptions = function() {
+        SubscriptionFactory.get(function (data) {
+            $scope.subscriptions = data.result.value;
+            console.log($scope.subscriptions);
+        });
+     };
+
+     $scope.deleteSubscription = function(application) {
+         SubscriptionFactory.delete(application, function(data){
+             console.log(data);
+             inform.add("Subscription deleted successfully.",
+                 {type: "info", ttl: 3000});
+             $scope.getSubscriptions();
+         });
+
+     };
+
+    $scope.getSubscriptions();
 });

@@ -39,5 +39,11 @@ angular.module('privacyideaApp.componentStates', ['ui.router']).config(
                     url: "/clienttype",
                     templateUrl: auditpath + "component.clienttype.html",
                     controller: "componentController"
-                });
+                })
+                .state('component.subscriptions', {
+                    url: "/subscriptions",
+                    templateUrl: auditpath + "component.subscriptions.html",
+                    controller: "componentController"
+                })
+            ;
         }]);

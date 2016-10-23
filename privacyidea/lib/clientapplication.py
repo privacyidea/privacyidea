@@ -162,7 +162,12 @@ def delete_subscription(application):
     :param application:
     :return: True in case of success
     """
-    s = Subscription.query.filter(Subscription.application ==
-                                  application).delete()
-    return s
+    ret = -1
+    sub = Subscription.query.filter(Subscription.application ==
+                                  application).first()
+
+    if sub:
+        sub.delete()
+        ret = sub.id
+    return ret
 
