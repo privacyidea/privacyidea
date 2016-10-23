@@ -272,6 +272,7 @@ class ACTION(object):
     REGISTERBODY = "registration_body"
     RESETALLTOKENS = "reset_all_user_tokens"
     ENROLLPIN = "enrollpin"
+    MANAGESUBSCRIPTION = "managesubscription"
 
 
 class MAIN_MENU(object):
@@ -1111,8 +1112,12 @@ def get_static_policy_definitions(scope=None):
                                 'desc': _("Admin is allowed to get the list "
                                           "of authenticated clients and their "
                                           "types."),
-                                'mainmenu': [MAIN_MENU.COMPONENTS]}
-
+                                'mainmenu': [MAIN_MENU.COMPONENTS]},
+            ACTION.MANAGESUBSCRIPTION: {
+                'type': 'bool',
+                'desc': _("Admin is allowed to add and delete component "
+                          "subscriptions."),
+                'mainmenu': [MAIN_MENU.COMPONENTS]}
         },
 
         SCOPE.USER: {

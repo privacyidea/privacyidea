@@ -9,9 +9,12 @@
 __doc__ = """This is the controller API for client componet
 subscriptions like ownCloud plugin or RADIUS Credential Provider.
 """
-from flask import (Blueprint, request)
+from flask import (Blueprint, request, g)
 from privacyidea.api.lib.utils import (send_result)
 from privacyidea.lib.log import log_with
+from privacyidea.lib.event import event
+from privacyidea.api.lib.prepolicy import check_base_action, prepolicy
+from privacyidea.lib.policy import ACTION
 from privacyidea.lib.clientapplication import (get_subscription,
                                                delete_subscription,
                                                save_subscription)
@@ -25,6 +28,8 @@ subscriptions_blueprint = Blueprint('subscriptions_blueprint', __name__)
 
 @subscriptions_blueprint.route('/', methods=['GET'])
 @subscriptions_blueprint.route('/<application>', methods=['GET'])
+@prepolicy(check_base_action, request, action=ACTION.MANAGESUBSCRIPTION)
+@event("subscription_get", request, g)
 @log_with(log)
 def api_get(application=None):
     """
@@ -35,6 +40,8 @@ def api_get(application=None):
 
 
 @subscriptions_blueprint.route('/', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.MANAGESUBSCRIPTION)
+@event("subscription_save", request, g)
 @log_with(log)
 def api_set():
     """
@@ -47,6 +54,8 @@ def api_set():
 
 
 @subscriptions_blueprint.route('/<application>', methods=['DELETE'])
+@prepolicy(check_base_action, request, action=ACTION.MANAGESUBSCRIPTION)
+@event("subscription_delete", request, g)
 @log_with(log)
 def api_delete(application=None):
     """
