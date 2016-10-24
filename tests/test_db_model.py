@@ -608,7 +608,8 @@ class TokenModelTestCase(MyTestCase):
     def test_22_subscription(self):
         sid = Subscription(application="otrs", for_name="customer",
                            for_email="customer@example.com", for_phone="12345",
-                           by_name="provider", by_email="p@example.com").save()
+                           by_name="provider", by_email="p@example.com",
+                           level="Gold").save()
         s = Subscription.query.filter(Subscription.application == "otrs").first()
         self.assertEqual(s.application, "otrs")
         self.assertEqual(s.for_name, "customer")
@@ -616,11 +617,12 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(s.for_phone, "12345")
         self.assertEqual(s.by_name, "provider")
         self.assertEqual(s.by_email, "p@example.com")
+        self.assertEqual(s.level, "Gold")
 
         # Update the entry
         sid = Subscription(application="otrs", for_phone="11111",
                            by_url="https://support.com",
-                           signature="1234567890").save()
+                           signature="1234567890", level="Silver").save()
         s = Subscription.query.filter(
             Subscription.application == "otrs").first()
         self.assertEqual(s.application, "otrs")
@@ -630,6 +632,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(s.by_name, "provider")
         self.assertEqual(s.by_email, "p@example.com")
         self.assertEqual(s.by_url, "https://support.com")
+        self.assertEqual(s.level, "Silver")
 
         # delete entry
         Subscription.query.filter(Subscription.application == "otrs").delete()

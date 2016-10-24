@@ -28,14 +28,16 @@ The code is tested in tests/test_lib_subscriptions.py.
 import logging
 import datetime
 from log import log_with
-from ..models import ClientApplication, Subscription
-from netaddr import IPAddress
+from ..models import Subscription
+from privacyidea.lib.error import SubscriptionError
+import functools
 
 SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
 
 log = logging.getLogger(__name__)
 
 
+@log_with
 def save_subscription(subscription):
     """
     Saves a subscription to the database. If the subscription already exists,
@@ -71,6 +73,7 @@ def save_subscription(subscription):
                      num_users=subscription.get("num_users"),
                      num_tokens=subscription.get("num_tokens"),
                      num_clients=subscription.get("num_clients"),
+                     level=subscription.get("level"),
                      signature=subscription.get("signatue")
                      ).save()
     return s
@@ -95,6 +98,7 @@ def get_subscription(application=None):
     return subscriptions
 
 
+@log_with
 def delete_subscription(application):
     """
     Delete the subscription for the given application
@@ -111,3 +115,54 @@ def delete_subscription(application):
         ret = sub.id
     return ret
 
+
+def check_subscription(application):
+    """
+    This checks if the subscription for the given application is valid.
+    In case of a failure an Exception is raised.
+
+    :param application: the name of the application to check
+    :return: bool
+    """
+    subscriptions = get_subscription(application) or get_subscription(
+        application.lower())
+    if application.lower() in ["owncloud",
+                               "privacyidea_credential_provider"]:
+        if len(subscriptions) == 0:
+            raise SubscriptionError(description="No subscription for your client.",
+                                    application=application)
+        else:
+            subscription = subscriptions[0]
+            expire = subscription.get("date_till")
+            expire_date = datetime.datetime.strptime(expire, SUBSCRIPTION_DATE_FORMAT)
+            if expire_date > datetime.datetime.now():
+                raise SubscriptionError(description="Your subscription "
+                                                    "expired.",
+                                        application=application)
+
+    return True
+
+
+class CheckSubscription(object):
+    """
+    Decorator to decorate an API request and check if the subscription is valid.
+    For this, we evaluate the requesting client.
+    If the subscription for this client is not valid, we raise an exception.
+    """
+
+    def __init__(self, request):
+        self.request = request
+
+    def __call__(self, func):
+        @functools.wraps(func)
+        def check_subscription_wrapper(*args, **kwds):
+            request = self.request
+            ua = request.user_agent
+            ua_str = "{0!s}".format(ua)
+            application = ua_str.split()[0]
+            # check and raise if fails
+            check_subscription(application)
+            f_result = func(*args, **kwds)
+            return f_result
+
+        return check_subscription_wrapper

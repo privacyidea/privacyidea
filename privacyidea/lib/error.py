@@ -70,6 +70,23 @@ class privacyIDEAError(Exception):
         return ret
 
 
+class SubscriptionError(Exception):
+    def __init__(self, description=None, application=None,
+                 id=101):
+        self.id = id
+        self.message = description
+        self.application = application
+        Exception.__init__(self, description)
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        ret = '{0!s}({1!r}, application={2!s})'.format(type(
+            self).__name__, self.message, self.application)
+        return ret
+
+
 class BaseError(Exception):
     def __init__(self, error, description, status=400, headers=None):
         Exception.__init__(self)

@@ -2159,13 +2159,8 @@ class Subscription(MethodsMixin, db.Model):
     num_users = db.Column(db.Integer)
     num_tokens = db.Column(db.Integer)
     num_clients = db.Column(db.Integer)
+    level = db.Column(db.Unicode(30))
     signature = db.Column(db.Unicode(640))
-
-    columns = ["for_name", "for_address", "for_email", "for_phone",
-                     "for_url", "for_comment", "by_name", "by_email",
-                     "by_address", "by_phone", "by_url", "date_from",
-                     "date_till", "num_users", "num_tokens",
-                     "num_clients", "signature"]
 
     def save(self):
         subscription = Subscription.query.filter(

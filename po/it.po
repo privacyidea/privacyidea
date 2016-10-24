@@ -375,7 +375,7 @@ msgstr ""
 msgid "Client ID"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:18
+#: privacyidea/static/components/components/views/component.subscriptions.html:19
 msgid "Clients"
 msgstr ""
 
@@ -548,7 +548,7 @@ msgstr ""
 msgid "Default Time Window"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:56
+#: privacyidea/static/components/components/views/component.subscriptions.html:58
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:26
 #: privacyidea/static/components/config/views/config.events.list.html:39
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:26
@@ -919,7 +919,7 @@ msgstr ""
 msgid "Four Eyes: Two or more users are required to log in."
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:19
+#: privacyidea/static/components/components/views/component.subscriptions.html:20
 msgid "From"
 msgstr ""
 
@@ -1130,7 +1130,7 @@ msgstr ""
 msgid "Info"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:43
+#: privacyidea/static/components/components/views/component.subscriptions.html:44
 msgid "Issuer"
 msgstr ""
 
@@ -1153,6 +1153,10 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:30
 msgid "Length of UID"
+msgstr ""
+
+#: privacyidea/static/components/components/views/component.subscriptions.html:16
+msgid "Level"
 msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:25
@@ -2052,7 +2056,7 @@ msgstr ""
 msgid "Statistics"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:26
+#: privacyidea/static/components/components/views/component.subscriptions.html:27
 msgid "Subscription issued to"
 msgstr ""
 
@@ -2795,7 +2799,7 @@ msgstr ""
 msgid "Tine 2.0"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:20
+#: privacyidea/static/components/components/views/component.subscriptions.html:21
 msgid "To"
 msgstr ""
 
@@ -2852,7 +2856,7 @@ msgstr ""
 msgid "Token {{ selectedToken.serial }} is Lost!"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:17
+#: privacyidea/static/components/components/views/component.subscriptions.html:18
 #: privacyidea/static/components/config/views/config.html:35
 #: privacyidea/static/templates/menu.html:35
 msgid "Tokens"
@@ -3004,7 +3008,7 @@ msgstr ""
 msgid "Usernane"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:16
+#: privacyidea/static/components/components/views/component.subscriptions.html:17
 #: privacyidea/static/components/config/views/config.html:47
 #: privacyidea/static/templates/menu.html:43
 msgid "Users"

@@ -36,6 +36,7 @@ def upgrade():
         sa.Column('num_users', sa.Integer(), nullable=True),
         sa.Column('num_tokens', sa.Integer(), nullable=True),
         sa.Column('num_clients', sa.Integer(), nullable=True),
+        sa.Column('level', sa.Unicode(length=30), nullable=True),
         sa.Column('signature', sa.Unicode(length=640), nullable=True),
         sa.PrimaryKeyConstraint('id')
         )

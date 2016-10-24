@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2016-10-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add subscription decorator
 # 2016-09-05 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            SAML attributes on fail
 # 2016-08-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -89,6 +91,7 @@ from privacyidea.api.register import register_blueprint
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.event import event
+from privacyidea.lib.subscriptions import CheckSubscription
 
 
 log = logging.getLogger(__name__)
@@ -160,6 +163,7 @@ def after_request(response):
 @prepolicy(mangle, request=request)
 @prepolicy(save_client_application_type, request=request)
 @check_user_or_serial_in_request(request)
+@CheckSubscription(request)
 @prepolicy(api_key_required, request=request)
 @event("validate_check", request, g)
 def check():
@@ -258,6 +262,7 @@ def check():
 @prepolicy(mangle, request=request)
 @prepolicy(save_client_application_type, request=request)
 @check_user_or_serial_in_request(request)
+@CheckSubscription(request)
 @prepolicy(api_key_required, request=request)
 @event("validate_check", request, g)
 def samlcheck():
