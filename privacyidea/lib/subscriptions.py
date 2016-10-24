@@ -32,8 +32,33 @@ from log import log_with
 from ..models import Subscription
 from privacyidea.lib.error import SubscriptionError
 import functools
+from flask import current_app
+import os
+from Crypto.Hash import SHA256
+from Crypto.PublicKey import RSA
+import traceback
+
 
 SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
+SIGN_FORMAT = """{application}
+{for_name}
+{for_address}
+{for_email}
+{for_phone}
+{for_url}
+{for_comment}
+{by_name}
+{by_email}
+{by_address}
+{by_phone}
+{by_url}
+{date_from}
+{date_till}
+{num_users}
+{num_tokens}
+{num_clients}
+{level}
+"""
 
 log = logging.getLogger(__name__)
 
@@ -49,13 +74,15 @@ def save_subscription(subscription):
     :type subscription: dict
     :return: True in case of success
     """
-    # TODO verify the signature of the subscriptions
     if type(subscription.get("date_from")) == str:
         subscription["date_from"] = datetime.datetime.strptime(
             subscription.get("date_from"), SUBSCRIPTION_DATE_FORMAT)
     if type(subscription.get("date_till")) == str:
         subscription["date_till"] = datetime.datetime.strptime(
             subscription.get("date_till"), SUBSCRIPTION_DATE_FORMAT)
+
+    # verify the signature of the subscriptions
+    check_signature(subscription)
 
     s = Subscription(application=subscription.get("application"),
                      for_name=subscription.get("for_name"),
@@ -66,7 +93,7 @@ def save_subscription(subscription):
                      for_comment=subscription.get("for_comment"),
                      by_name=subscription.get("by_name"),
                      by_email=subscription.get("by_email"),
-                     by_address=subscription.get("by_addresss"),
+                     by_address=subscription.get("by_address"),
                      by_phone=subscription.get("by_phone"),
                      by_url=subscription.get("by_url"),
                      date_from=subscription.get("date_from"),
@@ -75,7 +102,7 @@ def save_subscription(subscription):
                      num_tokens=subscription.get("num_tokens"),
                      num_clients=subscription.get("num_clients"),
                      level=subscription.get("level"),
-                     signature=subscription.get("signatue")
+                     signature=subscription.get("signature")
                      ).save()
     return s
 
@@ -164,12 +191,62 @@ def check_subscription(application):
             subscription = subscriptions[0]
             expire_date = subscription.get("date_till")
             if expire_date < datetime.datetime.now():
+                # subscription has expired
                 if raise_exception_probability(subscription):
                     raise SubscriptionError(description="Your subscription "
                                                         "expired.",
                                             application=application)
+            else:
+                # subscription is still valid, so check the signature.
+                check_signature(subscription)
 
     return True
+
+
+def check_signature(subscription):
+    """
+    This function checks the signature of a subscription. If the signature
+    checking fails, a SignatureError / Exception is raised.
+
+    :param subscription: The dict of the subscription
+    :return: True
+    """
+    vendor = subscription.get("by_name").split()[0]
+    enckey = current_app.config.get("PI_ENCFILE", "/etc/privacyidea/enckey")
+    dirname = os.path.dirname(enckey)
+    # In dirname we are searching for <vendor>.pem
+    filename = "{0!s}/{1!s}.pem".format(dirname, vendor)
+    with open(filename, "r") as file_handle:
+        public = file_handle.read()
+
+    r = False
+    try:
+        # remove the minutes 00:00:00
+        subscription["date_from"] = subscription.get("date_from").strftime(SUBSCRIPTION_DATE_FORMAT)
+        subscription["date_till"] = subscription.get("date_till").strftime(SUBSCRIPTION_DATE_FORMAT)
+        sign_string = SIGN_FORMAT.format(**subscription)
+        RSAkey = RSA.importKey(public)
+        hashvalue = SHA256.new(sign_string).digest()
+        signature = long(subscription.get("signature") or "100")
+        r = RSAkey.verify(hashvalue, (signature,))
+        subscription["date_from"] = datetime.datetime.strptime(
+            subscription.get("date_from"),
+            SUBSCRIPTION_DATE_FORMAT)
+        subscription["date_till"] = datetime.datetime.strptime(
+            subscription.get("date_till"),
+            SUBSCRIPTION_DATE_FORMAT)
+    except Exception as exx:
+        log.debug(traceback.format_exc())
+        raise SubscriptionError("Verifying the signature of your subscription "
+                                "failed.",
+                                application=subscription.get("application"))
+
+    if not r:
+        raise SubscriptionError("Signature of your subscription does not "
+                                "match.",
+                                application=subscription.get("application"))
+
+    return r
 
 
 class CheckSubscription(object):
@@ -187,7 +264,7 @@ class CheckSubscription(object):
         def check_subscription_wrapper(*args, **kwds):
             request = self.request
             ua = request.user_agent
-            ua_str = "{0!s}".format(ua)
+            ua_str = "{0!s}".format(ua) or "unknown"
             application = ua_str.split()[0]
             # check and raise if fails
             check_subscription(application)
