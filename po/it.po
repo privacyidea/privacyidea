@@ -548,7 +548,7 @@ msgstr ""
 msgid "Default Time Window"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:58
+#: privacyidea/static/components/components/views/component.subscriptions.html:67
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:26
 #: privacyidea/static/components/config/views/config.events.list.html:39
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:26
@@ -1130,7 +1130,7 @@ msgstr ""
 msgid "Info"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:44
+#: privacyidea/static/components/components/views/component.subscriptions.html:53
 msgid "Issuer"
 msgstr ""
 
@@ -2056,7 +2056,15 @@ msgstr ""
 msgid "Statistics"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:27
+#: privacyidea/static/components/components/views/component.subscriptions.html:25
+msgid "Subscription about to expire"
+msgstr ""
+
+#: privacyidea/static/components/components/views/component.subscriptions.html:28
+msgid "Subscription expired"
+msgstr ""
+
+#: privacyidea/static/components/components/views/component.subscriptions.html:36
 msgid "Subscription issued to"
 msgstr ""
 
@@ -3012,6 +3020,10 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.html:47
 #: privacyidea/static/templates/menu.html:43
 msgid "Users"
+msgstr ""
+
+#: privacyidea/static/components/components/views/component.subscriptions.html:22
+msgid "Valid subscription"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.details.html:272

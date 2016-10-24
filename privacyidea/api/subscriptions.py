@@ -17,8 +17,10 @@ from privacyidea.api.lib.prepolicy import check_base_action, prepolicy
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.subscriptions import (get_subscription,
                                            delete_subscription,
-                                           save_subscription)
+                                           save_subscription,
+                                           SUBSCRIPTION_DATE_FORMAT)
 import logging
+import datetime
 import yaml
 
 
@@ -36,6 +38,9 @@ def api_get(application=None):
     Return the subscription object as JSON.
     """
     subscription = get_subscription()
+    for sub in subscription:
+        # If subscription is valid, we have a negative timedelta
+        sub["timedelta"] = (datetime.datetime.now() - sub.get("date_till")).days
     return send_result(subscription)
 
 

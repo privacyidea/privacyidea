@@ -566,7 +566,7 @@ msgstr "Standard Zeitschritt"
 msgid "Default Time Window"
 msgstr "Standard Zeitfenster"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:58
+#: privacyidea/static/components/components/views/component.subscriptions.html:67
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:26
 #: privacyidea/static/components/config/views/config.events.list.html:39
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:26
@@ -1192,7 +1192,7 @@ msgstr "Den Fehlerzähler erhöhen, wenn eine falsche PIN eingegeben wurde."
 msgid "Info"
 msgstr "Info"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:44
+#: privacyidea/static/components/components/views/component.subscriptions.html:53
 msgid "Issuer"
 msgstr "Aussteller"
 
@@ -2144,7 +2144,15 @@ msgstr "Ein paar nette Worte..."
 msgid "Statistics"
 msgstr "Statistik"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:27
+#: privacyidea/static/components/components/views/component.subscriptions.html:25
+msgid "Subscription about to expire"
+msgstr "Die Subskription läuft in Kürze ab"
+
+#: privacyidea/static/components/components/views/component.subscriptions.html:28
+msgid "Subscription expired"
+msgstr "Die Subskription ist abgelaufen"
+
+#: privacyidea/static/components/components/views/component.subscriptions.html:36
 msgid "Subscription issued to"
 msgstr "Subskription ausgestellt für"
 
@@ -3297,6 +3305,10 @@ msgstr "Benutzername"
 #: privacyidea/static/templates/menu.html:43
 msgid "Users"
 msgstr "Benutzer"
+
+#: privacyidea/static/components/components/views/component.subscriptions.html:22
+msgid "Valid subscription"
+msgstr "Gültige Subskription"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:272
 msgid "Valid time"

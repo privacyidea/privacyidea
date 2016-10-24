@@ -13,6 +13,17 @@
      ng-repeat="(key, subscription) in subscriptions">
     <h3>{{ subscription.application }}</h3>
     <p>
+        <div class="alert alert-success" ng-show="subscription.timedelta < -14"
+             translate>
+            Valid subscription</div>
+        <div class="alert alert-warning"
+              ng-show="subscription.timedelta < 0 &&
+                subscription.timedelta >= -14"
+             translate>
+            Subscription about to expire</div>
+        <div class="alert alert-danger"
+              ng-show="subscription.timedelta >= 0" translate>
+            Subscription expired</div>
         <translate>Level</translate>: {{ subscription.level }}<br>
         <translate>Users</translate>: {{ subscription.num_users }}<br>
         <translate>Tokens</translate>: {{ subscription.num_tokens }}<br>
