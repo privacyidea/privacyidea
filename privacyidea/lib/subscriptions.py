@@ -27,6 +27,7 @@ The code is tested in tests/test_lib_subscriptions.py.
 
 import logging
 import datetime
+import random
 from log import log_with
 from ..models import Subscription
 from privacyidea.lib.error import SubscriptionError
@@ -37,7 +38,7 @@ SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
 log = logging.getLogger(__name__)
 
 
-@log_with
+@log_with(log)
 def save_subscription(subscription):
     """
     Saves a subscription to the database. If the subscription already exists,
@@ -98,7 +99,7 @@ def get_subscription(application=None):
     return subscriptions
 
 
-@log_with
+@log_with(log)
 def delete_subscription(application):
     """
     Delete the subscription for the given application
@@ -116,6 +117,32 @@ def delete_subscription(application):
     return ret
 
 
+def raise_exception_probability(subscription=None):
+    """
+    Depending on the subscription this will return True, so that an exception
+    can be raised
+
+    :param subscription: Subscription dictionary
+    :return: Bool
+    """
+    if not subscription:
+        # No subscription at all. We are in a kind of demo mode and return
+        # True with a 50% chance
+        return random.randrange(0, 2)
+
+    expire = subscription.get("date_till")
+    delta = datetime.datetime.now() - expire
+    if delta.days > 0:
+        # calculate a certain probability <1
+        # After 44 days we get 50%
+        # After 74 days we get 80%
+        # After 94 days we get 100%
+        p = 0.2 + ((delta.days-14.0)/30.0) * 0.3
+        return random.random() < p
+
+    return False
+
+
 def check_subscription(application):
     """
     This checks if the subscription for the given application is valid.
@@ -126,19 +153,21 @@ def check_subscription(application):
     """
     subscriptions = get_subscription(application) or get_subscription(
         application.lower())
-    if application.lower() in ["owncloud",
+    if application.lower() in ["demo_application",
+                               "owncloud",
                                "privacyidea_credential_provider"]:
         if len(subscriptions) == 0:
-            raise SubscriptionError(description="No subscription for your client.",
-                                    application=application)
+            if raise_exception_probability():
+                raise SubscriptionError(description="No subscription for your client.",
+                                        application=application)
         else:
             subscription = subscriptions[0]
-            expire = subscription.get("date_till")
-            expire_date = datetime.datetime.strptime(expire, SUBSCRIPTION_DATE_FORMAT)
-            if expire_date > datetime.datetime.now():
-                raise SubscriptionError(description="Your subscription "
-                                                    "expired.",
-                                        application=application)
+            expire_date = subscription.get("date_till")
+            if expire_date < datetime.datetime.now():
+                if raise_exception_probability(subscription):
+                    raise SubscriptionError(description="Your subscription "
+                                                        "expired.",
+                                            application=application)
 
     return True
 
