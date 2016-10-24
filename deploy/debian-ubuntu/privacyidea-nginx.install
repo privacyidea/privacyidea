@@ -13,8 +13,9 @@ deploy/uwsgi/apps-available/privacyidea.xml	etc/uwsgi/apps-available/
 
 # radius client
 deploy/privacyidea/dictionary                   etc/privacyidea/
-
-# This is needed, when we create more than one binary package
+deploy/privacyidea/NetKnights.pem		etc/privacyidea/
+ 
+#This is needed, when we create more than one binary package
 #debian/tmp/usr/bin/* usr/bin/
 #debian/tmp/usr/share/* usr/share/
 #debian/tmp/usr/lib/python* usr/lib/
