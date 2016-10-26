@@ -182,7 +182,7 @@ def check_subscription(application):
         application.lower())
     if application.lower() in ["demo_application",
                                "owncloud",
-                               "privacyidea_credential_provider"]:
+                               "privacyidea-cp", "privacyideacp"]:
         if len(subscriptions) == 0:
             if raise_exception_probability():
                 raise SubscriptionError(description="No subscription for your client.",
