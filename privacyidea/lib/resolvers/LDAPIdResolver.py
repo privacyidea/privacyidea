@@ -604,7 +604,11 @@ class IdResolver (UserIdResolver):
         :return: Server Pool
         :rtype: LDAP3 Server Pool Instance
         """
-        strategy = ldap3.POOLING_STRATEGY_ROUND_ROBIN
+        try:
+            strategy = ldap3.POOLING_STRATEGY_ROUND_ROBIN
+        except AttributeError:
+            # This is for ldap3 >= 2.0.7
+            strategy = ldap3.ROUND_ROBIN
         server_pool = ldap3.ServerPool(None, strategy, active=True,
                                        exhaust=True)
         for uri in urilist.split(","):
