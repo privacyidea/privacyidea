@@ -70,3 +70,45 @@ Additional attributes are
 specified path to the shared object file in the file system.
 
 ``PI_HSM_MODULE_KEY_ID`` is the key id (integer) on the HSM.
+
+AES HSM Security Module
+-----------------------
+
+The AES Hardware Security Module can be used to encrypt data with an
+hardware security module (HSM) connected via the PKCS11
+interface. This module allows to use AES keys stored in the HSM to
+encrypt and decrypt data.
+
+This module uses three keys, similarly to the content of
+``PI_ENCFILE``, identified as ``token``, ``config`` and ``value``.
+
+To activate this module add the following to the configuration file
+(:ref:`cfgfile`)
+
+   PI_HSM_MODULE = "privacyidea.lib.security.aeshsm.AESHardwareSecurityModule"
+
+Additional attributes are
+
+``PI_HSM_MODULE_MODULE`` which takes the pkcs11 library. This is the full
+specified path to the shared object file in the file system.
+
+``PI_HSM_MODULE_SLOT`` is the slot on the HSM where the keys are
+located (default: ``1``).
+
+``PI_HSM_MODULE_PASSWORD`` is the password to access the slot.
+
+``PI_HSM_MODULE_KEY_LABEL`` is the label prefix for the keys on the
+HSM (default: ``privacyidea``). In order to locate the keys, the
+module will search for key with a label equal to the concatenation of
+this prefix, ``_`` and the key identifier (respectively ``token``,
+``config`` and ``value``).
+
+``PI_HSM_MODULE_KEY_LABEL_TOKEN`` is the label for ``token`` key
+(defaults to value based on ``PI_HSM_MODULE_KEY_LABEL`` setting).
+
+``PI_HSM_MODULE_KEY_LABEL_CONFIG`` is the label for ``config`` key
+(defaults to value based on ``PI_HSM_MODULE_KEY_LABEL`` setting).
+
+``PI_HSM_MODULE_KEY_LABEL_VALUE`` is the label for ``value`` key
+(defaults to value based on ``PI_HSM_MODULE_KEY_LABEL`` setting).
+
