@@ -24,7 +24,8 @@ from privacyidea.lib.security.default import SecurityModule
 from privacyidea.lib.error import HSMException
 
 __doc__ = """
-This is a PKCS11 Security module that encrypts and decrypts the data on a HSM that is connected via PKCS11. This alternate version relies on AES keys.
+This is a PKCS11 Security module that encrypts and decrypts the data on a
+HSM that is connected via PKCS11. This alternate version relies on AES keys.
 """
 
 log = logging.getLogger(__name__)
@@ -42,7 +43,8 @@ mapping = {
 try:
     import PyKCS11
 except ImportError:
-    log.info("The python module PyKCS11 is not available. So we can not use the PKCS11 security module.")
+    log.info("The python module PyKCS11 is not available. "
+             "So we can not use the PKCS11 security module.")
 
 
 def int_list_to_bytestring(int_list):  # pragma: no cover
@@ -78,13 +80,13 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         label_prefix = config.get("key_label", "privacyidea")
         self.key_labels = {}
         for k in ['token', 'config', 'value']:
-            l = config.get(("key_label_%s" % k), None)
-            l = ('%s_%s' % (label_prefix, k)) if l is None else l
+            l = config.get(("key_label_{0!s}".format(k)))
+            l = ('{0!s}_{0!s}'.format(label_prefix, k)) if l is None else l
             self.key_labels[k] = l
 
         self.slot = config.get("slot", 1)
-        self.password = config.get("password", None)
-        self.module = config.get("module", None)
+        self.password = config.get("password")
+        self.module = config.get("module")
         self.session = None
         self.key_handles = {}
 
@@ -123,7 +125,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         if not len(slotlist):
             raise HSMException("No HSM connected")
         if self.slot not in slotlist:
-            raise HSMException("Slot %d not present" % (self.slot))
+            raise HSMException("Slot {0:d} not present".format(self.slot))
 
         slotinfo = self.pkcs11.getSlotInfo(self.slot)
         log.debug("Setting up '{}'".format(slotinfo.slotDescription))
