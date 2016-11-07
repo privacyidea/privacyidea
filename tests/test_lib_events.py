@@ -14,10 +14,13 @@ from privacyidea.lib.smtpserver import add_smtpserver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from flask import Request, Response
 from werkzeug.test import EnvironBuilder
-from privacyidea.lib.token import init_token
-from privacyidea.lib.user import User
 from privacyidea.lib.event import (delete_event, set_event,
                                    EventConfiguration, get_handler_object)
+from privacyidea.lib.resolver import save_resolver, delete_resolver
+from privacyidea.lib.realm import set_realm, delete_realm
+from privacyidea.lib.token import (init_token, remove_token)
+from privacyidea.lib.user import create_user, User
+import json
 
 
 class EventHandlerLibTestCase(MyTestCase):
@@ -694,3 +697,78 @@ class UserNotificationTestCase(MyTestCase):
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
         self.assertTrue(res)
+
+    def test_15_unassign_missing_user(self):
+        """
+        Unassign a token from a user that does not exist anymore.
+
+        There is a token which is owned by a user, who was deleted fromt he
+        userstore.
+        An Event Handler, to notifiy the user via email on unassign is defined.
+        This testcase must NOT throw an exception. Well, the user can not be
+        notified anymore, since the email also does not exist in the
+        userstore anymore.
+        """
+        # Create our realm and resolver
+        parameters = {'resolver': "notify_resolver",
+                      "type": "sqlresolver",
+                      'Driver': 'sqlite',
+                      'Server': '/tests/testdata/',
+                      'Database': "testuser.sqlite",
+                      'Table': 'users',
+                      'Encoding': 'utf8',
+                      'Editable': True,
+                      'Map': '{ "username": "username", \
+                        "userid" : "id", \
+                        "email" : "email", \
+                        "surname" : "name", \
+                        "givenname" : "givenname", \
+                        "password" : "password", \
+                        "phone": "phone", \
+                        "mobile": "mobile"}'
+                      }
+        r = save_resolver(parameters)
+        self.assertTrue(r)
+
+        success, fail = set_realm("notify_realm", ["notify_resolver"])
+        self.assertEqual(len(success), 1)
+        self.assertEqual(len(fail), 0)
+
+        # Create a user
+        ## First delete it, in case the user exist
+        User("notify_user", "notify_realm").delete()
+        uid = create_user("notify_resolver", {"username": "notify_user"})
+        self.assertTrue(uid)
+        user = User("notify_user", "notify_realm")
+        self.assertEqual(user.login, "notify_user")
+        self.assertEqual(user.realm, "notify_realm")
+
+        # Create a token for this user
+        r = init_token({"type": "spass",
+                        "serial": "SPNOTIFY"}, user=user)
+        self.assertTrue(r)
+
+        # create notification handler
+        eid = set_event("token_unassign", "UserNotification", "sendmail")
+        self.assertTrue(eid)
+
+        # delete the user
+        r = user.delete()
+        self.assertTrue(r)
+
+        # unassign the token from the non-existing user
+        # call the notification handler implicitly
+        with self.app.test_request_context('/token/unassign',
+                                           method='POST',
+                                           data={"serial": "SPNOTIFY"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value") is True, result)
+
+        # Cleanup
+        delete_event(eid)
+        delete_realm("notify_realm")
+        delete_resolver("notify_resolver")
+        remove_token("SPNOTIFY")

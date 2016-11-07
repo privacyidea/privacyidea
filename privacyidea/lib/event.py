@@ -102,7 +102,7 @@ def set_event(event, handlermodule, action, conditions=None,
               ordering=0, options=None, id=None):
 
     """
-    Set and event handling conifugration. This writes an entry to the
+    Set an event handling configuration. This writes an entry to the
     database eventhandler.
 
     :param event: The name of the event to react on. Can be a single event or
@@ -123,7 +123,7 @@ def set_event(event, handlermodule, action, conditions=None,
         action
     :type options: dict
     :param id: The DB id of the event. If the id is given, the event is
-        updated. Otherwiese a new entry is generated.
+        updated. Otherwise a new entry is generated.
     :type id: int
     :return: The id of the event.
     """
