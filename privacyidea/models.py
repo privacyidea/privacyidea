@@ -27,7 +27,7 @@ import binascii
 import logging
 from datetime import datetime, timedelta
 from json import loads, dumps
-from flask.ext.sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy
 from .lib.crypto import (encrypt,
                          encryptPin,
                          decryptPin,
@@ -2009,7 +2009,7 @@ class RADIUSServer(MethodsMixin, db.Model):
     port = db.Column(db.Integer, default=25)
     secret = db.Column(db.Unicode(255), default=u"")
     dictionary = db.Column(db.Unicode(255),
-                           default="/etc/privacyidea/dictionary")
+                           default=u"/etc/privacyidea/dictionary")
     description = db.Column(db.Unicode(2000), default=u'')
 
     def save(self):
