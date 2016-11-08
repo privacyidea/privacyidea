@@ -41,6 +41,7 @@ def api_get(application=None):
     for sub in subscription:
         # If subscription is valid, we have a negative timedelta
         sub["timedelta"] = (datetime.datetime.now() - sub.get("date_till")).days
+    g.audit_object.log({'success': True})
     return send_result(subscription)
 
 
@@ -55,6 +56,7 @@ def api_set():
     file_contents = subscription_file.read()
     subscription = yaml.load(file_contents)
     r = save_subscription(subscription)
+    g.audit_object.log({'success': True})
     return send_result(r)
 
 
@@ -68,5 +70,6 @@ def api_delete(application=None):
     This request needs to be sent to NetKnights to create a subscription
     """
     r = delete_subscription(application)
+    g.audit_object.log({'success': True})
     return send_result(r)
 
