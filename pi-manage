@@ -51,9 +51,9 @@ from privacyidea.lib.policy import (delete_policy, enable_policy,
                                     PolicyClass, set_policy)
 from privacyidea.app import create_app
 from privacyidea.lib.auth import ROLE
-from flask.ext.script import Manager
+from flask_script import Manager
 from privacyidea.app import db
-from flask.ext.migrate import MigrateCommand
+from flask_migrate import MigrateCommand
 # Wee need to import something, so that the models will be created.
 from privacyidea.models import Admin
 from sqlalchemy import create_engine, desc, MetaData
