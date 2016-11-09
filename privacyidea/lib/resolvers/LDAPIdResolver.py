@@ -188,8 +188,8 @@ class IdResolver (UserIdResolver):
         password = to_utf8(password)
 
         try:
-            log.debug("Authtype: {0!s}".format(self.authtype))
-            log.debug("user    : {0!s}".format(bind_user))
+            log.debug("Authtype: {0!r}".format(self.authtype))
+            log.debug("user    : {0!r}".format(bind_user))
             # Whatever happens. If we have an empty bind_user, we must break
             # since we must avoid anonymous binds!
             if not bind_user or len(bind_user) < 1:
@@ -201,7 +201,7 @@ class IdResolver (UserIdResolver):
                                        auto_referrals=not self.noreferrals)
             l.open()
             r = l.bind()
-            log.debug("bind result: {0!s}".format(r))
+            log.debug("bind result: {0!r}".format(r))
             if not r:
                 raise Exception("Wrong credentials")
             log.debug("bind seems successful.")
@@ -209,6 +209,7 @@ class IdResolver (UserIdResolver):
             log.debug("unbind successful.")
         except Exception as e:
             log.warning("failed to check password for {0!r}/{1!r}: {2!r}".format(uid, bind_user, e))
+            log.debug(traceback.format_exc())
             return False
 
         return True
@@ -412,7 +413,7 @@ class IdResolver (UserIdResolver):
         if self.uidtype.lower() != "dn":
             attributes.append(str(self.uidtype))
 
-        log.debug("Searching user {0!s} in LDAP.".format(LoginName))
+        log.debug("Searching user {0!r} in LDAP.".format(LoginName))
         self.l.search(search_base=self.basedn,
                       search_scope=self.scope,
                       search_filter=filter,
