@@ -1,4 +1,4 @@
-python-privacyidea (2.16~dev5-1trusty) trusty; urgency=low
+python-privacyidea (2.16-1trusty) trusty; urgency=low
 
   Featurs
   * Add HSM support via AES keys (#534)
@@ -21,7 +21,7 @@ python-privacyidea (2.16~dev5-1trusty) trusty; urgency=low
   * Catch error in case of faulty overrideClient definition (#526)
   * Truncate Audit lines, that are too long for the DB table (#525)
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Tue, 08 Nov 2016 09:00:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 10 Nov 2016 15:00:00 +0200
 
 python-privacyidea (2.15-1trusty) trusty; urgency=low
  
