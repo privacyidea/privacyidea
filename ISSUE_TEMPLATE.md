@@ -3,13 +3,18 @@ Please think about and cover the following questions:
 # Versions
 
 privacyIDEA:
+
 Installation method:
-- [ ] from source / github
-- [ ] in virtualenv
-- [ ] Debian
-- [ ] Ubuntu
-- more details:
+
+- from source / github ?
+- in virtualenv ? 
+- Debian ?
+- Ubuntu ?
+
+## more details: 
+
 OS:
+
 Webserver:
 
 # What did you try to do?
