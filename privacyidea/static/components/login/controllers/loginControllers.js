@@ -136,7 +136,9 @@ angular.module("privacyideaApp")
 
     // This holds the user object, the username, the password and the token.
     // If we have a REMOTE_USER, we preset it.
-    $scope.login = {username: $scope.remoteUser, password: ""};
+    $scope.login = {username: $scope.remoteUser,
+        password: "",
+        realm: ""};
     $scope.transactionid = "";
     AuthFactory.setUser();
 
