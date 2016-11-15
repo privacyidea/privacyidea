@@ -272,7 +272,7 @@ def list_api():
     :query type: Display only token of type. You ca do a non strict matching by
         specifying a tokentype like "*otp*", to file hotp and totp tokens.
     :query user: display tokens of this user
-    :query viewrealm: takes a realm, only the tokens in this realm will be
+    :query tokenrealm: takes a realm, only the tokens in this realm will be
         displayed
     :query basestring description: Display token with this kind of description
     :query sortby: sort the output by column
