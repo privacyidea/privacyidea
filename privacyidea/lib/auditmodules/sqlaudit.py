@@ -588,6 +588,7 @@ class Audit(AuditBase):
                       'token_type': audit_entry.token_type,
                       'user': audit_entry.user,
                       'realm': audit_entry.realm,
+                      'resolver': audit_entry.resolver,
                       'administrator': audit_entry.administrator,
                       'action_detail': audit_entry.action_detail,
                       'info': audit_entry.info,

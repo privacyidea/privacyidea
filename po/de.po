@@ -209,7 +209,7 @@ msgstr "Audit"
 msgid "Authentication Server URI"
 msgstr "URI des Authentisierungsservers"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:203
+#: privacyidea/static/components/login/controllers/loginControllers.js:205
 msgid "Authentication failed."
 msgstr "Authentisierung fehlgeschlagen."
 
@@ -315,7 +315,7 @@ msgstr "Zertifikatsanforderung (PEM)"
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr "Zertifikate: x509 Zertifikate ausrollen."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:175
+#: privacyidea/static/components/login/controllers/loginControllers.js:177
 msgid ""
 "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr "Challenge-Response Anmeldung. Sie sind noch nicht fertig angemeldet."
@@ -393,7 +393,7 @@ msgstr "Die Client-Konfiguration wird nicht unterstützt."
 msgid "Client ID"
 msgstr "Client-ID"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:19
+#: privacyidea/static/components/components/views/component.subscriptions.html:30
 msgid "Clients"
 msgstr "Clients"
 
@@ -566,7 +566,7 @@ msgstr "Standard Zeitschritt"
 msgid "Default Time Window"
 msgstr "Standard Zeitfenster"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:67
+#: privacyidea/static/components/components/views/component.subscriptions.html:69
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:26
 #: privacyidea/static/components/config/views/config.events.list.html:39
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:26
@@ -951,7 +951,7 @@ msgstr ""
 msgid "Four Eyes: Two or more users are required to log in."
 msgstr "Vier-Augen: Zwei oder mehr Benutzer werden für den Login benötigt."
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:20
+#: privacyidea/static/components/components/views/component.subscriptions.html:31
 msgid "From"
 msgstr "Von"
 
@@ -1192,7 +1192,7 @@ msgstr "Den Fehlerzähler erhöhen, wenn eine falsche PIN eingegeben wurde."
 msgid "Info"
 msgstr "Info"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:53
+#: privacyidea/static/components/components/views/component.subscriptions.html:55
 msgid "Issuer"
 msgstr "Aussteller"
 
@@ -1220,7 +1220,7 @@ msgid "Length of UID"
 msgstr "Länge des UID"
 
 # This is the level in the subscriptions
-#: privacyidea/static/components/components/views/component.subscriptions.html:16
+#: privacyidea/static/components/components/views/component.subscriptions.html:27
 msgid "Level"
 msgstr "Subskriptionsstufe"
 
@@ -1555,7 +1555,7 @@ msgstr "PAPER: OTP-Liste auf einem Stück Papier"
 msgid "PIN"
 msgstr "PIN"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:344
+#: privacyidea/static/components/login/controllers/loginControllers.js:346
 msgid "PIN changed successfully."
 msgstr "PIN erfolgreich geändert."
 
@@ -1744,7 +1744,7 @@ msgstr ""
 msgid "Realm"
 msgstr "Realm "
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:315
+#: privacyidea/static/components/login/controllers/loginControllers.js:317
 msgid "Realm defrealm created."
 msgstr "Der Realm defrealm wurde erzeugt."
 
@@ -2144,15 +2144,15 @@ msgstr "Ein paar nette Worte..."
 msgid "Statistics"
 msgstr "Statistik"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:25
+#: privacyidea/static/components/components/views/component.subscriptions.html:19
 msgid "Subscription about to expire"
 msgstr "Die Subskription läuft in Kürze ab"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:28
+#: privacyidea/static/components/components/views/component.subscriptions.html:24
 msgid "Subscription expired"
 msgstr "Die Subskription ist abgelaufen"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:36
+#: privacyidea/static/components/components/views/component.subscriptions.html:38
 msgid "Subscription issued to"
 msgstr "Subskription ausgestellt für"
 
@@ -3088,7 +3088,7 @@ msgstr "Zeitschritt"
 msgid "Tine 2.0"
 msgstr "Tine 2.0"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:21
+#: privacyidea/static/components/components/views/component.subscriptions.html:32
 msgid "To"
 msgstr "Bis"
 
@@ -3147,7 +3147,7 @@ msgstr "Token wurde erfolgreich resynchronisiert."
 msgid "Token {{ selectedToken.serial }} is Lost!"
 msgstr "Der Token {{ selectedToken.serial }} ist verloren!"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:18
+#: privacyidea/static/components/components/views/component.subscriptions.html:29
 #: privacyidea/static/components/config/views/config.html:35
 #: privacyidea/static/templates/menu.html:35
 msgid "Tokens"
@@ -3300,13 +3300,13 @@ msgstr "Benutzer"
 msgid "Usernane"
 msgstr "Benutzername"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:17
+#: privacyidea/static/components/components/views/component.subscriptions.html:28
 #: privacyidea/static/components/config/views/config.html:47
 #: privacyidea/static/templates/menu.html:43
 msgid "Users"
 msgstr "Benutzer"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:22
+#: privacyidea/static/components/components/views/component.subscriptions.html:16
 msgid "Valid subscription"
 msgstr "Gültige Subskription"
 
@@ -3382,7 +3382,6 @@ msgstr ""
 "später die die Realms der Token ändern."
 
 #: privacyidea/static/components/user/views/user.add.html:54
-#, fuzzy
 msgid ""
 "You have no editable resolvers defined. So you can not write\n"
 "                to any user store. If you want to add users, you need to\n"
@@ -3392,10 +3391,10 @@ msgid ""
 "                box \"Edit user store\"."
 msgstr ""
 "Sie haben keine editierbaren Resolver definiert. Daher können Sie in keine "
-"Benutzer-Quelle schreiben. Wenn Sie Benutzer hinzufügen wollen, müssen Sie "
-"einen <a ui-sref=\"config.resolvers.list\">editierbaren Resolver definieren</"
-"a> (bpsw. SQLResolver) und die Checkbox \"Benutzerquelle editierbar\" "
-"anhaken."
+"Benutzer-Quelle schreiben. \n"
+"Wenn Sie Benutzer hinzufügen wollen, müssen Sie einen <a ui-sref=\"config."
+"resolvers.list\">editierbaren Resolver definieren</a> \n"
+"(bpsw. SQLResolver) und die Checkbox \"Benutzerquelle editierbar\" anhaken."
 
 #: privacyidea/static/components/token/views/token.enrolled.registration.html:7
 msgid "You may pass this registration code to the user."
@@ -3416,7 +3415,7 @@ msgstr ""
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr "Sie werden nach {{ myCountdown }} Sekunden abgemeldet."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:245
+#: privacyidea/static/components/login/controllers/loginControllers.js:247
 msgid "Your OTP pin expires on"
 msgstr "Ihre OTP PIN läuft ab: "
 
@@ -3503,11 +3502,11 @@ msgstr "AppID"
 msgid "certificate"
 msgstr "Zertifikat"
 
-#: privacyidea/static/components/audit/views/audit.log.html:73
+#: privacyidea/static/components/audit/views/audit.log.html:77
 msgid "clearance"
 msgstr "Freigabestufe"
 
-#: privacyidea/static/components/audit/views/audit.log.html:63
+#: privacyidea/static/components/audit/views/audit.log.html:67
 msgid "client"
 msgstr "Client"
 
@@ -3555,7 +3554,7 @@ msgstr "Hostname"
 msgid "id"
 msgstr "ID"
 
-#: privacyidea/static/components/audit/views/audit.log.html:67
+#: privacyidea/static/components/audit/views/audit.log.html:71
 msgid "info"
 msgstr "Info"
 
@@ -3563,7 +3562,7 @@ msgstr "Info"
 msgid "locked"
 msgstr "gesperrt"
 
-#: privacyidea/static/components/audit/views/audit.log.html:74
+#: privacyidea/static/components/audit/views/audit.log.html:78
 msgid "log level"
 msgstr "Logstufe"
 
@@ -3579,7 +3578,7 @@ msgstr "mOTP: Klassischer Mobiles Einmal-Passwort."
 msgid "maxfail"
 msgstr "Max. Fehlerzähler"
 
-#: privacyidea/static/components/audit/views/audit.log.html:72
+#: privacyidea/static/components/audit/views/audit.log.html:76
 msgid "missing_line"
 msgstr "Fehlende Zeile"
 
@@ -3633,7 +3632,7 @@ msgid ""
 msgstr ""
 "privacyIDEA läuft im DEBUG-Modus. Sie können dies wieder in pi.cfg ändern."
 
-#: privacyidea/static/components/audit/views/audit.log.html:75
+#: privacyidea/static/components/audit/views/audit.log.html:79
 msgid "privacyidea server"
 msgstr "privacyIDEA Server"
 
@@ -3641,6 +3640,10 @@ msgstr "privacyIDEA Server"
 #: privacyidea/static/components/token/views/token.list.html:58
 msgid "realm"
 msgstr "Realm"
+
+#: privacyidea/static/components/audit/views/audit.log.html:63
+msgid "resolver"
+msgstr "Resolver"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:7
 msgid "resolvers"
@@ -3673,7 +3676,7 @@ msgstr "Setze als Standard"
 msgid "set password"
 msgstr "Passwort setzen"
 
-#: privacyidea/static/components/audit/views/audit.log.html:71
+#: privacyidea/static/components/audit/views/audit.log.html:75
 msgid "sig_check"
 msgstr "Signatur"
 

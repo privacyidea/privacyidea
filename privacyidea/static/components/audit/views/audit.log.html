@@ -100,7 +100,8 @@
                 realmname:audit.realm})">
                     {{ audit.user }}</a></td>
                 <td><a ui-sref="config.realms.list">{{ audit.realm }}</a></td>
-                <td>{{ audit.resolver }}</td>
+                <td><a ui-sref="config.resolvers.list">
+                    {{ audit.resolver }}</a></td>
                 <td>{{ audit.client }}</td>
                 <td>{{ audit.info }}</td>
                 <td><span status-class="{{ audit.sig_check }}">
