@@ -252,6 +252,7 @@ def get_challenges_api(serial=None):
     sort = getParam(param, "sortby", optional, default="timestamp")
     sdir = getParam(param, "sortdir", optional, default="asc")
     psize = int(getParam(param, "pagesize", optional, default=15))
+    g.audit_object.log({"serial": serial})
     challenges = get_challenges_paginate(serial=serial, sortby=sort,
                                          sortdir=sdir, page=page, psize=psize)
     g.audit_object.log({"success": True})
@@ -435,6 +436,7 @@ def enable_api(serial=None):
     user = get_user_from_param(request.all_data, optional)
     if not serial:
         serial = getParam(request.all_data, "serial", optional)
+    g.audit_object.log({"serial": serial})
 
     res = enable_token(serial, enable=True, user=user)
     g.audit_object.log({"success": res > 0})
@@ -464,6 +466,7 @@ def disable_api(serial=None):
     user = get_user_from_param(request.all_data, optional)
     if not serial:
         serial = getParam(request.all_data, "serial", optional)
+    g.audit_object.log({"serial": serial})
 
     res = enable_token(serial, enable=False, user=user)
     g.audit_object.log({"success": res > 0})
@@ -488,6 +491,7 @@ def delete_api(serial=None):
     :rtype: json object
     """
     # If the API is called by a user, we pass the User Object to the function
+    g.audit_object.log({"serial": serial})
     user = get_user_from_param(request.all_data)
     res = remove_token(serial, user=user)
     g.audit_object.log({"success": True})
@@ -721,6 +725,7 @@ def tokenrealm_api(serial=None):
         realm_list = realms
     else:
         realm_list = [r.strip() for r in realms.split(",")]
+    g.audit_object.log({"serial": serial})
 
     res = set_realms(serial, realms=realm_list)
     g.audit_object.log({"success": True})
