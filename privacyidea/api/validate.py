@@ -233,6 +233,7 @@ def check():
                 options[key] = value
 
     g.audit_object.log({"user": user.login,
+                        "resolver": user.resolver,
                         "realm": user.realm})
 
     if serial:
