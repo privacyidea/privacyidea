@@ -214,9 +214,6 @@ class Audit(AuditBase):
         except OperationalError as exx:  # pragma: no cover
             log.info("{0!r}".format(exx))
 
-        # disconnect
-        conn.invalidate()
-
 
     def _truncate_data(self):
         """
