@@ -60,6 +60,10 @@
                     <pi-filter ng-model="realmFilter"
                                ng-change="getAuditList()">
                 </th>
+                <th><translate>resolver</translate>
+                    <pi-filter ng-model="resolverFilter"
+                               ng-change="getAuditList()">
+                </th>
                 <th><translate>client</translate>
                     <pi-filter ng-model="clientFilter"
                                ng-change="getAuditList()">
@@ -96,6 +100,8 @@
                 realmname:audit.realm})">
                     {{ audit.user }}</a></td>
                 <td><a ui-sref="config.realms.list">{{ audit.realm }}</a></td>
+                <td><a ui-sref="config.resolvers.list">
+                    {{ audit.resolver }}</a></td>
                 <td>{{ audit.client }}</td>
                 <td>{{ audit.info }}</td>
                 <td><span status-class="{{ audit.sig_check }}">

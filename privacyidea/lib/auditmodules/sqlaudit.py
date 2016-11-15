@@ -44,6 +44,8 @@ from privacyidea.lib.crypto import Sign
 from sqlalchemy import Table, MetaData, Column
 from sqlalchemy import Integer, String, DateTime, asc, desc, and_
 from sqlalchemy.orm import mapper
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
 import datetime
 import traceback
 from sqlalchemy.exc import OperationalError
@@ -69,6 +71,7 @@ column_length = {"signature": 620,
                  "token_type": 12,
                  "user": 20,
                  "realm": 20,
+                 "resolver": 50,
                  "administrator": 20,
                  "action_detail": 50,
                  "info": 50,
@@ -89,6 +92,7 @@ logentry = Table(TABLE_NAME,
                  Column('token_type', String(column_length.get("token_type"))),
                  Column('user', String(column_length.get("user"))),
                  Column('realm', String(column_length.get("realm"))),
+                 Column('resolver', String(column_length.get("resolver"))),
                  Column('administrator',
                         String(column_length.get("administrator"))),
                  Column('action_detail',
@@ -111,6 +115,7 @@ class LogEntry(object):
                  token_type="",
                  user="",
                  realm="",
+                 resolver="",
                  administrator="",
                  action_detail="",
                  info="",
@@ -127,6 +132,7 @@ class LogEntry(object):
         self.token_type = token_type
         self.user = user
         self.realm = realm
+        self.resolver = resolver
         self.administrator = administrator
         self.action_detail = action_detail
         self.info = info
@@ -181,10 +187,33 @@ class Audit(AuditBase):
         # create a Session
         self.session = Session()
         self.session._model_changes = {}
+        # Create table and update schema
+        self._schema_init_and_update()
+
+    def _schema_init_and_update(self):
+        """
+        This method tries to create the database table and update the schema.
+
+        :return: None
+        """
         try:
+            # Try to create the database
             metadata.create_all(self.engine)
         except OperationalError as exx:  # pragma: no cover
             log.info("{0!r}".format(exx))
+
+        # Schema update
+        conn = self.engine.connect()
+        ctx = MigrationContext.configure(conn)
+        op = Operations(ctx)
+        try:
+            # Try to add resolver column
+            op.add_column(TABLE_NAME,
+                          Column('resolver',
+                                 String(length=column_length.get("resolver"))))
+        except OperationalError as exx:  # pragma: no cover
+            log.info("{0!r}".format(exx))
+
 
     def _truncate_data(self):
         """
@@ -281,6 +310,7 @@ class Audit(AuditBase):
                           token_type=self.audit_data.get("token_type"),
                           user=self.audit_data.get("user"),
                           realm=self.audit_data.get("realm"),
+                          resolver=self.audit_data.get("resolver"),
                           administrator=self.audit_data.get("administrator"),
                           action_detail=self.audit_data.get("action_detail"),
                           info=self.audit_data.get("info"),
@@ -558,6 +588,7 @@ class Audit(AuditBase):
                       'token_type': audit_entry.token_type,
                       'user': audit_entry.user,
                       'realm': audit_entry.realm,
+                      'resolver': audit_entry.resolver,
                       'administrator': audit_entry.administrator,
                       'action_detail': audit_entry.action_detail,
                       'info': audit_entry.info,
