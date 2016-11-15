@@ -124,6 +124,7 @@ def before_request():
     serial = getParam(request.all_data, "serial")
     realm = getParam(request.all_data, "realm")
     user_loginname = ""
+    resolver = ""
     if "token_blueprint" in request.endpoint:
         # In case of token endpoint we evaluate the user in the request.
         # Note: In policy-endpoint "user" is part of the policy configuration
@@ -131,11 +132,13 @@ def before_request():
         user = get_user_from_param(request.all_data)
         user_loginname = user.login
         realm = user.realm or realm
+        resolver = user.resolver
 
     g.audit_object.log({"success": False,
                         "serial": serial,
                         "user": user_loginname,
                         "realm": realm,
+                        "resolver": resolver,
                         "client": g.client_ip,
                         "client_user_agent": request.user_agent.browser,
                         "privacyidea_server": privacyidea_server,
@@ -156,6 +159,7 @@ def before_request():
         request.all_data["resolver"] = CurrentUser.resolver
         request.all_data["realm"] = CurrentUser.realm
         g.audit_object.log({"user": CurrentUser.login,
+                            "resolver": CurrentUser.resolver,
                             "realm": CurrentUser.realm})
     else:
         # An administrator is calling this API

@@ -346,6 +346,7 @@ def samlcheck():
                         "serial": details.get("serial"),
                         "tokentype": details.get("type"),
                         "user": user.login,
+                        "resolver": user.resolver,
                         "realm": user.realm})
     return send_result(result_obj, details=details)
 
