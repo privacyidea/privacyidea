@@ -26,6 +26,21 @@ and your database:
    source /opt/privacyidea/bin/activate
    pi-manage backup create
 
+Running upgrade
+...............
+
+Starting with version 2.17 the script ``privacyidea-pip-update`` performs the
+update of the python virtualenv and the DB schema.
+
+Just enter your python virtualenv (you already did so, when running the
+backup) and run the command:
+
+   privacyidea-pip-update
+
+
+Manual upgrade
+..............
+
 Now you can upgrade the installation:
 
 .. code-block:: bash
