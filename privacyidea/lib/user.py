@@ -249,6 +249,9 @@ class User(object):
         :return: a dict with all the userinformation
         :rtype: dict
         """
+        if self.is_empty():
+            # An emptry user has not info
+            return {}
         (uid, _rtype, _resolver) = self.get_user_identifiers()
         y = get_resolver_object(self.resolver)
         userInfo = y.getUserInfo(uid)

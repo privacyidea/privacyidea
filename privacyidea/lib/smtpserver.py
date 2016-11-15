@@ -52,11 +52,13 @@ class SMTPServer(object):
         """
         self.config = db_smtpserver_object
 
-    def send_email(self, recipient, subject, body, sender=None):
-        return self.test_email(self.config, recipient, subject, body, sender)
+    def send_email(self, recipient, subject, body, sender=None, reply_to=None):
+        return self.test_email(self.config, recipient, subject, body, sender,
+                               reply_to)
 
     @staticmethod
-    def test_email(config, recipient, subject, body, sender=None):
+    def test_email(config, recipient, subject, body, sender=None,
+                   reply_to=None):
         """
         Sends an email via the SMTP Database Object
 
@@ -72,16 +74,20 @@ class SMTPServer(object):
             object has its own sender. This parameter can be used to override
             the internal sender.
         :type sender: basestring
+        :param reply_to: The Reply-To parameter
+        :type reply_to: basestring
         :return: True or False
         """
         if type(recipient) != list:
             recipient = [recipient]
         mail_from = sender or config.sender
+        reply_to = reply_to or mail_from
         msg = MIMEText(body.encode('utf-8'), 'plain', 'utf-8')
         msg['Subject'] = subject
         msg['From'] = mail_from
         msg['To'] = ",".join(recipient)
         msg['Date'] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
+        msg['Reply-To'] = reply_to
 
         mail = smtplib.SMTP(config.server, port=int(config.port))
         mail.ehlo()
@@ -113,7 +119,8 @@ class SMTPServer(object):
 
 
 @log_with(log)
-def send_email_identifier(identifier, recipient, subject, body, sender=None):
+def send_email_identifier(identifier, recipient, subject, body, sender=None,
+                          reply_to=None):
     """
     Send the an email via the specified SMTP server configuration.
 
@@ -124,10 +131,11 @@ def send_email_identifier(identifier, recipient, subject, body, sender=None):
     :type body: plain text
     :param sender: The optional sender of the email. The SMTP server
         configuration has its own sender. You can use this to override it.
+    :param reply_to: Reply-To header
     :return: True or False
     """
     smtp_server = get_smtpserver(identifier)
-    return smtp_server.send_email(recipient, subject, body, sender)
+    return smtp_server.send_email(recipient, subject, body, sender, reply_to)
 
 
 @log_with(log)

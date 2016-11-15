@@ -112,6 +112,11 @@ class UserNotificationEventHandler(BaseEventHandler):
 
 
                                 },
+                                "reply_to": {"type": "str",
+                                             "required": False,
+                                             "description": _("The Reply-To "
+                                                              "header in the "
+                                                              "sent email.")},
                                 "body": {"type": "text",
                                          "required": False,
                                          "description": _("The body of the "
@@ -439,12 +444,14 @@ class UserNotificationEventHandler(BaseEventHandler):
             if action.lower() == "sendmail":
                 emailconfig = handler_options.get("emailconfig")
                 useremail = recipient.get("email")
+                reply_to = handler_options.get("reply_to")
                 subject = handler_options.get("subject") or \
                           "An action was performed on your token."
                 try:
                     ret = send_email_identifier(emailconfig,
                                                 recipient=useremail,
-                                                subject=subject, body=body)
+                                                subject=subject, body=body,
+                                                reply_to=reply_to)
                 except Exception as exx:
                     log.error("Failed to send email: {0!s}".format(exx))
                     ret = False
