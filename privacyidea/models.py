@@ -1503,6 +1503,8 @@ class EventHandler(MethodsMixin, db.Model):
     """
     __tablename__ = 'eventhandler'
     id = db.Column(db.Integer, primary_key=True, nullable=False)
+    name = db.Column(db.Unicode(64), unique=True, nullable=False)
+    active = db.Column(db.Boolean, default=True)
     ordering = db.Column(db.Integer, nullable=False, default=0)
     # This is the name of the event in the code
     event = db.Column(db.Unicode(255), nullable=False)
@@ -1517,13 +1519,16 @@ class EventHandler(MethodsMixin, db.Model):
                                  lazy='dynamic',
                                  backref='eventhandler')
 
-    def __init__(self, event, handlermodule, action, condition="",
-                 ordering=0, options=None, id=None, conditions=None):
-        self.odering = ordering
+    def __init__(self, name, event, handlermodule, action, condition="",
+                 ordering=0, options=None, id=None, conditions=None,
+                 active=True):
+        self.name = name
+        self.ordering = ordering
         self.event = event
         self.handlermodule = handlermodule
         self.condition = condition
         self.action = action
+        self.active = active
         if id == "":
             id = None
         self.id = id
@@ -1554,6 +1559,8 @@ class EventHandler(MethodsMixin, db.Model):
             EventHandler.query.filter_by(id=self.id).update({
                 "ordering": self.ordering or 0,
                 "event": self.event,
+                "active": self.active,
+                "name": self.name,
                 "handlermodule": self.handlermodule,
                 "condition": self.condition,
                 "action": self.action
@@ -1582,7 +1589,9 @@ class EventHandler(MethodsMixin, db.Model):
         :return: complete dict
         :rytpe: dict
         """
-        d = {"handlermodule": self.handlermodule,
+        d = {"active": self.active,
+             "name": self.name,
+             "handlermodule": self.handlermodule,
              "id": self.id,
              "ordering": self.ordering,
              "action": self.action,

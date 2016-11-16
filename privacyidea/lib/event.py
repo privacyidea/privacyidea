@@ -98,13 +98,14 @@ def get_handler_object(handlername):
     return h_obj
 
 
-def set_event(event, handlermodule, action, conditions=None,
-              ordering=0, options=None, id=None):
+def set_event(name, event, handlermodule, action, conditions=None,
+              ordering=0, options=None, id=None, active=True):
 
     """
     Set an event handling configuration. This writes an entry to the
     database eventhandler.
 
+    :param name: The name of the event definition
     :param event: The name of the event to react on. Can be a single event or
         a comma separated list.
     :type event: basestring
@@ -130,8 +131,9 @@ def set_event(event, handlermodule, action, conditions=None,
     conditions = conditions or {}
     if id:
         id = int(id)
-    event = EventHandler(event, handlermodule, action, conditions=conditions,
-                 ordering=ordering, options=options, id=id)
+    event = EventHandler(name, event, handlermodule, action,
+                         conditions=conditions, ordering=ordering,
+                         options=options, id=id, active=active)
     return event.id
 
 

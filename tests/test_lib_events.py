@@ -26,13 +26,13 @@ import json
 class EventHandlerLibTestCase(MyTestCase):
 
     def test_01_create_update_delete(self):
-        eid = set_event("token_init", "UserNotification", "sendmail",
-                      conditions={"bla": "yes"},
-                      options={"emailconfig": "themis"})
+        eid = set_event("name1", "token_init", "UserNotification", "sendmail",
+                        conditions={"bla": "yes"},
+                        options={"emailconfig": "themis"})
         self.assertEqual(eid, 1)
 
         # create a new event!
-        r = set_event("token_init, token_assign",
+        r = set_event("name2", "token_init, token_assign",
                       "UserNotification", "sendmail",
                       conditions={},
                       options={"emailconfig": "themis",
@@ -40,7 +40,7 @@ class EventHandlerLibTestCase(MyTestCase):
 
         self.assertEqual(r, 2)
         # Update the first event
-        r = set_event("token_init, token_assign",
+        r = set_event("name1", "token_init, token_assign",
                       "UserNotification", "sendmail",
                       conditions={},
                       options={"emailconfig": "themis",
@@ -749,7 +749,8 @@ class UserNotificationTestCase(MyTestCase):
         self.assertTrue(r)
 
         # create notification handler
-        eid = set_event("token_unassign", "UserNotification", "sendmail")
+        eid = set_event("This definition sends emails", "token_unassign",
+                        "UserNotification", "sendmail")
         self.assertTrue(eid)
 
         # delete the user

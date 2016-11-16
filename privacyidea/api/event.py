@@ -36,6 +36,7 @@ import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policy import ACTION
 from privacyidea.lib.event import AVAILABLE_EVENTS, get_handler_object
+from privacyidea.lib.utils import is_true
 import json
 
 
@@ -109,29 +110,23 @@ def get_module_conditions(handlermodule=None):
 @prepolicy(check_base_action, request, ACTION.EVENTHANDLINGWRITE)
 def set_eventhandling():
     """
-    This creates a new machine resolver or updates an existing one.
-    A resolver is uniquely identified by its name.
+    This creates a new event handling definition
 
-    If you update a resolver, you do not need to provide all parameters.
-    Parameters you do not provide are left untouched.
-    When updating a resolver you must not change the type!
-    You do not need to specify the type, but if you specify a wrong type,
-    it will produce an error.
-
-    :param resolver: the name of the resolver.
-    :type resolver: basestring
-    :param type: the type of the resolver. Valid types are... "hosts"
-    :type type: string
-    :return: a json result with the value being the database id (>0)
-
-    Additional parameters depend on the resolver type.
-
-    hosts:
-     * filename
+    :param name: A describing name of the event.bool
+    :param id: (optional) when updating an existing event you need to
+        specify the id
+    :param event: A comma seperated list of events
+    :param handlermodule: A handlermodule
+    :param action: The action to perform
+    :param ordering: N/A
+    :param conditions: Conditions, when the event will trigger
+    :param options.: A list of possible options.
     """
     param = request.all_data
+    name = getParam(param, "name", optional=False)
     event = getParam(param, "event", optional=False)
     eid = getParam(param, "id", optional=True)
+    active = is_true(getParam(param, "active", default=True))
     if eid:
         eid = int(eid)
     handlermodule = getParam(param, "handlermodule", optional=False)
@@ -145,9 +140,9 @@ def set_eventhandling():
         if k.startswith("option."):
             options[k[7:]] = v
 
-    res = set_event(event, handlermodule=handlermodule,
+    res = set_event(name, event, handlermodule=handlermodule,
                     action=action, conditions=conditions,
-                    ordering=ordering, id=eid, options=options)
+                    ordering=ordering, id=eid, options=options, active=active)
     g.audit_object.log({"success": True,
                         "info": res})
     return send_result(res)

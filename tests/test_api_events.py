@@ -19,6 +19,7 @@ class APIEventsTestCase(MyTestCase):
 
         # create an event configuration
         param = {
+            "name": "Send an email",
             "event": "token_init",
             "action": "sendmail",
             "handlermodule": "UserNotification",
@@ -50,6 +51,7 @@ class APIEventsTestCase(MyTestCase):
 
         # update event config
         param = {
+            "name": "A new name",
             "event": "token_init",
             "action": "sendmail",
             "handlermodule": "UserNotification",
@@ -121,6 +123,7 @@ class APIEventsTestCase(MyTestCase):
 
         # create an event configuration
         param = {
+            "name": "Send an email via themis",
             "event": "token_init",
             "action": "sendmail",
             "handlermodule": "UserNotification",

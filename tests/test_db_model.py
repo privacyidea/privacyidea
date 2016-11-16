@@ -519,7 +519,7 @@ class TokenModelTestCase(MyTestCase):
         options = {"mailserver": "blafoo",
                    "option2": "value2"}
         conditions = {"user_type": "admin"}
-        eh1 = EventHandler(event, handlermodule=handlermodule,
+        eh1 = EventHandler("ev1", event, handlermodule=handlermodule,
                            action=action, condition=condition,
                            options=options, conditions=conditions)
         self.assertTrue(eh1)
@@ -538,7 +538,7 @@ class TokenModelTestCase(MyTestCase):
         id = eh1.id
 
         # update eventhandler
-        eh2 = EventHandler(event_update, handlermodule=handlermodule,
+        eh2 = EventHandler("ev1", event_update, handlermodule=handlermodule,
                            action=action, condition=condition,
                            options=options, ordering=0, id=id)
         self.assertEqual(eh1.event, event_update)
