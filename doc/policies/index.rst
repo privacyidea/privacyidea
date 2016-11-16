@@ -118,12 +118,4 @@ Each policy can contain the following attributes:
      Thus you can get effects you did not plan. So think at least *twice* before
      using time restricted policies.
 
-  **Example**:
-
-
-
-
-
-.. note:: Policies can be active or inactive. So be sure to activate a policy to 
-   get the desired effect. 
 

@@ -17,6 +17,7 @@ using :ref:`code_policy` and
 The following actions are available in the scope 
 *authentication*:
 
+.. _otppin_policy:
 
 otppin
 ~~~~~~
