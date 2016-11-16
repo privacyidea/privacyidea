@@ -81,7 +81,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         self.key_labels = {}
         for k in ['token', 'config', 'value']:
             l = config.get(("key_label_{0!s}".format(k)))
-            l = ('{0!s}_{0!s}'.format(label_prefix, k)) if l is None else l
+            l = ('{0!s}_{1!s}'.format(label_prefix, k)) if l is None else l
             self.key_labels[k] = l
 
         self.slot = config.get("slot", 1)
