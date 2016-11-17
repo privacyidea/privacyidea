@@ -33,7 +33,8 @@ from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.realm import get_realms
-from privacyidea.lib.token import set_realms
+from privacyidea.lib.token import (set_realms, remove_token, enable_token,
+                                   unassign_token)
 from gettext import gettext as _
 import json
 import logging
@@ -46,6 +47,11 @@ class ACTION_TYPE(object):
     Allowed actions
     """
     SET_TOKENREALM = "set tokenrealm"
+    DELETE = "delete"
+    UNASSIGN = "unassign"
+    DISABLE = "disable"
+    ENABLE = "enable"
+
 
 
 class TokenEventHandler(BaseEventHandler):
@@ -89,9 +95,11 @@ class TokenEventHandler(BaseEventHandler):
                                               "realm will be added to the token.")
                             }
                         },
-                   "unassign": {},
+                   ACTION_TYPE.DELETE: {},
+                   ACTION_TYPE.UNASSIGN: {},
+                   ACTION_TYPE.DISABLE: {},
+                   ACTION_TYPE.ENABLE: {},
                    "assign": {},
-                   "delete": {},
                    "init": {"tokentype": {"type": "str",
                                           "required": True,
                                           "description": _("Token type to "
@@ -99,9 +107,7 @@ class TokenEventHandler(BaseEventHandler):
                                           "value": get_token_types()},
                             "user": {},
                             "realm": {}
-                            },
-                   "disable": {},
-                   "enable": {},
+                            }
                    }
         return actions
 
@@ -137,6 +143,18 @@ class TokenEventHandler(BaseEventHandler):
                     serial, realm))
                 # Add the token realm
                 set_realms(serial, [realm], add=True)
+            elif action.lower() == ACTION_TYPE.DELETE:
+                log.info("Delete token {0!s}".format(serial))
+                remove_token(serial=serial)
+            elif action.lower() == ACTION_TYPE.DISABLE:
+                log.info("Disable token {0!s}".format(serial))
+                enable_token(serial, enable=False)
+            elif action.lower() == ACTION_TYPE.ENABLE:
+                log.info("Enable token {0!s}".format(serial))
+                enable_token(serial, enable=True)
+            elif action.lower() == ACTION_TYPE.UNASSIGN:
+                log.info("Unassign token {0!s}".format(serial))
+                unassign_token(serial)
 
         return ret
 
