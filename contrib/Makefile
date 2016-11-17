@@ -7,8 +7,8 @@ VERSION2=1.3.0
 URL2=https://pypi.python.org/packages/source/P/PyJWT/PyJWT-$(VERSION2).tar.gz
 
 CONTRIB3=python-ldap3
-VERSION3=0.9.8.4
-URL3=https://pypi.python.org/packages/source/l/ldap3/ldap3-$(VERSION3).tar.gz
+VERSION3=2.1.0
+URL3=https://pypi.python.org/packages/44/53/b458da2329ad57fa0044717cace2fa901ea6999bc141e6d65245f77e4eb8/ldap3-$(VERSION3).tar.gz
 
 CONTRIB4=python-flask-sqlalchemy
 VERSION4=2.0
@@ -28,7 +28,8 @@ URL7=https://pypi.python.org/packages/source/p/pykcs11/PyKCS11-$(VERSION7).tar.g
 
 ME=Cornelius Kölbel <cornelius@privacyidea.org>
 
-series=trusty
+#series=trusty
+series=xenial
 
 info:
 	@echo "make ubuntu  - build packages for ubuntu 14.04LTS"

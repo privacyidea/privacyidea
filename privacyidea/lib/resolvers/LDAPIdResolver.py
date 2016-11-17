@@ -198,6 +198,7 @@ class IdResolver (UserIdResolver):
                                        server=server_pool,
                                        user=bind_user,
                                        password=password,
+                                       receive_timeout=self.timeout,
                                        auto_referrals=not self.noreferrals)
             l.open()
             r = l.bind()
@@ -313,6 +314,7 @@ class IdResolver (UserIdResolver):
                                             server=server_pool,
                                             user=self.binddn,
                                             password=self.bindpw,
+                                            receive_timeout=self.timeout,
                                             auto_referrals=not self.noreferrals)
             self.l.open()
             #log.error("LDAP Server Pool States: %s" % server_pool.pool_states)
@@ -675,14 +677,16 @@ class IdResolver (UserIdResolver):
         """
         success = False
         uidtype = param.get("UIDTYPE")
+        timeout = float(param.get("TIMEOUT", 5))
         try:
             server_pool = cls.get_serverpool(param.get("LDAPURI"),
-                                             float(param.get("TIMEOUT", 5)))
+                                             timeout)
             l = cls.create_connection(authtype=param.get("AUTHTYPE",
                                                           AUTHTYPE.SIMPLE),
                                       server=server_pool,
                                       user=param.get("BINDDN"),
                                       password=to_utf8(param.get("BINDPW")),
+                                      receive_timeout=timeout,
                                       auto_referrals=not param.get(
                                            "NOREFERRALS"))
             l.open()
@@ -903,7 +907,8 @@ class IdResolver (UserIdResolver):
                           password=None, auto_bind=False,
                           client_strategy=ldap3.SYNC,
                           check_names=True,
-                          auto_referrals=False):
+                          auto_referrals=False,
+                          receive_timeout=5):
 
         authentication = None
         if not user:
@@ -919,6 +924,7 @@ class IdResolver (UserIdResolver):
                                  client_strategy=client_strategy,
                                  authentication=authentication,
                                  check_names=check_names,
+                                 receive_timeout=receive_timeout,
                                  auto_referrals=auto_referrals)
         elif authtype == AUTHTYPE.NTLM:  # pragma: no cover
             if not authentication:
@@ -930,6 +936,7 @@ class IdResolver (UserIdResolver):
                                  client_strategy=client_strategy,
                                  authentication=authentication,
                                  check_names=check_names,
+                                 receive_timeout=receive_timeout,
                                  auto_referrals=auto_referrals)
         elif authtype == AUTHTYPE.SASL_DIGEST_MD5:  # pragma: no cover
             if not authentication:
@@ -942,6 +949,7 @@ class IdResolver (UserIdResolver):
                                  client_strategy=client_strategy,
                                  authentication=authentication,
                                  check_names=check_names,
+                                 receive_timeout=receive_timeout,
                                  auto_referrals=auto_referrals)
         else:
             raise Exception("Authtype {0!s} not supported".format(authtype))

@@ -211,7 +211,7 @@ class Audit(AuditBase):
             op.add_column(TABLE_NAME,
                           Column('resolver',
                                  String(length=column_length.get("resolver"))))
-        except OperationalError as exx:  # pragma: no cover
+        except Exception as exx:  # pragma: no cover
             log.info("{0!r}".format(exx))
 
 
