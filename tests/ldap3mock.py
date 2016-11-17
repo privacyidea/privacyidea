@@ -709,7 +709,7 @@ class Ldap3Mock(object):
     def _on_Connection(self, server, user, password,
                        auto_bind=None, client_strategy=None,
                        authentication=None, check_names=None,
-                       auto_referrals=None):
+                       auto_referrals=None, receive_timeout=None):
         """
         We need to create a Connection object with
         methods:

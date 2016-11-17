@@ -18,6 +18,7 @@ from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
 from privacyidea.lib.resolvers.SQLIdResolver import PasswordHash
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
+from privacyidea.lib.resolvers.LDAPIdResolver import (SERVERPOOL_ROUNDS, SERVERPOOL_SKIP)
 
 from privacyidea.lib.resolver import (save_resolver,
                                       delete_resolver,
@@ -828,8 +829,8 @@ class LDAPResolverTestCase(MyTestCase):
         urilist = "ldap://themis"
         server_pool = LDAPResolver.get_serverpool(urilist, timeout)
         self.assertEqual(len(server_pool), 1)
-        self.assertEqual(server_pool.active, True)
-        self.assertEqual(server_pool.exhaust, True)
+        self.assertEqual(server_pool.active, SERVERPOOL_ROUNDS)
+        self.assertEqual(server_pool.exhaust, SERVERPOOL_SKIP)
         self.assertEqual(server_pool.strategy, "ROUND_ROBIN")
 
         urilist = "ldap://themis, ldap://server2"
