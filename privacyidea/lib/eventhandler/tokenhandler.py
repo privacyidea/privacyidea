@@ -37,6 +37,7 @@ from privacyidea.lib.token import get_tokens
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.user import User, get_user_list
+from privacyidea.lib.realm import get_realms
 from gettext import gettext as _
 import json
 import logging
@@ -85,15 +86,29 @@ class TokenEventHandler(BaseEventHandler):
 
         :return: dict with actions
         """
+        realm_list = get_realms().keys()
         smtpserver_objs = get_smtpservers()
         smsgateway_dicts = get_smsgateway()
         smsgateways = [sms.identifier for sms in smsgateway_dicts]
         smtpservers = [s.config.identifier for s in smtpserver_objs]
         from privacyidea.lib.token import get_token_types
-        actions = {"unassign": {},
-                   "assign": {"user": {},
-                              "realm": {}
-                              },
+        actions = {"set tokenrealm":
+                       {"realm":
+                            {"type": "str",
+                             "required": True,
+                             "description": _("set a new realm of the token"),
+                             "value": realm_list},
+                        "only_realm":
+                            {"type": "bool",
+                             "description": _("The new realm will be the only "
+                                              "realm of the token. I.e. all "
+                                              "other realms will be removed "
+                                              "from this token. Otherwise the "
+                                              "realm will be added to the token.")
+                            }
+                        },
+                   "unassign": {},
+                   "assign": {},
                    "delete": {},
                    "init": {"tokentype": {"type": "str",
                                           "required": True,
