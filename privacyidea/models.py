@@ -246,24 +246,35 @@ class Token(MethodsMixin, db.Model):
         if reset_failcount is True:
             self.failcount = 0
 
-    def set_realms(self, realms):
+    def set_realms(self, realms, add=False):
         """
         Set the list of the realms.
         This is done by filling the tokenrealm table.
         :param realms: realms
         :type realms: list
+        :param add: If set, the realms are added. I.e. old realms are not
+            deleted
+        :type add: boolean
         """
         # delete old TokenRealms
-        db.session.query(TokenRealm)\
-                  .filter(TokenRealm.token_id == self.id)\
-                  .delete()
+        if not add:
+            db.session.query(TokenRealm)\
+                      .filter(TokenRealm.token_id == self.id)\
+                      .delete()
         # add new TokenRealms
         # We must not set the same realm more than once...
         # uniquify: realms -> set(realms)
         for realm in set(realms):
-            Tr = TokenRealm(token_id=self.id,
-                            realmname=realm)
-            db.session.add(Tr)
+            # Get the id of the realm to add
+            r = Realm.query.filter_by(name=realm).first()
+            if r:
+                # Check if tokenrealm already exists
+                tr = TokenRealm.query.filter_by(token_id=self.id,
+                                                realm_id=r.id).first()
+                if not tr:
+                    # If the realm is not yet attached to the token
+                    Tr = TokenRealm(token_id=self.id, realm_id=r.id)
+                    db.session.add(Tr)
         db.session.commit()
         
     def get_realms(self):

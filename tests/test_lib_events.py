@@ -9,6 +9,8 @@ import smtpmock
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.eventhandler.usernotification import (
     UserNotificationEventHandler, NOTIFY_TYPE)
+from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
+                                                       ACTION_TYPE)
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.smtpserver import add_smtpserver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
@@ -18,7 +20,8 @@ from privacyidea.lib.event import (delete_event, set_event,
                                    EventConfiguration, get_handler_object)
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.realm import set_realm, delete_realm
-from privacyidea.lib.token import (init_token, remove_token)
+from privacyidea.lib.token import (init_token, remove_token,
+                                   get_realms_of_token)
 from privacyidea.lib.user import create_user, User
 import json
 
@@ -84,6 +87,55 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertTrue(r)
 
 
+class TokenEventTestCase(MyTestCase):
+
+    def test_01_set_tokenrealm(self):
+        # setup realms
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
+        init_token({"serial": "SPASS01", "type": "spass"})
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "SPASS01"
+
+        g.logged_in_user = {"user": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        # Now the initiailized token will be set in realm2
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"realm": "realm2"}
+                                   }
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.SET_TOKENREALM, options=options)
+        self.assertTrue(res)
+
+        # Check if the token is contained in realm2
+        realms = get_realms_of_token("SPASS01")
+        self.assertTrue("realm2" in realms)
+
+
 class UserNotificationTestCase(MyTestCase):
 
     def test_01_basefunctions(self):
@@ -127,7 +179,10 @@ class UserNotificationTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"emailconfig": "myserver"}}
+                   "handler_def": {"options":
+                                       {"emailconfig": "myserver"}
+                                   }
+                   }
 
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
@@ -174,7 +229,10 @@ class UserNotificationTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"smsconfig": "myGW"}}
+                   "handler_def": {"options":
+                                       {"smsconfig": "myGW"}
+                                   }
+                   }
 
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendsms", options=options)

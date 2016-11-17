@@ -1005,7 +1005,7 @@ def remove_token(serial=None, user=None):
 
 
 @log_with(log)
-def set_realms(serial, realms=None):
+def set_realms(serial, realms=None, add=False):
     """
     Set all realms of a token. This sets the realms new. I.e. it does not add
     realms. So realms that are not contained in the list will not be assigned
@@ -1017,6 +1017,8 @@ def set_realms(serial, realms=None):
     :type serial: basestring
     :param realms: A list of realm names
     :type realms: list
+    :param add: if the realms should be added and not replaced
+    :type add: bool
     :return: the number of tokens, to which realms where added. As a serial
     number should be unique, this is either 1 or 0.
     :rtype: int
@@ -1032,7 +1034,7 @@ def set_realms(serial, realms=None):
     tokenobject_list = get_tokens(serial=serial)
 
     for tokenobject in tokenobject_list:
-        tokenobject.set_realms(corrected_realms)
+        tokenobject.set_realms(corrected_realms, add=add)
         tokenobject.save()
 
     return len(tokenobject_list)

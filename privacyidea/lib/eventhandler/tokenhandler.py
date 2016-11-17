@@ -30,40 +30,15 @@ You can attach token actions like enable, disable, delete, unassign,... of the
  * ...
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
-from privacyidea.lib.smtpserver import send_email_identifier
-from privacyidea.lib.smsprovider.SMSProvider import send_sms_identifier
-from privacyidea.lib.auth import get_db_admin
-from privacyidea.lib.token import get_tokens
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
-from privacyidea.lib.user import User, get_user_list
 from privacyidea.lib.realm import get_realms
+from privacyidea.lib.token import set_realms
 from gettext import gettext as _
 import json
 import logging
 
 log = logging.getLogger(__name__)
-
-DEFAULT_BODY = """
-Hello {user},
-
-the administrator {admin}@{realm} performed the action
-{action} on your token {serial}.
-
-To check your tokens you may login to the Web UI:
-{url}
-"""
-
-
-class NOTIFY_TYPE(object):
-    """
-    Allowed token owner
-    """
-    TOKENOWNER = "tokenowner"
-    LOGGED_IN_USER = "logged_in_user"
-    INTERNAL_ADMIN = "internal admin"
-    ADMIN_REALM = "admin realm"
-    EMAIL = "email"
 
 
 class ACTION_TYPE(object):
@@ -160,8 +135,8 @@ class TokenEventHandler(BaseEventHandler):
                 # Set the realm..
                 log.info("Setting realm of token {0!s} to {1!s}".format(
                     serial, realm))
-                from privacyidea.lib.token import set_realms
-                set_realms(serial, [realm])
+                # Add the token realm
+                set_realms(serial, [realm], add=True)
 
         return ret
 
