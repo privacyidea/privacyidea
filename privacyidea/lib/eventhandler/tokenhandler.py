@@ -30,11 +30,10 @@ You can attach token actions like enable, disable, delete, unassign,... of the
  * ...
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
-from privacyidea.lib.smtpserver import get_smtpservers
-from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
+from privacyidea.lib.token import get_token_types
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.token import (set_realms, remove_token, enable_token,
-                                   unassign_token)
+                                   unassign_token, init_token)
 from gettext import gettext as _
 import json
 import logging
@@ -51,7 +50,7 @@ class ACTION_TYPE(object):
     UNASSIGN = "unassign"
     DISABLE = "disable"
     ENABLE = "enable"
-
+    INIT = "enroll"
 
 
 class TokenEventHandler(BaseEventHandler):
@@ -75,11 +74,6 @@ class TokenEventHandler(BaseEventHandler):
         :return: dict with actions
         """
         realm_list = get_realms().keys()
-        smtpserver_objs = get_smtpservers()
-        smsgateway_dicts = get_smsgateway()
-        smsgateways = [sms.identifier for sms in smsgateway_dicts]
-        smtpservers = [s.config.identifier for s in smtpserver_objs]
-        from privacyidea.lib.token import get_token_types
         actions = {ACTION_TYPE.SET_TOKENREALM:
                        {"realm":
                             {"type": "str",
@@ -99,15 +93,22 @@ class TokenEventHandler(BaseEventHandler):
                    ACTION_TYPE.UNASSIGN: {},
                    ACTION_TYPE.DISABLE: {},
                    ACTION_TYPE.ENABLE: {},
-                   "assign": {},
-                   "init": {"tokentype": {"type": "str",
-                                          "required": True,
-                                          "description": _("Token type to "
-                                                           "create"),
-                                          "value": get_token_types()},
-                            "user": {},
-                            "realm": {}
-                            }
+                   #"assign": {},
+                   ACTION_TYPE.INIT:
+                       {"tokentype":
+                            {"type": "str",
+                             "required": True,
+                             "description": _("Token type to create"),
+                             "value": get_token_types()
+                             },
+                        #"user": {},
+                        "realm":
+                            {"type": "str",
+                             "required": False,
+                             "description": _("Set the realm of the newly "
+                                              "created token."),
+                             "value": realm_list},
+                        }
                    }
         return actions
 
@@ -133,29 +134,42 @@ class TokenEventHandler(BaseEventHandler):
                  content.get("detail", {}).get("serial") or \
                  g.audit_object.audit_data.get("serial")
 
-        if serial:
-            # DO THE ACTION
-            if action.lower() == ACTION_TYPE.SET_TOKENREALM:
-                realm = handler_options.get("realm")
-                only_realm = handler_options.get("only_realm")
-                # Set the realm..
-                log.info("Setting realm of token {0!s} to {1!s}".format(
-                    serial, realm))
-                # Add the token realm
-                set_realms(serial, [realm], add=True)
-            elif action.lower() == ACTION_TYPE.DELETE:
-                log.info("Delete token {0!s}".format(serial))
-                remove_token(serial=serial)
-            elif action.lower() == ACTION_TYPE.DISABLE:
-                log.info("Disable token {0!s}".format(serial))
-                enable_token(serial, enable=False)
-            elif action.lower() == ACTION_TYPE.ENABLE:
-                log.info("Enable token {0!s}".format(serial))
-                enable_token(serial, enable=True)
-            elif action.lower() == ACTION_TYPE.UNASSIGN:
-                log.info("Unassign token {0!s}".format(serial))
-                unassign_token(serial)
+        if action.lower() in [ACTION_TYPE.SET_TOKENREALM,
+                                         ACTION_TYPE.DELETE,
+                                         ACTION_TYPE.DISABLE,
+                                         ACTION_TYPE.ENABLE,
+                                         ACTION_TYPE.UNASSIGN]:
+            if serial:
+                if action.lower() == ACTION_TYPE.SET_TOKENREALM:
+                    realm = handler_options.get("realm")
+                    only_realm = handler_options.get("only_realm")
+                    # Set the realm..
+                    log.info("Setting realm of token {0!s} to {1!s}".format(
+                        serial, realm))
+                    # Add the token realm
+                    set_realms(serial, [realm], add=True)
+                elif action.lower() == ACTION_TYPE.DELETE:
+                    log.info("Delete token {0!s}".format(serial))
+                    remove_token(serial=serial)
+                elif action.lower() == ACTION_TYPE.DISABLE:
+                    log.info("Disable token {0!s}".format(serial))
+                    enable_token(serial, enable=False)
+                elif action.lower() == ACTION_TYPE.ENABLE:
+                    log.info("Enable token {0!s}".format(serial))
+                    enable_token(serial, enable=True)
+                elif action.lower() == ACTION_TYPE.UNASSIGN:
+                    log.info("Unassign token {0!s}".format(serial))
+                    unassign_token(serial)
+            else:
+                log.info("Action {0!s} requires serial number. But no serial "
+                         "number could be found in request.")
+
+        if action.lower() == ACTION_TYPE.INIT:
+            log.info("Initializing new token")
+            t = init_token({"type": handler_options.get("tokentype"),
+                            "genkey": 1,
+                            "realm": handler_options.get("realm", "")})
+            log.info("New token {0!s} enrolled.".format(t.token.serial))
 
         return ret
-
 

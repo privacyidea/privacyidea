@@ -279,6 +279,49 @@ class TokenEventTestCase(MyTestCase):
 
         remove_token("SPASS01")
 
+    def test_05_enroll(self):
+        # setup realms
+        self.setUp_user_realms()
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "SPASS01"
+
+        g.logged_in_user = {"user": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        # Now the initiailized token will be set in realm2
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"tokentype": "paper"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check if the token was unassigned
+        t = get_tokens(tokentype="paper")[0]
+        self.assertTrue(t)
+
+        remove_token(t.token.serial)
+
 
 class UserNotificationTestCase(MyTestCase):
 
