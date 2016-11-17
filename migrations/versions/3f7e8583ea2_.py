@@ -17,8 +17,9 @@ from sqlalchemy.exc import OperationalError, ProgrammingError, InternalError
 
 def upgrade():
     try:
+        op.add_column('eventhandler', sa.Column('name', sa.Unicode(
+            length=64), default=u""))
         op.add_column('eventhandler', sa.Column('active', sa.Boolean(), nullable=True))
-        op.add_column('eventhandler', sa.Column('name', sa.Unicode(length=64), nullable=False))
     except (OperationalError, ProgrammingError, InternalError) as exx:
         if exx.orig.message.lower().startswith("duplicate column name"):
             print("Good. Columns name and active already exist.")

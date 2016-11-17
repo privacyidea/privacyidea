@@ -47,10 +47,10 @@ msgstr "API Client ID"
 msgid "About privacyIDEA Web Client"
 msgstr "Über das privacyIDEA WebUI"
 
-#: privacyidea/static/components/config/views/config.events.details.html:108
-#: privacyidea/static/components/config/views/config.events.details.html:110
-#: privacyidea/static/components/config/views/config.events.details.html:49
-#: privacyidea/static/components/config/views/config.events.list.html:9
+#: privacyidea/static/components/config/views/config.events.details.html:119
+#: privacyidea/static/components/config/views/config.events.details.html:121
+#: privacyidea/static/components/config/views/config.events.details.html:60
+#: privacyidea/static/components/config/views/config.events.list.html:10
 #: privacyidea/static/components/config/views/config.policies.details.html:125
 #: privacyidea/static/components/config/views/config.policies.list.html:8
 msgid "Action"
@@ -409,12 +409,12 @@ msgstr "Community"
 msgid "Components"
 msgstr "Komponenten"
 
-#: privacyidea/static/components/config/views/config.events.details.html:45
-#: privacyidea/static/components/config/views/config.events.details.html:57
+#: privacyidea/static/components/config/views/config.events.details.html:56
+#: privacyidea/static/components/config/views/config.events.details.html:68
 msgid "Condition"
 msgstr "Bedingung"
 
-#: privacyidea/static/components/config/views/config.events.list.html:8
+#: privacyidea/static/components/config/views/config.events.list.html:9
 msgid "Conditions"
 msgstr "Bedingungen"
 
@@ -445,7 +445,7 @@ msgid ""
 "                    newly enrolled tokens"
 msgstr "Zählerfenster für neu ausgerollte Token"
 
-#: privacyidea/static/components/config/views/config.events.details.html:166
+#: privacyidea/static/components/config/views/config.events.details.html:177
 msgid "Create Event Handler Definition"
 msgstr "Erstelle eine Ereignisdefinition"
 
@@ -568,7 +568,7 @@ msgstr "Standard Zeitfenster"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:69
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:26
-#: privacyidea/static/components/config/views/config.events.list.html:39
+#: privacyidea/static/components/config/views/config.events.list.html:44
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:26
 #: privacyidea/static/components/config/views/config.policies.details.html:18
 #: privacyidea/static/components/config/views/config.policies.list.html:54
@@ -852,8 +852,8 @@ msgstr "Fehler beim Laden der Richtlinien-Vorlagen."
 msgid "Error in U2F response."
 msgstr "Fehler in der U2F-Antwort."
 
-#: privacyidea/static/components/config/views/config.events.details.html:13
-#: privacyidea/static/components/config/views/config.events.list.html:6
+#: privacyidea/static/components/config/views/config.events.details.html:24
+#: privacyidea/static/components/config/views/config.events.list.html:7
 #: privacyidea/static/components/config/views/config.html:30
 msgid "Events"
 msgstr "Ereignisse"
@@ -999,8 +999,8 @@ msgstr "HOTP-Token Einstellungen"
 msgid "HOTP: event based One Time Passwords"
 msgstr "HOTP: Ereignisbasiertes Einmal-Passwort"
 
-#: privacyidea/static/components/config/views/config.events.details.html:30
-#: privacyidea/static/components/config/views/config.events.list.html:7
+#: privacyidea/static/components/config/views/config.events.details.html:41
+#: privacyidea/static/components/config/views/config.events.list.html:8
 msgid "Handlermodule"
 msgstr "Handlermodul"
 
@@ -1370,6 +1370,11 @@ msgstr "Mobiltelefon"
 msgid "Name"
 msgstr "Name"
 
+#: privacyidea/static/components/config/views/config.events.details.html:13
+#: privacyidea/static/components/config/views/config.events.list.html:6
+msgid "Name or Description"
+msgstr "Name oder Beschreibung"
+
 #: privacyidea/static/components/config/views/config.caconnectors.html:17
 msgid "New Connectors"
 msgstr "Neue Konnektoren"
@@ -1521,8 +1526,8 @@ msgstr "Ein neues Tab öffnen, um die Zertifikatsanforderung zu erstellen."
 msgid "OpenSSL config file"
 msgstr "Konfigurationsdatei für OpenSSL"
 
-#: privacyidea/static/components/config/views/config.events.details.html:123
-#: privacyidea/static/components/config/views/config.events.list.html:10
+#: privacyidea/static/components/config/views/config.events.details.html:134
+#: privacyidea/static/components/config/views/config.events.list.html:11
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:81
 #: privacyidea/static/components/machine/views/machine.details.html:52
 #: privacyidea/static/components/token/views/token.details.html:462

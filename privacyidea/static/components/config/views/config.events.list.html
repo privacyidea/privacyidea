@@ -3,6 +3,7 @@
         <thead>
         <tr>
             <th translate>Id</th>
+            <th translate>Name or Description</th>
             <th translate>Events</th>
             <th translate>Handlermodule</th>
             <th translate>Conditions</th>
@@ -15,6 +16,10 @@
             <td>
                 <a ui-sref="config.events.details({eventid: event.id})">
                     {{ event.id }}</a>
+            </td>
+            <td>
+                <a ui-sref="config.events.details({eventid: event.id})">
+                    {{ event.name }}</a>
             </td>
             <td>
                 {{ event.event | json}}
