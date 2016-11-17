@@ -72,6 +72,11 @@ CACHE = {}
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
+# The number of rounds the resolver tries to reach a responding server in the
+#  pool
+SERVERPOOL_ROUNDS = 2
+# The number of seconds a non-responding server is removed from the server pool
+SERVERPOOL_SKIP = 30
 # 1 sec == 10^9 nano secs == 10^7 * (100 nano secs)
 MS_AD_MULTIPLYER = 10 ** 7
 MS_AD_START = datetime.datetime(1601, 1, 1)
@@ -612,8 +617,8 @@ class IdResolver (UserIdResolver):
         except AttributeError:
             # This is for ldap3 >= 2.0.7
             strategy = ldap3.ROUND_ROBIN
-        server_pool = ldap3.ServerPool(None, strategy, active=True,
-                                       exhaust=True)
+        server_pool = ldap3.ServerPool(None, strategy, active=SERVERPOOL_ROUNDS,
+                                       exhaust=SERVERPOOL_SKIP)
         for uri in urilist.split(","):
             uri = uri.strip()
             host, port, ssl = cls.split_uri(uri)
