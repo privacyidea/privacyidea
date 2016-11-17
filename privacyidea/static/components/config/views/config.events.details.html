@@ -88,7 +88,7 @@
                                   ng-show="condition.type==='text' && !condition.value"
                                   class="form-control"
                                   ng-model="conds[conditionname]">
-                </textarea>
+                        </textarea>
                         <input class="form-control"
                                ng-disabled="!conditionCheckBox[conditionname]"
                                ng-required="condition.required && !condition.value"
@@ -140,11 +140,15 @@
                                   ng-show="option.type==='text' && !option.value"
                                   class="form-control"
                                   ng-model="opts[optionname]">
-                </textarea>
+                        </textarea>
                         <input class="form-control"
                                ng-required="option.required && !option.value"
                                ng-model="opts[optionname]"
                                ng-show="option.type==='str' && !option.value">
+
+                        <input type="checkbox"
+                               ng-model="opts[optionname]"
+                               ng-show="option.type==='bool' && !option.value">
                         <p class="help help-block">
                             {{ option.description }}
                         </p>

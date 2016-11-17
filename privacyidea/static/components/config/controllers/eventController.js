@@ -73,6 +73,12 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
                     // set the options
                     $scope.actionChanged();
                     $scope.opts = event.result.value[0].options;
+                    // set bool options, which are marked as "1" to true
+                    angular.forEach($scope.opts, function(value, opt){
+                        if ($scope.handlerOptions[$scope.form.action][opt].type === "bool" && value === "1") {
+                            $scope.opts[opt] = true;
+                        }
+                    });
                     // get the configured conditions
                     $scope.conds = event.result.value[0].conditions;
                     angular.forEach($scope.conds, function(value, cond){

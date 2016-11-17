@@ -545,13 +545,15 @@ class TokenClass(object):
     def get_user_id(self):
         return self.token.user_id
 
-    def set_realms(self, realms):
+    def set_realms(self, realms, add=False):
         """
         Set the list of the realms of a token.
         :param realms: realms the token should be assigned to
         :type realms: list
+        :param add: if the realms should be added and not replaced
+        :type add: boolean
         """
-        self.token.set_realms(realms)
+        self.token.set_realms(realms, add=add)
         
     def get_realms(self):
         """
