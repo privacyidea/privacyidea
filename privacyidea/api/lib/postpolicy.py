@@ -39,6 +39,7 @@ Wrapping the functions in a decorator class enables easy modular testing.
 
 The functions of this module are tested in tests/test_api_lib_policy.py
 """
+import datetime
 import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.error import PolicyError
@@ -291,6 +292,9 @@ def add_user_detail_to_response(request, response):
         #  details
         ui = request.User.info
         ui["password"] = ""
+        for key, value in ui.iteritems():
+            if type(value) == datetime.datetime:
+                ui[key] = str(value)
         content["detail"]["user"] = ui
         response.data = json.dumps(content)
 

@@ -81,6 +81,32 @@ SERVERPOOL_SKIP = 30
 MS_AD_MULTIPLYER = 10 ** 7
 MS_AD_START = datetime.datetime(1601, 1, 1)
 
+"""
+ldap3 has some changes from version 1.x to 2.0.7.
+We need to take this into account here.
+
+            <= 1.4                           >= 2.0.7
+strategy:   POOLING_STRATEGY_ROUND_ROBIN    ROUND_ROBIN
+Connection: no receive_timeout              parameter reveice_timeout
+objectGUID
+returned as bytestring                      human readable string
+"""
+try:
+    # Old version <= 1.4
+    STRATEGY = ldap3.POOLING_STRATEGY_ROUND_ROBIN
+
+    def _oguid(rval):
+        uid = str(uuid.UUID(bytes_le=rval))
+        return uid
+
+except AttributeError:
+    # This is for ldap3 >= 2.0.7
+    STRATEGY = ldap3.ROUND_ROBIN
+
+    def _oguid(rval):
+        return rval
+
+
 
 def get_ad_timestamp_now():
     """
@@ -273,9 +299,9 @@ class IdResolver (UserIdResolver):
                 uid = attributes.get(uidtype)[0]
             else:
                 uid = attributes.get(uidtype)
-            # in case: fix the objectGUID
+            # in case: fix the objectGUID for ldap3 <= 1.4
             if uidtype == "objectGUID":
-                uid = str(uuid.UUID(bytes_le=uid))
+                uid = _oguid(uid)
         return uid
 
     @cache
@@ -385,7 +411,10 @@ class IdResolver (UserIdResolver):
                     elif type(ldap_v) == list and map_k not in ["mobile"]:
                         # All lists (except) mobile return the first value as
                         #  a string. Mobile is returned as a list
-                        ret[map_k] = ldap_v[0]
+                        if ldap_v:
+                            ret[map_k] = ldap_v[0]
+                        else:
+                            ret[map_k] = ""
                     else:
                         ret[map_k] = ldap_v
         return ret
@@ -914,6 +943,21 @@ class IdResolver (UserIdResolver):
                           check_names=True,
                           auto_referrals=False,
                           receive_timeout=5):
+        """
+        Create a connection to the LDAP server.
+
+        :param authtype:
+        :param server:
+        :param user:
+        :param password:
+        :param auto_bind:
+        :param client_strategy:
+        :param check_names:
+        :param auto_referrals:
+        :param receive_timeout: At the moment we do not use this,
+            since receive_timeout is not supported by ldap3 < 2.
+        :return:
+        """
 
         authentication = None
         if not user:
@@ -922,14 +966,13 @@ class IdResolver (UserIdResolver):
         if authtype == AUTHTYPE.SIMPLE:
             if not authentication:
                 authentication = ldap3.SIMPLE
-            l = ldap3.Connection(server,
-                                 user=user,
+            l = ldap3.Connection(server, user=user,
                                  password=to_utf8(password),
                                  auto_bind=auto_bind,
                                  client_strategy=client_strategy,
                                  authentication=authentication,
                                  check_names=check_names,
-                                 receive_timeout=receive_timeout,
+                                 # receive_timeout=receive_timeout,
                                  auto_referrals=auto_referrals)
         elif authtype == AUTHTYPE.NTLM:  # pragma: no cover
             if not authentication:
@@ -941,7 +984,7 @@ class IdResolver (UserIdResolver):
                                  client_strategy=client_strategy,
                                  authentication=authentication,
                                  check_names=check_names,
-                                 receive_timeout=receive_timeout,
+                                 # receive_timeout=receive_timeout,
                                  auto_referrals=auto_referrals)
         elif authtype == AUTHTYPE.SASL_DIGEST_MD5:  # pragma: no cover
             if not authentication:
@@ -954,7 +997,7 @@ class IdResolver (UserIdResolver):
                                  client_strategy=client_strategy,
                                  authentication=authentication,
                                  check_names=check_names,
-                                 receive_timeout=receive_timeout,
+                                 # receive_timeout=receive_timeout,
                                  auto_referrals=auto_referrals)
         else:
             raise Exception("Authtype {0!s} not supported".format(authtype))
