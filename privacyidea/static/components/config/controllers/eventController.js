@@ -57,8 +57,6 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
     $scope.getEvent = function () {
         ConfigFactory.getEvent($scope.eventid, function(event) {
             console.log("Fetching single event " + $scope.eventid);
-            console.log("=== Result value 1:");
-            console.log(event.result.value);
             // first we need to fetch the action-list:
             ConfigFactory.getHandlerActions(event.result.value[0].handlermodule,
                 function(actions){
