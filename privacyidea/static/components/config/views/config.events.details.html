@@ -67,14 +67,14 @@
                     </td>
                     <td>
                         <select class="form-control"
-                                ng-show="condition.type!=='multi' && condition.value"
+                                ng-if="condition.type!=='multi' && condition.value"
                                 ng-disabled="!conditionCheckBox[conditionname]"
                                 ng-required="condition.required && condition.value"
                                 ng-model="conds[conditionname]"
                                 ng-options="value for value in condition.value">
                         </select>
                         <div isteven-multi-select
-                             ng-show="condition.type==='multi'"
+                             ng-if="condition.type==='multi'"
                              ng-disabled="!conditionCheckBox[conditionname]"
                              input-model="condition.value"
                              output-model="conds[conditionname]"
@@ -85,7 +85,7 @@
                         <textarea type="text" rows="6"
                                   ng-disabled="!conditionCheckBox[conditionname]"
                                   ng-required="condition.required && !condition.value"
-                                  ng-show="condition.type==='text' && !condition.value"
+                                  ng-if="condition.type==='text' && !condition.value"
                                   class="form-control"
                                   ng-model="conds[conditionname]">
                         </textarea>
@@ -93,7 +93,7 @@
                                ng-disabled="!conditionCheckBox[conditionname]"
                                ng-required="condition.required && !condition.value"
                                ng-model="conds[conditionname]"
-                               ng-show="(condition.type==='str' && !condition.value)
+                               ng-if="(condition.type==='str' && !condition.value)
                             || condition.type==='regexp'">
                         <p class="help help-block"
                            ng-disabled="!conditionCheckBox[conditionname]">

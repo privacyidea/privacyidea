@@ -57,6 +57,8 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
     $scope.getEvent = function () {
         ConfigFactory.getEvent($scope.eventid, function(event) {
             console.log("Fetching single event " + $scope.eventid);
+            console.log("=== Result value 1:");
+            console.log(event.result.value);
             // first we need to fetch the action-list:
             ConfigFactory.getHandlerActions(event.result.value[0].handlermodule,
                 function(actions){
@@ -75,7 +77,12 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
                     $scope.opts = event.result.value[0].options;
                     // set bool options, which are marked as "1" to true
                     angular.forEach($scope.opts, function(value, opt){
-                        if ($scope.handlerOptions[$scope.form.action][opt].type === "bool" && value === "1") {
+                        // We need to check if $scope.form.action[opt]
+                        // exist. Since if the handler was changed, there
+                        // could be an option of another handler type, which
+                        // is not available anymore.
+                        if ($scope.handlerOptions[$scope.form.action][opt] &&
+                            $scope.handlerOptions[$scope.form.action][opt].type === "bool" && value === "1") {
                             $scope.opts[opt] = true;
                         }
                     });
