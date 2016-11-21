@@ -40,6 +40,14 @@ import logging
 log = logging.getLogger(__name__)
 
 
+class CONDITION(object):
+    """
+    Possible conditions
+    """
+    TOKEN_HAS_OWNER = "token_has_owner"
+    TOKEN_IS_ORPHANED = "token_is_orphaned"
+
+
 class BaseEventHandler(object):
     """
     An Eventhandler needs to return a list of actions, which it can handle.
@@ -112,6 +120,17 @@ class BaseEventHandler(object):
                           "reached."),
                 "value": ("True", "False")
             },
+            CONDITION.TOKEN_HAS_OWNER: {
+                "type": "str",
+                "desc": _("The token has a user assigned."),
+                "value": ("True", "False")
+            },
+            CONDITION.TOKEN_IS_ORPHANED: {
+                "type": "str",
+                "desc": _("The token has a user assigned, but the user does "
+                          "not exist in the userstore anymore."),
+                "value": ("True", "False")
+            },
             "serial": {
                 "type": "regexp",
                 "desc": _("Action is triggered, if the serial matches this "
@@ -168,9 +187,11 @@ class BaseEventHandler(object):
         token_obj_list = get_tokens(serial=serial)
         tokenrealms = []
         tokentype = None
+        token_obj = None
         if token_obj_list:
-            tokenrealms = token_obj_list[0].get_realms()
-            tokentype = token_obj_list[0].get_tokentype()
+            token_obj = token_obj_list[0]
+            tokenrealms = token_obj.get_realms()
+            tokentype = token_obj.get_tokentype()
 
         if "realm" in conditions:
             res = user.realm == conditions.get("realm")
@@ -192,15 +213,11 @@ class BaseEventHandler(object):
 
         # checking of max-failcounter state of the token
         if "token_locked" in conditions and res:
-            if serial:
-                # There is a distinct serial number
-                tokens = get_tokens(serial=serial)
-                if tokens:
-                    token_obj = tokens[0]
-                    locked = token_obj.get_failcount() >= \
-                             token_obj.get_max_failcount()
-                    res = (conditions.get("token_locked") in ["True", True]) \
-                          == locked
+            if token_obj:
+                locked = token_obj.get_failcount() >= \
+                         token_obj.get_max_failcount()
+                res = (conditions.get("token_locked") in ["True", True]) == \
+                      locked
             else:
                 # check all tokens of the user, if any token is maxfail
                 token_objects = get_tokens(user=user, maxfail=True)
@@ -225,6 +242,18 @@ class BaseEventHandler(object):
             serial_match = conditions.get("serial")
             if serial:
                 res = bool(re.match(serial_match, serial))
+
+        if CONDITION.TOKEN_HAS_OWNER in conditions and res and token_obj:
+            uid = token_obj.get_user_id()
+            check = conditions.get(CONDITION.TOKEN_HAS_OWNER)
+            if uid and check in ["True", True]:
+                res = True
+            elif not uid and check in ["False", False]:
+                res = True
+            else:
+                log.debug("Condition token_has_owner for token {0!r} "
+                          "failed.".format(token_obj))
+                res = False
 
         return res
 

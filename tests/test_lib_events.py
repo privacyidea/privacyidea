@@ -11,7 +11,7 @@ from privacyidea.lib.eventhandler.usernotification import (
     UserNotificationEventHandler, NOTIFY_TYPE)
 from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
                                                        ACTION_TYPE)
-from privacyidea.lib.eventhandler.base import BaseEventHandler
+from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
 from privacyidea.lib.smtpserver import add_smtpserver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from flask import Request, Response
@@ -20,7 +20,7 @@ from privacyidea.lib.event import (delete_event, set_event,
                                    EventConfiguration, get_handler_object)
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.realm import set_realm, delete_realm
-from privacyidea.lib.token import (init_token, remove_token,
+from privacyidea.lib.token import (init_token, remove_token, unassign_token,
                                    get_realms_of_token, get_tokens)
 from privacyidea.lib.user import create_user, User
 import json
@@ -646,6 +646,56 @@ class UserNotificationTestCase(MyTestCase):
              }
         )
         # Serial matches the regexp
+        self.assertEqual(r, True)
+
+    def test_10_check_conditions_token_has_owner(self):
+        uhandler = UserNotificationEventHandler()
+        # check if tokenrealm is contained
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1"},
+                                 headers={})
+
+        tok = init_token({"serial": "oath1234", "type": "spass"},
+                         user=User("cornelius", "realm1"))
+
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "serial": "oath1234"}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.TOKEN_HAS_OWNER: "True"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # Token has an owner
+        self.assertEqual(r, True)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.TOKEN_HAS_OWNER: "False"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # Token has an owner, but the condition is wrong
+        self.assertEqual(r, False)
+
+        # unassign token, no owner
+        unassign_token("oath1234")
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {
+                 "conditions": {CONDITION.TOKEN_HAS_OWNER: "False"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # The condition was, token-not-assigned and the token has no user
         self.assertEqual(r, True)
 
     @smtpmock.activate
