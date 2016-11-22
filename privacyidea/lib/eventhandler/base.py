@@ -224,24 +224,21 @@ class BaseEventHandler(object):
                 if not ','.join([tok.get_serial() for tok in token_objects]):
                     res = False
 
-        if "tokenrealm" in conditions and res:
-            if tokenrealms:
-                res = False
-                for trealm in tokenrealms:
-                    if trealm in conditions.get("tokenrealm").split(","):
-                        res = True
-                        break
-
-        if "tokentype" in conditions and res:
-            if tokentype:
-                res = False
-                if tokentype in conditions.get("tokentype").split(","):
+        if "tokenrealm" in conditions and res and tokenrealms:
+            res = False
+            for trealm in tokenrealms:
+                if trealm in conditions.get("tokenrealm").split(","):
                     res = True
+                    break
 
-        if "serial" in conditions and res:
+        if "tokentype" in conditions and res and tokentype:
+            res = False
+            if tokentype in conditions.get("tokentype").split(","):
+                res = True
+
+        if "serial" in conditions and res and serial:
             serial_match = conditions.get("serial")
-            if serial:
-                res = bool(re.match(serial_match, serial))
+            res = bool(re.match(serial_match, serial))
 
         if CONDITION.TOKEN_HAS_OWNER in conditions and res and token_obj:
             uid = token_obj.get_user_id()
