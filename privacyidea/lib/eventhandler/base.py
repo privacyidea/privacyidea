@@ -159,7 +159,14 @@ class BaseEventHandler(object):
         if user.is_empty() and serial:
             # maybe the user is empty, but a serial was passed.
             # Then we determine the user by the serial
-            user = get_token_owner(serial) or User()
+            try:
+                user = get_token_owner(serial) or User()
+            except Exception as exx:
+                user = User()
+                # This can happen for orphaned tokens.
+                log.info("Could not determine tokenowner for {0!s}. Maybe the "
+                         "user does not exist anymore.".format(serial))
+                log.debug(exx)
         return user
 
     def check_condition(self, options):
@@ -249,7 +256,20 @@ class BaseEventHandler(object):
                 res = True
             else:
                 log.debug("Condition token_has_owner for token {0!r} "
-                          "failed.".format(token_obj))
+                          "not fulfilled.".format(token_obj))
+                res = False
+
+        if CONDITION.TOKEN_IS_ORPHANED in conditions and res and token_obj:
+            uid = token_obj.get_user_id()
+            orphaned = uid and not self._get_tokenowner(request)
+            check = conditions.get(CONDITION.TOKEN_IS_ORPHANED)
+            if orphaned and check in ["True", True]:
+                res = True
+            elif not orphaned and check in ["False", False]:
+                res = True
+            else:
+                log.debug("Condition token_is_orphaned for token {0!r} not "
+                          "fulfilled.".format(token_obj))
                 res = False
 
         return res

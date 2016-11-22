@@ -698,6 +698,63 @@ class UserNotificationTestCase(MyTestCase):
         # The condition was, token-not-assigned and the token has no user
         self.assertEqual(r, True)
 
+    def test_10_check_conditions_token_is_orphaned(self):
+        uhandler = UserNotificationEventHandler()
+        serial = "orphaned1"
+        # check if tokenrealm is contained
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1"},
+                                 headers={})
+
+        tok = init_token({"serial": serial, "type": "spass"})
+        tok.token.resolver = self.resolvername1
+        tok.token.resolver_type = "passwd"
+        tok.token.user_id = "123981298"
+
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"serial": serial}
+        req.User = User()
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.TOKEN_IS_ORPHANED: "True"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # Token has an owner assigned, but this user does not exist
+        # -> token is orphaned
+        self.assertEqual(r, True)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {
+                 "conditions": {CONDITION.TOKEN_IS_ORPHANED: "False"}},
+             "request": req,
+             "response": resp
+             }
+        )
+
+        # Token is orphaned, but we check for non-orphaned tokens.
+        self.assertEqual(r, False)
+
+        tok.set_user(User("cornelius", "realm1"))
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {
+                 "conditions": {CONDITION.TOKEN_IS_ORPHANED: "False"}},
+             "request": req,
+             "response": resp
+             }
+        )
+
+        # Token is not orphaned
+        self.assertEqual(r, True)
+
+        remove_token(serial)
+
     @smtpmock.activate
     def test_11_extended_body_tags(self):
         # setup realms
