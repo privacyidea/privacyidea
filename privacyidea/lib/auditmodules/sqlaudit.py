@@ -65,84 +65,9 @@ except Exception as exx:
 
 metadata = MetaData()
 
-column_length = {"signature": 620,
-                 "action": 50,
-                 "serial": 20,
-                 "token_type": 12,
-                 "user": 20,
-                 "realm": 20,
-                 "resolver": 50,
-                 "administrator": 20,
-                 "action_detail": 50,
-                 "info": 50,
-                 "privacyidea_server": 255,
-                 "client": 50,
-                 "loglevel": 12,
-                 "clearance_level": 12}
-
-TABLE_NAME = 'pidea_audit'
-logentry = Table(TABLE_NAME,
-                 metadata,
-                 Column('id', Integer, primary_key=True),
-                 Column('date', DateTime),
-                 Column('signature', String(column_length.get("signature"))),
-                 Column('action', String(column_length.get("action"))),
-                 Column('success', Integer),
-                 Column('serial', String(column_length.get("serial"))),
-                 Column('token_type', String(column_length.get("token_type"))),
-                 Column('user', String(column_length.get("user"))),
-                 Column('realm', String(column_length.get("realm"))),
-                 Column('resolver', String(column_length.get("resolver"))),
-                 Column('administrator',
-                        String(column_length.get("administrator"))),
-                 Column('action_detail',
-                        String(column_length.get("action_detail"))),
-                 Column('info', String(column_length.get("info"))),
-                 Column('privacyidea_server',
-                        String(column_length.get("privacyidea_server"))),
-                 Column('client', String(column_length.get("client"))),
-                 Column('loglevel', String(column_length.get("loglevel"))),
-                 Column('clearance_level',
-                        String(column_length.get("clearance_level")))
-                 )
-
-
-class LogEntry(object):
-    def __init__(self,
-                 action="",
-                 success=0,
-                 serial="",
-                 token_type="",
-                 user="",
-                 realm="",
-                 resolver="",
-                 administrator="",
-                 action_detail="",
-                 info="",
-                 privacyidea_server="",
-                 client="",
-                 loglevel="default",
-                 clearance_level="default"
-                 ):
-        self.signature = ""
-        self.date = datetime.datetime.now()
-        self.action = action
-        self.success = success
-        self.serial = serial
-        self.token_type = token_type
-        self.user = user
-        self.realm = realm
-        self.resolver = resolver
-        self.administrator = administrator
-        self.action_detail = action_detail
-        self.info = info
-        self.privacyidea_server = privacyidea_server
-        self.client = client
-        self.loglevel = loglevel
-        self.clearance_level = clearance_level
-
-mapper(LogEntry, logentry)
-
+from privacyidea.models import audit_column_length as column_length
+from privacyidea.models import AUDIT_TABLE_NAME as TABLE_NAME
+from privacyidea.models import Audit as LogEntry
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -165,9 +90,8 @@ class Audit(AuditBase):
         
         # an Engine, which the Session will use for connection
         # resources
-        connect_string = self.config.get("PI_AUDIT_SQL_URI",
-                                        self.config.get(
-                                            "SQLALCHEMY_DATABASE_URI"))
+        connect_string = self.config.get("PI_AUDIT_SQL_URI", self.config.get(
+            "SQLALCHEMY_DATABASE_URI"))
         log.debug("using the connect string {0!s}".format(connect_string))
         try:
             pool_size = self.config.get("PI_AUDIT_POOL_SIZE", 20)
@@ -187,33 +111,6 @@ class Audit(AuditBase):
         # create a Session
         self.session = Session()
         self.session._model_changes = {}
-        # Create table and update schema
-        self._schema_init_and_update()
-
-    def _schema_init_and_update(self):
-        """
-        This method tries to create the database table and update the schema.
-
-        :return: None
-        """
-        try:
-            # Try to create the database
-            metadata.create_all(self.engine)
-        except OperationalError as exx:  # pragma: no cover
-            log.info("{0!r}".format(exx))
-
-        # Schema update
-        conn = self.engine.connect()
-        ctx = MigrationContext.configure(conn)
-        op = Operations(ctx)
-        try:
-            # Try to add resolver column
-            op.add_column(TABLE_NAME,
-                          Column('resolver',
-                                 String(length=column_length.get("resolver"))))
-        except Exception as exx:  # pragma: no cover
-            log.info("{0!r}".format(exx))
-
 
     def _truncate_data(self):
         """

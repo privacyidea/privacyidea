@@ -2225,7 +2225,7 @@ audit_column_length = {"signature": 620,
 AUDIT_TABLE_NAME = 'pidea_audit'
 
 
-class Audit(db.Model):
+class Audit(MethodsMixin, db.Model):
     """
     This class stores the Audit entries
     """
@@ -2251,3 +2251,36 @@ class Audit(db.Model):
     loglevel = db.Column(db.String(audit_column_length.get("loglevel")))
     clearance_level = db.Column(db.String(audit_column_length.get(
         "clearance_level")))
+
+    def __init__(self,
+                 action="",
+                 success=0,
+                 serial="",
+                 token_type="",
+                 user="",
+                 realm="",
+                 resolver="",
+                 administrator="",
+                 action_detail="",
+                 info="",
+                 privacyidea_server="",
+                 client="",
+                 loglevel="default",
+                 clearance_level="default"
+                 ):
+        self.signature = ""
+        self.date = datetime.now()
+        self.action = action
+        self.success = success
+        self.serial = serial
+        self.token_type = token_type
+        self.user = user
+        self.realm = realm
+        self.resolver = resolver
+        self.administrator = administrator
+        self.action_detail = action_detail
+        self.info = info
+        self.privacyidea_server = privacyidea_server
+        self.client = client
+        self.loglevel = loglevel
+        self.clearance_level = clearance_level
