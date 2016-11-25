@@ -322,6 +322,56 @@ class TokenEventTestCase(MyTestCase):
 
         remove_token(t.token.serial)
 
+    def test_06_set_description(self):
+        # setup realms
+        self.setUp_user_realms()
+
+        init_token({"serial": "SPASS01", "type": "spass"},
+                   User("cornelius", self.realm1))
+        t = get_tokens(serial="SPASS01")
+        uid = t[0].get_user_id()
+        self.assertEqual(uid, "1000")
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "SPASS01"
+
+        g.logged_in_user = {"user": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        # Now the initiailized token will be set in realm2
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options": {
+                       ACTION_TYPE.SET_DESCRIPTION: "New Description"
+                   }}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.SET_DESCRIPTION, options=options)
+        self.assertTrue(res)
+        # Check if the token was unassigned
+        t = get_tokens(serial="SPASS01")
+        self.assertEqual(t[0].token.description, "New Description")
+
+        remove_token("SPASS01")
+
 
 class UserNotificationTestCase(MyTestCase):
 

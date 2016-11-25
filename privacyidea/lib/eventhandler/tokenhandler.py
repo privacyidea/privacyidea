@@ -33,7 +33,7 @@ from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.token import get_token_types
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.token import (set_realms, remove_token, enable_token,
-                                   unassign_token, init_token)
+                                   unassign_token, init_token, set_description)
 from gettext import gettext as _
 import json
 import logging
@@ -51,6 +51,7 @@ class ACTION_TYPE(object):
     DISABLE = "disable"
     ENABLE = "enable"
     INIT = "enroll"
+    SET_DESCRIPTION = "set description"
 
 
 class TokenEventHandler(BaseEventHandler):
@@ -108,7 +109,15 @@ class TokenEventHandler(BaseEventHandler):
                              "description": _("Set the realm of the newly "
                                               "created token."),
                              "value": realm_list},
-                        }
+                        },
+                   ACTION_TYPE.SET_DESCRIPTION:
+                       {"description":
+                            {
+                                "type": "str",
+                                "description": _("The new description of the "
+                                                 "token.")
+                            }
+                       }
                    }
         return actions
 
@@ -135,10 +144,9 @@ class TokenEventHandler(BaseEventHandler):
                  g.audit_object.audit_data.get("serial")
 
         if action.lower() in [ACTION_TYPE.SET_TOKENREALM,
-                                         ACTION_TYPE.DELETE,
-                                         ACTION_TYPE.DISABLE,
-                                         ACTION_TYPE.ENABLE,
-                                         ACTION_TYPE.UNASSIGN]:
+                              ACTION_TYPE.SET_DESCRIPTION,
+                              ACTION_TYPE.DELETE, ACTION_TYPE.DISABLE,
+                              ACTION_TYPE.ENABLE, ACTION_TYPE.UNASSIGN]:
             if serial:
                 if action.lower() == ACTION_TYPE.SET_TOKENREALM:
                     realm = handler_options.get("realm")
@@ -160,6 +168,10 @@ class TokenEventHandler(BaseEventHandler):
                 elif action.lower() == ACTION_TYPE.UNASSIGN:
                     log.info("Unassign token {0!s}".format(serial))
                     unassign_token(serial)
+                elif action.lower() == ACTION_TYPE.SET_DESCRIPTION:
+                    log.info("Set description of token {0!s}".format(serial))
+                    set_description(serial, handler_options.get(
+                        ACTION_TYPE.SET_DESCRIPTION, ""))
             else:
                 log.info("Action {0!s} requires serial number. But no serial "
                          "number could be found in request.")
