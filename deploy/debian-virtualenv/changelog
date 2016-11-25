@@ -1,3 +1,9 @@
+privacyidea-venv (2.16.1-1) wheezy; urgency=low
+
+  * Fix compatibility with ldap3 version 2.0.7
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 25 Nov 2016 10:30:00 +0200
+
 privacyidea-venv (2.16-1) wheezy; urgency=low
 
   Featurs
