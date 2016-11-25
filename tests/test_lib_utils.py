@@ -5,7 +5,8 @@ from .base import MyTestCase
 
 from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
                                    check_time_in_range, parse_proxy,
-                                   check_proxy, reduce_realms, is_true)
+                                   check_proxy, reduce_realms, is_true,
+                                   parse_date)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 
@@ -175,3 +176,41 @@ class UtilsTestCase(MyTestCase):
         self.assertTrue(is_true("True"))
         self.assertTrue(is_true("TRUE"))
         self.assertTrue(is_true(True))
+
+    def test_07_parse_date(self):
+        d = parse_date("+12m")
+        self.assertTrue(datetime.now() < d)
+
+        d = parse_date(" +12m ")
+        self.assertTrue(datetime.now() < d)
+
+        d = parse_date(" +12H ")
+        self.assertTrue(datetime.now() + timedelta(hours=11) < d)
+
+        d = parse_date(" +12d ")
+        self.assertTrue(datetime.now() + timedelta(days=11) < d)
+
+        d = parse_date("")
+        self.assertTrue(datetime.now() >= d)
+
+        d = parse_date("2016/12/23")
+        self.assertEqual(d, datetime(2016, 12, 23))
+
+        d = parse_date("23.12.2016")
+        self.assertEqual(d, datetime(2016, 12, 23))
+
+        d = parse_date("2016/12/23 9:30pm")
+        self.assertEqual(d, datetime(2016, 12, 23, hour=21, minute=30))
+
+        d = parse_date("2016/12/23 10:30am")
+        self.assertEqual(d, datetime(2016, 12, 23, hour=10, minute=30))
+
+        d = parse_date("23.12.2016 21:30")
+        self.assertEqual(d, datetime(2016, 12, 23, hour=21, minute=30))
+
+        d = parse_date("23.12.2016 6:30")
+        self.assertEqual(d, datetime(2016, 12, 23, hour=6, minute=30))
+
+        # Non-matching date returns None
+        d = parse_date("23.12.16")
+        self.assertEqual(d, None)

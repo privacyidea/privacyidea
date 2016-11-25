@@ -30,10 +30,14 @@ You can attach token actions like enable, disable, delete, unassign,... of the
  * ...
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
-from privacyidea.lib.token import get_token_types
+from privacyidea.lib.token import (get_token_types, set_validity_period_end,
+                                   set_validity_period_start)
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.token import (set_realms, remove_token, enable_token,
                                    unassign_token, init_token, set_description)
+from privacyidea.lib.utils import parse_date
+from privacyidea.lib.tokenclass import DATE_FORMAT
+from datetime import datetime
 from gettext import gettext as _
 import json
 import logging
@@ -52,6 +56,16 @@ class ACTION_TYPE(object):
     ENABLE = "enable"
     INIT = "enroll"
     SET_DESCRIPTION = "set description"
+    SET_VALIDITY = "set validity"
+
+
+class VALIDITY(object):
+    """
+    Allowed validity options
+    """
+    START= "valid from"
+    END = "valid till"
+
 
 
 class TokenEventHandler(BaseEventHandler):
@@ -94,7 +108,6 @@ class TokenEventHandler(BaseEventHandler):
                    ACTION_TYPE.UNASSIGN: {},
                    ACTION_TYPE.DISABLE: {},
                    ACTION_TYPE.ENABLE: {},
-                   #"assign": {},
                    ACTION_TYPE.INIT:
                        {"tokentype":
                             {"type": "str",
@@ -102,7 +115,7 @@ class TokenEventHandler(BaseEventHandler):
                              "description": _("Token type to create"),
                              "value": get_token_types()
                              },
-                        #"user": {},
+                        # TODO: user of the newly enrolled token.
                         "realm":
                             {"type": "str",
                              "required": False,
@@ -117,6 +130,23 @@ class TokenEventHandler(BaseEventHandler):
                                 "description": _("The new description of the "
                                                  "token.")
                             }
+                       },
+                   ACTION_TYPE.SET_VALIDITY:
+                       {VALIDITY.START: {
+                           "type": "str",
+                           "description": _("The token will be valid starting "
+                                            "at the given date. Can be a fixed "
+                                            "date or an offset like +10m, "
+                                            "+24h, +7d.")
+                       },
+                        VALIDITY.END: {
+                            "type": "str",
+                            "description": _("The token will be valid until "
+                                             "the given date. Can be a fixed "
+                                             "date or an offset like +10m, "
+                                             "+24h, +7d.")
+                        }
+
                        }
                    }
         return actions
@@ -146,7 +176,8 @@ class TokenEventHandler(BaseEventHandler):
         if action.lower() in [ACTION_TYPE.SET_TOKENREALM,
                               ACTION_TYPE.SET_DESCRIPTION,
                               ACTION_TYPE.DELETE, ACTION_TYPE.DISABLE,
-                              ACTION_TYPE.ENABLE, ACTION_TYPE.UNASSIGN]:
+                              ACTION_TYPE.ENABLE, ACTION_TYPE.UNASSIGN,
+                              ACTION_TYPE.SET_VALIDITY]:
             if serial:
                 if action.lower() == ACTION_TYPE.SET_TOKENREALM:
                     realm = handler_options.get("realm")
@@ -171,7 +202,21 @@ class TokenEventHandler(BaseEventHandler):
                 elif action.lower() == ACTION_TYPE.SET_DESCRIPTION:
                     log.info("Set description of token {0!s}".format(serial))
                     set_description(serial, handler_options.get(
-                        ACTION_TYPE.SET_DESCRIPTION, ""))
+                        "description", ""))
+                elif action.lower() == ACTION_TYPE.SET_VALIDITY:
+                    log.info("Set validity period for token {0!s}".format(
+                        serial))
+                    start_date = handler_options.get(VALIDITY.START)
+                    end_date = handler_options.get(VALIDITY.END)
+                    if start_date:
+                         d = parse_date(start_date)
+                         set_validity_period_start(serial, None,
+                                                   d.strftime(DATE_FORMAT))
+                    if end_date:
+                        d = parse_date(end_date)
+                        set_validity_period_end(serial, None,
+                                                d.strftime(DATE_FORMAT))
+
             else:
                 log.info("Action {0!s} requires serial number. But no serial "
                          "number could be found in request.")

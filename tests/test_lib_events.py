@@ -10,7 +10,7 @@ from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.eventhandler.usernotification import (
     UserNotificationEventHandler, NOTIFY_TYPE)
 from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
-                                                       ACTION_TYPE)
+                                                       ACTION_TYPE, VALIDITY)
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
 from privacyidea.lib.smtpserver import add_smtpserver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
@@ -22,7 +22,9 @@ from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.token import (init_token, remove_token, unassign_token,
                                    get_realms_of_token, get_tokens)
+from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.user import create_user, User
+from datetime import datetime, timedelta
 import json
 
 
@@ -359,7 +361,7 @@ class TokenEventTestCase(MyTestCase):
                    "request": req,
                    "response": resp,
                    "handler_def": {"options": {
-                       ACTION_TYPE.SET_DESCRIPTION: "New Description"
+                       "description": "New Description"
                    }}
                    }
 
@@ -369,6 +371,62 @@ class TokenEventTestCase(MyTestCase):
         # Check if the token was unassigned
         t = get_tokens(serial="SPASS01")
         self.assertEqual(t[0].token.description, "New Description")
+
+        remove_token("SPASS01")
+
+    def test_06_set_validity(self):
+        # setup realms
+        self.setUp_user_realms()
+
+        init_token({"serial": "SPASS01", "type": "spass"},
+                   User("cornelius", self.realm1))
+        t = get_tokens(serial="SPASS01")
+        uid = t[0].get_user_id()
+        self.assertEqual(uid, "1000")
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "SPASS01"
+
+        g.logged_in_user = {"user": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        # The token will be set to be valid in 10 minutes for 10 days
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options": {VALIDITY.START: "+10m",
+                                               VALIDITY.END: "+10d"}
+                   }
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.SET_VALIDITY, options=options)
+        self.assertTrue(res)
+        # Check if the token has the correct validity period
+        t = get_tokens(serial="SPASS01")
+        end = t[0].get_validity_period_end()
+        start = t[0].get_validity_period_start()
+        d_end = datetime.strptime(end, DATE_FORMAT)
+        d_start = datetime.strptime(start, DATE_FORMAT)
+        self.assertTrue(datetime.now() + timedelta(minutes=9) < d_start)
+        self.assertTrue(datetime.now() + timedelta(days=9) < d_end)
+        self.assertTrue(datetime.now() + timedelta(days=11) > d_end)
 
         remove_token("SPASS01")
 

@@ -359,6 +359,59 @@ def parse_timelimit(limit):
     return count, td
 
 
+def parse_date(date_string):
+    """
+    Parses a string like
+
+      +30d
+      +12h
+      +10m
+
+    and returns a datetime object that is 30 days, 12 hours or 10 minutes
+    in the future.
+
+    It can also parse fixed date_strings like
+
+      23.12.2016 23:30
+      23.12.2016
+      2016/12/23 11:30pm
+      2016/12/23
+
+    :param date_string: a string containing a date or an offset
+    :return: datetime object
+    """
+    date_string = date_string.strip()
+    if date_string == "":
+        return datetime.now()
+    if date_string.startswith("+"):
+        # We are using an offset
+        delta_specifier = date_string[-1].lower()
+        delta_amount = int(date_string[1:-1])
+        if delta_specifier == "m":
+            td = timedelta(minutes=delta_amount)
+        elif delta_specifier == "h":
+            td = timedelta(hours=delta_amount)
+        elif delta_specifier == "d":
+            td = timedelta(days=delta_amount)
+        else:
+            td = timedelta()
+        return datetime.now() + td
+
+    # check 2016/12/23, 23.12.2016 and including hour and minutes.
+    d = None
+    for date_format in ["%Y/%m/%d", "%d.%m.%Y",
+                        "%Y/%m/%d %I:%M%p",
+                        "%d.%m.%Y %H:%M"]:
+        try:
+            d = datetime.strptime(date_string, date_format)
+            break
+        except ValueError:
+            log.debug("Dateformat {1!s} did not match date {0!s}".format(
+                date_string, date_format))
+
+    return d
+
+
 def parse_proxy(proxy_settings):
     """
     This parses the string of the system settings
