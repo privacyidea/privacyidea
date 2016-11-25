@@ -1124,3 +1124,45 @@ class UserNotificationTestCase(MyTestCase):
         delete_realm("notify_realm")
         delete_resolver("notify_resolver")
         remove_token("SPNOTIFY")
+
+    def test_16_check_conditions_user_num_tokens(self):
+        # prepare
+        user = User("cornelius", "realm1")
+        remove_token(user=user)
+        uhandler = UserNotificationEventHandler()
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1"},
+                                 headers={})
+
+        tok = init_token({"serial": "oath1234", "type": "spass"},
+                         user=user)
+
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "serial": "oath1234"}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+        # Do checking
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.USER_TOKEN_NUMBER: "1"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # The user has one token
+        self.assertEqual(r, True)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.USER_TOKEN_NUMBER: "2"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # The user has not two tokens!
+        self.assertEqual(r, False)
+
+        remove_token("oath1234")

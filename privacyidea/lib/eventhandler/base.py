@@ -46,6 +46,7 @@ class CONDITION(object):
     """
     TOKEN_HAS_OWNER = "token_has_owner"
     TOKEN_IS_ORPHANED = "token_is_orphaned"
+    USER_TOKEN_NUMBER = "user_token_number"
 
 
 class BaseEventHandler(object):
@@ -135,6 +136,11 @@ class BaseEventHandler(object):
                 "type": "regexp",
                 "desc": _("Action is triggered, if the serial matches this "
                           "regular expression.")
+            },
+            CONDITION.USER_TOKEN_NUMBER: {
+                "type": "str",
+                "desc": _("Action is triggered, if the user has this number "
+                          "of tokens assigned.")
             }
         }
         return cond
@@ -261,7 +267,7 @@ class BaseEventHandler(object):
 
         if CONDITION.TOKEN_IS_ORPHANED in conditions and res and token_obj:
             uid = token_obj.get_user_id()
-            orphaned = uid and not self._get_tokenowner(request)
+            orphaned = uid and not user
             check = conditions.get(CONDITION.TOKEN_IS_ORPHANED)
             if orphaned and check in ["True", True]:
                 res = True
@@ -271,6 +277,10 @@ class BaseEventHandler(object):
                 log.debug("Condition token_is_orphaned for token {0!r} not "
                           "fulfilled.".format(token_obj))
                 res = False
+
+        if CONDITION.USER_TOKEN_NUMBER in conditions and res and user:
+            num_tokens = get_tokens(user=user, count=True)
+            res = num_tokens == int(conditions.get(CONDITION.USER_TOKEN_NUMBER))
 
         return res
 
