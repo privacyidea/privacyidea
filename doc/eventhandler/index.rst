@@ -69,3 +69,4 @@ Available Handler Modules
    :maxdepth: 1
 
    usernotification
+   tokenhandler
