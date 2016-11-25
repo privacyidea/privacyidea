@@ -9,6 +9,9 @@ from privacyidea.lib.audit import getAudit, search
 from privacyidea.lib.auditmodules.sqlaudit import column_length
 import datetime
 import time
+from privacyidea.models import db
+from privacyidea.app import create_app
+
 
 PUBLIC = "tests/testdata/public.pem"
 PRIVATE = "tests/testdata/private.pem"
@@ -18,26 +21,11 @@ class AuditTestCase(MyTestCase):
     Test the Audit module
     """
 
-    @classmethod
-    def setUpClass(cls):
-        pass
-
-    @classmethod
-    def tearDownClass(cls):
-        pass
-
     def setUp(self):
-        pass
-        self.config = {"PI_AUDIT_MODULE":
-                       "privacyidea.lib.auditmodules.sqlaudit",
-                       "PI_AUDIT_KEY_PRIVATE": "tests/testdata/private.pem",
-                       "PI_AUDIT_KEY_PUBLIC": "tests/testdata/public.pem",
-                       "PI_AUDIT_SQL_URI": "sqlite://"}
-        self.Audit = getAudit(self.config)
+        self.Audit = getAudit(self.app.config)
         self.Audit.clear()
 
     def tearDown(self):
-        # Stop patching ldap.initialize and reset state.
         pass
 
     def test_00_write_audit(self):
@@ -139,7 +127,7 @@ class AuditTestCase(MyTestCase):
         self.assertEqual(r, 1)
 
     def test_03_lib_search(self):
-        res = search(self.config, {"page": 1, "page_size": 10, "sortorder":
+        res = search(self.app.config, {"page": 1, "page_size": 10, "sortorder":
             "asc"})
         self.assertTrue(res.get("count") == 0, res)
 
