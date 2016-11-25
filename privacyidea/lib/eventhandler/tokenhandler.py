@@ -115,7 +115,10 @@ class TokenEventHandler(BaseEventHandler):
                              "description": _("Token type to create"),
                              "value": get_token_types()
                              },
-                        # TODO: user of the newly enrolled token.
+                        "user":
+                            {"type": "bool",
+                             "description": _("Assign token to user in "
+                                              "request or tokenowner.")},
                         "realm":
                             {"type": "str",
                              "required": False,
@@ -223,9 +226,14 @@ class TokenEventHandler(BaseEventHandler):
 
         if action.lower() == ACTION_TYPE.INIT:
             log.info("Initializing new token")
+            if handler_options.get("user") in ["1", 1, True]:
+                user = self._get_tokenowner(request)
+            else:
+                user = None
             t = init_token({"type": handler_options.get("tokentype"),
                             "genkey": 1,
-                            "realm": handler_options.get("realm", "")})
+                            "realm": handler_options.get("realm", "")},
+                           user=user)
             log.info("New token {0!s} enrolled.".format(t.token.serial))
 
         return ret

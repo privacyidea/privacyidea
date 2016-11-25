@@ -304,23 +304,26 @@ class TokenEventTestCase(MyTestCase):
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"serial": "SPASS01", "type": "spass"}
+        req.User = User("cornelius", self.realm1)
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        # Now the initiailized token will be set in realm2
+        # A new paper token will be created and assigned to cornelius
         options = {"g": g,
                    "request": req,
                    "response": resp,
                    "handler_def": {"options":
-                                       {"tokentype": "paper"}}
+                                       {"tokentype": "paper",
+                                        "user": "1"}}
                    }
 
         t_handler = TokenEventHandler()
         res = t_handler.do(ACTION_TYPE.INIT, options=options)
         self.assertTrue(res)
-        # Check if the token was unassigned
+        # Check if the token was created and assigned
         t = get_tokens(tokentype="paper")[0]
         self.assertTrue(t)
+        self.assertEqual(t.user, User("cornelius", self.realm1))
 
         remove_token(t.token.serial)
 
@@ -374,7 +377,7 @@ class TokenEventTestCase(MyTestCase):
 
         remove_token("SPASS01")
 
-    def test_06_set_validity(self):
+    def test_07_set_validity(self):
         # setup realms
         self.setUp_user_realms()
 
