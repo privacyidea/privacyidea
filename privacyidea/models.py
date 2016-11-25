@@ -2204,3 +2204,50 @@ class Subscription(MethodsMixin, db.Model):
             if getattr(self, attr) is not None:
                 d[attr] = getattr(self, attr)
         return d
+
+
+### Audit
+
+audit_column_length = {"signature": 620,
+                       "action": 50,
+                       "serial": 20,
+                       "token_type": 12,
+                       "user": 20,
+                       "realm": 20,
+                       "resolver": 50,
+                       "administrator": 20,
+                       "action_detail": 50,
+                       "info": 50,
+                       "privacyidea_server": 255,
+                       "client": 50,
+                       "loglevel": 12,
+                       "clearance_level": 12}
+AUDIT_TABLE_NAME = 'pidea_audit'
+
+
+class Audit(db.Model):
+    """
+    This class stores the Audit entries
+    """
+    __tablename__ = AUDIT_TABLE_NAME
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    date = db.Column(db.DateTime)
+    signature = db.Column(db.String(audit_column_length.get("signature")))
+    action = db.Column(db.String(audit_column_length.get("action")))
+    success = db.Column(db.Integer)
+    serial = db.Column(db.String(audit_column_length.get("serial")))
+    token_type = db.Column(db.String(audit_column_length.get("token_type")))
+    user = db.Column(db.String(audit_column_length.get("user")))
+    realm = db.Column(db.String(audit_column_length.get("realm")))
+    resolver = db.Column(db.String(audit_column_length.get("resolver")))
+    administrator = db.Column(
+        db.String(audit_column_length.get("administrator")))
+    action_detail = db.Column(
+        db.String(audit_column_length.get("action_detail")))
+    info = db.Column(db.String(audit_column_length.get("info")))
+    privacyidea_server = db.Column(
+        db.String(audit_column_length.get("privacyidea_server")))
+    client = db.Column(db.String(audit_column_length.get("client")))
+    loglevel = db.Column(db.String(audit_column_length.get("loglevel")))
+    clearance_level = db.Column(db.String(audit_column_length.get(
+        "clearance_level")))
