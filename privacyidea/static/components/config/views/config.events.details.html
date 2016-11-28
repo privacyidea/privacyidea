@@ -1,6 +1,24 @@
 <h2 class="form-signin-heading"
     ng-show="eventid">
     <translate>Edit Event Handler {{ eventid }}</translate>
+
+    <span ng-show="checkRight('eventhandling_write')">
+    <button class="btn btn-danger"
+            ng-click="disableEvent(eventid)"
+            ng-show="form.active" translate>
+        Disable
+    </button>
+    <button class="btn btn-success"
+            ng-click="enableEvent(eventid)"
+            ng-show="!form.active" translate>
+        Enable
+    </button>
+    <button class="btn btn-danger"
+        ng-click="delEvent(eventid)">
+        <span class="glyphicon glyphicon-trash"></span>
+        <span translate>Delete</span>
+    </button>
+    </span>
 </h2>
 
 <h2 class="form-signin-heading"
@@ -11,7 +29,7 @@
 
     <div class="form-group">
         <label for="name" class="col-sm-3 control-label" translate>
-            Name or Description</label>
+            Description</label>
         <div class="col-sm-6">
             <input id="name" class="form-control"
                    ng-model="form.name"

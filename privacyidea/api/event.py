@@ -30,7 +30,7 @@ from flask import (Blueprint,
                    request)
 from lib.utils import getParam, send_result
 from ..lib.log import log_with
-from ..lib.event import set_event, delete_event
+from ..lib.event import set_event, delete_event, enable_event
 from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
@@ -146,6 +146,36 @@ def set_eventhandling():
     g.audit_object.log({"success": True,
                         "info": res})
     return send_result(res)
+
+
+@eventhandling_blueprint.route('/enable/<eventid>', methods=['POST'])
+@log_with(log)
+@prepolicy(check_base_action, request, ACTION.EVENTHANDLINGWRITE)
+def enable_event_api(eventid):
+    """
+    Enable a given event by its id.
+
+    :jsonparam eventid: ID of the event
+    :return: ID in the database
+    """
+    p = enable_event(eventid, True)
+    g.audit_object.log({"success": True})
+    return send_result(p)
+
+
+@eventhandling_blueprint.route('/disable/<eventid>', methods=['POST'])
+@log_with(log)
+@prepolicy(check_base_action, request, ACTION.EVENTHANDLINGWRITE)
+def disable_event_api(eventid):
+    """
+    Disable a given policy by its name.
+
+    :jsonparam name: The name of the policy
+    :return: ID in the database
+    """
+    p = enable_event(eventid, False)
+    g.audit_object.log({"success": True})
+    return send_result(p)
 
 
 @eventhandling_blueprint.route('/<eid>', methods=['DELETE'])

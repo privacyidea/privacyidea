@@ -1503,7 +1503,8 @@ class EventHandler(MethodsMixin, db.Model):
     """
     __tablename__ = 'eventhandler'
     id = db.Column(db.Integer, primary_key=True, nullable=False)
-    name = db.Column(db.Unicode(64), unique=True, nullable=False)
+    # in fact the name is a description
+    name = db.Column(db.Unicode(64), unique=False, nullable=True)
     active = db.Column(db.Boolean, default=True)
     ordering = db.Column(db.Integer, nullable=False, default=0)
     # This is the name of the event in the code

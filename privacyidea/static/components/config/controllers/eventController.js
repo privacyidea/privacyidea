@@ -18,13 +18,13 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("eventController", function($scope, $stateParams,
+myApp.controller("eventController", function($scope, $stateParams, $state,
                                              $location, ConfigFactory) {
     if ($location.path() === "/config/events") {
         $location.path("/config/events/list");
     }
 
-    // Get all events
+    // define functions
     $scope.getEvents = function () {
         ConfigFactory.getEvents(function(data) {
             $scope.events = data.result.value;
@@ -38,8 +38,23 @@ myApp.controller("eventController", function($scope, $stateParams,
         ConfigFactory.delEvent(eventid, function(data) {
             console.log(data);
             $scope.getEvents();
+            $state.go("config.events.list");
         });
     };
+
+    $scope.enableEvent= function (eventid) {
+        ConfigFactory.enableEvent(eventid, function () {
+            $scope.getEvents();
+        });
+    };
+
+    $scope.disableEvent = function (eventid) {
+        ConfigFactory.disableEvent(eventid, function () {
+            $scope.getEvents();
+        });
+    };
+
+    // Get all events
     $scope.getEvents();
 });
 
@@ -82,6 +97,18 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
                     // get the available conditions
                     $scope.getHandlerConditions();
                 });
+        });
+    };
+
+    $scope.enableEvent= function (eventid) {
+        ConfigFactory.enableEvent(eventid, function () {
+            $scope.getEvent();
+        });
+    };
+
+    $scope.disableEvent = function (eventid) {
+        ConfigFactory.disableEvent(eventid, function () {
+            $scope.getEvent();
         });
     };
 

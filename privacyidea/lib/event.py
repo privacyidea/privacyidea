@@ -21,6 +21,7 @@
 #
 #
 from privacyidea.models import EventHandler, EventHandlerOption, db
+from privacyidea.lib.error import ParameterError
 import functools
 import logging
 log = logging.getLogger(__name__)
@@ -96,6 +97,23 @@ def get_handler_object(handlername):
     if handlername == "UserNotification":
         h_obj = UserNotificationEventHandler()
     return h_obj
+
+
+def enable_event(event_id, enable=True):
+    """
+    Enable or disable the and event
+    :param event_id: ID of the event
+    :return:
+    """
+    ev = EventHandler.query.filter_by(id=event_id).first()
+    if not ev:
+        raise ParameterError("The event with id '{0!s}' does not "
+                             "exist".format(event_id))
+
+    # Update the event
+    ev.active = enable
+    r = ev.save()
+    return r
 
 
 def set_event(name, event, handlermodule, action, conditions=None,
