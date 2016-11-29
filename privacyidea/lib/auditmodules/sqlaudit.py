@@ -158,16 +158,15 @@ class Audit(AuditBase):
         filter_condition = and_(*conditions)
         return filter_condition
 
-    def get_total(self, param, AND=True, display_error=True):
+    def get_total(self, param, AND=True, display_error=True, timelimit=None):
         """
         This method returns the total number of audit entries
         in the audit store
         """
         count = 0
-
         # if param contains search filters, we build the search filter
         # to only return the number of those entries
-        filter_condition = self._create_filter(param)
+        filter_condition = self._create_filter(param, timelimit=timelimit)
         
         try:
             count = self.session.query(LogEntry.id)\
@@ -385,7 +384,7 @@ class Audit(AuditBase):
         page_size = int(page_size)
         paging_object = Paginate()
         paging_object.page = page
-        paging_object.total = self.get_total(search_dict)
+        paging_object.total = self.get_total(search_dict, timelimit=timelimit)
         if page > 1:
             paging_object.prev = page - 1
         if paging_object.total > (page_size * page):
