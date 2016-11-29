@@ -310,7 +310,7 @@ def parse_timedelta(delta):
     """
     This parses a string that contains a time delta for the last_auth policy
     in the format like
-    1h, 1d, 1y.
+    1m (minute), 1h, 1d, 1y.
 
     :param delta: The time delta
     :type delta: basestring
@@ -318,14 +318,17 @@ def parse_timedelta(delta):
     """
     delta = delta.strip().replace(" ", "")
     time_specifier = delta[-1].lower()
-    if time_specifier not in ["h", "d", "y"]:
+    if time_specifier not in ["m", "h", "d", "y"]:
         raise Exception("Invalid time specifier")
     time = int(delta[:-1])
-    td = timedelta(hours=time)
-    if time_specifier == "d":
+    if time_specifier == "h":
+        td = timedelta(hours=time)
+    elif time_specifier == "d":
         td = timedelta(days=time)
-    if time_specifier == "y":
+    elif time_specifier == "y":
         td = timedelta(days=time*365)
+    else:
+        td = timedelta(minutes=time)
 
     return td
 
