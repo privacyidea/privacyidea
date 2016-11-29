@@ -19,7 +19,6 @@ privacyIDEA knows the scopes:
    authorization
    enrollment
    webui
-   audit
    gettoken
    register
 

@@ -195,6 +195,20 @@ type: bool
 This action allows the user to view and search the audit log
 for actions with his own tokens.
 
+To learn more about the audit log, see :ref:`audit`.
+
+auditlog_age
+~~~~~~~~~~~~
+
+type: string
+
+This limits the maximum age of displayed audit entries. Older entries are not
+remove from the audit table but the user is simply not allowed to
+view older entries.
+
+Can be something like 10d (ten days), 3m (three months) or 2y (two years).
+
+
 updateuser
 ~~~~~~~~~~
 
