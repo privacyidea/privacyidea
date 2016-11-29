@@ -190,7 +190,8 @@ class EventConfiguration(object):
         :param eventname:
         :return:
         """
-        eventlist = [e for e in self.eventlist if eventname in e.get("event")]
+        eventlist = [e for e in self.eventlist if (
+            eventname in e.get("event") and e.get("active"))]
         return eventlist
 
     def get_event(self, eventid):

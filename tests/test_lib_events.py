@@ -15,7 +15,8 @@ from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from flask import Request, Response
 from werkzeug.test import EnvironBuilder
 from privacyidea.lib.event import (delete_event, set_event,
-                                   EventConfiguration, get_handler_object)
+                                   EventConfiguration, get_handler_object,
+                                   enable_event)
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.token import (init_token, remove_token)
@@ -56,10 +57,30 @@ class EventHandlerLibTestCase(MyTestCase):
         event_config = EventConfiguration()
         self.assertEqual(len(event_config.events), 1)
 
-        r = delete_event(2)
+        # Now we have one event left.
+        events = event_config.get_handled_events("token_init")
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0].get("name"), "name2")
+        n_eid = events[0].get("id")
+        # Disable this event in the database
+        enable_event(n_eid, False)
+        # Reread event config from the database
+        event_config = EventConfiguration()
+        events = event_config.get_handled_events("token_init")
+        self.assertEqual(len(events), 0)
+        # Enable the event in the database again
+        enable_event(n_eid, True)
+        # Reread event config from the database
+        event_config = EventConfiguration()
+        events = event_config.get_handled_events("token_init")
+        self.assertEqual(len(events), 1)
+
+        # Cleanup
+        r = delete_event(n_eid)
         self.assertTrue(r)
         event_config = EventConfiguration()
         self.assertEqual(len(event_config.events), 0)
+
 
     def test_02_get_handler_object(self):
         h_obj = get_handler_object("UserNotification")
