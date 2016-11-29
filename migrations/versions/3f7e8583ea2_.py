@@ -1,14 +1,14 @@
 """Add columns name and active to event handlers
 
 Revision ID: 3f7e8583ea2
-Revises: 37e6b49fc686
+Revises: 22558d9f3178
 Create Date: 2016-11-16 16:37:27.342209
 
 """
 
 # revision identifiers, used by Alembic.
 revision = '3f7e8583ea2'
-down_revision = '37e6b49fc686'
+down_revision = '22558d9f3178'
 
 from alembic import op
 import sqlalchemy as sa
