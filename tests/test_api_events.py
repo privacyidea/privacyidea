@@ -223,3 +223,95 @@ class APIEventsTestCase(MyTestCase):
             self.assertTrue("logged_in_user" in result.get("value"))
             self.assertTrue("result_value" in result.get("value"))
             detail = json.loads(res.data).get("detail")
+
+    def test_06_test_enable_disable(self):
+        # create an event configuration
+        param = {
+            "name": "Send an email via themis",
+            "event": "token_init",
+            "action": "sendmail",
+            "handlermodule": "UserNotification",
+            "conditions": '{"blabla": "yes"}',
+            "option.emailconfig": "themis",
+            "option.2": "value2"
+        }
+        with self.app.test_request_context('/event',
+                                           data=param,
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("value"), 1)
+
+        # list event with options
+        with self.app.test_request_context('/event',
+                                           method='GET',
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            event_list = result.get("value")
+            self.assertEqual(len(event_list), 1)
+            self.assertEqual(event_list[0].get("active"), True)
+
+        # disable event
+        with self.app.test_request_context('/event/disable/1',
+                                           method='POST',
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        with self.app.test_request_context('/event',
+                                           method='GET',
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            event_list = result.get("value")
+            self.assertEqual(len(event_list), 1)
+            self.assertEqual(event_list[0].get("active"), False)
+
+        # Enable event
+        with self.app.test_request_context('/event/enable/1',
+                                           method='POST',
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        with self.app.test_request_context('/event',
+                                           method='GET',
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            event_list = result.get("value")
+            self.assertEqual(len(event_list), 1)
+            self.assertEqual(event_list[0].get("active"), True)
+
+        # delete event
+        with self.app.test_request_context('/event/1',
+                                           method='DELETE',
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("value"), 1)
+
+        # list empty events
+        with self.app.test_request_context('/event',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("value"), [])

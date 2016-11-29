@@ -81,7 +81,6 @@ class EventHandlerLibTestCase(MyTestCase):
         event_config = EventConfiguration()
         self.assertEqual(len(event_config.events), 0)
 
-
     def test_02_get_handler_object(self):
         h_obj = get_handler_object("UserNotification")
         self.assertEqual(type(h_obj), UserNotificationEventHandler)
