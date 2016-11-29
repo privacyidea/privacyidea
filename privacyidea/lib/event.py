@@ -21,6 +21,7 @@
 #
 #
 from privacyidea.models import EventHandler, EventHandlerOption, db
+from privacyidea.lib.error import ParameterError
 import functools
 import logging
 log = logging.getLogger(__name__)
@@ -101,13 +102,31 @@ def get_handler_object(handlername):
     return h_obj
 
 
-def set_event(event, handlermodule, action, conditions=None,
-              ordering=0, options=None, id=None):
+def enable_event(event_id, enable=True):
+    """
+    Enable or disable the and event
+    :param event_id: ID of the event
+    :return:
+    """
+    ev = EventHandler.query.filter_by(id=event_id).first()
+    if not ev:
+        raise ParameterError("The event with id '{0!s}' does not "
+                             "exist".format(event_id))
+
+    # Update the event
+    ev.active = enable
+    r = ev.save()
+    return r
+
+
+def set_event(name, event, handlermodule, action, conditions=None,
+              ordering=0, options=None, id=None, active=True):
 
     """
     Set an event handling configuration. This writes an entry to the
     database eventhandler.
 
+    :param name: The name of the event definition
     :param event: The name of the event to react on. Can be a single event or
         a comma separated list.
     :type event: basestring
@@ -133,8 +152,9 @@ def set_event(event, handlermodule, action, conditions=None,
     conditions = conditions or {}
     if id:
         id = int(id)
-    event = EventHandler(event, handlermodule, action, conditions=conditions,
-                 ordering=ordering, options=options, id=id)
+    event = EventHandler(name, event, handlermodule, action,
+                         conditions=conditions, ordering=ordering,
+                         options=options, id=id, active=active)
     return event.id
 
 
@@ -173,7 +193,8 @@ class EventConfiguration(object):
         :param eventname:
         :return:
         """
-        eventlist = [e for e in self.eventlist if eventname in e.get("event")]
+        eventlist = [e for e in self.eventlist if (
+            eventname in e.get("event") and e.get("active"))]
         return eventlist
 
     def get_event(self, eventid):

@@ -17,7 +17,8 @@ from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from flask import Request, Response
 from werkzeug.test import EnvironBuilder
 from privacyidea.lib.event import (delete_event, set_event,
-                                   EventConfiguration, get_handler_object)
+                                   EventConfiguration, get_handler_object,
+                                   enable_event)
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.token import (init_token, remove_token, unassign_token,
@@ -31,13 +32,13 @@ import json
 class EventHandlerLibTestCase(MyTestCase):
 
     def test_01_create_update_delete(self):
-        eid = set_event("token_init", "UserNotification", "sendmail",
-                      conditions={"bla": "yes"},
-                      options={"emailconfig": "themis"})
+        eid = set_event("name1", "token_init", "UserNotification", "sendmail",
+                        conditions={"bla": "yes"},
+                        options={"emailconfig": "themis"})
         self.assertEqual(eid, 1)
 
         # create a new event!
-        r = set_event("token_init, token_assign",
+        r = set_event("name2", "token_init, token_assign",
                       "UserNotification", "sendmail",
                       conditions={},
                       options={"emailconfig": "themis",
@@ -45,7 +46,7 @@ class EventHandlerLibTestCase(MyTestCase):
 
         self.assertEqual(r, 2)
         # Update the first event
-        r = set_event("token_init, token_assign",
+        r = set_event("name1", "token_init, token_assign",
                       "UserNotification", "sendmail",
                       conditions={},
                       options={"emailconfig": "themis",
@@ -61,7 +62,26 @@ class EventHandlerLibTestCase(MyTestCase):
         event_config = EventConfiguration()
         self.assertEqual(len(event_config.events), 1)
 
-        r = delete_event(2)
+        # Now we have one event left.
+        events = event_config.get_handled_events("token_init")
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0].get("name"), "name2")
+        n_eid = events[0].get("id")
+        # Disable this event in the database
+        enable_event(n_eid, False)
+        # Reread event config from the database
+        event_config = EventConfiguration()
+        events = event_config.get_handled_events("token_init")
+        self.assertEqual(len(events), 0)
+        # Enable the event in the database again
+        enable_event(n_eid, True)
+        # Reread event config from the database
+        event_config = EventConfiguration()
+        events = event_config.get_handled_events("token_init")
+        self.assertEqual(len(events), 1)
+
+        # Cleanup
+        r = delete_event(n_eid)
         self.assertTrue(r)
         event_config = EventConfiguration()
         self.assertEqual(len(event_config.events), 0)
@@ -1212,7 +1232,8 @@ class UserNotificationTestCase(MyTestCase):
         self.assertTrue(r)
 
         # create notification handler
-        eid = set_event("token_unassign", "UserNotification", "sendmail")
+        eid = set_event("This definition sends emails", "token_unassign",
+                        "UserNotification", "sendmail")
         self.assertTrue(eid)
 
         # delete the user

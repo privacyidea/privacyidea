@@ -98,6 +98,20 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
             ).success(callback
             ).error(error_func);
         },
+        enableEvent: function(eventId, callback) {
+            $http.post(eventUrl + "/enable/" + eventId, {},
+                {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}}
+            ).success(callback
+            ).error(error_func);
+        },
+        disableEvent: function(eventId, callback) {
+            $http.post(eventUrl + "/disable/" + eventId, {},
+                {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}}
+            ).success(callback
+            ).error(error_func);
+        },
         setEvent: function(params, callback) {
             $http.post(eventUrl, params, {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken(),
