@@ -206,7 +206,7 @@ This limits the maximum age of displayed audit entries. Older entries are not
 remove from the audit table but the user is simply not allowed to
 view older entries.
 
-Can be something like 10d (ten days), 3m (three months) or 2y (two years).
+Can be something like 10m (10 minutes), 10h (10 hours) or 10d (ten days).
 
 
 updateuser
