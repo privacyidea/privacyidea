@@ -5,6 +5,8 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2016-11-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add timelimit, to only display recent entries
 #  2014-10-17 Fix the empty result problem
 #             Cornelius Kölbel, <cornelius@privacyidea.org>
 #
@@ -51,6 +53,7 @@ storage.
 import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.log import log_with
+from privacyidea.lib.utils import parse_timedelta
 
 
 @log_with(log)
@@ -109,6 +112,7 @@ def search(config, param=None, user=None):
     sortorder = "desc"
     page_size = 15
     page = 1
+    timelimit = None
     # The filtering dictionary
     param = param or {}
     # special treatment for:
@@ -122,9 +126,12 @@ def search(config, param=None, user=None):
     if "page_size" in param:
         page_size = param["page_size"]
         del param["page_size"]
+    if "timelimit" in param:
+        timelimit = parse_timedelta(param["timelimit"])
+        del param["timelimit"]
 
     pagination = audit.search(param, sortorder=sortorder, page=page,
-                              page_size=page_size)
+                              page_size=page_size, timelimit=timelimit)
 
     ret = {"auditdata": pagination.auditdata,
            "prev": pagination.prev,

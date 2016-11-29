@@ -20,7 +20,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            enroll_pin,
                                            check_external, api_key_required,
                                            mangle, is_remote_user_allowed,
-                                           required_email)
+                                           required_email, auditlog_age)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             no_detail_on_success,
                                             no_detail_on_fail, autoassign,
@@ -945,6 +945,34 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         self.assertRaises(PolicyError, check_base_action, req,
                           action=ACTION.ADDUSER)
         delete_policy("userAdd")
+
+    def test_18_auditlog_age(self):
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+
+        # Set a mangle policy to change the username
+        # and only use the last 4 characters of the username
+        set_policy(name="a_age",
+                   scope=SCOPE.ADMIN,
+                   action="{0!s}=1d".format(ACTION.AUDIT_AGE))
+        g.policy_object = PolicyClass()
+
+        # request, that matches the policy
+        req.all_data = {"user": "Unknown"}
+        req.User = User("Unknown")
+        auditlog_age(req)
+        # Check if the timelimit was added
+        self.assertEqual(req.all_data.get("timelimit"), "1d")
+
+        # finally delete policy
+        delete_policy("a_age")
 
 
 class PostPolicyDecoratorTestCase(MyTestCase):

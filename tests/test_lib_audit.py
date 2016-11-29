@@ -94,6 +94,11 @@ class AuditTestCase(MyTestCase):
         audit_log = self.Audit.search({"serial": "oath*"})
         self.assertTrue(audit_log.total == 1, audit_log.total)
 
+        # Search audit entries one minute in the future
+        audit_log = self.Audit.search({}, timelimit=datetime.timedelta(
+            minutes=-1))
+        self.assertEqual(len(audit_log.auditdata), 0)
+
     def test_02_get_count(self):
         # Prepare some audit entries:
         self.Audit.log({"action": "/validate/check",
@@ -129,6 +134,9 @@ class AuditTestCase(MyTestCase):
     def test_03_lib_search(self):
         res = search(self.app.config, {"page": 1, "page_size": 10, "sortorder":
             "asc"})
+        self.assertTrue(res.get("count") == 0, res)
+
+        res = search(self.app.config, {"timelimit": "-1d"})
         self.assertTrue(res.get("count") == 0, res)
 
     def test_04_lib_download(self):

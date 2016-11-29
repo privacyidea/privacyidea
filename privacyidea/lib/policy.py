@@ -481,7 +481,7 @@ class PolicyClass(object):
     @log_with(log)
     def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
                           resolver=None, user=None, client=None, unique=False,
-                          allow_white_space_in_action=False):
+                          allow_white_space_in_action=False, adminrealm=None):
         """
         Get the defined action values for a certain action like
             scope: authorization
@@ -503,7 +503,7 @@ class PolicyClass(object):
         :rtype: list
         """
         action_values = []
-        policies = self.get_policies(scope=scope,
+        policies = self.get_policies(scope=scope, adminrealm=adminrealm,
                                      action=action, active=True,
                                      realm=realm, resolver=resolver, user=user,
                                      client=client)
