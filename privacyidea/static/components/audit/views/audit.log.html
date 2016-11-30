@@ -1,7 +1,8 @@
 <div class="well">
     <csv-download url="{{ instanceUrl }}/audit/audit.csv"
                   filename="audit.csv"
-                  ng-show="loggedInUser.role === 'admin'">
+                  ng-show="loggedInUser.role === 'admin' &&
+                        checkRight('auditlog_download')">
     </csv-download>
     <button class="btn btn-default" ng-click="getAuditList()">
         <span class="glyphicon glyphicon-refresh"></span>

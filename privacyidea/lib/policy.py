@@ -182,6 +182,7 @@ class ACTION(object):
     ASSIGN = "assign"
     AUDIT = "auditlog"
     AUDIT_AGE = "auditlog_age"
+    AUDIT_DOWNLOAD = "auditlog_download"
     AUTHITEMS = "fetch_authentication_items"
     AUTHMAXSUCCESS = "auth_max_success"
     AUTHMAXFAIL = "auth_max_fail"
@@ -1073,6 +1074,11 @@ def get_static_policy_definitions(scope=None):
             ACTION.AUDIT_AGE: {'type': 'str',
                                "desc": _("The admin will only see audit "
                                          "entries of the last 10d, 3m or 2y."),
+                               "group": "system",
+                               'mainmenu': [MAIN_MENU.AUDIT]},
+            ACTION.AUDIT_DOWNLOAD: {'type': 'bool',
+                               "desc": _("The admin is allowed to download "
+                                         "the complete auditlog."),
                                "group": "system",
                                'mainmenu': [MAIN_MENU.AUDIT]},
             ACTION.ADDUSER: {'type': 'bool',

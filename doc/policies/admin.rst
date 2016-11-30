@@ -335,6 +335,18 @@ The administrators are allowed to view the audit log.
 
 To learn more about the audit log, see :ref:`audit`.
 
+auditlog_download
+~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to download the audit log.
+
+.. note:: The download is not restricted to filters and audit age.
+   Thus, if you want to avoid, that an administrator can see older
+   logs, you need to disallow downloading the data. Otherwise he
+   may download the audit log and look at older entries manually.
+
 auditlog_age
 ~~~~~~~~~~~~
 

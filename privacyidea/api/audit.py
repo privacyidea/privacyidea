@@ -94,7 +94,7 @@ def search_audit():
 
 
 @audit_blueprint.route('/<csvfile>', methods=['GET'])
-@prepolicy(check_base_action, request, ACTION.AUDIT)
+@prepolicy(check_base_action, request, ACTION.AUDIT_DOWNLOAD)
 @admin_required
 def download_csv(csvfile=None):
     """
