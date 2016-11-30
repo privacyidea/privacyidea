@@ -27,7 +27,7 @@ In the Apache configuration you can add entries like::
 
     RewriteEngine On
     RewriteRule "/static/components/login/views/login.html"  \
-         "/etc/privacyidea/customizatio/mylogin.html"
+         "/etc/privacyidea/customization/mylogin.html"
 
 and apply all required changes to the file *mylogin.html*.
 
