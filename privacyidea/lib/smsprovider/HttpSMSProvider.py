@@ -122,8 +122,9 @@ class HttpSMSProvider(ISMSProvider):
         log.debug("queued SMS on the HTTP gateway. status code returned: {0!s}".format(
                   r.status_code))
 
-        # We assume, that all gateway return with HTTP Status Code 200
-        if r.status_code != 200:
+        # We assume, that all gateways return with HTTP Status Code 200,
+        # 201 or 202
+        if r.status_code not in [200, 201, 202]:
             raise SMSError(r.status_code, "SMS could not be "
                                           "sent: %s" % r.status_code)
         success = self._check_success(r)
