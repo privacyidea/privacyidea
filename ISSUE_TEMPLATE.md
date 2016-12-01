@@ -17,6 +17,8 @@ OS:
 
 Webserver:
 
+Tokendatabase: (like MySQL, PostgreSQL, ...)
+
 # What did you try to do?
 
 # What outcome did you expect?
