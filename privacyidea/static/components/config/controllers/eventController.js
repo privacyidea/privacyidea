@@ -95,7 +95,7 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
                         // could be an option of another handler type, which
                         // is not available anymore.
                         if ($scope.handlerOptions[$scope.form.action][opt] &&
-                            $scope.handlerOptions[$scope.form.action][opt].type === "bool" && value === "1") {
+                            $scope.handlerOptions[$scope.form.action][opt].type === "bool" && isTrue(value)) {
                             $scope.opts[opt] = true;
                         }
                     });

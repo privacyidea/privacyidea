@@ -37,7 +37,7 @@ myApp.controller("ldapMachineResolverController", function ($scope,
             var resolver = data.result.value[$scope.resolvername];
             $scope.params = resolver.data;
             $scope.params.type = 'ldap';
-            $scope.params.NOREFERRALS = ($scope.params.NOREFERRALS == "1");
+            $scope.params.NOREFERRALS = isTrue($scope.params.NOREFERRALS);
         });
     }
 

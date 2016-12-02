@@ -851,8 +851,8 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
             var resolver = data.result.value[$scope.resolvername];
             console.log(resolver);
             $scope.params = resolver.data;
-            $scope.params.NOREFERRALS = ($scope.params.NOREFERRALS == "1");
-            $scope.params.EDITABLE = ($scope.params.EDITABLE == "1");
+            $scope.params.NOREFERRALS = isTrue($scope.params.NOREFERRALS);
+            $scope.params.EDITABLE = isTrue($scope.params.EDITABLE);
             $scope.params.type = 'ldapresolver';
         });
     }
@@ -966,7 +966,7 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory,
             console.log(resolver);
             $scope.params = resolver.data;
             $scope.params.type = 'sqlresolver';
-            $scope.params.Editable = ($scope.params.Editable == "1");
+            $scope.params.Editable = isTrue($scope.params.Editable);
         });
     }
 

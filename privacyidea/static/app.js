@@ -126,3 +126,7 @@ myApp.config(['$compileProvider',
     function ($compileProvider) {
         $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|tel|file|blob):/);
 }]);
+
+isTrue = function (value) {
+    return ["1", "true", true, "True"].indexOf(value) > -1;
+};
