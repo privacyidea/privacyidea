@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-11-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add audit log age functionality
 #  2016-08-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add registration body
 #  2016-06-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -179,6 +181,8 @@ class ACTION(object):
     __doc__ = """This is the list of usual actions."""
     ASSIGN = "assign"
     AUDIT = "auditlog"
+    AUDIT_AGE = "auditlog_age"
+    AUDIT_DOWNLOAD = "auditlog_download"
     AUTHITEMS = "fetch_authentication_items"
     AUTHMAXSUCCESS = "auth_max_success"
     AUTHMAXFAIL = "auth_max_fail"
@@ -478,7 +482,7 @@ class PolicyClass(object):
     @log_with(log)
     def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
                           resolver=None, user=None, client=None, unique=False,
-                          allow_white_space_in_action=False):
+                          allow_white_space_in_action=False, adminrealm=None):
         """
         Get the defined action values for a certain action like
             scope: authorization
@@ -500,7 +504,7 @@ class PolicyClass(object):
         :rtype: list
         """
         action_values = []
-        policies = self.get_policies(scope=scope,
+        policies = self.get_policies(scope=scope, adminrealm=adminrealm,
                                      action=action, active=True,
                                      realm=realm, resolver=resolver, user=user,
                                      client=client)
@@ -1067,6 +1071,16 @@ def get_static_policy_definitions(scope=None):
                            "desc": _("Admin is allowed to view the Audit log."),
                            "group": "system",
                            'mainmenu': [MAIN_MENU.AUDIT]},
+            ACTION.AUDIT_AGE: {'type': 'str',
+                               "desc": _("The admin will only see audit "
+                                         "entries of the last 10d, 3m or 2y."),
+                               "group": "system",
+                               'mainmenu': [MAIN_MENU.AUDIT]},
+            ACTION.AUDIT_DOWNLOAD: {'type': 'bool',
+                               "desc": _("The admin is allowed to download "
+                                         "the complete auditlog."),
+                               "group": "system",
+                               'mainmenu': [MAIN_MENU.AUDIT]},
             ACTION.ADDUSER: {'type': 'bool',
                              "desc": _("Admin is allowed to add users in a "
                                        "userstore/UserIdResolver."),
@@ -1183,6 +1197,10 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _('Allow the user to view his own token history.'),
                 'mainmenu': [MAIN_MENU.AUDIT]},
+            ACTION.AUDIT_AGE: {'type': 'str',
+                               "desc": _("The user will only see audit "
+                                         "entries of the last 10d, 3m or 2y."),
+                               'mainmenu': [MAIN_MENU.AUDIT]},
             ACTION.USERLIST: {'type': 'bool',
                               'desc': _("The user is allowed to view his "
                                         "own user information."),

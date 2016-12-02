@@ -31,7 +31,7 @@ from flask import (Blueprint,
                    request, current_app, Response,
                    stream_with_context)
 from lib.utils import (send_result, getParam)
-from ..api.lib.prepolicy import prepolicy, check_base_action
+from ..api.lib.prepolicy import prepolicy, check_base_action, auditlog_age
 from ..api.auth import admin_required
 from ..lib.policy import ACTION
 from flask import g
@@ -47,11 +47,15 @@ audit_blueprint = Blueprint('audit_blueprint', __name__)
 
 @audit_blueprint.route('/', methods=['GET'])
 @prepolicy(check_base_action, request, ACTION.AUDIT)
+@prepolicy(auditlog_age, request)
 def search_audit():
     """
     return a paginated list of audit entries.
 
     Params can be passed as key-value-pairs.
+
+    :httpparam timelimit: A timelimit, that limits the recent audit entries.
+        This param gets overwritten by a policy auditlog_age. Can be 1d, 1m, 1h.
 
     **Example request**:
 
@@ -90,7 +94,7 @@ def search_audit():
 
 
 @audit_blueprint.route('/<csvfile>', methods=['GET'])
-@prepolicy(check_base_action, request, ACTION.AUDIT)
+@prepolicy(check_base_action, request, ACTION.AUDIT_DOWNLOAD)
 @admin_required
 def download_csv(csvfile=None):
     """

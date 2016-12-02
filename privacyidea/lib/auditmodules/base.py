@@ -203,7 +203,7 @@ class Audit(object):  # pragma: no cover
 #        """
 #        pass
 
-    def search(self, param, display_error=True, rp_dict=None):
+    def search(self, param, display_error=True, rp_dict=None, timelimit=None):
         """
         This function is used to search audit events.
 

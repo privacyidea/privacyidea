@@ -122,7 +122,7 @@ class Audit(AuditBase):
                 self.audit_data[column] = self.audit_data[column][:l]
 
     @staticmethod
-    def _create_filter(param):
+    def _create_filter(param, timelimit=None):
         """
         create a filter condition for the logentry
         """
@@ -150,20 +150,23 @@ class Audit(AuditBase):
                     # The search_key was no search key but some
                     # bullshit stuff in the param
                     log.debug("Not a valid searchkey: {0!s}".format(exx))
+
+        if timelimit:
+            conditions.append(LogEntry.date >= datetime.datetime.now() -
+                              timelimit)
         # Combine them with or to a BooleanClauseList
         filter_condition = and_(*conditions)
         return filter_condition
 
-    def get_total(self, param, AND=True, display_error=True):
+    def get_total(self, param, AND=True, display_error=True, timelimit=None):
         """
         This method returns the total number of audit entries
         in the audit store
         """
         count = 0
-
         # if param contains search filters, we build the search filter
         # to only return the number of those entries
-        filter_condition = self._create_filter(param)
+        filter_condition = self._create_filter(param, timelimit=timelimit)
         
         try:
             count = self.session.query(LogEntry.id)\
@@ -368,22 +371,28 @@ class Audit(AuditBase):
 
         return log_count
 
-    def search(self, search_dict, page_size=15, page=1, sortorder="asc"):
+    def search(self, search_dict, page_size=15, page=1, sortorder="asc",
+               timelimit=None):
         """
         This function returns the audit log as a Pagination object.
+
+        :param timelimit: Only audit entries newer than this timedelta will
+            be searched
+        :type timelimit: timedelta
         """
         page = int(page)
         page_size = int(page_size)
         paging_object = Paginate()
         paging_object.page = page
-        paging_object.total = self.get_total(search_dict)
+        paging_object.total = self.get_total(search_dict, timelimit=timelimit)
         if page > 1:
             paging_object.prev = page - 1
         if paging_object.total > (page_size * page):
             paging_object.next = page + 1
 
         auditIter = self.search_query(search_dict, page_size=page_size,
-                                      page=page, sortorder=sortorder)
+                                      page=page, sortorder=sortorder,
+                                      timelimit=timelimit)
         try:
             le = auditIter.next()
             while le:
@@ -396,9 +405,13 @@ class Audit(AuditBase):
         return paging_object
         
     def search_query(self, search_dict, page_size=15, page=1, sortorder="asc",
-                     sortname="number"):
+                     sortname="number", timelimit=None):
         """
         This function returns the audit log as an iterator on the result
+
+        :param timelimit: Only audit entries newer than this timedelta will
+            be searched
+        :type timelimit: timedelta
         """
         logentries = None
         try:
@@ -406,7 +419,8 @@ class Audit(AuditBase):
             offset = (int(page) - 1) * limit
             
             # create filter condition
-            filter_condition = self._create_filter(search_dict)
+            filter_condition = self._create_filter(search_dict,
+                                                   timelimit=timelimit)
 
             if sortorder == "desc":
                 logentries = self.session.query(LogEntry).filter(

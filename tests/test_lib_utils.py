@@ -47,6 +47,9 @@ class UtilsTestCase(MyTestCase):
         tdelta = parse_timedelta(" 2y")
         self.assertEqual(tdelta, timedelta(days=2*365))
 
+        tdelta = parse_timedelta("30 m ")
+        self.assertEqual(tdelta, timedelta(minutes=30))
+
         # A missing time specifier raises an Exception
         self.assertRaises(Exception, parse_timedelta, "7")
 

@@ -324,4 +324,36 @@ eventhandling_write
 
 type: bool
 
-Allow the adminstrator to configure :ref:`eventhandler`.
+Allow the admiinstrator to configure :ref:`eventhandler`.
+
+auditlog
+~~~~~~~~
+
+type: bool
+
+The administrators are allowed to view the audit log.
+
+To learn more about the audit log, see :ref:`audit`.
+
+auditlog_download
+~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to download the audit log.
+
+.. note:: The download is not restricted to filters and audit age.
+   Thus, if you want to avoid, that an administrator can see older
+   logs, you need to disallow downloading the data. Otherwise he
+   may download the audit log and look at older entries manually.
+
+auditlog_age
+~~~~~~~~~~~~
+
+type: string
+
+This limits the maximum age of displayed audit entries. Older entries are not
+remove from the audit table but the administrator is simply not allowed to
+view older entries.
+
+Can be something like 10m (10 minutes), 10h (10 hours) or 10d (ten days).

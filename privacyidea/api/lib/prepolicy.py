@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-11-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add timelimit for audit entries
 #  2016-08-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add decorator to save the client type to the database
 #  2016-07-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -56,7 +58,8 @@ from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token)
-from privacyidea.lib.utils import generate_password, get_client_ip
+from privacyidea.lib.utils import (generate_password, get_client_ip,
+                                   parse_timedelta)
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.clientapplication import save_clientapplication
@@ -549,6 +552,60 @@ def required_email(request=None, action=None):
     return True
 
 
+def auditlog_age(request=None, action=None):
+    """
+    This pre condition checks for the policy auditlog_age and set the
+    "timelimit" paramter of the audit search API.
+
+    Check ACTION.AUDIT_AGE
+
+    The decorator can wrap GET /audit/
+
+    :param request: The request that is intercepted during the API call
+    :type request: Request Object
+    :param action: An optional Action
+    :type action: basestring
+    :returns: Always true. Modified the parameter request
+    """
+    user_object = request.User
+    policy_object = g.policy_object
+    role = g.logged_in_user.get("role")
+    if role == ROLE.ADMIN:
+        scope = SCOPE.ADMIN
+        adminrealm = g.logged_in_user.get("realm")
+        user = g.logged_in_user.get("username")
+        realm = user_object.realm
+    else:
+        scope = SCOPE.USER
+        adminrealm = None
+        user = user_object.login
+        realm = user_object.realm
+
+    audit_age = policy_object.get_action_values(ACTION.AUDIT_AGE,
+                                                scope=scope,
+                                                adminrealm=adminrealm,
+                                                realm=realm,
+                                                user=user,
+                                                client=g.client_ip,
+                                                unique=True)
+    timelimit = None
+    timelimit_s = None
+    for aa in audit_age:
+        if not timelimit:
+            timelimit_s = aa
+            timelimit = parse_timedelta(timelimit_s)
+        else:
+            # We will use the longest allowed timelimit
+            if parse_timedelta(aa) > timelimit:
+                timelimit_s = aa
+                timelimit = parse_timedelta(timelimit_s)
+
+        log.debug("auditlog_age: {0!s}".format(timelimit_s))
+        request.all_data["timelimit"] = timelimit_s
+
+    return True
+
+
 def mangle(request=None, action=None):
     """
     This pre condition checks if either of the parameters pass, user or realm
@@ -567,7 +624,6 @@ def mangle(request=None, action=None):
     :type action: basestring
     :returns: Always true. Modified the parameter request
     """
-    #user_object = get_user_from_param(request.all_data)
     user_object = request.User
 
     policy_object = g.policy_object
