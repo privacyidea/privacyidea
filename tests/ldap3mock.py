@@ -423,7 +423,12 @@ class Connection(object):
         rpar  = pyparsing.Literal(')').suppress()
 
         k = pyparsing.Word(pyparsing.alphanums)
-        v = pyparsing.Word(pyparsing.alphanums + "*@.\\")
+        # NOTE: We may need to expand on this list, but as this is not a real
+        # LDAP server we should be OK.
+        # Value to contain:
+        #   numbers, upper/lower case letters, astrisk, at symbol, full stop
+        #   backslash or a space
+        v = pyparsing.Word(pyparsing.alphanums + "*@.\\ ")
         rel = pyparsing.oneOf("= ~= >= <=")
 
         expr = pyparsing.Forward()
