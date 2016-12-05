@@ -426,29 +426,19 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     $scope.printOtp = function () {
         var serial = $scope.enrolledToken.serial;
         var mywindow = window.open('', 'otpPrintingWindow', 'height=400,width=600');
-        var link1 = '<link' +
+        var css = '<link' +
             ' href="' + instanceUrl +
-            '/static/contrib/css/bootstrap.css" rel="stylesheet">';
-        var link2 = '<link' +
-            ' href="' + instanceUrl +
-            '/static/contrib/css/bootstrap-theme.css"' +
+            '/static/css/papertoken.css"' +
             ' rel="stylesheet">';
-
-        console.log(link1);
-        console.log(link2);
         mywindow.document.write('<html><head><title>'+serial+'</title>');
-        /*
-        TODO: In certain cases (https/instance) the links lead to blank pages!
-        mywindow.document.write(link1);
-        mywindow.document.write(link2);
-        */
+        mywindow.document.write(css);
         mywindow.document.write('</head><body><h1>'+serial+'</h1>');
         mywindow.document.write($('#paperOtpTable').html());
         mywindow.document.write('</body></html>');
         mywindow.document.close(); // necessary for IE >= 10
         mywindow.focus(); // necessary for IE >= 10
-        mywindow.print();
-        mywindow.close();
+        //mywindow.print();
+        //mywindow.close();
         return true;
     };
 
