@@ -47,6 +47,7 @@ class CONDITION(object):
     TOKEN_HAS_OWNER = "token_has_owner"
     TOKEN_IS_ORPHANED = "token_is_orphaned"
     USER_TOKEN_NUMBER = "user_token_number"
+    OTP_COUNTER = "otp_counter"
 
 
 class BaseEventHandler(object):
@@ -141,6 +142,11 @@ class BaseEventHandler(object):
                 "type": "str",
                 "desc": _("Action is triggered, if the user has this number "
                           "of tokens assigned.")
+            },
+            CONDITION.OTP_COUNTER: {
+                "type": "str",
+                "desc": _("Action is triggered, if the counter of the token "
+                          "equals this setting.")
             }
         }
         return cond
@@ -281,6 +287,10 @@ class BaseEventHandler(object):
         if CONDITION.USER_TOKEN_NUMBER in conditions and res and user:
             num_tokens = get_tokens(user=user, count=True)
             res = num_tokens == int(conditions.get(CONDITION.USER_TOKEN_NUMBER))
+
+        if CONDITION.OTP_COUNTER in conditions and res and token_obj:
+            res = token_obj.token.count == \
+                  int(conditions.get(CONDITION.OTP_COUNTER))
 
         return res
 

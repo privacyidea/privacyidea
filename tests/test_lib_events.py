@@ -1298,3 +1298,46 @@ class UserNotificationTestCase(MyTestCase):
         self.assertEqual(r, False)
 
         remove_token("oath1234")
+
+    def test_17_check_conditions_otp_counter(self):
+        # prepare
+        serial = "spass01"
+        user = User("cornelius", "realm1")
+        remove_token(user=user)
+        uhandler = UserNotificationEventHandler()
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1"},
+                                 headers={})
+
+        tok = init_token({"serial": serial, "type": "spass",
+                          "otppin": "spass"},
+                         user=user)
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "serial": serial}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+        # Do checking
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.OTP_COUNTER: "1"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # The counter of the token is 0
+        self.assertEqual(r, False)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.OTP_COUNTER: "0"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # The counter of the token is 0
+        self.assertEqual(r, True)
+
+        remove_token(serial)
