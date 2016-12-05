@@ -224,4 +224,10 @@ You can add two access codes separated by a colon to change from one access code
    313233343536:414243444546
 
 
+papertoken_count
+~~~~~~~~~~~~~~~~
 
+type: int
+
+This is a specific action of the paper token. Here the administrator can
+define how many OTP values should be printed on the paper token.
