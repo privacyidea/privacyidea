@@ -987,6 +987,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User()
         # The response contains the token type SPASS
         res = {"jsonrpc": "2.0",
                "result": {"status": True,

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from urllib import urlencode
 import json
 from .base import MyTestCase
@@ -11,11 +12,216 @@ from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    reset_token, enable_token, revoke_token)
 from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy
 from privacyidea.lib.error import TokenAdminError
+from privacyidea.lib.resolver import save_resolver, get_resolver_list
+from privacyidea.lib.realm import set_realm, set_default_realm
 
-import smtpmock
+import smtpmock, ldap3mock
 
 
 PWFILE = "tests/testdata/passwords"
+
+LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
+                 "attributes": {'cn': 'alice',
+                                "sn": "Cooper",
+                                "givenName": "Alice",
+                                'userPassword': 'alicepw',
+                                'oid': "2",
+                                "homeDirectory": "/home/alice",
+                                "email": "alice@test.com",
+                                "accountExpires": 131024988000000000,
+                                "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
+                                              '\x9b\xf9\xcajl\rM1',
+                                'mobile': ["1234", "45678"]}},
+                {"dn": 'cn=bob,ou=example,o=test',
+                 "attributes": {'cn': 'bob',
+                                "sn": "Marley",
+                                "givenName": "Robert",
+                                "email": "bob@example.com",
+                                "mobile": "123456",
+                                "homeDirectory": "/home/bob",
+                                'userPassword': 'bobpwééé',
+                                "accountExpires": 9223372036854775807,
+                                "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
+                                              '\x9b\xf9\xcajl\rMw',
+                                'oid': "3"}},
+                {"dn": 'cn=manager,ou=example,o=test',
+                 "attributes": {'cn': 'manager',
+                                "givenName": "Corny",
+                                "sn": "keule",
+                                "email": "ck@o",
+                                "mobile": "123354",
+                                'userPassword': 'ldaptest',
+                                "accountExpires": 9223372036854775807,
+                                "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
+                                              '\x9b\xf9\xcajl\rMT',
+                                'oid': "1"}},
+                {"dn": 'cn=frank,ou=sales,o=test',
+                 "attributes": {'cn': 'frank',
+                                "givenName": "Frank",
+                                "sn": "Hause",
+                                "email": "fh@o",
+                                "mobile": "123354",
+                                'userPassword': 'ldaptest',
+                                "accountExpires": 9223372036854775807,
+                                "objectGUID": '\xef7\x9b\x03\xc0\xe7\xf3B'
+                                              '\x9b\xf9\xcajl\rMT',
+                                'oid': "5"}}
+                 ]
+
+
+class AuthorizationPolicyTestCase(MyTestCase):
+    """
+    This tests the catch all resolvers and resolvers which also contain the
+    user.
+    A user may authenticate with the default resolver, but the user may also
+    be contained in other resolver. we check these other resolvers, too.
+
+    Testcase for issue
+    https://github.com/privacyidea/privacyidea/issues/543
+    """
+    @ldap3mock.activate
+    def test_00_create_realm(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        params = {'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'LDAPFILTER': '(&(cn=%s))',
+                  'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                  'UIDTYPE': 'DN',
+                  "resolver": "catchall",
+                  "type": "ldapresolver"}
+
+        r = save_resolver(params)
+        self.assertTrue(r > 0)
+
+        params = {'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'ou=sales,o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'LDAPFILTER': '(&(cn=%s))',
+                  'USERINFO': '{ "username": "cn",'
+                              '"phone" : "telephoneNumber", '
+                              '"mobile" : "mobile"'
+                              ', "email" : "mail", '
+                              '"surname" : "sn", '
+                              '"givenname" : "givenName" }',
+                  'UIDTYPE': 'DN',
+                  "resolver": "sales",
+                  "type": "ldapresolver"}
+
+        r = save_resolver(params)
+        self.assertTrue(r > 0)
+
+        rl = get_resolver_list()
+        self.assertTrue("catchall" in rl)
+        self.assertTrue("sales" in rl)
+
+    @ldap3mock.activate
+    def test_01_resolving_user(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        # create realm
+        # If the sales resolver comes first, frank is found in sales!
+        r = set_realm("ldaprealm", resolvers=["catchall", "sales"],
+                      priority={"catchall": 2, "sales": 1})
+        set_default_realm("ldaprealm")
+        self.assertEqual(r, (["catchall", "sales"], []))
+
+        u = User("alice", "ldaprealm")
+        uid, rtype, resolver = u.get_user_identifiers()
+        self.assertEqual(resolver, "catchall")
+        u = User("frank", "ldaprealm")
+        uid, rtype, resolver = u.get_user_identifiers()
+        self.assertEqual(resolver, "sales")
+
+        # Catch all has the lower priority and contains all users
+        # ldap2 only contains sales
+        r = set_realm("ldaprealm", resolvers=["catchall", "sales"],
+                      priority={"catchall": 1, "sales": 2})
+        self.assertEqual(r, (["catchall", "sales"], []))
+
+        # Both users are found in the resolver "catchall
+        u = User("alice", "ldaprealm")
+        uid, rtype, resolver = u.get_user_identifiers()
+        self.assertEqual(resolver, "catchall")
+        u = User("frank", "ldaprealm")
+        uid, rtype, resolver = u.get_user_identifiers()
+        self.assertEqual(resolver, "catchall")
+
+    @ldap3mock.activate
+    def test_02_enroll_tokens(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        r = init_token({"type": "spass", "pin": "spass"}, user=User(
+            login="alice", realm="ldaprealm"))
+        self.assertTrue(r)
+        # The token gets assigned to frank in the resolver catchall
+        r = init_token({"type": "spass", "pin": "spass"}, user=User(
+            login="frank", realm="ldaprealm"))
+        self.assertTrue(r)
+        self.assertEqual("{0!s}".format(r.user), "<frank.catchall@ldaprealm>")
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "frank",
+                                                 "pass": "spass"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+
+    @ldap3mock.activate
+    def test_03_classic_policies(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+
+        # This policy will not match, since frank is in resolver "catchall".
+        set_policy(name="HOTPonly",
+                   action="tokentype=spass",
+                   scope=SCOPE.AUTHZ,
+                   resolver="sales")
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "frank",
+                                                 "pass": "spass"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+
+        # If users in resolver sales are required to use HOTP, then frank still
+        # can login with a SPASS token, since he is identified as user in
+        # resolver catchall
+        set_policy(name="HOTPonly",
+                   action="tokentype=hotp",
+                   scope=SCOPE.AUTHZ,
+                   resolver="sales")
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "frank",
+                                                 "pass": "spass"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        # Alice - not in sales - is allowed to login
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "alice",
+                                                 "pass": "spass"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
 
 
 class ValidateAPITestCase(MyTestCase):
@@ -1101,3 +1307,4 @@ class ValidateAPITestCase(MyTestCase):
             self.assertTrue(res.status_code == 400, res)
             detail = json.loads(res.data).get("detail")
             self.assertEqual(detail, None)
+
