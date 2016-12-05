@@ -148,9 +148,9 @@ class SmtpMock(object):
             response = (535, "authentication failed (#5.7.1)")
         return {self._request_data.get("recipient"): response}
 
-    def _on_init(self, SMTP_instance, host, port=25):
+    def _on_init(self, SMTP_instance, host, port=25, timeout=3):
         # mangle request packet
-        self.timeout = 3
+        self.timeout = timeout
         self.esmtp_features = {}
         return None
 
