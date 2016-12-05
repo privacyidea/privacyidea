@@ -36,6 +36,7 @@ This module is tested in tests/test_lib_smtpserver.py
 """
 
 log = logging.getLogger(__name__)
+TIMEOUT = 10
 
 
 class SMTPServer(object):
@@ -89,7 +90,8 @@ class SMTPServer(object):
         msg['Date'] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
         msg['Reply-To'] = reply_to
 
-        mail = smtplib.SMTP(config.server, port=int(config.port))
+        mail = smtplib.SMTP(config.server, port=int(config.port),
+                            timeout=TIMEOUT)
         mail.ehlo()
         # Start TLS if required
         if config.tls:
