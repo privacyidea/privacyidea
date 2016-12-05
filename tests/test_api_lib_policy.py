@@ -20,7 +20,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            enroll_pin,
                                            check_external, api_key_required,
                                            mangle, is_remote_user_allowed,
-                                           required_email, auditlog_age)
+                                           required_email, auditlog_age,
+                                           papertoken_count)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             no_detail_on_success,
                                             no_detail_on_fail, autoassign,
@@ -31,6 +32,7 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token)
 from privacyidea.lib.user import User
+from privacyidea.lib.tokens.papertoken import PAPERACTION
 
 from flask import Response, Request, g, current_app
 from werkzeug.test import EnvironBuilder
@@ -973,6 +975,31 @@ class PrePolicyDecoratorTestCase(MyTestCase):
 
         # finally delete policy
         delete_policy("a_age")
+
+    def test_19_papertoken_count(self):
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        set_policy(name="paperpol",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}=10".format(PAPERACTION.PAPERTOKEN_COUNT))
+        g.policy_object = PolicyClass()
+
+        # request, that matches the policy
+        req.all_data = {}
+        req.User = User()
+        papertoken_count(req)
+        # Check if the papertoken count is set
+        self.assertEqual(req.all_data.get("papertoken_count"), "10")
+
+        # finally delete policy
+        delete_policy("paperpol")
 
 
 class PostPolicyDecoratorTestCase(MyTestCase):

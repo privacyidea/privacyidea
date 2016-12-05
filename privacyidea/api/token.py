@@ -80,7 +80,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            init_tokenlabel, init_random_pin,
                                            encrypt_pin, check_otp_pin,
                                            check_external, init_token_defaults,
-                                           enroll_pin)
+                                           enroll_pin, papertoken_count)
 from privacyidea.api.lib.postpolicy import (save_pin_change,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -114,6 +114,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(check_otp_pin, request)
 @prepolicy(check_external, request, action="init")
 @prepolicy(init_token_defaults, request)
+@prepolicy(papertoken_count, request)
 @postpolicy(save_pin_change, request)
 @event("token_init", request, g)
 @log_with(log, log_entry=False)

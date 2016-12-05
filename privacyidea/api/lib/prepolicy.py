@@ -275,6 +275,37 @@ def check_otp_pin(request=None, action=None):
     return True
 
 
+def papertoken_count(request=None, action=None):
+    """
+    This is a token specifc wrapper for paper token for the endpoint
+    /token/init.
+    According to the policy scope=SCOPE.ENROLL,
+    action=PAPERACTION.PAPER_COUNT it sets the parameter papertoken_count to
+    enroll a paper token with such many OTP values.
+
+    :param request:
+    :param action:
+    :return:
+    """
+    from privacyidea.lib.tokens.papertoken import PAPERACTION
+    user_object = request.User
+    policy_object = g.policy_object
+    pols = policy_object.get_action_values(
+        action=PAPERACTION.PAPERTOKEN_COUNT,
+        scope=SCOPE.ENROLL,
+        user=user_object.login,
+        resolver=user_object.resolver,
+        realm=user_object.realm,
+        client=g.client_ip,
+        unique=True)
+
+    if pols:
+        papertoken_count = pols[0]
+        request.all_data["papertoken_count"] = papertoken_count
+
+    return True
+
+
 def encrypt_pin(request=None, action=None):
     """
     This policy function is to be used as a decorator for several API functions.

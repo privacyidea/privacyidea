@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 #
-#  (c) 2015 Cornelius Kölbel - cornelius@privacyidea.org
+#  2016-12-05 Cornelisu Kölbel <cornelius.koelbel@netknights.it>
+#             Add policy papertoken_count
 #
 #  2015-11-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             initial write
+#  (c) 2015 Cornelius Kölbel - cornelius@privacyidea.org
 #
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -27,8 +29,16 @@ import logging
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
+from privacyidea.lib.policy import SCOPE
+from gettext import gettext as _
+from privacyidea.lib.policydecorators import libpolicy
 
 log = logging.getLogger(__name__)
+DEFAULT_COUNT = 100
+
+
+class PAPERACTION(object):
+    PAPERTOKEN_COUNT = "papertoken_count"
 
 
 class PaperTokenClass(HotpTokenClass):
@@ -91,7 +101,15 @@ class PaperTokenClass(HotpTokenClass):
                'user':  ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {},
+               'policy': {
+                   SCOPE.ENROLL: {
+                       PAPERACTION.PAPERTOKEN_COUNT: {
+                           "type": "int",
+                           "desc": _("The number of OTP values, which are "
+                                     "printed on the paper.")
+                       }
+                   }
+               }
                }
 
         if key is not None and key in res:
@@ -105,8 +123,8 @@ class PaperTokenClass(HotpTokenClass):
         if "otpkey" not in param:
             param["genkey"] = 1
         HotpTokenClass.update(self, param, reset_failcount=reset_failcount)
+        papertoken_count = int(param.get("papertoken_count") or DEFAULT_COUNT)
         # Now we calculate all the OTP values and add them to the
         # init_details. Thus they will be returned by token/init.
-        # TODO: We can get the count from a policy
-        otps = self.get_multi_otp(count=100)
+        otps = self.get_multi_otp(count=papertoken_count)
         self.add_init_details("otps", otps[2].get("otp", {}))
