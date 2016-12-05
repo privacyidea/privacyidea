@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 """
+2016-12-05 Martin Wheldon <martin.wheldon@greenhills-it.co.uk>
+           Fixed issue creating ldap entries with objectClasses defined
+           Fix problem when searching for attribute values containing the
+           space character.
 2016-05-26 Martin Wheldon <martin.wheldon@greenhills-it.co.uk>
            Rewrite of search functionality to add recursive parsing
            of ldap search filters
@@ -170,10 +174,12 @@ class Connection(object):
 	    entry = {}
 	    entry['dn'] = dn
 	    entry['attributes'] = attributes
+            if object_class != None:
+                entry['attributes'].update( {'objectClass': object_class} )
         else:
             # User already exists
             self.result["description"] = "failure"
-            self.result["result"] = 68 
+            self.result["result"] = 68
             self.result["message"] = \
                     "Error entryAlreadyExists for {0}".format(dn)
             return False

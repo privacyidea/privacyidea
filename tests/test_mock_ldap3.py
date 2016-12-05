@@ -909,10 +909,27 @@ class LDAPMockTestCase(unittest.TestCase):
         self.assertTrue(len(self.c.response) == 1)
         self.assertTrue(self.c.response[0].get("dn") == dn)
 
-
     def test_24_filter_containing_spaces(self):
         dn = "cn=bob,ou=example,o=test"
         s = "(&(description=Bobs Account))"
+
+        self.c.search(search_base=self.base, search_filter=s, search_scope=ldap3.SUBTREE,
+                attributes = ldap3.ALL_ATTRIBUTES, paged_size = 5)
+
+        self.assertTrue(len(self.c.response) == 1)
+        self.assertTrue(self.c.response[0].get("dn") == dn)
+
+    def test_25_add_user(self):
+        dn = "cn=John Smith,ou=example,o=test"
+        data = { "sn" : "Smith",
+                "cn" : "John Smith",
+                "userPassword": "S3cr3t",
+                }
+        classes = ["top", "inetOrgPerson"]
+        s = "(&(cn=John Smith)(objectClass=top))"
+
+        r = self.c.add(dn, classes, data)
+        self.assertTrue(r)
 
         self.c.search(search_base=self.base, search_filter=s, search_scope=ldap3.SUBTREE,
                 attributes = ldap3.ALL_ATTRIBUTES, paged_size = 5)
