@@ -287,6 +287,11 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         $scope.U2FToken = {};
         $scope.enrolledToken = data.detail;
         $scope.click_wait=false;
+        if ($scope.enrolledToken.otps) {
+            var otps_count = Object.keys($scope.enrolledToken.otps).length;
+            $scope.otp_row_count = parseInt(otps_count/5 + 0.5);
+            $scope.otp_rows = Object.keys($scope.enrolledToken.otps).slice(0, $scope.otp_row_count);
+        }
         if ($scope.enrolledToken.certificate) {
             var blob = new Blob([ $scope.enrolledToken.certificate ],
                 { type : 'text/plain' });
