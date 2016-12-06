@@ -203,7 +203,10 @@ class BaseEventHandler(object):
 
         serial = request.all_data.get("serial") or \
                  content.get("detail", {}).get("serial")
-        token_obj_list = get_tokens(serial=serial)
+        if serial:
+            token_obj_list = get_tokens(serial=serial)
+        else:
+            token_obj_list = []
         tokenrealms = []
         tokentype = None
         token_obj = None
@@ -227,8 +230,9 @@ class BaseEventHandler(object):
 
         # Check result_value only if the check condition is still True
         if "result_value" in conditions and res:
-            res = content.get("result", {}).get("value") == conditions.get(
-                "result_value")
+            condition_value = conditions.get("result_value")
+            result_value = content.get("result", {}).get("value")
+            res = condition_value == str(result_value)
 
         # checking of max-failcounter state of the token
         if "token_locked" in conditions and res:

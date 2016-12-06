@@ -2067,6 +2067,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 if r_chal:
                     reply_dict["transaction_id"] = transaction_id
                     reply_dict["attributes"] = attributes
+                    reply_dict["serial"] = token_obj.token.serial
                     # If exist, add next pin and next password change
                     next_pin = challenge_request_token_list[0].get_tokeninfo(
                             "next_pin_change")
