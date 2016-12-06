@@ -432,13 +432,12 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             ' rel="stylesheet">';
         mywindow.document.write('<html><head><title>'+serial+'</title>');
         mywindow.document.write(css);
-        mywindow.document.write('</head><body><h1>'+serial+'</h1>');
+        mywindow.document.write('</head>' +
+            '<body onload="window.print(); window.close()">');
         mywindow.document.write($('#paperOtpTable').html());
         mywindow.document.write('</body></html>');
         mywindow.document.close(); // necessary for IE >= 10
         mywindow.focus(); // necessary for IE >= 10
-        //mywindow.print();
-        //mywindow.close();
         return true;
     };
 

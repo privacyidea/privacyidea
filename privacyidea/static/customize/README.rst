@@ -24,6 +24,14 @@ sub directory `views/includes`:
 * token.enroll.post.top.html
 * token.enroll.post.bottom.html
 
+Paper Token
+===========
+
+The paper token expects:
+
+* token.enrolled.paper.top.html
+* token.enrolled.paper.bottom.html
+
 Cascading Style Sheets
 ======================
 

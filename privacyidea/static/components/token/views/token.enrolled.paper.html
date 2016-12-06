@@ -2,10 +2,13 @@
     <div class="col-sm-12">
         <accordion close-others="oneAtATime">
             <accordion-group heading="{{ 'The OTP values'|translate }}">
-                <div class="table-responsive" id="paperOtpTable">
-                    <table class="table table-bordered table-striped
+                <div id="paperOtpTable">
+                    <div ng-include="instanceUrl+'/'+piCustomization+
+                    '/views/includes/token.enrolled.paper.top.html'"></div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped
                                   papertoken">
-                        <thead>
+                            <thead>
                             <tr>
                                 <th translate>#</th>
                                 <th>OTP</th>
@@ -18,8 +21,8 @@
                                 <th translate>#</th>
                                 <th>OTP</th>
                             </tr>
-                        </thead>
-                        <tbody>
+                            </thead>
+                            <tbody>
                             <tr ng-repeat="key in otp_rows">
                                 <td>{{ $index }}</td>
                                 <td>{{ enrolledToken.otps[$index] }}</td>
@@ -36,8 +39,11 @@
                                 <td>{{ enrolledToken.otps[$index+
                                         (4*otp_row_count)] }}</td>
                             </tr>
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div ng-include="instanceUrl+'/'+piCustomization+
+                    '/views/includes/token.enrolled.paper.bottom.html'"></div>
                 </div>
             </accordion-group>
         </accordion>
