@@ -26,8 +26,11 @@ tokentype
 type: string
 
 Users will only be authorized with this very tokentype.
-The string can hold a comma separated list of
-case insensitive tokentypes.
+The string can hold a space separated list of
+case sensitive tokentypes. It should look like:
+
+    hotp totp spass
+
 
 This is checked after the authentication request, so that a valid OTP value
 is wasted, so that it can not be used, even if the user was not authorized at
