@@ -1891,7 +1891,7 @@ class SMSGateway(MethodsMixin, db.Model):
         # delete non existing options in case of update
         if sql:
             for option in sql.option_dict.keys():
-                # iterate throuhg all existing options
+                # iterate through all existing options
                 if option not in options:
                     # if the option is not contained anymore
                     SMSGatewayOption.query.filter_by(gateway_id=self.id,
