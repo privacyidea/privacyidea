@@ -1,0 +1,77 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# 2016-12-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#
+# Copyright (c) 2016, Cornelius Kölbel
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+# contributors may be used to endorse or promote products derived from this
+# software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+__doc__ = """
+This script can be used to find the counter of two given OTP values and a
+secret key.
+
+This can be used to verify if a given secret belongs to a certain hardware
+OTP token. You may generate two OTP values with the hardware token and see,
+if the given secret generates these OTP values.
+"""
+from oath import hotp
+import hashlib
+import base64
+
+# hex encoded list of possible secrets
+secrets = ["215D1BE98824904158E4618419ED0BB0D76C67D0"]
+#
+# to convert base32 encoded:
+# baseb64.b32decode(...)
+
+otp1 = "201754"
+otp2 = "641588"
+
+# If we have TOTP the counter 30s for Dec. 12, 2016 is
+tcounter = int(1481540196 / 30)
+
+start = tcounter
+end = start + 100000
+debug_step = 200
+found = False
+
+for secret in secrets:
+    for counter in range(start, end):
+        otp = hotp(secret, counter, format='dec6', hash=hashlib.sha1)
+        if counter % debug_step == 0:
+            print("counter: {0!s}".format(counter))
+        if otp == otp1:
+            if otp2 == hotp(secret, counter + 1,
+                            format="dec6", hash=hashlib.sha1):
+                print("We found the counter {0!s}, {1!s} with secret "
+                      "{2!s}".format(counter, counter+1, secret))
+                found = True
+                break
+
+if not found:
+    print("We could not find any matching counter.")
