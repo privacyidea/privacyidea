@@ -228,31 +228,35 @@ angular.module("privacyideaApp")
             $location.path("/user/list");
         }
 
-        $scope._getUsers = function () {
-            var params = {realm: $scope.selectedRealm};
-            if ($scope.params.usernameFilter) {
-                params.username = "*" + $scope.params.usernameFilter + "*";
+        $scope._getUsers = function (live_search) {
+            if ((!$scope.search_on_enter) || ($scope.search_on_enter && !live_search)) {
+                // We shall only search, if either we do not search on enter or
+                // if we search_on_enter and the enter key is pressed.
+                var params = {realm: $scope.selectedRealm};
+                if ($scope.params.usernameFilter) {
+                    params.username = "*" + $scope.params.usernameFilter + "*";
+                }
+                if ($scope.params.surnameFilter) {
+                    params.surname = "*" + $scope.params.surnameFilter + "*";
+                }
+                if ($scope.params.givennameFilter) {
+                    params.givenname = "*" + $scope.params.givennameFilter + "*";
+                }
+                if ($scope.params.emailFilter) {
+                    params.email = "*" + $scope.params.emailFilter + "*";
+                }
+                UserFactory.getUsers(params,
+                    function (data) {
+                        console.log("success");
+                        var userlist = data.result.value;
+                        // The userlist is the complete list of the users.
+                        $scope.usercount = userlist.length;
+                        var start = ($scope.params.page - 1) * $scope.usersPerPage;
+                        var stop = start + $scope.usersPerPage;
+                        $scope.userlist = userlist.slice(start, stop);
+                        console.log($scope.userlist);
+                    });
             }
-            if ($scope.params.surnameFilter) {
-                params.surname = "*" + $scope.params.surnameFilter + "*";
-            }
-            if ($scope.params.givennameFilter) {
-                params.givenname = "*" + $scope.params.givennameFilter + "*";
-            }
-            if ($scope.params.emailFilter) {
-                params.email = "*" + $scope.params.emailFilter + "*";
-            }
-            UserFactory.getUsers(params,
-                function (data) {
-                    console.log("success");
-                    var userlist = data.result.value;
-                    // The userlist is the complete list of the users.
-                    $scope.usercount = userlist.length;
-                    var start = ($scope.params.page - 1) * $scope.usersPerPage;
-                    var stop = start + $scope.usersPerPage;
-                    $scope.userlist = userlist.slice(start, stop);
-                    console.log($scope.userlist);
-                });
         };
 
         // Change the pagination

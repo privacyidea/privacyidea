@@ -10,19 +10,27 @@
         <tr>
             <th><translate>username</translate>
                 <pi-filter ng-model="params.usernameFilter"
-                         ng-change="_getUsers()"></pi-filter>
+                           ng-change="_getUsers('livesearch')"
+                           ng-keypress="($event.which==13)?_getUsers():return"
+                           ></pi-filter>
             </th>
             <th><translate>surname</translate>
                 <pi-filter ng-model="params.surnameFilter"
-                         ng-change="_getUsers()"></pi-filter>
+                           ng-change="_getUsers('livesearch')"
+                           ng-keypress="($event.which==13)?_getUsers():return"
+                ></pi-filter>
             </th>
             <th><translate>givenname</translate>
                 <pi-filter ng-model="params.givennameFilter"
-                         ng-change="_getUsers()"></pi-filter>
+                           ng-change="_getUsers('livesearch')"
+                           ng-keypress="($event.which==13)?_getUsers():return"
+                ></pi-filter>
             </th>
             <th><translate>email</translate>
                 <pi-filter ng-model="params.emailFilter"
-                         ng-change="_getUsers()"></pi-filter>
+                           ng-change="_getUsers('livesearch')"
+                           ng-keypress="($event.which==13)?_getUsers():return"
+                ></pi-filter>
             </th>
             <th translate>phone</th>
             <th translate>mobile</th>

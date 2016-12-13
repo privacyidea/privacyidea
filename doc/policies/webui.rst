@@ -218,3 +218,19 @@ a space separated list of realm names. Only these realmnames are displayed in
 the dropdown box.
 
 .. note:: The realm names in the policy are not checked, if they realy exist!
+
+search_on_enter
+~~~~~~~~~~~~~~~
+
+.. index:: Search on Enter
+
+type: bool
+
+The searching in the user list is performed as live search. Each time a key
+is pressed, the new substring is searched in the user store.
+
+Sometimes this can be too time consuming. You can use this policy to change
+the bahaviour that the administrator needs to press *enter* to trigger the
+search.
+
+(Since privacyIDEA 2.17)

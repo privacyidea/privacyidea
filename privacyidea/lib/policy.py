@@ -277,6 +277,7 @@ class ACTION(object):
     RESETALLTOKENS = "reset_all_user_tokens"
     ENROLLPIN = "enrollpin"
     MANAGESUBSCRIPTION = "managesubscription"
+    SEARCH_ON_ENTER = "search_on_enter"
 
 
 class MAIN_MENU(object):
@@ -1391,6 +1392,11 @@ def get_static_policy_definitions(scope=None):
                     'to the Web UI. Defaults to "userstore"'),
                 'value': [LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA,
                           LOGINMODE.DISABLE],
+            },
+            ACTION.SEARCH_ON_ENTER: {
+                'type': 'bool',
+                'desc': _('When searching in the user list, the search will '
+                          'only performed when pressing enter.')
             },
             ACTION.REMOTE_USER: {
                 'type': 'str',

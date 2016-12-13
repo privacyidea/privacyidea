@@ -493,6 +493,12 @@ def get_webui_settings(request, response):
             realm=realm,
             client=client
         )
+        search_on_enter = policy_object.get_policies(
+            action=ACTION.SEARCH_ON_ENTER,
+            scope=SCOPE.WEBUI,
+            realm=realm,
+            client=client
+        )
         default_tokentype_pol = policy_object.get_action_values(
             action=ACTION.DEFAULT_TOKENTYPE,
             scope=SCOPE.WEBUI,
@@ -533,6 +539,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["user_details"] = len(user_details_pol) > 0
         content["result"]["value"]["token_wizard"] = token_wizard
         content["result"]["value"]["token_wizard_2nd"] = token_wizard_2nd
+        content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
         response.data = json.dumps(content)
     return response
 
