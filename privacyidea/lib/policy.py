@@ -685,7 +685,8 @@ class PolicyClass(object):
 
 @log_with(log)
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
-               user=None, time=None, client=None, active=True, adminrealm=None):
+               user=None, time=None, client=None, active=True,
+               adminrealm=None, check_all_resolvers=False):
     """
     Function to set a policy.
     If the policy with this name already exists, it updates the policy.
@@ -702,11 +703,16 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :param client: A client IP with optionally a subnet like 172.16.0.0/16
     :param active: If the policy is active or not
     :type active: bool
+    :param check_all_resolvers: If all the resolvers of a user should be
+        checked with this policy
+    :type check_all_resolvers: bool
     :return: The database ID od the the policy
     :rtype: int
     """
     if type(active) in [str, unicode]:
         active = active.lower() == "true"
+    if type(check_all_resolvers) in [str, unicode]:
+        check_all_resolvers = check_all_resolvers.lower() == "true"
     if type(action) == dict:
         action_list = []
         for k, v in action.items():
@@ -749,14 +755,16 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         if time is not None:
             p1.time = time
         p1.active = active
+        p1.check_all_resolvers = check_all_resolvers
         save_config_timestamp()
         db.session.commit()
         ret = p1.id
     else:
         # Create a new policy
         ret = Policy(name, action=action, scope=scope, realm=realm,
-               user=user, time=time, client=client, active=active,
-               resolver=resolver, adminrealm=adminrealm).save()
+                     user=user, time=time, client=client, active=active,
+                     resolver=resolver, adminrealm=adminrealm,
+                     check_all_resolvers=check_all_resolvers).save()
     return ret
 
 

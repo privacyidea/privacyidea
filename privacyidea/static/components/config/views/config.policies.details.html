@@ -228,8 +228,7 @@
     <div class="form-group">
         <label for="resolver" class="col-sm-3
         control-label" translate>User-Resolver</label>
-
-        <div class="col-sm-9">
+        <div class="col-sm-3">
             <div isteven-multi-select
                  input-model="resolvers"
                  output-model="selectedResolvers"
@@ -238,6 +237,15 @@
                  tick-property="ticked">
             </div>
         </div>
+        <label for="all-resolvers" class="col-sm-6">
+            <input type="checkbox" name="all-resolvers"
+                   ng-model="params.check_all_resolvers"
+                   id="all-resolvers">
+            <translate>
+                Check all possible resolvers of a user to match the resolver
+                in this policy.
+            </translate>
+        </label>
     </div>
     <div class="form-group">
         <label for="user" class="col-sm-3 control-label">

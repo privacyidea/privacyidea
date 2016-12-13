@@ -168,6 +168,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             resolver: "",
             user: "",
             active: true,
+            check_all_resolvers: false,
             client: "",
             time: ""
         };
@@ -315,6 +316,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             // fill $scope.params
             $scope.params.user = policy.user;
             $scope.params.active = policy.active;
+            $scope.params.check_all_resolvers = policy.check_all_resolvers;
             $scope.params.client = policy.client;
             $scope.params.time = policy.time;
             // tick the realms and the resolvers
