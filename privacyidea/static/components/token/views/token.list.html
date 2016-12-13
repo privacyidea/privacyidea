@@ -21,7 +21,9 @@
                         translate>serial
                 </button>
                 <pi-filter ng-model="serialFilter"
-                           ng-change="get()"></pi-filter>
+                           ng-change="get('livesearch')"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
             </th>
             <th>
                 <button class="btn btn-default unsorted"
@@ -29,7 +31,9 @@
                         translate>type
                 </button>
                 <pi-filter ng-model="typeFilter"
-                           ng-change="get()"></pi-filter>
+                           ng-change="get('livesearch')"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
             </th>
             <th>
                 <button pi-sort-by="active"
@@ -45,7 +49,9 @@
                         translate>description
                 </button>
                 <pi-filter ng-model="descriptionFilter"
-                           ng-change="get()"></pi-filter>
+                           ng-change="get('livesearch')"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
             </th>
             <th>
                 <button pi-sort-by="failcount"
@@ -64,7 +70,9 @@
                         translate>UserId
                 </button>
                 <pi-filter ng-model="userIdFilter"
-                           ng-change="get()"></pi-filter>
+                           ng-change="get('livesearch')"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
             </th>
             <th ng-show="loggedInUser.role == 'admin' &&
             user_details_in_tokenlist">
@@ -74,7 +82,9 @@
                         translate>User Store
                 </button>
                 <pi-filter ng-model="resolverFilter"
-                           ng-change="get()"></pi-filter>
+                           ng-change="get('livesearch')"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
             </th>
         </tr>
         </thead>

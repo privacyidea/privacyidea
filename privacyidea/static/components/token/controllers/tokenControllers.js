@@ -36,24 +36,26 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
     };
 
     // This function fills $scope.tokendata
-    $scope.get = function () {
-        $scope.params.serial = "*" + ($scope.serialFilter || "") + "*";
-        $scope.params.type = "*" + ($scope.typeFilter || "") + "*";
-        $scope.params.description = "*" + ($scope.descriptionFilter || "") + "*";
-        $scope.params.userid = "*" + ($scope.userIdFilter || "") + "*";
-        $scope.params.resolver = "*" + ($scope.resolverFilter || "") + "*";
-        $scope.params.pagesize = $scope.token_page_size;
-        if ($scope.reverse) {
-            $scope.params.sortdir = "desc";
-        } else {
-            $scope.params.sortdir = "asc";
-        }
-        TokenFactory.getTokens(function (data) {
-            if (data) {
-                $scope.tokendata = data.result.value;
-                console.log($scope.tokendata);
+    $scope.get = function (live_search) {
+        if ((!$scope.search_on_enter) || ($scope.search_on_enter && !live_search)) {
+            $scope.params.serial = "*" + ($scope.serialFilter || "") + "*";
+            $scope.params.type = "*" + ($scope.typeFilter || "") + "*";
+            $scope.params.description = "*" + ($scope.descriptionFilter || "") + "*";
+            $scope.params.userid = "*" + ($scope.userIdFilter || "") + "*";
+            $scope.params.resolver = "*" + ($scope.resolverFilter || "") + "*";
+            $scope.params.pagesize = $scope.token_page_size;
+            if ($scope.reverse) {
+                $scope.params.sortdir = "desc";
+            } else {
+                $scope.params.sortdir = "asc";
             }
-        }, $scope.params);
+            TokenFactory.getTokens(function (data) {
+                if (data) {
+                    $scope.tokendata = data.result.value;
+                    console.log($scope.tokendata);
+                }
+            }, $scope.params);
+        }
     };
 
     /*
