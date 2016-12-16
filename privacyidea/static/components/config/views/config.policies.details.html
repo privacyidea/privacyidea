@@ -122,7 +122,20 @@
     </div>
 
     <div class="form-group">
-        <label for="action" class="col-sm-3 control-label" translate>Action</label>
+        <label for="action" class="col-sm-3 control-label">
+               <translate>Action</translate>
+            <br>
+            <button class="btn btn-sm btn-success"
+                ng-show="!onlySelectedVisible"
+                ng-click="onlySelectedVisible=true">
+                <translate>Show selected actions only</translate>
+            </button>
+            <button class="btn btn-sm btn-success"
+                ng-show="onlySelectedVisible"
+                ng-click="onlySelectedVisible=false">
+                <translate>Show all actions</translate>
+            </button>
+        </label>
 
         <div class="col-sm-9">
             <div isteven-multi-select
@@ -137,7 +150,9 @@
             </div>
             <div ng-show="isActionValues">
                 <table class="table table-hover">
-                    <tr ng-repeat="action in actions">
+                    <tr ng-repeat="action in actions"
+                        ng-show="actionCheckBox[action.name] ||
+                        !onlySelectedVisible">
                         <td>
                             <label for="cb_{{ action.name }}">
                             <input type="checkbox" name="{{ action.name }}"
