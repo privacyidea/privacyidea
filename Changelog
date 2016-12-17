@@ -1,3 +1,11 @@
+Version 2.17, 2016-12
+
+  Enhancements
+  * The event handler conditions also determine a serial number
+    even if there is no serial number in the request:
+    If the user from the request only has one token assigned. (#571)
+
+
 Version 2.16, 2016-11-10
 
   Featurs

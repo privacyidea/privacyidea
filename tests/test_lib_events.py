@@ -108,6 +108,48 @@ class BaseEventHandlerTestCase(MyTestCase):
         r = base_handler.do("action")
         self.assertTrue(r)
 
+    def test_02_check_conditions_only_one_token_no_serial(self):
+        # In case there is no token serial in the request (like in a failed
+        # auth request of a user with no token) we check if the user has only
+        #  one token then this token is used in the conditions
+
+        # prepare
+        # setup realms
+        self.setUp_user_realms()
+        serial = "pw01"
+        user = User("cornelius", "realm1")
+        remove_token(user=user)
+        tok = init_token({"serial": serial,
+                          "type": "pw", "otppin": "test", "otpkey": "secret"},
+                         user=user)
+        self.assertEqual(tok.type, "pw")
+
+        uhandler = BaseEventHandler()
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "wrongvalue"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        # This is a kind of authentication request
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "wrongvalue"}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+        # Do checking
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.TOKENTYPE: "pw"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # The only token of the user is of type "pw".
+        self.assertEqual(r, True)
+
+        remove_token(serial)
+
 
 class TokenEventTestCase(MyTestCase):
 

@@ -48,6 +48,7 @@ class CONDITION(object):
     TOKEN_IS_ORPHANED = "token_is_orphaned"
     USER_TOKEN_NUMBER = "user_token_number"
     OTP_COUNTER = "otp_counter"
+    TOKENTYPE = "tokentype"
 
 
 class BaseEventHandler(object):
@@ -100,7 +101,7 @@ class BaseEventHandler(object):
                           "apply."),
                 "value": [{"name": r} for r in realms.keys()]
             },
-            "tokentype": {
+            CONDITION.TOKENTYPE: {
                 "type": "multi",
                 "desc": _("The type of the token."),
                 "value": [{"name": r} for r in get_token_types()]
@@ -203,17 +204,24 @@ class BaseEventHandler(object):
 
         serial = request.all_data.get("serial") or \
                  content.get("detail", {}).get("serial")
-        if serial:
-            token_obj_list = get_tokens(serial=serial)
-        else:
-            token_obj_list = []
         tokenrealms = []
         tokentype = None
         token_obj = None
-        if token_obj_list:
-            token_obj = token_obj_list[0]
-            tokenrealms = token_obj.get_realms()
-            tokentype = token_obj.get_tokentype()
+        if serial:
+            # We have determined the serial number from the request.
+            token_obj_list = get_tokens(serial=serial)
+            if token_obj_list:
+                token_obj = token_obj_list[0]
+                tokenrealms = token_obj.get_realms()
+                tokentype = token_obj.get_tokentype()
+        else:
+            # We have to determine the token via the user object. But only if
+            #  the user has only one token
+            token_obj_list = get_tokens(user=user)
+            if len(token_obj_list) == 1:
+                token_obj = token_obj_list[0]
+                tokenrealms = token_obj.get_realms()
+                tokentype = token_obj.get_tokentype()
 
         if "realm" in conditions:
             res = user.realm == conditions.get("realm")
@@ -254,9 +262,9 @@ class BaseEventHandler(object):
                     res = True
                     break
 
-        if "tokentype" in conditions and res and tokentype:
+        if CONDITION.TOKENTYPE in conditions and res and tokentype:
             res = False
-            if tokentype in conditions.get("tokentype").split(","):
+            if tokentype in conditions.get(CONDITION.TOKENTYPE).split(","):
                 res = True
 
         if "serial" in conditions and res and serial:
