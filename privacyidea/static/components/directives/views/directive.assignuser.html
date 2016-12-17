@@ -13,7 +13,7 @@ This is the directive for assigning users.
 <div class="form-group">
     <label for="username" translate>Username</label>
     <input name="username" type="text" ng-model="newUserObject.user"
-           autocomplete="false"
+           autocomplete="off"
            placeholder="{{ 'start typing a username'|translate }}"
            typeahead="newuser for newuser in loadUsers($viewValue)"
            typeahead-loading="loadingUsers" class="form-control" >
