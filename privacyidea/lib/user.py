@@ -141,8 +141,9 @@ class User(object):
     def get_ordererd_resolvers(self):
         """
         returns a list of resolvernames ordered by priority.
-        The resolver with the lowest priority is the first. Then in
-        alphabetical order
+        The resolver with the lowest priority is the first.
+        If resolvers have the same priority, they are ordered alphabetically.
+
         :return: list or resolvernames
         """
         resolver_tuples = []
@@ -159,17 +160,19 @@ class User(object):
         resolvers = [r[0] for r in resolvers]
         return resolvers
     
-    def get_resolvers(self):
+    def get_resolvers(self, all_resolvers=False):
         """
         This returns the list of the resolvernames of the user.
         If no resolver attribute exists at the moment, the user is searched
         in the realm and according to this the resolver attribute is set.
 
-        It will only return one resolver in the list for backward compatibilty
+        It will only return one resolver in the list for backward compatibility
 
         .. note:: If the user does not exist in the realm, then an empty
            list is returned!
 
+        :param all_resolvers: return all resolvers (of a realm), in which
+            the user is contained
         :return: list of resolvers for self.login
         :rtype: list of strings
         """

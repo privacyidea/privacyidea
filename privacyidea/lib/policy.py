@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-12-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add check_all_resolvers logic
 #  2016-11-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add audit log age functionality
 #  2016-08-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -154,6 +156,7 @@ from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import check_time_in_range, reload_db
+from privacyidea.lib.user import User
 import datetime
 
 log = logging.getLogger(__name__)
@@ -394,14 +397,15 @@ class PolicyClass(object):
         """
         Return the policies of the given filter values
 
-        :param name:
-        :param scope:
-        :param realm:
-        :param active:
-        :param resolver:
-        :param user:
+        :param name: The name of the policy
+        :param scope: The scope of the policy
+        :param realm: The realm in the policy
+        :param active: Only active policies
+        :param resolver: Only policies with this resolver
+        :param user: Only policies with this user
+        :type user: basestring
         :param client:
-        :param action:
+        :param action: Only policies, that contain this very action.
         :param adminrealm: This is the realm of the admin. This is only
             evaluated in the scope admin.
         :param time: The optional time, for which the policies should be
@@ -465,8 +469,22 @@ class PolicyClass(object):
         # check_all_resolvers flag in the policy is set.
         if resolver is not None:
             new_policies = []
+            user_resolvers = []
             for policy in reduced_policies:
-                if not policy.get("resolver"):
+                if policy.get("check_all_resolvers"):
+                    if realm and user:
+                        # We have a realm and a user and can get all resolvers
+                        # of this user in the realm
+                        if not user_resolvers:
+                            user_resolvers = User(user,
+                                                  realm=realm).get_ordererd_resolvers()
+                        for reso in user_resolvers:
+                            value_found, _v_ex = self._search_value(
+                                policy.get("resolver"), reso)
+                            if value_found:
+                                new_policies.append(policy)
+                                break
+                elif not policy.get("resolver"):
                     # We also find the policies with no distinct information
                     # about the request value
                     new_policies.append(policy)
@@ -475,6 +493,7 @@ class PolicyClass(object):
                         policy.get("resolver"), resolver)
                     if value_found:
                         new_policies.append(policy)
+
             reduced_policies = new_policies
             log.debug("Policies after matching resolver: {0!s}".format(
                 reduced_policies))

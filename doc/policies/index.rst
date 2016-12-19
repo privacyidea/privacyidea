@@ -71,11 +71,28 @@ Each policy can contain the following attributes:
 
   If this field is left blank, this policy is valid for all users.
 
+.. _check_all_resolvers:
+
 **resolver**
 
   This policy will be valid for all users in this resolver.
 
   If this field is left blank, this policy is valid for all resolvers.
+
+  .. note:: Starting with version 2.17 you can use the parameter
+     ``check_all_resolvers``. This is *Check all possible resolvers*
+     *of a user to match the resolver in this policy* in the Web UI.
+
+     Assume a user *user@realm1* is contained in *resolver1* and *resolver2*
+     in the realm *realm1*, where *resolver1* is the resolver with the
+     highest priority. If the user authenticates as *user@realm1*, only
+     policies for *resolver1* will match, since the user is identified as
+     *user.resolver1@realm1*.
+
+     If you also want to match a policy with ``resolver=resolver2``, you need
+     to select *Check all possible resolvers* in this policy. Thus this
+     policy will match for all users, which are als contained in *resolver2*
+     as a secondary resolver.
 
 **realm**
 
