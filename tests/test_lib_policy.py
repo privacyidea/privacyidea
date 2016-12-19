@@ -595,3 +595,16 @@ class PolicyTestCase(MyTestCase):
 
         delete_all_policies()
 
+    def test_20_search_values(self):
+        P = PolicyClass()
+        found, excluded = P._search_value(["v1", "v2"], "v1")
+        self.assertTrue(found)
+
+        found, excluded = P._search_value(["v1", "v2"], "v3")
+        self.assertFalse(found)
+
+        found, excluded = P._search_value(["v1", "*"], "v3")
+        self.assertTrue(found)
+
+        found, excluded = P._search_value(["v1", "-v2"], "v2")
+        self.assertTrue(excluded)

@@ -357,6 +357,36 @@ class PolicyClass(object):
                     self.policies.append(pol.get())
             self.timestamp = datetime.datetime.now()
 
+    @classmethod
+    def _search_value(cls, policy_attributes, searchvalue):
+        """
+        Searches a given value in a policy attribute. The policy_attribute is
+        a list like searching the resolver name "resolver1" in the given
+        resolvers of a policy:
+
+            policy.get("resolver") = ["resolver1", "resolver2"]
+
+        It returns a tuple of booleans if the searched value is
+        contained/found or excluded.
+
+        :param policy_attributes:
+        :param searchvalue:
+        :return: tuple of value_found and value_excluded
+        """
+        value_found = False
+        value_excluded = False
+        for value in policy_attributes:
+            if value and value[0] in ["!", "-"] and \
+                            searchvalue == value[1:]:
+                value_excluded = True
+            elif type(searchvalue) == list and value in \
+                            searchvalue + ["*"]:
+                value_found = True
+            elif value in [searchvalue, "*"]:
+                value_found = True
+
+        return value_found, value_excluded
+
     @log_with(log)
     def get_policies(self, name=None, scope=None, realm=None, active=None,
                      resolver=None, user=None, client=None, action=None,
@@ -405,8 +435,7 @@ class PolicyClass(object):
                 log.debug("Policies after matching {1!s}: {0!s}".format(
                     reduced_policies, searchkey))
 
-        p = [("action", action), ("user", user), ("resolver", resolver),
-             ("realm", realm)]
+        p = [("action", action), ("user", user), ("realm", realm)]
         # If this is an admin-policy, we also do check the adminrealm
         if scope == "admin":
             p.append(("adminrealm", adminrealm))
@@ -417,28 +446,38 @@ class PolicyClass(object):
                 # Either with the real value or with a "*"
                 # values can be excluded by a leading "!" or "-"
                 for policy in reduced_policies:
-                    value_found = False
-                    value_excluded = False
-                    # iterate through the list of values:
-                    for value in policy.get(searchkey):
-                        if value and value[0] in ["!", "-"] and \
-                                        searchvalue == value[1:]:
-                            value_excluded = True
-                        elif type(searchvalue) == list and value in \
-                                        searchvalue + ["*"]:
-                            value_found = True
-                        elif value in [searchvalue, "*"]:
-                            value_found = True
-                    if value_found and not value_excluded:
-                        new_policies.append(policy)
-                # We also find the policies with no distinct information
-                # about the request value
-                for policy in reduced_policies:
                     if not policy.get(searchkey):
+                        # We also find the policies with no distinct information
+                        # about the request value
                         new_policies.append(policy)
+                    else:
+                        value_found, value_excluded = self._search_value(
+                            policy.get(searchkey), searchvalue)
+                        if value_found and not value_excluded:
+                            new_policies.append(policy)
                 reduced_policies = new_policies
                 log.debug("Policies after matching {1!s}: {0!s}".format(
                     reduced_policies, searchkey))
+
+        # We need to act individually on the resolver key word
+        # We either match the resolver exactly or we match another resolver (
+        # which is not the first resolver) of the user, but only if the
+        # check_all_resolvers flag in the policy is set.
+        if resolver is not None:
+            new_policies = []
+            for policy in reduced_policies:
+                if not policy.get("resolver"):
+                    # We also find the policies with no distinct information
+                    # about the request value
+                    new_policies.append(policy)
+                else:
+                    value_found, _v_ex = self._search_value(
+                        policy.get("resolver"), resolver)
+                    if value_found:
+                        new_policies.append(policy)
+            reduced_policies = new_policies
+            log.debug("Policies after matching resolver: {0!s}".format(
+                reduced_policies))
 
         # Match the client IP.
         # Client IPs may be direct match, may be located in subnets or may
