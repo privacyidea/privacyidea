@@ -72,7 +72,7 @@ msgstr ""
 msgid "Add user"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:259
+#: privacyidea/static/components/config/views/config.policies.details.html:267
 msgid "Admin"
 msgstr ""
 
@@ -320,6 +320,12 @@ msgstr ""
 msgid "Check OTP only."
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.policies.details.html:259
+msgid ""
+"Check all possible resolvers of a user to match the resolver\n"
+"                in this policy."
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.enroll.radius.html:18
 #: privacyidea/static/components/token/views/token.enroll.remote.html:12
 msgid "Check the PIN locally"
@@ -357,7 +363,7 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/components/views/component.clienttype.html:11
-#: privacyidea/static/components/config/views/config.policies.details.html:275
+#: privacyidea/static/components/config/views/config.policies.details.html:283
 #: privacyidea/static/components/config/views/config.policies.list.html:12
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:49
 msgid "Client"
@@ -432,7 +438,7 @@ msgstr ""
 msgid "Create Event Handler Definition"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:306
+#: privacyidea/static/components/config/views/config.policies.details.html:314
 #: privacyidea/static/components/config/views/config.policies.details.html:85
 msgid "Create Policy"
 msgstr ""
@@ -2119,12 +2125,12 @@ msgstr ""
 msgid "System Config"
 msgstr ""
 
-#: privacyidea/static/components/config/controllers/configControllers.js:427
-#: privacyidea/static/components/config/controllers/configControllers.js:653
+#: privacyidea/static/components/config/controllers/configControllers.js:429
+#: privacyidea/static/components/config/controllers/configControllers.js:655
 msgid "System Config saved."
 msgstr ""
 
-#: privacyidea/static/components/config/controllers/configControllers.js:436
+#: privacyidea/static/components/config/controllers/configControllers.js:438
 msgid "System entry deleted."
 msgstr ""
 
@@ -2967,7 +2973,7 @@ msgstr ""
 msgid "Use TLS"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:261
+#: privacyidea/static/components/config/views/config.policies.details.html:269
 #: privacyidea/static/components/config/views/config.policies.list.html:10
 #: privacyidea/static/components/config/views/config.radius.edit.html:79
 #: privacyidea/static/templates/menu.html:52
@@ -3040,7 +3046,7 @@ msgstr ""
 msgid "Valid subscription"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:287
+#: privacyidea/static/components/config/views/config.policies.details.html:295
 msgid "Valid time"
 msgstr ""
 

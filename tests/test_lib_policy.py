@@ -11,7 +11,12 @@ from privacyidea.lib.policy import (set_policy, delete_policy,
                                     PolicyClass, SCOPE, enable_policy,
                                     PolicyError, ACTION, MAIN_MENU,
                                     delete_all_policies)
+from privacyidea.lib.realm import (set_realm, delete_realm, get_realms)
+from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
+                                      delete_resolver)
+from privacyidea.lib.user import User
 import datetime
+PWFILE = "tests/testdata/passwords"
 
 
 def _check_policy_name(polname, policies):
@@ -68,7 +73,6 @@ class PolicyTestCase(MyTestCase):
                                   action="disable")
         self.assertTrue(len(policies) == 1, len(policies))
         self.assertTrue(policies[0].get("name") == "pol4")
-
 
     def test_02_update_policies(self):
         p = set_policy(name="pol1",
@@ -594,4 +598,95 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(MAIN_MENU.MACHINES in menus)
 
         delete_all_policies()
+
+    def test_20_search_values(self):
+        P = PolicyClass()
+        found, excluded = P._search_value(["v1", "v2"], "v1")
+        self.assertTrue(found)
+
+        found, excluded = P._search_value(["v1", "v2"], "v3")
+        self.assertFalse(found)
+
+        found, excluded = P._search_value(["v1", "*"], "v3")
+        self.assertTrue(found)
+
+        found, excluded = P._search_value(["v1", "-v2"], "v2")
+        self.assertTrue(excluded)
+
+    def test_21_check_all_resolver(self):
+        # check_all_resolver allows to find a policy for a secondary user
+        # resolver.
+        # We create one realm "realm1" with the resolvers
+        # reso1 (prio 1)
+        # reso2 (prio 2)
+        # reso3 (prio 3)
+        # A user user@realm1 will be identified as user.reso1@realm1.
+        # But we will also match policies for reso2.
+
+        # no realm and resolver
+        r = get_realms()
+        self.assertEqual(r, {})
+
+        r = get_resolver_list()
+        self.assertEqual(r, {})
+
+        # create user realm
+        for reso in ["reso1", "resoX", "resoA"]:
+            rid = save_resolver({"resolver": reso,
+                                 "type": "passwdresolver",
+                                 "fileName": PWFILE})
+            self.assertTrue(rid > 0, rid)
+
+        # create a realm with reso1 being the resolver with the highest priority
+        (added, failed) = set_realm("realm1",
+                                    ["reso1", "resoX", "resoA"],
+                                    priority={"reso1": 1,
+                                              "resoX": 2,
+                                              "resoA": 3})
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 3)
+
+        user = User(login="cornelius",
+                    realm="realm1")
+        # The user, that is created, is cornelius.reso1@realm1
+        user_str = "{0!s}".format(user)
+        self.assertEqual(user_str, "<cornelius.reso1@realm1>")
+        # But the user "cornelius" is also contained in other resolves in
+        # this realm
+        r = user.get_ordererd_resolvers()
+        self.assertEqual(r, ["reso1", "resoX", "resoA"])
+        self.assertFalse(user.is_empty())
+        self.assertTrue(User().is_empty())
+
+        # define a policy with the wrong resolver
+        p = set_policy(name="checkAll", scope=SCOPE.AUTHZ, realm="realm1",
+                       resolver="resoX",
+                       action="{0}=totp".format(ACTION.TOKENTYPE))
+        self.assertTrue(p > 0)
+        p = set_policy(name="catchAll", scope=SCOPE.AUTHZ, realm="realm1",
+                       action="{0}=totp".format(ACTION.TOKENTYPE))
+        self.assertTrue(p > 0)
+        P = PolicyClass()
+        pols = P.get_policies(scope=SCOPE.AUTHZ, realm=user.realm,
+                              resolver=user.resolver, user=user.login)
+        self.assertEqual(len(pols), 1)
+
+        # Now we change the policy, so that it uses check_all_resolver, i.e.
+        p = set_policy(name="checkAll", scope=SCOPE.AUTHZ, realm="realm1",
+                       resolver="resoX", check_all_resolvers=True,
+                       action="{0}=totp".format(ACTION.TOKENTYPE))
+        self.assertTrue(p > 0)
+        P = PolicyClass()
+        pols = P.get_policies(scope=SCOPE.AUTHZ, realm=user.realm,
+                              resolver=user.resolver, user=user.login)
+        self.assertEqual(len(pols), 2)
+
+        # delete policy
+        delete_policy("checkAll")
+        delete_policy("catchAll")
+        # delete resolvers and realm
+        delete_realm("realm1")
+        for reso in ["reso1", "resoX", "resoA"]:
+            rid = delete_resolver(reso)
+            self.assertTrue(rid > 0, rid)
 

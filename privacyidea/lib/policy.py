@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2016-12-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add check_all_resolvers logic
 #  2016-11-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add audit log age functionality
 #  2016-08-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -154,6 +156,7 @@ from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import check_time_in_range, reload_db
+from privacyidea.lib.user import User
 import datetime
 
 log = logging.getLogger(__name__)
@@ -358,6 +361,36 @@ class PolicyClass(object):
                     self.policies.append(pol.get())
             self.timestamp = datetime.datetime.now()
 
+    @classmethod
+    def _search_value(cls, policy_attributes, searchvalue):
+        """
+        Searches a given value in a policy attribute. The policy_attribute is
+        a list like searching the resolver name "resolver1" in the given
+        resolvers of a policy:
+
+            policy.get("resolver") = ["resolver1", "resolver2"]
+
+        It returns a tuple of booleans if the searched value is
+        contained/found or excluded.
+
+        :param policy_attributes:
+        :param searchvalue:
+        :return: tuple of value_found and value_excluded
+        """
+        value_found = False
+        value_excluded = False
+        for value in policy_attributes:
+            if value and value[0] in ["!", "-"] and \
+                            searchvalue == value[1:]:
+                value_excluded = True
+            elif type(searchvalue) == list and value in \
+                            searchvalue + ["*"]:
+                value_found = True
+            elif value in [searchvalue, "*"]:
+                value_found = True
+
+        return value_found, value_excluded
+
     @log_with(log)
     def get_policies(self, name=None, scope=None, realm=None, active=None,
                      resolver=None, user=None, client=None, action=None,
@@ -365,14 +398,15 @@ class PolicyClass(object):
         """
         Return the policies of the given filter values
 
-        :param name:
-        :param scope:
-        :param realm:
-        :param active:
-        :param resolver:
-        :param user:
+        :param name: The name of the policy
+        :param scope: The scope of the policy
+        :param realm: The realm in the policy
+        :param active: Only active policies
+        :param resolver: Only policies with this resolver
+        :param user: Only policies with this user
+        :type user: basestring
         :param client:
-        :param action:
+        :param action: Only policies, that contain this very action.
         :param adminrealm: This is the realm of the admin. This is only
             evaluated in the scope admin.
         :param time: The optional time, for which the policies should be
@@ -406,8 +440,7 @@ class PolicyClass(object):
                 log.debug("Policies after matching {1!s}: {0!s}".format(
                     reduced_policies, searchkey))
 
-        p = [("action", action), ("user", user), ("resolver", resolver),
-             ("realm", realm)]
+        p = [("action", action), ("user", user), ("realm", realm)]
         # If this is an admin-policy, we also do check the adminrealm
         if scope == "admin":
             p.append(("adminrealm", adminrealm))
@@ -418,28 +451,53 @@ class PolicyClass(object):
                 # Either with the real value or with a "*"
                 # values can be excluded by a leading "!" or "-"
                 for policy in reduced_policies:
-                    value_found = False
-                    value_excluded = False
-                    # iterate through the list of values:
-                    for value in policy.get(searchkey):
-                        if value and value[0] in ["!", "-"] and \
-                                        searchvalue == value[1:]:
-                            value_excluded = True
-                        elif type(searchvalue) == list and value in \
-                                        searchvalue + ["*"]:
-                            value_found = True
-                        elif value in [searchvalue, "*"]:
-                            value_found = True
-                    if value_found and not value_excluded:
-                        new_policies.append(policy)
-                # We also find the policies with no distinct information
-                # about the request value
-                for policy in reduced_policies:
                     if not policy.get(searchkey):
+                        # We also find the policies with no distinct information
+                        # about the request value
                         new_policies.append(policy)
+                    else:
+                        value_found, value_excluded = self._search_value(
+                            policy.get(searchkey), searchvalue)
+                        if value_found and not value_excluded:
+                            new_policies.append(policy)
                 reduced_policies = new_policies
                 log.debug("Policies after matching {1!s}: {0!s}".format(
                     reduced_policies, searchkey))
+
+        # We need to act individually on the resolver key word
+        # We either match the resolver exactly or we match another resolver (
+        # which is not the first resolver) of the user, but only if the
+        # check_all_resolvers flag in the policy is set.
+        if resolver is not None:
+            new_policies = []
+            user_resolvers = []
+            for policy in reduced_policies:
+                if policy.get("check_all_resolvers"):
+                    if realm and user:
+                        # We have a realm and a user and can get all resolvers
+                        # of this user in the realm
+                        if not user_resolvers:
+                            user_resolvers = User(user,
+                                                  realm=realm).get_ordererd_resolvers()
+                        for reso in user_resolvers:
+                            value_found, _v_ex = self._search_value(
+                                policy.get("resolver"), reso)
+                            if value_found:
+                                new_policies.append(policy)
+                                break
+                elif not policy.get("resolver"):
+                    # We also find the policies with no distinct information
+                    # about the request value
+                    new_policies.append(policy)
+                else:
+                    value_found, _v_ex = self._search_value(
+                        policy.get("resolver"), resolver)
+                    if value_found:
+                        new_policies.append(policy)
+
+            reduced_policies = new_policies
+            log.debug("Policies after matching resolver: {0!s}".format(
+                reduced_policies))
 
         # Match the client IP.
         # Client IPs may be direct match, may be located in subnets or may
@@ -686,7 +744,8 @@ class PolicyClass(object):
 
 @log_with(log)
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
-               user=None, time=None, client=None, active=True, adminrealm=None):
+               user=None, time=None, client=None, active=True,
+               adminrealm=None, check_all_resolvers=False):
     """
     Function to set a policy.
     If the policy with this name already exists, it updates the policy.
@@ -703,11 +762,16 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :param client: A client IP with optionally a subnet like 172.16.0.0/16
     :param active: If the policy is active or not
     :type active: bool
+    :param check_all_resolvers: If all the resolvers of a user should be
+        checked with this policy
+    :type check_all_resolvers: bool
     :return: The database ID od the the policy
     :rtype: int
     """
     if type(active) in [str, unicode]:
         active = active.lower() == "true"
+    if type(check_all_resolvers) in [str, unicode]:
+        check_all_resolvers = check_all_resolvers.lower() == "true"
     if type(action) == dict:
         action_list = []
         for k, v in action.items():
@@ -750,14 +814,16 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         if time is not None:
             p1.time = time
         p1.active = active
+        p1.check_all_resolvers = check_all_resolvers
         save_config_timestamp()
         db.session.commit()
         ret = p1.id
     else:
         # Create a new policy
         ret = Policy(name, action=action, scope=scope, realm=realm,
-               user=user, time=time, client=client, active=active,
-               resolver=resolver, adminrealm=adminrealm).save()
+                     user=user, time=time, client=client, active=active,
+                     resolver=resolver, adminrealm=adminrealm,
+                     check_all_resolvers=check_all_resolvers).save()
     return ret
 
 

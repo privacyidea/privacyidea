@@ -194,10 +194,14 @@ def check_tokentype(request, response):
     content = json.loads(response.data)
     tokentype = content.get("detail", {}).get("type")
     policy_object = g.policy_object
-
-    allowed_tokentypes = policy_object.get_action_values("tokentype",
-                                                 scope=SCOPE.AUTHZ,
-                                                 client=g.client_ip)
+    user_object = request.User
+    allowed_tokentypes = policy_object.get_action_values(
+        "tokentype",
+        scope=SCOPE.AUTHZ,
+        user=user_object.login,
+        resolver=user_object.resolver,
+        realm=user_object.realm,
+        client=g.client_ip)
     if tokentype and allowed_tokentypes and tokentype not in allowed_tokentypes:
         g.audit_object.log({"success": False,
                             'action_detail': "Tokentype not allowed for "

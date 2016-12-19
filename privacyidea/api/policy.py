@@ -122,6 +122,9 @@ def set_policy_api(name=None):
     :jsonparam time: on which time does this policy hold
     :jsonparam client: for which requesting client this should be
     :jsontype client: IP address with subnet
+    :jsonparam active: bool, whether this policy is active or not
+    :jsonparam check_all_resolvers: bool, whether all all resolvers in which
+        the user exists should be checked with this policy.
 
     :return: a json result with success or error
 
@@ -179,13 +182,15 @@ def set_policy_api(name=None):
     time = getParam(param, "time", optional)
     client = getParam(param, "client", optional)
     active = getParam(param, "active", optional)
+    check_all_resolvers = getParam(param, "check_all_resolvers", optional)
     admin_realm = getParam(param, "adminrealm", optional)
 
     g.audit_object.log({'action_detail': name,
                         'info': "{0!s}".format(param)})
     ret = set_policy(name=name, scope=scope, action=action, realm=realm,
                      resolver=resolver, user=user, client=client, time=time,
-                     active=active or True, adminrealm=admin_realm)
+                     active=active or True, adminrealm=admin_realm,
+                     check_all_resolvers=check_all_resolvers or False)
     log.debug("policy {0!s} successfully saved.".format(name))
     string = "setPolicy " + name
     res[string] = ret

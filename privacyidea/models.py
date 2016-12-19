@@ -1249,6 +1249,7 @@ class Policy(TimestampMethodsMixin, db.Model):
     __tablename__ = "policy"
     id = db.Column(db.Integer, primary_key=True)
     active = db.Column(db.Boolean, default=True)
+    check_all_resolvers = db.Column(db.Boolean, default=False)
     name = db.Column(db.Unicode(64), unique=True, nullable=False)
     scope = db.Column(db.Unicode(32), nullable=False)
     action = db.Column(db.Unicode(2000), default=u"")
@@ -1262,7 +1263,8 @@ class Policy(TimestampMethodsMixin, db.Model):
     
     def __init__(self, name,
                  active=True, scope="", action="", realm="", adminrealm="",
-                 resolver="", user="", client="", time="", condition=0):
+                 resolver="", user="", client="", time="", condition=0,
+                 check_all_resolvers=False):
         if type(active) in [str, unicode]:
             if active.lower() in ["true", "1"]:
                 active = True
@@ -1279,6 +1281,7 @@ class Policy(TimestampMethodsMixin, db.Model):
         self.client = client
         self.time = time
         self.condition = condition
+        self.check_all_resolvers = check_all_resolvers
 
     @staticmethod
     def _split_string(value):
@@ -1310,6 +1313,7 @@ class Policy(TimestampMethodsMixin, db.Model):
              "realm": self._split_string(self.realm),
              "adminrealm": self._split_string(self.adminrealm),
              "resolver": self._split_string(self.resolver),
+             "check_all_resolvers": self.check_all_resolvers,
              "user": self._split_string(self.user),
              "client": self._split_string(self.client),
              "time": self.time,
