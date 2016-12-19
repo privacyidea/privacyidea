@@ -31,6 +31,7 @@ import random
 from log import log_with
 from ..models import Subscription
 from privacyidea.lib.error import SubscriptionError
+from privacyidea.lib.token import get_tokens
 import functools
 from flask import current_app
 import os
@@ -59,6 +60,11 @@ SIGN_FORMAT = """{application}
 {num_clients}
 {level}
 """
+
+
+APPLICATIONS = {"demo_application": 0,
+                "owncloud": 5,
+                "privacyidea-cp": 0}
 
 log = logging.getLogger(__name__)
 
@@ -180,11 +186,12 @@ def check_subscription(application):
     """
     subscriptions = get_subscription(application) or get_subscription(
         application.lower())
-    if application.lower() in ["demo_application",
-                               "owncloud",
-                               "privacyidea-cp", "privacyideacp"]:
+    if application.lower() in APPLICATIONS.keys():
         if len(subscriptions) == 0:
-            if raise_exception_probability():
+            # get the number of active assigned tokens
+            num_tokens = get_tokens(assigend=True, active=True, count=True)
+            if num_tokens > APPLICATIONS.get(application.lower()) \
+                    and raise_exception_probability():
                 raise SubscriptionError(description="No subscription for your client.",
                                         application=application)
         else:
