@@ -226,7 +226,7 @@ class Audit(object):  # pragma: no cover
         """
         return 0
 
-    def csv_generator(self, param):
+    def csv_generator(self, param=None, user=None, timelimit=None):
         """
         A generator that can be used to stream the audit log
 

@@ -52,7 +52,7 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         });
     };
 
-    $scope.getAuditList = function () {
+    $scope.getParams = function () {
         $scope.params.serial = "*" + ($scope.serialFilter || "") + "*";
         $scope.params.user = "*" + ($scope.userFilter || "") + "*";
         $scope.params.administrator = "*" + ($scope.administratorFilter || "") + "*";
@@ -68,6 +68,10 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         $scope.params.date = "*" + ($scope.dateFilter || "") + "*";
         console.log("Request Audit Trail with params");
         console.log($scope.params);
+    };
+
+    $scope.getAuditList = function () {
+        $scope.getParams();
         AuditFactory.get($scope.params, function(data) {
             $scope.auditdata = data.result.value;
             console.log($scope.auditdata);
@@ -84,11 +88,10 @@ myApp.controller("auditController", function (AuditFactory, $scope,
     $scope.download = function () {
         var filename = "audit.csv";
         console.log("download audit log");
-        $http.get("/audit/" + filename, {
-                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
-                }).done(
+        $scope.getParams();
+        AuditFactory.download($scope.params, filename, function(data){
             alert("Data received.")
-        );
+        });
     };
 
     if ($location.path() === "/audit/log") {

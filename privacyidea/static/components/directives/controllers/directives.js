@@ -295,8 +295,10 @@ myApp.directive('csvDownload', function(AuthFactory, $http, instanceUrl) {
             $scope.downloadCSV = function () {
                 $scope.$emit('download-start');
                 console.log("Download start.");
+                $scope.getParams();
                 $http.get($attrs.url, {
-                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                    params: $scope.params
                 }).then(function (response) {
                     console.log("Downloaded.");
                     $scope.$emit('downloaded', response.data);

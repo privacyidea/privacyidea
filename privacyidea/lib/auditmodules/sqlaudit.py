@@ -337,7 +337,7 @@ class Audit(AuditBase):
                     'clearance_level': LogEntry.clearance_level}
         return sortname.get(key)
 
-    def csv_generator(self, param=None, user=None):
+    def csv_generator(self, param=None, user=None, timelimit=None):
         """
         Returns the audit log as csv file.
         :param config: The current flask app configuration
@@ -347,7 +347,9 @@ class Audit(AuditBase):
         :param user: The user, who issued the request
         :return: None. It yields results as a generator
         """
-        logentries = self.session.query(LogEntry).all()
+        filter_condition = self._create_filter(param,
+                                               timelimit=timelimit)
+        logentries = self.session.query(LogEntry).filter(filter_condition).all()
 
         for le in logentries:
             audit_dict = self.audit_entry_to_dict(le)
