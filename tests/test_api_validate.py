@@ -15,7 +15,7 @@ from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.resolver import save_resolver, get_resolver_list
 from privacyidea.lib.realm import set_realm, set_default_realm
 
-import smtpmock, ldap3mock
+import smtpmock, ldap3mock, responses
 
 
 PWFILE = "tests/testdata/passwords"
@@ -1307,4 +1307,98 @@ class ValidateAPITestCase(MyTestCase):
             self.assertTrue(res.status_code == 400, res)
             detail = json.loads(res.data).get("detail")
             self.assertEqual(detail, None)
+
+    @responses.activate
+    def test_24_trigger_challenge(self):
+        from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
+        from privacyidea.lib.config import set_privacyidea_config
+        post_url = "http://smsgateway.com/sms_send_api.cgi"
+        success_body = "ID 12345"
+
+        identifier = "myGW"
+        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider" \
+                          ".HttpSMSProvider"
+        id = set_smsgateway(identifier, provider_module, description="test",
+                            options={"HTTP_METHOD": "POST",
+                                     "URL": post_url,
+                                     "RETURN_SUCCESS": "ID",
+                                     "text": "{otp}",
+                                     "phone": "{phone}"})
+        self.assertTrue(id > 0)
+        # set config sms.identifier = myGW
+        r = set_privacyidea_config("sms.identifier", identifier)
+        self.assertEqual(r, "insert")
+
+        responses.add(responses.POST,
+                      post_url,
+                      body=success_body)
+
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        serial = "sms01"
+        pin = "pin"
+        user = "passthru"
+        r = init_token({"type": "sms", "serial": serial,
+                        "otpkey": self.otpkey,
+                        "phone": "123456",
+                        "pin": pin}, user=User(user, self.realm2))
+        self.assertTrue(r)
+
+        # Trigger challenge for serial number
+        with self.app.test_request_context('/validate/triggerchallenge',
+                                           method='POST',
+                                           data={"serial": serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), 1)
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(detail.get("messages")[0],
+                             "Enter the OTP from the SMS:")
+            transaction_id = detail.get("transaction_ids")[0]
+
+        # Check authentication
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": user,
+                                                 "realm": self.realm2,
+                                                 "transaction_id":
+                                                     transaction_id,
+                                                 "pass": "287082"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+
+        # Trigger challenge for user
+        with self.app.test_request_context('/validate/triggerchallenge',
+                                           method='POST',
+                                           data={"user": user,
+                                                 "realm": self.realm2},
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), 1)
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(detail.get("messages")[0],
+                             "Enter the OTP from the SMS:")
+            transaction_id = detail.get("transaction_ids")[0]
+
+        # Check authentication
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": user,
+                                                 "realm": self.realm2,
+                                                 "transaction_id":
+                                                     transaction_id,
+                                                 "pass": "969429"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+
+        remove_token(serial)
 

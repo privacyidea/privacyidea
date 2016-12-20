@@ -93,6 +93,7 @@ class EmailTokenClass(HotpTokenClass):
     def __init__(self, aToken):
         HotpTokenClass.__init__(self, aToken)
         self.set_type(u"email")
+        self.mode = ['challenge']
         # we support various hashlib methods, but only on create
         # which is effectively set in the update
         self.hashlibStr = get_from_config("hotp.hashlib", "sha1")

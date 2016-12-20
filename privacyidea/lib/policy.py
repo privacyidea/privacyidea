@@ -259,6 +259,7 @@ class ACTION(object):
     TOKENTYPE = "tokentype"
     TOKENWIZARD = "tokenwizard"
     TOKENWIZARD2ND = "tokenwizard_2nd_token"
+    TRIGGERCHALLENGE = "triggerchallenge"
     UNASSIGN = "unassign"
     USERLIST = "userlist"
     USERPAGESIZE = "user_page_size"
@@ -1198,7 +1199,13 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _("Admin is allowed to add and delete component "
                           "subscriptions."),
-                'mainmenu': [MAIN_MENU.COMPONENTS]}
+                'mainmenu': [MAIN_MENU.COMPONENTS]},
+            ACTION.TRIGGERCHALLENGE: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to trigger a challenge for "
+                          "e.g. SMS OTP token."),
+                'mainmenu': []
+            }
         },
 
         SCOPE.USER: {

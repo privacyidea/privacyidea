@@ -357,3 +357,17 @@ remove from the audit table but the administrator is simply not allowed to
 view older entries.
 
 Can be something like 10m (10 minutes), 10h (10 hours) or 10d (ten days).
+
+trigger_challenge
+~~~~~~~~~~~~~~~~~
+
+type: bool
+
+If set the administrator is allowed to call the API
+``/validate/triggerchallenge``. This API can be used to send an OTP SMS to
+user without having specified the PIN of the SMS token.
+
+The usual setup that one administrative account has only this single policy
+and is only used for triggering challenges.
+
+New in version 2.17.

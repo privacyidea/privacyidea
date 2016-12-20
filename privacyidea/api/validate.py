@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2016-12-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add triggerchallenge endpoint
 # 2016-10-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add subscription decorator
 # 2016-09-05 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -74,7 +76,8 @@ from privacyidea.lib.config import (return_saml_attributes, get_from_config,
 from privacyidea.lib.audit import getAudit
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
-                                           save_client_application_type)
+                                           save_client_application_type,
+                                           check_base_action)
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
                                             no_detail_on_fail,
@@ -92,6 +95,9 @@ from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.event import event
 from privacyidea.lib.subscriptions import CheckSubscription
+from privacyidea.api.auth import admin_required
+from privacyidea.lib.policy import ACTION
+from privacyidea.lib.token import get_tokens
 
 
 log = logging.getLogger(__name__)
@@ -349,5 +355,64 @@ def samlcheck():
                         "user": user.login,
                         "resolver": user.resolver,
                         "realm": user.realm})
+    return send_result(result_obj, details=details)
+
+
+@validate_blueprint.route('/triggerchallenge', methods=['POST', 'GET'])
+@admin_required
+@check_user_or_serial_in_request(request)
+@prepolicy(check_base_action, request, action=ACTION.TRIGGERCHALLENGE)
+@event("validate_triggerchallenge", request, g)
+def trigger_challenge():
+    """
+    An administrator can call this endpoint if he has the right of
+    ``triggerchallenge`` (scope: admin).
+    He can pass a ``user`` name and or a ``serial`` number.
+    privacyIDEA will trigger challenges for all native challenges response
+    tokens, possessed by this user or only for the given serial number.
+
+    The request needs to contain a valid PI-Authorization header.
+
+    :param user: The loginname/username of the user, who tries to authenticate.
+    :param realm: The realm of the user, who tries to authenticate. If the
+        realm is omitted, the user is looked up in the default realm.
+    :param serial: The serial number of the token.
+
+    :return: a json result with a "result" of the number of matching
+        challenge response tokens
+
+    **Example response** for a successful authentication:
+
+       .. sourcecode:: http
+
+           {"jsonrpc": "2.0",
+            "signature": "1939...146964",
+            "detail": {"transaction_ids": ["03921966357577766962"],
+                       "messages": ["Enter the OTP from the SMS:"],
+                       "threadid": 140422378276608},
+            "versionnumber": "unknown",
+            "version": "privacyIDEA unknown",
+            "result": {"status": true,
+                       "value": 1},
+            "time": 1482223663.517212,
+            "id": 1}
+    """
+    user = request.User
+    serial = getParam(request.all_data, "serial")
+    result_obj = 0
+    details = {"messages": [],
+               "transaction_ids": []}
+
+    token_objs = get_tokens(serial=serial, user=user)
+    for token_obj in token_objs:
+        if "challenge" in token_obj.mode:
+            # If this is a challenge response token, we create a challenge
+            success, return_message, transactionid, attributes = \
+                token_obj.create_challenge()
+            if success:
+                result_obj += 1
+                details.get("transaction_ids").append(transactionid)
+            details.get("messages").append(return_message)
+
     return send_result(result_obj, details=details)
 
