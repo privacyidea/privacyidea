@@ -127,6 +127,7 @@ class Audit(AuditBase):
         create a filter condition for the logentry
         """
         conditions = []
+        param = param or {}
         for search_key in param.keys():
             search_value = param.get(search_key)
             # We do not search if the search value only consists of '*'
