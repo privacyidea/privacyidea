@@ -575,6 +575,7 @@ def autoassign(request, response):
                 get_action_values(action=ACTION.AUTOASSIGN,
                                   scope=SCOPE.ENROLL,
                                   user=user_obj.login,
+                                  resolver=user_obj.resolver,
                                   realm=user_obj.realm,
                                   client=g.client_ip)
 

@@ -533,12 +533,15 @@ def set_realm(request=None, action=None):
     #  the realm
     if user_object:
         realm = user_object.realm
+        username = user_object.login
     else:  # pragma: no cover
         realm = request.all_data.get("realm")
+        username = None
 
     policy_object = g.policy_object
     new_realm = policy_object.get_action_values(ACTION.SETREALM,
                                                 scope=SCOPE.AUTHZ,
+                                                user=username,
                                                 realm=realm,
                                                 client=g.client_ip)
     if len(new_realm) > 1:
