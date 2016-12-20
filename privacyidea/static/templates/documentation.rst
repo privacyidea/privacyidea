@@ -36,7 +36,7 @@ System Base Configuration
 -------------------------
 
 {% for k, v in context.systemconfig.items() %}
-{{k}}: **{{v}}**
+{{k.decode("utf-8")}}: **{{v.decode("utf-8")}}**
 {% endfor %}
 
 Resolver Configuration
@@ -53,7 +53,7 @@ To learn more about resolvers read [#resolvers]_.
 Configuration
 .............
 {% for k, v in reso.data.items() %}
-{{k}}: **{{v}}**
+{{k.decode("utf-8")}}: **{{v.decode("utf-8")}}**
 {% endfor %}
 
 {% endfor %}
@@ -98,7 +98,7 @@ The following policies are defined in your system:
 ~~~~~~~~~~~~~~~~~
 {% for k, v in policy.items(): %}
 {% if k != "name": %}
-{{k}}: **{{v}}**
+{{k.decode("utf-8")}}: **{{v}}**
 {% endif %}
 {% endfor %}
 {% endfor %}
