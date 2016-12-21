@@ -117,11 +117,11 @@ POST request.
 Example
 '''''''
 
-In case of the Clicaktell provider the configuration will look like this::
+In case of the **Clicaktell** provider the configuration will look like this::
 
- * **URL**: http://api.clickatell.com/http/sendmsg
- * **HTTP_METHOD**: GET
- * **RETURN_SUCCESS**: ID
+ * **URL** : http://api.clickatell.com/http/sendmsg
+ * **HTTP_METHOD** : GET
+ * **RETURN_SUCCESS** : ID
 
 Set the additional **options** to be passed as HTTP GET parameters:
 
@@ -139,6 +139,23 @@ This will consturct an HTTP GET request like this::
 where ``text`` and ``to`` will contain the OTP value and the mobile
 phone number. privacyIDEA will assume a successful sent SMS if the
 response contains the text "ID".
+
+You can also use the **Twilio** service for sending SMS. :ref:`twilio`.
+
+ * **URL** : https://api.twilio.com/2010-04-01/Accounts/B...8/Messages
+ * **HTTP_METHOD** : POST
+
+For basic authentication you need:
+
+ * **USERNAME** : *your accountSid*
+ * **PASSWORD** : *your password*
+
+Set the additional **options** as POST parameters:
+
+ * From: *your Twilio phone number*
+ * Body: {otp}
+ * To: {phone}
+
 
 Sipgate provider
 ~~~~~~~~~~~~~~~~
@@ -203,3 +220,4 @@ The default *SUBJECT* is set to *{phone}* and the default *BODY* to *{otp}*.
 You may change the *SUBJECT* and the *BODY* accordingly.
 
 
+.. [#twilio] https://www.twilio.com/docs/api/rest/sending-messages
