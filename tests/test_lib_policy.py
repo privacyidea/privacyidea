@@ -271,7 +271,7 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(_check_policy_name("pol4", p), p)
 
         p = P.get_policies(resolver="reso1")
-        self.assertTrue(len(p) == 3, p)
+        self.assertEqual(len(p), 3)
         self.assertTrue(_check_policy_name("pol1", p), p)
         self.assertTrue(_check_policy_name("pol2", p), p)
         self.assertFalse(_check_policy_name("pol3", p), p)

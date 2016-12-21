@@ -211,7 +211,7 @@ class IdResolver (UserIdResolver):
         self.resource_server = config.get('Resourceserver')
         self.auth_client = config.get('Client')
         self.auth_secret = config.get('Secret')
-        self.mapping = yaml.load(config.get('Mapping'))
+        self.mapping = yaml.safe_load(config.get('Mapping'))
         self.create_scim_object()
         return self
 
@@ -263,7 +263,7 @@ class IdResolver (UserIdResolver):
             info = "Could not get user list: {0!s}".format(resp.status_code)
             log.error(info)
             raise Exception(info)
-        j_content = yaml.load(resp.content)
+        j_content = yaml.safe_load(resp.content)
 
         return j_content
     
@@ -289,7 +289,7 @@ class IdResolver (UserIdResolver):
             info = "Could not get user: {0!s}".format(resp.status_code)
             log.error(info)
             raise Exception(info)
-        j_content = yaml.load(resp.content)
+        j_content = yaml.safe_load(resp.content)
 
         return j_content
 
@@ -307,7 +307,7 @@ class IdResolver (UserIdResolver):
             log.error(info)
             raise Exception(info)
 
-        access_token = yaml.load(resp.content).get('access_token')
+        access_token = yaml.safe_load(resp.content).get('access_token')
         return access_token
 
     def create_scim_object(self):

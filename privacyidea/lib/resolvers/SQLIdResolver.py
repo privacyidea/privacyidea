@@ -550,7 +550,7 @@ class IdResolver (UserIdResolver):
         self.table = config.get('Table', "")
         self._editable = config.get("Editable", False)
         usermap = config.get('Map', {})
-        self.map = yaml.load(usermap)
+        self.map = yaml.safe_load(usermap)
         self.reverse_map = dict([[v, k] for k, v in self.map.items()])
         self.where = config.get('Where', "")
         self.encoding = str(config.get('Encoding') or "latin1")

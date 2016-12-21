@@ -579,8 +579,8 @@ class IdResolver (UserIdResolver):
         self.searchfilter = config.get("LDAPSEARCHFILTER")
         self.reversefilter = config.get("LDAPFILTER")
         userinfo = config.get("USERINFO", "{}")
-        self.userinfo = yaml.load(userinfo)
-        self.map = yaml.load(userinfo)
+        self.userinfo = yaml.safe_load(userinfo)
+        self.map = yaml.safe_load(userinfo)
         self.uidtype = config.get("UIDTYPE", "DN")
         self.noreferrals = config.get("NOREFERRALS", False)
         self._editable = config.get("EDITABLE", False)
@@ -728,7 +728,7 @@ class IdResolver (UserIdResolver):
             if not l.bind():
                 raise Exception("Wrong credentials")
             # create searchattributes
-            attributes = yaml.load(param["USERINFO"]).values()
+            attributes = yaml.safe_load(param["USERINFO"]).values()
             if uidtype.lower() != "dn":
                 attributes.append(str(uidtype))
             # search for users...

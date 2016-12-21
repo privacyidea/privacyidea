@@ -158,6 +158,7 @@ from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import check_time_in_range, reload_db
 from privacyidea.lib.user import User
 import datetime
+import yaml
 
 log = logging.getLogger(__name__)
 
