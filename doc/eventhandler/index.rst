@@ -161,3 +161,4 @@ Available Handler Modules
 
    usernotification
    tokenhandler
+   scripthandler

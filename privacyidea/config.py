@@ -42,6 +42,7 @@ class TestingConfig(Config):
     PI_LOGLEVEL = logging.DEBUG
     PI_GNUPG_HOME = "tests/testdata/gpg"
     CACHE_TYPE = "None"
+    PI_SCRIPT_HANDLER_DIRECTORY = "tests/testdata/scripts/"
 
 
 class ProductionConfig(Config):

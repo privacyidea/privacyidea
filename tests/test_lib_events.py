@@ -11,6 +11,7 @@ from privacyidea.lib.eventhandler.usernotification import (
     UserNotificationEventHandler, NOTIFY_TYPE)
 from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
                                                        ACTION_TYPE, VALIDITY)
+from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
 from privacyidea.lib.smtpserver import add_smtpserver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
@@ -151,6 +152,52 @@ class BaseEventHandlerTestCase(MyTestCase):
         remove_token(serial)
 
 
+class ScriptEventTestCase(MyTestCase):
+
+    def test_01_runscript(self):
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "SPASS01"
+
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        req.User = User()
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "options":{
+                           "user": "1",
+                           "realm": "1",
+                           "serial": "1",
+                           "logged_in_user": "1",
+                           "logged_in_role": "1",}
+                   }
+                   }
+
+        script_name = "ls.sh"
+        t_handler = ScriptEventHandler()
+        res = t_handler.do(script_name, options=options)
+        self.assertTrue(res)
+        remove_token("SPASS01")
+
+
 class TokenEventTestCase(MyTestCase):
 
     def test_01_set_tokenrealm(self):
@@ -164,7 +211,7 @@ class TokenEventTestCase(MyTestCase):
         audit_object = FakeAudit()
         audit_object.audit_data["serial"] = "SPASS01"
 
-        g.logged_in_user = {"user": "admin",
+        g.logged_in_user = {"username": "admin",
                             "role": "admin",
                             "realm": ""}
         g.audit_object = audit_object
@@ -211,7 +258,7 @@ class TokenEventTestCase(MyTestCase):
         audit_object = FakeAudit()
         audit_object.audit_data["serial"] = "SPASS01"
 
-        g.logged_in_user = {"user": "admin",
+        g.logged_in_user = {"username": "admin",
                             "role": "admin",
                             "realm": ""}
         g.audit_object = audit_object
@@ -254,7 +301,7 @@ class TokenEventTestCase(MyTestCase):
         audit_object = FakeAudit()
         audit_object.audit_data["serial"] = "SPASS01"
 
-        g.logged_in_user = {"user": "admin",
+        g.logged_in_user = {"username": "admin",
                             "role": "admin",
                             "realm": ""}
         g.audit_object = audit_object
@@ -308,7 +355,7 @@ class TokenEventTestCase(MyTestCase):
         audit_object = FakeAudit()
         audit_object.audit_data["serial"] = "SPASS01"
 
-        g.logged_in_user = {"user": "admin",
+        g.logged_in_user = {"username": "admin",
                             "role": "admin",
                             "realm": ""}
         g.audit_object = audit_object
@@ -351,7 +398,7 @@ class TokenEventTestCase(MyTestCase):
         audit_object = FakeAudit()
         audit_object.audit_data["serial"] = "SPASS01"
 
-        g.logged_in_user = {"user": "admin",
+        g.logged_in_user = {"username": "admin",
                             "role": "admin",
                             "realm": ""}
         g.audit_object = audit_object
@@ -403,7 +450,7 @@ class TokenEventTestCase(MyTestCase):
         audit_object = FakeAudit()
         audit_object.audit_data["serial"] = "SPASS01"
 
-        g.logged_in_user = {"user": "admin",
+        g.logged_in_user = {"username": "admin",
                             "role": "admin",
                             "realm": ""}
         g.audit_object = audit_object
@@ -453,7 +500,7 @@ class TokenEventTestCase(MyTestCase):
         audit_object = FakeAudit()
         audit_object.audit_data["serial"] = "SPASS01"
 
-        g.logged_in_user = {"user": "admin",
+        g.logged_in_user = {"username": "admin",
                             "role": "admin",
                             "realm": ""}
         g.audit_object = audit_object
@@ -517,7 +564,7 @@ class UserNotificationTestCase(MyTestCase):
         audit_object = FakeAudit()
         audit_object.audit_data["serial"] = "123456"
 
-        g.logged_in_user = {"user": "admin",
+        g.logged_in_user = {"username": "admin",
                             "role": "admin",
                             "realm": ""}
         g.audit_object = audit_object
@@ -567,7 +614,7 @@ class UserNotificationTestCase(MyTestCase):
         audit_object = FakeAudit()
         audit_object.audit_data["serial"] = "123456"
 
-        g.logged_in_user = {"user": "admin",
+        g.logged_in_user = {"username": "admin",
                             "role": "admin",
                             "realm": ""}
         g.audit_object = audit_object
@@ -943,7 +990,7 @@ class UserNotificationTestCase(MyTestCase):
         audit_object = FakeAudit()
         audit_object.audit_data["serial"] = "123456"
 
-        g.logged_in_user = {"user": "admin",
+        g.logged_in_user = {"username": "admin",
                             "role": "admin",
                             "realm": ""}
         g.audit_object = audit_object
@@ -992,7 +1039,7 @@ class UserNotificationTestCase(MyTestCase):
         audit_object = FakeAudit()
         audit_object.audit_data["serial"] = "123456"
 
-        g.logged_in_user = {"user": "admin",
+        g.logged_in_user = {"username": "admin",
                             "role": "admin",
                             "realm": ""}
         g.audit_object = audit_object
@@ -1045,7 +1092,7 @@ class UserNotificationTestCase(MyTestCase):
         audit_object = FakeAudit()
         audit_object.audit_data["serial"] = "123456"
 
-        g.logged_in_user = {"user": "admin",
+        g.logged_in_user = {"username": "admin",
                             "role": "admin",
                             "realm": ""}
         g.audit_object = audit_object
@@ -1115,7 +1162,7 @@ class UserNotificationTestCase(MyTestCase):
         audit_object = FakeAudit()
         audit_object.audit_data["serial"] = "123456"
 
-        g.logged_in_user = {"user": "testadmin",
+        g.logged_in_user = {"username": "testadmin",
                             "role": "admin",
                             "realm": ""}
         g.audit_object = audit_object
@@ -1153,7 +1200,7 @@ class UserNotificationTestCase(MyTestCase):
         self.assertTrue(res)
 
         # Now send the mail to a logged in user from a realm
-        g.logged_in_user = {"user": "cornelius",
+        g.logged_in_user = {"username": "cornelius",
                             "role": "user",
                             "realm": "realm1"}
         options = {"g": g,
@@ -1183,7 +1230,7 @@ class UserNotificationTestCase(MyTestCase):
         audit_object = FakeAudit()
         audit_object.audit_data["serial"] = "123456"
 
-        g.logged_in_user = {"user": "testadmin",
+        g.logged_in_user = {"username": "testadmin",
                             "role": "admin",
                             "realm": ""}
         g.audit_object = audit_object

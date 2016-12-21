@@ -94,11 +94,14 @@ def get_handler_object(handlername):
     from privacyidea.lib.eventhandler.usernotification import \
         UserNotificationEventHandler
     from privacyidea.lib.eventhandler.tokenhandler import TokenEventHandler
+    from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler
     h_obj = None
     if handlername == "UserNotification":
         h_obj = UserNotificationEventHandler()
     if handlername == "Token":
         h_obj = TokenEventHandler()
+    if handlername == "Script":
+        h_obj = ScriptEventHandler()
     return h_obj
 
 
