@@ -426,6 +426,11 @@ variables in the secured ``location`` block::
 ownCloud
 --------
 
+.. index:: ownCloud
+
+ownCloud < 9
+............
+
 The ownCloud plugin is a ownCloud user backend. The directory
 ``user_privacyidea`` needs to be copied to your owncloud ``apps`` directory.
 
@@ -444,16 +449,45 @@ Checking *Also allow users to authenticate with their normal passwords.* lets
 the user choose if he wants to authenticate with the OTP token or with his
 original password from the original user backend.
 
-.. note:: At the moment using a desktop client with a static password is not
+.. note:: At the moment using a desktop client with a one time password is not
    supported.
+
+ownCloud >= 9.1 and Nextcloud >= 10
+....................................
+
+ownCloud 9.1 and Nextcloud 10 come with a new two factor framework. The new
+privacyIDEA ownCloud App allows you to add a second factor, that is centrally
+managed by privacyIDEA to the ownCloud or Nextcloud installation.
+
+The ownCloud privacyIDEA App is available here :ref:`owncloud`.
+
+The App requires a subscription file to work for more than ten users. You can
+ get the subscription file at NetKnights. :ref:`owncloudSubscription`.
+
+Django
+------
+
+.. index:: Django
+
+You can add two factor authentication with privacyIDEA to Django using this
+Django plugin. See :ref:`django`.
+
+You can simple add ``PrivacyIDEA`` class to ``AUTHENTICATION_BACKENDS``
+settings of Django.
+
 
 OpenVPN
 -------
+
+.. index:: OpenVPN
 
 Read more about how to use OpenVPN with privacyidea at :ref:`openvpn`.
 
 Further plugins
 ---------------
+
+.. index:: Dokuwiki, Wordpress, Contao, Django
+
 You can find further plugins for
 Dokuwiki, Wordpress, Contao and Django at [#cornelinuxGithub]_.
 
@@ -464,3 +498,6 @@ Dokuwiki, Wordpress, Contao and Django at [#cornelinuxGithub]_.
 .. [#cornelinuxGithub] https://github.com/cornelinux?tab=repositories
 .. [#nginxPlugin] https://github.com/dhoffend/lua-nginx-privacyidea
 .. [#NPS] https://netknights.it/en/nps-2012-for-two-factor-authentication-with-privacyidea/
+.. [#django] https://github.com/jeweber/django-privacyidea-auth
+.. [#owncloud] https://apps.owncloud.com/content/show.php/privacyIDEA+ownCloud+App?content=174779
+.. [#owncloudSubscription] https://netknights.it/en/produkte/privacyidea-owncloud-app/
