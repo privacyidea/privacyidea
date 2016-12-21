@@ -54,7 +54,7 @@ def api_set():
     """
     subscription_file = request.files['file']
     file_contents = subscription_file.read()
-    subscription = yaml.load(file_contents)
+    subscription = yaml.safe_load(file_contents)
     r = save_subscription(subscription)
     g.audit_object.log({'success': True})
     return send_result(r)
