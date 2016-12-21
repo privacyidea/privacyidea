@@ -470,12 +470,13 @@ class Audit(AuditBase):
             log.warning("If you want to use statistics, you need to install "
                         "python-pandas.")
             return None
-        result = self.engine.execute("select * from %s where date "
-                                     "> '%s' and date < "
-                                     "'%s'"
-                                     % (TABLE_NAME, start_time, end_time))
-        rows = result.fetchall()
-        df = DataFrame(rows, columns=result.keys())
+
+        q = self.session.query(LogEntry)\
+            .filter(LogEntry.date > start_time,
+                    LogEntry.date < end_time)
+        rows = q.all()
+        rows = [r.__dict__ for r in rows]
+        df = DataFrame(rows)
         return df
 
     def clear(self):
