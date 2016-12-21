@@ -140,7 +140,7 @@ where ``text`` and ``to`` will contain the OTP value and the mobile
 phone number. privacyIDEA will assume a successful sent SMS if the
 response contains the text "ID".
 
-You can also use the **Twilio** service for sending SMS. :ref:`twilio`.
+You can also use the **Twilio** service for sending SMS. [#twilio]_.
 
  * **URL** : https://api.twilio.com/2010-04-01/Accounts/B...8/Messages
  * **HTTP_METHOD** : POST

@@ -459,10 +459,10 @@ ownCloud 9.1 and Nextcloud 10 come with a new two factor framework. The new
 privacyIDEA ownCloud App allows you to add a second factor, that is centrally
 managed by privacyIDEA to the ownCloud or Nextcloud installation.
 
-The ownCloud privacyIDEA App is available here :ref:`owncloud`.
+The ownCloud privacyIDEA App is available here [#owncloud]_.
 
 The App requires a subscription file to work for more than ten users. You can
- get the subscription file at NetKnights. :ref:`owncloudSubscription`.
+ get the subscription file at NetKnights [#owncloudSubscription]_.
 
 Django
 ------
