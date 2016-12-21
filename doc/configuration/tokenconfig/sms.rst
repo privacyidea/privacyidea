@@ -117,11 +117,11 @@ POST request.
 Example
 '''''''
 
-In case of the **Clicaktell** provider the configuration will look like this::
+In case of the **Clicaktell** provider the configuration will look like this:
 
- * **URL** : http://api.clickatell.com/http/sendmsg
- * **HTTP_METHOD** : GET
- * **RETURN_SUCCESS** : ID
+ * **URL**: http://api.clickatell.com/http/sendmsg
+ * **HTTP_METHOD**: GET
+ * **RETURN_SUCCESS**: ID
 
 Set the additional **options** to be passed as HTTP GET parameters:
 
@@ -142,13 +142,13 @@ response contains the text "ID".
 
 You can also use the **Twilio** service for sending SMS. [#twilio]_.
 
- * **URL** : https://api.twilio.com/2010-04-01/Accounts/B...8/Messages
- * **HTTP_METHOD** : POST
+ * **URL**: https://api.twilio.com/2010-04-01/Accounts/B...8/Messages
+ * **HTTP_METHOD**: POST
 
 For basic authentication you need:
 
- * **USERNAME** : *your accountSid*
- * **PASSWORD** : *your password*
+ * **USERNAME**: *your accountSid*
+ * **PASSWORD**: *your password*
 
 Set the additional **options** as POST parameters:
 
