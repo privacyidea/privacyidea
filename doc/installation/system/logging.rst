@@ -61,7 +61,7 @@ Such a configuration could look like this::
    level=DEBUG
 
    [logger_root]
-   level=NOTSET
+   level=ERROR
    handlers=file
 
 
