@@ -52,7 +52,7 @@ necessarily the same as the privacyIDEA realms, but they can be mapped.
 
 A user can authenticate to the FreeRADIUS either with a simple username
 "fred", or a username combined with a RADIUS realm in the format like
-"fred@realm1" or "realm1\fred".
+"fred@realm1" or "realm1\\fred".
 
 .. note:: The format of the realms is defined in
    ``/etc/freeradius/modules/realm`` as "suffix" and "ntdomain". I.e. you could
@@ -74,7 +74,7 @@ FreeRADIUS to identify this as a REALM you need to add this to the file
 Realm processing in FreeRADIUS
 ..............................
 
-A ``User-Name`` "fred@realmRadius" or "realmRadius\fred" is sent to the
+A ``User-Name`` "fred@realmRadius" or "realmRadius\\fred" is sent to the
 FreeRADIUS server.
 
 If "realmRadius" can not be identified as RADIUS realm (missing entry in
@@ -82,7 +82,7 @@ proxy.conf), then no realm can be split and the complete ``User-Name`` will be
 sent to privacyIDEA for validation.
 This can work out with "fred@realmRadius", since privacyIDEA
 might split the @-sign. But this probably will not work out for
-"realmRadius\fred".
+"realmRadius\\fred".
 
 If the "realmRadius" can be identified as RADIUS realm (entry in proxy.conf),
 then FreeRADIUS will split the ``User-Name`` into the RADIUS attributes
