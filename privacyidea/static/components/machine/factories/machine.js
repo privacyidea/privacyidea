@@ -60,7 +60,7 @@ myApp.factory("MachineFactory", function (AuthFactory, $http, $state,
                 }).success(callback).error(error_func);
             },
             getApplicationDefinition: function(callback) {
-                $http.get(applicationUrl, {
+                $http.get(applicationUrl + "/", {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
             }).success(callback
                 ).error(error_func);
