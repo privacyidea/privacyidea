@@ -56,7 +56,7 @@ myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope,
             updateUser: function(resolver, params, callback) {
                 params.resolver = resolver;
                 params.user = params.username;
-                $http.put(userUrl, params,
+                $http.put(userUrl + "/", params,
                     {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).success(callback).error(error_func);
             },
@@ -69,7 +69,7 @@ myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope,
                 var params = User;
                 params.user = User.username;
                 params.resolver = resolver;
-                $http.post(userUrl + '/', params,
+                $http.post(userUrl + "/", params,
                     {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).success(callback).error(error_func);
             }

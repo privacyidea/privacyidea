@@ -102,7 +102,7 @@ myApp.directive('assignUser', function($http, userUrl, AuthFactory, instanceUrl)
             var auth_token = AuthFactory.getAuthToken();
             return $http({
                 method: 'GET',
-                url: userUrl + "?username=*" + $viewValue + "*" +
+                url: userUrl + "/?username=*" + $viewValue + "*" +
                     "&realm=" + scope.newUserObject.realm,
                 headers: {'PI-Authorization': auth_token}
             }).then(function ($response) {
@@ -137,7 +137,7 @@ myApp.directive('assignToken', function($http, tokenUrl,
             var auth_token = AuthFactory.getAuthToken();
             return $http({
                 method: 'GET',
-                url: tokenUrl,
+                url: tokenUrl + "/",
                 headers: {'PI-Authorization': auth_token},
                 params: {assigned: "False",
                 serial: "*" + $viewValue + "*"}
@@ -169,7 +169,7 @@ myApp.directive('attachToken', function($http, tokenUrl,
             var auth_token = AuthFactory.getAuthToken();
             return $http({
                 method: 'GET',
-                url: tokenUrl,
+                url: tokenUrl + "/",
                 headers: {'PI-Authorization': auth_token},
                 params: {serial: "*" + $viewValue + "*"}
             }).then(function ($response) {
@@ -198,7 +198,7 @@ myApp.directive('attachMachine', function($http, machineUrl,
             var auth_token = AuthFactory.getAuthToken();
             return $http({
                 method: 'GET',
-                url: machineUrl,
+                url: machineUrl + "/",
                 headers: {'PI-Authorization': auth_token},
                 params: {any: $viewValue}
             }).then(function ($response) {

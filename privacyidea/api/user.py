@@ -134,6 +134,7 @@ def delete_user(resolvername=None, username=None):
     return send_result(res)
 
 
+@user_blueprint.route('', methods=['POST'])
 @user_blueprint.route('/', methods=['POST'])
 @prepolicy(check_base_action, request, ACTION.ADDUSER)
 @admin_required
@@ -176,6 +177,7 @@ def create_user_api():
     return send_result(r)
 
 
+@user_blueprint.route('', methods=['PUT'])
 @user_blueprint.route('/', methods=['PUT'])
 @prepolicy(check_base_action, request, ACTION.UPDATEUSER)
 def update_user():
