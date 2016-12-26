@@ -1,8 +1,8 @@
-python-privacyidea (2.17~dev4-1trusty) trusty; urgency=low
+python-privacyidea (2.17~dev5-1trusty) trusty; urgency=low
 
   * init
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Wed, 21 Dec 2016 16:00:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 26 Dec 2016 16:00:00 +0200
 
 python-privacyidea (2.16-1trusty) trusty; urgency=low
 
