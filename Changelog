@@ -1,9 +1,44 @@
-Version 2.17, 2016-12-xx
+Version 2.17, 2016-12-29
+
+  Features
+  * Token Handler. Using the token handler the administrator
+    can defined actions in response to events, to modify tokens
+    like deleting, modifying, initilizing... tokens (#532)
+  * Script Event Handler or Shell Event Handler allows to
+    trigger an external shell script, if some event occurs. (#536)
+  * Add additional endpoint to trigger a challenge response
+    like the sending of an SMS, if the token PIN is not
+    available (#531)
+  * Policy Handling to also check for secondary resolvers of
+    a user. This way a user can authenticate with his primary 
+    resolver but policy will also work for secondary resolvers (#543)
 
   Enhancements
   * The event handler conditions also determine a serial number
     even if there is no serial number in the request:
     If the user from the request only has one token assigned. (#571)
+  * Allow event definitions to be disabled (#537)
+  * Allow event to be addressed by a destinct name (#522)
+  * Improving LDAP performace by addressing different functionality 
+    of ldap3 version 1.x and 2.x. (#549)
+  * Improve SQL Audit by adding the SQL Audit table to the schema.
+    Table is not created during HTTP request. (#557)
+  * Limit audit log entry age. Users may only view audit
+    log entries up to a certain age. (#541)
+  * Add checkbox to only display used actions in a policy (#573)
+  * In event handler: Use serial number of a user's token if the 
+    user has only one token (#571)
+  * Download a filtered audit log (#539)
+
+  Fixes
+  * Add missing token serial number to audit log if token is
+    deletes (#546)
+  * Fix event handler saving (#551)
+  * HttpSMSProvider accepts status codes 201 and 202 in addition
+    to 200 (#562)
+  * Fix checkbox bug in NOREFERRALS of LDAP resolver (#563)
+  * Add documentation for SMS provider (#566)
+  * Remove 301 redirects from WebUI (#576)
 
 
 Version 2.16, 2016-11-10
