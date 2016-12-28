@@ -189,7 +189,7 @@ def check_subscription(application):
     if application.lower() in APPLICATIONS.keys():
         if len(subscriptions) == 0:
             # get the number of active assigned tokens
-            num_tokens = get_tokens(assigend=True, active=True, count=True)
+            num_tokens = get_tokens(assigned=True, active=True, count=True)
             if num_tokens > APPLICATIONS.get(application.lower()) \
                     and raise_exception_probability():
                 raise SubscriptionError(description="No subscription for your client.",
