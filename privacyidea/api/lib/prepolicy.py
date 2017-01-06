@@ -198,79 +198,88 @@ def check_otp_pin(request=None, action=None):
     """
     This policy function checks if the OTP PIN that is about to be set
     follows the OTP PIN policies ACTION.OTPPINMAXLEN, ACTION.OTPPINMINLEN and
-    ACTION.OTPPINCONTENTS in the SCOPE.USER. It is used to decorate the API
-    functions.
+    ACTION.OTPPINCONTENTS in the SCOPE.USER or SCOPE.ADMIN. It is used to
+    decorate the API functions.
 
     The pin is investigated in the params as pin = params.get("pin")
 
     In case the given OTP PIN does not match the requirements an exception is
     raised.
     """
-    # This policy is only used for USER roles at the moment:
-    if g.logged_in_user.get("role") == ROLE.USER:
-        params = request.all_data
-        pin = params.get("otppin", "") or params.get("pin", "")
-        serial = params.get("serial")
-        if serial:
-            # if this is a token, that does not use a pin, we ignore this check
-            # And immediately return true
-            tokensobject_list = get_tokens(serial=serial)
-            if (len(tokensobject_list) == 1 and
-                    tokensobject_list[0].using_pin is False):
-                return True
-        policy_object = g.policy_object
-        user_object = get_user_from_param(params)
-        # get the policies for minimum length, maximum length and PIN contents
-        pol_minlen = policy_object.get_action_values(action=ACTION.OTPPINMINLEN,
-                                                     scope=SCOPE.USER,
-                                                     user=user_object.login,
-                                                     realm=user_object.realm,
-                                                     client=g.client_ip,
-                                                     unique=True)
-        pol_maxlen = policy_object.get_action_values(action=ACTION.OTPPINMAXLEN,
-                                                     scope=SCOPE.USER,
-                                                     user=user_object.login,
-                                                     realm=user_object.realm,
-                                                     client=g.client_ip,
-                                                     unique=True)
-        pol_contents = policy_object.get_action_values(action=ACTION.OTPPINCONTENTS,
-                                                       scope=SCOPE.USER,
-                                                       user=user_object.login,
-                                                       realm=user_object.realm,
-                                                       client=g.client_ip,
-                                                       unique=True)
+    params = request.all_data
+    realm = params.get("realm")
+    pin = params.get("otppin", "") or params.get("pin", "")
+    serial = params.get("serial")
+    if serial:
+        # if this is a token, that does not use a pin, we ignore this check
+        # And immediately return true
+        tokensobject_list = get_tokens(serial=serial)
+        if (len(tokensobject_list) == 1 and
+                tokensobject_list[0].using_pin is False):
+            return True
+    policy_object = g.policy_object
+    role = g.logged_in_user.get("role")
+    username = g.logged_in_user.get("username")
+    admin_realm = g.logged_in_user.get("realm")
+    scope = SCOPE.ADMIN
+    if role == ROLE.USER:
+        scope = SCOPE.USER
+        realm = admin_realm
+        admin_realm = None
+    # get the policies for minimum length, maximum length and PIN contents
+    pol_minlen = policy_object.get_action_values(action=ACTION.OTPPINMINLEN,
+                                                 scope=scope,
+                                                 user=username,
+                                                 realm=realm,
+                                                 adminrealm=admin_realm,
+                                                 client=g.client_ip,
+                                                 unique=True)
+    pol_maxlen = policy_object.get_action_values(action=ACTION.OTPPINMAXLEN,
+                                                 scope=scope,
+                                                 user=username,
+                                                 realm=realm,
+                                                 adminrealm=admin_realm,
+                                                 client=g.client_ip,
+                                                 unique=True)
+    pol_contents = policy_object.get_action_values(action=ACTION.OTPPINCONTENTS,
+                                                   scope=scope,
+                                                   user=username,
+                                                   realm=realm,
+                                                   adminrealm=admin_realm,
+                                                   client=g.client_ip,
+                                                   unique=True)
 
-        if len(pol_minlen) == 1 and len(pin) < int(pol_minlen[0]):
-            # check the minimum length requirement
-            raise PolicyError("The minimum OTP PIN length is {0!s}".format(
-                              pol_minlen[0]))
+    if len(pol_minlen) == 1 and len(pin) < int(pol_minlen[0]):
+        # check the minimum length requirement
+        raise PolicyError("The minimum OTP PIN length is {0!s}".format(
+                          pol_minlen[0]))
 
-        if len(pol_maxlen) == 1 and len(pin) > int(pol_maxlen[0]):
-            # check the maximum length requirement
-            raise PolicyError("The maximum OTP PIN length is {0!s}".format(
-                              pol_minlen[0]))
+    if len(pol_maxlen) == 1 and len(pin) > int(pol_maxlen[0]):
+        # check the maximum length requirement
+        raise PolicyError("The maximum OTP PIN length is {0!s}".format(
+                          pol_maxlen[0]))
 
-        if len(pol_contents) == 1:
-            # check the contents requirement
-            chars = "[a-zA-Z]"  # c
-            digits = "[0-9]"    # n
-            special = "[.:,;-_<>+*!/()=?$§%&#~\^]"  # s
-            no_others = False
-            grouping = False
+    if len(pol_contents) == 1:
+        # check the contents requirement
+        chars = "[a-zA-Z]"  # c
+        digits = "[0-9]"    # n
+        special = "[.:,;_<>+*!/()=?$§%&#~\^-]"  # s
+        no_others = False
+        grouping = False
 
-            if pol_contents[0] == "-":
-                no_others = True
-                pol_contents = pol_contents[1:]
-            elif pol_contents[0] == "+":
-                grouping = True
-                pol_contents = pol_contents[1:]
-            #  TODO implement grouping and substraction
-            if "c" in pol_contents[0] and not re.search(chars, pin):
-                raise PolicyError("Missing character in PIN: {0!s}".format(chars))
-            if "n" in pol_contents[0] and not re.search(digits, pin):
-                raise PolicyError("Missing character in PIN: {0!s}".format(digits))
-            if "s" in pol_contents[0] and not re.search(special, pin):
-                raise PolicyError("Missing character in PIN: {0!s}".format(special))
+        if pol_contents[0] == "-":
+            no_others = True
+            pol_contents = pol_contents[1:]
+        elif pol_contents[0] == "+":
+            grouping = True
+            pol_contents = pol_contents[1:]
+        #  TODO implement grouping and substraction
+        if "c" in pol_contents[0] and not re.search(chars, pin):
+            raise PolicyError("Missing character in PIN: {0!s}".format(chars))
+        if "n" in pol_contents[0] and not re.search(digits, pin):
+            raise PolicyError("Missing character in PIN: {0!s}".format(digits))
+        if "s" in pol_contents[0] and not re.search(special, pin):
+            raise PolicyError("Missing character in PIN: {0!s}".format(special))
 
     return True
 
