@@ -97,9 +97,7 @@ class MotpTokenClass(TokenClass):
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {'user': {'motp_webprovision': {'type': 'bool',
-                                                                'desc': 'Enroll mOTP token via QR-Code.'}
-                                          }}
+               'policy': {}
                }
 
         if key is not None and key in res:
