@@ -13,6 +13,7 @@ from .base import MyTestCase
 import ldap3mock
 import responses
 import uuid
+import ldap3
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
@@ -27,6 +28,22 @@ from privacyidea.lib.resolver import (save_resolver,
                                       get_resolver_object, pretestresolver)
 from privacyidea.models import ResolverConfig
 
+
+objectGUIDs = [
+    '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d31',
+    '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d77',
+    '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d54'
+]
+
+try:
+    # Old version <= 1.4
+    objectGUIDs = [ uuid.UUID("{{{0!s}}}".format(ouid)).bytes_le for ouid in
+                    objectGUIDs]
+except AttributeError:
+    # This is for ldap3 >= 2.0.7
+    # We are using the human readable objectGUIDs
+    pass
+
 LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                  "attributes": {'cn': 'alice',
                                 "sn": "Cooper",
@@ -36,8 +53,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "homeDirectory": "/home/alice",
                                 "email": "alice@test.com",
                                 "accountExpires": 131024988000000000,
-                                "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
-                                              '\x9b\xf9\xcajl\rM1',
+                                "objectGUID": objectGUIDs[0],
                                 'mobile': ["1234", "45678"]}},
                 {"dn": 'cn=bob,ou=example,o=test',
                  "attributes": {'cn': 'bob',
@@ -48,8 +64,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "homeDirectory": "/home/bob",
                                 'userPassword': 'bobpwééé',
                                 "accountExpires": 9223372036854775807,
-                                "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
-                                              '\x9b\xf9\xcajl\rMw',
+                                "objectGUID": objectGUIDs[1],
                                 'oid': "3"}},
                 {"dn": 'cn=manager,ou=example,o=test',
                  "attributes": {'cn': 'manager',
@@ -59,8 +74,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "mobile": "123354",
                                 'userPassword': 'ldaptest',
                                 "accountExpires": 9223372036854775807,
-                                "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
-                                              '\x9b\xf9\xcajl\rMT',
+                                "objectGUID": objectGUIDs[2],
                                 'oid': "1"}}]
 
 LDAPDirectory_small = [{"dn": 'cn=bob,ou=example,o=test',
@@ -72,8 +86,7 @@ LDAPDirectory_small = [{"dn": 'cn=bob,ou=example,o=test',
                                 "homeDirectory": "/home/bob",
                                 'userPassword': 'bobpwééé',
                                 "accountExpires": 9223372036854775807,
-                                "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
-                                              '\x9b\xf9\xcajl\rMw',
+                                "objectGUID": objectGUIDs[0],
                                 'oid': "3"}},
                 {"dn": 'cn=manager,ou=example,o=test',
                  "attributes": {'cn': 'manager',
@@ -83,8 +96,7 @@ LDAPDirectory_small = [{"dn": 'cn=bob,ou=example,o=test',
                                 "mobile": "123354",
                                 'userPassword': 'ldaptest',
                                 "accountExpires": 9223372036854775807,
-                                "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
-                                              '\x9b\xf9\xcajl\rMT',
+                                "objectGUID": objectGUIDs[1],
                                 'oid': "1"}}
                        ]
 

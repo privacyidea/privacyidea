@@ -170,10 +170,10 @@ class Connection(object):
             index = self._find_user(dn)
         except StopIteration:
             # If we get here the user doesn't exist so continue
-	    # Create a entry object for the new user
-	    entry = {}
-	    entry['dn'] = dn
-	    entry['attributes'] = attributes
+            # Create a entry object for the new user
+            entry = {}
+            entry['dn'] = dn
+            entry['attributes'] = attributes
             if object_class != None:
                 entry['attributes'].update( {'objectClass': object_class} )
         else:
@@ -432,9 +432,9 @@ class Connection(object):
         # NOTE: We may need to expand on this list, but as this is not a real
         # LDAP server we should be OK.
         # Value to contain:
-        #   numbers, upper/lower case letters, astrisk, at symbol, full stop
-        #   backslash or a space
-        v = pyparsing.Word(pyparsing.alphanums + "*@.\\ ")
+        #   numbers, upper/lower case letters, astrisk, at symbol, minus, full
+        #   stop, backslash or a space
+        v = pyparsing.Word(pyparsing.alphanums + "-*@.\\ ")
         rel = pyparsing.oneOf("= ~= >= <=")
 
         expr = pyparsing.Forward()
@@ -732,7 +732,7 @@ class Ldap3Mock(object):
         # check the password
         correct_password = False
         # Anonymous bind
-        # Reload the directory just incase a change has been made to 
+        # Reload the directory just in case a change has been made to
         # user credentials
         self.directory = self._load_data(DIRECTORY)
         if authentication == ldap3.ANONYMOUS and user == "":
