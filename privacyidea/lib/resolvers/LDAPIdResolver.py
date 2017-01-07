@@ -101,7 +101,11 @@ try:
     WITH_SCHEMA = ldap3.GET_SCHEMA_INFO
 
     def _oguid(rval):
-        uid = str(uuid.UUID(bytes_le=rval))
+        #uid = str(uuid.UUID(bytes_le=rval))
+        # By changing the default search behaviour to ldap3.GET_SCHEMA_INFO
+        # the uid is returned in a readable format and we do not need to
+        # convert it.
+        uid = rval
         return uid
 
 except AttributeError:
