@@ -110,16 +110,11 @@ as "NTLM".
 The ``LoginName`` attribute is the attribute that holds the loginname. It
 can be changed to your needs.
 
-The searchfilter and the userfilter are used for forward and backward 
+The searchfilter is used for forward and backward
 search the object in LDAP.
 
 The ``searchfilter`` is used to list all possible users, that can be used
 in this resolver.
-
-The ``userfilter`` is used to find the LDAP object for a given loginname.
-This is why the ``userfilter`` contains the python string replacement parameter
-``%s``, which will be filled with the given loginname to find the 
-LDAP object.
 
 The ``attribute mapping`` maps LDAP object attributes to user attributes in
 privacyIDEA. privacyIDEA knows the following attributes:

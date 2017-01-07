@@ -88,7 +88,6 @@ class AuthorizationPolicyTestCase(MyTestCase):
                   'BINDPW': 'ldaptest',
                   'LOGINNAMEATTRIBUTE': 'cn',
                   'LDAPSEARCHFILTER': '(cn=*)',
-                  'LDAPFILTER': '(&(cn=%s))',
                   'USERINFO': '{ "username": "cn",'
                                   '"phone" : "telephoneNumber", '
                                   '"mobile" : "mobile"'
@@ -108,7 +107,6 @@ class AuthorizationPolicyTestCase(MyTestCase):
                   'BINDPW': 'ldaptest',
                   'LOGINNAMEATTRIBUTE': 'cn',
                   'LDAPSEARCHFILTER': '(cn=*)',
-                  'LDAPFILTER': '(&(cn=%s))',
                   'USERINFO': '{ "username": "cn",'
                               '"phone" : "telephoneNumber", '
                               '"mobile" : "mobile"'

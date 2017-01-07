@@ -4,6 +4,7 @@
 #
 #  2017-01-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Use get_info=ldap3.NONE for binds to avoid querying of subschema
+#             Remove LDAPFILTER and self.reversefilter
 #  2016-07-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Adding getUserId cache.
 #  2016-04-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -191,7 +192,6 @@ class IdResolver (UserIdResolver):
         self.sizelimit = 500
         self.loginname_attribute = ""
         self.searchfilter = ""
-        self.reversefilter = ""
         self.userinfo = {}
         self.uidtype = ""
         self.noreferrals = False
@@ -563,7 +563,6 @@ class IdResolver (UserIdResolver):
         '#ldap_sizelimit': 'SIZELIMIT',
         '#ldap_loginattr': 'LOGINNAMEATTRIBUTE',
         '#ldap_searchfilter': 'LDAPSEARCHFILTER',
-        '#ldap_userfilter': 'LDAPFILTER',
         '#ldap_mapping': 'USERINFO',
         '#ldap_uidtype': 'UIDTYPE',
         '#ldap_noreferrals' : 'NOREFERRALS',
@@ -584,7 +583,6 @@ class IdResolver (UserIdResolver):
         self.sizelimit = int(config.get("SIZELIMIT", 500))
         self.loginname_attribute = config.get("LOGINNAMEATTRIBUTE")
         self.searchfilter = config.get("LDAPSEARCHFILTER")
-        self.reversefilter = config.get("LDAPFILTER")
         userinfo = config.get("USERINFO", "{}")
         self.userinfo = yaml.safe_load(userinfo)
         self.map = yaml.safe_load(userinfo)
@@ -686,7 +684,6 @@ class IdResolver (UserIdResolver):
                                 'SIZELIMIT': 'int',
                                 'LOGINNAMEATTRIBUTE': 'string',
                                 'LDAPSEARCHFILTER': 'string',
-                                'LDAPFILTER': 'string',
                                 'USERINFO': 'string',
                                 'UIDTYPE': 'string',
                                 'NOREFERRALS': 'bool',
@@ -712,8 +709,7 @@ class IdResolver (UserIdResolver):
 
         Parameters are:
             BINDDN, BINDPW, LDAPURI, TIMEOUT, LDAPBASE, LOGINNAMEATTRIBUTE,
-            LDAPSEARCHFILTER,
-            LDAPFILTER, USERINFO, SIZELIMIT, NOREFERRALS, CACERTIFICATE,
+            LDAPSEARCHFILTER, USERINFO, SIZELIMIT, NOREFERRALS, CACERTIFICATE,
             AUTHTYPE
         """
         success = False

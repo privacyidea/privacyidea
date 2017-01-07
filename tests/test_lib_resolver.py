@@ -474,8 +474,6 @@ class LDAPResolverTestCase(MyTestCase):
                                              'LOGINNAMEATTRIBUTE': 'cn',
                                              'LDAPSEARCHFILTER':
                                                  '(cn=*)',
-                                             'LDAPFILTER': '(&('
-                                                           'cn=%s))',
                                              'USERINFO': '{ '
                                                          '"username": "cn",'
                                                          '"phone" '
@@ -502,7 +500,6 @@ class LDAPResolverTestCase(MyTestCase):
                       'BINDPW': 'ldaptest',
                       'LOGINNAMEATTRIBUTE': 'cn',
                       'LDAPSEARCHFILTER': '(cn=*)',
-                      'LDAPFILTER': '(&(cn=%s))',
                       'USERINFO': '{ "username": "cn",'
                                   '"phone" : "telephoneNumber", '
                                   '"mobile" : "mobile"'
@@ -556,7 +553,6 @@ class LDAPResolverTestCase(MyTestCase):
                       'BINDPW': 'ldaptest',
                       'LOGINNAMEATTRIBUTE': 'cn',
                       'LDAPSEARCHFILTER': '(cn=*)',
-                      'LDAPFILTER': '(&(cn=%s))',
                       'USERINFO': '{ "username": "email",'
                                   '"phone" : "telephoneNumber", '
                                   '"mobile" : "mobile"'
@@ -612,7 +608,6 @@ class LDAPResolverTestCase(MyTestCase):
                       'BINDPW': 'ldaptest',
                       'LOGINNAMEATTRIBUTE': 'cn',
                       'LDAPSEARCHFILTER': '(cn=*)',
-                      'LDAPFILTER': '(&(cn=%s))',
                       'USERINFO': '{ "username": "cn",'
                                   '"phone" : "telephoneNumber", '
                                   '"mobile" : "mobile"'
@@ -651,7 +646,6 @@ class LDAPResolverTestCase(MyTestCase):
                       'BINDPW': 'ldaptest',
                       'LOGINNAMEATTRIBUTE': 'cn',
                       'LDAPSEARCHFILTER': '(cn=*)',
-                      'LDAPFILTER': '(&(cn=%s))',
                       'USERINFO': '{ "username": "cn",'
                                   '"phone" : "telephoneNumber", '
                                   '"mobile" : "mobile"'
@@ -705,7 +699,6 @@ class LDAPResolverTestCase(MyTestCase):
                                 'BINDPW': 'ldaptest',
                                 'LOGINNAMEATTRIBUTE': 'cn',
                                 'LDAPSEARCHFILTER': '(cn=*)',
-                                'LDAPFILTER': '(&(cn=%s))',
                                 'USERINFO': '{ "username": "cn",'
                                             '"phone" : "telephoneNumber", '
                                             '"mobile" : "mobile"'
@@ -729,7 +722,6 @@ class LDAPResolverTestCase(MyTestCase):
                                 'LOGINNAMEATTRIBUTE': 'cn',
                                 'LDAPSEARCHFILTER': '(cn=*)',
                                 'BINDDN': '',
-                                'LDAPFILTER': '(&(cn=%s))',
                                 'USERINFO': '{ "username": "cn",'
                                             '"phone" : "telephoneNumber", '
                                             '"mobile" : "mobile"'
@@ -754,7 +746,6 @@ class LDAPResolverTestCase(MyTestCase):
                                 'BINDPW': 'wrongpw',
                                 'LOGINNAMEATTRIBUTE': 'cn',
                                 'LDAPSEARCHFILTER': '(cn=*)',
-                                'LDAPFILTER': '(&(cn=%s))',
                                 'USERINFO': '{ "username": "cn",'
                                             '"phone" : "telephoneNumber", '
                                             '"mobile" : "mobile"'
@@ -779,7 +770,6 @@ class LDAPResolverTestCase(MyTestCase):
                                 'AUTHTYPE': 'unknown',
                                 'LOGINNAMEATTRIBUTE': 'cn',
                                 'LDAPSEARCHFILTER': '(cn=*)',
-                                'LDAPFILTER': '(&(cn=%s))',
                                 'USERINFO': '{ "username": "cn",'
                                             '"phone" : "telephoneNumber", '
                                             '"mobile" : "mobile"'
@@ -855,7 +845,6 @@ class LDAPResolverTestCase(MyTestCase):
                       'BINDPW': 'ldaptest',
                       'LOGINNAMEATTRIBUTE': 'cn',
                       'LDAPSEARCHFILTER': '(cn=*)',
-                      'LDAPFILTER': '(&(cn=%s))',
                       'USERINFO': '{ "username": "cn",'
                                   '"phone" : "telephoneNumber", '
                                   '"mobile" : "mobile"'
@@ -885,7 +874,6 @@ class LDAPResolverTestCase(MyTestCase):
                       'BINDPW': 'ldaptest',
                       'LOGINNAMEATTRIBUTE': 'cn',
                       'LDAPSEARCHFILTER': '(cn=*)',
-                      'LDAPFILTER': '(&(cn=%s))',
                       'USERINFO': '{ "username": "cn",'
                                   '"phone" : "telephoneNumber",'
                                   '"mobile" : "mobile",'
@@ -928,7 +916,6 @@ class LDAPResolverTestCase(MyTestCase):
                       'BINDPW': 'ldaptest',
                       'LOGINNAMEATTRIBUTE': 'cn',
                       'LDAPSEARCHFILTER': '(cn=*)',
-                      'LDAPFILTER': '(&(cn=%s))',
                       'USERINFO': '{ "username": "cn",'
                                   '"phone" : "telephoneNumber", '
                                   '"mobile" : "mobile"'
@@ -955,7 +942,6 @@ class LDAPResolverTestCase(MyTestCase):
                       'BINDPW': 'ldaptest',
                       'LOGINNAMEATTRIBUTE': 'cn',
                       'LDAPSEARCHFILTER': '(cn=*)',
-                      'LDAPFILTER': '(&(cn=%s))',
                       'USERINFO': '{ "username": "cn",'
                                   '"phone" : "telephoneNumber", '
                                   '"mobile" : "mobile"'
@@ -982,7 +968,6 @@ class LDAPResolverTestCase(MyTestCase):
                       'BINDPW': 'ldaptest',
                       'LOGINNAMEATTRIBUTE': 'cn',
                       'LDAPSEARCHFILTER': '(cn=*)',
-                      'LDAPFILTER': '(&(cn=%s))',
                       'USERINFO': '{ "username": "cn",'
                                   '"phone" : "telephoneNumber", '
                                   '"mobile" : "mobile",'
@@ -1064,7 +1049,6 @@ class LDAPResolverTestCase(MyTestCase):
                       'BINDPW': 'ldaptest',
                       'LOGINNAMEATTRIBUTE': 'cn',
                       'LDAPSEARCHFILTER': '(cn=*)',
-                      'LDAPFILTER': '(&(cn=%s))',
                       'USERINFO': '{ "username": "cn",'
                                   '"phone" : "telephoneNumber", '
                                   '"mobile" : "mobile",'
@@ -1113,7 +1097,6 @@ class LDAPResolverTestCase(MyTestCase):
                       'BINDPW': 'ldaptest',
                       'LOGINNAMEATTRIBUTE': 'cn',
                       'LDAPSEARCHFILTER': '(cn=*)',
-                      'LDAPFILTER': '(&(cn=%s))',
                       'USERINFO': '{ "username": "cn",'
                                   '"phone" : "telephoneNumber", '
                                   '"mobile" : "mobile"'
@@ -1143,7 +1126,6 @@ class LDAPResolverTestCase(MyTestCase):
                       'BINDPW': 'ldaptest',
                       'LOGINNAMEATTRIBUTE': 'cn',
                       'LDAPSEARCHFILTER': '(cn=*)',
-                      'LDAPFILTER': '(&(cn=%s))',
                       'USERINFO': '{ "username": "cn",'
                                   '"phone" : "telephoneNumber", '
                                   '"mobile" : "mobile"'
@@ -1167,7 +1149,6 @@ class LDAPResolverTestCase(MyTestCase):
                       'BINDPW': 'ldaptest',
                       'LOGINNAMEATTRIBUTE': 'cn',
                       'LDAPSEARCHFILTER': '(cn=*)',
-                      'LDAPFILTER': '(&(cn=%s))',
                       'USERINFO': '{ "username": "cn",'
                                   '"mobile" : "mobile"'
                                   ', "email" : "mail", '
@@ -1438,7 +1419,6 @@ class ResolverTestCase(MyTestCase):
                                'BINDPW': 'ldaptest',
                                'LOGINNAMEATTRIBUTE': 'cn',
                                'LDAPSEARCHFILTER': '(cn=*)',
-                               'LDAPFILTER': '(&(cn=%s))',
                                'USERINFO': '{ "username": "cn",'
                                            '"phone" : "telephoneNumber", '
                                            '"mobile" : "mobile"'
@@ -1467,7 +1447,6 @@ class ResolverTestCase(MyTestCase):
                                'BINDPW': 'ldaptest',
                                'LOGINNAMEATTRIBUTE': 'cn',
                                'LDAPSEARCHFILTER': '(cn=*)',
-                               'LDAPFILTER': '(&(cn=%s))',
                                'USERINFO': '{ "username": "cn",'
                                            '"phone" : "telephoneNumber", '
                                            '"surname" : "sn", '
