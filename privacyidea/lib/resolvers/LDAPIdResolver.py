@@ -2,6 +2,8 @@
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
+#  2017-01-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Use get_info=ldap3.NONE for binds to avoid querying of subschema
 #  2016-07-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Adding getUserId cache.
 #  2016-04-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -94,6 +96,8 @@ returned as bytestring                      human readable string
 try:
     # Old version <= 1.4
     STRATEGY = ldap3.POOLING_STRATEGY_ROUND_ROBIN
+    NO_SCHEMA = ldap3.GET_NO_INFO
+    WITH_SCHEMA = ldap3.GET_SCHEMA_INFO
 
     def _oguid(rval):
         uid = str(uuid.UUID(bytes_le=rval))
@@ -102,6 +106,8 @@ try:
 except AttributeError:
     # This is for ldap3 >= 2.0.7
     STRATEGY = ldap3.ROUND_ROBIN
+    NO_SCHEMA = ldap3.NONE
+    WITH_SCHEMA = ldap3.SCHEMA
 
     def _oguid(rval):
         return rval
@@ -215,7 +221,8 @@ class IdResolver (UserIdResolver):
         else:
             bind_user = self._getDN(uid)
 
-        server_pool = self.get_serverpool(self.uri, self.timeout)
+        server_pool = self.get_serverpool(self.uri, self.timeout,
+                                          get_info=NO_SCHEMA)
         password = to_utf8(password)
 
         try:
@@ -625,7 +632,7 @@ class IdResolver (UserIdResolver):
         return server, port, ssl
 
     @classmethod
-    def get_serverpool(cls, urilist, timeout):
+    def get_serverpool(cls, urilist, timeout, get_info=None):
         """
         This create the serverpool for the ldap3 connection.
         The URI from the LDAP resolver can contain a comma separated list of
@@ -638,22 +645,22 @@ class IdResolver (UserIdResolver):
         :type urilist: basestring
         :param timeout: The connection timeout
         :type timeout: float
+        :param get_info: The get_info type passed to the ldap3.Sever
+            constructor. default: ldap3.SCHEMA, should be ldap3.NONE in case
+            of a bind.
         :return: Server Pool
         :rtype: LDAP3 Server Pool Instance
         """
-        try:
-            strategy = ldap3.POOLING_STRATEGY_ROUND_ROBIN
-        except AttributeError:
-            # This is for ldap3 >= 2.0.7
-            strategy = ldap3.ROUND_ROBIN
-        server_pool = ldap3.ServerPool(None, strategy, active=SERVERPOOL_ROUNDS,
+        get_info = get_info or WITH_SCHEMA
+        server_pool = ldap3.ServerPool(None, STRATEGY, active=SERVERPOOL_ROUNDS,
                                        exhaust=SERVERPOOL_SKIP)
         for uri in urilist.split(","):
             uri = uri.strip()
             host, port, ssl = cls.split_uri(uri)
             server = ldap3.Server(host, port=port,
                                   use_ssl=ssl,
-                                  connect_timeout=float(timeout))
+                                  connect_timeout=float(timeout),
+                                  get_info=get_info)
             server_pool.add(server)
             log.debug("Added {0!s}, {1!s}, {2!s} to server pool.".format(host, port, ssl))
         return server_pool

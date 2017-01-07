@@ -1,3 +1,7 @@
+Version X, 2017-xx-xx
+
+  * Use get_info in bind requests to avoid querying of subschema (#585)
+
 Version 2.17, 2016-12-29
 
   Features
