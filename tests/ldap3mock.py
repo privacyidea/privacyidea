@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 """
+2017-01-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+           Remove objectGUID. Since we stick with ldap3 version 2.1,
+           the objectGUID is returned in a human readable format.
 2016-12-05 Martin Wheldon <martin.wheldon@greenhills-it.co.uk>
            Fixed issue creating ldap entries with objectClasses defined
            Fix problem when searching for attribute values containing the
@@ -345,8 +348,8 @@ class Connection(object):
             values_from_directory = entry.get("attributes").get(attribute)
             if isinstance(values_from_directory, list):
                 for item in values_from_directory:
-                    if attribute == "objectGUID":
-                        item = escape_bytes(item)
+                    #if attribute == "objectGUID":
+                    #    item = escape_bytes(item)
 
                     if match_using_regex:
                         m = re.match(regex, str(item), re.I)
@@ -359,8 +362,8 @@ class Connection(object):
                             matches.append(entry)
 
             else:
-                if attribute == "objectGUID":
-                    values_from_directory = escape_bytes(values_from_directory)
+                #if attribute == "objectGUID":
+                #    values_from_directory = escape_bytes(values_from_directory)
                 if match_using_regex:
                     m = re.match(regex, str(values_from_directory), re.I)
                     if m:
@@ -394,8 +397,8 @@ class Connection(object):
             values_from_directory = entry.get("attributes").get(attribute)
             if isinstance(values_from_directory, list):
                 for item in values_from_directory:
-                    if attribute == "objectGUID":
-                        item = escape_bytes(item)
+                    #if attribute == "objectGUID":
+                    #    item = escape_bytes(item)
 
                     if match_using_regex:
                         m = re.match(regex, str(item), re.I)
@@ -404,12 +407,12 @@ class Connection(object):
                     else:
                         if item == value:
                             found = True
-                if found == False:
+                if found is False:
                     entry["type"] = "searchResEntry"
                     matches.append(entry)
             else:
-                if attribute == "objectGUID":
-                    values_from_directory = escape_bytes(values_from_directory)
+                #if attribute == "objectGUID":
+                #    values_from_directory = escape_bytes(values_from_directory)
                 if match_using_regex:
                     m = re.match(regex, str(values_from_directory), re.I)
                     if not m:
@@ -521,8 +524,8 @@ class Connection(object):
         return candidates
 
     def _search_and(self, base, search_filter, candidates=None):
-        # Load the data from the directory, if we arn't passed any
-        if candidates == [] or candidates == None:
+        # Load the data from the directory, if we aren't passed any
+        if candidates == [] or candidates is None:
             candidates = self.directory
         this_filter = list()
 

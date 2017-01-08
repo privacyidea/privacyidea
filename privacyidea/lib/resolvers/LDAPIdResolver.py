@@ -63,8 +63,6 @@ import hashlib
 import binascii
 from privacyidea.lib.crypto import urandom, geturandom
 from privacyidea.lib.utils import is_true
-
-import uuid
 import datetime
 
 from gettext import gettext as _
@@ -83,40 +81,6 @@ SERVERPOOL_SKIP = 30
 # 1 sec == 10^9 nano secs == 10^7 * (100 nano secs)
 MS_AD_MULTIPLYER = 10 ** 7
 MS_AD_START = datetime.datetime(1601, 1, 1)
-
-"""
-ldap3 has some changes from version 1.x to 2.0.7.
-We need to take this into account here.
-
-            <= 1.4                           >= 2.0.7
-strategy:   POOLING_STRATEGY_ROUND_ROBIN    ROUND_ROBIN
-Connection: no receive_timeout              parameter reveice_timeout
-objectGUID
-returned as bytestring                      human readable string
-"""
-try:
-    # Old version <= 1.4
-    STRATEGY = ldap3.POOLING_STRATEGY_ROUND_ROBIN
-    NO_SCHEMA = ldap3.GET_NO_INFO
-    WITH_SCHEMA = ldap3.GET_SCHEMA_INFO
-
-    def _oguid(rval):
-        #uid = str(uuid.UUID(bytes_le=rval))
-        # By changing the default search behaviour to ldap3.GET_SCHEMA_INFO
-        # the uid is returned in a readable format and we do not need to
-        # convert it.
-        uid = rval
-        return uid
-
-except AttributeError:
-    # This is for ldap3 >= 2.0.7
-    STRATEGY = ldap3.ROUND_ROBIN
-    NO_SCHEMA = ldap3.NONE
-    WITH_SCHEMA = ldap3.SCHEMA
-
-    def _oguid(rval):
-        return rval
-
 
 
 def get_ad_timestamp_now():
@@ -226,7 +190,7 @@ class IdResolver (UserIdResolver):
             bind_user = self._getDN(uid)
 
         server_pool = self.get_serverpool(self.uri, self.timeout,
-                                          get_info=NO_SCHEMA)
+                                          get_info=ldap3.NONE)
         password = to_utf8(password)
 
         try:
@@ -310,9 +274,6 @@ class IdResolver (UserIdResolver):
                 uid = attributes.get(uidtype)[0]
             else:
                 uid = attributes.get(uidtype)
-            # in case: fix the objectGUID for ldap3 <= 1.4
-            if uidtype == "objectGUID":
-                uid = _oguid(uid)
         return uid
 
     @cache
@@ -330,9 +291,6 @@ class IdResolver (UserIdResolver):
         if self.uidtype.lower() == "dn":
             dn = userId
         else:
-            if self.uidtype == "objectGUID":
-                userId = uuid.UUID("{{{0!s}}}".format(userId)).bytes_le
-                userId = escape_bytes(userId)
             # get the DN for the Object
             self._bind()
             filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter, self.uidtype, userId)
@@ -384,9 +342,6 @@ class IdResolver (UserIdResolver):
                           search_filter="(&" + self.searchfilter + ")",
                           attributes=self.userinfo.values())
         else:
-            if self.uidtype == "objectGUID":
-                userId = uuid.UUID("{{{0!s}}}".format(userId)).bytes_le
-                userId = escape_bytes(userId)
             filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter, self.uidtype, userId)
             self.l.search(search_base=self.basedn,
                               search_scope=self.scope,
@@ -417,8 +372,7 @@ class IdResolver (UserIdResolver):
             for map_k, map_v in self.userinfo.items():
                 if ldap_k == map_v:
                     if ldap_k == "objectGUID":
-                        uuid_v = uuid.UUID(bytes_le=ldap_v[0])
-                        ret[map_k] = str(uuid_v)
+                        ret[map_k] = ldap_v[0]
                     elif type(ldap_v) == list and map_k not in ["mobile"]:
                         # All lists (except) mobile return the first value as
                         #  a string. Mobile is returned as a list
@@ -653,8 +607,9 @@ class IdResolver (UserIdResolver):
         :return: Server Pool
         :rtype: LDAP3 Server Pool Instance
         """
-        get_info = get_info or WITH_SCHEMA
-        server_pool = ldap3.ServerPool(None, STRATEGY, active=SERVERPOOL_ROUNDS,
+        get_info = get_info or ldap3.SCHEMA
+        server_pool = ldap3.ServerPool(None, ldap3.ROUND_ROBIN,
+                                       active=SERVERPOOL_ROUNDS,
                                        exhaust=SERVERPOOL_SKIP)
         for uri in urilist.split(","):
             uri = uri.strip()

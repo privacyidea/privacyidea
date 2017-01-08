@@ -13,7 +13,6 @@ from .base import MyTestCase
 import ldap3mock
 import responses
 import uuid
-import ldap3
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
@@ -28,21 +27,12 @@ from privacyidea.lib.resolver import (save_resolver,
                                       get_resolver_object, pretestresolver)
 from privacyidea.models import ResolverConfig
 
-
 objectGUIDs = [
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d31',
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d77',
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d54'
 ]
 
-try:
-    # Old version <= 1.4
-    objectGUIDs = [ uuid.UUID("{{{0!s}}}".format(ouid)).bytes_le for ouid in
-                    objectGUIDs]
-except AttributeError:
-    # This is for ldap3 >= 2.0.7
-    # We are using the human readable objectGUIDs
-    pass
 
 LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                  "attributes": {'cn': 'alice',
@@ -795,7 +785,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertFalse(res[0], res)
         self.assertTrue("Authtype unknown not supported" in res[1], res)
 
-    def test_06_slit_uri(self):
+    def test_06_split_uri(self):
         uri = "ldap://server"
         server, port, ssl = LDAPResolver.split_uri(uri)
         self.assertEqual(ssl, False)
@@ -1078,12 +1068,12 @@ class LDAPResolverTestCase(MyTestCase):
         })
 
         user = "achmed"
-        uid = uuid.uuid4().bytes
-        user_id = str(uuid.UUID(bytes_le=uid))
+        uid_bin = uuid.uuid4().bytes
+        user_id = str(uuid.UUID(bytes_le=uid_bin))
 
         attributes = {"username": user,
                       "surname": "Ali",
-                      "userid": uid,
+                      "userid": user_id,
                       "email": "achmed.ali@example.com",
                       "password": "testing123",
                       'mobile': ["1234", "45678"],
