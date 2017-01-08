@@ -7,8 +7,8 @@ VERSION2=1.3.0
 URL2=https://pypi.python.org/packages/source/P/PyJWT/PyJWT-$(VERSION2).tar.gz
 
 CONTRIB3=python-ldap3
-VERSION3=2.1.0
-URL3=https://pypi.python.org/packages/44/53/b458da2329ad57fa0044717cace2fa901ea6999bc141e6d65245f77e4eb8/ldap3-$(VERSION3).tar.gz
+VERSION3=2.1.1
+URL3=https://pypi.python.org/packages/f8/15/f8a33118b8e909e3953e5d9db6459693754ea42ae2aa481f4cab12e68c67/ldap3-$(VERSION3).tar.gz
 
 CONTRIB4=python-flask-sqlalchemy
 VERSION4=2.0
