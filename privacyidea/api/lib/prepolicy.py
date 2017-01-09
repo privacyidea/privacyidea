@@ -678,6 +678,8 @@ def mangle(request=None, action=None):
             log.debug("mangling authentication data: {0!s}".format(mangle_key))
             request.all_data[mangle_key] = re.sub(search, replace,
                                                   mangle_value)
+            if mangle_key in ["user", "realm"]:
+                request.User = get_user_from_param(request.all_data)
     return True
 
 

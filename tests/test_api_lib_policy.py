@@ -723,6 +723,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         mangle(req)
         # Check if the user was modified
         self.assertEqual(req.all_data.get("user"), "user")
+        self.assertEqual(req.User, User("user", "realm1"))
 
         # Set a mangle policy to remove blanks from realm name
         set_policy(name="mangle2",
@@ -735,6 +736,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         mangle(req)
         # Check if the realm was modified
         self.assertEqual(req.all_data.get("realm"), "lowerRealm")
+        self.assertEqual(req.User, User("", "lowerrealm"))
 
         # finally delete policy
         delete_policy("mangle1")
