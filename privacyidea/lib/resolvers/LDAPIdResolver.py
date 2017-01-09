@@ -543,6 +543,7 @@ class IdResolver (UserIdResolver):
         self.searchfilter = config.get("LDAPSEARCHFILTER")
         userinfo = config.get("USERINFO", "{}")
         self.userinfo = yaml.safe_load(userinfo)
+        self.userinfo["username"] = self.loginname_attribute
         self.map = yaml.safe_load(userinfo)
         self.uidtype = config.get("UIDTYPE", "DN")
         self.noreferrals = config.get("NOREFERRALS", False)

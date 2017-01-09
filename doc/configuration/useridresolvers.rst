@@ -119,7 +119,6 @@ in this resolver.
 The ``attribute mapping`` maps LDAP object attributes to user attributes in
 privacyIDEA. privacyIDEA knows the following attributes:
 
- * username *(mandatory)*,
  * phone,
  * mobile,
  * email,

@@ -555,8 +555,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'BINDPW': 'ldaptest',
                       'LOGINNAMEATTRIBUTE': 'cn',
                       'LDAPSEARCHFILTER': '(cn=*)',
-                      'USERINFO': '{ "username": "email",'
-                                  '"phone" : "telephoneNumber", '
+                      'USERINFO': '{ "phone" : "telephoneNumber", '
                                   '"mobile" : "mobile"'
                                   ', "email" : "email", '
                                   '"surname" : "sn", '
@@ -569,10 +568,10 @@ class LDAPResolverTestCase(MyTestCase):
 
         user = "bob"
         user_id = y.getUserId(user)
-        self.assertTrue(user_id == "cn=bob,ou=example,o=test", user_id)
+        self.assertEqual("cn=bob,ou=example,o=test", user_id)
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "c623ad4ec00e6f7249939de633fe94339bb4580d", rid)
+        self.assertEqual('8372b96a28ff8b4710f4aba838d5f9891ad4e381', rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -583,8 +582,23 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue("config" in rdesc.get("ldapresolver"), rdesc)
         self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
 
-        uinfo = y.getUserInfo(user_id)
-        self.assertTrue(uinfo.get("username") == "bob@example.com", uinfo)
+        # Use email as logon name
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'email',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{ "phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "email", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'DN',
+                      })
+
+        uinfo = y.getUserInfo("cn=bob,ou=example,o=test")
+        self.assertTrue(uinfo.get("email") == "bob@example.com", uinfo)
 
         ret = y.getUserList({"username": "bob@example.com"})
         self.assertTrue(len(ret) == 1, ret)
