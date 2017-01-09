@@ -1843,7 +1843,7 @@ def check_otp(serial, otpval):
 @libpolicy(auth_user_timelimit)
 @libpolicy(auth_lastauth)
 @libpolicy(auth_user_passthru)
-@log_with(log)
+@log_with(log, hide_kwargs=["passw"])
 def check_user_pass(user, passw, options=None):
     """
     This function checks the otp for a given user.
