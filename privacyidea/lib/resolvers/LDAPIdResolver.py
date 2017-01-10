@@ -445,7 +445,7 @@ class IdResolver (UserIdResolver):
             attributes.append(str(self.uidtype))
 
         # do the filter depending on the searchDict
-        filter = "(&" + self.searchfilter
+        filter = u"(&" + self.searchfilter
         for search_key in searchDict.keys():
             if search_key == "accountExpires":
                 comperator = ">="
@@ -456,7 +456,8 @@ class IdResolver (UserIdResolver):
                                                   get_ad_timestamp_now(),
                                                   self.userinfo[search_key])
             else:
-                filter += "({0!s}={1!s})".format(self.userinfo[search_key], searchDict[search_key])
+                filter += u"({0!s}={1!s})".format(self.userinfo[search_key],
+                                                  searchDict[search_key])
         filter += ")"
 
         g = self.l.extend.standard.paged_search(search_base=self.basedn,
