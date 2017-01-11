@@ -6,6 +6,7 @@ This depends on lib.tokenclass
 from .base import MyTestCase
 from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
 from privacyidea.models import Token
+from privacyidea.lib.token import remove_token
 
 
 class RegistrationTokenTestCase(MyTestCase):
@@ -56,3 +57,27 @@ class RegistrationTokenTestCase(MyTestCase):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         self.assertEqual(db_token, None)
 
+        remove_token(self.serial1)
+
+    def test_04_create_token_do_not_delete(self):
+        db_token = Token(self.serial1, tokentype="registration")
+        db_token.save()
+        token = RegistrationTokenClass(db_token)
+        token.update({})
+        token.add_tokeninfo("do_not_delete", "1")
+        init_detail = token.get_init_detail()
+        # Now we can use the token more than once
+        regcode = init_detail.get("registrationcode")
+
+        r = token.check_otp(regcode)
+        self.assertEqual(r, 0)
+        r = token.check_otp(regcode)
+        self.assertEqual(r, 0)
+        # check that the token is not deleted after inc_count_auth_success
+        token.inc_count_auth_success()
+
+        # check if the token sill exists after check_otp
+        db_token = Token.query.filter(Token.serial == self.serial1).first()
+        self.assertNotEqual(db_token, None)
+
+        remove_token(self.serial1)

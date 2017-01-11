@@ -34,7 +34,8 @@ from privacyidea.lib.token import (get_token_types, set_validity_period_end,
                                    set_validity_period_start)
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.token import (set_realms, remove_token, enable_token,
-                                   unassign_token, init_token, set_description)
+                                   unassign_token, init_token, set_description,
+                                   add_tokeninfo)
 from privacyidea.lib.utils import parse_date
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from datetime import datetime
@@ -57,6 +58,7 @@ class ACTION_TYPE(object):
     INIT = "enroll"
     SET_DESCRIPTION = "set description"
     SET_VALIDITY = "set validity"
+    SET_TOKENINFO = "set tokeninfo"
 
 
 class VALIDITY(object):
@@ -149,8 +151,16 @@ class TokenEventHandler(BaseEventHandler):
                                              "date or an offset like +10m, "
                                              "+24h, +7d.")
                         }
-
+                       },
+                   ACTION_TYPE.SET_TOKENINFO:
+                       {"tokeninfo":
+                            {"type": "str",
+                             "required": True,
+                             "description": _("A comma separated list of key "
+                                              "value pairs like key=value.")
+                             }
                        }
+
                    }
         return actions
 
@@ -180,9 +190,16 @@ class TokenEventHandler(BaseEventHandler):
                               ACTION_TYPE.SET_DESCRIPTION,
                               ACTION_TYPE.DELETE, ACTION_TYPE.DISABLE,
                               ACTION_TYPE.ENABLE, ACTION_TYPE.UNASSIGN,
-                              ACTION_TYPE.SET_VALIDITY]:
+                              ACTION_TYPE.SET_VALIDITY,
+                              ACTION_TYPE.SET_TOKENINFO]:
             if serial:
-                if action.lower() == ACTION_TYPE.SET_TOKENREALM:
+                if action.lower() == ACTION_TYPE.SET_TOKENINFO:
+                    tokeninfos = handler_options.get("tokeninfo", "")
+                    log.info("Setting the tokeninfo of token {0!s} to {1!s}".format(serial, tokeninfos))
+                    for ti in tokeninfos.split(","):
+                        key, value = ti.split("=")
+                        add_tokeninfo(serial,key.strip(), value=value.strip())
+                elif action.lower() == ACTION_TYPE.SET_TOKENREALM:
                     realm = handler_options.get("realm")
                     only_realm = handler_options.get("only_realm")
                     # Set the realm..

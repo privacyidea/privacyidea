@@ -154,10 +154,13 @@ class RegistrationTokenClass(PasswordTokenClass):
     def inc_count_auth_success(self):
         """
         Increase the counter, that counts successful authentications
-        In case of successful authentication the token does needs to be deleted.
+        In case of successful authentication the token is deleted.
         """
-        self.delete_token()
-        return 1
+        if self.get_tokeninfo("do_not_delete"):
+            return PasswordTokenClass.inc_count_auth_success(self)
+        else:
+            self.delete_token()
+            return 1
 
     @log_with(log)
     def get_init_detail(self, params=None, user=None):
