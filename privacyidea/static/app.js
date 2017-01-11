@@ -98,10 +98,25 @@ myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
     ]
 );
 myApp.config(['$httpProvider', function ($httpProvider, inform, gettext) {
-    $httpProvider.interceptors.push(function ($q, inform, gettext) {
+    $httpProvider.interceptors.push(function ($rootScope, $q, inform, gettext) {
         return {
+            request: function(config) {
+                $rootScope.$broadcast('spinnerEvent', {
+                    action: 'increment'
+                });
+                return config || $q.when(config);
+            },
+            response: function(response) {
+                $rootScope.$broadcast('spinnerEvent', {
+                    action: 'decrement'
+                });
+                return response || $q.when(response);
+            },
             responseError: function (rejection) {
                 console.log(rejection);
+                $rootScope.$broadcast('spinnerEvent', {
+                    action: 'decrement'
+                });
                 if(rejection.status === 0) {
                     if (rejection.config.timeout) {
                         // The Request was canceled on purpose (getUsers)

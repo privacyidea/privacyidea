@@ -307,3 +307,37 @@ myApp.directive('csvDownload', function(AuthFactory, $http, instanceUrl) {
         }]
     }
 });
+
+myApp.directive('spinner', function() {
+    return {
+        scope: {
+            name: '@?',
+            show: '=?',
+            register: '=?'
+        },
+        template: [
+            '<div ng-show="show">',
+            '<span class="glyphicon glyphicon-refresh spin" style="margin: 50% 5px 0 0; font-size:120%; color: #787878;" aria-hidden="true"></span>',
+            '</div>'
+        ].join(''),
+        controller: function($scope) {
+            $scope.loading_queue = 0;
+            $scope.$watch('loading_queue', function(loading_queue) {
+                if (loading_queue > 0) {
+                    $scope.show = true;
+                } else if (loading_queue < 0) {
+                    $scope.loading_queue = 0;
+                } else {
+                    $scope.show = false;
+                }
+            });
+            $scope.$on('spinnerEvent', function(event, data) {
+                if(data.action === 'increment') {
+                    $scope.loading_queue++;
+                } else if(data.action === 'decrement') {
+                    $scope.loading_queue--;
+                }
+            });
+        }
+    };
+});
