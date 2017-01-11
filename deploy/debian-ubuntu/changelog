@@ -1,3 +1,9 @@
+python-privacyidea (2.18~dev0-1trusty) trusty; urgency=low
+
+  * Move to ldap3 version 2.1.1
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Sun, 08 Jan 2017 21:00:00 +0200
+
 python-privacyidea (2.17-1trusty) trusty; urgency=low
 
   Features

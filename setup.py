@@ -5,7 +5,7 @@ import glob
 import sys
 
 #VERSION="2.1dev4"
-VERSION="2.17"
+VERSION="2.18dev0"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -51,7 +51,7 @@ install_requires = ["Flask>=0.10.1",
                     "docutils>=0.12",
                     "funcparserlib>=0.3.6",
                     "itsdangerous>=0.24",
-                    "ldap3>=0.9.8.4",
+                    "ldap3>=2.1.1",
                     "netaddr>=0.7.12",
                     "passlib>=1.6.2",
                     "pyasn1>=0.1.7",

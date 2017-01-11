@@ -831,7 +831,7 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
     /*
      BINDDN, BINDPW, LDAPURI, TIMEOUT, LDAPBASE, LOGINNAMEATTRIBUTE,
      LDAPSEARCHFILTER,
-     LDAPFILTER, USERINFO, SIZELIMIT, NOREFERRALS, CACERTIFICATE, AUTHTYPE, EDITABLE
+     USERINFO, SIZELIMIT, NOREFERRALS, CACERTIFICATE, AUTHTYPE, EDITABLE
      */
     $scope.params = {
         SIZELIMIT: 500,
@@ -862,8 +862,7 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
     $scope.presetAD = function () {
         $scope.params.LOGINNAMEATTRIBUTE = "sAMAccountName";
         $scope.params.LDAPSEARCHFILTER = "(sAMAccountName=*)(objectClass=person)";
-        $scope.params.LDAPFILTER = "(&(sAMAccountName=%s)(objectClass=person))";
-        $scope.params.USERINFO = '{ "username": "sAMAccountName", "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }';
+        $scope.params.USERINFO = '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }';
         $scope.params.NOREFERRALS = true;
         $scope.params.EDITABLE = false;
         $scope.params.SIZELIMIT = 500;
@@ -875,8 +874,7 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
     $scope.presetLDAP = function () {
         $scope.params.LOGINNAMEATTRIBUTE = "uid";
         $scope.params.LDAPSEARCHFILTER = "(uid=*)(objectClass=inetOrgPerson)";
-        $scope.params.LDAPFILTER = "(&(uid=%s)(objectClass=inetOrgPerson))";
-        $scope.params.USERINFO = '{ "username": "uid", "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }';
+        $scope.params.USERINFO = '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }';
         $scope.params.NOREFERRALS = true;
         $scope.params.EDITABLE = false;
         $scope.params.SIZELIMIT = 500;

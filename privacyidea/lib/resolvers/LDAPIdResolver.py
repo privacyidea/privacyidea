@@ -2,6 +2,9 @@
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
+#  2017-01-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Use get_info=ldap3.NONE for binds to avoid querying of subschema
+#             Remove LDAPFILTER and self.reversefilter
 #  2016-07-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Adding getUserId cache.
 #  2016-04-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -60,8 +63,6 @@ import hashlib
 import binascii
 from privacyidea.lib.crypto import urandom, geturandom
 from privacyidea.lib.utils import is_true
-
-import uuid
 import datetime
 
 from gettext import gettext as _
@@ -80,32 +81,6 @@ SERVERPOOL_SKIP = 30
 # 1 sec == 10^9 nano secs == 10^7 * (100 nano secs)
 MS_AD_MULTIPLYER = 10 ** 7
 MS_AD_START = datetime.datetime(1601, 1, 1)
-
-"""
-ldap3 has some changes from version 1.x to 2.0.7.
-We need to take this into account here.
-
-            <= 1.4                           >= 2.0.7
-strategy:   POOLING_STRATEGY_ROUND_ROBIN    ROUND_ROBIN
-Connection: no receive_timeout              parameter reveice_timeout
-objectGUID
-returned as bytestring                      human readable string
-"""
-try:
-    # Old version <= 1.4
-    STRATEGY = ldap3.POOLING_STRATEGY_ROUND_ROBIN
-
-    def _oguid(rval):
-        uid = str(uuid.UUID(bytes_le=rval))
-        return uid
-
-except AttributeError:
-    # This is for ldap3 >= 2.0.7
-    STRATEGY = ldap3.ROUND_ROBIN
-
-    def _oguid(rval):
-        return rval
-
 
 
 def get_ad_timestamp_now():
@@ -185,7 +160,6 @@ class IdResolver (UserIdResolver):
         self.sizelimit = 500
         self.loginname_attribute = ""
         self.searchfilter = ""
-        self.reversefilter = ""
         self.userinfo = {}
         self.uidtype = ""
         self.noreferrals = False
@@ -215,7 +189,8 @@ class IdResolver (UserIdResolver):
         else:
             bind_user = self._getDN(uid)
 
-        server_pool = self.get_serverpool(self.uri, self.timeout)
+        server_pool = self.get_serverpool(self.uri, self.timeout,
+                                          get_info=ldap3.NONE)
         password = to_utf8(password)
 
         try:
@@ -299,9 +274,6 @@ class IdResolver (UserIdResolver):
                 uid = attributes.get(uidtype)[0]
             else:
                 uid = attributes.get(uidtype)
-            # in case: fix the objectGUID for ldap3 <= 1.4
-            if uidtype == "objectGUID":
-                uid = _oguid(uid)
         return uid
 
     @cache
@@ -319,9 +291,6 @@ class IdResolver (UserIdResolver):
         if self.uidtype.lower() == "dn":
             dn = userId
         else:
-            if self.uidtype == "objectGUID":
-                userId = uuid.UUID("{{{0!s}}}".format(userId)).bytes_le
-                userId = escape_bytes(userId)
             # get the DN for the Object
             self._bind()
             filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter, self.uidtype, userId)
@@ -373,9 +342,6 @@ class IdResolver (UserIdResolver):
                           search_filter="(&" + self.searchfilter + ")",
                           attributes=self.userinfo.values())
         else:
-            if self.uidtype == "objectGUID":
-                userId = uuid.UUID("{{{0!s}}}".format(userId)).bytes_le
-                userId = escape_bytes(userId)
             filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter, self.uidtype, userId)
             self.l.search(search_base=self.basedn,
                               search_scope=self.scope,
@@ -406,8 +372,7 @@ class IdResolver (UserIdResolver):
             for map_k, map_v in self.userinfo.items():
                 if ldap_k == map_v:
                     if ldap_k == "objectGUID":
-                        uuid_v = uuid.UUID(bytes_le=ldap_v[0])
-                        ret[map_k] = str(uuid_v)
+                        ret[map_k] = ldap_v[0]
                     elif type(ldap_v) == list and map_k not in ["mobile"]:
                         # All lists (except) mobile return the first value as
                         #  a string. Mobile is returned as a list
@@ -480,7 +445,7 @@ class IdResolver (UserIdResolver):
             attributes.append(str(self.uidtype))
 
         # do the filter depending on the searchDict
-        filter = "(&" + self.searchfilter
+        filter = u"(&" + self.searchfilter
         for search_key in searchDict.keys():
             if search_key == "accountExpires":
                 comperator = ">="
@@ -491,7 +456,8 @@ class IdResolver (UserIdResolver):
                                                   get_ad_timestamp_now(),
                                                   self.userinfo[search_key])
             else:
-                filter += "({0!s}={1!s})".format(self.userinfo[search_key], searchDict[search_key])
+                filter += u"({0!s}={1!s})".format(self.userinfo[search_key],
+                                                  searchDict[search_key])
         filter += ")"
 
         g = self.l.extend.standard.paged_search(search_base=self.basedn,
@@ -556,7 +522,6 @@ class IdResolver (UserIdResolver):
         '#ldap_sizelimit': 'SIZELIMIT',
         '#ldap_loginattr': 'LOGINNAMEATTRIBUTE',
         '#ldap_searchfilter': 'LDAPSEARCHFILTER',
-        '#ldap_userfilter': 'LDAPFILTER',
         '#ldap_mapping': 'USERINFO',
         '#ldap_uidtype': 'UIDTYPE',
         '#ldap_noreferrals' : 'NOREFERRALS',
@@ -577,9 +542,9 @@ class IdResolver (UserIdResolver):
         self.sizelimit = int(config.get("SIZELIMIT", 500))
         self.loginname_attribute = config.get("LOGINNAMEATTRIBUTE")
         self.searchfilter = config.get("LDAPSEARCHFILTER")
-        self.reversefilter = config.get("LDAPFILTER")
         userinfo = config.get("USERINFO", "{}")
         self.userinfo = yaml.safe_load(userinfo)
+        self.userinfo["username"] = self.loginname_attribute
         self.map = yaml.safe_load(userinfo)
         self.uidtype = config.get("UIDTYPE", "DN")
         self.noreferrals = config.get("NOREFERRALS", False)
@@ -625,7 +590,7 @@ class IdResolver (UserIdResolver):
         return server, port, ssl
 
     @classmethod
-    def get_serverpool(cls, urilist, timeout):
+    def get_serverpool(cls, urilist, timeout, get_info=None):
         """
         This create the serverpool for the ldap3 connection.
         The URI from the LDAP resolver can contain a comma separated list of
@@ -638,22 +603,23 @@ class IdResolver (UserIdResolver):
         :type urilist: basestring
         :param timeout: The connection timeout
         :type timeout: float
+        :param get_info: The get_info type passed to the ldap3.Sever
+            constructor. default: ldap3.SCHEMA, should be ldap3.NONE in case
+            of a bind.
         :return: Server Pool
         :rtype: LDAP3 Server Pool Instance
         """
-        try:
-            strategy = ldap3.POOLING_STRATEGY_ROUND_ROBIN
-        except AttributeError:
-            # This is for ldap3 >= 2.0.7
-            strategy = ldap3.ROUND_ROBIN
-        server_pool = ldap3.ServerPool(None, strategy, active=SERVERPOOL_ROUNDS,
+        get_info = get_info or ldap3.SCHEMA
+        server_pool = ldap3.ServerPool(None, ldap3.ROUND_ROBIN,
+                                       active=SERVERPOOL_ROUNDS,
                                        exhaust=SERVERPOOL_SKIP)
         for uri in urilist.split(","):
             uri = uri.strip()
             host, port, ssl = cls.split_uri(uri)
             server = ldap3.Server(host, port=port,
                                   use_ssl=ssl,
-                                  connect_timeout=float(timeout))
+                                  connect_timeout=float(timeout),
+                                  get_info=get_info)
             server_pool.add(server)
             log.debug("Added {0!s}, {1!s}, {2!s} to server pool.".format(host, port, ssl))
         return server_pool
@@ -679,7 +645,6 @@ class IdResolver (UserIdResolver):
                                 'SIZELIMIT': 'int',
                                 'LOGINNAMEATTRIBUTE': 'string',
                                 'LDAPSEARCHFILTER': 'string',
-                                'LDAPFILTER': 'string',
                                 'USERINFO': 'string',
                                 'UIDTYPE': 'string',
                                 'NOREFERRALS': 'bool',
@@ -705,8 +670,7 @@ class IdResolver (UserIdResolver):
 
         Parameters are:
             BINDDN, BINDPW, LDAPURI, TIMEOUT, LDAPBASE, LOGINNAMEATTRIBUTE,
-            LDAPSEARCHFILTER,
-            LDAPFILTER, USERINFO, SIZELIMIT, NOREFERRALS, CACERTIFICATE,
+            LDAPSEARCHFILTER, USERINFO, SIZELIMIT, NOREFERRALS, CACERTIFICATE,
             AUTHTYPE
         """
         success = False
