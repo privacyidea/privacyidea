@@ -1136,6 +1136,19 @@ def get_static_policy_definitions(scope=None):
                                                      "machine resolvers."),
                                            'group': "system",
                                            'mainmenu': [MAIN_MENU.CONFIG]},
+            ACTION.OTPPINMAXLEN: {'type': 'int',
+                                  'value': range(0, 32),
+                                  "desc": _("Set the maximum allowed length "
+                                            "of the OTP PIN.")},
+            ACTION.OTPPINMINLEN: {'type': 'int',
+                                  'value': range(0, 32),
+                                  "desc": _("Set the minimum required length "
+                                            "of the OTP PIN.")},
+            ACTION.OTPPINCONTENTS: {'type': 'str',
+                                    "desc": _("Specifiy the required "
+                                              "contents of the OTP PIN. "
+                                              "(c)haracters, (n)umeric, "
+                                              "(s)pecial, (o)thers. [+/-]!")},
             ACTION.AUDIT: {'type': 'bool',
                            "desc": _("Admin is allowed to view the Audit log."),
                            "group": "system",

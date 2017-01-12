@@ -343,6 +343,7 @@ def list_api():
 @prepolicy(check_max_token_user, request)
 @prepolicy(check_base_action, request, action=ACTION.ASSIGN)
 @prepolicy(encrypt_pin, request)
+@prepolicy(check_otp_pin, request)
 @prepolicy(check_external, request, action="assign")
 @event("token_assign", request, g)
 @log_with(log)
