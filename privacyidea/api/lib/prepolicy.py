@@ -220,11 +220,13 @@ def check_otp_pin(request=None, action=None):
     policy_object = g.policy_object
     role = g.logged_in_user.get("role")
     username = g.logged_in_user.get("username")
-    admin_realm = g.logged_in_user.get("realm")
-    scope = SCOPE.ADMIN
-    if role == ROLE.USER:
+    if role == ROLE.ADMIN:
+        scope = SCOPE.ADMIN
+        admin_realm = g.logged_in_user.get("realm")
+        realm = params.get("realm", "")
+    else:
         scope = SCOPE.USER
-        realm = admin_realm
+        realm = g.logged_in_user.get("realm")
         admin_realm = None
     # get the policies for minimum length, maximum length and PIN contents
     pol_minlen = policy_object.get_action_values(action=ACTION.OTPPINMINLEN,

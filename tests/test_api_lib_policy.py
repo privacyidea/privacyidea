@@ -623,6 +623,72 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # finally delete policy
         delete_policy("pol1")
 
+    def test_09_pin_policies_admin(self):
+        g.logged_in_user = {"username": "super",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+
+        # Set a policy that defines PIN policy
+        set_policy(name="pol1",
+                   scope=SCOPE.ADMIN,
+                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(ACTION.OTPPINMAXLEN, "10",
+                                                 ACTION.OTPPINMINLEN, "4",
+                                                 ACTION.OTPPINCONTENTS, "cn"),
+                   realm="home")
+        g.policy_object = PolicyClass()
+
+        req.all_data = {"user": "cornelius",
+                        "realm": "home"}
+        # The minimum OTP length is 4
+        self.assertRaises(PolicyError, check_otp_pin, req)
+
+        req.all_data = {"user": "cornelius",
+                        "realm": "home",
+                        "pin": "12345566890012"}
+        # Fail maximum OTP length
+        self.assertRaises(PolicyError, check_otp_pin, req)
+
+        req.all_data = {"user": "cornelius",
+                        "realm": "home",
+                        "pin": "123456"}
+        # Good OTP length, but missing character A-Z
+        self.assertRaises(PolicyError, check_otp_pin, req)
+
+        req.all_data = {
+                        "user": "cornelius",
+                        "realm": "home",
+                        "pin": "abc123"}
+        # Good length and good contents
+        self.assertTrue(check_otp_pin(req))
+
+        # A token that does not use pins is ignored.
+        init_token({"type": "certificate",
+                    "serial": "certificate"})
+        req.all_data = {"serial": "certificate",
+                        "realm": "somerealm",
+                        "user": "cornelius",
+                        "pin": ""}
+        self.assertTrue(check_otp_pin(req))
+
+        init_token({"type": "sshkey",
+                    "serial": "sshkey",
+                    "sshkey": SSHKEY})
+        req.all_data = {"serial": "sshkey",
+                        "realm": "somerealm",
+                        "user": "cornelius",
+                        "pin": ""}
+        self.assertTrue(check_otp_pin(req))
+
+        # finally delete policy
+        delete_policy("pol1")
+
     def test_10_check_external(self):
         g.logged_in_user = {"username": "user1",
                             "role": "user"}
