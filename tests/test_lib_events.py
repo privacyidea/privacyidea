@@ -26,6 +26,7 @@ from privacyidea.lib.token import (init_token, remove_token, unassign_token,
                                    get_realms_of_token, get_tokens)
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.user import create_user, User
+from privacyidea.lib.policy import ACTION
 from datetime import datetime, timedelta
 import json
 
@@ -1428,5 +1429,50 @@ class UserNotificationTestCase(MyTestCase):
         )
         # The counter of the token is 0
         self.assertEqual(r, True)
+
+        remove_token(serial)
+
+    def test_18_check_conditions_last_auth(self):
+        # prepare
+        serial = "spass01"
+        user = User("cornelius", "realm1")
+        remove_token(user=user)
+        uhandler = UserNotificationEventHandler()
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1"},
+                                 headers={})
+
+        tok = init_token({"serial": serial, "type": "spass",
+                          "otppin": "spass"},
+                         user=user)
+        # Add last authentication
+        tok.add_tokeninfo(ACTION.LASTAUTH, "2016-10-10 10:10:10.000")
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "serial": serial}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+        # Do checking
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.LAST_AUTH: "1h"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # the last authentication is longer than one hour ago
+        self.assertEqual(r, True)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.LAST_AUTH: "100y"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # The last authentication is not longer than 100 years ago
+        self.assertEqual(r, False)
 
         remove_token(serial)

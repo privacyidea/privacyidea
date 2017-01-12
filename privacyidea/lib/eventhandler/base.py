@@ -31,6 +31,7 @@ from gettext import gettext as _
 from privacyidea.lib.config import get_token_types
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.auth import ROLE
+from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import get_token_owner, get_tokens
 from privacyidea.lib.user import User
 import re
@@ -49,6 +50,7 @@ class CONDITION(object):
     USER_TOKEN_NUMBER = "user_token_number"
     OTP_COUNTER = "otp_counter"
     TOKENTYPE = "tokentype"
+    LAST_AUTH = "last_auth"
 
 
 class BaseEventHandler(object):
@@ -148,6 +150,11 @@ class BaseEventHandler(object):
                 "type": "str",
                 "desc": _("Action is triggered, if the counter of the token "
                           "equals this setting.")
+            },
+            CONDITION.LAST_AUTH: {
+                "type": "str",
+                "desc": _("Action is triggered, if the last authentication of "
+                          "the token is older than 7h, 10d or 1y.")
             }
         }
         return cond
@@ -303,6 +310,10 @@ class BaseEventHandler(object):
         if CONDITION.OTP_COUNTER in conditions and res and token_obj:
             res = token_obj.token.count == \
                   int(conditions.get(CONDITION.OTP_COUNTER))
+
+        if CONDITION.LAST_AUTH in conditions and res and token_obj:
+            res = not token_obj.check_last_auth_newer(conditions.get(
+                CONDITION.LAST_AUTH))
 
         return res
 

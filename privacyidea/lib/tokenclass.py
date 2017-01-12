@@ -79,6 +79,8 @@ from .crypto import encryptPassword
 from .crypto import decryptPassword
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .decorators import check_token_locked
+from .utils import parse_timedelta
+from policy import ACTION
 
 DATE_FORMAT = "%d/%m/%y %H:%M"
 optional = True
@@ -1447,3 +1449,38 @@ class TokenClass(object):
         :return: default parameters
         """
         return {}
+
+    def check_last_auth_newer(self, last_auth):
+        """
+        Check if the last successful authentication with the token is newer
+        than the specified time delta which is passed as 10h, 7d or 1y.
+
+        It returns True, if the last authentication with this token is
+        **newer*** than the specified delta.
+
+        :param last_auth: 10h, 7d or 1y
+        :type last_auth: basestring
+        :return: bool
+        """
+        # per default we return True
+        res = True
+        # The tdelta in the policy
+        tdelta = parse_timedelta(last_auth)
+
+        # The last successful authentication of the token
+        last_success_auth = self.get_tokeninfo(ACTION.LASTAUTH)
+        if last_success_auth:
+            log.debug("Compare the last successful authentication of "
+                      "token %s with policy "
+                      "tdelat %s: %s" % (self.token.serial, tdelta,
+                                         last_success_auth))
+            # convert string of last_success_auth
+            last_success_auth = datetime.datetime.strptime(
+                last_success_auth, "%Y-%m-%d %H:%M:%S.%f")
+            # The last auth is to far in the past
+            if last_success_auth + tdelta < datetime.datetime.now():
+                res = False
+                log.debug("The last successful authentication is too old: "
+                          "{0!s}".format(last_success_auth))
+
+        return res

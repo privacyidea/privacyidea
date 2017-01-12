@@ -66,6 +66,17 @@ Basic conditions
 
 The basic event handler module has the following conditions.
 
+**last_auth**
+
+This condition checks if the last authentication is older than the specified
+time delta. The timedelta is specified with "h" (hours), "d" (days) or "y"
+(years). Specifying *180d* would mean, that the action is triggered if the
+last successful authentication witht he token was berformed more than 180
+days ago.
+
+This can be used to send notifications to users or administrators to inform
+them, that there is a token, that might be orphaned.
+
 **logged_in_user**
 
 This condition checks if the logged in user is either an administrator or a
