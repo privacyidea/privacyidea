@@ -66,3 +66,4 @@ user
 Add ``--serial <username>'`` as script parameter. If no username is given,
 *none* will be passed.
 
+.. note:: A possible script you could call is the :ref:`get_unused_tokens`.
