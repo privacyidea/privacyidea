@@ -381,7 +381,7 @@ def trigger_challenge():
     :return: a json result with a "result" of the number of matching
         challenge response tokens
 
-    **Example response** for a successful authentication:
+    **Example response** for a successful triggering of challenge:
 
        .. sourcecode:: http
 
@@ -396,6 +396,39 @@ def trigger_challenge():
                        "value": 1},
             "time": 1482223663.517212,
             "id": 1}
+
+    **Example response** for response, if the user has no challenge token:
+
+       .. sourcecode:: http
+
+           {"detail": {"messages": [],
+                       "threadid": 140031212377856,
+                       "transaction_ids": []},
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": {"status": true,
+                       "value": 0},
+            "signature": "205530282...54508",
+            "time": 1484303812.346576,
+            "version": "privacyIDEA 2.17",
+            "versionnumber": "2.17"}
+
+    **Example response** for a failed triggering of a challenge. In this case
+        the ``status`` will be ``false``.
+
+       .. sourcecode:: http
+
+           {"detail": null,
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": {"error": {"code": 905,
+                                 "message": "ERR905: The user can not be
+                                 found in any resolver in this realm!"},
+                       "status": false},
+            "signature": "14468...081555",
+            "time": 1484303933.72481,
+            "version": "privacyIDEA 2.17"}
+
     """
     user = request.User
     serial = getParam(request.all_data, "serial")
