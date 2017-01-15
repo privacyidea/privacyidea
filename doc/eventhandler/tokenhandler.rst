@@ -100,10 +100,10 @@ event occurred.
 .. note:: This way you could easily define a event definition, which will set
    newly enrolled tokens to be only valid for a certain amount of days.
 
-set syncwindow
+set countwindow
 ..............
 
-Here the sync window of a token can be set. This requires an integer value.
+Here the count window of a token can be set. This requires an integer value.
 
 Code
 ~~~~

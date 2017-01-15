@@ -543,7 +543,7 @@ class TokenEventTestCase(MyTestCase):
 
         remove_token("SPASS01")
 
-    def test_08_set_sync_window(self):
+    def test_08_set_count_window(self):
         # setup realms
         self.setUp_user_realms()
 
@@ -584,11 +584,11 @@ class TokenEventTestCase(MyTestCase):
                    }
 
         t_handler = TokenEventHandler()
-        res = t_handler.do(ACTION_TYPE.SET_SYNCWINDOW, options=options)
+        res = t_handler.do(ACTION_TYPE.SET_COUNTWINDOW, options=options)
         self.assertTrue(res)
         # Check if the token has the correct sync window
         t = get_tokens(serial="SPASS01")
-        sw = t[0].get_sync_window()
+        sw = t[0].get_count_window()
         self.assertEqual(sw, 123)
 
         remove_token("SPASS01")
