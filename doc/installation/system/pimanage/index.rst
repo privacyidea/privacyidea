@@ -76,3 +76,36 @@ log rotation.
    pi-manage rotate_audit
 
 You can specify a highwatermark and a lowwatermark.
+
+API Keys
+--------
+
+You can use ``pi-manage`` to create API keys. API keys can be used to
+
+1. secure the access to the ``/validate/check`` API or
+2. to access administrative tasks via the REST API.
+
+You can create API keys for ``/validate/check`` using the command
+
+   pi-manage api createtoken -r validate
+
+If you want to secure the access to ``/validate/check`` you also need to
+define a policy in scope ``authorizaion``. See :ref:`policy_api_key`.
+
+If you wan to use the API key to automate administrative REST API calls, you
+can use the command:
+
+   pi-manage api createtoken -r admin
+
+This command also generates an admin account name. But it does not create
+this admin account. You need to do so using ``pi-manage admin``.
+You can now use this API key to enroll tokens as administrator.
+
+.. note:: These API keys are not persistant. They are not stored in the
+   privacyIDEA server. The API key is connected to the username, that is also
+   generated. This means you have to create an administrative account with
+   this very username to use this API key for this admin user.
+   You also should set policies for this admin user, so that this API key has
+   only restricted rights!
+
+.. note:: The API key is valid for 365 days.

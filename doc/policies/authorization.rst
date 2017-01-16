@@ -106,6 +106,8 @@ the authentication request failed.
 If this action is set and the user fails to authenticate
 this additional information will not be returned.
 
+.. _policy_api_key:
+
 api_key_required
 ~~~~~~~~~~~~~~~~
 
