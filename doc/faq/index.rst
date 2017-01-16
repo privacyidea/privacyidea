@@ -20,4 +20,5 @@ Frequently Asked Questions
    crypto-considerations
    policies
    performance
+   tokenview
 

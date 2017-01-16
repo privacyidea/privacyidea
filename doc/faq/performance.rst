@@ -59,3 +59,5 @@ Remove unused resolvers and policies. Have a realm with several resolvers is
 a bit slower than one realm with one resolver. Finding the user in the first
 resolver is faster than in the last resolver.
 Although e.g. the LDAP resolver utilizes caching.
+
+Also see :ref:`performance_tokenview`.
