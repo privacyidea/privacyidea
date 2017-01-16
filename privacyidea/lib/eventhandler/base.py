@@ -51,6 +51,9 @@ class CONDITION(object):
     OTP_COUNTER = "otp_counter"
     TOKENTYPE = "tokentype"
     LAST_AUTH = "last_auth"
+    COUNT_AUTH = "count_auth"
+    COUNT_AUTH_SUCCESS = "count_auth_success"
+    COUNT_AUTH_FAIL = "count_auth_fail"
 
 
 class BaseEventHandler(object):
@@ -155,6 +158,26 @@ class BaseEventHandler(object):
                 "type": "str",
                 "desc": _("Action is triggered, if the last authentication of "
                           "the token is older than 7h, 10d or 1y.")
+            },
+            CONDITION.COUNT_AUTH: {
+                "type": "str",
+                "desc": _("This can be '>100', '<99', or '=100', to trigger "
+                          "the action, if the tokeninfo field 'count_auth' is "
+                          "bigger than 100, less than 99 or exactly 100.")
+            },
+            CONDITION.COUNT_AUTH_SUCCESS: {
+                "type": "str",
+                "desc": _("This can be '>100', '<99', or '=100', to trigger "
+                          "the action, if the tokeninfo field "
+                          "'count_auth_success' is "
+                          "bigger than 100, less than 99 or exactly 100.")
+            },
+            CONDITION.COUNT_AUTH_FAIL: {
+                "type": "str",
+                "desc": _("This can be '>100', '<99', or '=100', to trigger "
+                          "the action, if the difference between the tokeninfo "
+                          "field 'count_auth' and 'count_auth_success is "
+                          "bigger than 100, less than 99 or exactly 100.")
             }
         }
         return cond
@@ -269,51 +292,52 @@ class BaseEventHandler(object):
                     res = True
                     break
 
-        if CONDITION.TOKENTYPE in conditions and res and tokentype:
-            res = False
-            if tokentype in conditions.get(CONDITION.TOKENTYPE).split(","):
-                res = True
-
         if "serial" in conditions and res and serial:
             serial_match = conditions.get("serial")
             res = bool(re.match(serial_match, serial))
-
-        if CONDITION.TOKEN_HAS_OWNER in conditions and res and token_obj:
-            uid = token_obj.get_user_id()
-            check = conditions.get(CONDITION.TOKEN_HAS_OWNER)
-            if uid and check in ["True", True]:
-                res = True
-            elif not uid and check in ["False", False]:
-                res = True
-            else:
-                log.debug("Condition token_has_owner for token {0!r} "
-                          "not fulfilled.".format(token_obj))
-                res = False
-
-        if CONDITION.TOKEN_IS_ORPHANED in conditions and res and token_obj:
-            uid = token_obj.get_user_id()
-            orphaned = uid and not user
-            check = conditions.get(CONDITION.TOKEN_IS_ORPHANED)
-            if orphaned and check in ["True", True]:
-                res = True
-            elif not orphaned and check in ["False", False]:
-                res = True
-            else:
-                log.debug("Condition token_is_orphaned for token {0!r} not "
-                          "fulfilled.".format(token_obj))
-                res = False
 
         if CONDITION.USER_TOKEN_NUMBER in conditions and res and user:
             num_tokens = get_tokens(user=user, count=True)
             res = num_tokens == int(conditions.get(CONDITION.USER_TOKEN_NUMBER))
 
-        if CONDITION.OTP_COUNTER in conditions and res and token_obj:
-            res = token_obj.token.count == \
-                  int(conditions.get(CONDITION.OTP_COUNTER))
+        if token_obj:
+            if CONDITION.TOKENTYPE in conditions and res:
+                res = False
+                if tokentype in conditions.get(CONDITION.TOKENTYPE).split(","):
+                    res = True
 
-        if CONDITION.LAST_AUTH in conditions and res and token_obj:
-            res = not token_obj.check_last_auth_newer(conditions.get(
-                CONDITION.LAST_AUTH))
+            if CONDITION.TOKEN_HAS_OWNER in conditions and res:
+                uid = token_obj.get_user_id()
+                check = conditions.get(CONDITION.TOKEN_HAS_OWNER)
+                if uid and check in ["True", True]:
+                    res = True
+                elif not uid and check in ["False", False]:
+                    res = True
+                else:
+                    log.debug("Condition token_has_owner for token {0!r} "
+                              "not fulfilled.".format(token_obj))
+                    res = False
+
+            if CONDITION.TOKEN_IS_ORPHANED in conditions and res:
+                uid = token_obj.get_user_id()
+                orphaned = uid and not user
+                check = conditions.get(CONDITION.TOKEN_IS_ORPHANED)
+                if orphaned and check in ["True", True]:
+                    res = True
+                elif not orphaned and check in ["False", False]:
+                    res = True
+                else:
+                    log.debug("Condition token_is_orphaned for token {0!r} not "
+                              "fulfilled.".format(token_obj))
+                    res = False
+
+            if CONDITION.OTP_COUNTER in conditions and res:
+                res = token_obj.token.count == \
+                      int(conditions.get(CONDITION.OTP_COUNTER))
+
+            if CONDITION.LAST_AUTH in conditions and res:
+                res = not token_obj.check_last_auth_newer(conditions.get(
+                    CONDITION.LAST_AUTH))
 
         return res
 
