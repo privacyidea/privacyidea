@@ -37,14 +37,22 @@ This code is tested in tests/test_lib_tokens_spass
 """
 
 import logging
+from gettext import gettext as _
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.policy import SCOPE
 
 optional = True
 required = False
 
 log = logging.getLogger(__name__)
+
+
+class SPASSACTION(object):
+    OTPPINMAXLEN = 'spass_otp_pin_maxlength'
+    OTPPINMINLEN = 'spass_otp_pin_minlength'
+    OTPPINCONTENTS = 'spass_otp_pin_contents'
 
 
 class SpassTokenClass(TokenClass):
@@ -92,7 +100,45 @@ class SpassTokenClass(TokenClass):
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {},
+               'policy': {
+                   SCOPE.ADMIN: {
+                       SPASSACTION.OTPPINMAXLEN: {
+                           'type': 'int',
+                           'value': range(0, 32),
+                           "desc": _("Set the maximum allowed length "
+                                     "of the SPASS PIN.")},
+                       SPASSACTION.OTPPINMINLEN: {
+                           'type': 'int',
+                           'value': range(0, 32),
+                           "desc": _("Set the minimum required length "
+                                     "of the SPASS PIN.")},
+                       SPASSACTION.OTPPINCONTENTS: {
+                           'type': 'str',
+                           "desc": _("Specifiy the required "
+                                     "contents of the SPASS PIN. "
+                                     "(c)haracters, (n)umeric, "
+                                     "(s)pecial, (o)thers. [+/-]!")},
+                   },
+                   SCOPE.USER: {
+                       SPASSACTION.OTPPINMAXLEN: {
+                           'type': 'int',
+                           'value': range(0, 32),
+                           "desc": _("Set the maximum allowed length "
+                                     "of the SPASS PIN.")},
+                       SPASSACTION.OTPPINMINLEN: {
+                           'type': 'int',
+                           'value': range(0, 32),
+                           "desc": _("Set the minimum required length "
+                                     "of the SPASS PIN.")},
+                       SPASSACTION.OTPPINCONTENTS: {
+                           'type': 'str',
+                           "desc": _("Specifiy the required "
+                                     "contents of the SPASS PIN. "
+                                     "(c)haracters, (n)umeric, "
+                                     "(s)pecial, (o)thers. [+/-]!")},
+
+                   },
+               },
                }
 
         # do we need to define the lost token policies here...
