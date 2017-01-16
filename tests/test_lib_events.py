@@ -23,7 +23,8 @@ from privacyidea.lib.event import (delete_event, set_event,
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.token import (init_token, remove_token, unassign_token,
-                                   get_realms_of_token, get_tokens)
+                                   get_realms_of_token, get_tokens,
+                                   add_tokeninfo)
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.user import create_user, User
 from privacyidea.lib.policy import ACTION
@@ -150,6 +151,89 @@ class BaseEventHandlerTestCase(MyTestCase):
         # The only token of the user is of type "pw".
         self.assertEqual(r, True)
 
+        remove_token(serial)
+
+    def test_03_check_auth_count_conditions(self):
+        self.setUp_user_realms()
+        serial = "pw01"
+        user = User("cornelius", "realm1")
+        remove_token(user=user)
+        tok = init_token({"serial": serial,
+                          "type": "pw", "otppin": "test", "otpkey": "secret"},
+                         user=user)
+        self.assertEqual(tok.type, "pw")
+        uhandler = BaseEventHandler()
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "wrongvalue"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        # This is a kind of authentication request
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "wrongvalue"}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.COUNT_AUTH: "<100"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertEqual(r, True)
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.COUNT_AUTH: ">100"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+
+        # Set the count_auth and count_auth_success
+        add_tokeninfo(serial, "count_auth", 100)
+        add_tokeninfo(serial, "count_auth_success", 50)
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.COUNT_AUTH: ">99"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.COUNT_AUTH_SUCCESS:
+                                                ">45"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.COUNT_AUTH_FAIL:
+                                                ">45"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.COUNT_AUTH_FAIL:
+                                                "<45"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
         remove_token(serial)
 
 

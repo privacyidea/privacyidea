@@ -34,6 +34,7 @@ from privacyidea.lib.auth import ROLE
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import get_token_owner, get_tokens
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import compare_condition
 import re
 import json
 import logging
@@ -300,6 +301,7 @@ class BaseEventHandler(object):
             num_tokens = get_tokens(user=user, count=True)
             res = num_tokens == int(conditions.get(CONDITION.USER_TOKEN_NUMBER))
 
+        # Token specific conditions
         if token_obj:
             if CONDITION.TOKENTYPE in conditions and res:
                 res = False
@@ -338,6 +340,23 @@ class BaseEventHandler(object):
             if CONDITION.LAST_AUTH in conditions and res:
                 res = not token_obj.check_last_auth_newer(conditions.get(
                     CONDITION.LAST_AUTH))
+
+            if CONDITION.COUNT_AUTH in conditions and res:
+                count = token_obj.get_count_auth()
+                cond = conditions.get(CONDITION.COUNT_AUTH)
+                res = compare_condition(cond, count)
+
+            if CONDITION.COUNT_AUTH_SUCCESS in conditions and res:
+                count = token_obj.get_count_auth_success()
+                cond = conditions.get(CONDITION.COUNT_AUTH_SUCCESS)
+                res = compare_condition(cond, count)
+
+            if CONDITION.COUNT_AUTH_FAIL in conditions and res:
+                count = token_obj.get_count_auth()
+                c_success = token_obj.get_count_auth_success()
+                c_fail = count - c_success
+                cond = conditions.get(CONDITION.COUNT_AUTH_FAIL)
+                res = compare_condition(cond, c_fail)
 
         return res
 

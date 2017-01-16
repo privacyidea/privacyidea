@@ -6,7 +6,7 @@ from .base import MyTestCase
 from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
                                    check_time_in_range, parse_proxy,
                                    check_proxy, reduce_realms, is_true,
-                                   parse_date)
+                                   parse_date, compare_condition)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 
@@ -217,3 +217,19 @@ class UtilsTestCase(MyTestCase):
         # Non-matching date returns None
         d = parse_date("23.12.16")
         self.assertEqual(d, None)
+
+    def test_08_compare_condition(self):
+        self.assertTrue(compare_condition("100", 100))
+        self.assertTrue(compare_condition("=100", 100))
+        self.assertTrue(compare_condition(" = 100 ", 100))
+
+        self.assertFalse(compare_condition("100 ", 99))
+
+        self.assertTrue(compare_condition(">100", 101))
+        self.assertFalse(compare_condition(">100", 100))
+        self.assertFalse(compare_condition(">100", 1))
+
+        self.assertTrue(compare_condition("<100", 10))
+        self.assertTrue(compare_condition("  <100", 10))
+        self.assertFalse(compare_condition("<100", 1000))
+        self.assertFalse(compare_condition("<100", 100))

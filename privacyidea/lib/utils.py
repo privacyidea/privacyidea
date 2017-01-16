@@ -578,3 +578,40 @@ def is_true(value):
     :return: Boolean
     """
     return value in [1, "1", True, "True", "true", "TRUE"]
+
+
+def compare_condition(condition, value):
+    """
+    This function checks, if the 'value' complies the 'condition'.
+    The condition can start with '<', '=' or '>' and contain a number like:
+    <100
+    >1000
+    =123
+    123 is interpreted as =123
+
+    :param condition: A string like <100
+    :type condition: basestring
+    :param value: the value to check
+    :type value: int
+    :return: True or False
+    """
+    condition = condition.replace(" ", "")
+
+    # compare equal
+    if condition[0] in "=" + string.digits:
+        if condition[0] == "=":
+            compare_value = int(condition[1:])
+        else:
+            compare_value = int(condition)
+        return value == compare_value
+
+    # compare bigger
+    if condition[0] == ">":
+        compare_value = int(condition[1:])
+        return value > compare_value
+
+    # compare less
+    if condition[0] == "<":
+        compare_value = int(condition[1:])
+        return value < compare_value
+
