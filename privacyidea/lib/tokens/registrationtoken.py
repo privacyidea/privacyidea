@@ -127,7 +127,7 @@ class RegistrationTokenClass(PasswordTokenClass):
                'policy': {},
                }
 
-        if key is not None and key in res:
+        if key:
             ret = res.get(key)
         else:
             if ret == 'all':
