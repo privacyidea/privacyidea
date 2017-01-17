@@ -198,8 +198,8 @@ def check_otp_pin(request=None, action=None):
     """
     This policy function checks if the OTP PIN that is about to be set
     follows the OTP PIN policies ACTION.OTPPINMAXLEN, ACTION.OTPPINMINLEN and
-    ACTION.OTPPINCONTENTS in the SCOPE.USER or SCOPE.ADMIN. It is used to
-    decorate the API functions.
+    ACTION.OTPPINCONTENTS and token-type-specific PIN policy actions in the
+    SCOPE.USER or SCOPE.ADMIN. It is used to decorate the API functions.
 
     The pin is investigated in the params as pin = params.get("pin")
 
@@ -209,6 +209,7 @@ def check_otp_pin(request=None, action=None):
     params = request.all_data
     realm = params.get("realm")
     pin = params.get("otppin", "") or params.get("pin", "")
+    type = params.get("type", "")
     serial = params.get("serial")
     if serial:
         # if this is a token, that does not use a pin, we ignore this check
@@ -250,6 +251,34 @@ def check_otp_pin(request=None, action=None):
                                                    adminrealm=admin_realm,
                                                    client=g.client_ip,
                                                    unique=True)
+    if type:
+        typed_pol_minlen_action = "{0!s}_{1!s}".format(type, ACTION.OTPPINMINLEN)
+        typed_pol_maxlen_action = "{0!s}_{1!s}".format(type, ACTION.OTPPINMAXLEN)
+        typed_pol_contents_action = "{0!s}_{1!s}".format(type, ACTION.OTPPINCONTENTS)
+        typed_pol_minlen = policy_object.get_action_values(action=typed_pol_minlen_action,
+                                                           scope=scope,
+                                                           user=username,
+                                                           realm=realm,
+                                                           adminrealm=admin_realm,
+                                                           client=g.client_ip,
+                                                           unique=True)
+        typed_pol_maxlen = policy_object.get_action_values(action=typed_pol_maxlen_action,
+                                                           scope=scope,
+                                                           user=username,
+                                                           realm=realm,
+                                                           adminrealm=admin_realm,
+                                                           client=g.client_ip,
+                                                           unique=True)
+        typed_pol_contents = policy_object.get_action_values(action=typed_pol_contents_action,
+                                                             scope=scope,
+                                                             user=username,
+                                                             realm=realm,
+                                                             adminrealm=admin_realm,
+                                                             client=g.client_ip,
+                                                             unique=True)
+        pol_minlen = typed_pol_minlen if len(typed_pol_minlen) == 1 else pol_minlen
+        pol_maxlen = typed_pol_maxlen if len(typed_pol_maxlen) == 1 else pol_maxlen
+        pol_contents = typed_pol_contents if len(typed_pol_contents) == 1 else pol_contents
 
     if len(pol_minlen) == 1 and len(pin) < int(pol_minlen[0]):
         # check the minimum length requirement

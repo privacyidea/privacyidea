@@ -166,10 +166,8 @@ angular.module("TokenModule", ["privacyideaAuth"])
                     }).success(callback
                 ).error(error_func);
             },
-            setpin: function(serial, key, value, callback) {
-                var data = {};
-                data[key] = value;
-                $http.post(tokenUrl + "/setpin/" + serial, data,
+            setpin: function(serial, params, callback) {
+                $http.post(tokenUrl + "/setpin/" + serial, params,
                     {
                         headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).success(callback
