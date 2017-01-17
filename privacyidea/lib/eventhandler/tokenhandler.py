@@ -35,7 +35,7 @@ from privacyidea.lib.token import (get_token_types, set_validity_period_end,
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.token import (set_realms, remove_token, enable_token,
                                    unassign_token, init_token, set_description,
-                                   set_count_window)
+                                   set_count_window, add_tokeninfo)
 from privacyidea.lib.utils import parse_date
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from datetime import datetime
@@ -59,6 +59,7 @@ class ACTION_TYPE(object):
     SET_DESCRIPTION = "set description"
     SET_VALIDITY = "set validity"
     SET_COUNTWINDOW = "set countwindow"
+    SET_TOKENINFO = "set tokeninfo"
 
 
 class VALIDITY(object):
@@ -157,8 +158,23 @@ class TokenEventHandler(BaseEventHandler):
                                 # TODO: should be "int" but we do not support
                                 #  this at the moment.
                                 "type": "str",
+                                "required": True,
                                 "description": _("Set the new count window of "
                                                  "the token.")
+                            }
+                       },
+                   ACTION_TYPE.SET_TOKENINFO:
+                       {"key":
+                           {
+                               "type": "str",
+                               "required": True,
+                               "description": _("Set this tokeninfo key.")
+                           },
+                        "value":
+                            {
+                                "type": "str",
+                                "description": _("Set the above key the this "
+                                                 "value.")
                             }
                        }
                    }
@@ -191,8 +207,10 @@ class TokenEventHandler(BaseEventHandler):
                               ACTION_TYPE.DELETE, ACTION_TYPE.DISABLE,
                               ACTION_TYPE.ENABLE, ACTION_TYPE.UNASSIGN,
                               ACTION_TYPE.SET_VALIDITY,
-                              ACTION_TYPE.SET_COUNTWINDOW]:
+                              ACTION_TYPE.SET_COUNTWINDOW,
+                              ACTION_TYPE.SET_TOKENINFO]:
             if serial:
+                log.info("{0!s} for token {1!s}".format(action, serial))
                 if action.lower() == ACTION_TYPE.SET_TOKENREALM:
                     realm = handler_options.get("realm")
                     only_realm = handler_options.get("only_realm")
@@ -202,29 +220,24 @@ class TokenEventHandler(BaseEventHandler):
                     # Add the token realm
                     set_realms(serial, [realm], add=True)
                 elif action.lower() == ACTION_TYPE.DELETE:
-                    log.info("Delete token {0!s}".format(serial))
                     remove_token(serial=serial)
                 elif action.lower() == ACTION_TYPE.DISABLE:
-                    log.info("Disable token {0!s}".format(serial))
                     enable_token(serial, enable=False)
                 elif action.lower() == ACTION_TYPE.ENABLE:
-                    log.info("Enable token {0!s}".format(serial))
                     enable_token(serial, enable=True)
                 elif action.lower() == ACTION_TYPE.UNASSIGN:
-                    log.info("Unassign token {0!s}".format(serial))
                     unassign_token(serial)
                 elif action.lower() == ACTION_TYPE.SET_DESCRIPTION:
-                    log.info("Set description of token {0!s}".format(serial))
                     set_description(serial, handler_options.get(
                         "description", ""))
                 elif action.lower() == ACTION_TYPE.SET_COUNTWINDOW:
-                    log.info("Set the count window of token {0!s}".format(
-                        serial))
                     set_count_window(serial,
-                                    int(handler_options.get("sync window", 50)))
+                                    int(handler_options.get("count window",
+                                                            50)))
+                elif action.lower() == ACTION_TYPE.SET_TOKENINFO:
+                    add_tokeninfo(serial, handler_options.get("key"),
+                                  handler_options.get("value") or "")
                 elif action.lower() == ACTION_TYPE.SET_VALIDITY:
-                    log.info("Set validity period for token {0!s}".format(
-                        serial))
                     start_date = handler_options.get(VALIDITY.START)
                     end_date = handler_options.get(VALIDITY.END)
                     if start_date:

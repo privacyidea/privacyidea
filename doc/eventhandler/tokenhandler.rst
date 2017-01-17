@@ -101,9 +101,24 @@ event occurred.
    newly enrolled tokens to be only valid for a certain amount of days.
 
 set countwindow
-..............
+...............
 
 Here the count window of a token can be set. This requires an integer value.
+
+set tokeninfo
+.............
+
+Using the action ``set tokeninfo`` you can set any arbitrary tokeninfo
+attribute for the token. You need to specify the ``key`` of the
+tokeninfo and the ``value``.
+
+.. note:: Some tokens have token specific attributes that are stored in the
+   tokeninfo. The TOTP token type has a ``timeWindow``. The TOTP and the HOTP
+   token store the ``hashlib`` in the tokeninfo, the SMS token stores the
+   ``phone`` number.
+
+.. note:: You can use this to set the ``timeWindow`` of a TOTP token for
+   :ref:`faq_initial_synchronization`.
 
 Code
 ~~~~
