@@ -127,7 +127,6 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.assignUser = function () {
         TokenFactory.assign({
             serial: $scope.tokenSerial,
-            type: $scope.token.tokentype,
             user: fixUser($scope.newUser.user),
             realm: $scope.newUser.realm,
             pin: $scope.newUser.pin
@@ -139,18 +138,16 @@ myApp.controller("tokenDetailController", function ($scope,
     };
 
     $scope.setPin = function () {
-        TokenFactory.setpin($scope.tokenSerial, {
-            otppin: $scope.pin1,
-            type: $scope.token.tokentype
-        }, function () {
-            $scope.pin1 = "";
-            $scope.pin2 = "";
-            // in case of certificate tokens we need to reread the token
-            // information. Since the PKCS12 is encrypted with the new PIN.
-            if ($scope.token.tokentype === "certificate") {
-                $scope.get();
-            }
-        });
+        TokenFactory.setpin($scope.tokenSerial, "otppin",
+            $scope.pin1, function () {
+                $scope.pin1 = "";
+                $scope.pin2 = "";
+                // in case of certificate tokens we need to reread the token
+                // information. Since the PKCS12 is encrypted with the new PIN.
+                if ($scope.token.tokentype === "certificate") {
+                    $scope.get();
+                }
+            });
     };
 
     $scope.resyncToken = function () {
