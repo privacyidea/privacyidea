@@ -2174,6 +2174,30 @@ def get_dynamic_policy_definitions(scope=None):
 
                     pol[pol_section][set_def] = pol_entry.get(pol_def)
 
+        # If the token class should provide specific PIN policies, now merge
+        # PIN policies
+        pin_scopes = get_tokenclass_info(ttype, section='pin_scopes') or []
+        for pin_scope in pin_scopes:
+            pol[pin_scope]['{0!s}_otp_pin_maxlength'.format(ttype.lower())] = {
+                'type': 'int',
+                'value': range(0, 32),
+                "desc": _("Set the maximum allowed PIN length of the {0!s}"
+                          " token.").format(ttype.upper())
+            }
+            pol[pin_scope]['{0!s}_otp_pin_minlength'.format(ttype.lower())] = {
+                'type': 'int',
+                'value': range(0, 32),
+                "desc": _("Set the minimum required PIN length of the {0!s}"
+                          " token.").format(ttype.upper())
+            }
+            pol[pin_scope]['{0!s}_otp_pin_contents'.format(ttype.lower())] = {
+                'type': 'str',
+                "desc": _("Specifiy the required PIN contents of the "
+                          "{0!s} token. "
+                          "(c)haracters, (n)umeric, "
+                          "(s)pecial, (o)thers. [+/-]!").format(ttype.upper())
+            }
+
     # return sub section, if scope is defined
     # make sure that scope is in the policy key
     # e.g. scope='_' is undefined and would break

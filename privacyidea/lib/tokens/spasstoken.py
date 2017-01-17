@@ -49,12 +49,6 @@ required = False
 log = logging.getLogger(__name__)
 
 
-class SPASSACTION(object):
-    OTPPINMAXLEN = 'spass_otp_pin_maxlength'
-    OTPPINMINLEN = 'spass_otp_pin_minlength'
-    OTPPINCONTENTS = 'spass_otp_pin_contents'
-
-
 class SpassTokenClass(TokenClass):
     """
     This is a simple pass token.
@@ -100,50 +94,15 @@ class SpassTokenClass(TokenClass):
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {
-                   SCOPE.ADMIN: {
-                       SPASSACTION.OTPPINMAXLEN: {
-                           'type': 'int',
-                           'value': range(0, 32),
-                           "desc": _("Set the maximum allowed length "
-                                     "of the SPASS PIN.")},
-                       SPASSACTION.OTPPINMINLEN: {
-                           'type': 'int',
-                           'value': range(0, 32),
-                           "desc": _("Set the minimum required length "
-                                     "of the SPASS PIN.")},
-                       SPASSACTION.OTPPINCONTENTS: {
-                           'type': 'str',
-                           "desc": _("Specifiy the required "
-                                     "contents of the SPASS PIN. "
-                                     "(c)haracters, (n)umeric, "
-                                     "(s)pecial, (o)thers. [+/-]!")},
-                   },
-                   SCOPE.USER: {
-                       SPASSACTION.OTPPINMAXLEN: {
-                           'type': 'int',
-                           'value': range(0, 32),
-                           "desc": _("Set the maximum allowed length "
-                                     "of the SPASS PIN.")},
-                       SPASSACTION.OTPPINMINLEN: {
-                           'type': 'int',
-                           'value': range(0, 32),
-                           "desc": _("Set the minimum required length "
-                                     "of the SPASS PIN.")},
-                       SPASSACTION.OTPPINCONTENTS: {
-                           'type': 'str',
-                           "desc": _("Specifiy the required "
-                                     "contents of the SPASS PIN. "
-                                     "(c)haracters, (n)umeric, "
-                                     "(s)pecial, (o)thers. [+/-]!")},
-
-                   },
-               },
+               # SPASS token can have specific PIN policies in the scopes
+               # admin and user
+               'pin_scopes': [SCOPE.ADMIN, SCOPE.USER],
+               'policy': {}
                }
 
         # do we need to define the lost token policies here...
-        if key is not None and key in res:
-            ret = res.get(key)
+        if key:
+            ret = res.get(key, {})
         else:
             if ret == 'all':
                 ret = res
