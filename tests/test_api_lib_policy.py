@@ -689,6 +689,62 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # finally delete policy
         delete_policy("pol1")
 
+    def test_01b_token_specific_pin_policy(self):
+        g.logged_in_user = {"username": "super",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+
+        # Set a policy that defines a default PIN policy
+        set_policy(name="pol1",
+                   scope=SCOPE.ADMIN,
+                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
+                       ACTION.OTPPINMAXLEN, "10",
+                       ACTION.OTPPINMINLEN, "4",
+                       ACTION.OTPPINCONTENTS, "cn"),
+                   realm="home")
+
+        # Set a policy that defines a SPASS PIN policy
+        set_policy(name="pol2",
+                   scope=SCOPE.ADMIN,
+                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
+                       "spass_otp_pin_maxlength", "11",
+                       "spass_otp_pin_minlength", "8",
+                       "spass_otp_pin_contents", "n"),
+                   realm="home")
+        g.policy_object = PolicyClass()
+
+        req.all_data = {"user": "cornelius",
+                        "realm": "home",
+                        "pin": "123456",
+                        "type": "spass"}
+        # The minimum OTP length is 8
+        self.assertRaises(PolicyError, check_otp_pin, req)
+
+        req.all_data = {"user": "cornelius",
+                        "realm": "home",
+                        "type": "spass",
+                        "pin": "12345678901"}
+        # The maximum PIN length of 11 is ok.
+        r = check_otp_pin(req)
+        self.assertTrue(r)
+
+        req.all_data = {"user": "cornelius",
+                        "realm": "home",
+                        "type": "spass",
+                        "pin": "abcdefghij"}
+        # Good OTP length, but missing nummbers
+        self.assertRaises(PolicyError, check_otp_pin, req)
+
+        # finally delete policy
+        delete_policy("pol1")
+
     def test_10_check_external(self):
         g.logged_in_user = {"username": "user1",
                             "role": "user"}

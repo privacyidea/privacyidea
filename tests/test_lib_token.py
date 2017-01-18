@@ -837,6 +837,11 @@ class TokenTestCase(MyTestCase):
         self.assertTrue("enrollHOTP" in p, p)
         self.assertTrue("enrollPW" in p, p)
 
+        # The SPASS token can have his own PIN policy
+        self.assertTrue("spass_otp_pin_contents" in p, p)
+        self.assertTrue("spass_otp_pin_maxlength" in p, p)
+        self.assertTrue("spass_otp_pin_minlength" in p, p)
+
     def test_41_get_tokens_paginate(self):
         # create some tokens
         for serial in ["S1", "S2", "S3", "A8", "B", "X"]:

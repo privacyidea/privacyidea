@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-01-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add token specific PIN policies based on
+#             Quynh's pull request.
 #  2016-11-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add timelimit for audit entries
 #  2016-08-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -201,7 +204,7 @@ def check_otp_pin(request=None, action=None):
     ACTION.OTPPINCONTENTS and token-type-specific PIN policy actions in the
     SCOPE.USER or SCOPE.ADMIN. It is used to decorate the API functions.
 
-    The pin is investigated in the params as pin = params.get("pin")
+    The pin is investigated in the params as "otppin" or "pin"
 
     In case the given OTP PIN does not match the requirements an exception is
     raised.
@@ -209,15 +212,18 @@ def check_otp_pin(request=None, action=None):
     params = request.all_data
     realm = params.get("realm")
     pin = params.get("otppin", "") or params.get("pin", "")
-    type = params.get("type", "")
     serial = params.get("serial")
+    tokentype = params.get("type")
     if serial:
         # if this is a token, that does not use a pin, we ignore this check
         # And immediately return true
         tokensobject_list = get_tokens(serial=serial)
-        if (len(tokensobject_list) == 1 and
-                tokensobject_list[0].using_pin is False):
-            return True
+        if len(tokensobject_list) == 1:
+            if tokensobject_list[0].using_pin is False:
+                return True
+            tokentype = tokensobject_list[0].token.type
+    # the default tokentype is still HOTP
+    tokentype = tokentype or "hotp"
     policy_object = g.policy_object
     role = g.logged_in_user.get("role")
     username = g.logged_in_user.get("username")
@@ -230,55 +236,34 @@ def check_otp_pin(request=None, action=None):
         realm = g.logged_in_user.get("realm")
         admin_realm = None
     # get the policies for minimum length, maximum length and PIN contents
-    pol_minlen = policy_object.get_action_values(action=ACTION.OTPPINMINLEN,
-                                                 scope=scope,
-                                                 user=username,
-                                                 realm=realm,
-                                                 adminrealm=admin_realm,
-                                                 client=g.client_ip,
-                                                 unique=True)
-    pol_maxlen = policy_object.get_action_values(action=ACTION.OTPPINMAXLEN,
-                                                 scope=scope,
-                                                 user=username,
-                                                 realm=realm,
-                                                 adminrealm=admin_realm,
-                                                 client=g.client_ip,
-                                                 unique=True)
-    pol_contents = policy_object.get_action_values(action=ACTION.OTPPINCONTENTS,
-                                                   scope=scope,
-                                                   user=username,
-                                                   realm=realm,
-                                                   adminrealm=admin_realm,
-                                                   client=g.client_ip,
-                                                   unique=True)
-    if type:
-        typed_pol_minlen_action = "{0!s}_{1!s}".format(type, ACTION.OTPPINMINLEN)
-        typed_pol_maxlen_action = "{0!s}_{1!s}".format(type, ACTION.OTPPINMAXLEN)
-        typed_pol_contents_action = "{0!s}_{1!s}".format(type, ACTION.OTPPINCONTENTS)
-        typed_pol_minlen = policy_object.get_action_values(action=typed_pol_minlen_action,
-                                                           scope=scope,
-                                                           user=username,
-                                                           realm=realm,
-                                                           adminrealm=admin_realm,
-                                                           client=g.client_ip,
-                                                           unique=True)
-        typed_pol_maxlen = policy_object.get_action_values(action=typed_pol_maxlen_action,
-                                                           scope=scope,
-                                                           user=username,
-                                                           realm=realm,
-                                                           adminrealm=admin_realm,
-                                                           client=g.client_ip,
-                                                           unique=True)
-        typed_pol_contents = policy_object.get_action_values(action=typed_pol_contents_action,
-                                                             scope=scope,
-                                                             user=username,
-                                                             realm=realm,
-                                                             adminrealm=admin_realm,
-                                                             client=g.client_ip,
-                                                             unique=True)
-        pol_minlen = typed_pol_minlen if len(typed_pol_minlen) == 1 else pol_minlen
-        pol_maxlen = typed_pol_maxlen if len(typed_pol_maxlen) == 1 else pol_maxlen
-        pol_contents = typed_pol_contents if len(typed_pol_contents) == 1 else pol_contents
+    # first try to get a token specific policy - otherwise fall back to
+    # default policy
+    pol_minlen = policy_object.get_action_values(
+        action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINMINLEN),
+        scope=scope, user=username, realm=realm, adminrealm=admin_realm,
+        client=g.client_ip, unique=True) or \
+                 policy_object.get_action_values(
+                     action=ACTION.OTPPINMINLEN, scope=scope, user=username,
+                     realm=realm, adminrealm=admin_realm, client=g.client_ip,
+                     unique=True)
+
+    pol_maxlen = policy_object.get_action_values(
+        action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINMAXLEN),
+        scope=scope, user=username, realm=realm, adminrealm=admin_realm,
+        client=g.client_ip, unique=True) or \
+                 policy_object.get_action_values(
+                     action=ACTION.OTPPINMAXLEN, scope=scope, user=username,
+                     realm=realm, adminrealm=admin_realm, client=g.client_ip,
+                     unique=True)
+
+    pol_contents = policy_object.get_action_values(
+        action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINCONTENTS),
+        scope=scope, user=username, realm=realm, adminrealm=admin_realm,
+        client=g.client_ip, unique=True) or \
+                   policy_object.get_action_values(
+                       action=ACTION.OTPPINCONTENTS, scope=scope,
+                       user=username, realm=realm, adminrealm=admin_realm,
+                       client=g.client_ip, unique=True)
 
     if len(pol_minlen) == 1 and len(pin) < int(pol_minlen[0]):
         # check the minimum length requirement
