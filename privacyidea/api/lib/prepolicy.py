@@ -221,7 +221,7 @@ def check_otp_pin(request=None, action=None):
         if len(tokensobject_list) == 1:
             if tokensobject_list[0].using_pin is False:
                 return True
-            tokentype = tokensobject_list[0].token.type
+            tokentype = tokensobject_list[0].token.tokentype
     # the default tokentype is still HOTP
     tokentype = tokentype or "hotp"
     policy_object = g.policy_object
