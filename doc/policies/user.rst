@@ -119,12 +119,19 @@ from the request.
 otp_pin_maxlength
 ~~~~~~~~~~~~~~~~~
 
+.. index:: PIN policy, Token specific PIN policy
+
 type: integer
 
 range: 0 - 31
 
 This is the maximum allowed PIN length the user is allowed to
 use when setting the OTP PIN.
+
+.. note:: There can be token type specific policies like
+``spass_otp_pin_maxlength``, ``spass_otp_pin_minlength`` and
+``spass_otp_pin_contents``. If suche a token specific policy exists, it takes
+priority of the common PIN policy.
 
 otp_pin_minlength
 ~~~~~~~~~~~~~~~~~
@@ -179,13 +186,6 @@ and it must not contain any other characters.
    characters from the sum of the two groups.
    *test1234*, *test12$$*, *test*
    and *1234* would all be valid OTP PINs.
-
-(**TODO**) grouping and substraction are not implemented, yet.
-
-.. note:: You can change these character definitions in the privacyidea.ini
-   file using ``privacyideaPolicy.pin_c``, ``privacyideaPolicy.pin_n``
-   and ``privacyideaPolicy.pin_s``.
-   (**Not migrated, yet**)
 
 
 auditlog

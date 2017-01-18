@@ -97,8 +97,8 @@ class QuestionnaireTokenClass(TokenClass):
                'policy': {},
                }
 
-        if key is not None and key in res:
-            ret = res.get(key)
+        if key:
+            ret = res.get(key, {})
         else:
             if ret == 'all':
                 ret = res
