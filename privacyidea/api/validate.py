@@ -433,6 +433,7 @@ def trigger_challenge():
     user = request.User
     serial = getParam(request.all_data, "serial")
     result_obj = 0
+    triggered_serials = []
     details = {"messages": [],
                "transaction_ids": []}
 
@@ -445,7 +446,18 @@ def trigger_challenge():
             if success:
                 result_obj += 1
                 details.get("transaction_ids").append(transactionid)
+                triggered_serials.append(token_obj.token.serial)
             details.get("messages").append(return_message)
+
+    g.audit_object.log({
+        "transaction_ids": details["transaction_ids"],
+        "given_serial": serial,
+        "triggered_serials": triggered_serials,
+        "user": user.login,
+        "resolver": user.resolver,
+        "realm": user.realm,
+        "success": result_obj > 0,
+    })
 
     return send_result(result_obj, details=details)
 
