@@ -253,16 +253,26 @@ class TokenEventHandler(BaseEventHandler):
                 log.info("Action {0!s} requires serial number. But no serial "
                          "number could be found in request.")
 
+
         if action.lower() == ACTION_TYPE.INIT:
             log.info("Initializing new token")
+
+            action_param = {"type": handler_options.get("tokentype"),
+                     "genkey": 1,
+                     "realm": handler_options.get("realm", "")}
+
             if handler_options.get("user") in ["1", 1, True]:
                 user = self._get_tokenowner(request)
+                # initiating a sms token for a user without 'phone' will always throw an exception
+                # the user can't add this information later, so the user ends up stuck non-working sms token
+                # alternatively this can be implemented with a dropdown after "sms" is selected:
+                #  "autofill user phone number with: phone, mobile, none <default>
+                if handler_options.get("tokentype") == "sms":
+                    action_param.update({'phone': user.get_user_phone(phone_type='mobile')})
             else:
                 user = None
-            t = init_token({"type": handler_options.get("tokentype"),
-                            "genkey": 1,
-                            "realm": handler_options.get("realm", "")},
-                           user=user)
+
+            t = init_token(param=action_param, user=user)
             log.info("New token {0!s} enrolled.".format(t.token.serial))
 
         return ret
