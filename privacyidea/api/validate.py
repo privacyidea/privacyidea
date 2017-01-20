@@ -445,7 +445,19 @@ def trigger_challenge():
             if success:
                 result_obj += 1
                 details.get("transaction_ids").append(transactionid)
+                # This will write only the serial of the token that was processed last to the audit log
+                g.audit_object.log({
+                    "serial": token_obj.token.serial,
+                })
             details.get("messages").append(return_message)
+
+    g.audit_object.log({
+        "user": user.login,
+        "resolver": user.resolver,
+        "realm": user.realm,
+        "success": result_obj > 0,
+        "info": "triggered {0!s} challenges".format(result_obj),
+    })
 
     return send_result(result_obj, details=details)
 

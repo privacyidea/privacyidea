@@ -556,7 +556,7 @@ def resync_api(serial=None):
 @token_blueprint.route('/setpin/<serial>', methods=['POST'])
 @prepolicy(check_base_action, request, action=ACTION.SETPIN)
 @prepolicy(encrypt_pin, request)
-@prepolicy(check_otp_pin, request)
+@prepolicy(check_otp_pin, request, action=ACTION.SETPIN)
 @postpolicy(save_pin_change, request)
 @event("token_setpin", request, g)
 @log_with(log)

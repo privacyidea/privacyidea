@@ -148,11 +148,22 @@
                  group-property="multiSelectGroup"
                     >
             </div>
+            <div class="input-group">
+                <input type="text" ng-model="action_filter"
+                   placeholder="{{ 'filter action...'|translate }}"
+                   class="form-control"
+                   aria-describedby="filter-delete">
+                <span class="input-group-addon" id="filter-delete"
+                    ng-click="action_filter=''">
+                    <span class="glyphicon glyphicon-remove-circle"></span>
+                </span>
+            </div>
             <div ng-show="isActionValues">
                 <table class="table table-hover">
                     <tr ng-repeat="action in actions"
-                        ng-show="actionCheckBox[action.name] ||
-                        !onlySelectedVisible">
+                        ng-show="(actionCheckBox[action.name] ||
+                        !onlySelectedVisible) &&
+                        action.name.match(action_filter) !== null">
                         <td>
                             <label for="cb_{{ action.name }}">
                             <input type="checkbox" name="{{ action.name }}"

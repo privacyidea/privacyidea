@@ -214,6 +214,11 @@ def check_otp_pin(request=None, action=None):
     pin = params.get("otppin", "") or params.get("pin", "")
     serial = params.get("serial")
     tokentype = params.get("type")
+    if not serial and action == ACTION.SETPIN:
+        path_elems = request.path.split("/")
+        serial = path_elems[-1]
+        # Also set it for later use
+        request.all_data["serial"] = serial
     if serial:
         # if this is a token, that does not use a pin, we ignore this check
         # And immediately return true
