@@ -148,9 +148,16 @@
                  group-property="multiSelectGroup"
                     >
             </div>
-            <input type="text" ng-model="action_filter"
+            <div class="input-group">
+                <input type="text" ng-model="action_filter"
                    placeholder="{{ 'filter action...'|translate }}"
-                   class="form-control">
+                   class="form-control"
+                   aria-describedby="filter-delete">
+                <span class="input-group-addon" id="filter-delete"
+                    ng-click="action_filter=''">
+                    <span class="glyphicon glyphicon-remove-circle"></span>
+                </span>
+            </div>
             <div ng-show="isActionValues">
                 <table class="table table-hover">
                     <tr ng-repeat="action in actions"
