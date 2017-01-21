@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add required mobile number and email address when enrolling tokens
+#             added with the help of splashx
 #  2016-11-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Initial writup
 #
@@ -36,9 +39,8 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.token import (set_realms, remove_token, enable_token,
                                    unassign_token, init_token, set_description,
                                    set_count_window, add_tokeninfo)
-from privacyidea.lib.utils import parse_date
+from privacyidea.lib.utils import parse_date, is_true
 from privacyidea.lib.tokenclass import DATE_FORMAT
-from datetime import datetime
 from gettext import gettext as _
 import json
 import logging
@@ -120,13 +122,21 @@ class TokenEventHandler(BaseEventHandler):
                         "user":
                             {"type": "bool",
                              "description": _("Assign token to user in "
-                                              "request or tokenowner.")},
+                                              "request or to tokenowner.")},
                         "realm":
                             {"type": "str",
                              "required": False,
                              "description": _("Set the realm of the newly "
                                               "created token."),
                              "value": realm_list},
+                        "motppin": {
+                            "type": "str",
+                            "visibleIf": "tokentype",
+                            "visibleValue": "motp",
+                            "description": _("Set the MOTP PIN of the MOTP "
+                                             "token during enrollment. This "
+                                             "is a required value for "
+                                             "enrolling MOTP tokens.")}
                         },
                    ACTION_TYPE.SET_DESCRIPTION:
                        {"description":
@@ -255,14 +265,31 @@ class TokenEventHandler(BaseEventHandler):
 
         if action.lower() == ACTION_TYPE.INIT:
             log.info("Initializing new token")
-            if handler_options.get("user") in ["1", 1, True]:
+            init_param = {"type": handler_options.get("tokentype"),
+                          "genkey": 1,
+                          "realm": handler_options.get("realm", "")}
+            user = None
+            if is_true(handler_options.get("user")):
                 user = self._get_tokenowner(request)
-            else:
-                user = None
-            t = init_token({"type": handler_options.get("tokentype"),
-                            "genkey": 1,
-                            "realm": handler_options.get("realm", "")},
-                           user=user)
+                tokentype = handler_options.get("tokentype")
+                # Some tokentypes need additional parameters or otherwise
+                # will fail to enroll.
+                # TODO: Other tokentypes will require additional parameters
+                if tokentype == "sms":
+                    init_param['phone'] = user.get_user_phone(
+                        phone_type='mobile')
+                    if not init_param['phone']:
+                        log.warning("Enrolling SMS token. But the user "
+                                    "{0!s} has no mobile number!".format(user))
+                elif tokentype == "email":
+                    init_param['email'] = user.info.get("email", "")
+                    if not init_param['email']:
+                        log.warning("Enrolling EMail token. But the user {0!s}"
+                                    "has no email address!".format(user))
+                elif tokentype == "motp":
+                    init_param['motppin'] = handler_options.get("motppin")
+
+            t = init_token(param=init_param, user=user)
             log.info("New token {0!s} enrolled.".format(t.token.serial))
 
         return ret
