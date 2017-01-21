@@ -498,7 +498,8 @@ class TokenEventTestCase(MyTestCase):
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"serial": "SPASS01", "type": "spass"}
-        req.User = User("cornelius", self.realm1)
+        user_obj = User("cornelius", self.realm1)
+        req.User = user_obj
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
@@ -517,8 +518,64 @@ class TokenEventTestCase(MyTestCase):
         # Check if the token was created and assigned
         t = get_tokens(tokentype="paper")[0]
         self.assertTrue(t)
-        self.assertEqual(t.user, User("cornelius", self.realm1))
+        self.assertEqual(t.user, user_obj)
+        remove_token(t.token.serial)
 
+        # Enroll an SMS token
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"tokentype": "sms",
+                                        "user": "1"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check if the token was created and assigned
+        t = get_tokens(tokentype="sms")[0]
+        self.assertTrue(t)
+        self.assertEqual(t.user, user_obj)
+        self.assertEqual(t.get_tokeninfo("phone"), user_obj.info.get("mobile"))
+        remove_token(t.token.serial)
+
+        # Enroll an Email token
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"tokentype": "email",
+                                        "user": "1"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check if the token was created and assigned
+        t = get_tokens(tokentype="email")[0]
+        self.assertTrue(t)
+        self.assertEqual(t.user, user_obj)
+        self.assertEqual(t.get_tokeninfo("email"), user_obj.info.get("email"))
+        remove_token(t.token.serial)
+
+        # Enroll an mOTP token
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"tokentype": "motp",
+                                        "user": "1",
+                                        "motppin": "1234"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check if the token was created and assigned
+        t = get_tokens(tokentype="motp")[0]
+        self.assertTrue(t)
+        self.assertEqual(t.user, user_obj)
         remove_token(t.token.serial)
 
     def test_06_set_description(self):
