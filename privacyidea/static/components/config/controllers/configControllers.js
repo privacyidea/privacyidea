@@ -188,12 +188,15 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
         var actions = $scope.policyDefs[scope];
         console.log(actions);
         $scope.actions = [];
+        $scope.actionGroups = [];
         $scope.isActionValues = false;
 
         angular.forEach(actions, function(value, key) {
-            // TODO: we might evaluate value.group and group the actions
-            //$scope.actions.push({name: "GroupName", multiSelectGroup: true})
-            //$scope.actions.push({multiSelectGroup: false})
+            // we might evaluate value.group and group the actions
+            if ($scope.actionGroups.indexOf(value.group) < 0) {
+                // build a list of all groups
+                $scope.actionGroups.push(value.group);
+            }
             // Check the given policy actions
             var ticked = false;
             if (policyActions && policyActions[key] === true) {
@@ -219,6 +222,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
                 $scope.actions.push({name: key,
                                      type: value.type,
                                      desc: value.desc,
+                                     group: value.group,
                                      allowedValues: value.value});
                 // preset the fields
                 if (policyActions && policyActions[key]) {

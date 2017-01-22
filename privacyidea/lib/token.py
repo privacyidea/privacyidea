@@ -2133,7 +2133,7 @@ def get_dynamic_policy_definitions(scope=None):
     this scope.
     :return: The policy definition for the token or only for the scope.
     """
-    from privacyidea.lib.policy import SCOPE, MAIN_MENU
+    from privacyidea.lib.policy import SCOPE, MAIN_MENU, GROUP
 
     pol = {SCOPE.ADMIN: {},
            SCOPE.USER: {},
@@ -2145,14 +2145,16 @@ def get_dynamic_policy_definitions(scope=None):
             = {'type': 'bool',
                'desc': _('Admin is allowed to initalize %s tokens.') %
                        ttype.upper(),
-               'mainmenu': [MAIN_MENU.TOKENS]}
+               'mainmenu': [MAIN_MENU.TOKENS],
+               'group': GROUP.ENROLLMENT}
 
         conf = get_tokenclass_info(ttype, section='user')
         if 'enroll' in conf:
             pol[SCOPE.USER]["enroll{0!s}".format(ttype.upper())] = {
                 'type': 'bool',
                 'desc': _("The user is allowed to enroll a %s token.") % ttype,
-                'mainmenu': [MAIN_MENU.TOKENS]}
+                'mainmenu': [MAIN_MENU.TOKENS],
+                'group': GROUP.ENROLLMENT}
 
         # now merge the dynamic Token policy definition
         # into the global definitions
@@ -2182,20 +2184,23 @@ def get_dynamic_policy_definitions(scope=None):
                 'type': 'int',
                 'value': range(0, 32),
                 "desc": _("Set the maximum allowed PIN length of the {0!s}"
-                          " token.").format(ttype.upper())
+                          " token.").format(ttype.upper()),
+                'group': GROUP.PIN
             }
             pol[pin_scope]['{0!s}_otp_pin_minlength'.format(ttype.lower())] = {
                 'type': 'int',
                 'value': range(0, 32),
                 "desc": _("Set the minimum required PIN length of the {0!s}"
-                          " token.").format(ttype.upper())
+                          " token.").format(ttype.upper()),
+                'group': GROUP.PIN
             }
             pol[pin_scope]['{0!s}_otp_pin_contents'.format(ttype.lower())] = {
                 'type': 'str',
                 "desc": _("Specifiy the required PIN contents of the "
                           "{0!s} token. "
                           "(c)haracters, (n)umeric, "
-                          "(s)pecial, (o)thers. [+/-]!").format(ttype.upper())
+                          "(s)pecial, (o)thers. [+/-]!").format(ttype.upper()),
+                'group': GROUP.PIN
             }
 
     # return sub section, if scope is defined

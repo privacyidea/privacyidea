@@ -72,7 +72,7 @@ msgstr ""
 msgid "Add user"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:271
+#: privacyidea/static/components/config/views/config.policies.details.html:286
 msgid "Admin"
 msgstr ""
 
@@ -320,7 +320,7 @@ msgstr ""
 msgid "Check OTP only."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:263
+#: privacyidea/static/components/config/views/config.policies.details.html:278
 msgid ""
 "Check all possible resolvers of a user to match the resolver\n"
 "                in this policy."
@@ -363,7 +363,7 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/components/views/component.clienttype.html:11
-#: privacyidea/static/components/config/views/config.policies.details.html:287
+#: privacyidea/static/components/config/views/config.policies.details.html:302
 #: privacyidea/static/components/config/views/config.policies.list.html:12
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:49
 msgid "Client"
@@ -438,7 +438,7 @@ msgstr ""
 msgid "Create Event Handler Definition"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:318
+#: privacyidea/static/components/config/views/config.policies.details.html:333
 #: privacyidea/static/components/config/views/config.policies.details.html:85
 msgid "Create Policy"
 msgstr ""
@@ -2125,12 +2125,12 @@ msgstr ""
 msgid "System Config"
 msgstr ""
 
-#: privacyidea/static/components/config/controllers/configControllers.js:429
-#: privacyidea/static/components/config/controllers/configControllers.js:655
+#: privacyidea/static/components/config/controllers/configControllers.js:433
+#: privacyidea/static/components/config/controllers/configControllers.js:659
 msgid "System Config saved."
 msgstr ""
 
-#: privacyidea/static/components/config/controllers/configControllers.js:438
+#: privacyidea/static/components/config/controllers/configControllers.js:442
 msgid "System entry deleted."
 msgstr ""
 
@@ -2973,7 +2973,7 @@ msgstr ""
 msgid "Use TLS"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:273
+#: privacyidea/static/components/config/views/config.policies.details.html:288
 #: privacyidea/static/components/config/views/config.policies.list.html:10
 #: privacyidea/static/components/config/views/config.radius.edit.html:79
 #: privacyidea/static/templates/menu.html:52
@@ -3004,11 +3004,11 @@ msgstr ""
 msgid "User updated successfully."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:233
+#: privacyidea/static/components/config/views/config.policies.details.html:248
 msgid "User-Realm"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:248
+#: privacyidea/static/components/config/views/config.policies.details.html:263
 msgid "User-Resolver"
 msgstr ""
 
@@ -3042,7 +3042,7 @@ msgstr ""
 msgid "Valid subscription"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:299
+#: privacyidea/static/components/config/views/config.policies.details.html:314
 msgid "Valid time"
 msgstr ""
 
@@ -3254,7 +3254,7 @@ msgstr ""
 msgid "failcounter"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:152
+#: privacyidea/static/components/config/views/config.policies.details.html:153
 msgid "filter action..."
 msgstr ""
 
@@ -3292,6 +3292,10 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.details.html:87
 msgid "maxfail"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.policies.details.html:164
+msgid "miscellaneous"
 msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.log.html:77
