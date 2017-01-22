@@ -1102,7 +1102,6 @@ def get_static_policy_definitions(scope=None):
             ACTION.LOSTTOKEN: {'type': 'bool',
                                'desc': _('Admin is allowed to trigger the '
                                          'lost token workflow.'),
-                               "group": "tools",
                                'mainmenu': [MAIN_MENU.TOKENS],
                                'group': GROUP.TOOLS},
 
