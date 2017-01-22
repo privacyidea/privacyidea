@@ -167,9 +167,9 @@
                         <table class="table table-hover">
                             <tr ng-repeat="action in actions"
                                 ng-show="(actionCheckBox[action.name] ||
-                        !onlySelectedVisible) &&
-                        action.name.match(action_filter) !== null &&
-                        (action.group===null || actionGroup===action.group)">
+                                    !onlySelectedVisible) &&
+                                    action.name.match(action_filter) !== null"
+                                ng-if="action.group===null || actionGroup===action.group">
                                 <td>
                                     <label for="cb_{{ action.name }}">
                                         <input type="checkbox"
