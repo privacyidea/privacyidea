@@ -433,8 +433,9 @@ class TokenClass(object):
         otpKey = getParam(param, "otpkey", optional)
         genkey = int(getParam(param, "genkey", optional) or 0)
 
-        assert(genkey in [0, 1]), ("TokenClass supports only genkey in"
-                                   " range [0,1] : %r" % genkey)
+        if genkey not in [0, 1]:
+            raise ParameterError("TokenClass supports only genkey in  range ["
+                                 "0,1] : %r" % genkey)
 
         if genkey == 1 and otpKey is not None:
             raise ParameterError('[ParameterError] You may either specify '

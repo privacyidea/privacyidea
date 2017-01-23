@@ -470,9 +470,6 @@ class urandom(object):
         # scale the integer to an float between 0.0 and 1.0
         randf = randi / intmax
 
-        assert randf >= 0.0
-        assert randf <= 1.0
-
         return randf
 
     @staticmethod
