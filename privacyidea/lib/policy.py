@@ -160,7 +160,7 @@ from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import check_time_in_range, reload_db
 from privacyidea.lib.user import User
 import datetime
-import yaml
+import ast
 
 log = logging.getLogger(__name__)
 
@@ -921,12 +921,12 @@ def import_policies(file_contents):
     res = 0
     for policy_name, policy in policies.iteritems():
         ret = set_policy(name=policy_name,
-                         action=eval(policy.get("action")),
+                         action=ast.literal_eval(policy.get("action")),
                          scope=policy.get("scope"),
-                         realm=eval(policy.get("realm", "[]")),
-                         user=eval(policy.get("user", "[]")),
-                         resolver=eval(policy.get("resolver", "[]")),
-                         client=eval(policy.get("client", "[]")),
+                         realm=ast.literal_eval(policy.get("realm", "[]")),
+                         user=ast.literal_eval(policy.get("user", "[]")),
+                         resolver=ast.literal_eval(policy.get("resolver", "[]")),
+                         client=ast.literal_eval(policy.get("client", "[]")),
                          time=policy.get("time", "")
                          )
         if ret > 0:
