@@ -43,7 +43,6 @@ import six
 from ast import literal_eval
 import hashlib
 import ldap3
-from ldap3.utils.conv import check_escape, escape_bytes
 import re
 import pyparsing
 
