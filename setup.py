@@ -65,7 +65,8 @@ install_requires = ["Flask>=0.10.1",
                     "sqlsoup>=0.9.0",
                     "ecdsa>=0.13",
                     "lxml>=3.3",
-                    "python-gnupg>=0.3.8"
+                    "python-gnupg>=0.3.8",
+                    "defusedxml>=0.4.1"
                     ]
 
 # For python 2.6 we need additional dependency importlib

@@ -8,6 +8,7 @@ configobj==5.0.6
 cookies==2.2.1
 cov-core==1.15.0
 coverage==3.7.1
+defusedxml=0.4.1
 docutils==0.12
 ecdsa==0.13
 enum34==1.1.6

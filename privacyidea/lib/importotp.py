@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-01-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Avoid XML bombs
 #  2016-07-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add GPG encrpyted import
 #  2016-01-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -38,7 +40,7 @@ It is used for importing SafeNet (former Aladdin)
 XML files, that hold the OTP secrets for eToken PASS.
 '''
 
-import xml.etree.ElementTree as etree
+import defusedxml.ElementTree as etree
 import re
 import binascii
 import base64
