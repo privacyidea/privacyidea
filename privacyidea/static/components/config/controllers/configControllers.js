@@ -843,7 +843,8 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
         UIDTYPE: "DN",
         type: 'ldapresolver',
         AUTHTYPE: "Simple",
-        SCOPE: "SUBTREE"
+        SCOPE: "SUBTREE",
+        CACHE_TIMEOUT: 120
     };
     $scope.result = {};
     $scope.resolvername = $stateParams.resolvername;
@@ -859,6 +860,7 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
             $scope.params = resolver.data;
             $scope.params.NOREFERRALS = isTrue($scope.params.NOREFERRALS);
             $scope.params.EDITABLE = isTrue($scope.params.EDITABLE);
+            $scope.params.TLS_VERIFY = isTrue($scope.params.TLS_VERIFY);
             $scope.params.type = 'ldapresolver';
         });
     }

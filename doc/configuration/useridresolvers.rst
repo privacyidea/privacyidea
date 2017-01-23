@@ -146,6 +146,19 @@ blank, the distinguished name will be used. In case of OpenLDAP this can be
 
 .. note:: The attributes *entryUUID* and *objectGUID* are case sensitive!
 
+TLS certificates
+~~~~~~~~~~~~~~~~
+
+Starting with privacyIDEA 2.18 in case of encrypted LDAPS
+connections privacyIDEA can verify  the TLS
+certificate. (Python >= 2.7.9 required)
+To have privacyIDEA verify the TLS certificate you need to check the
+according checkbox.
+
+You also need to have a file with the trusted CA certificate, that signed the
+TLS certificate. The default CA filename is */etc/privacyidea/ldap-ca.crt*
+and can contain a list of base64 encoded CA certificates.
+
 Modifying users
 ~~~~~~~~~~~~~~~
 

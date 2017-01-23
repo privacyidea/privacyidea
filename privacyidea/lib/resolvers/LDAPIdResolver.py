@@ -2,6 +2,8 @@
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
+#  2017-01-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add certificate verification
 #  2017-01-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Use get_info=ldap3.NONE for binds to avoid querying of subschema
 #             Remove LDAPFILTER and self.reversefilter
@@ -55,7 +57,8 @@ from UserIdResolver import UserIdResolver
 
 import ldap3
 from ldap3 import MODIFY_REPLACE, MODIFY_ADD, MODIFY_DELETE
-from ldap3.utils.conv import escape_bytes
+from ldap3 import Server, Tls, Connection
+import ssl
 
 import traceback
 
@@ -81,6 +84,8 @@ SERVERPOOL_SKIP = 30
 # 1 sec == 10^9 nano secs == 10^7 * (100 nano secs)
 MS_AD_MULTIPLYER = 10 ** 7
 MS_AD_START = datetime.datetime(1601, 1, 1)
+
+DEFAULT_CA_FILE = "/etc/privacyidea/ldap-ca.crt"
 
 
 def get_ad_timestamp_now():
@@ -164,10 +169,10 @@ class IdResolver (UserIdResolver):
         self.uidtype = ""
         self.noreferrals = False
         self._editable = False
-        self.certificate = ""
         self.resolverId = self.uri
         self.scope = ldap3.SUBTREE
         self.cache_timeout = 120
+        self.tls_context = None
 
     def checkPass(self, uid, password):
         """
@@ -190,7 +195,8 @@ class IdResolver (UserIdResolver):
             bind_user = self._getDN(uid)
 
         server_pool = self.get_serverpool(self.uri, self.timeout,
-                                          get_info=ldap3.NONE)
+                                          get_info=ldap3.NONE,
+                                          tls_context=self.tls_context)
         password = to_utf8(password)
 
         try:
@@ -309,7 +315,8 @@ class IdResolver (UserIdResolver):
 
     def _bind(self):
         if not self.i_am_bound:
-            server_pool = self.get_serverpool(self.uri, self.timeout)
+            server_pool = self.get_serverpool(self.uri, self.timeout,
+                                              tls_context=self.tls_context)
             self.l = self.create_connection(authtype=self.authtype,
                                             server=server_pool,
                                             user=self.binddn,
@@ -549,10 +556,17 @@ class IdResolver (UserIdResolver):
         self.uidtype = config.get("UIDTYPE", "DN")
         self.noreferrals = config.get("NOREFERRALS", False)
         self._editable = config.get("EDITABLE", False)
-        self.certificate = config.get("CACERTIFICATE")
         self.scope = config.get("SCOPE") or ldap3.SUBTREE
         self.resolverId = self.uri
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
+        self.tls_verify = config.get("TLS_VERIFY", False)
+        self.tls_ca_file = config.get("TLS_CA_FILE") or DEFAULT_CA_FILE
+        if self.uri.lower().startswith("ldaps") and self.tls_verify:
+            self.tls_context = Tls(validate=ssl.CERT_REQUIRED,
+                              version=ssl.PROTOCOL_TLSv1,
+                              ca_certs_file=self.tls_ca_file)
+        else:
+            self.tls_context = None
 
         return self
 
@@ -590,7 +604,7 @@ class IdResolver (UserIdResolver):
         return server, port, ssl
 
     @classmethod
-    def get_serverpool(cls, urilist, timeout, get_info=None):
+    def get_serverpool(cls, urilist, timeout, get_info=None, tls_context=None):
         """
         This create the serverpool for the ldap3 connection.
         The URI from the LDAP resolver can contain a comma separated list of
@@ -606,6 +620,8 @@ class IdResolver (UserIdResolver):
         :param get_info: The get_info type passed to the ldap3.Sever
             constructor. default: ldap3.SCHEMA, should be ldap3.NONE in case
             of a bind.
+        :param tls_context: A ldap3.tls object, which defines if certificate
+            verification should be performed
         :return: Server Pool
         :rtype: LDAP3 Server Pool Instance
         """
@@ -619,7 +635,8 @@ class IdResolver (UserIdResolver):
             server = ldap3.Server(host, port=port,
                                   use_ssl=ssl,
                                   connect_timeout=float(timeout),
-                                  get_info=get_info)
+                                  get_info=get_info,
+                                  tls=tls_context)
             server_pool.add(server)
             log.debug("Added {0!s}, {1!s}, {2!s} to server pool.".format(host, port, ssl))
         return server_pool
@@ -651,7 +668,9 @@ class IdResolver (UserIdResolver):
                                 'CACERTIFICATE': 'string',
                                 'EDITABLE': 'bool',
                                 'SCOPE': 'string',
-                                'AUTHTYPE': 'string'}
+                                'AUTHTYPE': 'string',
+                                'TLS_VERIFY': 'bool',
+                                'TLS_CA_FILE': 'string'}
         return {typ: descriptor}
 
     @classmethod
@@ -671,14 +690,22 @@ class IdResolver (UserIdResolver):
         Parameters are:
             BINDDN, BINDPW, LDAPURI, TIMEOUT, LDAPBASE, LOGINNAMEATTRIBUTE,
             LDAPSEARCHFILTER, USERINFO, SIZELIMIT, NOREFERRALS, CACERTIFICATE,
-            AUTHTYPE
+            AUTHTYPE, TLS_VERIFY, TLS_CA_FILE
         """
         success = False
         uidtype = param.get("UIDTYPE")
         timeout = float(param.get("TIMEOUT", 5))
+        ldap_uri = param.get("LDAPURI")
+        if ldap_uri.lower().startswith("ldaps") and param.get("TLS_VERIFY"):
+            tls_ca_file = param.get("TLS_CA_FILE") or DEFAULT_CA_FILE
+            tls_context = Tls(validate=ssl.CERT_REQUIRED,
+                              version=ssl.PROTOCOL_TLSv1,
+                              ca_certs_file=tls_ca_file)
+        else:
+            tls_context = None
         try:
-            server_pool = cls.get_serverpool(param.get("LDAPURI"),
-                                             timeout)
+            server_pool = cls.get_serverpool(ldap_uri, timeout,
+                                             tls_context=tls_context)
             l = cls.create_connection(authtype=param.get("AUTHTYPE",
                                                           AUTHTYPE.SIMPLE),
                                       server=server_pool,
