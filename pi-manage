@@ -589,7 +589,7 @@ def create(name, scope, action):
 @policy_manager.command
 def create_from_file(name, filename):
     """
-    create a new policy from file (json formatted)
+    create a new policy from a JSON-file
     """
     import json
 
