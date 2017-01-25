@@ -586,6 +586,25 @@ def create(name, scope, action):
     return r
 
 
+@policy_manager.command
+def create_from_file(name, filename):
+    """
+    create a new policy from file (json formatted)
+    """
+    import json
+
+    f = open(filename, 'r')
+    contents = f.read()
+    f.close()
+    params = json.loads(contents)
+
+    r = set_policy(name, scope=params["scope"], action=params["action"], realm=params["realm"],
+                   resolver=params["resolver"],
+                   user=params["user"], time=params["time"], client=params["client"], active=params["active"],
+                   adminrealm=params["adminrealm"], check_all_resolvers=params["check_all_resolvers"])
+
+    return r
+
 @api_manager.command
 def createtoken(role=ROLE.ADMIN):
     """
