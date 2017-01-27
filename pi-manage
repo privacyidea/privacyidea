@@ -578,32 +578,30 @@ def delete(name):
     print(r)
 
 @policy_manager.command
-def create(name, scope, action):
+def create(name, filename):
     """
-    create a new policy
+    create a new policy. If filename is used, scope and action are ignored (not necessary)
     """
-    r = set_policy(name, scope, action)
-    return r
+    import ast
 
-
-@policy_manager.command
-def create_from_file(name, filename):
-    """
-    create a new policy from a JSON-file
-    """
-    import json
-
+    # we keep this not to break backwards compatibility
     f = open(filename, 'r')
     contents = f.read()
     f.close()
-    params = json.loads(contents)
+    try:
+        params = ast.literal_eval(contents)
+        r = set_policy(name, scope=params.get("scope"), action=params.get("action"), realm=params.get("realm"),
+                       resolver=params.get("resolver"),
+                       user=params.get("user"), time=params.get("time"), client=params.get("client"), active=params.get("active"),
+                       adminrealm=params.get("adminrealm"), check_all_resolvers=params.get("check_all_resolvers"))
 
-    r = set_policy(name, scope=params["scope"], action=params["action"], realm=params["realm"],
-                   resolver=params["resolver"],
-                   user=params["user"], time=params["time"], client=params["client"], active=params["active"],
-                   adminrealm=params["adminrealm"], check_all_resolvers=params["check_all_resolvers"])
+        return r
 
-    return r
+    except ValueError as e:
+        if e.message == "malformed string":
+            print(
+            "Parameters were not loaded. Make sure the file is in the right format (hint: check if all values are quoted)")
+
 
 @api_manager.command
 def createtoken(role=ROLE.ADMIN):
