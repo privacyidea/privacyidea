@@ -578,32 +578,44 @@ def delete(name):
     print(r)
 
 @policy_manager.command
-def create(name, scope, action):
+def create(name, scope, action, filename=''):
     """
-    create a new policy
+    create a new policy. 'FILENAME' must be a dictionary and its content takes precedence over cli
     """
-    r = set_policy(name, scope, action)
-    return r
+    import ast
 
+    if filename:
+        try:
+            f = open(filename, 'r')
+            contents = f.read()
+            f.close()
 
-@policy_manager.command
-def create_from_file(name, filename):
-    """
-    create a new policy from a JSON-file
-    """
-    import json
+            params = ast.literal_eval(contents)
 
-    f = open(filename, 'r')
-    contents = f.read()
-    f.close()
-    params = json.loads(contents)
+            if params.get("scope") and params.get("scope")!=scope:
+                print("Found scope '%s' in file, will use that instead of '%s'." %(params.get("scope"), scope))
+            else:
+                print("scope not defined in file, will use the cli value %s" % scope)
+                params["scope"]=scope
 
-    r = set_policy(name, scope=params["scope"], action=params["action"], realm=params["realm"],
-                   resolver=params["resolver"],
-                   user=params["user"], time=params["time"], client=params["client"], active=params["active"],
-                   adminrealm=params["adminrealm"], check_all_resolvers=params["check_all_resolvers"])
+            if params.get("action") and params.get("action")!=action:
+                print("Found action in file: '%s' , will use that instead of: '%s'." %(params.get("action"), action))
+            else:
+                print("action not defined in file, will use the cli value %s" % action)
+                params["action"]=action
 
-    return r
+            r = set_policy(name, scope=params.get("scope"), action=params.get("action"), realm=params.get("realm"),
+                           resolver=params.get("resolver"),
+                           user=params.get("user"), time=params.get("time"), client=params.get("client"), active=params.get("active"),
+                           adminrealm=params.get("adminrealm"), check_all_resolvers=params.get("check_all_resolvers"))
+            return r
+
+        except:
+            print "Unexpected error:", sys.exc_info()[1]
+
+    else:
+        r = set_policy(name, scope, action)
+        return r
 
 @api_manager.command
 def createtoken(role=ROLE.ADMIN):
