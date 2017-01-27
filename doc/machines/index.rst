@@ -59,11 +59,10 @@ The command expects a configuration file
    nosslcheck=False
 
 .. note:: To disable a SSH key for all servers, you simple can disable the
-SSH token in privacyIDEA.
+    SSH token in privacyIDEA.
 
 .. warning:: In a productive environment you should not set **nosslcheck** to
-true,
-otherwise you are vulnerable to man in the middle attacks.
+    true, otherwise you are vulnerable to man in the middle attacks.
 
 .. _application_luks:
 
