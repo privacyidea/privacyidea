@@ -46,7 +46,7 @@ Then create the encryption key and the signing keys::
 Create the database and the first administrator::
 
    pi-manage createdb
-   pi-manage admin add admin admin@localhost
+   pi-manage admin add admin -e admin@localhost
 
 Now you can run the server for your first test::
 
