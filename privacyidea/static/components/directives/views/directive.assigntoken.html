@@ -6,7 +6,10 @@ This is the directive for assigning tokens to users.
     <input name="serial" type="text" ng-model="newTokenObject.serial"
            autocomplete="off"
            placeholder="{{ 'start typing a serial number of a token that is notassigned, yet.'|translate}} "
-           typeahead="serial for serial in loadSerials($viewValue)"
+           ng-keypress="toggleLoadSerials($event.which==13)"
+           typeahead-wait-ms="100"
+           typeahead-focus-first="false"
+           typeahead="serial for serial in loadSerials($viewValue) | filter: $viewValue"
            typeahead-loading="loadingSerials" class="form-control" >
     <i ng-show="loadingSerials" class="glyphicon glyphicon-refresh"
             translate>Loading serials...</i>

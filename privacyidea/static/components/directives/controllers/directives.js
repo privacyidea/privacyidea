@@ -82,7 +82,7 @@ myApp.directive("piSortBy", function(){
 });
 
 
-myApp.directive('assignUser', function($http, userUrl, AuthFactory, instanceUrl) {
+myApp.directive('assignUser', function($http, $rootScope, userUrl, AuthFactory, instanceUrl) {
     /*
     This directive is used to select a user from a realm
 
@@ -98,7 +98,27 @@ myApp.directive('assignUser', function($http, userUrl, AuthFactory, instanceUrl)
             console.log("Entering assignUser directive");
             console.log(scope.realms);
             console.log(scope.newUserObject);
+
+            // toggle enable/disable loadUsers calls
+            scope.toggleLoadUsers = function($toggle) {
+                // only trigger if the search_on_enter policy is active
+                if ($rootScope.search_on_enter) {
+                    var $viewValue = scope.newUserObject.user;
+                    scope.newUserObject.toggle = $toggle;
+                    // update field value with a placeholder to trigger typeahead
+                    if (scope.newUserObject.toggle
+                        && $viewValue.charAt($viewValue.length - 1) != "*") {
+                        var ctrl = element.find('input').controller('ngModel');
+                        ctrl.$setViewValue($viewValue + "*");
+                    }
+                }
+            };
+
             scope.loadUsers = function($viewValue) {
+            if ($rootScope.search_on_enter && (!$viewValue || $viewValue == "*" || !scope.newUserObject.toggle)) {
+                // only use existing result if any, and if search_on_enter policy is active
+                return scope.newUserObject.loadedUsers;
+            }
             var auth_token = AuthFactory.getAuthToken();
             return $http({
                 method: 'GET',
@@ -106,20 +126,21 @@ myApp.directive('assignUser', function($http, userUrl, AuthFactory, instanceUrl)
                     "&realm=" + scope.newUserObject.realm,
                 headers: {'PI-Authorization': auth_token}
             }).then(function ($response) {
-                return $response.data.result.value.map(function (item) {
+                scope.newUserObject.loadedUsers = $response.data.result.value.map(function (item) {
                     scope.newUserObject.email = item.email;
                     scope.newUserObject.mobile = item.mobile;
                     scope.newUserObject.phone = item.phone;
                     return "[" + item.userid + "] " + item.username +
                         " (" + item.givenname + " " + item.surname + ")";
                 });
+                return scope.newUserObject.loadedUsers;
             });
             };
         }
     };
 });
 
-myApp.directive('assignToken', function($http, tokenUrl,
+myApp.directive('assignToken', function($http, $rootScope, tokenUrl,
                                         AuthFactory, instanceUrl) {
     /*
     This directive is used to select a serial number and assign it
@@ -133,7 +154,25 @@ myApp.directive('assignToken', function($http, tokenUrl,
         },
         templateUrl: instanceUrl + "/static/components/directives/views/directive.assigntoken.html",
         link: function (scope, element, attr) {
+            // Toggle enable/disable loadSerials call
+            scope.toggleLoadSerials = function($toggle) {
+                // only trigger if the search_on_enter policy is active
+                if ($rootScope.search_on_enter) {
+                    var $viewValue = scope.newTokenObject.serial;
+                    scope.newTokenObject.toggle = $toggle;
+                    // update field value with a placeholder to trigger typeahead
+                    if (scope.newTokenObject.toggle
+                        && $viewValue.charAt($viewValue.length - 1) != "*") {
+                        var ctrl = element.find('input').controller('ngModel');
+                        ctrl.$setViewValue($viewValue + "*");
+                    }
+                }
+            };
             scope.loadSerials = function($viewValue) {
+            if ($rootScope.search_on_enter && (!$viewValue || $viewValue == "*" || !scope.newTokenObject.toggle)) {
+                // only use existing result if any, and if search_on_enter policy is active
+                return scope.newTokenObject.loadedSerials;
+            }
             var auth_token = AuthFactory.getAuthToken();
             return $http({
                 method: 'GET',
@@ -142,9 +181,10 @@ myApp.directive('assignToken', function($http, tokenUrl,
                 params: {assigned: "False",
                 serial: "*" + $viewValue + "*"}
             }).then(function ($response) {
-                return $response.data.result.value.tokens.map(function (item) {
+                scope.newTokenObject.loadedSerials = $response.data.result.value.tokens.map(function (item) {
                     return item.serial + " (" + item.tokentype + ")";
                 });
+                return scope.newTokenObject.loadedSerials;
             });
             };
         }

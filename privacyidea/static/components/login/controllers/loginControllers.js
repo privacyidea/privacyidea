@@ -127,7 +127,7 @@ angular.module("privacyideaApp")
         $scope.logoutWarning = false;
     });
     */
-                                
+
     // helper function
     $scope.isChecked = function (val) {
         // check if val is set
@@ -259,7 +259,7 @@ angular.module("privacyideaApp")
             $scope.user_page_size = data.result.value.user_page_size;
             $scope.user_details_in_tokenlist = data.result.value.user_details;
             $scope.default_tokentype = data.result.value.default_tokentype;
-            $scope.search_on_enter = data.result.value.search_on_enter;
+            $rootScope.search_on_enter = data.result.value.search_on_enter;
             var timeout = data.result.value.logout_time;
             PolicyTemplateFactory.setUrl(data.result.value.policy_template_url);
             console.log(timeout);
