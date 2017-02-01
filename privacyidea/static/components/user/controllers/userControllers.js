@@ -229,7 +229,7 @@ angular.module("privacyideaApp")
         }
 
         $scope._getUsers = function (live_search) {
-            if ((!$scope.search_on_enter) || ($scope.search_on_enter && !live_search)) {
+            if ((!$rootScope.search_on_enter) || ($rootScope.search_on_enter && !live_search)) {
                 // We shall only search, if either we do not search on enter or
                 // if we search_on_enter and the enter key is pressed.
                 var params = {realm: $scope.selectedRealm};
