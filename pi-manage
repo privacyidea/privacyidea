@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+# 2017-01-27 Diogenes S. Jesus
+#            Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add creation of more detailed policy
 # 2016-04-15 Cornelius Kölbel <cornelius@privacyidea.org>
 #            Add backup for pymysql driver
 # 2016-01-29 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -61,6 +64,7 @@ from sqlalchemy.orm import sessionmaker
 from privacyidea.lib.auditmodules.sqlaudit import LogEntry
 from Crypto.PublicKey import RSA
 import jwt
+import ast
 
 SILENT = False
 
@@ -172,6 +176,7 @@ def create(directory="/var/lib/privacyidea/backup/"):
     os.unlink(sqlfile)
     os.chmod(backup_file, 0600)
 
+
 @backup_manager.command
 def restore(backup_file):
     """
@@ -228,6 +233,7 @@ def test():
     call(['nosetests', '-v',
           '--with-coverage', '--cover-package=privacyidea', '--cover-branches',
           '--cover-erase', '--cover-html', '--cover-html-dir=cover'])
+
 
 @manager.command
 def encrypt_enckey(encfile):
@@ -416,7 +422,6 @@ def create(name, rtype, filename):
     :return:
     """
     from privacyidea.lib.resolver import save_resolver
-    import ast
 
     f = open(filename, 'r')
     contents = f.read()
@@ -425,6 +430,7 @@ def create(name, rtype, filename):
     params["resolver"] = name
     params["type"] = rtype
     save_resolver(params)
+
 
 @resolver_manager.command
 def create_internal(name):
@@ -578,12 +584,54 @@ def delete(name):
     print(r)
 
 @policy_manager.command
-def create(name, scope, action):
+def create(name, scope, action, filename=None):
     """
-    create a new policy
+    create a new policy. 'FILENAME' must contain a dictionary and its content
+    takes precedence over CLI parameters.
     """
-    r = set_policy(name, scope, action)
-    return r
+    if filename:
+        try:
+            f = open(filename, 'r')
+            contents = f.read()
+            f.close()
+
+            params = ast.literal_eval(contents)
+
+            if params.get("scope") and params.get("scope")!=scope:
+                print("Found scope '{0!s}' in file, will use that instead of "
+                      "'{1!s}'.".format(params.get("scope"), scope))
+            else:
+                print("scope not defined in file, will use the cli value "
+                      "{0!s}.".format(scope))
+                params["scope"] = scope
+
+            if params.get("action") and params.get("action")!=action:
+                print("Found action in file: '{0!s}', will use that instead "
+                      "of: '{1!s}'.".format(params.get("action"), action))
+            else:
+                print("action not defined in file, will use the cli value "
+                      "{0!s}.".format(action))
+                params["action"]=action
+
+            r = set_policy(name, scope=params.get("scope"),
+                           action=params.get("action"),
+                           realm=params.get("realm"),
+                           resolver=params.get("resolver"),
+                           user=params.get("user"),
+                           time=params.get("time"),
+                           client=params.get("client"),
+                           active=params.get("active", True),
+                           adminrealm=params.get("adminrealm"),
+                           check_all_resolvers=params.get(
+                               "check_all_resolvers", False))
+            return r
+
+        except Exception:
+            print("Unexpected error: {0!s}".format(sys.exc_info()[1]))
+
+    else:
+        r = set_policy(name, scope, action)
+        return r
 
 
 @api_manager.command

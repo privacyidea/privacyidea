@@ -442,6 +442,8 @@ def trigger_challenge():
             # If this is a challenge response token, we create a challenge
             success, return_message, transactionid, attributes = \
                 token_obj.create_challenge()
+            if attributes:
+                details["attributes"] = attributes
             if success:
                 result_obj += 1
                 details.get("transaction_ids").append(transactionid)

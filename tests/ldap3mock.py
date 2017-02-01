@@ -694,7 +694,8 @@ class Ldap3Mock(object):
         evaldict = {'ldap3mock': self, 'func': func}
         return get_wrapped(func, _wrapper_template, evaldict)
 
-    def _on_Server(self, host, port, use_ssl, connect_timeout, get_info=None):
+    def _on_Server(self, host, port, use_ssl, connect_timeout, get_info=None,
+                   tls=None):
         # mangle request packet
 
         return "FakeServerObject"

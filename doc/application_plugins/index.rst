@@ -266,9 +266,9 @@ path *validate/check*. Thus the URL for a common installation would be
 
 Whether the validity of the SSL certificate should be checked or not.
 
-.. warning:: If the SSL certificate is not checked,  the authentication
-request could be modified and the answer to the request can be modified,
-easily granting access to an attacker.
+.. warning:: If the SSL certificate is not checked, the authentication
+    request could be modified and the answer to the request can be modified,
+    easily granting access to an attacker.
 
 **Enable privacyIDEA for backend users**
 
