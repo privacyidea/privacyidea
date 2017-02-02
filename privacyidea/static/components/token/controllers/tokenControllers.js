@@ -37,7 +37,7 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
 
     // This function fills $scope.tokendata
     $scope.get = function (live_search) {
-        if ((!$scope.search_on_enter) || ($scope.search_on_enter && !live_search)) {
+        if ((!$rootScope.search_on_enter) || ($rootScope.search_on_enter && !live_search)) {
             $scope.params.serial = "*" + ($scope.serialFilter || "") + "*";
             $scope.params.type = "*" + ($scope.typeFilter || "") + "*";
             $scope.params.description = "*" + ($scope.descriptionFilter || "") + "*";
@@ -89,7 +89,7 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
     if ($location.path() == "/token/list") {
         $scope.get();
     }
-    
+
     // go to the list view by default
     if ($location.path() == "/token") {
         $location.path("/token/list");
