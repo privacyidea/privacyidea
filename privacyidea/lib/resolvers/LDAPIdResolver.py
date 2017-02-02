@@ -197,7 +197,6 @@ class IdResolver (UserIdResolver):
         server_pool = self.get_serverpool(self.uri, self.timeout,
                                           get_info=ldap3.NONE,
                                           tls_context=self.tls_context)
-        password = to_utf8(password)
 
         try:
             log.debug("Authtype: {0!r}".format(self.authtype))
@@ -710,7 +709,7 @@ class IdResolver (UserIdResolver):
                                                           AUTHTYPE.SIMPLE),
                                       server=server_pool,
                                       user=param.get("BINDDN"),
-                                      password=to_utf8(param.get("BINDPW")),
+                                      password=param.get("BINDPW"),
                                       receive_timeout=timeout,
                                       auto_referrals=not param.get(
                                            "NOREFERRALS"))
@@ -957,8 +956,9 @@ class IdResolver (UserIdResolver):
         if authtype == AUTHTYPE.SIMPLE:
             if not authentication:
                 authentication = ldap3.SIMPLE
+            # SIMPLE works with passwords as UTF8 and unicode
             l = ldap3.Connection(server, user=user,
-                                 password=to_utf8(password),
+                                 password=password,
                                  auto_bind=auto_bind,
                                  client_strategy=client_strategy,
                                  authentication=authentication,
@@ -968,9 +968,10 @@ class IdResolver (UserIdResolver):
         elif authtype == AUTHTYPE.NTLM:  # pragma: no cover
             if not authentication:
                 authentication = ldap3.NTLM
+            # NTLM requires the password to be unicode
             l = ldap3.Connection(server,
                                  user=user,
-                                 password=to_utf8(password),
+                                 password=password,
                                  auto_bind=auto_bind,
                                  client_strategy=client_strategy,
                                  authentication=authentication,
@@ -980,6 +981,7 @@ class IdResolver (UserIdResolver):
         elif authtype == AUTHTYPE.SASL_DIGEST_MD5:  # pragma: no cover
             if not authentication:
                 authentication = ldap3.SASL
+            password = to_utf8(password)
             sasl_credentials = (str(user), str(password))
             l = ldap3.Connection(server,
                                  sasl_mechanism="DIGEST-MD5",

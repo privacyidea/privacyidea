@@ -743,6 +743,12 @@ class Ldap3Mock(object):
         for entry in self.directory:
             if entry.get("dn") == user:
                 pw = entry.get("attributes").get("userPassword")
+                # password can be unicode
+                try:
+                    password = password.encode("utf-8")
+                except UnicodeDecodeError:
+                    # already encoded.
+                    pass
                 if pw == password:
                     correct_password = True
                 elif pw.startswith('{SSHA}'):
