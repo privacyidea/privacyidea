@@ -139,7 +139,7 @@ myApp.config(['$httpProvider', function ($httpProvider, inform, gettext) {
 
 myApp.config(['$compileProvider',
     function ($compileProvider) {
-        $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|tel|file|blob):/);
+        $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|tel|file|blob|otpauth):/);
 }]);
 
 isTrue = function (value) {
