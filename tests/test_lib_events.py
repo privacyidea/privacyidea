@@ -1161,6 +1161,63 @@ class UserNotificationTestCase(MyTestCase):
         # The condition was, token-not-assigned and the token has no user
         self.assertEqual(r, True)
 
+    def test_10_check_conditions_token_validity_period(self):
+        uhandler = UserNotificationEventHandler()
+        serial = "spass01"
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1"},
+                                 headers={})
+
+        tok = init_token({"serial": serial,
+                          "type": "spass"},
+                          user=User("cornelius", "realm1"))
+
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "serial": serial}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        # token is within validity period
+        r = uhandler.check_condition(
+            {"g": {},
+             "request": req,
+             "response": resp,
+             "handler_def": {
+                 "conditions": {CONDITION.TOKEN_VALIDITY_PERIOD: "True"}}
+             }
+        )
+        self.assertEqual(r, True)
+
+        # token is outside validity period
+        end_date = datetime.now() - timedelta(1)
+        end = end_date.strftime(DATE_FORMAT)
+        tok.set_validity_period_end(end)
+        r = uhandler.check_condition(
+            {"g": {},
+             "request": req,
+             "response": resp,
+             "handler_def": {
+                 "conditions": {CONDITION.TOKEN_VALIDITY_PERIOD: "True"}}
+             }
+        )
+        self.assertEqual(r, False)
+
+        # token is outside validity period but we check for invalid token
+        r = uhandler.check_condition(
+            {"g": {},
+             "request": req,
+             "response": resp,
+             "handler_def": {
+                 "conditions": {CONDITION.TOKEN_VALIDITY_PERIOD: "False"}}
+             }
+        )
+        self.assertEqual(r, True)
+
+        remove_token(serial)
+
     def test_10_check_conditions_token_is_orphaned(self):
         uhandler = UserNotificationEventHandler()
         serial = "orphaned1"
