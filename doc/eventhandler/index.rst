@@ -154,6 +154,14 @@ does not exist anymore.
 This can be used to trigger the deletion of the token, if the token owner was
 removed from the userstore.
 
+**token_validity_period**
+
+Checks if the token is in the current validity period or not. Can be set to
+*True* or *False*.
+
+.. note:: ``token_validity_period==False`` will trigger an action if either the
+   validitiy period is either *over* or has not *started*, yet.
+
 **user_token_number**
 
 The action is only triggered, if the user in the event has the given number
