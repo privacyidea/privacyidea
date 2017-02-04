@@ -48,6 +48,7 @@ class CONDITION(object):
     """
     TOKEN_HAS_OWNER = "token_has_owner"
     TOKEN_IS_ORPHANED = "token_is_orphaned"
+    TOKEN_VALIDITY_PERIOD = "token_validity_period"
     USER_TOKEN_NUMBER = "user_token_number"
     OTP_COUNTER = "otp_counter"
     TOKENTYPE = "tokentype"
@@ -138,6 +139,11 @@ class BaseEventHandler(object):
                 "type": "str",
                 "desc": _("The token has a user assigned, but the user does "
                           "not exist in the userstore anymore."),
+                "value": ("True", "False")
+            },
+            CONDITION.TOKEN_VALIDITY_PERIOD: {
+                "type": "str",
+                "desc": _("Check if the token is within its validity period."),
                 "value": ("True", "False")
             },
             "serial": {
@@ -332,6 +338,11 @@ class BaseEventHandler(object):
                     log.debug("Condition token_is_orphaned for token {0!r} not "
                               "fulfilled.".format(token_obj))
                     res = False
+
+            if CONDITION.TOKEN_VALIDITY_PERIOD in conditions and res:
+                valid = token_obj.check_validity_period()
+                res = (conditions.get(CONDITION.TOKEN_VALIDITY_PERIOD)
+                       in ["True", True]) == valid
 
             if CONDITION.OTP_COUNTER in conditions and res:
                 res = token_obj.token.count == \
