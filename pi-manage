@@ -66,7 +66,7 @@ from Crypto.PublicKey import RSA
 import jwt
 import ast
 
-SILENT = False
+SILENT = True
 
 
 app = create_app(config_name='production', silent=SILENT)

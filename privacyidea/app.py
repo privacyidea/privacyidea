@@ -174,21 +174,25 @@ def create_app(config_name="development",
             raise Exception("The config file specified in PI_LOGCONFIG does "
                             "not exist.")
     except Exception as exx:
-        sys.stderr.write("{0!s}\n".format(exx))
-        sys.stderr.write("Could not use PI_LOGCONFIG. "
-                         "Using PI_LOGLEVEL and PI_LOGFILE.\n")
+        if not silent:
+            sys.stderr.write("{0!s}\n".format(exx))
+            sys.stderr.write("Could not use PI_LOGCONFIG. "
+                             "Using PI_LOGLEVEL and PI_LOGFILE.\n")
         level = app.config.get("PI_LOGLEVEL", logging.DEBUG)
         # If there is another logfile in pi.cfg we use this.
         logfile = app.config.get("PI_LOGFILE")
         if logfile:
-            sys.stderr.write("Using PI_LOGLEVEL {0!s}.\n".format(level))
-            sys.stderr.write("Using PI_LOGFILE {0!s}.\n".format(logfile))
+            if not silent:
+                sys.stderr.write("Using PI_LOGLEVEL {0!s}.\n".format(level))
+                sys.stderr.write("Using PI_LOGFILE {0!s}.\n".format(logfile))
             PI_LOGGING_CONFIG["handlers"]["file"]["filename"] = logfile
             PI_LOGGING_CONFIG["handlers"]["file"]["level"] = level
             PI_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = level
             logging.config.dictConfig(PI_LOGGING_CONFIG)
         else:
-            sys.stderr.write("No PI_LOGFILE found. Using default config.\n")
+            if not silent:
+                sys.stderr.write("No PI_LOGFILE found. Using default "
+                                  "config.\n")
             logging.config.dictConfig(DEFAULT_LOGGING_CONFIG)
 
     return app
