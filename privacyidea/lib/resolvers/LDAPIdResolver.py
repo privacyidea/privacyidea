@@ -173,6 +173,7 @@ class IdResolver (UserIdResolver):
         self.scope = ldap3.SUBTREE
         self.cache_timeout = 120
         self.tls_context = None
+        self.start_tls = False
 
     def checkPass(self, uid, password):
         """
@@ -210,7 +211,8 @@ class IdResolver (UserIdResolver):
                                        user=bind_user,
                                        password=password,
                                        receive_timeout=self.timeout,
-                                       auto_referrals=not self.noreferrals)
+                                       auto_referrals=not self.noreferrals,
+                                       start_tls=self.start_tls)
             l.open()
             r = l.bind()
             log.debug("bind result: {0!r}".format(r))
@@ -321,7 +323,9 @@ class IdResolver (UserIdResolver):
                                             user=self.binddn,
                                             password=self.bindpw,
                                             receive_timeout=self.timeout,
-                                            auto_referrals=not self.noreferrals)
+                                            auto_referrals=not
+                                            self.noreferrals,
+                                            start_tls=self.start_tls)
             self.l.open()
             #log.error("LDAP Server Pool States: %s" % server_pool.pool_states)
             if not self.l.bind():
@@ -554,6 +558,7 @@ class IdResolver (UserIdResolver):
         self.map = yaml.safe_load(userinfo)
         self.uidtype = config.get("UIDTYPE", "DN")
         self.noreferrals = config.get("NOREFERRALS", False)
+        self.start_tls = config.get("START_TLS", False)
         self._editable = config.get("EDITABLE", False)
         self.scope = config.get("SCOPE") or ldap3.SUBTREE
         self.resolverId = self.uri
@@ -669,7 +674,8 @@ class IdResolver (UserIdResolver):
                                 'SCOPE': 'string',
                                 'AUTHTYPE': 'string',
                                 'TLS_VERIFY': 'bool',
-                                'TLS_CA_FILE': 'string'}
+                                'TLS_CA_FILE': 'string',
+                                'START_TLS': 'bool'}
         return {typ: descriptor}
 
     @classmethod
@@ -712,7 +718,8 @@ class IdResolver (UserIdResolver):
                                       password=param.get("BINDPW"),
                                       receive_timeout=timeout,
                                       auto_referrals=not param.get(
-                                           "NOREFERRALS"))
+                                           "NOREFERRALS"),
+                                      start_tls=param.get("START_TLS", False))
             l.open()
             #log.error("LDAP Server Pool States: %s" % server_pool.pool_states)
             if not l.bind():
@@ -932,7 +939,8 @@ class IdResolver (UserIdResolver):
                           client_strategy=ldap3.SYNC,
                           check_names=True,
                           auto_referrals=False,
-                          receive_timeout=5):
+                          receive_timeout=5,
+                          start_tls=False):
         """
         Create a connection to the LDAP server.
 
@@ -994,6 +1002,10 @@ class IdResolver (UserIdResolver):
                                  auto_referrals=auto_referrals)
         else:
             raise Exception("Authtype {0!s} not supported".format(authtype))
+        l.open()
+        if start_tls:
+            log.debug("Doing start_tls")
+            l.start_tls()
 
         return l
 

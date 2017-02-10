@@ -30,6 +30,21 @@
                    placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2"/>
         </div>
     </div>
+    <div class="form-group"
+        ng_show="params.LDAPURI.toLowerCase().substring(0,5) ==='ldap:'">
+        <label for="starttls"
+            class="col-sm-3 control-label" translate>
+            STARTTLS
+        </label>
+        <div class="col-sm-9">
+            <input name="starttls" id="starttls"
+                   ng-model="params.START_TLS"
+                   type="checkbox"/>
+            <p class="help-block" translate>
+                Use STARTTLS on a plain LDAP connection usually on port 389.
+            </p>
+        </div>
+    </div>
     <div class="form-group">
         <label for="tls"
             class="col-sm-3 control-label" translate>

@@ -193,7 +193,7 @@ msgstr ""
 msgid "Attach to a new Machine"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:212
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:227
 msgid "Attribute mapping"
 msgstr ""
 
@@ -222,22 +222,22 @@ msgid "Bad U2F Request"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:37
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:60
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:75
 msgid "Base DN"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:47
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:83
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:98
 msgid "Bind DN"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:57
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:95
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:110
 msgid "Bind Password"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:67
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:105
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:120
 msgid "Bind Type"
 msgstr ""
 
@@ -269,7 +269,7 @@ msgstr ""
 msgid "CAs"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:125
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:140
 msgid "Cache Timeout (seconds)"
 msgstr ""
 
@@ -518,7 +518,7 @@ msgstr ""
 msgid "Create realm"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:165
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:180
 msgid "DN of a new created user object"
 msgstr ""
 
@@ -750,7 +750,7 @@ msgstr ""
 msgid "Edit user"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:145
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:160
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:88
 msgid "Edit user store"
 msgstr ""
@@ -1159,7 +1159,7 @@ msgstr ""
 msgid "Last seen:"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:89
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:104
 msgid "Leave the Bind DN empty if you want to do anonymous binding."
 msgstr ""
 
@@ -1199,12 +1199,12 @@ msgstr ""
 msgid "Loading Machines..."
 msgstr ""
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:11
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:14
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:12
 msgid "Loading serials..."
 msgstr ""
 
-#: privacyidea/static/components/directives/views/directive.assignuser.html:20
+#: privacyidea/static/components/directives/views/directive.assignuser.html:23
 msgid "Loading users..."
 msgstr ""
 
@@ -1370,7 +1370,7 @@ msgid "No Serial number could be found for OTP value {{ otp }}."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:106
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:186
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:201
 msgid "No anonymous referral chasing"
 msgstr ""
 
@@ -1436,7 +1436,7 @@ msgstr ""
 msgid "OTRS"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:159
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:174
 msgid "Object classes of a new created user object"
 msgstr ""
 
@@ -1493,8 +1493,8 @@ msgstr ""
 msgid "PAPER: OTP values on a sheet of paper."
 msgstr ""
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:19
-#: privacyidea/static/components/directives/views/directive.assignuser.html:28
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:22
+#: privacyidea/static/components/directives/views/directive.assignuser.html:31
 #: privacyidea/static/components/token/views/token.enroll.html:43
 msgid "PIN"
 msgstr ""
@@ -1589,11 +1589,11 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:99
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:179
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:194
 msgid "Preset Active Directory"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:176
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:191
 msgid "Preset OpenLDAP"
 msgstr ""
 
@@ -1751,8 +1751,8 @@ msgstr ""
 msgid "Repeat new PIN"
 msgstr ""
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:27
-#: privacyidea/static/components/directives/views/directive.assignuser.html:36
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:30
+#: privacyidea/static/components/directives/views/directive.assignuser.html:39
 #: privacyidea/static/components/recovery/views/recovery.reset.html:19
 #: privacyidea/static/components/token/views/token.enroll.html:51
 #: privacyidea/static/components/token/views/token.enroll.motp.html:43
@@ -1873,6 +1873,10 @@ msgstr ""
 msgid "SSH public Key"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:35
+msgid "STARTTLS"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.realms.list.html:69
 #: privacyidea/static/components/config/views/config.tokens.html:69
 msgid "Save"
@@ -1914,7 +1918,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:102
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:39
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:158
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:243
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:258
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:38
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:86
 msgid "Save resolver"
@@ -1926,12 +1930,12 @@ msgid "Save user"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.list.html:7
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:69
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:84
 msgid "Scope"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:120
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:201
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:216
 msgid "Search Filter"
 msgstr ""
 
@@ -2063,7 +2067,7 @@ msgid "Show selected actions only"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:88
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:135
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:150
 msgid "Size Limit"
 msgstr ""
 
@@ -2159,7 +2163,7 @@ msgid "Test Email sent successfully."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:154
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:238
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:253
 msgid "Test LDAP Resolver"
 msgstr ""
 
@@ -2459,7 +2463,7 @@ msgstr ""
 msgid "The client device can not be used for this type of request."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:46
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:61
 msgid ""
 "The file containing the CA certificate which signed the\n"
 "                    LDAP TLS certificate."
@@ -2628,7 +2632,7 @@ msgid ""
 "                    privacyIDEA."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:153
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:168
 msgid ""
 "The user data in this database can be modified from within\n"
 "                privacyIDEA."
@@ -2817,7 +2821,7 @@ msgid "Timeout"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:79
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:117
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:132
 msgid "Timeout (seconds)"
 msgstr ""
 
@@ -2916,8 +2920,8 @@ msgstr ""
 msgid "Type"
 msgstr ""
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:23
-#: privacyidea/static/components/directives/views/directive.assignuser.html:32
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:26
+#: privacyidea/static/components/directives/views/directive.assignuser.html:35
 #: privacyidea/static/components/recovery/views/recovery.reset.html:14
 #: privacyidea/static/components/token/views/token.enroll.html:47
 #: privacyidea/static/components/token/views/token.enroll.motp.html:39
@@ -2937,7 +2941,7 @@ msgstr ""
 msgid "U2F: Universal 2nd Factor hardware token."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:224
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:239
 msgid "UID Type"
 msgstr ""
 
@@ -2973,6 +2977,10 @@ msgstr ""
 msgid ""
 "Use @ sign to split the username\n"
 "                and the realm."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:43
+msgid "Use STARTTLS on a plain LDAP connection usually on port 389."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:103
@@ -3074,11 +3082,11 @@ msgstr ""
 msgid "Verify SSL certificate"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:34
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:49
 msgid "Verify TLS"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:42
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:57
 msgid "Verify the TLS cerificate of the server."
 msgstr ""
 
