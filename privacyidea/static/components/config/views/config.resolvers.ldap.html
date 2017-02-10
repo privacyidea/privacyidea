@@ -45,7 +45,9 @@
             </p>
         </div>
     </div>
-    <div class="form-group">
+    <div class="form-group"
+        ng-show="params.LDAPURI.toLowerCase().substring(0,5) === 'ldaps' ||
+                 params.START_TLS">
         <label for="tls"
             class="col-sm-3 control-label" translate>
             Verify TLS
