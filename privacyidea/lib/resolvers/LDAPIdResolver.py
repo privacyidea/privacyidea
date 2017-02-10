@@ -565,10 +565,11 @@ class IdResolver (UserIdResolver):
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
         self.tls_verify = config.get("TLS_VERIFY", False)
         self.tls_ca_file = config.get("TLS_CA_FILE") or DEFAULT_CA_FILE
-        if self.uri.lower().startswith("ldaps") and self.tls_verify:
+        if self.tls_verify and (self.uri.lower().startswith("ldaps") or
+                                    self.start_tls):
             self.tls_context = Tls(validate=ssl.CERT_REQUIRED,
-                              version=ssl.PROTOCOL_TLSv1,
-                              ca_certs_file=self.tls_ca_file)
+                                   version=ssl.PROTOCOL_TLSv1,
+                                   ca_certs_file=self.tls_ca_file)
         else:
             self.tls_context = None
 
@@ -701,7 +702,8 @@ class IdResolver (UserIdResolver):
         uidtype = param.get("UIDTYPE")
         timeout = float(param.get("TIMEOUT", 5))
         ldap_uri = param.get("LDAPURI")
-        if ldap_uri.lower().startswith("ldaps") and param.get("TLS_VERIFY"):
+        if param.get("TLS_VERIFY") and (ldap_uri.lower().startswith("ldaps") or
+                                    param.get("START_TLS")):
             tls_ca_file = param.get("TLS_CA_FILE") or DEFAULT_CA_FILE
             tls_context = Tls(validate=ssl.CERT_REQUIRED,
                               version=ssl.PROTOCOL_TLSv1,
@@ -1005,7 +1007,7 @@ class IdResolver (UserIdResolver):
         l.open()
         if start_tls:
             log.debug("Doing start_tls")
-            l.start_tls()
+            r = l.start_tls()
 
         return l
 
