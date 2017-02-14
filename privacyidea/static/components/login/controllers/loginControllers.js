@@ -119,8 +119,10 @@ angular.module("privacyideaApp")
     });
 
     $scope.$on('IdleTimeout', function () {
-        console.log("Logout!");
-        $scope.logout();
+        console.log("Lock!");
+        $scope.logoutWarning = false;
+        $scope.$apply();
+        $scope.lock_screen();
     });
     /*
      $rootScope.$on('Keepalive', function() {
@@ -141,6 +143,12 @@ angular.module("privacyideaApp")
         realm: ""};
     $scope.transactionid = "";
     AuthFactory.setUser();
+
+    $scope.unlock_first = function () {
+        $scope.unlocking = true;
+        $scope.login.username = $scope.loggedInUser.username;
+        $scope.authenticate_first();
+    };
 
     $scope.authenticate_first = function() {
         $scope.transactionid = "";
@@ -267,7 +275,12 @@ angular.module("privacyideaApp")
             Idle.watch();
             console.log("successfully authenticated");
             console.log($scope.loggedInUser);
-            $location.path("/token");
+            if ( $scope.unlocking ) {
+                $('#dialogLock').modal().hide();
+            } else {
+                // if we are unlocking we do NOT go to the tokens
+                $location.path("/token");
+            }
 
             //inform.add(gettextCatalog.getString("privacyIDEA UI supports " +
             //    "hotkeys. Use '?' to get help."), {type: "info", ttl: 10000});
@@ -285,6 +298,13 @@ angular.module("privacyideaApp")
         Idle.unwatch();
         // Jump to top when the policy is saved
         $('html,body').scrollTop(0);
+    };
+
+    $scope.lock_screen = function () {
+        // We need to destroy the auth_token
+        $scope.loggedInUser.auth_token = null;
+        Idle.unwatch();
+        $('#dialogLock').modal().show();
     };
 
     $scope.about = function() {

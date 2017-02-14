@@ -65,6 +65,12 @@ body {
     min-width: 150px;
 }
 
+.lock-dialog {
+   background: #333333;
+   opacity: .30;
+   filter: Alpha(Opacity=30);
+}
+
 /* User Add
 */
 .css-form input.ng-invalid {
