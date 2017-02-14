@@ -16,6 +16,11 @@ With event handlers you do not change the way the system reacts. But on
 certain events you can *trigger a new action* in addition to the behaviour
 defined in the policies.
 
+These additional actions are also logged to the audit log. These actions are
+marked as *EVENT* in the audit log and you can see, which event triggered
+these actions. Thus a single API call can cause several audit log entries:
+One for the API call and more for the triggered actions.
+
 Events
 ------
 
