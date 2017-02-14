@@ -73,11 +73,13 @@
                   ng-class="{'has-error': !newUser.password }">
                 <label for="password" translate>Password</label>
                 <input name="password" type="password"
+                       autocomplete="off"
                        id="pw1" class="form-control round-top"
                        ng-model="newUser.password" required
                        equals="{{ password2 }}"
                        placeholder="{{ 'Password'|translate }}"/>
                 <input name="password" type="password"
+                       autocomplete="off"
                        id="pw2" class="form-control round-bottom"
                        ng-model="password2"
                        equals="{{ newUser.password }}"

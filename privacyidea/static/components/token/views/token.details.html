@@ -308,12 +308,12 @@
         <tr ng-hide="token.locked || !checkRight('setpin')">
             <td>
                 <input type="password" ng-model="pin1"
-                       class="form-control"
+                       class="form-control" autocomplete="off"
                        placeholder="{{ 'Enter PIN for token'|translate }}">
             </td>
             <td>
                 <input type="password" ng-model="pin2"
-                       class="form-control"
+                       class="form-control" autocomplete="off"
                        placeholder="{{ 'Enter PIN again'|translate }}">
             </td>
             <td>
@@ -341,6 +341,7 @@
                        ng-hide="showPassword"
                        name="testPassword"
                        class="form-control"
+                       autocomplete="off"
                        placeholder="{{ testTokenPlaceholder }}">
             </td>
             <td>
