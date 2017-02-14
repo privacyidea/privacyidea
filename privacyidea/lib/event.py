@@ -22,6 +22,7 @@
 #
 from privacyidea.models import EventHandler, EventHandlerOption, db
 from privacyidea.lib.error import ParameterError
+from privacyidea.lib.audit import getAudit
 import functools
 import logging
 log = logging.getLogger(__name__)
@@ -62,7 +63,7 @@ class event(object):
             for e_handler_def in e_handles:
                 log.debug("Handling event {eventname} with "
                           "{eventDef}".format(eventname=self.eventname,
-                                             eventDef=e_handler_def ))
+                                              eventDef=e_handler_def))
                 event_handler_name = e_handler_def.get("handlermodule")
                 event_handler = get_handler_object(event_handler_name)
                 # The "action is determined by the event configuration
@@ -75,8 +76,26 @@ class event(object):
                     log.debug("Handling event {eventname} with options"
                               "{options}".format(eventname=self.eventname,
                                                  options=options))
+                    # create a new audit object
+                    event_audit = getAudit(self.g.audit_object.config)
+                    # copy all values from the originial audit entry
+                    event_audit_data = dict(self.g.audit_object.audit_data)
+                    event_audit_data["action"] = "EVENT {trigger}>>" \
+                                                 "{handler}:{action}".format(
+                            trigger=self.eventname,
+                            handler=e_handler_def.get("handlermodule"),
+                            action=e_handler_def.get("action"))
+                    event_audit_data["action_detail"] = "{0!s}".format(
+                        e_handler_def.get("options"))
+                    event_audit_data["info"] = e_handler_def.get("name")
+                    event_audit.log(event_audit_data)
+
                     event_handler.do(e_handler_def.get("action"),
                                      options=options)
+                    # set audit object to success
+                    event_audit.log({"success": True})
+                    event_audit.finalize_log()
+
             return f_result
 
         return event_wrapper
