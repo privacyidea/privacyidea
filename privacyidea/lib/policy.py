@@ -117,6 +117,12 @@ If the user is empty or '*', this policy matches each user.
 You can exclude users from matching this policy, by prepending a '-' or a '!'.
 ``*, -admin`` will match for all users except the admin.
 
+You can also use regular expressions to match the user like ``customer_.*``
+to match any user, starting with *customer_*.
+
+.. note:: Regular expression will only work for exact machtes.
+   *user1234* will not match *user1* but only *user1...*
+
 client
 ------
 The client is identified by its IP address. A policy can contain a list of
@@ -160,6 +166,7 @@ from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import check_time_in_range, reload_db
 from privacyidea.lib.user import User
 import datetime
+import re
 import ast
 
 log = logging.getLogger(__name__)
@@ -405,6 +412,13 @@ class PolicyClass(object):
                 value_found = True
             elif value in [searchvalue, "*"]:
                 value_found = True
+            elif type(searchvalue) != list:
+                # Do not do this search style for resolvers, which come as a
+                # list
+                # check regular expression only for exact matches
+                # avoid matching user1234 -> user1
+                if re.search("^{0!s}$".format(value), searchvalue):
+                    value_found = True
 
         return value_found, value_excluded
 

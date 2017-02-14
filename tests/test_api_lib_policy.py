@@ -1002,7 +1002,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
                           "fetch_authentication_items, enrollDAPLUG, "
                           "mresolverwrite, losttoken, enrollSSHKEY, "
                           "importtokens, assign, delete",
-                   user="adminA",
+                   user="admin[aA]",
                    realm="realmA, realmB",
                    resolver="resolverA, resolverB",
                    )

@@ -613,6 +613,14 @@ class PolicyTestCase(MyTestCase):
         found, excluded = P._search_value(["v1", "-v2"], "v2")
         self.assertTrue(excluded)
 
+        found, excluded = P._search_value(["v1", "v.*"], "v3")
+        self.assertTrue(found)
+        self.assertFalse(excluded)
+
+        found, excluded = P._search_value(["v1", "r.*"], "v13")
+        self.assertFalse(found)
+        self.assertFalse(excluded)
+
     def test_21_check_all_resolver(self):
         # check_all_resolver allows to find a policy for a secondary user
         # resolver.
