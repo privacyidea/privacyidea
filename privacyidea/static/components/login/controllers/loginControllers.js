@@ -277,6 +277,9 @@ angular.module("privacyideaApp")
             console.log($scope.loggedInUser);
             if ( $scope.unlocking ) {
                 $('#dialogLock').modal().hide();
+                // Hack, since we can not close the modal and thus the body
+                // keeps the modal-open and thus has no scroll-bars
+                $("body").removeClass("modal-open");
             } else {
                 // if we are unlocking we do NOT go to the tokens
                 $location.path("/token");

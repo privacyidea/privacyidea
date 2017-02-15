@@ -66,9 +66,7 @@ body {
 }
 
 .lock-dialog {
-   background: #333333;
-   opacity: .30;
-   filter: Alpha(Opacity=30);
+   background-color: rgba(0, 0, 0, 0.8);
 }
 
 /* User Add
