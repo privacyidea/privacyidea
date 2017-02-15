@@ -145,13 +145,15 @@ angular.module("privacyideaApp")
     AuthFactory.setUser();
 
     $scope.unlock_first = function () {
+        $scope.transactionid = "";
         $scope.unlocking = true;
         $scope.login.username = $scope.loggedInUser.username;
-        $scope.authenticate_first();
+        $scope.authenticate();
     };
 
     $scope.authenticate_first = function() {
         $scope.transactionid = "";
+        $scope.unlocking = false;
         $scope.authenticate();
     };
 
