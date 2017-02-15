@@ -222,6 +222,9 @@ class CertificateTokenClass(TokenClass):
             s = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
             self.add_tokeninfo("privatekey", s, value_type="password")
 
+        if "pin" in param:
+            self.set_pin(param.get("pin"), encrypt=True)
+
         if certificate:
             self.add_tokeninfo("certificate", certificate)
 
