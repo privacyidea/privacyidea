@@ -44,7 +44,7 @@ import sys
 import datetime
 from datetime import timedelta
 import re
-from subprocess import call, Popen
+from subprocess import call, Popen, PIPE
 from getpass import getpass
 from privacyidea.lib.security.default import DefaultSecurityModule
 from privacyidea.lib.crypto import geturandom
@@ -103,6 +103,7 @@ def add(username, email=None, password=None):
     create_db_admin(app, username, email, password)
     print('Admin {0} was registered successfully.'.format(username))
 
+
 @admin_manager.command
 def list():
     """
@@ -110,12 +111,14 @@ def list():
     """
     list_db_admin()
 
+
 @admin_manager.command
 def delete(username):
     """
     Delete an existing administrator.
     """
     delete_db_admin(username)
+
 
 @admin_manager.command
 def change(username, email=None, password_prompt=False):
@@ -133,14 +136,18 @@ def change(username, email=None, password_prompt=False):
 
     create_db_admin(app, username, email, password)
 
+
 @backup_manager.command
-def create(directory="/var/lib/privacyidea/backup/"):
+def create(directory="/var/lib/privacyidea/backup/",
+           conf_dir="/etc/privacyidea/",
+           enckey=False):
     """
-    Create a new backup of the database and the configuration. This does not
-    backup the encryption key!
+    Create a new backup of the database and the configuration. The default
+    does not include the encryption key. Use the 'enckey' option to also
+    backup the encryption key. Then you should make sure, that the backups
+    are stored safely.
     """
-    CONF_DIR = "/etc/privacyidea/"
-    # INIFILE = "%s/pi.cfg" % CONF_DIR
+    CONF_DIR = conf_dir
     DATE = datetime.datetime.now().strftime("%Y%m%d-%H%M")
     BASE_NAME = "privacyidea-backup"
     
@@ -161,20 +168,43 @@ def create(directory="/var/lib/privacyidea/backup/"):
         password = m.groups()[1]
         datahost = m.groups()[2]
         database = m.groups()[3]
-        call("mysqldump -u %s --password=%s -h %s %s > %s" % (username,
-                                                              password,
-                                                              datahost,
-                                                              database,
-                                                              sqlfile),
-             shell=True)
-
+        defaults_file = "{0!s}/mysql.cnf".format(conf_dir)
+        _write_mysql_defaults(defaults_file, username, password)
+        call("mysqldump --defaults-file=%s -h %s %s > %s" % (
+            defaults_file,
+            datahost,
+            database, sqlfile), shell=True)
     else:
         print("unsupported SQL syntax: %s" % sqltype)
         sys.exit(2)
+    enc_file = app.config.get("PI_ENCFILE")
 
-    call(["tar", "-zcf", backup_file, CONF_DIR, sqlfile])
+    backup_call = ["tar", "-zcf",
+          backup_file, CONF_DIR, sqlfile]
+    if not enckey:
+        # Exclude enckey from backup
+        backup_call.append("--exclude={0!s}".format(enc_file))
+
+    call(backup_call)
     os.unlink(sqlfile)
     os.chmod(backup_file, 0600)
+
+
+def _write_mysql_defaults(filename, username, password):
+    """
+    Write the defaults_file for mysql commands
+
+    :param filename: THe name of the file
+    :param username: The username to connect to the database
+    :param password: The password to connect to the database
+    :return:
+    """
+    f = open(filename, "w")
+    f.write("""[client]
+user={0!s}
+password={1!s}""".format(username, password))
+    f.close()
+    os.chmod(filename, 0600)
 
 
 @backup_manager.command
@@ -182,29 +212,52 @@ def restore(backup_file):
     """
     Restore a previously made backup. You need to specify the tgz file.
     """
-    SQLALCHEMY_DATABASE_URI = None
-    directory = os.path.dirname(backup_file)
+    sqluri = None
+    config_file = None
+    sqlfile = None
+    enckey_contained = False
+
+    p = Popen(["tar", "-ztf", backup_file], stdout=PIPE)
+    std_out, err_out = p.communicate()
+    for line in std_out.split("\n"):
+        if re.search("/pi.cfg$", line):
+            config_file = "/{0!s}".format(line.strip())
+        elif re.search("\.sql", line):
+            sqlfile = "/{0!s}".format(line.strip())
+        elif re.search("/enckey", line):
+            enckey_contained = True
+
+    if not config_file:
+        raise Exception("Missing config file pi.cfg in backup file.")
+    if not sqlfile:
+        raise Exception("Missing database dump in backup file.")
+
+    if enckey_contained:
+        print("Also restoring encryption key 'enckey'")
+    else:
+        print("NO FILE 'enckey' CONTAINED! BE SURE TO RESTORE THE ENCRYPTION "
+              "KEY MANUALLY!")
+    print("Restoring to {0!s} with data from {1!s}".format(config_file,
+                                                           sqlfile))
+
     call(["tar", "-zxf", backup_file, "-C", "/"])
     print(60*"=")
-    """
-    The restore of the SQL file will not work, since at the moment we "
-    can not be sure to know the correct SQLALCHEMY_DATABASE_URI. The "
-    right URI "
-    was just restored to /etc/privacyidea/pi.cfg. So please take a "
-    look into that file and restore the SQL dumb from the file "
-    /var/lib/privacyidea/backup/*.[sql,sqlite]")
-    """
-    execfile("/etc/privacyidea/pi.cfg")
-    # Now we know the variable SQLALCHEMY_DATABASE_URI
-    sqluri = SQLALCHEMY_DATABASE_URI
+    f = open(config_file, "r")
+    # Determine the SQLAlchemy URI
+    for line in f:
+        if re.search("^SQLALCHEMY_DATABASE_URI", line):
+            key, value = line.split("=", 1)
+            # Strip whitespaces, and ' "
+            sqluri = value.strip().strip("'").strip('"')
+    f.close()
+
     if sqluri is None:
-        print("No SQLALCHEMY_DATABASE_URI found in /etc/privacyidea/pi.cfg")
+        print("No SQLALCHEMY_DATABASE_URI found in {0!s}".format(config_file))
         sys.exit(2)
     sqltype = sqluri.split(":")[0]
     if sqltype == "sqlite":
         productive_file = sqluri[len("sqlite:///"):]
         print("Restore SQLite %s" % productive_file)
-        sqlfile = "%s/db-*.sqlite" % directory
         call(["cp", sqlfile, productive_file])
         os.unlink(sqlfile)
     elif sqltype in ["mysql", "pymysql"]:
@@ -213,9 +266,11 @@ def restore(backup_file):
         password = m.groups()[1]
         datahost = m.groups()[2]
         database = m.groups()[3]
-        sqlfile = "%s/dbdump-*.sql" % directory
-        call("mysql -u %s --password=%s -h %s %s < %s" % (username,
-                                                          password,
+        defaults_file = "/etc/privacyidea/mysql.cnf"
+        _write_mysql_defaults(defaults_file, username, password)
+        # Rewriting database
+        print("Restoring database.")
+        call("mysql --defaults-file=%s -h %s %s < %s" % (defaults_file,
                                                           datahost,
                                                           database,
                                                           sqlfile), shell=True)

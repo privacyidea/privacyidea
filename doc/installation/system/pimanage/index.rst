@@ -58,9 +58,10 @@ Backup and Restore
 You can create a backup which will be save to */var/lib/privacyidea/backup/*.
 
 The backup will contain the database dump and the complete directory
-*/etc/privacyidea* which also includes the encryption key.
+*/etc/privacyidea*. You may choose if you want to add the encryption key to
+the backup or not.
 
-.. warning:: As the backup includes the database dump and the encryption key
+.. warning:: If the backup includes the database dump and the encryption key
    all seeds of the OTP tokens can be read from the backup.
 
 As the backup contains the etc directory and the database you only need this
