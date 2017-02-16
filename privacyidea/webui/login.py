@@ -49,6 +49,10 @@ def single_page_application():
     # The backend URL should come from the configuration of the system.
     backend_url = ""
 
+    if current_app.config.get("PI_UI_DEACTIVATED"):
+        # Do not provide the UI
+        return render_template("deactivated.html")
+
     # The default theme. We can change this later
     theme = current_app.config.get("PI_CSS", DEFAULT_THEME)
     # Get further customizations

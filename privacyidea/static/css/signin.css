@@ -99,3 +99,7 @@ body {
         transform: rotate(359deg);
     }
 }
+
+.deactivated {
+    text-align: center;
+}

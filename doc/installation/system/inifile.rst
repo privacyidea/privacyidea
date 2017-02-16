@@ -38,6 +38,7 @@ The file should contain the following contents::
    # PI_LOGLEVEL = 20
    # PI_INIT_CHECK_HOOK = 'your.module.function'
    # PI_CSS = '/location/of/theme.css'
+   # PI_UI_DEACTIVATED = True
 
 
 .. note:: The config file is parsed as python code, so you can use variables to
@@ -70,3 +71,10 @@ sheet to customize the look and fell. Read more at :ref:`themes`.
 privacyIDEA digitally signs the responses. You can disable this using the
 parameter ``PI_NO_RESPONSE_SIGN``. Set this to *True* to suppress the
 response signature.
+
+You can set ``PI_UI_DEACTIVATED = True`` to deactivate the privacyIDEA UI.
+This can be interesting if you are only using the command line client or your
+own UI and you do not want to present the UI to the user or the outside world.
+
+.. note:: The API calls are all still accessable, i.e. privacyIDEA is
+   technically fully functional.
