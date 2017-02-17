@@ -131,6 +131,10 @@ def parse_registration_data(reg_data):
     subj_x509name = attestation_cert.get_subject()
     subj_list = subj_x509name.get_components()
     description = ""
+    log.debug("This attestation certificate registered: {0!s}".format(
+        crypto.dump_certificate(crypto.FILETYPE_PEM,
+                                attestation_cert)
+    ))
     for component in subj_list:
         # each component is a tuple. We are looking for CN
         if component[0].upper() == "CN":
