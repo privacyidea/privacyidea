@@ -36,6 +36,7 @@ from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.api.auth import (user_required, admin_required)
 from privacyidea.lib.config import get_from_config, SYSCONF, ConfigClass
+from privacyidea.lib.token import get_token_type
 from .resolver import resolver_blueprint
 from .policy import policy_blueprint
 from .realm import realm_blueprint
@@ -122,6 +123,10 @@ def before_request():
                          request.host
     # Already get some typical parameters to log
     serial = getParam(request.all_data, "serial")
+    if serial:
+        tokentype = get_token_type(serial)
+    else:
+        tokentype = None
     realm = getParam(request.all_data, "realm")
     user_loginname = ""
     resolver = ""
@@ -139,6 +144,7 @@ def before_request():
                         "user": user_loginname,
                         "realm": realm,
                         "resolver": resolver,
+                        "token_type": tokentype,
                         "client": g.client_ip,
                         "client_user_agent": request.user_agent.browser,
                         "privacyidea_server": privacyidea_server,
