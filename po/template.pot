@@ -198,7 +198,7 @@ msgstr ""
 msgid "Authentication Server URI"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:213
+#: privacyidea/static/components/login/controllers/loginControllers.js:215
 msgid "Authentication failed."
 msgstr ""
 
@@ -299,7 +299,7 @@ msgstr ""
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:185
+#: privacyidea/static/components/login/controllers/loginControllers.js:187
 msgid "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr ""
 
@@ -1492,7 +1492,7 @@ msgstr ""
 msgid "PIN"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:367
+#: privacyidea/static/components/login/controllers/loginControllers.js:372
 msgid "PIN changed successfully."
 msgstr ""
 
@@ -1678,7 +1678,7 @@ msgstr ""
 msgid "Realm"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:338
+#: privacyidea/static/components/login/controllers/loginControllers.js:343
 msgid "Realm defrealm created."
 msgstr ""
 
@@ -3135,7 +3135,7 @@ msgstr ""
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:255
+#: privacyidea/static/components/login/controllers/loginControllers.js:257
 msgid "Your OTP pin expires on"
 msgstr ""
 

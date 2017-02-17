@@ -210,7 +210,7 @@ msgstr "Audit"
 msgid "Authentication Server URI"
 msgstr "URI des Authentisierungsservers"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:213
+#: privacyidea/static/components/login/controllers/loginControllers.js:215
 msgid "Authentication failed."
 msgstr "Authentisierung fehlgeschlagen."
 
@@ -316,7 +316,7 @@ msgstr "Zertifikatsanforderung (PEM)"
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr "Zertifikate: x509 Zertifikate ausrollen."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:185
+#: privacyidea/static/components/login/controllers/loginControllers.js:187
 msgid ""
 "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr "Challenge-Response Anmeldung. Sie sind noch nicht fertig angemeldet."
@@ -1574,7 +1574,7 @@ msgstr "PAPER: OTP-Liste auf einem Stück Papier"
 msgid "PIN"
 msgstr "PIN"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:367
+#: privacyidea/static/components/login/controllers/loginControllers.js:372
 msgid "PIN changed successfully."
 msgstr "PIN erfolgreich geändert."
 
@@ -1765,7 +1765,7 @@ msgstr ""
 msgid "Realm"
 msgstr "Realm "
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:338
+#: privacyidea/static/components/login/controllers/loginControllers.js:343
 msgid "Realm defrealm created."
 msgstr "Der Realm defrealm wurde erzeugt."
 
@@ -3074,7 +3074,7 @@ msgid ""
 "This must be a valid FQDN with also a valid top level domain -\n"
 "        otherwise you might receive a U2F Error 2 (Bad Request)."
 msgstr ""
-"Dies muss ein gültiger FQDN mit eine gültigen Top-Level-Domain sein -  "
+"Dies muss ein gültiger FQDN mit einer gültigen Top-Level-Domain sein -  "
 "ansonsten wird ein U2F Fehlercode 2 geworfen (Bad Request)."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:21
@@ -3471,7 +3471,7 @@ msgstr ""
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr "Sie werden nach {{ myCountdown }} Sekunden abgemeldet."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:255
+#: privacyidea/static/components/login/controllers/loginControllers.js:257
 msgid "Your OTP pin expires on"
 msgstr "Ihre OTP PIN läuft ab: "
 
