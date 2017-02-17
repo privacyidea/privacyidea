@@ -29,6 +29,7 @@ Version 2.18, 2017-xx-xx
   * Add event handler condition for last_auth.
   * Improve Audit Log for Event Handler. Each triggered action 
     will now also create an audit entry. (#609)
+  * Allow the use of {current_time} in tokenevent handler. (#628)
 
   Enhancements in LDAP Resolver:
   * Upgrade dependency to ldap3 version >=2.1.1 to improve LDAP 
