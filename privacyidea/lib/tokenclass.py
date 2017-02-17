@@ -83,6 +83,7 @@ from .utils import parse_timedelta
 from policy import ACTION
 
 DATE_FORMAT = "%d/%m/%y %H:%M"
+AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 optional = True
 required = False
 
@@ -1477,7 +1478,7 @@ class TokenClass(object):
                                          last_success_auth))
             # convert string of last_success_auth
             last_success_auth = datetime.datetime.strptime(
-                last_success_auth, "%Y-%m-%d %H:%M:%S.%f")
+                last_success_auth, AUTH_DATE_FORMAT)
             # The last auth is to far in the past
             if last_success_auth + tdelta < datetime.datetime.now():
                 res = False

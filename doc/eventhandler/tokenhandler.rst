@@ -61,6 +61,8 @@ set description
 If all conditions are matched the description of the token identified in the
 request will be set.
 
+You can use the tag ``{current_time}`` to set the current timestamp.
+
 set validity
 ............
 
@@ -111,6 +113,9 @@ set tokeninfo
 Using the action ``set tokeninfo`` you can set any arbitrary tokeninfo
 attribute for the token. You need to specify the ``key`` of the
 tokeninfo and the ``value``.
+
+In the value field you can use the tag ``{current_time}`` to set the current
+timestamp.
 
 .. note:: Some tokens have token specific attributes that are stored in the
    tokeninfo. The TOTP token type has a ``timeWindow``. The TOTP and the HOTP

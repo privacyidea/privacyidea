@@ -40,10 +40,11 @@ from privacyidea.lib.token import (set_realms, remove_token, enable_token,
                                    unassign_token, init_token, set_description,
                                    set_count_window, add_tokeninfo)
 from privacyidea.lib.utils import parse_date, is_true
-from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.tokenclass import DATE_FORMAT, AUTH_DATE_FORMAT
 from gettext import gettext as _
 import json
 import logging
+import datetime
 
 log = logging.getLogger(__name__)
 
@@ -238,15 +239,18 @@ class TokenEventHandler(BaseEventHandler):
                 elif action.lower() == ACTION_TYPE.UNASSIGN:
                     unassign_token(serial)
                 elif action.lower() == ACTION_TYPE.SET_DESCRIPTION:
-                    set_description(serial, handler_options.get(
-                        "description", ""))
+                    s_now = datetime.datetime.now().strftime(AUTH_DATE_FORMAT)
+                    set_description(serial, (handler_options.get("description") or "").format(
+                            current_time=s_now))
                 elif action.lower() == ACTION_TYPE.SET_COUNTWINDOW:
                     set_count_window(serial,
-                                    int(handler_options.get("count window",
-                                                            50)))
+                                     int(handler_options.get("count window",
+                                                             50)))
                 elif action.lower() == ACTION_TYPE.SET_TOKENINFO:
+                    s_now = datetime.datetime.now().strftime(AUTH_DATE_FORMAT)
                     add_tokeninfo(serial, handler_options.get("key"),
-                                  handler_options.get("value") or "")
+                                  (handler_options.get("value") or "").format(
+                                      current_time=s_now))
                 elif action.lower() == ACTION_TYPE.SET_VALIDITY:
                     start_date = handler_options.get(VALIDITY.START)
                     end_date = handler_options.get(VALIDITY.END)
