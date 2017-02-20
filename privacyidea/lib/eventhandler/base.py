@@ -27,7 +27,7 @@ The event handler module is bound to an event together with
 * an action
 * optional options ;-)
 """
-from gettext import gettext as _
+from privacyidea.lib import _
 from privacyidea.lib.config import get_token_types
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.auth import ROLE

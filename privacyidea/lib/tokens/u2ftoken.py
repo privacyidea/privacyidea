@@ -27,7 +27,7 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
 import logging
 from privacyidea.models import Challenge
-import gettext
+from privacyidea.lib import _
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
@@ -179,7 +179,6 @@ U2F_Version = "U2F_V2"
 log = logging.getLogger(__name__)
 optional = True
 required = False
-_ = gettext.gettext
 
 
 class U2FACTION(object):

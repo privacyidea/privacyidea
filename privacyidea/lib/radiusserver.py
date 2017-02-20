@@ -26,7 +26,7 @@ from privacyidea.lib.error import ConfigAdminError, privacyIDEAError
 import pyrad.packet
 from pyrad.client import Client
 from pyrad.dictionary import Dictionary
-from gettext import gettext as _
+from privacyidea.lib import _
 
 __doc__ = """
 This is the library for creating, listing and deleting RADIUS server objects in

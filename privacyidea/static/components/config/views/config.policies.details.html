@@ -161,8 +161,7 @@
             <div ng-show="isActionValues">
                 <accordion close-others="false">
                     <accordion-group
-                            heading="{{ actionGroup ||
-                                    'miscellaneous'|translate }}"
+                            heading="{{ actionGroup || 'miscellaneous'}}"
                                 ng-repeat="actionGroup in actionGroups">
                         <table class="table table-hover">
                             <tr ng-repeat="action in actions"

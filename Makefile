@@ -52,6 +52,14 @@ translate:
 	poedit po/it.po
 	grunt nggettext_compile
 
+translate-server:
+	(cd privacyidea; pybabel extract -F babel.cfg -o messages.pot .)
+	# pybabel init -i messages.pot -d translations -l de
+	(cd privacyidea; pybabel update -i messages.pot -d translations)
+	(poedit privacyidea/translations/de/LC_MESSAGES/messages.po)
+	# create the .mo file
+	(cd privacyidea; pybabel compile -d translations)
+
 pypi:
 	make doc-man
 	python setup.py sdist upload

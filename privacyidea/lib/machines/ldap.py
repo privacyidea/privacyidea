@@ -44,7 +44,7 @@ import traceback
 import logging
 from privacyidea.lib.resolvers.LDAPIdResolver import AUTHTYPE
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver
-from gettext import gettext as _
+from privacyidea.lib import _
 
 log = logging.getLogger(__name__)
 

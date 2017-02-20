@@ -75,7 +75,7 @@ from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types,
                                     get_inc_fail_count_on_false_pin)
 from privacyidea.lib.user import get_user_info
-from gettext import gettext as _
+from privacyidea.lib import _
 from privacyidea.lib.realm import realm_is_defined
 from privacyidea.lib.resolver import get_resolver_object
 from privacyidea.lib.policy import ACTION, SCOPE

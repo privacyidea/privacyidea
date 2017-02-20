@@ -32,11 +32,10 @@ from privacyidea.lib.error import TokenAdminError
 import logging
 from privacyidea.models import Challenge
 from privacyidea.lib.challenge import get_challenges
-import gettext
+from privacyidea.lib import _
 from privacyidea.lib.decorators import check_token_locked
 import random
 import json
-_ = gettext.gettext
 
 log = logging.getLogger(__name__)
 optional = True

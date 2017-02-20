@@ -22,7 +22,7 @@ import logging
 import functools
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.error import ParameterError
-from gettext import gettext as _
+from privacyidea.lib import _
 log = logging.getLogger(__name__)
 
 

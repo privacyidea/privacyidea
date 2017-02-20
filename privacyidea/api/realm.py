@@ -58,7 +58,7 @@ from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.utils import reduce_realms
 from flask import g
 from privacyidea.lib.auth import ROLE
-from gettext import gettext as _
+from flask_babel import gettext as _
 import logging
 
 log = logging.getLogger(__name__)

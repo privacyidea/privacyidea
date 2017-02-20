@@ -49,12 +49,12 @@ from privacyidea.lib.utils import generate_otpkey
 from privacyidea.lib.decorators import check_token_locked
 import traceback
 import logging
-import gettext
+from privacyidea.lib import _
 
 optional = True
 required = False
 log = logging.getLogger(__name__)
-_ = gettext.gettext
+
 
 
 class MotpTokenClass(TokenClass):

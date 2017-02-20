@@ -54,6 +54,7 @@ from privacyidea.lib.radiusserver import get_radius
 import pyrad.packet
 from pyrad.client import Client
 from pyrad.dictionary import Dictionary
+from privacyidea.lib import _
 
 
 optional = True
@@ -93,16 +94,8 @@ class RadiusTokenClass(RemoteTokenClass):
         """
         res = {'type': 'radius',
                'title': 'RADIUS Token',
-               'description': 'RADIUS: Forward authentication request to a '
-                              'RADIUS server.',
-               'init': {'page': {'html': 'radiustoken.mako',
-                                 'scope': 'enroll'},
-                        'title': {'html': 'radiustoken.mako',
-                                  'scope': 'enroll.title', }},
-               'config': {'page': {'html': 'radiustoken.mako',
-                                   'scope': 'config'},
-                          'title': {'html': 'radiustoken.mako',
-                                    'scope': 'config.title'}},
+               'description': _('RADIUS: Forward authentication request to a '
+                                'RADIUS server.'),
                'user':  ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],

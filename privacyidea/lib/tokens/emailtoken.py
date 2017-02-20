@@ -66,11 +66,11 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.log import log_with
-from gettext import gettext as _
+from privacyidea.lib import _
 from privacyidea.models import Challenge
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.smtpserver import send_email_data, send_email_identifier
-
+from privacyidea.lib import _
 
 log = logging.getLogger(__name__)
 TEST_SUCCESSFUL = "Successfully sent email. Please check your inbox."

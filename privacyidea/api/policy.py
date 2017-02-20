@@ -53,7 +53,7 @@ from ..api.lib.prepolicy import prepolicy, check_base_action
 
 from flask import (g,
                     make_response)
-from gettext import gettext as _
+from flask_babel import gettext as _
 from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
 

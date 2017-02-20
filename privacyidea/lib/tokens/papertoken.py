@@ -30,7 +30,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.policy import SCOPE
-from gettext import gettext as _
+from privacyidea.lib import _
 from privacyidea.lib.policydecorators import libpolicy
 
 log = logging.getLogger(__name__)

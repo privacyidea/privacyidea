@@ -50,13 +50,12 @@ from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.policy import SCOPE
-import gettext
+from privacyidea.lib import _
 import traceback
 import logging
 
 optional = True
 required = False
-_ = gettext.gettext
 log = logging.getLogger(__name__)
 
 keylen = {'sha1': 20,

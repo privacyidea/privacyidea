@@ -48,6 +48,7 @@ from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib import _
 
 optional = True
 required = False
@@ -105,21 +106,8 @@ class RemoteTokenClass(TokenClass):
         """
         res = {'type': 'remote',
                'title': 'Remote Token',
-               'description': ('Remote Token: Forward authentication request '
-                               'to another server.'),
-
-               'init': {'page': {'html': 'remotetoken.mako',
-                                 'scope': 'enroll', },
-                        'title': {'html': 'remotetoken.mako',
-                                  'scope': 'enroll.title', },
-                        },
-
-               'config': {'page': {'html': 'remotetoken.mako',
-                                   'scope': 'config', },
-                          'title': {'html': 'remotetoken.mako',
-                                    'scope': 'config.title', },
-                          },
-
+               'description': _('Remote Token: Forward authentication request '
+                                'to another server.'),
                'user': [],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin"],

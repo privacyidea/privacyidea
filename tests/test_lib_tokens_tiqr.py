@@ -327,8 +327,7 @@ class TiQRTokenTestCase(MyTestCase):
         self.assertEqual(info, "tiqr")
 
         idetail = token.get_init_detail()
-        self.assertEqual(idetail.get("tiqrenroll").get("description"),
-                         "URL for TiQR enrollment")
+        self.assertTrue("TiQR" in idetail.get("tiqrenroll").get("description"))
         self.assertTrue("serial" in idetail, idetail)
         self.assertTrue("img" in idetail.get("tiqrenroll"), idetail)
         self.assertTrue("value" in idetail.get("tiqrenroll"), idetail)

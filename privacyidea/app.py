@@ -24,7 +24,7 @@ import os.path
 import logging
 import logging.config
 import sys
-from flask import Flask
+from flask import Flask, request
 
 import privacyidea.api.before_after
 from privacyidea.api.validate import validate_blueprint
@@ -56,6 +56,8 @@ from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
 from privacyidea.config import config
 from privacyidea.models import db
 from flask.ext.migrate import Migrate
+from flask_babel import Babel
+
 
 ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 MY_LOG_FORMAT = "[%(asctime)s][%(process)d][%(thread)d][%(levelname)s][%(" \
@@ -162,6 +164,7 @@ def create_app(config_name="development",
     db.init_app(app)
     migrate = Migrate(app, db)
 
+
     try:
         # Try to read logging config from file
         log_config_file = app.config.get("PI_LOGCONFIG",
@@ -194,6 +197,16 @@ def create_app(config_name="development",
                 sys.stderr.write("No PI_LOGFILE found. Using default "
                                   "config.\n")
             logging.config.dictConfig(DEFAULT_LOGGING_CONFIG)
+
+    babel = Babel(app)
+
+    @babel.localeselector
+    def get_locale():
+        # otherwise try to guess the language from the user accept
+        # header the browser transmits.  We support de/fr/en in this
+        # example.  The best match wins.
+        return request.accept_languages.best_match(['de',
+                                                    'fr', 'it', 'es', 'en'])
 
     return app
 

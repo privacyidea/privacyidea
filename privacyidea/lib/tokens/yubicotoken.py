@@ -49,6 +49,7 @@ from privacyidea.lib.tokens.yubikeytoken import (yubico_check_api_signature,
                                                  yubico_api_signature)
 import os
 import binascii
+from privacyidea.lib import _
 
 YUBICO_LEN_ID = 12
 YUBICO_LEN_OTP = 44
@@ -90,18 +91,8 @@ class YubicoTokenClass(TokenClass):
         """
         res = {'type': 'yubico',
                'title': 'Yubico Token',
-               'description': 'Yubikey Cloud mode: Forward authentication '
-                              'request to YubiCloud.',
-               'init': {'page': {'html': 'yubicotoken.mako',
-                                 'scope': 'enroll', },
-                        'title': {'html': 'yubicotoken.mako',
-                                   'scope': 'enroll.title'}
-               },
-               'config': {'page': {'html': 'yubicotoken.mako',
-                                   'scope': 'config'},
-                          'title': {'html': 'yubicotoken.mako',
-                                    'scope': 'config.title'}
-               },
+               'description': _('Yubikey Cloud mode: Forward authentication '
+                                'request to YubiCloud.'),
                'user':  ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],

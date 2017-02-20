@@ -45,8 +45,7 @@ from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.policy import ACTION, SCOPE
 from privacyidea.lib.auth import ROLE
-import gettext
-_ = gettext.gettext
+from privacyidea.lib import _
 
 optional = True
 required = False

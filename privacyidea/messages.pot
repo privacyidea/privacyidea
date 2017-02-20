@@ -1,0 +1,972 @@
+# Translations template for PROJECT.
+# Copyright (C) 2017 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2017-02-20 22:01+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.3.4\n"
+
+#: api/policy.py:171
+msgid "The name of the policy may only contain the characters a-zA-Z0-9_."
+msgstr ""
+
+#: api/policy.py:175
+msgid "T'check' is an invalid policy name."
+msgstr ""
+
+#: lib/decorators.py:42
+msgid "This action is not possible, since the token is locked"
+msgstr ""
+
+#: lib/decorators.py:90
+msgid "You need to specify a serial or a user."
+msgstr ""
+
+#: lib/error.py:168
+msgid "You either need to provide user or serial"
+msgstr ""
+
+#: lib/policy.py:981
+msgid "Define in which resolver the user should be registered."
+msgstr ""
+
+#: lib/policy.py:985
+msgid "Define in which realm the user should be registered."
+msgstr ""
+
+#: lib/policy.py:989
+msgid ""
+"The SMTP server configuration, that should be used to send the "
+"registration email."
+msgstr ""
+
+#: lib/policy.py:993
+msgid ""
+"Only users with this email address are allowed to register. This is a "
+"regular expression."
+msgstr ""
+
+#: lib/policy.py:998
+msgid ""
+"The body of the registration email. Use '{regkey}' as tagfor the "
+"registration key."
+msgstr ""
+
+#: lib/policy.py:1004
+msgid "Admin is allowed to enable tokens."
+msgstr ""
+
+#: lib/policy.py:1008
+msgid "Admin is allowed to disable tokens."
+msgstr ""
+
+#: lib/policy.py:1012
+msgid "Admin is allowed to set token properties."
+msgstr ""
+
+#: lib/policy.py:1017
+msgid "Admin is allowed to set the OTP PIN of tokens."
+msgstr ""
+
+#: lib/policy.py:1023
+msgid "Admin is allowed to set the OTP PIN during enrollment."
+msgstr ""
+
+#: lib/policy.py:1028
+msgid "Admin is allowed to resync tokens."
+msgstr ""
+
+#: lib/policy.py:1032
+msgid "Admin is allowed to reset the Failcounter of a token."
+msgstr ""
+
+#: lib/policy.py:1038
+msgid "Admin is allowed to revoke a token"
+msgstr ""
+
+#: lib/policy.py:1042
+msgid "Admin is allowed to assign a token to a user."
+msgstr ""
+
+#: lib/policy.py:1048
+msgid "Admin is allowed to remove the token from a user, i.e. unassign a token."
+msgstr ""
+
+#: lib/policy.py:1055
+msgid "Admin is allowed to import token files."
+msgstr ""
+
+#: lib/policy.py:1060
+msgid "Admin is allowed to remove tokens from the database."
+msgstr ""
+
+#: lib/policy.py:1066
+msgid "Admin is allowed to view the list of the users."
+msgstr ""
+
+#: lib/policy.py:1072
+msgid "The Admin is allowed to list the machines."
+msgstr ""
+
+#: lib/policy.py:1077
+msgid "The Admin is allowed to attach and detach tokens to machines."
+msgstr ""
+
+#: lib/policy.py:1084
+msgid ""
+"The Admin is allowed to fetch authentication items of tokens assigned to "
+"machines."
+msgstr ""
+
+#: lib/policy.py:1089
+msgid "Admin is allowed to manage the realms of a token."
+msgstr ""
+
+#: lib/policy.py:1094
+msgid "Admin is allowed to retrieve a serial for a given OTP value."
+msgstr ""
+
+#: lib/policy.py:1099
+msgid "Admin is allowed to retrieve random keys from privacyIDEA."
+msgstr ""
+
+#: lib/policy.py:1103
+msgid "Admin is allowed to copy the PIN of one token to another token."
+msgstr ""
+
+#: lib/policy.py:1109
+msgid ""
+"Admin is allowed to copy the assigned user to another token, i.e. assign "
+"a user ot another token."
+msgstr ""
+
+#: lib/policy.py:1116
+msgid "Admin is allowed to trigger the lost token workflow."
+msgstr ""
+
+#: lib/policy.py:1122
+msgid "Admin is allowed to write and modify the system configuration."
+msgstr ""
+
+#: lib/policy.py:1127
+msgid "Admin is allowed to delete keys in the system configuration."
+msgstr ""
+
+#: lib/policy.py:1133
+msgid ""
+"Admin is allowed to export a documentation of the complete configuration "
+"including resolvers and realm."
+msgstr ""
+
+#: lib/policy.py:1141
+msgid "Admin is allowed to write and modify the policies."
+msgstr ""
+
+#: lib/policy.py:1146
+msgid "Admin is allowed to delete policies."
+msgstr ""
+
+#: lib/policy.py:1151
+msgid "Admin is allowed to write and modify the resolver and realm configuration."
+msgstr ""
+
+#: lib/policy.py:1158
+msgid "Admin is allowed to delete resolvers and realms."
+msgstr ""
+
+#: lib/policy.py:1163
+msgid ""
+"Admin is allowed to create new CA Connector definitions and modify "
+"existing ones."
+msgstr ""
+
+#: lib/policy.py:1169
+msgid "Admin is allowed to delete CA Connector definitions."
+msgstr ""
+
+#: lib/policy.py:1174
+msgid "Admin is allowed to write and modify the machine resolvers."
+msgstr ""
+
+#: lib/policy.py:1180
+msgid "Admin is allowed to delete machine resolvers."
+msgstr ""
+
+#: lib/policy.py:1187 lib/policy.py:1341
+msgid "Set the maximum allowed length of the OTP PIN."
+msgstr ""
+
+#: lib/policy.py:1192 lib/policy.py:1346
+msgid "Set the minimum required length of the OTP PIN."
+msgstr ""
+
+#: lib/policy.py:1196 lib/policy.py:1350
+msgid ""
+"Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, "
+"(s)pecial, (o)thers. [+/-]!"
+msgstr ""
+
+#: lib/policy.py:1202
+msgid "Admin is allowed to view the Audit log."
+msgstr ""
+
+#: lib/policy.py:1206
+msgid "The admin will only see audit entries of the last 10d, 3m or 2y."
+msgstr ""
+
+#: lib/policy.py:1211
+msgid "The admin is allowed to download the complete auditlog."
+msgstr ""
+
+#: lib/policy.py:1216
+msgid "Admin is allowed to add users in a userstore/UserIdResolver."
+msgstr ""
+
+#: lib/policy.py:1221
+msgid "Admin is allowed to update the users data in a userstore."
+msgstr ""
+
+#: lib/policy.py:1226
+msgid "Admin is allowed to delete a user object in a userstore."
+msgstr ""
+
+#: lib/policy.py:1231
+msgid "Admin is allowed to set the password of the HSM/Security Module."
+msgstr ""
+
+#: lib/policy.py:1235
+msgid "Admin is allowed to retrieve the list of active challenges."
+msgstr ""
+
+#: lib/policy.py:1241
+msgid "Admin is allowed to write new SMTP server definitions."
+msgstr ""
+
+#: lib/policy.py:1246
+msgid "Admin is allowed to write new RADIUS server definitions."
+msgstr ""
+
+#: lib/policy.py:1252
+msgid "Admin is allowed to write and modify the event handling configuration."
+msgstr ""
+
+#: lib/policy.py:1258
+msgid "Admin is allowed to write and modify SMS gateway definitions."
+msgstr ""
+
+#: lib/policy.py:1264
+msgid "Admin is allowed to get the list of authenticated clients and their types."
+msgstr ""
+
+#: lib/policy.py:1271
+msgid "Admin is allowed to add and delete component subscriptions."
+msgstr ""
+
+#: lib/policy.py:1277
+msgid "The Admin is allowed to trigger a challenge for e.g. SMS OTP token."
+msgstr ""
+
+#: lib/policy.py:1287
+msgid ""
+"The user is allowed to assign an existing token that is not yet assigned "
+"using the token serial number."
+msgstr ""
+
+#: lib/policy.py:1293
+msgid "The user is allowed to disable his own tokens."
+msgstr ""
+
+#: lib/policy.py:1299
+msgid "The user is allowed to enable his own tokens."
+msgstr ""
+
+#: lib/policy.py:1305
+msgid "The user is allowed to delete his own tokens."
+msgstr ""
+
+#: lib/policy.py:1311
+msgid "The user is allowed to unassign his own tokens."
+msgstr ""
+
+#: lib/policy.py:1316
+msgid "The user is allowed to resyncronize his tokens."
+msgstr ""
+
+#: lib/policy.py:1321
+msgid "The user is allowed to revoke a token"
+msgstr ""
+
+#: lib/policy.py:1326
+msgid "The user is allowed to reset the failcounter of his tokens."
+msgstr ""
+
+#: lib/policy.py:1331
+msgid "The user is allowed to set the OTP PIN of his tokens."
+msgstr ""
+
+#: lib/policy.py:1336
+msgid "The user is allowed to set the OTP PIN during enrollment."
+msgstr ""
+
+#: lib/policy.py:1358
+msgid "Allow the user to view his own token history."
+msgstr ""
+
+#: lib/policy.py:1361
+msgid "The user will only see audit entries of the last 10d, 3m or 2y."
+msgstr ""
+
+#: lib/policy.py:1365
+msgid "The user is allowed to view his own user information."
+msgstr ""
+
+#: lib/policy.py:1369
+msgid ""
+"The user is allowed to update his own user information, like changing his"
+" password."
+msgstr ""
+
+#: lib/policy.py:1374
+msgid "The user is allowed to do a password reset in an editable UserIdResolver."
+msgstr ""
+
+#: lib/policy.py:1383
+msgid "Limit the number of allowed tokens in a realm."
+msgstr ""
+
+#: lib/policy.py:1387
+msgid "Limit the number of tokens a user may have assigned."
+msgstr ""
+
+#: lib/policy.py:1393
+msgid "Set a random OTP PIN with this length for a token."
+msgstr ""
+
+#: lib/policy.py:1398
+msgid "In case of a random OTP PIN use this python module to process the PIN."
+msgstr ""
+
+#: lib/policy.py:1403
+msgid ""
+"If the administrator sets the OTP PIN during enrollment or later, the "
+"user will have to change the PIN during first use."
+msgstr ""
+
+#: lib/policy.py:1410
+msgid ""
+"The user needs to change his PIN on a regular basis. To change the PIN "
+"every 180 days, enter '180d'."
+msgstr ""
+
+#: lib/policy.py:1417
+msgid ""
+"The OTP PIN can be hashed or encrypted. Hashing the PIN is the default "
+"behaviour."
+msgstr ""
+
+#: lib/policy.py:1422
+msgid ""
+"Set label for a new enrolled Google Authenticator. Possible tags are <u> "
+"(user), <r> (realm), <s> (serial)."
+msgstr ""
+
+#: lib/policy.py:1428
+msgid "This is the issuer label for new enrolled Google Authenticators."
+msgstr ""
+
+#: lib/policy.py:1435
+msgid ""
+"Users can assign a token just by using the unassigned token to "
+"authenticate."
+msgstr ""
+
+#: lib/policy.py:1441
+msgid "The length of the password in case of temporary token (lost token)."
+msgstr ""
+
+#: lib/policy.py:1445
+msgid ""
+"The contents of the temporary password, described by the characters C, c,"
+" n, s."
+msgstr ""
+
+#: lib/policy.py:1450
+msgid "The length of the validity for the temporary token (in days)."
+msgstr ""
+
+#: lib/policy.py:1458
+msgid ""
+"Either use the Token PIN , use the Userstore Password or use no fixed "
+"password component."
+msgstr ""
+
+#: lib/policy.py:1463
+msgid ""
+"This is a whitespace separated list of tokentypes, that can be used with "
+"challenge response."
+msgstr ""
+
+#: lib/policy.py:1469
+msgid ""
+"If set, the user in this realm will be authenticated against the "
+"userstore or against the given RADIUS config, if the user has no tokens "
+"assigned."
+msgstr ""
+
+#: lib/policy.py:1476
+msgid ""
+"If the user has no token, the authentication request for this user will "
+"always be true."
+msgstr ""
+
+#: lib/policy.py:1481
+msgid ""
+"If the user user does not exist, the authentication request for this non-"
+"existing user will always be true."
+msgstr ""
+
+#: lib/policy.py:1487
+msgid ""
+"Can be used to modify the parameters pass, user and realm in an "
+"authentication request. See the documentation for an example."
+msgstr ""
+
+#: lib/policy.py:1493
+msgid ""
+"If a user authenticates successfully reset the failcounter of all of his "
+"tokens."
+msgstr ""
+
+#: lib/policy.py:1501
+msgid ""
+"You can specify how many successful authentication requests a user is "
+"allowed to do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h "
+"being second, minute and hour."
+msgstr ""
+
+#: lib/policy.py:1508
+msgid ""
+"You can specify how many failed authentication requests a user is allowed"
+" to do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h being "
+"second, minute and hour."
+msgstr ""
+
+#: lib/policy.py:1515
+msgid ""
+"You can specify in which time frame the user needs to authenticate again "
+"with this token. If the user authenticates later, authentication will "
+"fail. Specify like 30h, 7d or 1y."
+msgstr ""
+
+#: lib/policy.py:1522
+msgid "The user will only be authenticated with this very tokentype."
+msgstr ""
+
+#: lib/policy.py:1526
+msgid ""
+"The user will only be authenticated if the serial number of the token "
+"matches this regexp."
+msgstr ""
+
+#: lib/policy.py:1531
+msgid ""
+"The Realm of the user is set to this very realm. This is important if the"
+" user is not contained in the default realm and can not pass his realm."
+msgstr ""
+
+#: lib/policy.py:1536
+msgid ""
+"In case of successful authentication additional no detail information "
+"will be returned."
+msgstr ""
+
+#: lib/policy.py:1540
+msgid ""
+"In case of failed authentication additional no detail information will be"
+" returned."
+msgstr ""
+
+#: lib/policy.py:1544
+msgid ""
+"In case of successful authentication user data will be added in the "
+"detail branch of the authentication response."
+msgstr ""
+
+#: lib/policy.py:1549
+msgid ""
+"The sending of an API Auth Key is required duringauthentication. This "
+"avoids rogue authenticate requests against the /validate/check interface."
+msgstr ""
+
+#: lib/policy.py:1558
+msgid ""
+"If set to \"privacyIDEA\" the users and admins need to authenticate "
+"against privacyIDEA when they log in to the Web UI. Defaults to "
+"\"userstore\""
+msgstr ""
+
+#: lib/policy.py:1567
+msgid ""
+"When searching in the user list, the search will only performed when "
+"pressing enter."
+msgstr ""
+
+#: lib/policy.py:1573
+msgid ""
+"The REMOTE_USER set by the webserver can be used to login to privacyIDEA "
+"or it will be ignored. Defaults to \"disable\"."
+msgstr ""
+
+#: lib/policy.py:1579
+msgid ""
+"Set the time in seconds after which the user will be logged out from the "
+"WebUI. Default: 120"
+msgstr ""
+
+#: lib/policy.py:1584
+msgid "Set how many tokens should be displayed in the token view on one page."
+msgstr ""
+
+#: lib/policy.py:1589
+msgid "Set how many users should be displayed in the user view on one page."
+msgstr ""
+
+#: lib/policy.py:1594
+msgid ""
+"Whether the user ID and the resolver should be displayed in the token "
+"list."
+msgstr ""
+
+#: lib/policy.py:1599
+msgid ""
+"The URL of a repository, where the policy templates can be found.  "
+"(Default https: //raw.githubusercontent.com/ privacyidea/policy-templates"
+" /master/templates/)"
+msgstr ""
+
+#: lib/policy.py:1606
+msgid "As long as a user has no token, he will only see a token wizard in the UI."
+msgstr ""
+
+#: lib/policy.py:1611
+msgid ""
+"The tokenwizard will be displayed in the token menu, even if the user "
+"already has a token."
+msgstr ""
+
+#: lib/policy.py:1616
+msgid "This is the default token type in the token enrollment dialog."
+msgstr ""
+
+#: lib/policy.py:1622
+msgid ""
+"If this is checked, a dropdown combobox with the realms is displayed in "
+"the login screen."
+msgstr ""
+
+#: lib/radiusserver.py:185
+msgid "The RADIUS secret is too long"
+msgstr ""
+
+#: lib/token.py:2146
+#, python-format
+msgid "Admin is allowed to initalize %s tokens."
+msgstr ""
+
+#: lib/token.py:2155
+#, python-format
+msgid "The user is allowed to enroll a %s token."
+msgstr ""
+
+#: lib/token.py:2186
+msgid "Set the maximum allowed PIN length of the {0!s} token."
+msgstr ""
+
+#: lib/token.py:2193
+msgid "Set the minimum required PIN length of the {0!s} token."
+msgstr ""
+
+#: lib/token.py:2199
+msgid ""
+"Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
+"(n)umeric, (s)pecial, (o)thers. [+/-]!"
+msgstr ""
+
+#: lib/eventhandler/base.py:102
+msgid "The user realm, for which this event should apply."
+msgstr ""
+
+#: lib/eventhandler/base.py:107
+msgid "The token realm, for which this event should apply."
+msgstr ""
+
+#: lib/eventhandler/base.py:113
+msgid "The type of the token."
+msgstr ""
+
+#: lib/eventhandler/base.py:118
+msgid "The logged in user is of the following type."
+msgstr ""
+
+#: lib/eventhandler/base.py:123
+msgid "The result.value within the response is True or False."
+msgstr ""
+
+#: lib/eventhandler/base.py:129
+msgid "Check if the max failcounter of the token is reached."
+msgstr ""
+
+#: lib/eventhandler/base.py:135
+msgid "The token has a user assigned."
+msgstr ""
+
+#: lib/eventhandler/base.py:140
+msgid ""
+"The token has a user assigned, but the user does not exist in the "
+"userstore anymore."
+msgstr ""
+
+#: lib/eventhandler/base.py:146
+msgid "Check if the token is within its validity period."
+msgstr ""
+
+#: lib/eventhandler/base.py:151
+msgid "Action is triggered, if the serial matches this regular expression."
+msgstr ""
+
+#: lib/eventhandler/base.py:156
+msgid "Action is triggered, if the user has this number of tokens assigned."
+msgstr ""
+
+#: lib/eventhandler/base.py:161
+msgid "Action is triggered, if the counter of the token equals this setting."
+msgstr ""
+
+#: lib/eventhandler/base.py:166
+msgid ""
+"Action is triggered, if the last authentication of the token is older "
+"than 7h, 10d or 1y."
+msgstr ""
+
+#: lib/eventhandler/base.py:171
+msgid ""
+"This can be '>100', '<99', or '=100', to trigger the action, if the "
+"tokeninfo field 'count_auth' is bigger than 100, less than 99 or exactly "
+"100."
+msgstr ""
+
+#: lib/eventhandler/base.py:177
+msgid ""
+"This can be '>100', '<99', or '=100', to trigger the action, if the "
+"tokeninfo field 'count_auth_success' is bigger than 100, less than 99 or "
+"exactly 100."
+msgstr ""
+
+#: lib/eventhandler/base.py:184
+msgid ""
+"This can be '>100', '<99', or '=100', to trigger the action, if the "
+"difference between the tokeninfo field 'count_auth' and "
+"'count_auth_success is bigger than 100, less than 99 or exactly 100."
+msgstr ""
+
+#: lib/eventhandler/scripthandler.py:77
+msgid "Add '--serial <serial number>' as script parameter."
+msgstr ""
+
+#: lib/eventhandler/scripthandler.py:82
+msgid "Add '--user <username>' as script parameter."
+msgstr ""
+
+#: lib/eventhandler/scripthandler.py:87
+msgid "Add '--realm <realm>' as script parameter."
+msgstr ""
+
+#: lib/eventhandler/scripthandler.py:92
+msgid ""
+"Add the username of the logged in user as script parameter like '--"
+"logged_in_user <username>'."
+msgstr ""
+
+#: lib/eventhandler/scripthandler.py:98
+msgid ""
+"Add the role (either admin or user) of the logged in user as script "
+"parameter like '--logged_in_role <role>'."
+msgstr ""
+
+#: lib/eventhandler/tokenhandler.py:101
+msgid "set a new realm of the token"
+msgstr ""
+
+#: lib/eventhandler/tokenhandler.py:105
+msgid ""
+"The new realm will be the only realm of the token. I.e. all other realms "
+"will be removed from this token. Otherwise the realm will be added to the"
+" token."
+msgstr ""
+
+#: lib/eventhandler/tokenhandler.py:120
+msgid "Token type to create"
+msgstr ""
+
+#: lib/eventhandler/tokenhandler.py:125
+msgid "Assign token to user in request or to tokenowner."
+msgstr ""
+
+#: lib/eventhandler/tokenhandler.py:130
+msgid "Set the realm of the newly created token."
+msgstr ""
+
+#: lib/eventhandler/tokenhandler.py:137
+msgid ""
+"Set the MOTP PIN of the MOTP token during enrollment. This is a required "
+"value for enrolling MOTP tokens."
+msgstr ""
+
+#: lib/eventhandler/tokenhandler.py:146
+msgid "The new description of the token."
+msgstr ""
+
+#: lib/eventhandler/tokenhandler.py:153
+msgid ""
+"The token will be valid starting at the given date. Can be a fixed date "
+"or an offset like +10m, +24h, +7d."
+msgstr ""
+
+#: lib/eventhandler/tokenhandler.py:160
+msgid ""
+"The token will be valid until the given date. Can be a fixed date or an "
+"offset like +10m, +24h, +7d."
+msgstr ""
+
+#: lib/eventhandler/tokenhandler.py:173
+msgid "Set the new count window of the token."
+msgstr ""
+
+#: lib/eventhandler/tokenhandler.py:182
+msgid "Set this tokeninfo key."
+msgstr ""
+
+#: lib/eventhandler/tokenhandler.py:187
+msgid "Set the above key the this value."
+msgstr ""
+
+#: lib/eventhandler/usernotification.py:101
+msgid "Send notification email via this email server."
+msgstr ""
+
+#: lib/eventhandler/usernotification.py:107
+msgid "The subject of the mail that is sent."
+msgstr ""
+
+#: lib/eventhandler/usernotification.py:115
+msgid "The Reply-To header in the sent email."
+msgstr ""
+
+#: lib/eventhandler/usernotification.py:120
+msgid "The body of the mail that is sent."
+msgstr ""
+
+#: lib/eventhandler/usernotification.py:125
+#: lib/eventhandler/usernotification.py:168
+msgid "Send notification to this user."
+msgstr ""
+
+#: lib/eventhandler/usernotification.py:148
+msgid "Any email address, to which the notification should be sent."
+msgstr ""
+
+#: lib/eventhandler/usernotification.py:157
+msgid "Send the user notification via a predefined SMS gateway."
+msgstr ""
+
+#: lib/eventhandler/usernotification.py:164
+msgid "The text of the SMS."
+msgstr ""
+
+#: lib/machines/ldap.py:313
+#, python-format
+msgid "Your LDAP config seems to be OK, %i machine objects found."
+msgstr ""
+
+#: lib/resolvers/LDAPIdResolver.py:757
+#, python-format
+msgid ""
+"Your LDAP config found %i user objects, but only %i with the specified "
+"uidtype"
+msgstr ""
+
+#: lib/resolvers/LDAPIdResolver.py:759
+#, python-format
+msgid "Your LDAP config seems to be OK, %i user objects found."
+msgstr ""
+
+#: lib/tokens/certificatetoken.py:151
+msgid "Certificate: Enroll an x509 Certificate Token."
+msgstr ""
+
+#: lib/tokens/daplugtoken.py:113
+msgid "event based OTP token using the HOTP algorithm"
+msgstr ""
+
+#: lib/tokens/emailtoken.py:134
+msgid "EMail Token"
+msgstr ""
+
+#: lib/tokens/emailtoken.py:136
+msgid "EMail: Send a One Time Password to the users email address."
+msgstr ""
+
+#: lib/tokens/emailtoken.py:144
+msgid ""
+"The text that will be send via EMail for an EMail token. Use <otp> and "
+"<serial> as parameters."
+msgstr ""
+
+#: lib/tokens/emailtoken.py:149
+msgid ""
+"The subject of the EMail for an EMail token. Use <otp> and <serial> as "
+"parameters."
+msgstr ""
+
+#: lib/tokens/emailtoken.py:154
+msgid ""
+"If set, a new EMail OTP will be sent after successful authentication with"
+" one EMail OTP."
+msgstr ""
+
+#: lib/tokens/foureyestoken.py:123
+msgid "4Eyes Token: Use tokens of two or more users to authenticate"
+msgstr ""
+
+#: lib/tokens/hotptoken.py:104
+msgid "Specify the hashlib to be used. Can be sha1 (1) or sha2-256 (2)."
+msgstr ""
+
+#: lib/tokens/hotptoken.py:106
+msgid "Specify the otplen to be used. Can be 6 or 8 digits."
+msgstr ""
+
+#: lib/tokens/hotptoken.py:109
+msgid "HOTP: Event based One Time Passwords."
+msgstr ""
+
+#: lib/tokens/hotptoken.py:117
+msgid "The Yubikey access code used to initialize Yubikeys."
+msgstr ""
+
+#: lib/tokens/hotptoken.py:130 lib/tokens/totptoken.py:131
+msgid "Force the key to be generated on the server."
+msgstr ""
+
+#: lib/tokens/hotptoken.py:186
+msgid "URL for google Authenticator"
+msgstr ""
+
+#: lib/tokens/hotptoken.py:199
+msgid "URL for OATH token"
+msgstr ""
+
+#: lib/tokens/motptoken.py:139
+msgid "URL for MOTP token"
+msgstr ""
+
+#: lib/tokens/papertoken.py:108
+msgid "The number of OTP values, which are printed on the paper."
+msgstr ""
+
+#: lib/tokens/passwordtoken.py:90
+msgid ""
+"A token with a fixed password. Can be combined  with the OTP PIN. Is used"
+" for the lost token scenario."
+msgstr ""
+
+#: lib/tokens/questionnairetoken.py:89
+msgid "Questionnaire: Enroll Questions for the user."
+msgstr ""
+
+#: lib/tokens/questionnairetoken.py:136
+#, python-format
+msgid "You need to provide at least %s answers."
+msgstr ""
+
+#: lib/tokens/radiustoken.py:97
+msgid "RADIUS: Forward authentication request to a RADIUS server."
+msgstr ""
+
+#: lib/tokens/registrationtoken.py:120
+msgid ""
+"Registration: A token that creates a registration code that can be used "
+"as a second factor once."
+msgstr ""
+
+#: lib/tokens/remotetoken.py:109
+msgid "Remote Token: Forward authentication request to another server."
+msgstr ""
+
+#: lib/tokens/smstoken.py:185
+msgid "SMS Token"
+msgstr ""
+
+#: lib/tokens/smstoken.py:187
+msgid "SMS: Send a One Time Password to the users mobile phone."
+msgstr ""
+
+#: lib/tokens/smstoken.py:196
+msgid ""
+"The text that will be send via SMS for an SMS token. Use <otp> and "
+"<serial> as parameters."
+msgstr ""
+
+#: lib/tokens/smstoken.py:201
+msgid ""
+"If set, a new SMS OTP will be sent after successful authentication with "
+"one SMS OTP."
+msgstr ""
+
+#: lib/tokens/spasstoken.py:87
+msgid "SPass: Simple Pass token. Static passwords."
+msgstr ""
+
+#: lib/tokens/sshkeytoken.py:84
+msgid "SSH Public Key: The public SSH key."
+msgstr ""
+
+#: lib/tokens/tiqrtoken.py:148
+msgid "TiQR: Enroll a TiQR token."
+msgstr ""
+
+#: lib/tokens/tiqrtoken.py:216
+msgid "URL for TiQR enrollment"
+msgstr ""
+
+#: lib/tokens/totptoken.py:111
+msgid "TOTP: Time based One Time Passwords."
+msgstr ""
+
+#: lib/tokens/u2ftoken.py:236
+msgid "This is a list of FQDN hostnames trusting the registered U2F tokens."
+msgstr ""
+
+#: lib/tokens/u2ftoken.py:300
+msgid "You need to define the appId in the token config!"
+msgstr ""
+
+#: lib/tokens/yubicotoken.py:94
+msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud."
+msgstr ""
+
+#: lib/tokens/yubikeytoken.py:159
+msgid "Yubikey AES mode: One Time Passwords with Yubikey."
+msgstr ""
+

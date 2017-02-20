@@ -37,7 +37,7 @@ from ..lib.log import log_with
 from ..lib.policy import ACTION
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from flask import g
-from gettext import gettext as _
+from flask_babel import gettext as _
 import logging
 from privacyidea.lib.smtpserver import (add_smtpserver, SMTPServer,
                                         get_smtpservers, delete_smtpserver)

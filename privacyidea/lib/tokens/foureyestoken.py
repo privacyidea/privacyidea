@@ -38,6 +38,7 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.token import check_realm_pass
 from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib import _
 
 log = logging.getLogger(__name__)
 optional = True
@@ -119,8 +120,8 @@ class FourEyesTokenClass(TokenClass):
         """
         res = {'type': '4eyes',
                'title': '4Eyes Token',
-               'description': ('4Eyes Token: Use tokens of two or more users '
-                               'to authenticate'),
+               'description': _('4Eyes Token: Use tokens of two or more users '
+                                'to authenticate'),
                'init': {},
                'config': {},
                'user':  [],

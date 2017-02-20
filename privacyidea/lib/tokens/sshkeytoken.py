@@ -27,7 +27,7 @@ The code is tested in tests/test_lib_tokens_ssh
 """
 
 import logging
-from gettext import gettext as _
+from privacyidea.lib import _
 log = logging.getLogger(__name__)
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.log import log_with
@@ -82,11 +82,6 @@ class SSHkeyTokenClass(TokenClass):
         res = {'type': 'sshkey',
                'title': 'SSHkey Token',
                'description': _('SSH Public Key: The public SSH key.'),
-               'init': {'page': {'html': 'sshkeytoken.mako',
-                                 'scope': 'enroll'},
-                        'title': {'html': 'sshkeytoken.mako',
-                                  'scope': 'enroll.title'},
-                        },
                'config': {},
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...

@@ -41,7 +41,7 @@ from privacyidea.lib.token import get_tokens
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.user import User, get_user_list
-from gettext import gettext as _
+from privacyidea.lib import _
 from flask import current_app
 import json
 import logging

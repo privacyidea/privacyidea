@@ -150,8 +150,6 @@ from configobj import ConfigObj
 
 from netaddr import IPAddress
 from netaddr import IPNetwork
-from gettext import gettext as _
-
 import logging
 from ..models import (Policy, Config, PRIVACYIDEA_TIMESTAMP, db,
                       save_config_timestamp)
@@ -165,6 +163,7 @@ from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import check_time_in_range, reload_db
 from privacyidea.lib.user import User
+from privacyidea.lib import _
 import datetime
 import re
 import ast

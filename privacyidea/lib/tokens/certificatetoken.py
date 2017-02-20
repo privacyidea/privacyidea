@@ -40,6 +40,7 @@ from privacyidea.lib.user import get_user_from_param
 from OpenSSL import crypto
 from privacyidea.lib.decorators import check_token_locked
 import base64
+from privacyidea.lib import _
 
 optional = True
 required = False
@@ -147,8 +148,8 @@ class CertificateTokenClass(TokenClass):
         """
         res = {'type': 'certificate',
                'title': 'Certificate Token',
-               'description': ('Certificate: Enroll an x509 Certificate '
-                               'Token.'),
+               'description': _('Certificate: Enroll an x509 Certificate '
+                                'Token.'),
                'init': {},
                'config': {},
                'user':  ['enroll'],

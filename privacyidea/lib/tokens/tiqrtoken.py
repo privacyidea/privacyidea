@@ -88,14 +88,14 @@ from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.tokens.ocra import OCRASuite, OCRA
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.models import cleanup_challenges
-import gettext
+from privacyidea.lib import _
 from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.decorators import check_token_locked
 
 log = logging.getLogger(__name__)
 optional = True
 required = False
-_ = gettext.gettext
+
 
 OCRA_DEFAULT_SUITE = "OCRA-1:HOTP-SHA1-6:QN10"
 
@@ -145,7 +145,7 @@ class TiqrTokenClass(TokenClass):
         """
         res = {'type': 'tiqr',
                'title': 'TiQR Token',
-               'description': ('TiQR: Enroll a TiQR token.'),
+               'description': _('TiQR: Enroll a TiQR token.'),
                'init': {},
                'config': {},
                'user':  ['enroll'],

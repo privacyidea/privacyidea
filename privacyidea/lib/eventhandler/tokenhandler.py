@@ -41,7 +41,7 @@ from privacyidea.lib.token import (set_realms, remove_token, enable_token,
                                    set_count_window, add_tokeninfo)
 from privacyidea.lib.utils import parse_date, is_true
 from privacyidea.lib.tokenclass import DATE_FORMAT, AUTH_DATE_FORMAT
-from gettext import gettext as _
+from privacyidea.lib import _
 import json
 import logging
 import datetime

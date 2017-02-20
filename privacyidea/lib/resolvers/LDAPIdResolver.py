@@ -68,7 +68,7 @@ from privacyidea.lib.crypto import urandom, geturandom
 from privacyidea.lib.utils import is_true
 import datetime
 
-from gettext import gettext as _
+from privacyidea.lib import _
 from privacyidea.lib.utils import to_utf8
 from privacyidea.lib.error import privacyIDEAError
 

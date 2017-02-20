@@ -37,7 +37,7 @@ This code is tested in tests/test_lib_tokens_spass
 """
 
 import logging
-from gettext import gettext as _
+from privacyidea.lib import _
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.decorators import check_token_locked
@@ -84,12 +84,7 @@ class SpassTokenClass(TokenClass):
         """
         res = {'type' :'spass',
                'title' :'Simple Pass Token',
-               'description': ('SPass: Simple Pass token. Static passwords.'),
-               'init': {'page': {'html': 'spasstoken.mako',
-                                 'scope': 'enroll'},
-                        'title': {'html': 'spasstoken.mako',
-                                  'scope': 'enroll.title'}
-               },
+               'description': _('SPass: Simple Pass token. Static passwords.'),
                'config': {},
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...

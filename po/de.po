@@ -75,7 +75,7 @@ msgstr "Neue Frage hinzufügen"
 msgid "Add user"
 msgstr "Benutzer hinzufügen"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:287
+#: privacyidea/static/components/config/views/config.policies.details.html:286
 msgid "Admin"
 msgstr "Administrator"
 
@@ -330,7 +330,7 @@ msgstr "PIN ändern"
 msgid "Check OTP only."
 msgstr "Nur den OTP-Wert prüfen."
 
-#: privacyidea/static/components/config/views/config.policies.details.html:279
+#: privacyidea/static/components/config/views/config.policies.details.html:278
 msgid ""
 "Check all possible resolvers of a user to match the resolver\n"
 "                in this policy."
@@ -383,7 +383,7 @@ msgstr ""
 "scannen  Sie den QR-Code, um den Token Ihrer TiQR-App hinzuzufügen."
 
 #: privacyidea/static/components/components/views/component.clienttype.html:11
-#: privacyidea/static/components/config/views/config.policies.details.html:303
+#: privacyidea/static/components/config/views/config.policies.details.html:302
 #: privacyidea/static/components/config/views/config.policies.list.html:12
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:49
 msgid "Client"
@@ -458,7 +458,7 @@ msgstr "Zählerfenster für neu ausgerollte Token"
 msgid "Create Event Handler Definition"
 msgstr "Erstelle eine Ereignisdefinition"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:334
+#: privacyidea/static/components/config/views/config.policies.details.html:333
 #: privacyidea/static/components/config/views/config.policies.details.html:85
 msgid "Create Policy"
 msgstr "Richtlinie erzeugen"
@@ -3281,7 +3281,7 @@ msgstr "STARTTLS mit einer LDAP-Verbindung auf Port 389 benutzen."
 msgid "Use TLS"
 msgstr "TLS verwenden"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:289
+#: privacyidea/static/components/config/views/config.policies.details.html:288
 #: privacyidea/static/components/config/views/config.policies.list.html:10
 #: privacyidea/static/components/config/views/config.radius.edit.html:79
 #: privacyidea/static/templates/menu.html:52
@@ -3312,11 +3312,11 @@ msgstr "Benutzer erfolgreich gelöscht."
 msgid "User updated successfully."
 msgstr "Benutzer erfolgreich aktualisiert."
 
-#: privacyidea/static/components/config/views/config.policies.details.html:249
+#: privacyidea/static/components/config/views/config.policies.details.html:248
 msgid "User-Realm"
 msgstr "Benutzerrealm"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:264
+#: privacyidea/static/components/config/views/config.policies.details.html:263
 msgid "User-Resolver"
 msgstr "Benutzer-Resolver"
 
@@ -3350,7 +3350,7 @@ msgstr "Benutzer"
 msgid "Valid subscription"
 msgstr "Gültige Subskription"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:315
+#: privacyidea/static/components/config/views/config.policies.details.html:314
 msgid "Valid time"
 msgstr "Gültigkeitszeitraum"
 

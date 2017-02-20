@@ -66,6 +66,7 @@ import base64
 import hmac
 from hashlib import sha1
 from privacyidea.lib.config import get_from_config
+from privacyidea.lib import _
 
 optional = True
 required = False
@@ -155,10 +156,8 @@ class YubikeyTokenClass(TokenClass):
         """
         res = {'type': 'yubikey',
                'title': 'Yubikey in AES mode',
-               'description': 'Yubikey AES mode: One Time Passwords with '
-                              'Yubikey.',
-               'init': {},
-               'config': {},
+               'description': _('Yubikey AES mode: One Time Passwords with '
+                                'Yubikey.'),
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],

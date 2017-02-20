@@ -28,7 +28,7 @@
 contains Errors and Exceptions
 """
 
-from gettext import gettext as _
+from privacyidea.lib import _
 import logging
 log = logging.getLogger(__name__)
 
