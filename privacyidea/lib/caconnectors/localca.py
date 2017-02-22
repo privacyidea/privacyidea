@@ -23,11 +23,11 @@
 __doc__ = """This module contains the connectors to Certificate Authorities.
 In this first implementation it is only a local certificate authority.
 
-This module is tested in tests/test_lib_caconnector.py in the class
-MachineTestCase.
+This module is tested in tests/test_lib_caconnector.py
 """
 from privacyidea.lib.error import CAError
 from privacyidea.lib.utils import int_to_hex
+from privacyidea.lib.caconnectors.baseca import BaseCAConnector
 from OpenSSL import crypto
 from subprocess import Popen, PIPE
 import shlex
@@ -46,9 +46,6 @@ CA_REVOKE = "openssl ca -keyfile {cakey} -cert {cacert} -config {config} "\
 CA_GENERATE_CRL = "openssl ca -keyfile {cakey} -cert {cacert} -config " \
                   "{config} -gencrl -out {CRL}"
 
-
-class BaseCAConnector(object):
-    pass
 
 CRL_REASONS = ["unspecified", "keyCompromise", "CACompromise",
                "affiliationChanged", "superseded", "cessationOfOperation"]
@@ -103,7 +100,6 @@ class LocalCAConnector(BaseCAConnector):
         :return: resolver description dict
         :rtype:  dict
         """
-        descriptor = {}
         typ = cls.connector_type
         config = {ATTR.CAKEY: 'string',
                   ATTR.CACERT: 'string',
@@ -281,7 +277,7 @@ class LocalCAConnector(BaseCAConnector):
         :return: Returns the serial number of the revoked certificate. Otherwise
             an error is raised.
         """
-        if type(certificate) == basestring:
+        if type(certificate) in [basestring, unicode, str]:
             cert_obj = crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
         elif type(certificate) == crypto.X509:
             cert_obj = certificate

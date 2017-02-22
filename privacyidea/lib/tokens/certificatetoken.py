@@ -302,3 +302,31 @@ class CertificateTokenClass(TokenClass):
         """
         storeHashed = False
         self.token.set_pin(pin, storeHashed)
+
+    def revoke(self):
+        """
+        This revokes the token. We need to determine the CA, which issues the
+        certificate, contact the connector and revoke the certificate
+
+        Some token types may revoke a token without locking it.
+        """
+        TokenClass.revoke(self)
+
+        # determine the CA and its connector.
+        ti = self.get_tokeninfo()
+        ca_specifier = ti.get("CA")
+        log.debug("Revoking certificate {0!s} on CA {1!s}.".format(
+            self.token.serial, ca_specifier))
+        certificate_pem = ti.get("certificate")
+
+        # call CAConnector.revoke_cert()
+        ca_obj = get_caconnector_object(ca_specifier)
+        revoked = ca_obj.revoke_cert(certificate_pem)
+        log.info("Certificate {0!s} revoked on CA {1!s}.".format(revoked,
+                                                                 ca_specifier))
+
+        # call CAConnector.create_crl()
+        crl = ca_obj.create_crl()
+        log.info("CRL {0!s} created.".format(crl))
+
+        return revoked
