@@ -6,7 +6,8 @@ from .base import MyTestCase
 from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
                                    check_time_in_range, parse_proxy,
                                    check_proxy, reduce_realms, is_true,
-                                   parse_date, compare_condition)
+                                   parse_date, compare_condition,
+                                   get_data_from_params)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 
@@ -233,3 +234,26 @@ class UtilsTestCase(MyTestCase):
         self.assertTrue(compare_condition("  <100", 10))
         self.assertFalse(compare_condition("<100", 1000))
         self.assertFalse(compare_condition("<100", 100))
+
+    def test_09_get_data_from_params(self):
+        config_description = {
+            "local":  {
+                'cakey': 'string',
+                'cacert': 'string',
+                'openssl.cnf': 'string',
+                'WorkingDir': 'string',
+                'CSRDir': 'sting',
+                'CertificateDir': 'string',
+                'CRLDir': 'string',
+                'CRL_Validity_Period': 'int',
+                'CRL_Overlap_Period': 'int'}}
+        params = {"type": "local", "cakey": "key", "cacert": "cert",
+                  "bindpw": "secret", "type.bindpw": "password"}
+        data, types, desc = get_data_from_params(params,
+                                                 ["caconnector", "type"],
+                                                 config_description,
+                                                 "CA connector",
+                                                 "local")
+        self.assertEqual(data.get("cakey"), "key")
+        self.assertEqual(data.get("bindpw"), "secret")
+        self.assertEqual(types.get("bindpw"), "password")

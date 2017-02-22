@@ -221,6 +221,10 @@ msgstr ""
 msgid "Bad U2F Request"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:26
+msgid "Base Config"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:37
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:77
 msgid "Base DN"
@@ -249,7 +253,7 @@ msgid ""
 "    or in assigned or unassigned tokens."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:40
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:41
 msgid "CA Certificate"
 msgstr ""
 
@@ -261,12 +265,16 @@ msgstr ""
 msgid "CA Connector name"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:53
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:54
 msgid "CA Key"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.html:61
 msgid "CAs"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:105
+msgid "CRL Configuration"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:143
@@ -288,11 +296,15 @@ msgstr ""
 msgid "Certificate (PEM)"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:90
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:91
 msgid "Certificate Directory"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:77
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:107
+msgid "Certificate Revocation List"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:78
 msgid ""
 "Certificate Signing\n"
 "                Request Directory"
@@ -1383,6 +1395,16 @@ msgstr ""
 msgid "Number of answers"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:147
+msgid ""
+"Number of days a new CRL should be generated before the\n"
+"                    current CRL expires."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:133
+msgid "Number of days the generated CRL should be valid."
+msgstr ""
+
 #: privacyidea/static/components/machine/views/machine.html:20
 msgid "Number of machines: {{ $scope.machinecount }}"
 msgstr ""
@@ -1466,7 +1488,7 @@ msgid ""
 "                    request"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:27
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:28
 msgid "OpenSSL config file"
 msgstr ""
 
@@ -1484,6 +1506,10 @@ msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.stats.html:76
 msgid "Overall token usage"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:138
+msgid "Overlap Period"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.system.html:133
@@ -1922,7 +1948,7 @@ msgstr ""
 msgid "Save realms"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:102
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:155
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:39
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:159
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:261
@@ -2724,6 +2750,12 @@ msgid ""
 "            password."
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:116
+msgid ""
+"This is the CRL file, which is written when a certificate\n"
+"                    is revoked or the CRL is created otherwise."
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.token.tiqr.html:67
 msgid ""
 "This is the OCRA suite used by the TiQR App.\n"
@@ -2732,6 +2764,10 @@ msgid ""
 "        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA"
 "\">RFC\n"
 "            6287</a>."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:99
+msgid "This is the directory were certificates get written to."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:33
@@ -3080,6 +3116,10 @@ msgstr ""
 msgid "Validity End"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:124
+msgid "Validity Period"
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.details.html:173
 #: privacyidea/static/components/token/views/token.enroll.html:59
 msgid "Validity Start"
@@ -3118,7 +3158,7 @@ msgstr ""
 msgid "Wordpress"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:65
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:66
 msgid "Working Directory"
 msgstr ""
 

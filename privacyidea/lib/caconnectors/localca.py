@@ -27,6 +27,7 @@ This module is tested in tests/test_lib_caconnector.py in the class
 MachineTestCase.
 """
 from privacyidea.lib.error import CAError
+from privacyidea.lib.utils import int_to_hex
 from OpenSSL import crypto
 from subprocess import Popen, PIPE
 import shlex
@@ -39,8 +40,31 @@ CA_SIGN_SPKAC = "openssl ca -keyfile {cakey} -cert {cacert} -config {config} "\
                 "-extensions {extension} -days {days} -spkac {spkacfile} -out " \
                 "{certificate} -batch"
 
+CA_REVOKE = "openssl ca -keyfile {cakey} -cert {cacert} -config {config} "\
+            "-revoke {certificate} -crl_reason {reason}"
+
+CA_GENERATE_CRL = "openssl ca -keyfile {cakey} -cert {cacert} -config " \
+                  "{config} -gencrl -out {CRL}"
+
+
 class BaseCAConnector(object):
     pass
+
+CRL_REASONS = ["unspecified", "keyCompromise", "CACompromise",
+               "affiliationChanged", "superseded", "cessationOfOperation"]
+
+
+class ATTR(object):
+    __doc__ = """This is the list Attributes of the Local CA."""
+    CAKEY = "cakey"
+    CACERT = "cacert"
+    OPENSSL_CNF = "openssl.cnf"
+    WORKING_DIR = "WorkingDir"
+    CSR_DIR = "CSRDir"
+    CERT_DIR = "CertificateDir"
+    CRL = "CRL"
+    CRL_VALIDITY_PERIOD = "CRL_Validity_Period"
+    CRL_OVERLAP_PERIOD = "CRL_Overlap_Period"
 
 
 class LocalCAConnector(BaseCAConnector):
@@ -81,26 +105,29 @@ class LocalCAConnector(BaseCAConnector):
         """
         descriptor = {}
         typ = cls.connector_type
-        config = {'cakey': 'string',
-                  'cacert': 'string',
-                  'openssl.cnf': 'string',
-                  'WorkingDir': 'string',
-                  'CSRDir': 'sting',
-                  'CertificateDir': 'string'}
+        config = {ATTR.CAKEY: 'string',
+                  ATTR.CACERT: 'string',
+                  ATTR.OPENSSL_CNF: 'string',
+                  ATTR.WORKING_DIR: 'string',
+                  ATTR.CSR_DIR: 'string',
+                  ATTR.CERT_DIR: 'string',
+                  ATTR.CRL: 'string',
+                  ATTR.CRL_OVERLAP_PERIOD: 'int',
+                  ATTR.CRL_VALIDITY_PERIOD: 'int'}
         return {typ: config}
 
     def _check_attributes(self):
-        if "cakey" not in self.config:
-            raise CAError("required argument 'cakey' is missing.")
-        if "cacert" not in self.config:
-            raise CAError("required argument 'cacert' is missing.")
+        for req_key in [ATTR.CAKEY, ATTR.CACERT]:
+            if req_key not in self.config:
+                raise CAError("required argument '{0!s}' is missing.".format(
+                    req_key))
 
     def set_config(self, config=None):
         self.config = config or {}
         self._check_attributes()
         # The CAKEY and the CACERT are passed as filenames
-        self.cakey = self.config.get("cakey")
-        self.cacert = self.config.get("cacert")
+        self.cakey = self.config.get(ATTR.CAKEY)
+        self.cacert = self.config.get(ATTR.CACERT)
 
     @staticmethod
     def _filename_from_x509(x509_name, file_extension="pem"):
@@ -142,16 +169,16 @@ class LocalCAConnector(BaseCAConnector):
         options = options or {}
         days = options.get("days", 365)
         spkac = options.get("spkac")
-        config = options.get("openssl.cnf",
+        config = options.get(ATTR.OPENSSL_CNF,
                              self.config.get(
-                                 "openssl.cnf", "/etc/ssl/openssl.cnf"))
+                                 ATTR.OPENSSL_CNF, "/etc/ssl/openssl.cnf"))
         extension = options.get("extension", "server")
-        workingdir = options.get("WorkingDir",
-                                 self.config.get("WorkingDir"))
-        csrdir = options.get("CSRDir",
-                             self.config.get("CSRDir", ""))
-        certificatedir = options.get("CertificateDir",
-                                     self.config.get("CertificateDir", ""))
+        workingdir = options.get(ATTR.WORKING_DIR,
+                                 self.config.get(ATTR.WORKING_DIR))
+        csrdir = options.get(ATTR.CSR_DIR,
+                             self.config.get(ATTR.CSR_DIR, ""))
+        certificatedir = options.get(ATTR.CERT_DIR,
+                                     self.config.get(ATTR.CERT_DIR, ""))
         if workingdir:
             if not csrdir.startswith("/"):
                 # No absolut path
@@ -241,11 +268,60 @@ class LocalCAConnector(BaseCAConnector):
         """
         pass
 
+    def revoke_cert(self, certificate, reason=CRL_REASONS[0]):
+        """
+        Revoke the specified certificate. At this point only the database
+        index.txt is updated.
+
+        :param certificate: The certificate to revoke
+        :type certificate: Either takes X509 object or a PEM encoded
+            certificate (string)
+        :param reason: One of the available reasons the certificate gets revoked
+        :type reason: basestring
+        :return: Returns the serial number of the revoked certificate. Otherwise
+            an error is raised.
+        """
+        if type(certificate) == basestring:
+            cert_obj = crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
+        elif type(certificate) == crypto.X509:
+            cert_obj = certificate
+        else:
+            raise CAError("Certificate in unsupported format")
+        serial = cert_obj.get_serial_number()
+        serial_hex = int_to_hex(serial)
+        filename = serial_hex + ".pem"
+
+        cmd = CA_REVOKE.format(cakey=self.cakey, cacert=self.cacert,
+                               config=self.config.get(ATTR.OPENSSL_CNF),
+                               certificate=filename,
+                               reason=reason)
+        workingdir = self.config.get(ATTR.WORKING_DIR)
+        args = shlex.split(cmd)
+        p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir)
+        result, error = p.communicate()
+        if p.returncode != 0:  # pragma: no cover
+            # Some error occurred
+            raise CAError(error)
+
+        return serial_hex
+
     def create_crl(self, publish=True):
         """
         Create and Publish the CRL.
 
         :param publish: Whether the CRL should be published at its CDPs
-        :return: None
+        :return: the CRL location
         """
-        pass
+        crl = self.config.get(ATTR.CRL, "crl.pem")
+        cmd = CA_GENERATE_CRL.format(cakey=self.cakey, cacert=self.cacert,
+                                     config=self.config.get(ATTR.OPENSSL_CNF),
+                                     CRL=crl)
+        workingdir = self.config.get(ATTR.WORKING_DIR)
+        args = shlex.split(cmd)
+        p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir)
+        result, error = p.communicate()
+        if p.returncode != 0:  # pragma: no cover
+            # Some error occurred
+            raise CAError(error)
+
+        return crl

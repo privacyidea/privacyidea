@@ -255,7 +255,7 @@ def get_data_from_params(params, exclude_params, config_description, module,
     It takes the parameters and checks, if the parameters correspond to the
     Class definition.
 
-    :param params: The inpurt parameters like passed from the REST API
+    :param params: The input parameters like passed from the REST API
     :type params: dict
     :param exclude_params: The parameters to be excluded like "resolver",
         "type" or "caconnector"
@@ -615,3 +615,16 @@ def compare_condition(condition, value):
         compare_value = int(condition[1:])
         return value < compare_value
 
+
+def int_to_hex(serial):
+    """
+    Converts a string with an integer to a hexstring.
+    This is used to convert integer serial numbers of certificates to the hex
+    representation
+
+    :param serial: an integer string
+    :return: a hex formatted string
+    """
+    serial_hex = hex(int(serial)).upper()
+    serial_hex = serial_hex.split("X")[1]
+    return serial_hex

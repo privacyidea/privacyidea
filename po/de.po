@@ -226,6 +226,10 @@ msgstr "Automatische Resynchronisation während der Authentifizierung"
 msgid "Bad U2F Request"
 msgstr "Fehlerhafte U2F-Anfrage"
 
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:26
+msgid "Base Config"
+msgstr "Basiskonfiguration"
+
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:37
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:77
 msgid "Base DN"
@@ -259,7 +263,7 @@ msgstr ""
 "innerhalb bestimmter Tokentypen oder zugewiesener oder noch nicht "
 "zugewiesener Token suchen."
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:40
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:41
 msgid "CA Certificate"
 msgstr "Zertifikat der Zeritfizierungsstelle (CA)"
 
@@ -271,13 +275,17 @@ msgstr "CA-Konnektor"
 msgid "CA Connector name"
 msgstr "CA-Konnektor-Name"
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:53
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:54
 msgid "CA Key"
 msgstr "Schlüssel der Zertifizierungsstelle"
 
 #: privacyidea/static/components/config/views/config.html:61
 msgid "CAs"
 msgstr "Zertifizierungsstellen"
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:105
+msgid "CRL Configuration"
+msgstr "CRL Konfiguration"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:143
 msgid "Cache Timeout (seconds)"
@@ -298,11 +306,15 @@ msgstr "Abbrechen"
 msgid "Certificate (PEM)"
 msgstr "Zertifikat (PEM)"
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:90
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:91
 msgid "Certificate Directory"
 msgstr "Zertifikats-Verzeichnis"
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:77
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:107
+msgid "Certificate Revocation List"
+msgstr "Zertifikatssperrliste (CRL)"
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:78
 msgid ""
 "Certificate Signing\n"
 "                Request Directory"
@@ -1450,6 +1462,18 @@ msgstr "Referrals werden nicht (anonym) verfolgt."
 msgid "Number of answers"
 msgstr "Anzahl der Antworten"
 
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:147
+msgid ""
+"Number of days a new CRL should be generated before the\n"
+"                    current CRL expires."
+msgstr ""
+"Eine neue CRL wird erzeugt, diese Anzahl an Tagen, bevor die aktuelle CRL "
+"abläuft."
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:133
+msgid "Number of days the generated CRL should be valid."
+msgstr "Die Anzahl der Tage, wie lange eine erzeugte CRL gültig sein soll."
+
 #: privacyidea/static/components/machine/views/machine.html:20
 msgid "Number of machines: {{ $scope.machinecount }}"
 msgstr "Anzahl der Maschinen: {{ $sope.machinecount }}"
@@ -1536,7 +1560,7 @@ msgid ""
 "                    request"
 msgstr "Ein neues Tab öffnen, um die Zertifikatsanforderung zu erstellen."
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:27
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:28
 msgid "OpenSSL config file"
 msgstr "Konfigurationsdatei für OpenSSL"
 
@@ -1555,6 +1579,10 @@ msgstr "Unbekanter Fehler"
 #: privacyidea/static/components/audit/views/audit.stats.html:76
 msgid "Overall token usage"
 msgstr "Allgemeine Tokennutzung"
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:138
+msgid "Overlap Period"
+msgstr "Überlappungsdauer"
 
 #: privacyidea/static/components/config/views/config.system.html:133
 msgid "Override Authorization Clients"
@@ -2000,7 +2028,7 @@ msgstr "Tokeninfo speichern"
 msgid "Save realms"
 msgstr "Realms speichern"
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:102
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:155
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:39
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:159
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:261
@@ -2988,6 +3016,14 @@ msgstr ""
 "<em>Passwort</em> verschlüsselt. Bitte geben Sie in diesem Fall den Pre "
 "Shared Key im Hexformat oder das Passwort an."
 
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:116
+msgid ""
+"This is the CRL file, which is written when a certificate\n"
+"                    is revoked or the CRL is created otherwise."
+msgstr ""
+"Die CRL-Datei, die geschrieben wird, wenn ein Zertifikat widerrufen wird "
+"oder anderweitig die CRL erzeugt wird."
+
 #: privacyidea/static/components/config/views/config.token.tiqr.html:67
 msgid ""
 "This is the OCRA suite used by the TiQR App.\n"
@@ -3002,6 +3038,10 @@ msgstr ""
 "Suites zu erfahren,lesen Sie  <a href=\"http://tools.ietf.org/html/"
 "rfc6287#page-8\" target=\"OCRA\">RFC\n"
 "            6287</a>."
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:99
+msgid "This is the directory were certificates get written to."
+msgstr "Das Verzeichnis, in das generierte Zertifikate geschrieben werden."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:33
 msgid "This is the display name of your service in the TiQR app."
@@ -3367,6 +3407,10 @@ msgstr "Validate-Requests pro Benutzer"
 msgid "Validity End"
 msgstr "Ende Gültigkeit"
 
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:124
+msgid "Validity Period"
+msgstr "Gültigkeitsdauer"
+
 #: privacyidea/static/components/token/views/token.details.html:173
 #: privacyidea/static/components/token/views/token.enroll.html:59
 msgid "Validity Start"
@@ -3405,7 +3449,7 @@ msgstr "Die meistgenutzen administrativen Requests."
 msgid "Wordpress"
 msgstr "Wordpress"
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:65
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:66
 msgid "Working Directory"
 msgstr "Arbeitsverzeichnis"
 
@@ -3818,6 +3862,12 @@ msgid "{{ auditdata.count }} entries found."
 msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."
 
 #~ msgid ""
+#~ "How long before the CRL expires should a new CRL be\n"
+#~ "                    generated."
+#~ msgstr ""
+#~ "Anzahl der Tage, wenn eine neue CRL wird erzeugt, bevor die alte abläuft."
+
+#~ msgid ""
 #~ "Reset\n"
 #~ "                                    Password"
 #~ msgstr "Passwort zurücksetzen"
@@ -3836,9 +3886,6 @@ msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."
 
 #~ msgid "Deprecated configuration"
 #~ msgstr "Veraltete Konfiguration"
-
-#~ msgid "New configuration"
-#~ msgstr "Neue Konfiguration"
 
 #~ msgid "RADIUS Server"
 #~ msgstr "RADIUS-Server"

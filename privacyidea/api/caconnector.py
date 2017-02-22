@@ -48,7 +48,7 @@ caconnector_blueprint = Blueprint('caconnector_blueprint', __name__)
 #@prepolicy(check_base_action, request, ACTION.CACONNECTORREAD)
 def get_caconnector_api(name=None):
     """
-    returns a json list of the available applications
+    returns a json list of the available CA connectors
     """
     g.audit_object.log({"detail": "{0!s}".format(name)})
     role = g.logged_in_user.get("role")

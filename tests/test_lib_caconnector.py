@@ -5,6 +5,8 @@ lib.caconnectors.localca.py
 from .base import MyTestCase
 import os
 from privacyidea.lib.caconnectors.localca import LocalCAConnector
+from OpenSSL import crypto
+from privacyidea.lib.utils import int_to_hex
 from privacyidea.lib.error import CAError
 from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_class,
@@ -165,14 +167,17 @@ class LocalCATestCase(MyTestCase):
         cacon = LocalCAConnector("localCA", {"cacert": "...",
                                              "cakey": "..."})
         # set the parameters:
-        cacon.set_config({"cakey": CAKEY, "cacert": CACERT,
-                          "openssl.cnf": OPENSSLCNF})
-
         cwd = os.getcwd()
+        cacon.set_config({"cakey": CAKEY, "cacert": CACERT,
+                          "openssl.cnf": OPENSSLCNF,
+                          "WorkingDir": cwd + "/" + WORKINGDIR})
+
         cert = cacon.sign_request(REQUEST,
                                   {"CSRDir": "",
                                    "CertificateDir": "",
                                    "WorkingDir": cwd + "/" + WORKINGDIR})
+        serial = cert.get_serial_number()
+
         self.assertEqual("{0!r}".format(cert.get_issuer()),
                          "<X509Name object "
                          "'/C=DE/ST=Hessen/O=privacyidea/CN=CA001'>")
@@ -180,6 +185,29 @@ class LocalCATestCase(MyTestCase):
                          "<X509Name object "
                          "'/C=DE/ST=Hessen/O=privacyidea/CN=requester"
                          ".localdomain'>")
+
+        # Revoke certificate
+        r = cacon.revoke_cert(cert)
+        serial_hex = int_to_hex(serial)
+        self.assertEqual(r, serial_hex)
+
+        # Create the CRL
+        r = cacon.create_crl()
+        self.assertEqual(r, "crl.pem")
+        # Check if the serial number is contained in the CRL!
+        filename = cwd + "/" + WORKINGDIR + "/crl.pem"
+        f = open(filename)
+        buff = f.read()
+        f.close()
+        crl = crypto.load_crl(crypto.FILETYPE_PEM, buff)
+        revoked_certs = crl.get_revoked()
+        found_revoked_cert = False
+        for revoked_cert in revoked_certs:
+            s = revoked_cert.get_serial()
+            if s == serial_hex:
+                found_revoked_cert = True
+                break
+        self.assertTrue(found_revoked_cert)
 
 
     def test_03_sign_user_cert(self):
