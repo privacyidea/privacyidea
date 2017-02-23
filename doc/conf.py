@@ -10,6 +10,18 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
+import sys
+from mock import Mock as MagicMock
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+            return MagicMock()
+
+#MOCK_MODULES = ['pandas', 'pyOpenSSL']
+MOCK_MODULES = []
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+
 
 # Monkey-patch functools.wraps
 # http://stackoverflow.com/questions/28366818/preserve-default-arguments-of-wrapped-decorated-python-function-in-sphinx-docume
