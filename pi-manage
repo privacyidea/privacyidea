@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+# 2017-02-23 Cornelius Kölbel <cornelisu.koelbel@netknights.it>
+#            Add CA sub commands
 # 2017-01-27 Diogenes S. Jesus
 #            Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add creation of more detailed policy
@@ -52,6 +54,8 @@ from privacyidea.lib.auth import (create_db_admin, list_db_admin,
                                   delete_db_admin)
 from privacyidea.lib.policy import (delete_policy, enable_policy,
                                     PolicyClass, set_policy)
+from privacyidea.lib.caconnector import (get_caconnector_list,
+                                         get_caconnector_object)
 from privacyidea.app import create_app
 from privacyidea.lib.auth import ROLE
 from flask_script import Manager
@@ -78,6 +82,7 @@ realm_manager = Manager(usage='Create new realms')
 resolver_manager = Manager(usage='Create new resolver')
 policy_manager = Manager(usage='Manage policies')
 api_manager = Manager(usage="Manage API keys")
+ca_manager = Manager(usage="Manage Certificate Authorities")
 manager.add_command('db', MigrateCommand)
 manager.add_command('admin', admin_manager)
 manager.add_command('backup', backup_manager)
@@ -85,6 +90,28 @@ manager.add_command('realm', realm_manager)
 manager.add_command('resolver', resolver_manager)
 manager.add_command('policy', policy_manager)
 manager.add_command('api', api_manager)
+manager.add_command('ca', ca_manager)
+
+
+@ca_manager.command
+def list(verbose=False):
+    l = get_caconnector_list()
+    for ca in l:
+        print("{ca!s} (type {typ!s})".format(ca=ca.get("connectorname"),
+                                             typ=ca.get("type")))
+        if verbose:
+            for k, v in ca.get("data").iteritems():
+                print("\t{key!s:20}: {value!s}".format(key=k, value=v))
+
+
+@ca_manager.command
+def create_crl(ca, force=False):
+    ca_obj = get_caconnector_object(ca)
+    r = ca_obj.create_crl(check_validity=not force)
+    if not r:
+        print("The CRL was not created.")
+    else:
+        print("The CRL {name!s} was created.".format(name=r))
 
 
 @admin_manager.command

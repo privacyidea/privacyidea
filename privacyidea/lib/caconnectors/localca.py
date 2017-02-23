@@ -127,7 +127,7 @@ class LocalCAConnector(BaseCAConnector):
         # The CAKEY and the CACERT are passed as filenames
         self.cakey = self.config.get(ATTR.CAKEY)
         self.cacert = self.config.get(ATTR.CACERT)
-        self.overlap = self.config.get(ATTR.CRL_OVERLAP_PERIOD, 2)
+        self.overlap = int(self.config.get(ATTR.CRL_OVERLAP_PERIOD, 2))
 
     @staticmethod
     def _filename_from_x509(x509_name, file_extension="pem"):
