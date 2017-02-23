@@ -30,6 +30,7 @@ from privacyidea.lib.utils import int_to_hex
 from privacyidea.lib.caconnectors.baseca import BaseCAConnector
 from OpenSSL import crypto
 from subprocess import Popen, PIPE
+import yaml
 import datetime
 import shlex
 import re
@@ -54,6 +55,31 @@ CRL_REASONS = ["unspecified", "keyCompromise", "CACompromise",
                "affiliationChanged", "superseded", "cessationOfOperation"]
 
 
+def _get_crl_next_update(filename):
+    """
+    Read the CRL file and return the next update as datetime
+    :param filename:
+    :return:
+    """
+    dt = None
+    f = open(filename)
+    crl_buff = f.read()
+    f.close()
+    crl_obj = crypto.load_crl(crypto.FILETYPE_PEM, crl_buff)
+    # Get "Next Update" of CRL
+    # Unfortunately pyOpenSSL does not support this. so we dump the
+    # CRL and parse the text :-/
+    # We do not want to add dependency to pyasn1
+    crl_text = crypto.dump_crl(crypto.FILETYPE_TEXT, crl_obj)
+    for line in crl_text.split("\n"):
+        if "Next Update: " in line:
+            key, value = line.split(":", 1)
+            date = value.strip()
+            dt = datetime.datetime.strptime(date, "%b %d %X %Y %Z")
+            break
+    return dt
+
+
 class ATTR(object):
     __doc__ = """This is the list Attributes of the Local CA."""
     CAKEY = "cakey"
@@ -65,6 +91,7 @@ class ATTR(object):
     CRL = "CRL"
     CRL_VALIDITY_PERIOD = "CRL_Validity_Period"
     CRL_OVERLAP_PERIOD = "CRL_Overlap_Period"
+    TEMPLATE_FILE = "templates"
 
 
 class LocalCAConnector(BaseCAConnector):
@@ -91,6 +118,12 @@ class LocalCAConnector(BaseCAConnector):
         :return:
         """
         self.name = name
+        self.cakey = None
+        self.cacert = None
+        self.overlap = 1
+        self.template_file = None
+        self.workingdir = None
+        self.templates = {}
         if config:
             self.set_config(config)
 
@@ -112,7 +145,8 @@ class LocalCAConnector(BaseCAConnector):
                   ATTR.CERT_DIR: 'string',
                   ATTR.CRL: 'string',
                   ATTR.CRL_OVERLAP_PERIOD: 'int',
-                  ATTR.CRL_VALIDITY_PERIOD: 'int'}
+                  ATTR.CRL_VALIDITY_PERIOD: 'int',
+                  ATTR.TEMPLATE_FILE: 'string'}
         return {typ: config}
 
     def _check_attributes(self):
@@ -128,6 +162,12 @@ class LocalCAConnector(BaseCAConnector):
         self.cakey = self.config.get(ATTR.CAKEY)
         self.cacert = self.config.get(ATTR.CACERT)
         self.overlap = int(self.config.get(ATTR.CRL_OVERLAP_PERIOD, 2))
+        self.template_file = self.config.get(ATTR.TEMPLATE_FILE)
+        self.workingdir = self.config.get(ATTR.WORKING_DIR)
+        if self.template_file and self.workingdir:
+            if not self.template_file.startswith("/"):
+                self.template_file = self.workingdir + "/" + self.template_file
+        self.templates = self.get_templates()
 
     @staticmethod
     def _filename_from_x509(x509_name, file_extension="pem"):
@@ -257,10 +297,17 @@ class LocalCAConnector(BaseCAConnector):
 
     def get_templates(self):
         """
-        Return a list of available certificate templates
-        :return:
+        Return the dict of available templates, which are read from the
+        template YAML file.
+
+        :return: dict
         """
-        pass
+        content = {}
+        if self.template_file:
+            with open(self.template_file, 'r') as content_file:
+                file_content = content_file.read()
+                content = yaml.load(file_content)
+        return content
 
     def publish_cert(self):
         """
@@ -350,30 +397,5 @@ class LocalCAConnector(BaseCAConnector):
             ret = crl
 
         return ret
-
-
-def _get_crl_next_update(filename):
-    """
-    Read the CRL file and return the next update as datetime
-    :param filename:
-    :return:
-    """
-    dt = None
-    f = open(filename)
-    crl_buff = f.read()
-    f.close()
-    crl_obj = crypto.load_crl(crypto.FILETYPE_PEM, crl_buff)
-    # Get "Next Update" of CRL
-    # Unfortunately pyOpenSSL does not support this. so we dump the
-    # CRL and parse the text :-/
-    # We do not want to add dependency to pyasn1
-    crl_text = crypto.dump_crl(crypto.FILETYPE_TEXT, crl_obj)
-    for line in crl_text.split("\n"):
-        if "Next Update: " in line:
-            key, value = line.split(":", 1)
-            date = value.strip()
-            dt = datetime.datetime.strptime(date, "%b %d %X %Y %Z")
-            break
-    return dt
 
 

@@ -246,7 +246,7 @@ msgid ""
 "    or in assigned or unassigned tokens."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:41
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:29
 msgid "CA Certificate"
 msgstr ""
 
@@ -258,7 +258,7 @@ msgstr ""
 msgid "CA Connector name"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:54
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:42
 msgid "CA Key"
 msgstr ""
 
@@ -266,7 +266,7 @@ msgstr ""
 msgid "CAs"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:105
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:119
 msgid "CRL Configuration"
 msgstr ""
 
@@ -285,30 +285,38 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.certificate.html:38
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:43
 msgid "Certificate (PEM)"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:91
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:105
 msgid "Certificate Directory"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:107
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:121
 msgid "Certificate Revocation List"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:78
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:92
 msgid ""
 "Certificate Signing\n"
 "                Request Directory"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.certificate.html:49
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:54
 msgid "Certificate Signing Request (PEM)"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:33
+msgid "Certificate Template"
 msgstr ""
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:191
 msgid "Certificate: Enroll an x509 Certificate Token."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:67
+msgid "Certificates Templates file"
 msgstr ""
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:187
@@ -948,7 +956,7 @@ msgstr ""
 msgid "Generate Request"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.certificate.html:64
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:69
 msgid "Generate the Key Pair on the Server"
 msgstr ""
 
@@ -1307,7 +1315,7 @@ msgstr ""
 msgid "Maximum Success Auth Count"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.certificate.html:85
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:90
 msgid "Microsoft Internet Explorer is not supported."
 msgstr ""
 
@@ -1383,13 +1391,13 @@ msgstr ""
 msgid "Number of answers"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:147
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:161
 msgid ""
 "Number of days a new CRL should be generated before the\n"
 "                    current CRL expires."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:133
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:147
 msgid "Number of days the generated CRL should be valid."
 msgstr ""
 
@@ -1470,13 +1478,13 @@ msgstr ""
 msgid "Online Documentation"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.certificate.html:89
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:94
 msgid ""
 "Open new tab to create certificate\n"
 "                    request"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:28
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:54
 msgid "OpenSSL config file"
 msgstr ""
 
@@ -1496,7 +1504,7 @@ msgstr ""
 msgid "Overall token usage"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:138
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:152
 msgid "Overlap Period"
 msgstr ""
 
@@ -1903,6 +1911,10 @@ msgstr ""
 msgid "Save"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:169
+msgid "Save CA"
+msgstr ""
+
 #: privacyidea/static/components/machine/views/machine.details.html:104
 #: privacyidea/static/components/token/views/token.details.html:522
 msgid "Save Options"
@@ -1936,7 +1948,6 @@ msgstr ""
 msgid "Save realms"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:155
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:39
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:159
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:261
@@ -2317,7 +2328,7 @@ msgid ""
 "    server."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.certificate.html:78
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:83
 msgid ""
 "The RSA keys will be generated in the browser.\n"
 "                You will be taken to a new browser window, where you can\n"
@@ -2578,7 +2589,7 @@ msgid ""
 "            displayed to you to be scanned."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.certificate.html:67
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:72
 msgid ""
 "The server will create the private RSA key and store it in\n"
 "                    the\n"
@@ -2719,7 +2730,7 @@ msgid ""
 "            password."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:116
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:130
 msgid ""
 "This is the CRL file, which is written when a certificate\n"
 "                    is revoked or the CRL is created otherwise."
@@ -2734,7 +2745,7 @@ msgid ""
 "            6287</a>."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:99
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:113
 msgid "This is the directory were certificates get written to."
 msgstr ""
 
@@ -3083,7 +3094,7 @@ msgstr ""
 msgid "Validity End"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:124
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:138
 msgid "Validity Period"
 msgstr ""
 
@@ -3125,7 +3136,7 @@ msgstr ""
 msgid "Wordpress"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.caconnectors.local.html:66
+#: privacyidea/static/components/config/views/config.caconnectors.local.html:80
 msgid "Working Directory"
 msgstr ""
 

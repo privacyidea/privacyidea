@@ -254,3 +254,15 @@ class LocalCATestCase(MyTestCase):
                          "<X509Name object '/CN=Steve Test"
                          "/emailAddress=steve@openssl.org'>")
 
+    def test_05_templates(self):
+        cwd = os.getcwd()
+        cacon = LocalCAConnector("localCA",
+                                 {"cakey": CAKEY,
+                                  "cacert": CACERT,
+                                  "openssl.cnf": OPENSSLCNF,
+                                  "WorkingDir": cwd + "/" + WORKINGDIR,
+                                  ATTR.TEMPLATE_FILE: "templates.yaml"})
+        templates = cacon.get_templates()
+        self.assertTrue("user" in templates)
+        self.assertTrue("webserver" in templates)
+        self.assertTrue("template3" in templates)

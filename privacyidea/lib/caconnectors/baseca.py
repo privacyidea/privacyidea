@@ -92,3 +92,14 @@ class BaseCAConnector(object):
         :return:
         """
         pass
+
+    def get_templates(self):
+        """
+        Return a dictionary of available certificate templates.
+        The names of the certificate templates are the keys of the dict.
+
+        Depending on the user we could return different templates.
+
+        :return:
+        """
+        return {}
