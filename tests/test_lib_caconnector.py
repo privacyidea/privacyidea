@@ -4,7 +4,7 @@ lib.caconnectors.localca.py
 """
 from .base import MyTestCase
 import os
-from privacyidea.lib.caconnectors.localca import LocalCAConnector
+from privacyidea.lib.caconnectors.localca import LocalCAConnector, ATTR
 from OpenSSL import crypto
 from privacyidea.lib.utils import int_to_hex
 from privacyidea.lib.error import CAError
@@ -209,6 +209,18 @@ class LocalCATestCase(MyTestCase):
                 break
         self.assertTrue(found_revoked_cert)
 
+        # Create the CRL and check the overlap period. But no need to create
+        # a new CRL.
+        r = cacon.create_crl(check_validity=True)
+        self.assertEqual(r, None)
+
+        # Now we overlap at any cost!
+        cacon.set_config({"cakey": CAKEY, "cacert": CACERT,
+                          "openssl.cnf": OPENSSLCNF,
+                          "WorkingDir": cwd + "/" + WORKINGDIR,
+                          ATTR.CRL_OVERLAP_PERIOD: 1000})
+        r = cacon.create_crl(check_validity=True)
+        self.assertEqual(r, "crl.pem")
 
     def test_03_sign_user_cert(self):
         cwd = os.getcwd()

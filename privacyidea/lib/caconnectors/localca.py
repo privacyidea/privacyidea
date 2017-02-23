@@ -30,8 +30,11 @@ from privacyidea.lib.utils import int_to_hex
 from privacyidea.lib.caconnectors.baseca import BaseCAConnector
 from OpenSSL import crypto
 from subprocess import Popen, PIPE
+import datetime
 import shlex
 import re
+import logging
+log = logging.getLogger(__name__)
 
 CA_SIGN = "openssl ca -keyfile {cakey} -cert {cacert} -config {config} " \
           "-extensions {extension} -days {days} -in {csrfile} -out {" \
@@ -124,6 +127,7 @@ class LocalCAConnector(BaseCAConnector):
         # The CAKEY and the CACERT are passed as filenames
         self.cakey = self.config.get(ATTR.CAKEY)
         self.cacert = self.config.get(ATTR.CACERT)
+        self.overlap = self.config.get(ATTR.CRL_OVERLAP_PERIOD, 2)
 
     @staticmethod
     def _filename_from_x509(x509_name, file_extension="pem"):
@@ -301,23 +305,75 @@ class LocalCAConnector(BaseCAConnector):
 
         return serial_hex
 
-    def create_crl(self, publish=True):
+    def create_crl(self, publish=True, check_validity=False):
         """
         Create and Publish the CRL.
 
         :param publish: Whether the CRL should be published at its CDPs
-        :return: the CRL location
+        :param check_validity: Onle create a new CRL, if the old one is about to
+            expire. Therfore the overlap period and the remaining runtime of
+            the CRL is checked. If the remaining runtime is smaller than the
+            overlap period, we recreate the CRL.
+        :return: the CRL location or None, if no CRL was created
         """
         crl = self.config.get(ATTR.CRL, "crl.pem")
-        cmd = CA_GENERATE_CRL.format(cakey=self.cakey, cacert=self.cacert,
-                                     config=self.config.get(ATTR.OPENSSL_CNF),
-                                     CRL=crl)
         workingdir = self.config.get(ATTR.WORKING_DIR)
-        args = shlex.split(cmd)
-        p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir)
-        result, error = p.communicate()
-        if p.returncode != 0:  # pragma: no cover
-            # Some error occurred
-            raise CAError(error)
+        create_new_crl = True
+        ret = None
+        # Check if we need to create a new CRL
+        if check_validity:
+            if crl.startswith("/"):
+                full_path_crl = crl
+            else:
+                full_path_crl = workingdir + "/" + crl
+            next_update = _get_crl_next_update(full_path_crl)
+            if datetime.datetime.now() + \
+                    datetime.timedelta(days=self.overlap) > next_update:
+                log.info("We checked the overlap period and we need to create "
+                         "the new CRL.")
+            else:
+                log.info("No need to create a new CRL, yet. Next Update: "
+                         "{0!s}, overlap: {1!s}".format(next_update,
+                                                        self.overlap))
+                create_new_crl = False
 
-        return crl
+        if create_new_crl:
+            cmd = CA_GENERATE_CRL.format(cakey=self.cakey, cacert=self.cacert,
+                                         config=self.config.get(ATTR.OPENSSL_CNF),
+                                         CRL=crl)
+            args = shlex.split(cmd)
+            p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir)
+            result, error = p.communicate()
+            if p.returncode != 0:  # pragma: no cover
+                # Some error occurred
+                raise CAError(error)
+            ret = crl
+
+        return ret
+
+
+def _get_crl_next_update(filename):
+    """
+    Read the CRL file and return the next update as datetime
+    :param filename:
+    :return:
+    """
+    dt = None
+    f = open(filename)
+    crl_buff = f.read()
+    f.close()
+    crl_obj = crypto.load_crl(crypto.FILETYPE_PEM, crl_buff)
+    # Get "Next Update" of CRL
+    # Unfortunately pyOpenSSL does not support this. so we dump the
+    # CRL and parse the text :-/
+    # We do not want to add dependency to pyasn1
+    crl_text = crypto.dump_crl(crypto.FILETYPE_TEXT, crl_obj)
+    for line in crl_text.split("\n"):
+        if "Next Update: " in line:
+            key, value = line.split(":", 1)
+            date = value.strip()
+            dt = datetime.datetime.strptime(date, "%b %d %X %Y %Z")
+            break
+    return dt
+
+
