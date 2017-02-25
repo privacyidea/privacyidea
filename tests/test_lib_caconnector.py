@@ -254,3 +254,26 @@ class LocalCATestCase(MyTestCase):
                          "<X509Name object '/CN=Steve Test"
                          "/emailAddress=steve@openssl.org'>")
 
+    def test_05_templates(self):
+        cwd = os.getcwd()
+        cacon = LocalCAConnector("localCA",
+                                 {"cakey": CAKEY,
+                                  "cacert": CACERT,
+                                  "openssl.cnf": OPENSSLCNF,
+                                  "WorkingDir": cwd + "/" + WORKINGDIR,
+                                  ATTR.TEMPLATE_FILE: "templates.yaml"})
+        templates = cacon.get_templates()
+        self.assertTrue("user" in templates)
+        self.assertTrue("webserver" in templates)
+        self.assertTrue("template3" in templates)
+        cert = cacon.sign_request(SPKAC, options={"spkac": 1,
+                                                  "template": "webserver"})
+        expires = cert.get_notAfter()
+        import datetime
+        dt = datetime.datetime.strptime(expires, "%Y%m%d%H%M%SZ")
+        ddiff = dt - datetime.datetime.now()
+        # The certificate is signed for 750 days
+        self.assertTrue(ddiff.days > 740, ddiff.days)
+        self.assertTrue(ddiff.days < 760, ddiff.days)
+
+

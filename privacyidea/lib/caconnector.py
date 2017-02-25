@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-02-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add certificate templates to the list of CA connector
 #  2015-04-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Initial writup
 #             This code is inspired by the resolver.py which was forked from
@@ -114,7 +116,7 @@ def save_caconnector(params):
     return connector_id
 
 
-@log_with(log)
+#@log_with(log)
 #@cache.memoize(10)
 def get_caconnector_list(filter_caconnector_type=None,
                          filter_caconnector_name=None,
@@ -154,6 +156,18 @@ def get_caconnector_list(filter_caconnector_type=None,
                     value = decryptPassword(value)
                 data[conf.Key] = value
         c["data"] = data
+
+        # Also add templates
+        c_obj_class = get_caconnector_class(conn.catype)
+        if c_obj_class is None:
+            log.error(
+                "unknown CA connector class {0!s} ".format(conn.name))
+        else:
+            # create the resolver instance and load the config
+            c_obj = c_obj_class(conn.name, c.get("data"))
+            if c_obj:
+                c["templates"] = templates = c_obj.get_templates()
+
         Connectors.append(c)
 
     return Connectors
@@ -193,7 +207,7 @@ def get_caconnector_config(connector_name):
     return conn[0].get("data", {})
 
 
-@log_with(log)
+#@log_with(log)
 #@cache.memoize(10)
 def get_caconnector_config_description(caconnector_type):
     """
@@ -253,26 +267,30 @@ def get_caconnector_type(connector_name):
     return c_type
 
 
-@log_with(log)
+#@log_with(log)
 #@cache.memoize(10)
 def get_caconnector_object(connector_name):
     """
     create a CA Connector object from a connector_name
 
     :param connector_name: the name of the CA connector
+    :param connector_type: optional connector_type
     :return: instance of the CA Connector with the loaded config
     """
     c_obj = None
-    c_type = get_caconnector_type(connector_name)
-    c_obj_class = get_caconnector_class(c_type)
 
-    if c_obj_class is None:
-        log.error("unknown CA connector class {0!s} ".format(connector_name))
-    else:
-        # create the resolver instance and load the config
-        c_obj = c_obj_class(connector_name)
-        if c_obj is not None:
-            connector_config = get_caconnector_config(connector_name)
-            c_obj.set_config(connector_config)
+    connectors = CAConnector.query.filter(func.lower(CAConnector.name) ==
+                                    connector_name.lower()).all()
+    for conn in connectors:
+        c_obj_class = get_caconnector_class(conn.catype)
+
+        if c_obj_class is None:
+            log.error("unknown CA connector class {0!s} ".format(connector_name))
+        else:
+            # create the resolver instance and load the config
+            c_obj = c_obj_class(connector_name)
+            if c_obj is not None:
+                connector_config = get_caconnector_config(connector_name)
+                c_obj.set_config(connector_config)
 
     return c_obj

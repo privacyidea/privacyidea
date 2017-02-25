@@ -30,6 +30,13 @@
                 ng-model="form.ca"
                 name="ca"
                 ng-options="connectorname for connectorname in CAConnectors"></select>
+        <label for="template" translate>Certificate Template</label>
+        <select class="form-control"
+                ng-model="form.template"
+                name="template"
+                ng-options="template as template for (template, value) in
+                            CATemplates[form.ca].templates"></select>
+        {{ CATemplates[form.ca].templates[form.template] }}
     </div>
 
 

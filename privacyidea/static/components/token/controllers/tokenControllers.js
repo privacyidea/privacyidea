@@ -281,6 +281,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     });
 
     $scope.CAConnectors = [];
+    $scope.CATemplates = {};
     $scope.radioCSR = 'csrgenerate';
 
 
@@ -374,6 +375,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             angular.forEach(CAConnectors, function(value, key){
                 $scope.CAConnectors.push(value.connectorname);
                 $scope.form.ca = value.connectorname;
+                $scope.CATemplates[value.connectorname] = value;
             });
             console.log($scope.CAConnectors);
         });

@@ -96,3 +96,34 @@ is necessary. If you want to force the creation of the CRL, you can use the
 switch *-f*.
 
 For more information on pi-manage see :ref:`pimanage`.
+
+Templates
+.........
+
+.. index:: Certificate Templates
+
+The *local CA* supports a kind of certificate templates. These "templates"
+are predefined combinations of *extensions* and *validity days*, as they are
+passed to openssl via the parameters ``-extensions`` and ``-days``.
+
+This way the administrator can define certificate templates with certain
+X.509 extensions like keyUsage, extendedKeyUsage, CDPs or AIAs and
+certificate validity periods.
+
+The extensions are defined in YAML file and the location of this file is
+added to the CA connector definition.
+
+The file can look like this, defining three templates "user", "webserver" and
+"template3":
+
+    user:
+        days: 365
+        extensions: "user"
+    webserver:
+        days: 750
+        extensions: "server"
+    template3:
+        days: 10
+        extensions: "user"
+
+
