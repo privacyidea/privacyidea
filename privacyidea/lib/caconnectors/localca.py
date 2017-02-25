@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-02-25 Cornelius Kölbeb <cornelius.koelbel@netknights.it>
+#             Add template functionality
 #  2015-04-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Initial writup
 #
@@ -213,6 +215,7 @@ class LocalCAConnector(BaseCAConnector):
                              self.config.get(
                                  ATTR.OPENSSL_CNF, "/etc/ssl/openssl.cnf"))
         extension = options.get("extension", "server")
+        template_name = options.get("template")
         workingdir = options.get(ATTR.WORKING_DIR,
                                  self.config.get(ATTR.WORKING_DIR))
         csrdir = options.get(ATTR.CSR_DIR,
@@ -225,6 +228,11 @@ class LocalCAConnector(BaseCAConnector):
                 csrdir = workingdir + "/" + csrdir
             if not certificatedir.startswith("/"):
                 certificatedir = workingdir + "/" + certificatedir
+
+        if template_name:
+            t_data = self.templates.get(template_name)
+            extension = t_data.get("extensions", extension)
+            days = t_data.get("days", days)
 
         # Determine filename from the CN of the request
         if spkac:
@@ -244,6 +252,7 @@ class LocalCAConnector(BaseCAConnector):
         with open(csrdir + "/" + csr_filename, "w") as f:
             f.write(csr)
 
+        # TODO: use the template name to set the days and the extention!
         if spkac:
             cmd = CA_SIGN_SPKAC.format(cakey=self.cakey, cacert=self.cacert,
                                        days=days, config=config,

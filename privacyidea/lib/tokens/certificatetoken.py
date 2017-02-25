@@ -178,6 +178,7 @@ class CertificateTokenClass(TokenClass):
         spkac = getParam(param, "spkac", optional)
         certificate = getParam(param, "certificate", optional)
         generate = getParam(param, "genkey", optional)
+        template_name = getParam(param, "template", optional)
         if request or generate:
             # If we do not upload a user certificate, then we need a CA do
             # sign the uploaded request or generated certificate.
@@ -188,7 +189,8 @@ class CertificateTokenClass(TokenClass):
             # During the initialization process, we need to create the
             # certificate
             x509object = cacon.sign_request(request,
-                                            options={"spkac": spkac})
+                                            options={"spkac": spkac,
+                                                     "template": template_name})
             certificate = crypto.dump_certificate(crypto.FILETYPE_PEM,
                                                   x509object)
         elif generate:
@@ -216,7 +218,7 @@ class CertificateTokenClass(TokenClass):
             req.set_pubkey(key)
             req.sign(key, "sha256")
             x509object = cacon.sign_request(crypto.dump_certificate_request(
-                crypto.FILETYPE_PEM, req))
+                crypto.FILETYPE_PEM, req), options={"template": template_name})
             certificate = crypto.dump_certificate(crypto.FILETYPE_PEM,
                                                   x509object)
             # Save the private key to the encrypted key field of the token
