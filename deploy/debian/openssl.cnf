@@ -78,7 +78,7 @@ x509_extensions	= usr_cert		# The extentions to add to the cert
 
 default_days	= 3650			# how long to certify for
 default_crl_days= 35			# how long before next CRL
-default_md	= sha1			# which md to use.
+default_md	= sha256		# which md to use.
 preserve	= no			# keep passed DN ordering
 
 # A few difference way of specifying how similar the request should look
