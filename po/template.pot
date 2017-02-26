@@ -146,10 +146,6 @@ msgid ""
 "            32 characters long hex string."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.details.html:370
-msgid "Assgined User"
-msgstr ""
-
 #: privacyidea/static/components/token/views/token.assign.html:12
 #: privacyidea/static/components/token/views/token.html:44
 #: privacyidea/static/components/user/views/user.details.html:134
@@ -168,6 +164,10 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.html:28
 msgid "Assign token to user"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.details.html:370
+msgid "Assigned User"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.getserial.html:33
@@ -285,7 +285,7 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.certificate.html:43
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:45
 msgid "Certificate (PEM)"
 msgstr ""
 
@@ -303,7 +303,7 @@ msgid ""
 "                Request Directory"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.certificate.html:54
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:56
 msgid "Certificate Signing Request (PEM)"
 msgstr ""
 
@@ -956,7 +956,7 @@ msgstr ""
 msgid "Generate Request"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.certificate.html:69
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:71
 msgid "Generate the Key Pair on the Server"
 msgstr ""
 
@@ -1315,7 +1315,7 @@ msgstr ""
 msgid "Maximum Success Auth Count"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.certificate.html:90
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:92
 msgid "Microsoft Internet Explorer is not supported."
 msgstr ""
 
@@ -1478,7 +1478,7 @@ msgstr ""
 msgid "Online Documentation"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.certificate.html:94
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:96
 msgid ""
 "Open new tab to create certificate\n"
 "                    request"
@@ -2328,7 +2328,7 @@ msgid ""
 "    server."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.certificate.html:83
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:85
 msgid ""
 "The RSA keys will be generated in the browser.\n"
 "                You will be taken to a new browser window, where you can\n"
@@ -2589,7 +2589,7 @@ msgid ""
 "            displayed to you to be scanned."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.certificate.html:72
+#: privacyidea/static/components/token/views/token.enroll.certificate.html:74
 msgid ""
 "The server will create the private RSA key and store it in\n"
 "                    the\n"
@@ -3051,6 +3051,7 @@ msgstr ""
 msgid "UserId"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.smtp.edit.html:63
 #: privacyidea/static/components/directives/views/directive.assignuser.html:14
 #: privacyidea/static/components/login/views/login.html:49
 #: privacyidea/static/components/login/views/login.html:53
@@ -3061,10 +3062,6 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:374
 #: privacyidea/static/components/user/views/user.password.html:6
 msgid "Username"
-msgstr ""
-
-#: privacyidea/static/components/config/views/config.smtp.edit.html:63
-msgid "Usernane"
 msgstr ""
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:28
