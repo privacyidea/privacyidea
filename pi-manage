@@ -55,7 +55,9 @@ from privacyidea.lib.auth import (create_db_admin, list_db_admin,
 from privacyidea.lib.policy import (delete_policy, enable_policy,
                                     PolicyClass, set_policy)
 from privacyidea.lib.caconnector import (get_caconnector_list,
-                                         get_caconnector_object)
+                                         get_caconnector_class,
+                                         get_caconnector_object,
+                                         save_caconnector)
 from privacyidea.app import create_app
 from privacyidea.lib.auth import ROLE
 from flask_script import Manager
@@ -112,6 +114,31 @@ def create_crl(ca, force=False):
         print("The CRL was not created.")
     else:
         print("The CRL {name!s} was created.".format(name=r))
+
+
+@ca_manager.option('name', help='The name of the new CA')
+@ca_manager.option('-t', '--type', help='The type of the new CA. The default '
+                                        'is "local"')
+def create(name, type):
+    """
+    Create a new CA connector. In case of the "localca" also the directory
+    structure, the openssl.cnf and the key pair is created.
+    """
+    ca = get_caconnector_object(name)
+    if ca:
+        print("A CA connector with the name '{0!s}' already exists.".format(
+            name))
+        sys.exit(1)
+    if not type:
+        type = "local"
+    print("Creating CA connector of type {0!s}.".format(type))
+    ca_class = get_caconnector_class(type)
+    ca_params = ca_class.create_ca(name)
+    r = save_caconnector(ca_params)
+    if r:
+        print("Saved CA Connector with ID {0!s}.".format(r))
+    else:
+        print("Error saving CA connector.")
 
 
 @admin_manager.command

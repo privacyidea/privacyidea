@@ -37,6 +37,7 @@ import datetime
 import shlex
 import re
 import logging
+import os
 log = logging.getLogger(__name__)
 
 CA_SIGN = "openssl ca -keyfile {cakey} -cert {cacert} -config {config} " \
@@ -55,6 +56,131 @@ CA_GENERATE_CRL = "openssl ca -keyfile {cakey} -cert {cacert} -config " \
 
 CRL_REASONS = ["unspecified", "keyCompromise", "CACompromise",
                "affiliationChanged", "superseded", "cessationOfOperation"]
+
+OPENSSL_TEMPLATE = """
+HOME			= .
+RANDFILE		= $ENV::HOME/.rnd
+oid_section		= new_oids
+
+[ new_oids ]
+# You may add individual OIDs here
+
+[ ca ]
+default_ca	= CA_default		# The default ca section
+
+[ CA_default ]
+dir		    =  .        		# Where everything is kept
+certs		= $dir		    	# Where the issued certs are kept
+crl_dir		= $dir		    	# Where the issued crl are kept
+database	= $dir/index.txt	# database index file.
+new_certs_dir	= $dir			# default place for new certs.
+
+certificate	= $dir/cacert.pem	# The CA certificate
+serial		= $dir/serial 		# The current serial number
+crl		    = $dir/crl.pem 		# The current CRL
+private_key	= $dir/cakey.pem	# The private key
+RANDFILE	= $dir/.rand		# private random number file
+
+x509_extensions	= usr_cert		# The extentions to add to the cert
+
+default_days	= {ca_days} 	# how long to certify for
+default_crl_days= {crl_days}	# how long before next CRL
+default_md	= sha256		    # which md to use.
+preserve	= no			    # keep passed DN ordering
+
+policy		= policy_anything
+
+[ policy_anything ]
+countryName		= optional
+stateOrProvinceName	= optional
+localityName		= optional
+organizationName	= optional
+organizationalUnitName	= optional
+commonName		= supplied
+emailAddress		= optional
+
+[ req ]
+default_bits		= 2048
+default_keyfile 	= privkey.pem
+distinguished_name	= req_distinguished_name
+attributes		= req_attributes
+x509_extensions	= v3_ca	# The extentions to add to the self signed cert
+string_mask = nombstr
+
+
+[ req_distinguished_name ]
+countryName			= Country Name (2 letter code)
+countryName_min	    = 2
+countryName_max		= 2
+
+stateOrProvinceName		= State or Province Name (full name)
+localityName			= Locality Name (eg, city)
+0.organizationName		= Organization Name (eg, company)
+organizationalUnitName	= Organizational Unit Name (eg, section)
+commonName			    = Common Name (eg, your name or your server\'s hostname)
+commonName_max			= 64
+
+emailAddress			= Email Address
+emailAddress_max		= 40
+
+[ req_attributes ]
+challengePassword		= A challenge password
+challengePassword_min		= 4
+challengePassword_max		= 20
+unstructuredName		= An optional company name
+
+[ usr_cert ]
+basicConstraints=CA:FALSE
+nsComment			= "OpenSSL Generated Certificate"
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer:always
+crlDistributionPoints = @crl_dp_policy
+#authorityInfoAccess = caIssuers;URI:http://www.example.com/yourCA.crt
+
+[ server ]
+keyUsage = digitalSignature, keyEncipherment
+basicConstraints=CA:FALSE
+nsCertType			= server
+nsComment			= "OpenSSL Generated Server Certificate"
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer:always
+extendedKeyUsage=serverAuth
+
+[ etoken ]
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+basicConstraints=CA:FALSE
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer:always
+cirlDistributionPoints = @crl_dp_policy
+#authorityInfoAccess = caIssuers;URI:http://www.example.com/yourCA.crt
+
+[ ocsp ]
+keyUsage = digitalSignature, keyEncipherment
+extendedKeyUsage = OCSPSigning
+basicConstraints=CA:FALSE
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer:always
+crlDistributionPoints = @crl_dp_policy
+#authorityInfoAccess = caIssuers;URI:http://www.example.com/yourCA.crt
+
+[ user ]
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+basicConstraints = CA:FALSE
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer:always
+crlDistributionPoints = @crl_dp_policy
+authorityInfoAccess = caIssuers;URI:http://www.example.com/yourCA.crt
+
+[ v3_ca ]
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid:always,issuer:always
+basicConstraints = CA:true
+
+[ crl_ext ]
+authorityKeyIdentifier=keyid:always,issuer:always
+
+[ crl_dp_policy ]
+"""
 
 
 def _get_crl_next_update(filename):
@@ -80,6 +206,32 @@ def _get_crl_next_update(filename):
             dt = datetime.datetime.strptime(date, "%b %d %X %Y %Z")
             break
     return dt
+
+
+class CONFIG(object):
+
+    def __init__(self, name):
+        self.directory = "./ca"
+        self.keysize = 4096
+        self.validity_ca = 1800
+        self.validity_cert = 365
+        self.crl_days = 30
+        self.crl_overlap = 5
+        self.dn = "/CN={0!s}".format(name)
+
+    def __str__(self):
+        s = """
+        Directory  : {ca.directory}
+        CA DN      : {ca.dn}
+        CA Keysize : {ca.keysize}
+        CA Validity: {ca.validity_ca}
+
+        Validity of issued certificates: {ca.validity_cert}
+
+        CRL validity: {ca.crl_days}
+        CRL overlap : {ca.crl_overlap}
+        """.format(ca=self)
+        return s
 
 
 class ATTR(object):
@@ -407,4 +559,165 @@ class LocalCAConnector(BaseCAConnector):
 
         return ret
 
+    @classmethod
+    def create_ca(cls, name):
+        """
+        Create a new CA connector.
+        The configurations is requested at the command line in questions and
+        answers. The CA connector definition is also written to the database.
+
+        We are asking for the following:
+
+        * Directory (should exist or the current user should be able to
+          create it and write into it)
+        * Keysize 2048/4096/8192
+        * Validity of CA certificate
+        * DN of CA Certificate
+        * Validity of enrolled certificates
+        * CRL: * default days
+               * overlap period
+
+        Fixed values:
+        * Hash: SHA256
+        * Name of Key, and CACert
+        * Name of CRL
+        * We create two templates for users and for servers.
+
+        :param name: The name of the CA connector.
+        :return:
+        """
+        config = CONFIG(name)
+
+        while 1:
+            directory = raw_input("In which directory do you want to create "
+                                  "the CA [{0!s}]: ".format(config.directory))
+            config.directory = directory or config.directory
+            if not config.directory.startswith("/"):
+                config.directory = os.path.abspath(config.directory)
+
+            keysize = raw_input(
+                "What should be the keysize of the CA (2048/4096/8192) [{"
+                "0!s}]: ".format(config.keysize))
+            config.keysize = keysize or config.keysize
+
+            validity_ca = raw_input("How many days should the CA be valid ["
+                                    "{0!s}]: ".format(config.validity_ca))
+            config.validity_ca = validity_ca or config.validity_ca
+
+            dn = raw_input("What is the DN of the CA [{0!s}]: ".format(
+                config.dn))
+            config.dn = dn or config.dn
+            validity_cert = raw_input(
+                "What should be the validity period of enrolled certificates in days [{0!s}]: ".format(
+                config.validity_cert))
+            config.validity_cert = validity_cert or config.validity_cert
+            crl_days = raw_input("How many days should the CRL be valid [{"
+                                 "0!s}]: ".format(config.crl_days))
+            config.crl_days = crl_days or config.crl_days
+            crl_overlap = raw_input(
+                "What should be the overlap period of the CRL in days [{"
+                "0!s}]: ".format(config.crl_overlap))
+            config.crl_overlap = crl_overlap or config.crl_overlap
+
+            print("="*60)
+            print("{0!s}".format(config))
+            answer = raw_input("Is this configuration correct? [y/n] ")
+            if answer.lower() == "y":
+                break
+
+        # Create the CA on the file system
+        try:
+            os.mkdir(config.directory)
+        except OSError as exx:
+            if exx.errno != 17:
+                # If it is another error than the the file exist, we reraise
+                # the error.
+                raise exx
+
+        _generate_openssl_cnf(config)
+        _init_ca(config)
+
+        # return the configuration to the upper level, so that the CA
+        # connector can be created in the database
+        caparms = {u"caconnector": name,
+                   u"type": u"local",
+                   ATTR.WORKING_DIR: config.directory,
+                   ATTR.CACERT: u"{0!s}/cacert.pem".format(config.directory),
+                   ATTR.CAKEY: u"{0!s}/cakey.pem".format(config.directory),
+                   ATTR.CERT_DIR: config.directory,
+                   ATTR.CRL: u"{0!s}/crl.pem".format(config.directory),
+                   ATTR.CSR_DIR: config.directory,
+                   ATTR.CRL_VALIDITY_PERIOD: config.crl_days,
+                   ATTR.CRL_OVERLAP_PERIOD: config.crl_overlap,
+                   ATTR.OPENSSL_CNF: u"{0!s}/openssl.cnf".format(config.directory)
+                   }
+        return caparms
+
+
+def _generate_openssl_cnf(config):
+    """
+    Generate the openssl config file from the config object.
+    :param config: Config object
+    :return:
+    """
+    conf_file = OPENSSL_TEMPLATE.format(crl_days=config.crl_days,
+                                        ca_days=config.validity_ca)
+
+    f = open("{0!s}/openssl.cnf".format(config.directory), "w")
+    f.write(conf_file)
+    f.close()
+
+
+def _init_ca(config):
+    """
+    Generate the CA certificate
+    :param config:
+    :return:
+    """
+    # Write the database
+    f = open("{0!s}/index.txt".format(config.directory), "w")
+    f.write("")
+    f.close()
+
+    # Write the serial file
+    f = open("{0!s}/serial".format(config.directory), "w")
+    f.write("1000")
+    f.close()
+
+    # create the privacy key and set accesss rights
+    f = open("{0!s}/cakey.pem".format(config.directory), "w")
+    f.write("")
+    f.close()
+    import stat
+    os.chmod("{0!s}/cakey.pem".format(config.directory),
+             stat.S_IRUSR | stat.S_IWUSR)
+    command = "openssl genrsa -out {0!s}/cakey.pem {1!s}".format(
+        config.directory, config.keysize)
+    print("Running command...")
+    print(command)
+    args = shlex.split(command)
+    p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory)
+    result, error = p.communicate()
+    if p.returncode != 0:  # pragma: no cover
+        # Some error occurred
+        raise CAError(error)
+
+    # create the CA certificate
+    command = """openssl req -config openssl.cnf -key cakey.pem \
+      -new -x509 -days {ca_days!s} -sha256 -extensions v3_ca \
+      -out cacert.pem -subj {ca_dn!s}""".format(ca_days=config.validity_ca,
+                                                   ca_dn=config.dn)
+    print("Running command...")
+    print(command)
+    args = shlex.split(command)
+    p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory)
+    result, error = p.communicate()
+    if p.returncode != 0:  # pragma: no cover
+        # Some error occurred
+        raise CAError(error)
+
+    print("!"*60)
+    print("Please check the ownership of the private key")
+    print("{0!s}/cakey.pem".format(config.directory))
+    print("!" * 60)
 
