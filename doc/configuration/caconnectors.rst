@@ -47,8 +47,8 @@ Starting with privacyIDEA version 2.12 an example *openssl.cnf* is provided in
    description is ment to be as an example. When setting up a productive CA, you
    should ask a PKI consultant for assistance.
 
-Setup
-.....
+Manual Setup
+............
 
 1. Modify the parameters in the file */etc/privacyidea/CA/openssl.cnf* according
    to your needs.
@@ -66,6 +66,20 @@ Setup
 
 3. Now set up a local CA connector within privacyIDEA with the directory
    */etc/privacyidea/CA* and the files accordingly.
+
+Easy Setup
+..........
+
+Starting with privacyIDEA version 2.18 it gets easier to setup local CAs.
+
+You can use the :ref:`pi-manage` tool to setup a new CA like this:
+
+   pi-manage ca create myCA
+
+This will ask you for all necessary parameters for the CA and then automatically
+
+1. Create the files for this new CA and
+2. Create the CA connector in privacyIDEA.
 
 Management
 ..........

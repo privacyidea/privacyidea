@@ -607,10 +607,12 @@ class LocalCAConnector(BaseCAConnector):
             dn = raw_input("What is the DN of the CA [{0!s}]: ".format(
                 config.dn))
             config.dn = dn or config.dn
-            validity_cert = raw_input(
-                "What should be the validity period of enrolled certificates in days [{0!s}]: ".format(
-                config.validity_cert))
-            config.validity_cert = validity_cert or config.validity_cert
+            # At the moment we do not use this. This would be written to the
+            # templates file.
+            #validity_cert = raw_input(
+            #    "What should be the validity period of enrolled certificates in days [{0!s}]: ".format(
+            #    config.validity_cert))
+            #config.validity_cert = validity_cert or config.validity_cert
             crl_days = raw_input("How many days should the CRL be valid [{"
                                  "0!s}]: ".format(config.crl_days))
             config.crl_days = crl_days or config.crl_days
