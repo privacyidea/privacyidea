@@ -5,6 +5,9 @@ Version 2.18, 2017-xx-xx
   * The WebUI will lock the screen after a timeout instead of  
     logging out the user. This allows to easily continue
     configuration work. (#621)
+  * Improve the creation and handling of local CAs (#630, #632, #633)
+    Allow certificate template for certificates with different runtime
+    and x509v3 extensions.
 
   Enhancements
   Enhancements in Policies:
