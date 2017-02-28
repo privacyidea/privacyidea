@@ -24,7 +24,9 @@
         <div class="alert alert-danger"
               ng-show="subscription.timedelta >= 0" translate>
             Subscription expired</div>
-        <translate>Level</translate>: {{ subscription.level }}<br>
+        <translate translate-context="subscription"
+                   translate-comment="level of subscription">
+            Level</translate>: {{ subscription.level }}<br>
         <translate>Users</translate>: {{ subscription.num_users }}<br>
         <translate>Tokens</translate>: {{ subscription.num_tokens }}<br>
         <translate>Clients</translate>: {{ subscription.num_clients }}<br>
