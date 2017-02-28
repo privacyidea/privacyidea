@@ -5,7 +5,7 @@ import glob
 import sys
 
 #VERSION="2.1dev4"
-VERSION="2.18dev2"
+VERSION="2.18dev3"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -66,7 +66,8 @@ install_requires = ["Flask>=0.10.1",
                     "ecdsa>=0.13",
                     "lxml>=3.3",
                     "python-gnupg>=0.3.8",
-                    "defusedxml>=0.4.1"
+                    "defusedxml>=0.4.1",
+                    "flask-babel>=0.9"
                     ]
 
 # For python 2.6 we need additional dependency importlib

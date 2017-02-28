@@ -16,6 +16,9 @@ Version 2.17, 2016-12-29
   * Policy Handling to also check for secondary resolvers of
     a user. This way a user can authenticate with his primary 
     resolver but policy will also work for secondary resolvers (#543)
+  * Improve the creation and handling of local CAs (#630, #632, #633)
+    Allow certificate template for certificates with different runtime
+    and x509v3 extensions.
 
   Enhancements
   * The event handler conditions also determine a serial number
