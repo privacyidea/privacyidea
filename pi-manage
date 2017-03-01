@@ -474,9 +474,9 @@ def profile(length=30, profile_dir=None):
     app.run()
 
 
-@manager.option('--highwatermark', help="If entries exceed this value, "
+@manager.option('--highwatermark', '--hw', help="If entries exceed this value, "
                                         "old entries are deleted.")
-@manager.option('--lowwatermark', help="Keep this number of entries.")
+@manager.option('--lowwatermark', '--lw' ,help="Keep this number of entries.")
 def rotate_audit(highwatermark=10000, lowwatermark=5000):
     """
     Rotate the SQL audit log.
