@@ -33,7 +33,7 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import get_token_owner, get_tokens
-from privacyidea.lib.user import User
+from privacyidea.lib.user import User, UserError
 from privacyidea.lib.utils import compare_condition
 import re
 import json
@@ -217,6 +217,14 @@ class BaseEventHandler(object):
                 log.info("Could not determine tokenowner for {0!s}. Maybe the "
                          "user does not exist anymore.".format(serial))
                 log.debug(exx)
+        # We now check, if the user exists at all!
+        try:
+            ui = user.info
+        except UserError as exx:
+            if exx.id == 905:
+                user = User()
+            else:
+                raise exx
         return user
 
     def check_condition(self, options):
