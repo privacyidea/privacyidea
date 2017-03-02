@@ -11,6 +11,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 import sys
+import os
 from mock import Mock as MagicMock
 
 class Mock(MagicMock):
@@ -39,9 +40,6 @@ def no_op_wraps(func):
     return wrapper
 
 functools.wraps = no_op_wraps
-
-
-import sys, os
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
