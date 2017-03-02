@@ -563,7 +563,7 @@ class IdResolver (UserIdResolver):
         self.scope = config.get("SCOPE") or ldap3.SUBTREE
         self.resolverId = self.uri
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
-        self.tls_verify = config.get("TLS_VERIFY", False)
+        self.tls_verify = is_true(config.get("TLS_VERIFY", False))
         self.tls_ca_file = config.get("TLS_CA_FILE") or DEFAULT_CA_FILE
         if self.tls_verify and (self.uri.lower().startswith("ldaps") or
                                     self.start_tls):
@@ -702,7 +702,8 @@ class IdResolver (UserIdResolver):
         uidtype = param.get("UIDTYPE")
         timeout = float(param.get("TIMEOUT", 5))
         ldap_uri = param.get("LDAPURI")
-        if param.get("TLS_VERIFY") and (ldap_uri.lower().startswith("ldaps") or
+        if is_true(param.get("TLS_VERIFY")) \
+                and (ldap_uri.lower().startswith("ldaps") or
                                     param.get("START_TLS")):
             tls_ca_file = param.get("TLS_CA_FILE") or DEFAULT_CA_FILE
             tls_context = Tls(validate=ssl.CERT_REQUIRED,
