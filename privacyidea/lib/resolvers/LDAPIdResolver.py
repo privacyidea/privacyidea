@@ -71,6 +71,8 @@ import datetime
 from privacyidea.lib import _
 from privacyidea.lib.utils import to_utf8
 from privacyidea.lib.error import privacyIDEAError
+import uuid
+from ldap3.utils.conv import escape_bytes
 
 CACHE = {}
 
@@ -283,6 +285,18 @@ class IdResolver (UserIdResolver):
                 uid = attributes.get(uidtype)
         return uid
 
+    def _trim_user_id(self, userId):
+        """
+        If we search for the objectGUID we can not search for the normal
+        string representation but we need to search for the bytestring in AD.
+        :param userId: The userId
+        :return: the trimmed userId
+        """
+        if self.uidtype == "objectGUID":
+            userId = uuid.UUID("{{{0!s}}}".format(userId)).bytes_le
+            userId = escape_bytes(userId)
+        return userId
+
     @cache
     def _getDN(self, userId):
         """
@@ -300,7 +314,9 @@ class IdResolver (UserIdResolver):
         else:
             # get the DN for the Object
             self._bind()
-            filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter, self.uidtype, userId)
+            search_userId = self._trim_user_id(userId)
+            filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
+                                                    self.uidtype, search_userId)
             self.l.search(search_base=self.basedn,
                           search_scope=self.scope,
                           search_filter=filter,
@@ -309,8 +325,10 @@ class IdResolver (UserIdResolver):
             r = self._trim_result(r)
             if len(r) > 1:  # pragma: no cover
                 raise Exception("Found more than one object for uid {0!r}".format(userId))
-            if len(r) == 1:
+            elif len(r) == 1:
                 dn = r[0].get("dn")
+            else:
+                log.info("The filter {0!s} returned no DN.".format(filter))
 
         return dn
 
@@ -352,7 +370,9 @@ class IdResolver (UserIdResolver):
                           search_filter="(&" + self.searchfilter + ")",
                           attributes=self.userinfo.values())
         else:
-            filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter, self.uidtype, userId)
+            search_userId = self._trim_user_id(userId)
+            filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
+                                                    self.uidtype, search_userId)
             self.l.search(search_base=self.basedn,
                               search_scope=self.scope,
                               search_filter=filter,

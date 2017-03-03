@@ -41,6 +41,8 @@ from __future__ import (
 DIRECTORY = "tests/testdata/tmp_directory"
 import six
 from ast import literal_eval
+import uuid
+from ldap3.utils.conv import escape_bytes
 import hashlib
 import ldap3
 import re
@@ -62,6 +64,11 @@ def wrapper%(signature)s:
     with ldap3mock:
         return func%(funcargs)s
 """
+
+def _convert_objectGUID(item):
+    item = uuid.UUID("{{{0!s}}}".format(item)).bytes_le
+    item = escape_bytes(item)
+    return item
 
 
 def get_wrapped(func, wrapper_template, evaldict):
@@ -347,8 +354,8 @@ class Connection(object):
             values_from_directory = entry.get("attributes").get(attribute)
             if isinstance(values_from_directory, list):
                 for item in values_from_directory:
-                    #if attribute == "objectGUID":
-                    #    item = escape_bytes(item)
+                    if attribute == "objectGUID":
+                        item = _convert_objectGUID(item)
 
                     if match_using_regex:
                         m = re.match(regex, str(item), re.I)
@@ -361,8 +368,9 @@ class Connection(object):
                             matches.append(entry)
 
             else:
-                #if attribute == "objectGUID":
-                #    values_from_directory = escape_bytes(values_from_directory)
+                if attribute == "objectGUID":
+                    values_from_directory = _convert_objectGUID(values_from_directory)
+
                 if match_using_regex:
                     m = re.match(regex, str(values_from_directory), re.I)
                     if m:
@@ -396,8 +404,8 @@ class Connection(object):
             values_from_directory = entry.get("attributes").get(attribute)
             if isinstance(values_from_directory, list):
                 for item in values_from_directory:
-                    #if attribute == "objectGUID":
-                    #    item = escape_bytes(item)
+                    if attribute == "objectGUID":
+                        item = _convert_objectGUID(item)
 
                     if match_using_regex:
                         m = re.match(regex, str(item), re.I)
@@ -410,8 +418,9 @@ class Connection(object):
                     entry["type"] = "searchResEntry"
                     matches.append(entry)
             else:
-                #if attribute == "objectGUID":
-                #    values_from_directory = escape_bytes(values_from_directory)
+                if attribute == "objectGUID":
+                    values_from_directory = _convert_objectGUID(values_from_directory)
+
                 if match_using_regex:
                     m = re.match(regex, str(values_from_directory), re.I)
                     if not m:
