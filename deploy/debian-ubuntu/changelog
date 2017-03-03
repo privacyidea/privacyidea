@@ -1,6 +1,75 @@
 python-privacyidea (2.18~dev6-1trusty) trusty; urgency=low
 
-  * Move to ldap3 version 2.1.1
+  Features:
+  * Allow to disable the WebUI (#605)
+  * The WebUI will lock the screen after a timeout instead of  
+    logging out the user. This allows to easily continue
+    configuration work. (#621)
+  * Improve the creation and handling of local CAs (#630, #632, #633)
+    Allow certificate template for certificates with different runtime
+    and x509v3 extensions.
+
+  Enhancements
+  Enhancements in Policies:
+  * Allow regular expressions in usernames in policies. (#581)
+  * Improve Policy creation with pi-manage from JSON formatted file.
+  * WebUI: Add action grouping in policies.
+  * WebUI: Add action filter in policy view.
+  * Allow token specific PIN policies: The SPASS token can now
+    have dedicated PIN policies.
+  * Add PIN policies for administrators during enrollment and
+    during assignment.
+  * Add WebUI policy: only search on enter being pressed (#617)
+
+  Enhancements in Event Handlers:
+  * Add token_validity_period condition to event handlers. (#618)
+  * Add additional options in token handler when creating 
+    SMS, Email or mOTP tokens.
+  * Allow tokenhandler to set tokeninfo field.
+  * Allow tokenhandler to set syncwindow.
+  * Add event handler condition for count_auth_success and
+    cound_auth_fail
+  * Add event handler condition for last_auth.
+  * Improve Audit Log for Event Handler. Each triggered action 
+    will now also create an audit entry. (#609)
+  * Allow the use of {current_time} in tokenevent handler. (#628)
+
+  Enhancements in LDAP Resolver:
+  * Upgrade dependency to ldap3 version >=2.1.1 to improve LDAP 
+    performance in regards to redundancy and security
+  * LDAP Resolver: Use get_info in bind requests to avoid querying 
+    of subschema. (#585)
+  * LDAP Resolver: Support StartTLS over Port 389.
+  * Simplify LDAP Resolver: Remove username from Attribute Mapping.
+  * Simplefy LDAP Resolver: Remove reverse filter.
+
+  Misc Enhancements:
+  * Automatically add user's mobile number if tokentype is SMS.
+  * Add example configuration for GTX messaging SMS gateway.
+  * Add a script "privacyidea-get-unused-tokens" to find
+    unused tokens
+  * WebUI: Add a busy indicator spinner.
+  * Improve the pi-manage script in regards to backup and restore.
+    Let you choose whether to backup encryption key or not.
+    Better handling for individual pathes. (#626, #623)
+
+  Fixes:
+  * LDAP Resolver: Verify SSL Certificate (Security)
+  * LDAP Resolver: Allow special characters in NTLM password
+  * LDAP Resolver: Allow searching for users with German umlaut
+  * Remove the "unsafe" notation in the QR-Code link, so that 
+    a smartphone may import the key during HOTP/TOTP token enrollment
+    by clicking the link. (#620)
+  * Use defusexml to avoid XML bombs on token import (Security)
+  * Replace eval with ast.literal_evel (Security)
+  * Add missing attributes for U2F tokens in 
+    validate/triggerchallenge API
+  * Let /validate/triggerchallenge write to audit log.
+  * Fix mangle policy for users and realms
+  * Avoid logging of password in check_user_pass in debug level 
+    (level=10)
+  * Set encrypted PIN on enrollment for certificate tokens (#625)
+  * Remove unused policy action "motp_webprovision"
 
  -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 03 Mar 2017 09:00:00 +0200
 
