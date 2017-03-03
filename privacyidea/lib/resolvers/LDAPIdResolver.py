@@ -106,6 +106,12 @@ def get_ad_timestamp_now():
     return int(MS_AD_MULTIPLYER * total_seconds)
 
 
+def trim_objectGUID(userId):
+    userId = uuid.UUID("{{{0!s}}}".format(userId)).bytes_le
+    userId = escape_bytes(userId)
+    return userId
+
+
 def cache(func):
     """
     Decorator to check if a token is locked or not.
@@ -293,8 +299,7 @@ class IdResolver (UserIdResolver):
         :return: the trimmed userId
         """
         if self.uidtype == "objectGUID":
-            userId = uuid.UUID("{{{0!s}}}".format(userId)).bytes_le
-            userId = escape_bytes(userId)
+            userId = trim_objectGUID(userId)
         return userId
 
     @cache

@@ -6,6 +6,7 @@ This test file tests the test.ldap3mock
 import unittest
 import ldap3
 import ldap3mock
+from privacyidea.lib.resolvers.LDAPIdResolver import trim_objectGUID
 
 objectGUIDs = [
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d31',
@@ -170,7 +171,7 @@ class LDAPMockTestCase(unittest.TestCase):
         self.assertTrue(self.c.response[1].get("dn") == dn1)
 
         dn = "cn=bob,ou=example,o=test"
-        s = "(&(objectGUID=%s))" % objectGUIDs[2]
+        s = "(&(objectGUID=%s))" % trim_objectGUID(objectGUIDs[2])
 
         self.c.search(search_base=self.base, search_filter=s, search_scope=ldap3.SUBTREE,
                 attributes = ldap3.ALL_ATTRIBUTES, paged_size = 5)
@@ -179,7 +180,7 @@ class LDAPMockTestCase(unittest.TestCase):
         self.assertTrue(self.c.response[0].get("dn") == dn)
 
         dn = "cn=bob,ou=example,o=test"
-        s = "(&(objectGUID~=%s))" % objectGUIDs[2]
+        s = "(&(objectGUID~=%s))" % trim_objectGUID(objectGUIDs[2])
 
         self.c.search(search_base=self.base, search_filter=s, search_scope=ldap3.SUBTREE,
                 attributes = ldap3.ALL_ATTRIBUTES, paged_size = 5)
@@ -382,7 +383,7 @@ class LDAPMockTestCase(unittest.TestCase):
         dn = "cn=alice,ou=example,o=test"
         dn1 = "cn=mini,ou=example,o=test"
         dn2 = "cn=manager,ou=example,o=test"
-        s = "(!(objectGUID=%s))" % objectGUIDs[2]
+        s = "(!(objectGUID=%s))" % trim_objectGUID(objectGUIDs[2])
 
         self.c.search(search_base=self.base, search_filter=s, search_scope=ldap3.SUBTREE,
                 attributes = ldap3.ALL_ATTRIBUTES, paged_size = 5)
@@ -395,7 +396,7 @@ class LDAPMockTestCase(unittest.TestCase):
         dn = "cn=alice,ou=example,o=test"
         dn1 = "cn=mini,ou=example,o=test"
         dn2 = "cn=manager,ou=example,o=test"
-        s = "(!(objectGUID~=%s))" % objectGUIDs[2]
+        s = "(!(objectGUID~=%s))" % trim_objectGUID(objectGUIDs[2])
 
         self.c.search(search_base=self.base, search_filter=s, search_scope=ldap3.SUBTREE,
                 attributes = ldap3.ALL_ATTRIBUTES, paged_size = 5)
@@ -632,7 +633,7 @@ class LDAPMockTestCase(unittest.TestCase):
         self.assertTrue(self.c.response[0].get("dn") == dn)
 
         dn = "cn=bob,ou=example,o=test"
-        s = "(|(objectGUID=%s))" % objectGUIDs[2]
+        s = "(|(objectGUID=%s))" % trim_objectGUID(objectGUIDs[2])
 
         self.c.search(search_base=self.base, search_filter=s, search_scope=ldap3.SUBTREE,
                 attributes = ldap3.ALL_ATTRIBUTES, paged_size = 5)
@@ -641,7 +642,7 @@ class LDAPMockTestCase(unittest.TestCase):
         self.assertTrue(self.c.response[0].get("dn") == dn)
 
         dn = "cn=bob,ou=example,o=test"
-        s = "(|(objectGUID~=%s))" % objectGUIDs[2]
+        s = "(|(objectGUID~=%s))" % trim_objectGUID(objectGUIDs[2])
 
         self.c.search(search_base=self.base, search_filter=s, search_scope=ldap3.SUBTREE,
                 attributes = ldap3.ALL_ATTRIBUTES, paged_size = 5)
@@ -895,7 +896,7 @@ class LDAPMockTestCase(unittest.TestCase):
         self.assertTrue(self.c.response[0].get("dn") == dn)
 
         dn = "cn=bob,ou=example,o=test"
-        s = "(&(cn=*)(objectGUID~=%s))" % objectGUIDs[2]
+        s = "(&(cn=*)(objectGUID~=%s))" % trim_objectGUID(objectGUIDs[2])
 
         self.c.search(search_base=self.base, search_filter=s, search_scope=ldap3.SUBTREE,
                 attributes = ldap3.ALL_ATTRIBUTES, paged_size = 5)

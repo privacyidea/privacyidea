@@ -1,4 +1,4 @@
-python-privacyidea (2.18~dev5-1trusty) trusty; urgency=low
+python-privacyidea (2.18~dev6-1trusty) trusty; urgency=low
 
   * Move to ldap3 version 2.1.1
 
