@@ -1,4 +1,4 @@
-python-privacyidea (2.18~dev6-1trusty) trusty; urgency=low
+python-privacyidea (2.18~dev7-1trusty) trusty; urgency=low
 
   Features:
   * Allow to disable the WebUI (#605)
@@ -72,8 +72,7 @@ python-privacyidea (2.18~dev6-1trusty) trusty; urgency=low
   * Remove unused policy action "motp_webprovision"
   * Allow emailtext policy in triggerchallenge API (#642)
 
-
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 03 Mar 2017 09:00:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Mon, 06 Mar 2017 23:00:00 +0200
 
 python-privacyidea (2.17-1trusty) trusty; urgency=low
 
