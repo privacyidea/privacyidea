@@ -1400,3 +1400,45 @@ class ValidateAPITestCase(MyTestCase):
 
         remove_token(serial)
 
+    @smtpmock.activate
+    def test_25_trigger_challenge_smtp(self):
+        smtpmock.setdata(response={"hans@dampf.com": (200, 'OK')})
+        from privacyidea.lib.tokens.emailtoken import EMAILACTION
+
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        serial = "smtp01"
+        pin = "pin"
+        user = "passthru"
+        r = init_token({"type": "email", "serial": serial,
+                        "otpkey": self.otpkey,
+                        "email": "hans@dampf.com",
+                        "pin": pin}, user=User(user, self.realm2))
+        self.assertTrue(r)
+
+        set_policy("emailtext", scope=SCOPE.AUTH,
+                   action="{0!s}=Dein <otp>".format(EMAILACTION.EMAILTEXT))
+        set_policy("emailsubject", scope=SCOPE.AUTH,
+                   action="{0!s}=Dein OTP".format(EMAILACTION.EMAILSUBJECT))
+
+        # Trigger challenge for serial number
+        with self.app.test_request_context('/validate/triggerchallenge',
+                                           method='POST',
+                                           data={"serial": serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), 1)
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(detail.get("messages")[0],
+                             "Enter the OTP from the Email:")
+            transaction_id = detail.get("transaction_ids")[0]
+            # check the sent message
+            sent_message = smtpmock.get_sent_message()
+            self.assertTrue("RGVpbiAyODcwODI=" in sent_message)
+            self.assertTrue("Subject: Dein OTP" in sent_message)
+
+        remove_token(serial)
+        delete_policy("emailtext")
+

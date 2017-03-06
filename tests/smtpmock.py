@@ -97,6 +97,7 @@ class SmtpMock(object):
 
     def __init__(self):
         self._calls = CallList()
+        self.sent_message = None
         self.reset()
 
     def reset(self):
@@ -116,6 +117,9 @@ class SmtpMock(object):
             'config': config,
             'recipient': config.get("MAILTO")
         }
+
+    def get_sent_message(self):
+        return self.sent_message
 
     @property
     def calls(self):
@@ -173,6 +177,7 @@ class SmtpMock(object):
         import mock
 
         def unbound_on_send(SMTP, sender, recipient, msg, *a, **kwargs):
+            self.sent_message = msg
             return self._on_request(SMTP, sender, recipient, msg, *a, **kwargs)
         self._patcher = mock.patch('smtplib.SMTP.sendmail',
                                    unbound_on_send)
@@ -221,7 +226,6 @@ class SmtpMock(object):
         self._patcher8 = mock.patch('smtplib.SMTP.starttls',
                                     unbound_on_starttls)
         self._patcher8.start()
-
 
     def stop(self):
         self._patcher.stop()

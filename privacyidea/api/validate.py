@@ -435,13 +435,16 @@ def trigger_challenge():
     result_obj = 0
     details = {"messages": [],
                "transaction_ids": []}
+    options = {"g": g,
+               "clientip": g.client_ip,
+               "user": user}
 
     token_objs = get_tokens(serial=serial, user=user)
     for token_obj in token_objs:
         if "challenge" in token_obj.mode:
             # If this is a challenge response token, we create a challenge
             success, return_message, transactionid, attributes = \
-                token_obj.create_challenge()
+                token_obj.create_challenge(options=options)
             if attributes:
                 details["attributes"] = attributes
             if success:

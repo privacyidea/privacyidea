@@ -70,6 +70,8 @@ python-privacyidea (2.18~dev6-1trusty) trusty; urgency=low
     (level=10)
   * Set encrypted PIN on enrollment for certificate tokens (#625)
   * Remove unused policy action "motp_webprovision"
+  * Allow emailtext policy in triggerchallenge API (#642)
+
 
  -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 03 Mar 2017 09:00:00 +0200
 

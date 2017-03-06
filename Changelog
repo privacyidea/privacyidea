@@ -70,6 +70,7 @@ Version 2.18, 2017-03-09
     (level=10)
   * Set encrypted PIN on enrollment for certificate tokens (#625)
   * Remove unused policy action "motp_webprovision"
+  * Allow emailtext policy in triggerchallenge API (#642)
  
 
 Version 2.17, 2016-12-29
