@@ -60,6 +60,8 @@ from ldap3 import MODIFY_REPLACE, MODIFY_ADD, MODIFY_DELETE
 from ldap3 import Server, Tls, Connection
 import ssl
 
+import os.path
+
 import traceback
 
 import hashlib
@@ -87,7 +89,14 @@ SERVERPOOL_SKIP = 30
 MS_AD_MULTIPLYER = 10 ** 7
 MS_AD_START = datetime.datetime(1601, 1, 1)
 
-DEFAULT_CA_FILE = "/etc/privacyidea/ldap-ca.crt"
+if os.path.isfile("/etc/privacyidea/ldap-ca.crt"):
+    DEFAULT_CA_FILE = "/etc/privacyidea/ldap-ca.crt"
+elif os.path.isfile("/etc/ssl/certs/ca-certificates.crt"):
+    DEFAULT_CA_FILE = "/etc/ssl/certs/ca-certificates.crt"
+elif os.path.isfile("/etc/ssl/certs/ca-bundle.crt"):
+    DEFAULT_CA_FILE = "/etc/ssl/certs/ca-bundle.crt"
+else:
+    DEFAULT_CA_FILE = "/etc/privacyidea/ldap-ca.crt"
 
 
 def get_ad_timestamp_now():
