@@ -142,9 +142,11 @@ request.
   
 The ``UID Type`` is the unique identifier for the LDAP object. If it is left
 blank, the distinguished name will be used. In case of OpenLDAP this can be
-*entryUUID* and in case of Active Directory *objectGUID*.
+*entryUUID* and in case of Active Directory *objectGUID*. For FreeIPA you
+can use *ipaUniqueID*.
 
-.. note:: The attributes *entryUUID* and *objectGUID* are case sensitive!
+.. note:: The attributes *entryUUID*, *objectGUID*, and *ipaUniqueID*
+are case sensitive!
 
 TLS certificates
 ~~~~~~~~~~~~~~~~
