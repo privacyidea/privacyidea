@@ -142,9 +142,11 @@ request.
   
 The ``UID Type`` is the unique identifier for the LDAP object. If it is left
 blank, the distinguished name will be used. In case of OpenLDAP this can be
-*entryUUID* and in case of Active Directory *objectGUID*.
+*entryUUID* and in case of Active Directory *objectGUID*. For FreeIPA you
+can use *ipaUniqueID*.
 
-.. note:: The attributes *entryUUID* and *objectGUID* are case sensitive!
+.. note:: The attributes *entryUUID*, *objectGUID*, and *ipaUniqueID*
+are case sensitive!
 
 TLS certificates
 ~~~~~~~~~~~~~~~~
@@ -155,9 +157,12 @@ certificate. (Python >= 2.7.9 required)
 To have privacyIDEA verify the TLS certificate you need to check the
 according checkbox.
 
-You also need to have a file with the trusted CA certificate, that signed the
+You can specify a file with the trusted CA certificate, that signed the
 TLS certificate. The default CA filename is */etc/privacyidea/ldap-ca.crt*
 and can contain a list of base64 encoded CA certificates.
+PrivacyIDEA will use the CA file if specifed. If you leave the field empty
+it will also try the system certificate store (*/etc/ssl/certs/ca-certificates.crt*
+or */etc/ssl/certs/ca-bundle.crt*).
 
 Modifying users
 ~~~~~~~~~~~~~~~
