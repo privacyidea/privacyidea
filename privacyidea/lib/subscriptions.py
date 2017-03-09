@@ -184,9 +184,9 @@ def check_subscription(application):
     :param application: the name of the application to check
     :return: bool
     """
-    subscriptions = get_subscription(application) or get_subscription(
-        application.lower())
     if application.lower() in APPLICATIONS.keys():
+        subscriptions = get_subscription(application) or get_subscription(
+            application.lower())
         if len(subscriptions) == 0:
             # get the number of active assigned tokens
             num_tokens = get_tokens(assigned=True, active=True, count=True)
