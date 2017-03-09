@@ -42,7 +42,6 @@ pandas==0.16.2
 passlib==1.6.2
 pbr==1.10.0
 Pillow==2.6.1
-pkg-resources==0.0.0
 psycopg2==2.6
 py==1.4.30
 pyasn1==0.2.3
