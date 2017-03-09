@@ -141,12 +141,18 @@ class log_with(object):
         def log_wrapper(*args, **kwds):
             """
             Wrap the function in log entries. The entry of the function and
-            the exit of the function is logged.
+            the exit of the function is logged using the DEBUG log level.
+            If the logger does not log DEBUG messages, this just returns
+            the result of ``func(*args, **kwds)`` to improve performance.
 
             :param args: The positional arguments starting with index
             :param kwds: The keyword arguemnts
             :return: The wrapped function
             """
+            # Exit early if self.logger disregards DEBUG messages.
+            if not self.logger.isEnabledFor(logging.DEBUG):
+                return func(*args, **kwds)
+
             log_args = args
             log_kwds = kwds
             if self.hide_args or self.hide_kwargs or \
