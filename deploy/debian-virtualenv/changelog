@@ -1,5 +1,6 @@
-privacyidea-venv (2.18~dev6-1) wheezy; urgency=low
+privacyidea-venv (2.18-1) wheezy; urgency=low
 
+  Features:
   * Allow to disable the WebUI (#605)
   * The WebUI will lock the screen after a timeout instead of  
     logging out the user. This allows to easily continue
@@ -69,8 +70,9 @@ privacyidea-venv (2.18~dev6-1) wheezy; urgency=low
     (level=10)
   * Set encrypted PIN on enrollment for certificate tokens (#625)
   * Remove unused policy action "motp_webprovision"
+  * Allow emailtext policy in triggerchallenge API (#642)
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 03 Mar 2017 16:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 09 Mar 2017 12:00:00 +0200
 
 privacyidea-venv (2.17-1) wheezy; urgency=low
 
