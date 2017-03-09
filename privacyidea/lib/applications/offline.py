@@ -30,6 +30,57 @@ from privacyidea.lib.token import get_tokens
 log = logging.getLogger(__name__)
 ROUNDS = 6549
 
+"""
+TOOD: Add a mechanism for resynching offline
+
+Resynching the offline state means that the backend is online again _before_
+the cached OTP values are used up.
+Then we need to be able to contact the privacyIDEA server again, to either
+authenticate online or to fetch new OTP values.
+
+Requirements for resynching offline state.
+
+1. When going offline the client receives a list of hashed
+   OTP PIN / OTP values pairs. These are marked as not usable, since the server
+   would not know, if the values were used offline.
+
+2. The privacyIDEA server can not simply verify on off the offline OTP values.
+   We need an additional proof, that not a shoulder surfer is using a offline
+   OTP value, that he akquired from shoulder surfing.
+
+3. Two consecutive OTP values could be aquired by shoulder surfing a longer
+   time.
+
+4. For synching we need to add information, that can not be aquired from
+   shoulder surfing.
+
+5. This could be the remaining hashed OTP values. These hashed OTP values are
+   only known to the system.
+
+Resynching the offline state requires:
+a) a OTP value entered by the user
+b) the list of (or parts of the list) remaining hashed OTP values.
+
+This way the attacker would have to:
+
+1. should surf to receive an OTP value
+2. get grasp of the client machine, to get the remaining hashed OTP values.
+
+So if the client has cached OTP values the client may:
+1. authenticate against these hashed values
+2. if successfull try to contact the privacyIDEA server and try to resync
+   using
+   a) the entered OTP PIN / OTP value
+   b) the remaining hashed OTP values.
+
+privacyIDEA knows that this is an offline token and try to find the OTP value in
+the past OTP values and ask for the hashed OTP values.
+It then can reissue another 100 hashed OTP values.
+
+This way the issued offline OTP values become some kind of offline cache.
+
+"""
+
 
 class MachineApplication(MachineApplicationBase):
     """
