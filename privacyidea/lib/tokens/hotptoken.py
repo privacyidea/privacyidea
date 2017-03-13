@@ -181,7 +181,8 @@ class HotpTokenClass(TokenClass):
                                         hash_algo=params.get("hashlib",
                                                              "sha1"),
                                         digits=params.get("otplen", 6),
-                                        issuer=tokenissuer)
+                                        issuer=tokenissuer,
+                                        user_obj=user)
                     response_detail["googleurl"] = {"description":
                                                     _("URL for google "
                                                       "Authenticator"),

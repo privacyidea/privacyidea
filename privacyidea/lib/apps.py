@@ -49,6 +49,7 @@ import logging
 log = logging.getLogger(__name__)
 from urllib import quote
 from privacyidea.lib.log import log_with
+from privacyidea.lib.user import User
 
 @log_with(log)
 def create_motp_url(key, user=None, realm=None, serial=""):
@@ -78,7 +79,7 @@ def create_google_authenticator_url(key=None, user=None,
                                     realm=None, tokentype="hotp",
                                     serial="mylabel", tokenlabel="<s>",
                                     hash_algo="SHA1", digits="6",
-                                    issuer="privacyIDEA"):
+                                    issuer="privacyIDEA", user_obj=None):
     """
     This creates the google authenticator URL.
     This url may only be 119 characters long.
@@ -88,6 +89,7 @@ def create_google_authenticator_url(key=None, user=None,
     """
     # policy depends on some lib.util
 
+    user_obj = user_obj or User()
     if "hotp" == tokentype.lower():
         tokentype = "hotp"
 
@@ -104,9 +106,13 @@ def create_google_authenticator_url(key=None, user=None,
     allowed_label_len = max_len - base_len
     log.debug("we have got {0!s} characters left for the token label".format(
               str(allowed_label_len)))
+    # Deprecated
     label = tokenlabel.replace("<s>",
                                serial).replace("<u>",
                                                user).replace("<r>", realm)
+    label = label.format(serial=serial, user=user, realm=realm,
+                         givenname=user_obj.info.get("givenname"),
+                         surname=user_obj.info.get("surname"))
 
     label = label[0:allowed_label_len]
     url_label = quote(label.encode("utf-8"))
