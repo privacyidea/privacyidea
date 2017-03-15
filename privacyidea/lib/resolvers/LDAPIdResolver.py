@@ -230,7 +230,6 @@ class IdResolver (UserIdResolver):
                                        receive_timeout=self.timeout,
                                        auto_referrals=not self.noreferrals,
                                        start_tls=self.start_tls)
-            l.open()
             r = l.bind()
             log.debug("bind result: {0!r}".format(r))
             if not r:
@@ -358,7 +357,6 @@ class IdResolver (UserIdResolver):
                                             auto_referrals=not
                                             self.noreferrals,
                                             start_tls=self.start_tls)
-            self.l.open()
             #log.error("LDAP Server Pool States: %s" % server_pool.pool_states)
             if not self.l.bind():
                 raise Exception("Wrong credentials")
@@ -757,7 +755,6 @@ class IdResolver (UserIdResolver):
                                       auto_referrals=not param.get(
                                            "NOREFERRALS"),
                                       start_tls=param.get("START_TLS", False))
-            l.open()
             #log.error("LDAP Server Pool States: %s" % server_pool.pool_states)
             if not l.bind():
                 raise Exception("Wrong credentials")
@@ -1039,8 +1036,9 @@ class IdResolver (UserIdResolver):
                                  auto_referrals=auto_referrals)
         else:
             raise Exception("Authtype {0!s} not supported".format(authtype))
-        l.open()
+
         if start_tls:
+            l.open()
             log.debug("Doing start_tls")
             r = l.start_tls()
 
