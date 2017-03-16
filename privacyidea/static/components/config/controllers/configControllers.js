@@ -861,6 +861,7 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
             $scope.params.NOREFERRALS = isTrue($scope.params.NOREFERRALS);
             $scope.params.EDITABLE = isTrue($scope.params.EDITABLE);
             $scope.params.TLS_VERIFY = isTrue($scope.params.TLS_VERIFY);
+            $scope.params.START_TLS = isTrue($scope.params.START_TLS);
             $scope.params.type = 'ldapresolver';
         });
     }

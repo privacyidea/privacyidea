@@ -589,8 +589,8 @@ class IdResolver (UserIdResolver):
         self.userinfo["username"] = self.loginname_attribute
         self.map = yaml.safe_load(userinfo)
         self.uidtype = config.get("UIDTYPE", "DN")
-        self.noreferrals = config.get("NOREFERRALS", False)
-        self.start_tls = config.get("START_TLS", False)
+        self.noreferrals = is_true(config.get("NOREFERRALS", False))
+        self.start_tls = is_true(config.get("START_TLS", False))
         self._editable = config.get("EDITABLE", False)
         self.scope = config.get("SCOPE") or ldap3.SUBTREE
         self.resolverId = self.uri
