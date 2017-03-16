@@ -483,6 +483,24 @@ OpenVPN
 
 Read more about how to use OpenVPN with privacyidea at :ref:`openvpn`.
 
+Windows
+-------
+
+.. index:: Windows
+
+Credential Provider
+~~~~~~~~~~~~~~~~~~~
+The privacyIDEA Credential Provider adds two factor authentication to
+the Windows desktop or Terminal server.
+See http://privacyidea-credential-provider.readthedocs.io
+
+Provider Class
+~~~~~~~~~~~~~~
+
+There is a dot Net provider class, which you can use to integrate privacyIDEA
+authentication into other products and worflows.
+See https://github.com/sbidy/privacyIDEA_dotnetProvider
+
 Further plugins
 ---------------
 
