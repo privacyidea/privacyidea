@@ -476,12 +476,24 @@ def profile(length=30, profile_dir=None):
 
 @manager.option('--highwatermark', '--hw', help="If entries exceed this value, "
                                         "old entries are deleted.")
-@manager.option('--lowwatermark', '--lw' ,help="Keep this number of entries.")
-def rotate_audit(highwatermark=10000, lowwatermark=5000):
+@manager.option('--lowwatermark', '--lw', help="Keep this number of entries.")
+@manager.option('--age', help="Delete audit entries older than these number "
+                              "of days.")
+def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0):
     """
-    Rotate the SQL audit log.
+    Clean the SQL audit log.
+
+    You can either clean the audit log based on the number of entries of
+    based on the age of the entires.
+
+    Cleaning based on number of entries:
+
     If more than 'highwatermark' entries are in the audit log old entries
     will be deleted, so that 'lowwatermark' entries remain.
+
+    Cleaning based on age:
+
+    Entries older than the specified number of days are deleted.
     """
     metadata = MetaData()
     highwatermark = int(highwatermark or 10000)
@@ -494,7 +506,11 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000):
     if audit_module != default_module:
         raise Exception("We only rotate SQL audit module. You are using %s" %
                         audit_module)
-    print("Cleaning up with high: %s, low: %s. %s" % (highwatermark,
+    if age:
+        age = int(age)
+        print("Cleaning up with age: %s. %s" % (age, audit_db_uri))
+    else:
+        print("Cleaning up with high: %s, low: %s. %s" % (highwatermark,
                                                       lowwatermark,
                                                       audit_db_uri))
 
@@ -503,19 +519,25 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000):
     session = sessionmaker(bind=engine)()
     # create a Session
     metadata.create_all(engine)
-    count = session.query(LogEntry.id).count()
-    for l in session.query(LogEntry.id).order_by(desc(LogEntry.id)).limit(1):
-        last_id = l[0]
-    print("The log audit log has %i entries, the last one is %i" % (count,
-                                                                    last_id))
-    # deleting old entries
-    if count > highwatermark:
-        print("More than %i entries, deleting..." % highwatermark)
-        cut_id = last_id - lowwatermark
-        # delete all entries less than cut_id
-        print("Deleting entries smaller than %i" % cut_id)
-        session.query(LogEntry.id).filter(LogEntry.id < cut_id).delete()
+    if age:
+        now = datetime.datetime.now() - datetime.timedelta(days=age)
+        print("Deleting entries older than {0!s}".format(now))
+        session.query(LogEntry.date).filter(LogEntry.date < now).delete()
         session.commit()
+    else:
+        count = session.query(LogEntry.id).count()
+        for l in session.query(LogEntry.id).order_by(desc(LogEntry.id)).limit(1):
+            last_id = l[0]
+        print("The log audit log has %i entries, the last one is %i" % (count,
+                                                                        last_id))
+        # deleting old entries
+        if count > highwatermark:
+            print("More than %i entries, deleting..." % highwatermark)
+            cut_id = last_id - lowwatermark
+            # delete all entries less than cut_id
+            print("Deleting entries smaller than %i" % cut_id)
+            session.query(LogEntry.id).filter(LogEntry.id < cut_id).delete()
+            session.commit()
 
 
 @resolver_manager.command

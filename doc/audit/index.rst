@@ -25,7 +25,11 @@ The ``sqlaudit`` module writes audit entries to an SQL database.
 For performance reasons the audit module does no log rotation during
 the logging process.
 
-But you can set up a cron job to clean up old audit entries.
+But you can set up a cron job to clean up old audit entries. Since version
+2.19 audit entries can be either cleaned up based on the number of entries or
+based on on the age.
+
+Cleaning based on the age takes precedence:
 
 You can specify a *highwatermark* and a *lowwatermark*. To clean
 up the audit log table, you can call ``pi-manage`` at command line::
@@ -34,6 +38,14 @@ up the audit log table, you can call ``pi-manage`` at command line::
 
 This will, if there are more than 20.000 log entries, clean all old
 log entries, so that only 18000 log entries remain.
+
+Cleaning based on the age:
+
+You can specify the number of days, how old an audit entry may be at a max.
+
+   pi-manage rotate_audit --age 365
+
+will delete all audit entries that are older than one year.
 
 Access rights
 ~~~~~~~~~~~~~
