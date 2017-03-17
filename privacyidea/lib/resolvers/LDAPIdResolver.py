@@ -1038,9 +1038,9 @@ class IdResolver (UserIdResolver):
             raise Exception("Authtype {0!s} not supported".format(authtype))
 
         if start_tls:
-            l.open()
+            l.open(read_server_info=False)
             log.debug("Doing start_tls")
-            r = l.start_tls()
+            r = l.start_tls(read_server_info=False)
 
         return l
 
