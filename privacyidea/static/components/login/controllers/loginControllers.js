@@ -148,6 +148,7 @@ angular.module("privacyideaApp")
         $scope.transactionid = "";
         $scope.unlocking = true;
         $scope.login.username = $scope.loggedInUser.username;
+        $scope.login.realm = $scope.loggedInUser.realm;
         $scope.authenticate();
     };
 
