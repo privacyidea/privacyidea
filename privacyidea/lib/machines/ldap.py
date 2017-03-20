@@ -68,7 +68,6 @@ class LdapMachineResolver(BaseMachineResolver):
                                                   password=self.bindpw,
                                                   auto_referrals=not
                                                   self.noreferrals)
-            self.l.open()
             if not self.l.bind():
                 raise Exception("Wrong credentials")
             self.i_am_bound = True
@@ -299,7 +298,6 @@ class LdapMachineResolver(BaseMachineResolver):
                                              password=params.get("BINDPW"),
                                              auto_referrals=not params.get(
                                                  "NOREFERRALS"))
-            l.open()
             if not l.bind():
                 raise Exception("Wrong credentials")
             # search for users...
