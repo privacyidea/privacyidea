@@ -316,29 +316,30 @@ def get_resolver_type(resolvername):
 #@cache.memoize(10)
 def get_resolver_object(resolvername):
     """
-    TODO: We can cache this
-    create a resolver object from a resolvername
+    Return the cached resolver object for the given resolver name (stored in the request context).
+    If no resolver object is cached, create it and add it to the cache.
 
     :param resolvername: the resolver string as from the token including
                          the config as last part
     :return: instance of the resolver with the loaded config
 
     """
-    r_obj = None
     r_type = get_resolver_type(resolvername)
     r_obj_class = get_resolver_class(r_type)
 
     if r_obj_class is None:
         log.error("Can not find resolver with name {0!s} ".format(resolvername))
+        return None
     else:
-        # create the resolver instance and load the config
-        r_obj = r_obj_class()
-        if r_obj is not None:
-            resolver_config = get_resolver_config(resolvername)
-            r_obj.loadConfig(resolver_config)
-
-    return r_obj
-
+        if 'resolver_objects' not in g:
+            g.resolver_objects = {}
+        if resolvername not in g.resolver_objects:
+            # create the resolver instance and load the config
+            r_obj = g.resolver_objects[resolvername] = r_obj_class()
+            if r_obj is not None:
+                resolver_config = get_resolver_config(resolvername)
+                r_obj.loadConfig(resolver_config)
+        return g.resolver_objects[resolvername]
 
 @log_with(log)
 def pretestresolver(resolvertype, params):
