@@ -60,7 +60,7 @@ from privacyidea.lib.caconnector import (get_caconnector_list,
                                          save_caconnector)
 from privacyidea.app import create_app
 from privacyidea.lib.auth import ROLE
-from flask_script import Manager
+from flask_script import Manager, Command
 from privacyidea.app import db
 from flask_migrate import MigrateCommand
 # Wee need to import something, so that the models will be created.
@@ -463,7 +463,14 @@ def validate(user, password, realm=None, client=None):
         print("ERROR=%s" % exx)
 
 
-@manager.command
+class CommandOutsideRequestContext(Command):
+    """
+    In contrast to flask_script's `Command`, this command class does
+    not push a request context before running the command.
+    """
+    def __call__(self, app=None, *args, **kwargs):
+        return self.run(*args, **kwargs)
+
 def profile(length=30, profile_dir=None):
     """
     Start the application in profiling mode.
@@ -472,6 +479,11 @@ def profile(length=30, profile_dir=None):
     app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[length],
                                       profile_dir=profile_dir)
     app.run()
+
+# If flask_script's `Command` is used here instead of `CommandOutsideRequestContext`,
+# the request context will persist over requests. Thus, `g` is not
+# cleared properly between requests, which makes privacyIDEA behave unrealistically.
+manager.add_command('profile', CommandOutsideRequestContext(profile))
 
 
 @manager.option('--highwatermark', '--hw', help="If entries exceed this value, "
