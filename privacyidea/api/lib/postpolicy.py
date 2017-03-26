@@ -503,6 +503,12 @@ def get_webui_settings(request, response):
             realm=realm,
             client=client
         )
+        timeout_action = policy_object.get_policies(
+            action=ACTION.TIMEOUT_ACTION,
+            scope=SCOPE.WEBUI,
+            realm=realm,
+            client=client
+        )
         default_tokentype_pol = policy_object.get_action_values(
             action=ACTION.DEFAULT_TOKENTYPE,
             scope=SCOPE.WEBUI,
@@ -544,6 +550,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["token_wizard"] = token_wizard
         content["result"]["value"]["token_wizard_2nd"] = token_wizard_2nd
         content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
+        content["result"]["value"]["timeout_action"] = timeout_action[0]['action']['timeout_action']
         response.data = json.dumps(content)
     return response
 
