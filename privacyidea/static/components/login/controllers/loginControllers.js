@@ -119,7 +119,7 @@ angular.module("privacyideaApp")
     });
 
     $scope.$on('IdleTimeout', function () {
-        if ($scope.timeout_action == 1) {
+        if ($scope.timeout_action == "logout") {
             console.log("Logout!");
             $scope.logout();
         } else {
