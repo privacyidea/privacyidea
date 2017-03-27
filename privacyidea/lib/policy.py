@@ -1577,7 +1577,8 @@ def get_static_policy_definitions(scope=None):
             ACTION.TIMEOUT_ACTION: {
                 'type': 'str',
                 'desc': _('The action taken when a user is idle '
-                          'beyond the logout_time limit.'),
+                          'beyond the logout_time limit. '
+                          'Defaults to "lockscreen".'),
                 'value': [TIMEOUT_ACTION.LOGOUT, TIMEOUT_ACTION.LOCKSCREEN],
             },
             ACTION.REMOTE_USER: {

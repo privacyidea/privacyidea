@@ -550,7 +550,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["token_wizard"] = token_wizard
         content["result"]["value"]["token_wizard_2nd"] = token_wizard_2nd
         content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
-        content["result"]["value"]["timeout_action"] = timeout_action[0]['action']['timeout_action']
+        content["result"]["value"]["timeout_action"] = len(timeout_action) > 0
         response.data = json.dumps(content)
     return response
 
