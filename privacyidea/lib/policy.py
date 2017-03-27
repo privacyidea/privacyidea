@@ -291,6 +291,7 @@ class ACTION(object):
     ENROLLPIN = "enrollpin"
     MANAGESUBSCRIPTION = "managesubscription"
     SEARCH_ON_ENTER = "search_on_enter"
+    TIMEOUT_ACTION = "timeout_action"
 
 
 class GROUP(object):
@@ -344,6 +345,12 @@ class AUTOASSIGNVALUE(object):
     __doc__ = """This is the possible values for autoassign"""
     USERSTORE = "userstore"
     NONE = "any_pin"
+
+
+class TIMEOUT_ACTION(object):
+    __doc__ = """This is a list of actions values for idle users"""
+    LOGOUT = "logout"
+    LOCKSCREEN = 'lockscreen'
 
 
 class PolicyClass(object):
@@ -1566,6 +1573,13 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _('When searching in the user list, the search will '
                           'only performed when pressing enter.')
+            },
+            ACTION.TIMEOUT_ACTION: {
+                'type': 'str',
+                'desc': _('The action taken when a user is idle '
+                          'beyond the logout_time limit. '
+                          'Defaults to "lockscreen".'),
+                'value': [TIMEOUT_ACTION.LOGOUT, TIMEOUT_ACTION.LOCKSCREEN],
             },
             ACTION.REMOTE_USER: {
                 'type': 'str',

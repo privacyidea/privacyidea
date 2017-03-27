@@ -119,10 +119,15 @@ angular.module("privacyideaApp")
     });
 
     $scope.$on('IdleTimeout', function () {
-        console.log("Lock!");
-        $scope.logoutWarning = false;
-        $scope.$apply();
-        $scope.lock_screen();
+        if ($scope.timeout_action == "logout") {
+            console.log("Logout!");
+            $scope.logout();
+        } else {
+            console.log("Lock!");
+            $scope.logoutWarning = false;
+            $scope.$apply();
+            $scope.lock_screen();
+        }
     });
     /*
      $rootScope.$on('Keepalive', function() {
@@ -270,6 +275,7 @@ angular.module("privacyideaApp")
             $scope.user_page_size = data.result.value.user_page_size;
             $scope.user_details_in_tokenlist = data.result.value.user_details;
             $scope.default_tokentype = data.result.value.default_tokentype;
+            $scope.timeout_action = data.result.value.timeout_action;
             $rootScope.search_on_enter = data.result.value.search_on_enter;
             var timeout = data.result.value.logout_time;
             PolicyTemplateFactory.setUrl(data.result.value.policy_template_url);
