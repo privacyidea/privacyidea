@@ -133,7 +133,7 @@ def _get_config():
         SSLVERIFY = config_file.get("DEFAULT", "sslverify") or DEFAULT_SSLVERIFY
         if SSLVERIFY == "False":
             SSLVERIFY = False
-        if SSLVERIFY == "True":
+        elif SSLVERIFY == "True":
             SSLVERIFY = True
         REDIS = config_file.get("DEFAULT", "redis") or DEFAULT_REDIS
     except ConfigParser.NoOptionError as exx:
