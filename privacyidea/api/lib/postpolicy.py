@@ -458,6 +458,13 @@ def get_webui_settings(request, response):
             realm=realm,
             client=client,
             unique=True)
+        timeout_action_pol = policy_object.get_action_values(
+            action=ACTION.TIMEOUT_ACTION,
+            scope=SCOPE.WEBUI,
+            realm=realm,
+            client=client,
+            unique=True
+        )
         token_page_size_pol = policy_object.get_action_values(
             action=ACTION.TOKENPAGESIZE,
             scope=SCOPE.WEBUI,
@@ -504,12 +511,6 @@ def get_webui_settings(request, response):
             realm=realm,
             client=client
         )
-        timeout_action_pol = policy_object.get_policies(
-            action=ACTION.TIMEOUT_ACTION,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client
-        )
         default_tokentype_pol = policy_object.get_action_values(
             action=ACTION.DEFAULT_TOKENTYPE,
             scope=SCOPE.WEBUI,
@@ -534,7 +535,7 @@ def get_webui_settings(request, response):
 
         timeout_action = DEFAULT_TIMEOUT_ACTION
         if len(timeout_action_pol) == 1:
-            timeout_action = timeout_action_pol[0]['action']['timeout_action']
+            timeout_action = timeout_action_pol[0]
 
         policy_template_url_pol = policy_object.get_action_values(
             action=ACTION.POLICYTEMPLATEURL,

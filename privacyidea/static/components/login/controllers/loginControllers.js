@@ -280,7 +280,11 @@ angular.module("privacyideaApp")
             var timeout = data.result.value.logout_time;
             PolicyTemplateFactory.setUrl(data.result.value.policy_template_url);
             console.log(timeout);
-            Idle.setIdle(timeout-10);
+            var idlestart = timeout - 10;
+            if (idlestart<=0) {
+                idlestart = 1;
+            }
+            Idle.setIdle(idlestart);
             Idle.watch();
             console.log("successfully authenticated");
             console.log($scope.loggedInUser);
