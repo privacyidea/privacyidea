@@ -65,6 +65,7 @@ required = False
 DEFAULT_LOGOUT_TIME = 120
 DEFAULT_PAGE_SIZE = 15
 DEFAULT_TOKENTYPE = "hotp"
+DEFAULT_TIMEOUT_ACTION = "lockscreeen"
 DEFAULT_POLICY_TEMPLATE_URL = "https://raw.githubusercontent.com/privacyidea/" \
                               "policy-templates/master/templates/"
 
@@ -457,6 +458,13 @@ def get_webui_settings(request, response):
             realm=realm,
             client=client,
             unique=True)
+        timeout_action_pol = policy_object.get_action_values(
+            action=ACTION.TIMEOUT_ACTION,
+            scope=SCOPE.WEBUI,
+            realm=realm,
+            client=client,
+            unique=True
+        )
         token_page_size_pol = policy_object.get_action_values(
             action=ACTION.TOKENPAGESIZE,
             scope=SCOPE.WEBUI,
@@ -525,6 +533,10 @@ def get_webui_settings(request, response):
         if len(logout_time_pol) == 1:
             logout_time = int(logout_time_pol[0])
 
+        timeout_action = DEFAULT_TIMEOUT_ACTION
+        if len(timeout_action_pol) == 1:
+            timeout_action = timeout_action_pol[0]
+
         policy_template_url_pol = policy_object.get_action_values(
             action=ACTION.POLICYTEMPLATEURL,
             scope=SCOPE.WEBUI,
@@ -544,6 +556,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["token_wizard"] = token_wizard
         content["result"]["value"]["token_wizard_2nd"] = token_wizard_2nd
         content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
+        content["result"]["value"]["timeout_action"] = timeout_action
         response.data = json.dumps(content)
     return response
 
