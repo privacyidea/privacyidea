@@ -235,6 +235,11 @@ def delete_resolver(resolvername):
                                    "realm %r." % (resolvername, realmname))
         reso.delete()
         ret = reso.id
+    # Delete resolver object from cache
+    if 'resolver_objects' in g:
+        if g.resolver_objects.get(resolvername):
+            del(g.resolver_objects[resolvername])
+
     return ret
 
 
