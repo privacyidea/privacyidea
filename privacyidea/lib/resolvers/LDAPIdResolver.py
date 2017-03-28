@@ -120,6 +120,18 @@ def trim_objectGUID(userId):
     userId = escape_bytes(userId)
     return userId
 
+def get_info_configuration(noschemas):
+    """
+    Given the value of the NOSCHEMAS config option, return the value that should
+    be passed as ldap3's `get_info` argument.
+    :param noschemas: a boolean
+    :return: one of ldap3.SCHEMA or ldap3.NONE
+    """
+    if noschemas:
+        return ldap3.NONE
+    else:
+        return ldap3.SCHEMA
+
 
 def cache(func):
     """
@@ -348,6 +360,7 @@ class IdResolver (UserIdResolver):
     def _bind(self):
         if not self.i_am_bound:
             server_pool = self.get_serverpool(self.uri, self.timeout,
+                                              get_info=self.get_info,
                                               tls_context=self.tls_context)
             self.l = self.create_connection(authtype=self.authtype,
                                             server=server_pool,
@@ -591,6 +604,7 @@ class IdResolver (UserIdResolver):
         self.uidtype = config.get("UIDTYPE", "DN")
         self.noreferrals = is_true(config.get("NOREFERRALS", False))
         self.start_tls = is_true(config.get("START_TLS", False))
+        self.get_info = get_info_configuration(is_true(config.get("NOSCHEMAS", False)))
         self._editable = config.get("EDITABLE", False)
         self.scope = config.get("SCOPE") or ldap3.SUBTREE
         self.resolverId = self.uri
@@ -702,6 +716,7 @@ class IdResolver (UserIdResolver):
                                 'USERINFO': 'string',
                                 'UIDTYPE': 'string',
                                 'NOREFERRALS': 'bool',
+                                'NOSCHEMAS': 'bool',
                                 'CACERTIFICATE': 'string',
                                 'EDITABLE': 'bool',
                                 'SCOPE': 'string',
@@ -743,9 +758,11 @@ class IdResolver (UserIdResolver):
                               ca_certs_file=tls_ca_file)
         else:
             tls_context = None
+        get_info = get_info_configuration(is_true(param.get("NOSCHEMAS")))
         try:
             server_pool = cls.get_serverpool(ldap_uri, timeout,
-                                             tls_context=tls_context)
+                                             tls_context=tls_context,
+                                             get_info=get_info)
             l = cls.create_connection(authtype=param.get("AUTHTYPE",
                                                           AUTHTYPE.SIMPLE),
                                       server=server_pool,
