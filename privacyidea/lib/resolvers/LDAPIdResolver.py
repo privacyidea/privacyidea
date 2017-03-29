@@ -120,6 +120,7 @@ def trim_objectGUID(userId):
     userId = escape_bytes(userId)
     return userId
 
+
 def get_info_configuration(noschemas):
     """
     Given the value of the NOSCHEMAS config option, return the value that should
@@ -127,10 +128,11 @@ def get_info_configuration(noschemas):
     :param noschemas: a boolean
     :return: one of ldap3.SCHEMA or ldap3.NONE
     """
+    get_schema_info = ldap3.SCHEMA
     if noschemas:
-        return ldap3.NONE
-    else:
-        return ldap3.SCHEMA
+        get_schema_info = ldap3.NONE
+    log.debug("Get LDAP schema info: {0!s}".format(get_schema_info))
+    return get_schema_info
 
 
 def cache(func):

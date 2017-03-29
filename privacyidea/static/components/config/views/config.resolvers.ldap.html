@@ -191,23 +191,13 @@
         </div>
     </div>
     <div class="well">
-        <button class="btn btn-info" ng-click="presetLDAP()" translate>
-            Preset OpenLDAP
-        </button>
-        <button class="btn btn-info" ng-click="presetAD()" translate>
-            Preset Active Directory
-        </button>
         <div class="form-group">
-            <input name="noreferrals" id="noreferrals"
-                   ng-model="params.NOREFERRALS"
-                   type="checkbox"/>
-            <label for="noreferrals"
-                    translate>No anonymous referral chasing</label>
-            <input name="noschemas" id="noschemas"
-                   ng-model="params.NOSCHEMAS"
-                   type="checkbox"/>
-            <label for="noschemas"
-                   translate>No retrieval of schema information</label>
+            <button class="btn btn-info" ng-click="presetLDAP()" translate>
+                Preset OpenLDAP
+            </button>
+            <button class="btn btn-info" ng-click="presetAD()" translate>
+                Preset Active Directory
+            </button>
         </div>
         <div class="form-group">
             <label for="loginnameattr"
@@ -254,6 +244,20 @@
                        placeholder='DN'
                         />
             </div>
+        </div>
+        <div class="form-group">
+            <input name="noreferrals" id="noreferrals"
+                   ng-model="params.NOREFERRALS"
+                   type="checkbox"/>
+            <label for="noreferrals"
+                    translate>No anonymous referral chasing</label>
+        </div>
+        <div class="form-group">
+            <input name="noschemas" id="noschemas"
+                   ng-model="params.NOSCHEMAS"
+                   type="checkbox"/>
+            <label for="noschemas"
+                   translate>No retrieval of schema information</label>
         </div>
     </div>
 

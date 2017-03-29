@@ -186,7 +186,7 @@ msgstr ""
 msgid "Attach to a new Machine"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:230
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:225
 msgid "Attribute mapping"
 msgstr ""
 
@@ -198,7 +198,7 @@ msgstr ""
 msgid "Authentication Server URI"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:215
+#: privacyidea/static/components/login/controllers/loginControllers.js:221
 msgid "Authentication failed."
 msgstr ""
 
@@ -319,7 +319,7 @@ msgstr ""
 msgid "Certificates Templates file"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:187
+#: privacyidea/static/components/login/controllers/loginControllers.js:193
 msgid "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr ""
 
@@ -394,7 +394,7 @@ msgstr ""
 msgid "Client ID"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:30
+#: privacyidea/static/components/components/views/component.subscriptions.html:32
 msgid "Clients"
 msgstr ""
 
@@ -567,7 +567,7 @@ msgstr ""
 msgid "Default Time Window"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:69
+#: privacyidea/static/components/components/views/component.subscriptions.html:71
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:26
 #: privacyidea/static/components/config/views/config.events.details.html:19
 #: privacyidea/static/components/config/views/config.events.list.html:55
@@ -942,7 +942,7 @@ msgstr ""
 msgid "Four Eyes: Two or more users are required to log in."
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:31
+#: privacyidea/static/components/components/views/component.subscriptions.html:33
 msgid "From"
 msgstr ""
 
@@ -1150,7 +1150,7 @@ msgstr ""
 msgid "Info"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:55
+#: privacyidea/static/components/components/views/component.subscriptions.html:57
 msgid "Issuer"
 msgstr ""
 
@@ -1175,7 +1175,9 @@ msgstr ""
 msgid "Length of UID"
 msgstr ""
 
+#. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
+msgctxt "subscription"
 msgid "Level"
 msgstr ""
 
@@ -1383,8 +1385,12 @@ msgid "No Serial number could be found for OTP value {{ otp }}."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:107
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:204
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:252
 msgid "No anonymous referral chasing"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:259
+msgid "No retrieval of schema information"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.question.html:11
@@ -1526,7 +1532,7 @@ msgstr ""
 msgid "PIN"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:372
+#: privacyidea/static/components/login/controllers/loginControllers.js:383
 msgid "PIN changed successfully."
 msgstr ""
 
@@ -1618,11 +1624,11 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:100
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:197
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:198
 msgid "Preset Active Directory"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:194
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:195
 msgid "Preset OpenLDAP"
 msgstr ""
 
@@ -1712,7 +1718,7 @@ msgstr ""
 msgid "Realm"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:343
+#: privacyidea/static/components/login/controllers/loginControllers.js:354
 msgid "Realm defrealm created."
 msgstr ""
 
@@ -1950,7 +1956,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:39
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:159
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:261
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:270
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:38
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:86
 msgid "Save resolver"
@@ -1967,7 +1973,7 @@ msgid "Scope"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:121
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:219
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:214
 msgid "Search Filter"
 msgstr ""
 
@@ -2120,7 +2126,7 @@ msgstr ""
 msgid "Subscription expired"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:38
+#: privacyidea/static/components/components/views/component.subscriptions.html:40
 msgid "Subscription issued to"
 msgstr ""
 
@@ -2195,7 +2201,7 @@ msgid "Test Email sent successfully."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:155
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:256
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:265
 msgid "Test LDAP Resolver"
 msgstr ""
 
@@ -2859,7 +2865,7 @@ msgstr ""
 msgid "Tine 2.0"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:32
+#: privacyidea/static/components/components/views/component.subscriptions.html:34
 msgid "To"
 msgstr ""
 
@@ -2915,7 +2921,7 @@ msgstr ""
 msgid "Token {{ selectedToken.serial }} is Lost!"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:29
+#: privacyidea/static/components/components/views/component.subscriptions.html:31
 #: privacyidea/static/components/config/views/config.html:35
 #: privacyidea/static/templates/menu.html:35
 msgid "Tokens"
@@ -2962,7 +2968,7 @@ msgstr ""
 msgid "U2F: Universal 2nd Factor hardware token."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:242
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:237
 msgid "UID Type"
 msgstr ""
 
@@ -3064,7 +3070,7 @@ msgstr ""
 msgid "Username"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:28
+#: privacyidea/static/components/components/views/component.subscriptions.html:30
 #: privacyidea/static/components/config/views/config.html:47
 #: privacyidea/static/templates/menu.html:43
 msgid "Users"
@@ -3183,7 +3189,7 @@ msgstr ""
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:257
+#: privacyidea/static/components/login/controllers/loginControllers.js:263
 msgid "Your OTP pin expires on"
 msgstr ""
 
