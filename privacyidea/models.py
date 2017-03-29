@@ -2251,7 +2251,7 @@ class Audit(MethodsMixin, db.Model):
     success = db.Column(db.Integer)
     serial = db.Column(db.String(audit_column_length.get("serial")))
     token_type = db.Column(db.String(audit_column_length.get("token_type")))
-    user = db.Column(db.String(audit_column_length.get("user")))
+    user = db.Column(db.String(audit_column_length.get("user")), index=True)
     realm = db.Column(db.String(audit_column_length.get("realm")))
     resolver = db.Column(db.String(audit_column_length.get("resolver")))
     administrator = db.Column(
