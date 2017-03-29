@@ -148,6 +148,12 @@ can use *ipaUniqueID*.
 .. note:: The attributes *entryUUID*, *objectGUID*, and *ipaUniqueID*
 are case sensitive!
 
+The option ``No retrieval of schema information`` can be used to
+disable the retrieval of schema information [#ldapschema]_ in
+order to improve performance. This checkbox is deactivated by default
+and should only be activated after having ensured that schema information
+are unnecessary.
+
 TLS certificates
 ~~~~~~~~~~~~~~~~
 
@@ -300,3 +306,4 @@ The available attributes for the ``Attribute mapping`` are:
 .. [#adreferrals] http://blogs.technet.com/b/ad/archive/2009/07/06/referral-chasing.aspx
 .. [#osiam] http://www.osiam.org
 .. [#serverpool] https://github.com/cannatag/ldap3/blob/master/docs/manual/source/servers.rst#server-pool
+.. [#ldapschema] http://ldap3.readthedocs.io/schema.html

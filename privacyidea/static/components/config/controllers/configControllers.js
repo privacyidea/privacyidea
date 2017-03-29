@@ -844,7 +844,8 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
         type: 'ldapresolver',
         AUTHTYPE: "Simple",
         SCOPE: "SUBTREE",
-        CACHE_TIMEOUT: 120
+        CACHE_TIMEOUT: 120,
+        NOSCHEMAS: false
     };
     $scope.result = {};
     $scope.resolvername = $stateParams.resolvername;
@@ -862,6 +863,7 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
             $scope.params.EDITABLE = isTrue($scope.params.EDITABLE);
             $scope.params.TLS_VERIFY = isTrue($scope.params.TLS_VERIFY);
             $scope.params.START_TLS = isTrue($scope.params.START_TLS);
+            $scope.params.NOSCHEMAS = isTrue($scope.params.NOSCHEMAS);
             $scope.params.type = 'ldapresolver';
         });
     }
