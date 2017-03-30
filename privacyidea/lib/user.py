@@ -253,7 +253,7 @@ class User(object):
         :rtype: dict
         """
         if self.is_empty():
-            # An emptry user has not info
+            # An empty user has no info
             return {}
         (uid, _rtype, _resolver) = self.get_user_identifiers()
         y = get_resolver_object(self.resolver)
@@ -456,7 +456,6 @@ class User(object):
 
         return success
 
-####################################################################
 
 @log_with(log, hide_kwargs=["password"])
 def create_user(resolvername, attributes, password=None):
