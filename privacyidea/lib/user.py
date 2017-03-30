@@ -263,7 +263,7 @@ class User(object):
     @log_with(log)
     def get_user_phone(self, phone_type='phone'):
         """
-        Returns the phone numer of a user
+        Returns the phone number of a user
     
         :param phone_type: The type of the phone, i.e. either mobile or
                            phone (land line)
@@ -300,7 +300,7 @@ class User(object):
         elif self.realm != "":
             Realms.append(self.realm.lower())
         else:
-            # User has not realm!
+            # User has no realm!
             # we have got a resolver and will get all realms
             # the resolver belongs to.
             for key, val in allRealms.items():
