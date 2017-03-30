@@ -36,6 +36,8 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from privacyidea.lib.userinfocache import cache_username, cache_resolver, cache_identifiers
+
 __doc__ = '''There are the library functions for user functions.
 It depends on the lib.resolver and lib.realm.
 
@@ -159,7 +161,8 @@ class User(object):
         resolvers = sorted(resolver_tuples, key=lambda resolver: resolver[1])
         resolvers = [r[0] for r in resolvers]
         return resolvers
-    
+
+    @cache_resolver
     def get_resolvers(self, all_resolvers=False):
         """
         This returns the list of the resolvernames of the user.
@@ -201,7 +204,8 @@ class User(object):
         if self.resolver:
             resolvers = [self.resolver]
         return resolvers
-    
+
+    @cache_identifiers
     def get_user_identifiers(self):
         """
         This returns the UserId  information from the resolver object and
@@ -656,6 +660,7 @@ def get_user_info(userid, resolvername):
 
 
 @log_with(log)
+@cache_username
 def get_username(userid, resolvername):
     """
     Determine the username for a given id and a resolvername.
