@@ -1,3 +1,11 @@
+privacyidea-venv (2.18.1-1) wheezy; urgency=low
+
+  * Fix to also pass the realm when unlocking the
+    webui (#662)
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 30 Mar 2017 10:00:00 +0200
+
+
 privacyidea-venv (2.18-1) wheezy; urgency=low
 
   Features:
