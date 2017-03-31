@@ -36,8 +36,6 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from privacyidea.lib.userinfocache import cache_username, cache_resolver, cache_identifiers
-
 __doc__ = '''There are the library functions for user functions.
 It depends on the lib.resolver and lib.realm.
 
@@ -61,6 +59,8 @@ from .realm import (get_realms,
                     get_default_realm,
                     get_realm)
 from .config import get_from_config
+from .userinfocache import cache_username, cache_resolver, cache_identifiers
+
 
 ENCODING = 'utf-8'
 
@@ -89,6 +89,7 @@ class User(object):
         self.login = login or ""
         self.realm = (realm or "").lower()
         self.resolver = resolver or ""
+        self.uid = None
         if not self.resolver:
             # set the resolver implicitly!
             self.get_resolvers()
@@ -133,7 +134,8 @@ class User(object):
         return ret
 
     def __repr__(self):
-        ret = ('User(login={0!r}, realm={1!r}, resolver={2!r})'.format(self.login, self.realm, self.resolver))
+        ret = ('User(login={0!r}, realm={1!r}, resolver={2!r}, uid={3!r})'.format(
+            self.login, self.realm, self.resolver, self.uid))
         return ret
 
     def __nonzero__(self):
@@ -195,6 +197,7 @@ class User(object):
                                                                resolvername))
                     log.info("userid resolved to {0!r} ".format(uid))
                     self.resolver = resolvername
+                    self.uid = uid
                     # We do not need to search other resolvers!
                     break
                 else:
@@ -223,12 +226,13 @@ class User(object):
             raise UserError("The user can not be found in any resolver in "
                             "this realm!")
         rtype = get_resolver_type(self.resolver)
-        y = get_resolver_object(self.resolver)
-        if y is None:
-            raise UserError("The resolver '{0!s}' does not exist!".format(
-                            self.resolver))
-        uid = y.getUserId(self.login)
-        return uid, rtype, self.resolver
+        if self.uid is None:
+            y = get_resolver_object(self.resolver)
+            if y is None:
+                raise UserError("The resolver '{0!s}' does not exist!".format(
+                                self.resolver))
+            self.uid = y.getUserId(self.login)
+        return self.uid, rtype, self.resolver
 
     def exist(self):
         """
