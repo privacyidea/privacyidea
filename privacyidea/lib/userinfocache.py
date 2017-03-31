@@ -20,6 +20,8 @@ import functools
 
 import logging
 
+import datetime
+
 from privacyidea.lib.resolver import get_resolver_type
 from privacyidea.models import UserInfo
 
@@ -53,8 +55,10 @@ def add_to_cache(username, realm, resolver, user_id):
     # TODO: It is very possible that the entry did not exist in the cache when queried,
     # but was added in the meantime and exists now!
     # How do we handle that case?
-    record = UserInfo(username, realm, resolver, user_id)
-    log.debug('Adding record to cache: ({!r}, {!r}, {!r}, {!r})'.format(username, realm, resolver, user_id))
+    expiration = datetime.datetime.now() + datetime.timedelta(minutes=1)
+    record = UserInfo(username, realm, resolver, user_id, expiration)
+    log.debug('Adding record to cache: ({!r}, {!r}, {!r}, {!r}, {!r})'.format(
+        username, realm, resolver, user_id, expiration))
     record.save()
 
 def build_query(username=None,
@@ -63,10 +67,10 @@ def build_query(username=None,
                 user_id=None):
     """
     Build and return a SQLAlchemy query that searches the userinfo cache for a combination
-    of username, realm, resolver and user ID.
+    of username, realm, resolver and user ID. This also takes the expiration time into account.
     :return: SQLAlchemy Query
     """
-    query = UserInfo.query
+    query = UserInfo.query.filter(UserInfo.expiration > datetime.datetime.now())
     if username is not None:
         query = query.filter(UserInfo.username == username)
     if realm is not None:
