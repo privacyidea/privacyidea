@@ -2308,11 +2308,13 @@ class UserInfo(MethodsMixin, db.Model):
     realm = db.Column(db.Unicode(256), default=u"")
     resolver = db.Column(db.Unicode(120), default=u'')
     user_id = db.Column(db.Unicode(320), default=u'')
+    timestamp = db.Column(db.DateTime)
     expiration = db.Column(db.DateTime)
 
-    def __init__(self, username, realm, resolver, user_id, expiration):
+    def __init__(self, username, realm, resolver, user_id, timestamp, expiration):
         self.username = username
         self.realm = realm
         self.resolver = resolver
         self.user_id = user_id
+        self.timestamp = timestamp
         self.expiration = expiration

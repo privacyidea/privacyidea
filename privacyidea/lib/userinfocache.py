@@ -68,8 +68,9 @@ def add_to_cache(username, realm, resolver, user_id):
     # How do we handle that case?
     expiration_delta = get_expiration_delta_from_config()
     if expiration_delta:
+        now = datetime.datetime.now()
         expiration = datetime.datetime.now() + expiration_delta
-        record = UserInfo(username, realm, resolver, user_id, expiration)
+        record = UserInfo(username, realm, resolver, user_id, now, expiration)
         log.debug('Adding record to cache: ({!r}, {!r}, {!r}, {!r}, {!r})'.format(
             username, realm, resolver, user_id, expiration))
         record.save()
