@@ -113,6 +113,7 @@ class User(object):
         :return: True or False
         :rtype: bool
         """
+        # TODO: Should we add a check for `uid` here?
         return (self.login == other.login) and (self.resolver ==
                                                 other.resolver) and (
                 self.realm == other.realm)
@@ -134,8 +135,8 @@ class User(object):
         return ret
 
     def __repr__(self):
-        ret = ('User(login={0!r}, realm={1!r}, resolver={2!r}, uid={3!r})'.format(
-            self.login, self.realm, self.resolver, self.uid))
+        ret = ('User(login={0!r}, realm={1!r}, resolver={2!r})'.format(
+            self.login, self.realm, self.resolver))
         return ret
 
     def __nonzero__(self):
