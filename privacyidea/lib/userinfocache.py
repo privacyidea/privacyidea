@@ -22,10 +22,19 @@ import logging
 
 import datetime
 
+from privacyidea.lib.config import get_from_config
 from privacyidea.lib.resolver import get_resolver_type
 from privacyidea.models import UserInfo
 
 log = logging.getLogger(__name__)
+
+def get_expiration_delta_from_config():
+    """
+    Return a ``datetime.timedelta`` object that denotes the time after which
+    a cache entry expires.
+    """
+    expiration_seconds = int(get_from_config('userinfocache.expirationSeconds', '0'))
+    return datetime.timedelta(seconds=expiration_seconds)
 
 def one_or_none(query):
     """
@@ -46,7 +55,9 @@ def one_or_none(query):
 
 def add_to_cache(username, realm, resolver, user_id):
     """
-    Add the given record to the user information cache
+    Add the given record to the user information cache, if it is enabled.
+    The user info cache is considered disabled if the config option
+    'userinfocache.expirationSeconds' is set to 0.
     :param username: login name of the user
     :param realm: realm name of the user
     :param resolver: resolver name of the user
@@ -55,11 +66,13 @@ def add_to_cache(username, realm, resolver, user_id):
     # TODO: It is very possible that the entry did not exist in the cache when queried,
     # but was added in the meantime and exists now!
     # How do we handle that case?
-    expiration = datetime.datetime.now() + datetime.timedelta(minutes=1)
-    record = UserInfo(username, realm, resolver, user_id, expiration)
-    log.debug('Adding record to cache: ({!r}, {!r}, {!r}, {!r}, {!r})'.format(
-        username, realm, resolver, user_id, expiration))
-    record.save()
+    expiration_delta = get_expiration_delta_from_config()
+    if expiration_delta:
+        expiration = datetime.datetime.now() + expiration_delta
+        record = UserInfo(username, realm, resolver, user_id, expiration)
+        log.debug('Adding record to cache: ({!r}, {!r}, {!r}, {!r}, {!r})'.format(
+            username, realm, resolver, user_id, expiration))
+        record.save()
 
 def build_query(username=None,
                 realm=None,
