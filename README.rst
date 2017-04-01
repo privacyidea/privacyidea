@@ -56,6 +56,16 @@ VPN, remote access, SSH connections, access to web sites or web portals with
 a second factor during authentication. Thus boosting the security of your 
 existing applications.
 
+Overview
+========
+
+privacyIDEA runs as an additional service in your network and you can connect different 
+applications to privacyIDEA.
+
+.. image:: https://privacyidea.org/wp-content/uploads/2017/privacyIDEA-Integration.png
+    :alt: privacyIDEA Integration
+    :scale: 50 %
+
 privacyIDEA does not bind you to any decision of the authentication
 protocol or it does not dictate you where your user information should be
 stored. This is achieved by its totally modular architecture.
