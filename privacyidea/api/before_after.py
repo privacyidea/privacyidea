@@ -123,7 +123,7 @@ def before_request():
                          request.host
     # Already get some typical parameters to log
     serial = getParam(request.all_data, "serial")
-    if serial:
+    if serial and "**" not in serial:
         tokentype = get_token_type(serial)
     else:
         tokentype = None
