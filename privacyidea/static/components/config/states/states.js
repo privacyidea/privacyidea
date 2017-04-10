@@ -63,6 +63,14 @@ angular.module('privacyideaApp.configStates', ['ui.router']).config(
                     url: "/ldap/{resolvername:.*}",
                     templateUrl: configpath + "config.resolvers.ldap.html"
                 })
+                .state('config.resolvers.addkerberosresolver', {
+                    url: "/kerberos",
+                    templateUrl: configpath + "config.resolvers.kerberos.html"
+                })
+                .state('config.resolvers.editkerberosresolver', {
+                    url: "/kerberos/{resolvername:.*}",
+                    templateUrl: configpath + "config.resolvers.kerberos.html"
+                })
                 .state('config.resolvers.addscimresolver', {
                     url: "/scim",
                     templateUrl: configpath + "config.resolvers.scim.html"
