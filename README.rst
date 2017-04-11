@@ -40,13 +40,16 @@ privacyIDEA
     :alt: Codacy Badge
     :target: https://www.codacy.com/app/cornelius-koelbel/privacyidea
     
-.. image:: http://issuestats.com/github/privacyidea/privacyidea/badge/pr?style=flat
+.. image:: https://img.shields.io/issuestats/i/github/privacyidea/privacyidea.svg
     :alt: Issue stats
     :target: http://issuestats.com/github/privacyidea/privacyidea
 
-.. image:: http://issuestats.com/github/privacyidea/privacyidea/badge/issue?style=flat
+.. image:: https://img.shields.io/issuestats/p/github/privacyidea/privacyidea.svg
     :alt: Issue stats
     :target: http://issuestats.com/github/privacyidea/privacyidea
+
+.. image:: https://img.shields.io/twitter/follow/privacyidea.svg?style=social&label=Follow
+    :alt: privacyIDEA on twitter
     
 privacyIDEA is an open solution for strong two-factor authentication like 
 OTP tokens, SMS, smartphones or SSH keys.
