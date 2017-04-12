@@ -149,11 +149,11 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
             sql_query = sql_query.filter(func.lower(Token.tokentype) ==
                                          tokentype.lower())
 
-    if description is not None and tokentype.strip("*"):
+    if description is not None and description.strip("*"):
         # filter for Description
         if "*" in description:
             # match with "like"
-            sql_query = sql_query.filter(Token.description.like(
+            sql_query = sql_query.filter(func.lower(Token.description).like(
                 description.lower().replace("*", "%")))
         else:
             # exact match
