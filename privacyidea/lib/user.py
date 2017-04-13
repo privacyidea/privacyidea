@@ -59,7 +59,8 @@ from .realm import (get_realms,
                     get_default_realm,
                     get_realm)
 from .config import get_from_config
-from .usercache import cache_username, cache_resolver, cache_identifiers
+from .usercache import (user_cache, cache_username, cache_resolver,
+                        cache_identifiers)
 
 
 ENCODING = 'utf-8'
@@ -165,7 +166,7 @@ class User(object):
         resolvers = [r[0] for r in resolvers]
         return resolvers
 
-    @cache_resolver
+    @user_cache(cache_resolver)
     def get_resolvers(self, all_resolvers=False):
         """
         This returns the list of the resolvernames of the user.
@@ -209,7 +210,7 @@ class User(object):
             resolvers = [self.resolver]
         return resolvers
 
-    @cache_identifiers
+    @user_cache(cache_identifiers)
     def get_user_identifiers(self):
         """
         This returns the UserId  information from the resolver object and
@@ -665,7 +666,7 @@ def get_user_info(userid, resolvername):
 
 
 @log_with(log)
-@cache_username
+@user_cache(cache_username)
 def get_username(userid, resolvername):
     """
     Determine the username for a given id and a resolvername.
@@ -682,5 +683,4 @@ def get_username(userid, resolvername):
         if y:
             username = y.getUsername(userid)
     return username
-   
-    
+

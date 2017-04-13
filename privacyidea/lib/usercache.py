@@ -29,6 +29,43 @@ from privacyidea.models import UserCache
 log = logging.getLogger(__name__)
 
 
+class user_cache(object):
+    """
+    This is the decorator wrapper to call a specific resolver function to
+    allow user caching.
+    """
+
+    def __init__(self, decorator_function):
+        """
+        :param decorator_function: This is the cache function that is to be
+            called
+        :type decorator_function: function
+        """
+        self.decorator_function = decorator_function
+
+    def __call__(self, wrapped_function):
+        """
+        This decorates the given function.
+
+        :param wrapped_function: The function, that is decorated.
+        :return: None
+        """
+        @functools.wraps(wrapped_function)
+        def cache_wrapper(*args, **kwds):
+            return self.decorator_function(wrapped_function, *args, **kwds)
+
+        return cache_wrapper
+
+
+def delete_user_cache():
+    """
+    This completely deletes the user cache
+    :return:
+    """
+    r = UserCache.query.delete()
+    return r
+
+
 def get_expiration_delta_from_config():
     """
     Return a ``datetime.timedelta`` object that denotes the time after which
@@ -97,42 +134,39 @@ def build_query(username=None, realm=None, resolver=None, user_id=None):
     return query
 
 
-def cache_username(func):
+def cache_username(wrapped_function, userid, resolvername):
     """
-    Decorator that adds a UserCache cache lookup to a function that looks up user names
-    based on a user ID and a resolver name.
+    Decorator that adds a UserCache lookup to a function that looks up  user
+    names based on a user ID and a resolver name.
     Raises a RuntimeError in case of an inconsistent cache.
     """
-    @functools.wraps(func)
-    def user_cache_wrapper(userid, resolvername):
-        # try to fetch the record from the UserCache
-        results = build_query(user_id=userid, resolver=resolvername).all()
-        if results:
-            username = results[0].username
-            if len(results) == 1:
-                log.debug('Found username of {!r}/{!r} in cache: {!r}'.format(userid, resolvername, username))
-                return username
-            else:
-                # more than one result was returned
-                # check if all results produce the same username
-                # if not: RuntimeError!
-                usernames = set(result.username for result in results)
-                if len(usernames) == 1:
-                    log.debug('Found {!r} entries of {!r}/{!r} in cache, all pointing to to: {!r}'.format(
-                        len(usernames), userid, resolvername, username))
-                    return
-                else:
-                    raise RuntimeError(
-                        "User cache contains {!r} usernames for user ID {!r} and resolver {!r}".format(
-                            len(usernames), userid, resolvername))
+
+    # try to fetch the record from the UserCache
+    results = build_query(user_id=userid, resolver=resolvername).all()
+    if results:
+        username = results[0].username
+        if len(results) == 1:
+            log.debug('Found username of {!r}/{!r} in cache: {!r}'.format(userid, resolvername, username))
+            return username
         else:
-            # record was not found in the cache
-            return func(userid, resolvername)
+            # more than one result was returned
+            # check if all results produce the same username
+            # if not: RuntimeError!
+            usernames = set(result.username for result in results)
+            if len(usernames) == 1:
+                log.debug('Found {!r} entries of {!r}/{!r} in cache, all pointing to to: {!r}'.format(
+                    len(usernames), userid, resolvername, username))
+                return
+            else:
+                raise RuntimeError(
+                    "User cache contains {!r} usernames for user ID {!r} and resolver {!r}".format(
+                        len(usernames), userid, resolvername))
+    else:
+        # record was not found in the cache
+        return wrapped_function(userid, resolvername)
 
-    return user_cache_wrapper
 
-
-def cache_resolver(func):
+def cache_resolver(wrapped_function, self, all_resolvers=False):
     """
     Decorator that adds a user cache lookup to a method that looks up and sets
     the resolver of a specific user.
@@ -140,57 +174,51 @@ def cache_resolver(func):
     If the cache does not contain a matching record, the original function is
     invoked and the respective record is added to the cache (if possible).
     """
-    @functools.wraps(func)
-    def resolver_cache_wrapper(self, all_resolvers=False):
-        # exit early if the resolver is already known
-        if self.resolver:
+    # exit early if the resolver is already known
+    if self.resolver:
+        return [self.resolver]
+    if self.login and self.realm:
+        # tne user is identifiable by login name and realm
+        result = one_or_none(build_query(username=self.login, realm=self.realm))
+        if result is not None:
+            # set and return the resolver
+            log.debug('Set resolver and UID of {!r} from cache: {!r}, {!r}'.format(
+                self, result.resolver, result.user_id))
+            self.resolver = result.resolver
+            self.uid = result.user_id
             return [self.resolver]
-        if self.login and self.realm:
-            # tne user is identifiable by login name and realm
-            result = one_or_none(build_query(username=self.login, realm=self.realm))
-            if result is not None:
-                # set and return the resolver
-                log.debug('Set resolver and UID of {!r} from cache: {!r}, {!r}'.format(
-                    self, result.resolver, result.user_id))
-                self.resolver = result.resolver
-                self.uid = result.user_id
-                return [self.resolver]
-            else:
-                # not found in the cache, call original function
-                result = func(self, all_resolvers)
-                # now, `self` might have `resolver` and `uid` set
-                if self.resolver and self.uid:
-                    add_to_cache(self.login, self.realm, self.resolver, self.uid)
-                return result
         else:
-            # user object has no proper login or realm name, call original function
-            log.debug('{!r} misses loginname or realm, falling back to resolver lookup'.format(self))
-            return func(self, all_resolvers)
+            # not found in the cache, call original function
+            result = wrapped_function(self, all_resolvers)
+            # now, `self` might have `resolver` and `uid` set
+            if self.resolver and self.uid:
+                add_to_cache(self.login, self.realm, self.resolver, self.uid)
+            return result
+    else:
+        # user object has no proper login or realm name, call original function
+        log.debug('{!r} misses loginname or realm, falling back to resolver lookup'.format(self))
+        return wrapped_function(self, all_resolvers)
 
-    return resolver_cache_wrapper
 
-
-def cache_identifiers(func):
+def cache_identifiers(wrapped_function, self):
     """
     Decorator that adds a user cache lookup to a method that returns a user's identifiers
     consisting of (uid, resolvertype, resolver).
     If the cache does not contain a matching record, the original function is invoked
     and the respective record is added to the cache.
     """
-    @functools.wraps(func)
-    def identifiers_cache_wrapper(self):
-        # TODO: If `self` has `uid` set, we do not need to query the database at all!
-        # TODO: review the query: should we really filter for the resolver?
-        result = one_or_none(build_query(username=self.login, realm=self.realm, resolver=self.resolver))
-        if result is not None:
-            rtype = get_resolver_type(result.resolver)
-            identifiers = (result.user_id, rtype, result.resolver)
-            log.debug('Found identifiers of {!r} in cache: {!r}'.format(self, identifiers))
-            return identifiers
-        else:
-            # not yet found in the cache: invoke original function and add to cache
-            (user_id, rtype, resolver) = result = func(self)
-            if user_id:
-                add_to_cache(self.login, self.realm, resolver, user_id)
-            return result
-    return identifiers_cache_wrapper
+    # TODO: If `self` has `uid` set, we do not need to query the database at all!
+    # TODO: review the query: should we really filter for the resolver?
+    result = one_or_none(build_query(username=self.login, realm=self.realm, resolver=self.resolver))
+    if result is not None:
+        rtype = get_resolver_type(result.resolver)
+        identifiers = (result.user_id, rtype, result.resolver)
+        log.debug('Found identifiers of {!r} in cache: {!r}'.format(self, identifiers))
+        return identifiers
+    else:
+        # not yet found in the cache: invoke original function and add to cache
+        (user_id, rtype, resolver) = result = wrapped_function(self)
+        if user_id:
+            add_to_cache(self.login, self.realm, resolver, user_id)
+        return result
+
