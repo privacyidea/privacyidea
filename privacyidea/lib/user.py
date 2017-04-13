@@ -59,7 +59,7 @@ from .realm import (get_realms,
                     get_default_realm,
                     get_realm)
 from .config import get_from_config
-from .userinfocache import cache_username, cache_resolver, cache_identifiers
+from .usercache import cache_username, cache_resolver, cache_identifiers
 
 
 ENCODING = 'utf-8'

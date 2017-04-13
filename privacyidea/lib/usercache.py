@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #  2017-03-30   Friedrich Weber <friedrich.weber@netknights.it>
-#               First ideas for a user information cache to improve performance
+#               First ideas for a user cache to improve performance
 #
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -24,17 +24,19 @@ import datetime
 
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.resolver import get_resolver_type
-from privacyidea.models import UserInfo
+from privacyidea.models import UserCache
 
 log = logging.getLogger(__name__)
+
 
 def get_expiration_delta_from_config():
     """
     Return a ``datetime.timedelta`` object that denotes the time after which
     a cache entry expires.
     """
-    expiration_seconds = int(get_from_config('userinfocache.expirationSeconds', '0'))
+    expiration_seconds = int(get_from_config('usercache.expirationSeconds', '0'))
     return datetime.timedelta(seconds=expiration_seconds)
+
 
 def one_or_none(query):
     """
@@ -53,11 +55,12 @@ def one_or_none(query):
     else:
         raise RuntimeError('Expected one result, got {!r}'.format(length))
 
+
 def add_to_cache(username, realm, resolver, user_id):
     """
-    Add the given record to the user information cache, if it is enabled.
-    The user info cache is considered disabled if the config option
-    'userinfocache.expirationSeconds' is set to 0.
+    Add the given record to the user cache, if it is enabled.
+    The user cache is considered disabled if the config option
+    'usercache.expirationSeconds' is set to 0.
     :param username: login name of the user
     :param realm: realm name of the user
     :param resolver: resolver name of the user
@@ -68,42 +71,41 @@ def add_to_cache(username, realm, resolver, user_id):
     # How do we handle that case?
     expiration_delta = get_expiration_delta_from_config()
     if expiration_delta:
-        now = datetime.datetime.now()
         expiration = datetime.datetime.now() + expiration_delta
-        record = UserInfo(username, realm, resolver, user_id, now, expiration)
+        record = UserCache(username, realm, resolver, user_id,
+                           expiration=expiration)
         log.debug('Adding record to cache: ({!r}, {!r}, {!r}, {!r}, {!r})'.format(
             username, realm, resolver, user_id, expiration))
         record.save()
 
-def build_query(username=None,
-                realm=None,
-                resolver=None,
-                user_id=None):
+
+def build_query(username=None, realm=None, resolver=None, user_id=None):
     """
-    Build and return a SQLAlchemy query that searches the userinfo cache for a combination
+    Build and return a SQLAlchemy query that searches the UserCache cache for a combination
     of username, realm, resolver and user ID. This also takes the expiration time into account.
     :return: SQLAlchemy Query
     """
-    query = UserInfo.query.filter(UserInfo.expiration > datetime.datetime.now())
+    query = UserCache.query.filter(UserCache.expiration > datetime.datetime.now())
     if username is not None:
-        query = query.filter(UserInfo.username == username)
+        query = query.filter(UserCache.username == username)
     if realm is not None:
-        query = query.filter(UserInfo.realm == realm)
+        query = query.filter(UserCache.realm == realm)
     if resolver is not None:
-        query = query.filter(UserInfo.resolver == resolver)
+        query = query.filter(UserCache.resolver == resolver)
     if user_id is not None:
-        query = query.filter(UserInfo.user_id == user_id)
+        query = query.filter(UserCache.user_id == user_id)
     return query
+
 
 def cache_username(func):
     """
-    Decorator that adds a userinfo cache lookup to a function that looks up user names
+    Decorator that adds a UserCache cache lookup to a function that looks up user names
     based on a user ID and a resolver name.
     Raises a RuntimeError in case of an inconsistent cache.
     """
     @functools.wraps(func)
-    def userinfo_cache_wrapper(userid, resolvername):
-        # try to fetch the record from the userinfo cache
+    def user_cache_wrapper(userid, resolvername):
+        # try to fetch the record from the UserCache
         results = build_query(user_id=userid, resolver=resolvername).all()
         if results:
             username = results[0].username
@@ -121,21 +123,22 @@ def cache_username(func):
                     return
                 else:
                     raise RuntimeError(
-                        "User info cache contains {!r} usernames for user ID {!r} and resolver {!r}".format(
+                        "User cache contains {!r} usernames for user ID {!r} and resolver {!r}".format(
                             len(usernames), userid, resolvername))
         else:
             # record was not found in the cache
             return func(userid, resolvername)
 
-    return userinfo_cache_wrapper
+    return user_cache_wrapper
+
 
 def cache_resolver(func):
     """
-    Decorator that adds a userinfo cache lookup to a method that looks up and sets the
-    resolver of a specific user.
+    Decorator that adds a user cache lookup to a method that looks up and sets
+    the resolver of a specific user.
     May raise a RuntimeError if the cache is inconsistent.
-    If the cache does not contain a matching record, the original function is invoked
-    and the respective record is added to the cache (if possible).
+    If the cache does not contain a matching record, the original function is
+    invoked and the respective record is added to the cache (if possible).
     """
     @functools.wraps(func)
     def resolver_cache_wrapper(self, all_resolvers=False):
@@ -166,9 +169,10 @@ def cache_resolver(func):
 
     return resolver_cache_wrapper
 
+
 def cache_identifiers(func):
     """
-    Decorator that adds a userinfo cache lookup to a method that returns a user's identifiers
+    Decorator that adds a user cache lookup to a method that returns a user's identifiers
     consisting of (uid, resolvertype, resolver).
     If the cache does not contain a matching record, the original function is invoked
     and the respective record is added to the cache.

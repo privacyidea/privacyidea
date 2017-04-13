@@ -12,7 +12,7 @@ from privacyidea.models import (Token,
                                 PasswordReset, EventHandlerOption,
                                 EventHandler, SMSGatewayOption, SMSGateway,
                                 EventHandlerCondition,
-                                ClientApplication, Subscription)
+                                ClientApplication, Subscription, UserCache)
 from .base import MyTestCase
 from datetime import datetime
 from datetime import timedelta
@@ -639,3 +639,29 @@ class TokenModelTestCase(MyTestCase):
         s = Subscription.query.filter(
             Subscription.application == "otrs").first()
         self.assertEqual(s, None)
+
+    def test_23_usercache(self):
+        username = "cornelius"
+        realm = "realm1"
+        resolver = "resolver1"
+        user_id = 1
+
+        # create a user in the cache
+        cached_user = UserCache(username, realm, resolver, user_id)
+        self.assertTrue(cached_user)
+        cached_user.save()
+
+        # search a user in the cache
+        find_user = UserCache.query.filter(UserCache.username ==
+                                           username).first()
+        self.assertTrue(find_user)
+        self.assertEqual(find_user.user_id, str(user_id))
+        self.assertEqual(find_user.realm, realm)
+        self.assertEqual(find_user.resolver, resolver)
+
+        # delete the user from the cache
+        r = find_user.delete()
+        self.assertTrue(r)
+        find_user = UserCache.query.filter(UserCache.username ==
+                                           username).first()
+        self.assertFalse(find_user)
