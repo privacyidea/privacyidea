@@ -59,8 +59,7 @@ from .realm import (get_realms,
                     get_default_realm,
                     get_realm)
 from .config import get_from_config
-from .usercache import (user_cache, cache_username, cache_resolver,
-                        cache_identifiers)
+from .usercache import (user_cache, cache_username, user_init)
 
 
 ENCODING = 'utf-8'
@@ -85,17 +84,34 @@ class User(object):
     login = ""
     realm = ""
     resolver = ""
-    
+
     def __init__(self, login="", realm="", resolver=""):
         self.login = login or ""
         self.realm = (realm or "").lower()
+        if resolver == "**":
+            resolver = ""
         self.resolver = resolver or ""
         self.uid = None
+        # Enrich user object with information from the userstore or from the
+        # usercache
+        if login:
+            self._get_user_from_userstore()
+            # Just store the resolver type
+            self.rtype = get_resolver_type(self.resolver)
+
+    @user_cache(user_init)
+    def _get_user_from_userstore(self):
         if not self.resolver:
             # set the resolver implicitly!
-            self.get_resolvers()
+            self._get_resolvers()
 
-        self.Resolvers_list = []
+        # Get Identifiers
+        if self.resolver:
+            y = get_resolver_object(self.resolver)
+            if y is None:
+                raise UserError("The resolver '{0!s}' does not exist!".format(
+                    self.resolver))
+            self.uid = y.getUserId(self.login)
 
     def is_empty(self):
         # ignore if only resolver is set! as it makes no sense
@@ -166,8 +182,7 @@ class User(object):
         resolvers = [r[0] for r in resolvers]
         return resolvers
 
-    @user_cache(cache_resolver)
-    def get_resolvers(self, all_resolvers=False):
+    def _get_resolvers(self, all_resolvers=False):
         """
         This returns the list of the resolvernames of the user.
         If no resolver attribute exists at the moment, the user is searched
@@ -210,7 +225,6 @@ class User(object):
             resolvers = [self.resolver]
         return resolvers
 
-    @user_cache(cache_identifiers)
     def get_user_identifiers(self):
         """
         This returns the UserId  information from the resolver object and
@@ -222,37 +236,16 @@ class User(object):
         :rtype: tuple
         """
         if not self.resolver:
-            self.get_resolvers()
-        if not self.resolver:
-            # The resolver list is empty
             raise UserError("The user can not be found in any resolver in "
                             "this realm!")
-        rtype = get_resolver_type(self.resolver)
-        if self.uid is None:
-            y = get_resolver_object(self.resolver)
-            if y is None:
-                raise UserError("The resolver '{0!s}' does not exist!".format(
-                                self.resolver))
-            self.uid = y.getUserId(self.login)
-        return self.uid, rtype, self.resolver
+        return self.uid, self.rtype, self.resolver
 
     def exist(self):
         """
         Check if the user object exists in the user store
         :return: True or False
         """
-        success = True
-        uid = None
-        try:
-            uid, _rtype, _resolver = self.get_user_identifiers()
-        except UserError:
-            log.debug("User {0!s} does not exist.".format(self))
-            success = False
-        if not uid:
-            # The SQL resolver does not raise an exception but returns an
-            # empty UID.
-            success = False
-        return success
+        return bool(self.uid)
 
     @property
     def info(self):
@@ -339,7 +332,7 @@ class User(object):
                      "authenticate" % (self.login, self.realm))
             if type(self.login) != unicode:
                 self.login = self.login.decode(ENCODING)
-            res = self.get_resolvers()
+            res = self._get_resolvers()
             # Now we know, the resolvers of this user and we can verify the
             # password
             if len(res) == 1:
@@ -372,7 +365,7 @@ class User(object):
         """
         searchFields = {}
     
-        for reso in self.get_resolvers():
+        for reso in self._get_resolvers():
             # try to load the UserIdResolver Class
             try:
                 y = get_resolver_object(reso)
@@ -404,7 +397,7 @@ class User(object):
             log.info("User info for user {0!s}@{1!s} about to be updated.".format(self.login, self.realm))
             if type(self.login) != unicode:
                 self.login = self.login.decode(ENCODING)
-            res = self.get_resolvers()
+            res = self._get_resolvers()
             # Now we know, the resolvers of this user and we can update the
             # user
             if len(res) == 1:
@@ -442,7 +435,7 @@ class User(object):
             log.info("User {0!s}@{1!s} about to be deleted.".format(self.login, self.realm))
             if type(self.login) != unicode:
                 self.login = self.login.decode(ENCODING)
-            res = self.get_resolvers()
+            res = self._get_resolvers()
             # Now we know, the resolvers of this user and we can delete it
             if len(res) == 1:
                 y = get_resolver_object(self.resolver)
@@ -561,12 +554,9 @@ def get_user_from_param(param, optionalOrRequired=optional):
         if realm is None or realm == "":
             realm = get_default_realm()
 
-    user_object = User(login=username, realm=realm)
+    user_object = User(login=username, realm=realm,
+                       resolver=param.get("resolver"))
 
-    if "resolver" in param:
-        user_object.resolver = param["resolver"]
-    else:
-        user_object.get_resolvers()
     return user_object
 
 

@@ -59,7 +59,7 @@ from .clienttype import client_blueprint
 from .subscriptions import subscriptions_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from ..lib.error import (privacyIDEAError,
-                         AuthError,
+                         AuthError, UserError,
                          PolicyError)
 from privacyidea.lib.utils import get_client_ip
 
@@ -112,6 +112,10 @@ def before_request():
         # Some endpoints do not need users OR e.g. the setPolicy endpoint
         # takes a list as the userobject
         request.User = None
+    except UserError:
+        # In cases like the policy API, the parameter "user" is part of the
+        # policy and will not resolve to a user object
+        pass
 
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)

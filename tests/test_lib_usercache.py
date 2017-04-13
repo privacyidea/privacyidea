@@ -8,8 +8,9 @@ from .base import MyTestCase
 from privacyidea.lib.resolver import (save_resolver, delete_resolver)
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User, get_username)
-from privacyidea.lib.usercache import (get_expiration_delta_from_config,
-                                       cache_username, delete_user_cache)
+from privacyidea.lib.usercache import (get_cache_time,
+                                       cache_username, delete_user_cache,
+                                       EXPIRATION_SECONDS)
 from privacyidea.lib.config import set_privacyidea_config
 from datetime import timedelta
 from datetime import datetime
@@ -42,10 +43,10 @@ class UserCacheTestCase(MyTestCase):
         delete_resolver(self.resolvername1)
 
     def test_00_set_config(self):
-        set_privacyidea_config("usercache.expirationSeconds", 60)
+        set_privacyidea_config(EXPIRATION_SECONDS, 600)
 
-        exp_delta = get_expiration_delta_from_config()
-        self.assertEqual(exp_delta, timedelta(seconds=60))
+        exp_delta = get_cache_time()
+        self.assertEqual(exp_delta, timedelta(seconds=600))
 
     def test_01_get_username_from_cache(self):
         # If a username is already contained in the cache, the function
@@ -55,9 +56,8 @@ class UserCacheTestCase(MyTestCase):
         resolver = "resolver1"
         uid = "1"
 
-        expiration_delta = get_expiration_delta_from_config()
-        r = UserCache(username, realm, resolver, uid,
-                      expiration=datetime.now() + expiration_delta).save()
+        expiration_delta = get_cache_time()
+        r = UserCache(username, realm, resolver, uid).save()
         u_name = cache_username(get_username, uid, resolver)
         self.assertEqual(u_name, username)
 
@@ -73,8 +73,7 @@ class UserCacheTestCase(MyTestCase):
         self.assertTrue(r >= 0)
 
         # The username is not in the cache. It is fetched from the resolver
-        # At the same time the cache is filled. Implicitly we test the
-        # get_resolvers!
+        # At the same time the cache is filled.
         user = User(self.username, self.realm1)
         self.assertEqual(user.login, self.username)
 
@@ -102,7 +101,7 @@ class UserCacheTestCase(MyTestCase):
 
         # The username is not in the cache. It is fetched from the resolver
         # At the same time the cache is filled. Implicitly we test the
-        # get_resolvers!
+        # _get_resolvers!
         user = User(self.username, self.realm1, self.resolvername1)
         uids = user.get_user_identifiers()
         self.assertEqual(user.login, self.username)

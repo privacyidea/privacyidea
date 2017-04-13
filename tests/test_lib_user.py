@@ -71,14 +71,14 @@ class UserTestCase(MyTestCase):
         user = User(login="root",
                     realm=self.realm1)
 
-        resolvers = user.get_resolvers()
+        resolvers = user._get_resolvers()
         self.assertTrue(self.resolvername1 in resolvers, resolvers)
         self.assertFalse(self.resolvername2 in resolvers, resolvers)
         
         user2 = User(login="root",
                      realm=self.realm1,
                      resolver=self.resolvername1)
-        resolvers = user2.get_resolvers()
+        resolvers = user2._get_resolvers()
         self.assertTrue(self.resolvername1 in resolvers, resolvers)
         self.assertFalse(self.resolvername2 in resolvers, resolvers)
         
