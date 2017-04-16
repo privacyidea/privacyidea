@@ -63,15 +63,20 @@ def get_cache_time():
     return datetime.timedelta(seconds=seconds)
 
 
-def delete_user_cache(resolver=None, username=None):
+def delete_user_cache(resolver=None, username=None, expired=None):
     """
     This completely deletes the user cache.
     If no parameter is given, it deletes the user cache completely.
 
+    :param resolver: Will only delete entries of this resolver
+    :param username: Will only delete entries of this username
+    :param expired: Will delete expired (True) or non-expired (False) entries
+        or will not care about the expiration date (None)
+
     :return:
     """
     filter_condition = create_filter(username=username, resolver=resolver,
-                                     expiration=False)
+                                     expired=expired)
     r = UserCache.query.filter(filter_condition).delete()
     return r
 
@@ -104,7 +109,8 @@ def add_to_cache(username, realm, resolver, user_id):
     :param resolver: resolver name of the user
     :param user_id: ID of the user in its resolver
     """
-    # TODO: It is very possible that the entry did not exist in the cache when queried,
+    # TODO: It is very possible that the entry did not exist in the cache
+    # when queried,
     # but was added in the meantime and exists now!
     # How do we handle that case?
     cache_time = get_cache_time()
@@ -118,19 +124,29 @@ def add_to_cache(username, realm, resolver, user_id):
 
 
 def create_filter(username=None, realm=None, resolver=None,
-                  user_id=None, expiration=True):
+                  user_id=None, expired=False):
     """
     Build and return a SQLAlchemy query that searches the UserCache cache for a combination
     of username, realm, resolver and user ID. This also takes the expiration time into account.
 
-    :param expiration: If set to True will filter for not expired entries.
+    :param username: will filter for username
+    :param realm: will filter for this realm name
+    :param resolver: will filter for this resolver name
+    :param user_id: will filter for this user ID
+    :param expired: Can be True/False/None. If set to False will return
+        non-expired entries
 
     :return: SQLAlchemy Filter
     """
     conditions = []
-    if expiration:
+    if expired:
+        cache_time = get_cache_time()
+        conditions.append(
+            UserCache.timestamp < datetime.datetime.now() - cache_time)
+    elif expired is False:
         cache_time = get_cache_time()
         conditions.append(UserCache.timestamp >= datetime.datetime.now() - cache_time)
+
     if username:
         conditions.append(UserCache.username == username)
     if realm:
@@ -178,11 +194,18 @@ def cache_username(wrapped_function, userid, resolvername):
 
 
 def user_init(wrapped_function, self):
+    """
+    Decorator to decorate the User creation function
+
+    :param wrapped_function:
+    :param self:
+    :return:
+    """
     filter_conditions = create_filter(username=self.login, realm=self.realm,
                                      resolver=self.resolver)
     result = one_or_none(UserCache.query.filter(filter_conditions))
     if result:
-        # User is cached
+        # Cached user exists
         self.resolver = result.resolver
         self.uid = result.user_id
 
