@@ -63,12 +63,16 @@ def get_cache_time():
     return datetime.timedelta(seconds=seconds)
 
 
-def delete_user_cache():
+def delete_user_cache(resolver=None, username=None):
     """
-    This completely deletes the user cache
+    This completely deletes the user cache.
+    If no parameter is given, it deletes the user cache completely.
+
     :return:
     """
-    r = UserCache.query.delete()
+    filter_condition = create_filter(username=username, resolver=resolver,
+                                     expiration=False)
+    r = UserCache.query.filter(filter_condition).delete()
     return r
 
 
@@ -114,15 +118,19 @@ def add_to_cache(username, realm, resolver, user_id):
 
 
 def create_filter(username=None, realm=None, resolver=None,
-                  user_id=None):
+                  user_id=None, expiration=True):
     """
     Build and return a SQLAlchemy query that searches the UserCache cache for a combination
     of username, realm, resolver and user ID. This also takes the expiration time into account.
-    :return: SQLAlchemy Query
+
+    :param expiration: If set to True will filter for not expired entries.
+
+    :return: SQLAlchemy Filter
     """
-    cache_time = get_cache_time()
     conditions = []
-    conditions.append(UserCache.timestamp >= datetime.datetime.now() - cache_time)
+    if expiration:
+        cache_time = get_cache_time()
+        conditions.append(UserCache.timestamp >= datetime.datetime.now() - cache_time)
     if username:
         conditions.append(UserCache.username == username)
     if realm:

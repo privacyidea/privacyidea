@@ -120,3 +120,29 @@ class UserCacheTestCase(MyTestCase):
         # resolver does not exist anymore.
         u_name = get_username(self.uid, self.resolvername1)
         self.assertEqual(u_name, "")
+
+    def test_04_delete_cache(self):
+        UserCache("hans1", "realm1", "resolver1", "uid1").save()
+        UserCache("hans2", "realm2", "resolver2", "uid2").save()
+
+        r = UserCache.query.filter(UserCache.username == "hans1").first()
+        self.assertTrue(r)
+        r = UserCache.query.filter(UserCache.username == "hans2").first()
+        self.assertTrue(r)
+
+        # delete hans1
+        delete_user_cache(username="hans1")
+        r = UserCache.query.filter(UserCache.username == "hans1").first()
+        self.assertFalse(r)
+        r = UserCache.query.filter(UserCache.username == "hans2").first()
+        self.assertTrue(r)
+
+        # delete resolver2
+        delete_user_cache(resolver="resolver2")
+        r = UserCache.query.filter(UserCache.username == "hans1").first()
+        self.assertFalse(r)
+        r = UserCache.query.filter(UserCache.username == "hans2").first()
+        self.assertFalse(r)
+
+
+
