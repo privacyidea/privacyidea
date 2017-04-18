@@ -126,7 +126,7 @@ def init():
     :jsonparam genkey: set to =1, if key should be generated. We either
                    need otpkey or genkey
     :jsonparam keysize: the size (byte) of the key. Either 20 or 32. Default is 20
-    :jsonparam serial: required: the serial number/identifier of the token
+    :jsonparam serial: the serial number/identifier of the token
     :jsonparam description: A description for the token
     :jsonparam pin: the pin of the token. "OTP PIN"
     :jsonparam user: the login user name. This user gets the token assigned
@@ -139,6 +139,10 @@ def init():
     :jsonparam validity_period_end: The end of the validity period
 
     :return: a json result with a boolean "result": true
+
+    Depending on the token type there can be additional parameters.
+    In the tokenclass you can see additional parameters in the method ``update``
+    when looking for ``getParam`` functions.
 
     **Example response**:
 
