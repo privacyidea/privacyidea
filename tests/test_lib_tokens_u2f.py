@@ -7,7 +7,8 @@ from .base import MyTestCase
 from privacyidea.lib.tokens.u2ftoken import U2fTokenClass
 from privacyidea.lib.tokens.u2f import (check_registration_data,
                                         parse_registration_data, url_decode,
-                                        check_response, parse_response_data)
+                                        check_response, parse_response_data,
+                                        x509name_to_string)
 from privacyidea.lib.token import init_token
 from privacyidea.lib.config import set_privacyidea_config
 import binascii
@@ -148,6 +149,14 @@ class U2FTokenTestCase(MyTestCase):
         idetail = token.get_init_detail()
         subject = idetail.get("u2fRegisterResponse").get("subject")
         self.assertEqual(subject, 'Yubico U2F EE Serial 13831167861')
+
+        # check the tokeninfo of the attestation certificate
+        issuer = token.get_tokeninfo("attestation_issuer")
+        subject = token.get_tokeninfo("attestation_subject")
+        serial = token.get_tokeninfo("attestation_serial")
+        self.assertEqual(issuer, "CN=Yubico U2F Root CA Serial 457200631")
+        self.assertEqual(subject, "CN=Yubico U2F EE Serial 13831167861")
+        self.assertEqual(serial, "946265973")
 
         #
         # Do some authentication

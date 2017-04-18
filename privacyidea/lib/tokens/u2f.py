@@ -328,3 +328,14 @@ def der_decode(signature_bin):
     if len(signature_bin_asn) != 64:
         raise Exception("The signatrue needs to be 64 bytes.")
     return signature_bin_asn
+
+
+def x509name_to_string(x509name):
+    """
+    converts a X509Name to a string as in a DN
+
+    :param x509name: THe X509Name object
+    :return:
+    """
+    components = x509name.get_components()
+    return ",".join(["{0}={1}".format(c[0], c[1]) for c in components])

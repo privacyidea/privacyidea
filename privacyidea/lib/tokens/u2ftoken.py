@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-04-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Save attestation cert info to tokeninfo
 #  2015-11-22 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Adding dynamic facet list
 #
@@ -32,7 +34,8 @@ from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
                                         parse_registration_data, url_encode,
-                                        parse_response_data, check_response)
+                                        parse_response_data, check_response,
+                                        x509name_to_string)
 from privacyidea.lib.error import ValidateError
 from privacyidea.lib.policy import SCOPE
 import base64
@@ -283,6 +286,13 @@ class U2fTokenClass(TokenClass):
                                     user_pub_key, key_handle, signature)
             self.set_otpkey(key_handle)
             self.add_tokeninfo("pubKey", user_pub_key)
+            # add attestation certificat info
+            issuer = x509name_to_string(attestation_cert.get_issuer())
+            serial = "{!s}".format(attestation_cert.get_serial_number())
+            subject = x509name_to_string(attestation_cert.get_subject())
+            self.add_tokeninfo("attestation_issuer", issuer)
+            self.add_tokeninfo("attestation_serial", serial)
+            self.add_tokeninfo("attestation_subject", subject)
 
         self.set_description(description)
 
