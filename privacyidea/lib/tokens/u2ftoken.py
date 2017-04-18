@@ -36,7 +36,7 @@ from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
                                         parse_registration_data, url_encode,
                                         parse_response_data, check_response,
                                         x509name_to_string)
-from privacyidea.lib.error import ValidateError
+from privacyidea.lib.error import ValidateError, PolicyError
 from privacyidea.lib.policy import SCOPE
 import base64
 import binascii
@@ -305,6 +305,11 @@ class U2fTokenClass(TokenClass):
             issuer = x509name_to_string(attestation_cert.get_issuer())
             serial = "{!s}".format(attestation_cert.get_serial_number())
             subject = x509name_to_string(attestation_cert.get_subject())
+
+            #TODO: At this point we can check, if the attestation certificate
+            # is allowed in the policy scope=ENROLL
+            # If not, we can raise a PolicyError
+
             self.add_tokeninfo("attestation_issuer", issuer)
             self.add_tokeninfo("attestation_serial", serial)
             self.add_tokeninfo("attestation_subject", subject)
@@ -464,6 +469,17 @@ class U2fTokenClass(TokenClass):
                 if counter > self.get_otp_count():
                     self.set_otp_count(counter)
                     ret = counter
+                    # TODO: At this point we can check, if the attestation
+                    # certificate is authorized.
+                    # If not, we can raise a policy exception
+                    g = options.get("g")
+                    allowed_certs = g.policy_object.get_action_values(
+                        U2FACTION.REQ,
+                        scope=SCOPE.AUTHZ,
+                        client=g.client_ip)
+                    if allowed_certs:
+                        pass
+
                 else:
                     log.warning("The signature of %s was valid, but contained "
                                 "an old counter." % self.token.serial)
