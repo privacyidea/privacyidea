@@ -187,3 +187,19 @@ if the token was not successfully used for 12 hours, 123 days or 2 years.
 
 The date of the last successful authentication is store in the `tokeninfo`
 field of a token and denoted in UTC.
+
+u2f_req
+~~~~~~~
+
+type: string
+
+Only the specified U2F devices are authorized to authenticate.
+The administrator can specify the action like this:
+
+    u2f_req=subject/.*Yubico.*/
+
+The the key word can be "subject", "issuer" or "serial". Followed by a
+regular expression. During registration of the U2F device the information
+from the attestation certificate is stored in the tokeninfo.
+Only if the regexp matches this value, the authentication with such U2F
+device is authorized.

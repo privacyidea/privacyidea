@@ -186,6 +186,7 @@ required = False
 
 class U2FACTION(object):
     FACETS = "u2f_facets"
+    REQ = "u2f_req"
 
 
 class U2fTokenClass(TokenClass):
@@ -238,6 +239,20 @@ class U2fTokenClass(TokenClass):
                            'type': 'str',
                            'desc': _("This is a list of FQDN hostnames "
                                      "trusting the registered U2F tokens.")}
+                   },
+                   SCOPE.AUTHZ: {
+                       U2FACTION.REQ: {
+                           'type': 'str',
+                           'desc': _("Only specified U2F tokens are "
+                                     "authorized.")
+                       }
+                   },
+                   SCOPE.ENROLL: {
+                       U2FACTION.REQ: {
+                           'type': 'str',
+                           'desc': _("Only specified U2F tokens are allowed "
+                                     "to be registered.")
+                       }
                    }
                }
                }
