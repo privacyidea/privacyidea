@@ -167,3 +167,22 @@ class UserCacheTestCase(MyTestCase):
 
         u_name = cache_username(get_username, "uid1", "resolver1")
         self.assertEqual(u_name, "hans2")
+
+        # Clean up the cache
+        r = delete_user_cache()
+
+    def test_06_implicit_cache_population(self):
+        self._create_realm()
+        self.assertEquals(UserCache.query.count(), 0)
+        # the cache is empty, so the username is read from the resolver
+        # TODO: Not using `cache_username` here, because `get_username` is already
+        # decorated, so we would add two entries to the cache
+        u_name = get_username(self.uid, self.resolvername1)
+        self.assertEqual(self.username, u_name)
+        # it should be part of the cache now
+        r = UserCache.query.filter(UserCache.user_id == self.uid, UserCache.resolver == self.resolvername1).one()
+        self.assertEqual(self.username, u_name)
+        # Apart from that, the cache should be empty.
+        self.assertEqual(UserCache.query.count(), 1)
+
+        self._delete_realm()

@@ -144,9 +144,9 @@ def create_filter(username=None, resolver=None,
 
 def cache_username(wrapped_function, userid, resolvername):
     """
-    Decorator that adds a UserCache lookup to a function that looks up  user
+    Decorator that adds a UserCache lookup to a function that looks up user
     names based on a user ID and a resolver name.
-    Raises a RuntimeError in case of an inconsistent cache.
+    After a successful lookup, the entry is added to the cache.
     """
 
     # try to fetch the record from the UserCache
@@ -159,7 +159,11 @@ def cache_username(wrapped_function, userid, resolvername):
         return username
     else:
         # record was not found in the cache
-        return wrapped_function(userid, resolvername)
+        username = wrapped_function(userid, resolvername)
+        if username:
+            # If we could figure out a user name, add the record to the cache.
+            add_to_cache(username, resolvername, userid)
+        return username
 
 
 def user_init(wrapped_function, self):
