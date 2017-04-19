@@ -59,7 +59,7 @@ from .realm import (get_realms,
                     get_default_realm,
                     get_realm)
 from .config import get_from_config
-from .usercache import (user_cache, cache_username, user_init)
+from .usercache import (user_cache, cache_username, user_init, delete_user_cache)
 
 
 ENCODING = 'utf-8'
@@ -446,6 +446,8 @@ class User(object):
                     if y.delete_user(uid):
                         success = True
                         log.info("Successfully deleted user {0!r}.".format(self))
+                        # Delete corresponding entry from the user cache
+                        delete_user_cache(username=self.login, resolver=self.resolver)
                     else:  # pragma: no cover
                         log.info("user {0!r} failed to update.".format(self))
 

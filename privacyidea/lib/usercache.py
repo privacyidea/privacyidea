@@ -23,7 +23,7 @@ import logging
 import datetime
 
 from privacyidea.lib.config import get_from_config
-from privacyidea.models import UserCache
+from privacyidea.models import UserCache, db
 from sqlalchemy import and_
 
 log = logging.getLogger(__name__)
@@ -77,8 +77,12 @@ def delete_user_cache(resolver=None, username=None, expired=None):
     """
     filter_condition = create_filter(username=username, resolver=resolver,
                                      expired=expired)
-    r = UserCache.query.filter(filter_condition).delete()
-    return r
+    rowcount = db.session.query(UserCache).filter(filter_condition).delete()
+    db.session.commit()
+    log.info('Deleted {} entries from the user cache (resolver={!r}, username={!r}, expired={!r})'.format(
+        rowcount, resolver, username, expired
+    ))
+    return rowcount
 
 
 def add_to_cache(username, resolver, user_id):

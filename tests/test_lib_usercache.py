@@ -76,8 +76,17 @@ class UserCacheTestCase(MyTestCase):
         user = User(self.username, self.realm1)
         self.assertEqual(user.login, self.username)
 
-        # delete the resolver
+        # Now, the cache should have exactly one entry
+        entry = UserCache.query.one()
+        self.assertEqual(entry.user_id, self.uid)
+        self.assertEqual(entry.username, self.username)
+        self.assertEqual(entry.resolver, self.resolvername1)
+
+        # delete the resolver, which also purges the cache
         self._delete_realm()
+
+        # manually re-add the entry from above
+        UserCache(entry.username, entry.resolver, entry.user_id, entry.timestamp).save()
 
         # the username is fetched from the cache
         u_name = get_username(self.uid, self.resolvername1)
@@ -104,9 +113,19 @@ class UserCacheTestCase(MyTestCase):
         user = User(self.username, self.realm1, self.resolvername1)
         uids = user.get_user_identifiers()
         self.assertEqual(user.login, self.username)
+        self.assertEqual(user.uid, self.uid)
 
-        # delete the resolver
+        # Now, the cache should have exactly one entry
+        entry = UserCache.query.one()
+        self.assertEqual(entry.user_id, self.uid)
+        self.assertEqual(entry.username, self.username)
+        self.assertEqual(entry.resolver, self.resolvername1)
+
+        # delete the resolver, which also purges the cache
         self._delete_realm()
+
+        # manually re-add the entry from above
+        UserCache(entry.username, entry.resolver, entry.user_id, entry.timestamp).save()
 
         # the username is fetched from the cache
         u_name = get_username(self.uid, self.resolvername1)
@@ -185,4 +204,26 @@ class UserCacheTestCase(MyTestCase):
         # Apart from that, the cache should be empty.
         self.assertEqual(UserCache.query.count(), 1)
 
+        self._delete_realm()
+
+    def test_07_invalidate_resolver(self):
+        self._create_realm()
+        self.assertEquals(UserCache.query.count(), 0)
+        # initially populate the cache
+        timestamp = datetime.now()
+        UserCache("hans1", self.resolvername1, "uid1", timestamp).save()
+        UserCache("hans2", self.resolvername1, "uid2", timestamp - timedelta(weeks=50)).save()
+        UserCache("hans3", "resolver2", "uid2", timestamp).save()
+        self.assertEquals(UserCache.query.count(), 3)
+        # call save_resolver on resolver1, which should invalidate all entries of "resolver1"
+        save_resolver({"resolver": self.resolvername1,
+             "type": "passwdresolver",
+             "fileName": self.PWFILE,
+             "type.fileName": "string",
+             "desc.fileName": "Some change"
+        })
+        self.assertEquals(UserCache.query.count(), 1)
+        # Only hans3 in resolver2 should still be in the cache
+        u_name = get_username("uid2", "resolver2")
+        self.assertEquals("hans3", u_name)
         self._delete_realm()
