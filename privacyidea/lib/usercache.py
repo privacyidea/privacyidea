@@ -81,24 +81,6 @@ def delete_user_cache(resolver=None, username=None, expired=None):
     return r
 
 
-def one_or_none(query):
-    """
-    Given a SQLAlchemy query, ensure that it only has zero or one result and
-    return None or the result, respectively. In case the query has more results,
-    raise a RuntimeError.
-    :param query: a SQLAlchemy Query
-    :return: None or a row
-    """
-    results = query.all()
-    length = len(results)
-    if length == 0:
-        return None
-    elif length == 1:
-        return results[0]
-    else:
-        raise RuntimeError('Expected one result, got {!r}'.format(length))
-
-
 def add_to_cache(username, resolver, user_id):
     """
     Add the given record to the user cache, if it is enabled.
@@ -108,10 +90,6 @@ def add_to_cache(username, resolver, user_id):
     :param resolver: resolver name of the user
     :param user_id: ID of the user in its resolver
     """
-    # TODO: It is very possible that the entry did not exist in the cache
-    # when queried,
-    # but was added in the meantime and exists now!
-    # How do we handle that case?
     cache_time = get_cache_time()
     if cache_time:
         timestamp = datetime.datetime.now()
@@ -119,6 +97,15 @@ def add_to_cache(username, resolver, user_id):
         log.debug('Adding record to cache: ({!r}, {!r}, {!r}, {!r})'.format(
             username, resolver, user_id, timestamp))
         record.save()
+
+
+def retrieve_latest_entry(filter_condition):
+    """
+    Return the most recently added entry in the user cache matching the given filter condition, or None.
+    :param filter_condition: SQLAlchemy filter, as created (for example) by create_filter
+    :return: A `UserCache` object or None, if no entry matches the given condition.
+    """
+    return UserCache.query.filter(filter_condition).order_by(UserCache.timestamp.desc()).first()
 
 
 def create_filter(username=None, resolver=None,
@@ -165,25 +152,11 @@ def cache_username(wrapped_function, userid, resolvername):
     # try to fetch the record from the UserCache
     filter_conditions = create_filter(user_id=userid,
                                       resolver=resolvername)
-    results = UserCache.query.filter(filter_conditions).all()
-    if results:
-        username = results[0].username
-        if len(results) == 1:
-            log.debug('Found username of {!r}/{!r} in cache: {!r}'.format(userid, resolvername, username))
-            return username
-        else:
-            # more than one result was returned
-            # check if all results produce the same username
-            # if not: RuntimeError!
-            usernames = set(result.username for result in results)
-            if len(usernames) == 1:
-                log.debug('Found {!r} entries of {!r}/{!r} in cache, all pointing to to: {!r}'.format(
-                    len(usernames), userid, resolvername, username))
-                return
-            else:
-                raise RuntimeError(
-                    "User cache contains {!r} usernames for user ID {!r} and resolver {!r}".format(
-                        len(usernames), userid, resolvername))
+    result = retrieve_latest_entry(filter_conditions)
+    if result:
+        username = result.username
+        log.debug('Found username of {!r}/{!r} in cache: {!r}'.format(userid, resolvername, username))
+        return username
     else:
         # record was not found in the cache
         return wrapped_function(userid, resolvername)
@@ -203,7 +176,7 @@ def user_init(wrapped_function, self):
     if self.resolver:
         # If we could figure out a resolver, we can query the user cache
         filter_conditions = create_filter(username=self.login, resolver=self.resolver)
-        result = one_or_none(UserCache.query.filter(filter_conditions))
+        result = retrieve_latest_entry(filter_conditions)
         if result:
             # Cached user exists, retrieve information and exit early
             self.resolver = result.resolver
