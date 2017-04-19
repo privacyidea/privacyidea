@@ -27,6 +27,7 @@ class TokenBaseTestCase(MyTestCase):
     realm1 = "realm1"
     realm2 = "realm2"
     serial1 = "SE123456"
+    serial2 = "SE222222"
     
     # set_user, get_user, reset, set_user_identifiers
     
@@ -122,6 +123,21 @@ class TokenBaseTestCase(MyTestCase):
 
         c = token.create_challenge()
         self.assertTrue(c[0], c)
+
+        transaction_id = c[2]
+        self.assertEqual(len(transaction_id), 20)
+        # Now we create the challenge with the same transaction_id for
+        # another token.
+        db_token2 = Token(self.serial2, tokentype="spass")
+        db_token2.save()
+        token2 = TokenClass(db_token)
+        c = token2.create_challenge(transaction_id)
+        self.assertEqual(c[2], transaction_id)
+
+        # Now there should be two entries with the same transaction_id
+        r = Challenge.query.filter(
+            Challenge.transaction_id==transaction_id).all()
+        self.assertEqual(len(r), 2)
 
         # set the description
         token.set_description("something new")

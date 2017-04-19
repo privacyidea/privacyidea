@@ -1097,13 +1097,12 @@ class Challenge(MethodsMixin, db.Model):
     """
     __tablename__ = "challenge"
     id = db.Column(db.Integer(), primary_key=True, nullable=False)
-    transaction_id = db.Column(db.Unicode(64), unique=True, nullable=False,
-                               index=True)
+    transaction_id = db.Column(db.Unicode(64), nullable=False, index=True)
     data = db.Column(db.Unicode(512), default=u'')
     challenge = db.Column(db.Unicode(512), default=u'')
     session = db.Column(db.Unicode(512), default=u'')
     # The token serial number
-    serial = db.Column(db.Unicode(40), default=u'')
+    serial = db.Column(db.Unicode(40), default=u'', index=True)
     timestamp = db.Column(db.DateTime, default=datetime.now())
     expiration = db.Column(db.DateTime)
     received_count = db.Column(db.Integer(), default=0)
