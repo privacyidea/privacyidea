@@ -2308,14 +2308,9 @@ class UserCache(MethodsMixin, db.Model):
     resolver = db.Column(db.Unicode(120), default=u'')
     user_id = db.Column(db.Unicode(320), default=u'', index=True)
     timestamp = db.Column(db.DateTime)
-    expiration = db.Column(db.DateTime, index=True)
 
-    def __init__(self, username, resolver, user_id,
-                 timestamp=None, expiration=None):
-        timestamp = timestamp or datetime.now()
-        expiration = expiration or timestamp + timedelta(minutes=60)
+    def __init__(self, username, resolver, user_id, timestamp):
         self.username = username
         self.resolver = resolver
         self.user_id = user_id
         self.timestamp = timestamp
-        self.expiration = expiration

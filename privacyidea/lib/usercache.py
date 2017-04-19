@@ -103,7 +103,7 @@ def add_to_cache(username, resolver, user_id):
     """
     Add the given record to the user cache, if it is enabled.
     The user cache is considered disabled if the config option
-    'usercache.expirationSeconds' is set to 0.
+    EXPIRATION_SECONDS is set to 0.
     :param username: login name of the user
     :param resolver: resolver name of the user
     :param user_id: ID of the user in its resolver
@@ -114,11 +114,10 @@ def add_to_cache(username, resolver, user_id):
     # How do we handle that case?
     cache_time = get_cache_time()
     if cache_time:
-        expiration = datetime.datetime.now() + cache_time
-        record = UserCache(username, resolver, user_id,
-                           expiration=expiration)
+        timestamp = datetime.datetime.now()
+        record = UserCache(username, resolver, user_id, timestamp)
         log.debug('Adding record to cache: ({!r}, {!r}, {!r}, {!r})'.format(
-            username, resolver, user_id, expiration))
+            username, resolver, user_id, timestamp))
         record.save()
 
 
@@ -132,7 +131,8 @@ def create_filter(username=None, resolver=None,
     :param resolver: will filter for this resolver name
     :param user_id: will filter for this user ID
     :param expired: Can be True/False/None. If set to False will return
-        non-expired entries
+        only non-expired entries. If set to True, it will return only expired entries.
+        If set to None, it will return expired as well as non-expired entries.
 
     :return: SQLAlchemy Filter
     """
