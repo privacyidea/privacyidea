@@ -642,12 +642,12 @@ class TokenModelTestCase(MyTestCase):
 
     def test_23_usercache(self):
         username = "cornelius"
-        realm = "realm1"
         resolver = "resolver1"
         user_id = 1
+        timestamp = datetime.now()
 
         # create a user in the cache
-        cached_user = UserCache(username, realm, resolver, user_id)
+        cached_user = UserCache(username, resolver, user_id, timestamp)
         self.assertTrue(cached_user)
         cached_user.save()
 
@@ -656,8 +656,8 @@ class TokenModelTestCase(MyTestCase):
                                            username).first()
         self.assertTrue(find_user)
         self.assertEqual(find_user.user_id, str(user_id))
-        self.assertEqual(find_user.realm, realm)
         self.assertEqual(find_user.resolver, resolver)
+        self.assertEqual(find_user.timestamp, timestamp)  # TODO: Sensible, or might we have a small loss of precision?
 
         # delete the user from the cache
         r = find_user.delete()

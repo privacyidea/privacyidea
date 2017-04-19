@@ -52,12 +52,11 @@ class UserCacheTestCase(MyTestCase):
         # If a username is already contained in the cache, the function
         # lib.user.get_username will return the cache value
         username = "cached_user"
-        realm = "realm1"
         resolver = "resolver1"
         uid = "1"
 
         expiration_delta = get_cache_time()
-        r = UserCache(username, realm, resolver, uid).save()
+        r = UserCache(username, resolver, uid, datetime.now()).save()
         u_name = cache_username(get_username, uid, resolver)
         self.assertEqual(u_name, username)
 
@@ -122,8 +121,9 @@ class UserCacheTestCase(MyTestCase):
         self.assertEqual(u_name, "")
 
     def test_04_delete_cache(self):
-        UserCache("hans1", "realm1", "resolver1", "uid1").save()
-        UserCache("hans2", "realm2", "resolver2", "uid2").save()
+        now = datetime.now()
+        UserCache("hans1", "resolver1", "uid1", now).save()
+        UserCache("hans2", "resolver2", "uid2", now).save()
 
         r = UserCache.query.filter(UserCache.username == "hans1").first()
         self.assertTrue(r)
@@ -144,5 +144,26 @@ class UserCacheTestCase(MyTestCase):
         r = UserCache.query.filter(UserCache.username == "hans2").first()
         self.assertFalse(r)
 
+    def test_05_multiple_entries(self):
+        # two consistent entries
+        now = datetime.now()
+        UserCache("hans1", "resolver1", "uid1", now - timedelta(seconds=60)).save()
+        UserCache("hans1", "resolver1", "uid1", now).save()
 
+        r = UserCache.query.filter(UserCache.username == "hans1", UserCache.resolver == "resolver1")
+        self.assertEquals(r.count(), 2)
 
+        u_name = cache_username(get_username, "uid1", "resolver1")
+        self.assertEqual(u_name, "hans1")
+
+        r = delete_user_cache()
+
+        # two inconsistent entries: most recent entry (ordered by datetime) wins
+        UserCache("hans2", "resolver1", "uid1", now).save()
+        UserCache("hans1", "resolver1", "uid1", now - timedelta(seconds=60)).save()
+
+        r = UserCache.query.filter(UserCache.user_id == "uid1", UserCache.resolver == "resolver1")
+        self.assertEquals(r.count(), 2)
+
+        u_name = cache_username(get_username, "uid1", "resolver1")
+        self.assertEqual(u_name, "hans2")
