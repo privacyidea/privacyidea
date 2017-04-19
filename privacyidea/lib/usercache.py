@@ -99,13 +99,12 @@ def one_or_none(query):
         raise RuntimeError('Expected one result, got {!r}'.format(length))
 
 
-def add_to_cache(username, realm, resolver, user_id):
+def add_to_cache(username, resolver, user_id):
     """
     Add the given record to the user cache, if it is enabled.
     The user cache is considered disabled if the config option
     'usercache.expirationSeconds' is set to 0.
     :param username: login name of the user
-    :param realm: realm name of the user
     :param resolver: resolver name of the user
     :param user_id: ID of the user in its resolver
     """
@@ -116,21 +115,20 @@ def add_to_cache(username, realm, resolver, user_id):
     cache_time = get_cache_time()
     if cache_time:
         expiration = datetime.datetime.now() + cache_time
-        record = UserCache(username, realm, resolver, user_id,
+        record = UserCache(username, resolver, user_id,
                            expiration=expiration)
-        log.debug('Adding record to cache: ({!r}, {!r}, {!r}, {!r}, {!r})'.format(
-            username, realm, resolver, user_id, expiration))
+        log.debug('Adding record to cache: ({!r}, {!r}, {!r}, {!r})'.format(
+            username, resolver, user_id, expiration))
         record.save()
 
 
-def create_filter(username=None, realm=None, resolver=None,
+def create_filter(username=None, resolver=None,
                   user_id=None, expired=False):
     """
     Build and return a SQLAlchemy query that searches the UserCache cache for a combination
-    of username, realm, resolver and user ID. This also takes the expiration time into account.
+    of username, resolver and user ID. This also takes the expiration time into account.
 
     :param username: will filter for username
-    :param realm: will filter for this realm name
     :param resolver: will filter for this resolver name
     :param user_id: will filter for this user ID
     :param expired: Can be True/False/None. If set to False will return
@@ -149,8 +147,6 @@ def create_filter(username=None, realm=None, resolver=None,
 
     if username:
         conditions.append(UserCache.username == username)
-    if realm:
-        conditions.append(UserCache.realm == realm)
     if resolver:
         conditions.append(UserCache.resolver == resolver)
     if user_id:
@@ -201,20 +197,24 @@ def user_init(wrapped_function, self):
     :param self:
     :return:
     """
-    filter_conditions = create_filter(username=self.login, realm=self.realm,
-                                     resolver=self.resolver)
-    result = one_or_none(UserCache.query.filter(filter_conditions))
-    if result:
-        # Cached user exists
-        self.resolver = result.resolver
-        self.uid = result.user_id
+    if not self.resolver:
+        # In order to query the user cache, we need to find out the resolver
+        self._get_resolvers()
+    if self.resolver:
+        # If we could figure out a resolver, we can query the user cache
+        filter_conditions = create_filter(username=self.login, resolver=self.resolver)
+        result = one_or_none(UserCache.query.filter(filter_conditions))
+        if result:
+            # Cached user exists, retrieve information and exit early
+            self.resolver = result.resolver
+            self.uid = result.user_id
+            return
 
-    else:
-        # User is not in cache. We need to get additional information from
-        # the userstore.
-        wrapped_function(self)
-        if self.login and self.realm and self.resolver and self.uid:
-            # We only cache complete sets!
-            cache_time = get_cache_time()
-            add_to_cache(self.login, self.realm, self.resolver, self.uid)
+    # Either we could not determine a resolver or we could, but the user is not in cache.
+    # We need to get additional information from the userstore.
+    wrapped_function(self)
+    # If the user object is complete, add it to the cache.
+    if self.login and self.resolver and self.uid:
+        # We only cache complete sets!
+        add_to_cache(self.login, self.resolver, self.uid)
 

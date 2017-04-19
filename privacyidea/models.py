@@ -2305,18 +2305,16 @@ class UserCache(MethodsMixin, db.Model):
     __tablename__ = 'usercache'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.Unicode(64), default=u"", index=True)
-    realm = db.Column(db.Unicode(256), default=u"")
     resolver = db.Column(db.Unicode(120), default=u'')
     user_id = db.Column(db.Unicode(320), default=u'', index=True)
     timestamp = db.Column(db.DateTime)
     expiration = db.Column(db.DateTime, index=True)
 
-    def __init__(self, username, realm, resolver, user_id,
+    def __init__(self, username, resolver, user_id,
                  timestamp=None, expiration=None):
         timestamp = timestamp or datetime.now()
         expiration = expiration or timestamp + timedelta(minutes=60)
         self.username = username
-        self.realm = realm
         self.resolver = resolver
         self.user_id = user_id
         self.timestamp = timestamp
