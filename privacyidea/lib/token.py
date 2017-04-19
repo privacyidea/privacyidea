@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2017-04-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add support for multiple challenge response token
 #  2016-08-31 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Reset failcounter of all user tokens.
 #  2016-06-21 Cornelius Kölbel <cornelius@privacyidea.org>

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-04-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add support for multiple challenge response token
 #  2016-02-19 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Add radiusserver table
 #  2015-08-27 Cornelius Kölbel <cornelius@privacyidea.org>
