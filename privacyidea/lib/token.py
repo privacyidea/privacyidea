@@ -801,6 +801,7 @@ def get_serial_by_otp(token_list, otp="", window=10):
 @log_with(log)
 def get_tokenserial_of_transaction(transaction_id):
     """
+    TODO: Remove me! It looks like I am never used!
     get the serial number of a token from a challenge state / transaction
 
     :param transaction_id: the state / transaction id
@@ -2055,39 +2056,43 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
         # This is the initial REQUEST of a challenge response token
         active_challenge_token = [t for t in challenge_request_token_list
                                   if t.token.active ]
-        if len(active_challenge_token) == 1:
-            message_list = []
-            token_obj = active_challenge_token[0]
-            # Check if the max auth is succeeded
-            if token_obj.check_all(message_list):
-                r_chal, message, transaction_id, \
-                attributes = token_obj.create_challenge(options=options)
-                # Add the reply to the response
-                message_list.append(message)
-                if r_chal:
-                    reply_dict["transaction_id"] = transaction_id
-                    reply_dict["attributes"] = attributes
-                    reply_dict["serial"] = token_obj.token.serial
-                    # If exist, add next pin and next password change
-                    next_pin = challenge_request_token_list[0].get_tokeninfo(
-                            "next_pin_change")
-                    if next_pin:
-                        reply_dict["next_pin_change"] = next_pin
-                        reply_dict["pin_change"] = \
-                            challenge_request_token_list[0].is_pin_change()
-                    next_passw = challenge_request_token_list[0].get_tokeninfo(
-                            "next_password_change")
-                    if next_passw:
-                        reply_dict["next_password_change"] = next_passw
-                        reply_dict["password_change"] = \
-                            challenge_request_token_list[0].is_pin_change(
-                                password=True)
-            reply_dict["message"] = ", ".join(message_list)
-        elif len(active_challenge_token) == 0:
+        if len(active_challenge_token) == 0:
             reply_dict["message"] = "No active challenge response token found"
         else:
-            reply_dict["message"] = "Multiple tokens to create a challenge " \
-                                    "found!"
+            reply_dict["multi_challenge"] = []
+            transaction_id = None
+            for token_obj in active_challenge_token:
+                message_list = []
+                # Check if the max auth is succeeded
+                if token_obj.check_all(message_list):
+                    r_chal, message, transaction_id, attributes = \
+                        token_obj.create_challenge(
+                            transactionid=transaction_id, options=options)
+                    # Add the reply to the response
+                    message_list.append(message)
+                    reply_dict["message"] = ", ".join(message_list)
+                    if r_chal:
+                        challenge_info = {}
+                        challenge_info["transaction_id"] = transaction_id
+                        challenge_info["attributes"] = attributes
+                        challenge_info["serial"] = token_obj.token.serial
+                        # If exist, add next pin and next password change
+                        next_pin = challenge_request_token_list[0].get_tokeninfo(
+                                "next_pin_change")
+                        if next_pin:
+                            challenge_info["next_pin_change"] = next_pin
+                            challenge_info["pin_change"] = \
+                                challenge_request_token_list[0].is_pin_change()
+                        next_passw = challenge_request_token_list[0].get_tokeninfo(
+                                "next_password_change")
+                        if next_passw:
+                            challenge_info["next_password_change"] = next_passw
+                            challenge_info["password_change"] = \
+                                challenge_request_token_list[0].is_pin_change(
+                                    password=True)
+                        for k, v in challenge_info.items():
+                            reply_dict[k] = v
+                        reply_dict["multi_challenge"].append(challenge_info)
 
     elif pin_matching_token_list:
         # We did not find a valid token and no challenge.

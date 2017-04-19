@@ -14,6 +14,7 @@ getToken....
 """
 PWFILE = "tests/testdata/passwords"
 OTPKEY = "3132333435363738393031323334353637383930"
+OTPKE2 = "31323334353637383930313233343536373839AA"
 
 from .base import MyTestCase
 from privacyidea.lib.user import (User)
@@ -808,25 +809,6 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(reply.get("message") == "Found matching challenge",
                         reply)
 
-        # create two tokens with the same OTP Key and the same PIN, so
-        # this token will create the same challenge
-        # creating a challenge will not work!
-        tokenobject = init_token({"serial": "CHALL001", "type": "hotp",
-                                  "otpkey": self.otpkey})
-        tokenobject = init_token({"serial": "CHALL002", "type": "hotp",
-                                  "otpkey": self.otpkey})
-        user = User("cornelius", realm=self.realm1)
-        assign_token("CHALL001", user)
-        assign_token("CHALL002", user)
-        set_pin("CHALL001", "challpin")
-        set_pin("CHALL002", "challpin")
-        r, reply = check_user_pass(user, "challpin")
-        self.assertFalse(r)
-        self.assertTrue("Multiple tokens to create a challenge found"
-                        in reply.get("message"), reply)
-        remove_token("CHALL001")
-        remove_token("CHALL002")
-
     def test_40_dynamic_policies(self):
         p = get_dynamic_policy_definitions()
         self.assertTrue("user" in p, p)
@@ -1094,6 +1076,33 @@ class TokenTestCase(MyTestCase):
         remove_token("CR2A")
         remove_token("CR2B")
         delete_policy("test48")
+
+    def test_49_challenge_request_multiple_tokens(self):
+        # Test the challenges for multiple active tokens
+        user = User("cornelius", self.realm1)
+        pin = "test49"
+        token_a = init_token({"serial": "CR2A",
+                              "type": "hotp",
+                              "otpkey": self.otpkey,
+                              "pin": pin}, user)
+        token_b = init_token({"serial": "CR2B",
+                              "type": "hotp",
+                              "otpkey": self.otpkey,
+                              "pin": pin}, user)
+        set_policy("test48", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
+            ACTION.CHALLENGERESPONSE))
+        # both tokens will be a valid challenge response token!
+        r, r_dict = check_token_list([token_a, token_b], pin, user)
+        multi_challenge = r_dict.get("multi_challenge")
+        self.assertEqual(multi_challenge[0].get("serial"), "CR2A")
+        self.assertEqual(multi_challenge[0].get("transaction_id"),
+                         multi_challenge[1].get("transaction_id"))
+        self.assertEqual(multi_challenge[0].get("transaction_id"),
+                         r_dict.get("transaction_id"))
+        self.assertEqual(multi_challenge[1].get("serial"), "CR2B")
+        remove_token("CR2A")
+        remove_token("CR2B")
+        delete_policy("test49")
 
 
 class TokenFailCounterTestCase(MyTestCase):

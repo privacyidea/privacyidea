@@ -225,6 +225,45 @@ def check():
               },
               "version": "privacyIDEA unknown"
             }
+
+    **Example response** for this first part of a challenge response
+    authentication:
+
+       .. sourcecode:: http
+
+           HTTP/1.1 200 OK
+           Content-Type: application/json
+
+            {
+              "detail": {
+                "serial": "PIEM0000AB00",
+                "type": "email",
+                "transaction_id": "12345678901234567890",
+                "multi_challenge: [ {"serial": "PIEM0000AB00",
+                                     "transaction_id":  "12345678901234567890",
+                                     "message": "Please enter otp from your
+                                     email"},
+                                    {"serial": "PISM12345678",
+                                     "transaction_id": "12345678901234567890",
+                                     "message": "Please enter otp from your
+                                     SMS"}
+                ]
+              },
+              "id": 1,
+              "jsonrpc": "2.0",
+              "result": {
+                "status": true,
+                "value": false
+              },
+              "version": "privacyIDEA unknown"
+            }
+
+    In this example two challenges are triggered, one with an email and one
+    with an SMS. The application and thus the user has to decide, which one
+    to use. They can use either.
+
+    .. note:: All challenge response tokens have the same transaction_id in
+       this case.
     """
     #user = get_user_from_param(request.all_data)
     user = request.User
