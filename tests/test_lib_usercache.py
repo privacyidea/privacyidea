@@ -9,7 +9,7 @@ from mock import patch
 
 from privacyidea.lib.error import UserError
 from .base import MyTestCase
-from privacyidea.lib.resolver import (save_resolver, delete_resolver)
+from privacyidea.lib.resolver import (save_resolver, delete_resolver, get_resolver_object)
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User, get_username, create_user)
 from privacyidea.lib.usercache import (get_cache_time,
@@ -35,7 +35,7 @@ class UserCacheTestCase(MyTestCase):
     sql_resolver = "SQL1"
     sql_parameters = {'Driver': 'sqlite',
                   'Server': '/tests/testdata/',
-                  'Database': "testuser.sqlite",
+                  'Database': "testusercache.sqlite",
                   'Table': 'users',
                   'Encoding': 'utf8',
                   'Map': '{ "username": "username", \
@@ -393,3 +393,61 @@ class UserCacheTestCase(MyTestCase):
             delete_user_cache(expired=True)
             self.assertEqual(UserCache.query.count(), 1)
             self.assertEqual(UserCache.query.one().user_id, "uid4")
+        # clean up
+        delete_user_cache()
+
+    def test_12_multiple_resolvers(self):
+        # one realm, two SQL resolvers
+        parameters_a = self.sql_parameters.copy()
+        # first resolver only contains users with phone numbers
+        parameters_a['Where'] = 'phone LIKE %'
+        parameters_a['resolver'] = 'reso_a'
+        rid_a = save_resolver(parameters_a)
+        self.assertTrue(rid_a > 0, rid_a)
+        # second resolver contains all users
+        parameters_b = self.sql_parameters.copy()
+        parameters_b['resolver'] = 'reso_b'
+        rid_b = save_resolver(parameters_b)
+        self.assertTrue(rid_b > 0, rid_b)
+
+        # First ask reso_a, then reso_b
+        (added, failed) = set_realm(self.sql_realm, ['reso_a', 'reso_b'], {
+            'reso_a': 1,
+            'reso_b': 2
+        })
+        self.assertEqual(len(failed), 0)
+        self.assertEqual(len(added), 2)
+
+        # Now, query the user and populate the cache
+        self.assertEqual(UserCache.query.count(), 0)
+        user1 = User('wordpressuser', self.sql_realm)
+        self.assertEqual(user1.uid, 6)
+        # Assert it was found in reso_b (as it does not have a phone number)!
+        self.assertEqual(user1.resolver, 'reso_b')
+        self.assertEqual(UserCache.query.filter(UserCache.username == 'wordpressuser',
+                                                UserCache.user_id == 6).one().resolver,
+                         'reso_b')
+        # Add a phone number. We do not use the User API to do that to simulate that the change is performed
+        # out of privacyIDEA's control. Using `update_user_info` would invalidate the cache, which would be unrealistic.
+        info = user1.info
+        new_info = info.copy()
+        new_info['phone'] = '123456'
+        get_resolver_object('reso_a').update_user(user1.uid, new_info)
+        # Ensure that the user's association with reso_b is still cached.
+        self.assertEqual(UserCache.query.filter(UserCache.username == 'wordpressuser',
+                                                UserCache.user_id == 6).one().resolver,
+                         'reso_b')
+        # Now, it should be located in reso_a!
+        user2 = User('wordpressuser', self.sql_realm)
+        self.assertEqual(user2.uid, 6)
+        self.assertEqual(user2.resolver, 'reso_a')
+        # ... but the cache still contains entries for both!
+        resolver_query = UserCache.query.filter(UserCache.username == 'wordpressuser',
+                                                UserCache.user_id == 6).order_by(UserCache.timestamp.desc())
+        cached_resolvers = [entry.resolver for entry in resolver_query.all()]
+        self.assertEqual(cached_resolvers, ['reso_a', 'reso_b'])
+        # Remove the phone number.
+        get_resolver_object('reso_a').update_user(user1.uid, {'phone': None})
+        delete_realm(self.sql_realm)
+        delete_resolver('reso_a')
+        delete_resolver('reso_b')

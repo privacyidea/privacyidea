@@ -178,19 +178,34 @@ def user_init(wrapped_function, self):
     :param self:
     :return:
     """
-    if not self.resolver:
-        # In order to query the user cache, we need to find out the resolver
-        self._get_resolvers()
     if self.resolver:
+        resolvers = [self.resolver]
+    else:
+        # In order to query the user cache, we need to find out the resolver
+        resolvers = self.get_ordererd_resolvers()
+    for resolvername in resolvers:
         # If we could figure out a resolver, we can query the user cache
-        filter_conditions = create_filter(username=self.login, resolver=self.resolver)
+        filter_conditions = create_filter(username=self.login, resolver=resolvername)
         result = retrieve_latest_entry(filter_conditions)
         if result:
             # Cached user exists, retrieve information and exit early
             self.resolver = result.resolver
             self.uid = result.user_id
             return
-
+        else:
+            # If the user does not exist in the cache, we actually query the resolver
+            # before moving on to the next resolver in the prioritized list.
+            # This is important in the following scenario:
+            # We have a realm with two resolvers, resolverA and resolverB,
+            # a user foo has been located in resolverB and a corresponding cache entry
+            # has been added.
+            # Now, if a user of the same name is added to the store associated with resolverA,
+            # we want to notice! This is why we actually query resolverA if there is no
+            # cache entry associating foo with resolverA before checking the cache entries
+            # of resolverB. Otherwise, we could end up with a cache that associates foo with
+            # resolverB even though it should be associated with resolverA.
+            if self._locate_user_in_resolver(resolvername):
+                break
     # Either we could not determine a resolver or we could, but the user is not in cache.
     # We need to get additional information from the userstore.
     wrapped_function(self)

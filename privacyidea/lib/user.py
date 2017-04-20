@@ -204,26 +204,40 @@ class User(object):
         resolvers = []
         for resolvername in self.get_ordererd_resolvers():
             # test, if the user is contained in this resolver
-            y = get_resolver_object(resolvername)
-            if y is None:  # pragma: no cover
-                log.info("Resolver {0!r} not found!".format(resolvername))
-            else:
-                uid = y.getUserId(self.login)
-                if uid not in ["", None]:
-                    log.info("user {0!r} found in resolver {1!r}".format(self.login,
-                                                               resolvername))
-                    log.info("userid resolved to {0!r} ".format(uid))
-                    self.resolver = resolvername
-                    self.uid = uid
-                    # We do not need to search other resolvers!
-                    break
-                else:
-                    log.debug("user %r not found"
-                              " in resolver %r" % (self.login,
-                                                   resolvername))
+            if self._locate_user_in_resolver(resolvername):
+                break
         if self.resolver:
             resolvers = [self.resolver]
         return resolvers
+
+    def _locate_user_in_resolver(self, resolvername):
+        """
+        Try to locate the user (by self.login) in the resolver with the given name.
+        In case of success, this sets `self.resolver` as well as `self.uid`
+        and returns True. If the resolver does not exist or the user does
+        not exist in the resolver, False is returned.
+        :param resolvername: string denoting the resolver name
+        :return: boolean
+        """
+        y = get_resolver_object(resolvername)
+        if y is None:  # pragma: no cover
+            log.info("Resolver {0!r} not found!".format(resolvername))
+            return False
+        else:
+            uid = y.getUserId(self.login)
+            if uid not in ["", None]:
+                log.info("user {0!r} found in resolver {1!r}".format(self.login,
+                                                                     resolvername))
+                log.info("userid resolved to {0!r} ".format(uid))
+                self.resolver = resolvername
+                self.uid = uid
+                # We do not need to search other resolvers!
+                return True
+            else:
+                log.debug("user %r not found"
+                          " in resolver %r" % (self.login,
+                                               resolvername))
+                return False
 
     def get_user_identifiers(self):
         """
