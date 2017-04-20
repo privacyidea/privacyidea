@@ -408,6 +408,8 @@ class User(object):
                     uid, _rtype, _rname = self.get_user_identifiers()
                     if y.update_user(uid, attributes):
                         success = True
+                        # Delete entries corresponding to the old username from the user cache
+                        delete_user_cache(username=self.login, resolver=self.resolver)
                         # If necessary, update the username
                         if attributes.get("username"):
                             self.login = attributes.get("username")
