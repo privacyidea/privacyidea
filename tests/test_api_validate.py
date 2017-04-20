@@ -4,7 +4,7 @@ import json
 from .base import MyTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
-from privacyidea.models import (Token)
+from privacyidea.models import (Token, Challenge)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
                                     get_inc_fail_count_on_false_pin,
                                     delete_privacyidea_config)
@@ -1441,4 +1441,74 @@ class ValidateAPITestCase(MyTestCase):
 
         remove_token(serial)
         delete_policy("emailtext")
+
+    def test_26_multiple_challenge_response(self):
+        # Test the challenges for multiple active tokens
+        self.setUp_user_realms()
+        OTPKE2 = "31323334353637383930313233343536373839AA"
+        user = User("multichal", self.realm1)
+        pin = "test49"
+        token_a = init_token({"serial": "CR2A",
+                              "type": "hotp",
+                              "otpkey": OTPKE2,
+                              "pin": pin}, user)
+        token_b = init_token({"serial": "CR2B",
+                              "type": "hotp",
+                              "otpkey": self.otpkey,
+                              "pin": pin}, user)
+        set_policy("test48", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
+            ACTION.CHALLENGERESPONSE))
+        # both tokens will be a valid challenge response token!
+
+        transaction_id = None
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "multichal",
+                                                 "realm": self.realm1,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), False)
+            detail = json.loads(res.data).get("detail")
+            transaction_id = detail.get("transaction_id")
+            multi_challenge = detail.get("multi_challenge")
+            self.assertEqual(multi_challenge[0].get("serial"), "CR2A")
+            self.assertEqual(transaction_id,
+                             multi_challenge[0].get("transaction_id"))
+            self.assertEqual(transaction_id,
+                             multi_challenge[1].get("transaction_id"))
+            self.assertEqual(multi_challenge[1].get("serial"), "CR2B")
+
+        # There are two challenges in the database
+        r = Challenge.query.filter(Challenge.transaction_id ==
+                                   transaction_id).all()
+        self.assertEqual(len(r), 2)
+
+        # Check the second response to the challenge, the second step in
+        # challenge response:
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "multichal",
+                                                 "transaction_id":
+                                                     transaction_id,
+                                                 "realm": self.realm1,
+                                                 "pass": "287082"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+            detail = json.loads(res.data).get("detail")
+            serial = detail.get("serial")
+            self.assertEqual(serial, "CR2B")
+
+        # No challenges in the database
+        r = Challenge.query.filter(Challenge.transaction_id ==
+                                   transaction_id).all()
+        self.assertEqual(len(r), 0)
+
+        remove_token("CR2A")
+        remove_token("CR2B")
+        delete_policy("test49")
 
