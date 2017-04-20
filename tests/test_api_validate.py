@@ -1456,7 +1456,7 @@ class ValidateAPITestCase(MyTestCase):
                               "type": "hotp",
                               "otpkey": self.otpkey,
                               "pin": pin}, user)
-        set_policy("test48", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
+        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
             ACTION.CHALLENGERESPONSE))
         # both tokens will be a valid challenge response token!
 
@@ -1484,6 +1484,76 @@ class ValidateAPITestCase(MyTestCase):
         r = Challenge.query.filter(Challenge.transaction_id ==
                                    transaction_id).all()
         self.assertEqual(len(r), 2)
+
+        # Check the second response to the challenge, the second step in
+        # challenge response:
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "multichal",
+                                                 "transaction_id":
+                                                     transaction_id,
+                                                 "realm": self.realm1,
+                                                 "pass": "287082"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+            detail = json.loads(res.data).get("detail")
+            serial = detail.get("serial")
+            self.assertEqual(serial, "CR2B")
+
+        # No challenges in the database
+        r = Challenge.query.filter(Challenge.transaction_id ==
+                                   transaction_id).all()
+        self.assertEqual(len(r), 0)
+
+        remove_token("CR2A")
+        remove_token("CR2B")
+        delete_policy("test49")
+
+    def test_27_multiple_challenge_response_different_pin(self):
+        # Test the challenges for multiple active tokens with different PINs
+        # Test issue #649
+        self.setUp_user_realms()
+        OTPKE2 = "31323334353637383930313233343536373839AA"
+        user = User("multichal", self.realm1)
+        pinA = "testA"
+        pinB = "testB"
+        token_a = init_token({"serial": "CR2A",
+                              "type": "hotp",
+                              "otpkey": OTPKE2,
+                              "pin": pinA}, user)
+        token_b = init_token({"serial": "CR2B",
+                              "type": "hotp",
+                              "otpkey": self.otpkey,
+                              "pin": pinB}, user)
+        set_policy("test48", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
+            ACTION.CHALLENGERESPONSE))
+        # both tokens will be a valid challenge response token!
+
+        transaction_id = None
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "multichal",
+                                                 "realm": self.realm1,
+                                                 "pass": pinB}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), False)
+            detail = json.loads(res.data).get("detail")
+            transaction_id = detail.get("transaction_id")
+            multi_challenge = detail.get("multi_challenge")
+            self.assertEqual(multi_challenge[0].get("serial"), "CR2B")
+            self.assertEqual(transaction_id,
+                             multi_challenge[0].get("transaction_id"))
+            self.assertEqual(len(multi_challenge), 1)
+
+        # There is ONE challenge in the database
+        r = Challenge.query.filter(Challenge.transaction_id ==
+                                   transaction_id).all()
+        self.assertEqual(len(r), 1)
 
         # Check the second response to the challenge, the second step in
         # challenge response:

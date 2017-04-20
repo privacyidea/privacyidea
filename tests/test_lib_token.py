@@ -1075,7 +1075,7 @@ class TokenTestCase(MyTestCase):
                               "type": "hotp",
                               "otpkey": self.otpkey,
                               "pin": pin}, user)
-        set_policy("test48", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
+        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
             ACTION.CHALLENGERESPONSE))
         # both tokens will be a valid challenge response token!
         r, r_dict = check_token_list([token_a, token_b], pin, user)
