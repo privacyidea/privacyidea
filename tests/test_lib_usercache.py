@@ -361,10 +361,10 @@ class UserCacheTestCase(MyTestCase):
         # delete user_cache
         r = delete_user_cache()
         self.assertTrue(r >= 0)
-        # populate the cache with artificial data
-        now = datetime.now()
-        UserCache("hans1", "resolver1", "uid1", now).save()
-        UserCache("hans2", "resolver1", "uid2", now).save()
+        # populate the cache with artificial, somewhat "old", but still relevant data
+        timestamp = datetime.now() - timedelta(seconds=300)
+        UserCache("hans1", "resolver1", "uid1", timestamp).save()
+        UserCache("hans2", "resolver1", "uid2", timestamp).save()
         # check that the cache is indeed queried
         self.assertEqual(get_username("uid1", "resolver1"), "hans1")
         self.assertEqual(User("hans2", "realm1", "resolver1").uid, "uid2")
@@ -372,27 +372,22 @@ class UserCacheTestCase(MyTestCase):
         # for entries not contained in the cache
         self.assertEqual(get_username("uid3", "resolver1"), "")
 
-        # Now, let one day pass, which makes the entries above expire
-        with self._patch_datetime_now('privacyidea.lib.usercache.datetime.datetime') as mock_datetime:
-            # check that the cache is not queried anymore
+        # TODO: Interestingly, if we mock `datetime` here to increase the time by one
+        # day, this test works, but a subsequent test (test_ui_certificate) will fail
+        # with weird error messages. So we do not use the datetime mock for now.
+        #with self._patch_datetime_now('privacyidea.lib.usercache.datetime.datetime') as mock_datetime:
+        with patch('privacyidea.lib.usercache.get_cache_time') as mock_get_cache_time:
+            # Instead, we just decrease the cache time from 600 to 60 seconds,
+            # which causes the entries above to be considered expired
+            mock_get_cache_time.return_value = timedelta(seconds=60)
+            # check that the cached entries are not queried anymore
             self.assertEqual(UserCache.query.count(), 2)
             self.assertEqual(get_username("uid1", "resolver1"), "")
             with self.assertRaises(UserError):
                 User("hans2", "realm1", "resolver1")
             self.assertEqual(get_username("uid3", "resolver1"), "")
-            # if we now extend the expiration delta to two days, it is again queried!
-            # we do not use `set_privacyidea_config` for that, as it proved to be very hard
-            # to get privacyIDEA to reload the configuration properly while still using
-            # the mocked datetime.
-            with patch('privacyidea.lib.usercache.get_cache_time') as mock_get_cache_time:
-                mock_get_cache_time.return_value = timedelta(days=2)
-                self.assertEqual(UserCache.query.count(), 2)
-                # the entries are now relevant again
-                self.assertEqual(get_username("uid1", "resolver1"), "hans1")
-                self.assertEqual(User("hans2", "realm1", "resolver1").uid, "uid2")
-                self.assertEqual(get_username("uid3", "resolver1"), "")
-            # back to using normal expiration delta of 600 seconds, we add another entry in the future
-            UserCache("hans4", "resolver1", "uid4", mock_datetime.now()).save()
+            # We add another, "current" entry
+            UserCache("hans4", "resolver1", "uid4", datetime.now()).save()
             self.assertEqual(UserCache.query.count(), 3)
             # we now remove old entries, only the newest remains
             delete_user_cache(expired=True)
