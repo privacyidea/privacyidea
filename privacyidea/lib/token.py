@@ -803,7 +803,6 @@ def get_serial_by_otp(token_list, otp="", window=10):
 @log_with(log)
 def get_tokenserial_of_transaction(transaction_id):
     """
-    TODO: Remove me! It looks like I am never used!
     get the serial number of a token from a challenge state / transaction
 
     :param transaction_id: the state / transaction id
@@ -811,6 +810,7 @@ def get_tokenserial_of_transaction(transaction_id):
     :return: the serial number or None
     :rtype: basestring
     """
+    # TODO: Remove me! It looks like I am never used!
     serial = None
 
     challenge = Challenge.query.filter(Challenge.transaction_id == u'' +
@@ -2049,10 +2049,19 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 res = True
                 tokenobject.inc_count_auth_success()
                 reply_dict["message"] = "Found matching challenge"
-                reply_dict["serial"] = challenge_response_token_list[0].token.serial
+                reply_dict["serial"] = tokenobject.token.serial
                 tokenobject.challenge_janitor()
+                # clean up all other challenges from other tokens. I.e.
+                # all challenges with this very transaction_id!
+                transaction_id = options.get("transaction_id") or \
+                                 options.get("state")
+                Challenge.query.filter(Challenge.transaction_id == u'' +
+                                       transaction_id).delete()
+
                 # Reset the fail counter of the challenge response token
                 tokenobject.reset()
+                # We have one successful authentication, so we bail out
+                break
 
     elif challenge_request_token_list:
         # This is the initial REQUEST of a challenge response token

@@ -1083,7 +1083,7 @@ class TokenTestCase(MyTestCase):
         pin = "test49"
         token_a = init_token({"serial": "CR2A",
                               "type": "hotp",
-                              "otpkey": self.otpkey,
+                              "otpkey": OTPKE2,
                               "pin": pin}, user)
         token_b = init_token({"serial": "CR2B",
                               "type": "hotp",
@@ -1094,12 +1094,33 @@ class TokenTestCase(MyTestCase):
         # both tokens will be a valid challenge response token!
         r, r_dict = check_token_list([token_a, token_b], pin, user)
         multi_challenge = r_dict.get("multi_challenge")
+        transaction_id = r_dict.get("transaction_id")
         self.assertEqual(multi_challenge[0].get("serial"), "CR2A")
-        self.assertEqual(multi_challenge[0].get("transaction_id"),
+        self.assertEqual(transaction_id,
+                         multi_challenge[0].get("transaction_id"))
+        self.assertEqual(transaction_id,
                          multi_challenge[1].get("transaction_id"))
-        self.assertEqual(multi_challenge[0].get("transaction_id"),
-                         r_dict.get("transaction_id"))
         self.assertEqual(multi_challenge[1].get("serial"), "CR2B")
+
+        # There are two challenges in the database
+        r = Challenge.query.filter(Challenge.transaction_id ==
+                                   transaction_id).all()
+        self.assertEqual(len(r), 2)
+
+        # Check the second response to the challenge, the second step in
+        # challenge response:
+        r, r_dict = check_token_list([token_a, token_b], "287082", user,
+                                     options={"transaction_id": transaction_id})
+        # The response is successfull
+        self.assertTrue(r)
+        # The matching token was CR2B
+        self.assertEqual(r_dict.get("serial"), "CR2B")
+        # All challenges of the transaction_id have been deleted on
+        # successful authentication
+        r = Challenge.query.filter(Challenge.transaction_id ==
+                                transaction_id).all()
+        self.assertEqual(len(r), 0)
+
         remove_token("CR2A")
         remove_token("CR2B")
         delete_policy("test49")
