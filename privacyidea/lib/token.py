@@ -801,30 +801,6 @@ def get_serial_by_otp(token_list, otp="", window=10):
 
 
 @log_with(log)
-def get_tokenserial_of_transaction(transaction_id):
-    """
-    get the serial number of a token from a challenge state / transaction
-
-    :param transaction_id: the state / transaction id
-    :type transaction_id: basestring
-    :return: the serial number or None
-    :rtype: basestring
-    """
-    # TODO: Remove me! It looks like I am never used!
-    serial = None
-
-    challenge = Challenge.query.filter(Challenge.transaction_id == u'' +
-                                      transaction_id).first()
-
-    if challenge:
-        serial = challenge.serial
-    else:
-        log.info('no challenge found for transaction_id {0!r}'.format(transaction_id))
-
-    return serial
-
-
-@log_with(log)
 def gen_serial(tokentype=None, prefix=None):
     """
     generate a serial for a given tokentype

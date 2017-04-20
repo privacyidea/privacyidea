@@ -35,7 +35,6 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokens_in_resolver,
                                    get_all_token_users, get_otp,
                                    get_token_by_otp, get_serial_by_otp,
-                                   get_tokenserial_of_transaction,
                                    gen_serial, init_token, remove_token,
                                    set_realms, set_defaults, assign_token,
                                    unassign_token, resync_token,
@@ -275,19 +274,6 @@ class TokenTestCase(MyTestCase):
         self.assertRaises(TokenAdminError, get_serial_by_otp,
                           get_tokens(), "287922")
         db_token.delete()
-
-    def test_13_challenges_transaction(self):
-        transaction_id = "some_id"
-        challenge = Challenge("hotptoken", transaction_id=transaction_id,
-                              challenge="You dont guess this")
-        challenge.save()
-
-        serial = get_tokenserial_of_transaction(transaction_id)
-        self.assertTrue(serial == "hotptoken", serial)
-
-        # Challenge does not exist
-        serial = get_tokenserial_of_transaction("other id")
-        self.assertTrue(serial is None, serial)
 
     def test_14_gen_serial(self):
         serial = gen_serial(tokentype="hotp")
