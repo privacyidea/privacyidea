@@ -1,14 +1,14 @@
 """alter table challenge
 
 Revision ID: 307a4fbe8a05
-Revises: d6b40a745e5
+Revises: 1edda52b619f
 Create Date: 2017-04-19 14:39:20.255958
 
 """
 
 # revision identifiers, used by Alembic.
 revision = '307a4fbe8a05'
-down_revision = 'd6b40a745e5'
+down_revision = '1edda52b619f'
 
 from alembic import op
 
