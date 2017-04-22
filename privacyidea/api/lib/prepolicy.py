@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-04-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add wrapper for U2F token
 #  2017-01-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add token specific PIN policies based on
 #             Quynh's pull request.
@@ -307,7 +309,7 @@ def check_otp_pin(request=None, action=None):
 
 def papertoken_count(request=None, action=None):
     """
-    This is a token specifc wrapper for paper token for the endpoint
+    This is a token specific wrapper for paper token for the endpoint
     /token/init.
     According to the policy scope=SCOPE.ENROLL,
     action=PAPERACTION.PAPER_COUNT it sets the parameter papertoken_count to
@@ -1011,4 +1013,74 @@ def save_client_application_type(request, action):
     # ...and the user agent.
     ua = request.user_agent
     save_clientapplication(client_ip, "{0!s}".format(ua) or "unknown")
+    return True
+
+
+def u2ftoken_allowed(request, action):
+    """
+    This is a token specific wrapper for u2f token for the endpoint
+     /token/init.
+     According to the policy scope=SCOPE.ENROLL,
+     action=U2FACTINO.REQ it checks, if the assertion certificate is an 
+     allowed U2F token type.
+
+     If the token, which is enrolled contains a non allowed attestation 
+     certificate, we bail out.
+
+    :param request: 
+    :param action: 
+    :return: 
+    """
+    from privacyidea.lib.tokens.u2ftoken import (U2FACTION,
+                                                 parse_registration_data)
+    from privacyidea.lib.tokens.u2f import x509name_to_string
+    policy_object = g.policy_object
+    # Get the registration data of the 2nd step of enrolling a U2F device
+    reg_data = request.all_data.get("regdata")
+    if reg_data:
+        # We have a registered u2f device!
+        serial = request.all_data.get("serial")
+        user_object = request.User
+
+        attestation_cert, user_pub_key, key_handle, \
+        signature, description = parse_registration_data(reg_data)
+
+        cert_info = {
+            "attestation_issuer":
+                x509name_to_string(attestation_cert.get_issuer()),
+            "attestation_serial": "{!s}".format(
+                attestation_cert.get_serial_number()),
+            "attestation_subject": x509name_to_string(
+                attestation_cert.get_subject())}
+
+        if user_object:
+            token_user = user_object.login
+            token_realm = user_object.realm
+            token_resolver = user_object.resolver
+        else:
+            token_realm = token_resolver = token_user = None
+
+        allowed_certs_pols = policy_object.get_action_values(
+            U2FACTION.REQ,
+            scope=SCOPE.ENROLL,
+            realm=token_realm,
+            user=token_user,
+            resolver=token_resolver,
+            client=g.client_ip)
+        for allowed_cert in allowed_certs_pols:
+            tag, matching, _rest = allowed_cert.split("/", 3)
+            tag_value = cert_info.get("attestation_{0!s}".format(tag))
+            # if we do not get a match, we bail out
+            m = re.search(matching, tag_value)
+            if not m:
+                log.warning("The U2F device {0!s} is not "
+                            "allowed to be registered due to policy "
+                            "restriction".format(
+                    serial))
+                raise PolicyError("The U2F device is not allowed "
+                                  "to be registered due to policy "
+                                  "restriction.")
+                # TODO: Maybe we should delete the token, as it is a not
+                # usable U2F token, now.
+
     return True

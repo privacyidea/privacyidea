@@ -6,6 +6,8 @@
 #             Adding dynamic facet list
 #
 #  http://www.privacyidea.org
+#  2017-04-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add policies of attestation certificate
 #  2015-09-21 Initial writeup.
 #             Cornelius Kölbel <cornelius@privacyidea.org>
 #
@@ -41,6 +43,7 @@ from privacyidea.lib.policy import SCOPE
 import base64
 import binascii
 import json
+import re
 
 __doc__ = """
 U2F is the "Universal 2nd Factor" specified by the FIDO Alliance.
@@ -306,10 +309,6 @@ class U2fTokenClass(TokenClass):
             serial = "{!s}".format(attestation_cert.get_serial_number())
             subject = x509name_to_string(attestation_cert.get_subject())
 
-            #TODO: At this point we can check, if the attestation certificate
-            # is allowed in the policy scope=ENROLL
-            # If not, we can raise a PolicyError
-
             self.add_tokeninfo("attestation_issuer", issuer)
             self.add_tokeninfo("attestation_serial", serial)
             self.add_tokeninfo("attestation_subject", subject)
@@ -450,7 +449,7 @@ class U2fTokenClass(TokenClass):
             client_challenge = clientdata_dict.get("challenge")
             if challenge_url != client_challenge:
                 raise ValidateError("Challenge mismatch. The U2F key did not "
-                                    "send to original challenge.")
+                                    "send the original challenge.")
             if clientdata_dict.get("typ") != "navigator.id.getAssertion":
                 raise ValidateError("Incorrect navigator.id")
             #client_origin = clientdata_dict.get("origin")
@@ -469,16 +468,37 @@ class U2fTokenClass(TokenClass):
                 if counter > self.get_otp_count():
                     self.set_otp_count(counter)
                     ret = counter
-                    # TODO: At this point we can check, if the attestation
+                    # At this point we can check, if the attestation
                     # certificate is authorized.
                     # If not, we can raise a policy exception
                     g = options.get("g")
-                    allowed_certs = g.policy_object.get_action_values(
+                    if self.user:
+                        token_user = self.user.login
+                        token_realm = self.user.realm
+                        token_resolver = self.user.resolver
+                    else:
+                        token_realm = token_resolver = token_user = None
+                    allowed_certs_pols = g.policy_object.get_action_values(
                         U2FACTION.REQ,
                         scope=SCOPE.AUTHZ,
+                        realm=token_realm,
+                        user=token_user,
+                        resolver=token_resolver,
                         client=g.client_ip)
-                    if allowed_certs:
-                        pass
+                    for allowed_cert in allowed_certs_pols:
+                        tag, matching, _rest = allowed_cert.split("/", 3)
+                        tag_value = self.get_tokeninfo(
+                            "attestation_{0!s}".format(tag))
+                        # if we do not get a match, we bail out
+                        m = re.search(matching, tag_value)
+                        if not m:
+                            log.warning("The U2F device {0!s} is not "
+                                        "allowed to authenticate due to policy "
+                                        "restriction".format(
+                                self.token.serial))
+                            raise PolicyError("The U2F device is not allowed "
+                                              "to authenticate due to policy "
+                                              "restriction.")
 
                 else:
                     log.warning("The signature of %s was valid, but contained "
