@@ -1,13 +1,15 @@
 from .base import MyTestCase
 import json
 import binascii
-from privacyidea.lib.token import assign_token
+from privacyidea.lib.token import assign_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.tokens.u2f import (sign_challenge, check_response,
                                         url_encode)
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.tokens.u2ftoken import U2FACTION
+from privacyidea.models import Challenge
+
 
 PWFILE = "tests/testdata/passwords"
 IMPORTFILE = "tests/testdata/import.oath"
@@ -170,3 +172,215 @@ class APIU2fTestCase(MyTestCase):
             self.assertTrue("https://host3" in ids)
 
         delete_policy("facet1")
+
+    def test_04_create_token_validate(self):
+        # test data taken from
+        # https://fidoalliance.org/specs/fido-u2f-v1.0-ps-20141009/fido-u2f-raw-message-formats-ps-20141009.html#examples
+        serial = "U2F0010BF6F"
+        set_privacyidea_config("u2f.appId",
+                               "https://puck.az.intern")
+        pin = "test"
+        # Registration data
+        client_data = "eyJ0eXAiOiJuYXZpZ2F0b3IuaWQuZmluaXNoRW5yb2xsbWVudCIsImNoYWxsZW5nZSI6ImpIakIxaEM2VjA3dDl4ZnNNaDRfOEQ3U1JuSHRFY1BqUTdsaVl3cWxkX009Iiwib3JpZ2luIjoiaHR0cHM6Ly9wdWNrLmF6LmludGVybiIsImNpZF9wdWJrZXkiOiJ1bnVzZWQifQ"
+        reg_data = "BQRHjwxEYFCkLHz3xdrmifKOHl2h17BmRJQ_S1Y9PRAhS2R186T391YE-ryqWis9HSmdp0XpRqUaKk9L8lxJTPpTQF_xFJ_LAsKkPTzKIwUlPIjGZDsLmv0en2Iya17Yz8X8OS89fuxwZOvEok-NQOKUTJP3att_RVe3dEAbq_iOtyAwggJEMIIBLqADAgECAgRVYr6gMAsGCSqGSIb3DQEBCzAuMSwwKgYDVQQDEyNZdWJpY28gVTJGIFJvb3QgQ0EgU2VyaWFsIDQ1NzIwMDYzMTAgFw0xNDA4MDEwMDAwMDBaGA8yMDUwMDkwNDAwMDAwMFowKjEoMCYGA1UEAwwfWXViaWNvIFUyRiBFRSBTZXJpYWwgMTQzMjUzNDY4ODBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABEszH3c9gUS5mVy-RYVRfhdYOqR2I2lcvoWsSCyAGfLJuUZ64EWw5m8TGy6jJDyR_aYC4xjz_F2NKnq65yvRQwmjOzA5MCIGCSsGAQQBgsQKAgQVMS4zLjYuMS40LjEuNDE0ODIuMS41MBMGCysGAQQBguUcAgEBBAQDAgUgMAsGCSqGSIb3DQEBCwOCAQEArBbZs262s6m3bXWUs09Z9Pc-28n96yk162tFHKv0HSXT5xYU10cmBMpypXjjI-23YARoXwXn0bm-BdtulED6xc_JMqbK-uhSmXcu2wJ4ICA81BQdPutvaizpnjlXgDJjq6uNbsSAp98IStLLp7fW13yUw-vAsWb5YFfK9f46Yx6iakM3YqNvvs9M9EUJYl_VrxBJqnyLx2iaZlnpr13o8NcsKIJRdMUOBqt_ageQg3ttsyq_3LyoNcu7CQ7x8NmeCGm_6eVnZMQjDmwFdymwEN4OxfnM5MkcKCYhjqgIGruWkVHsFnJa8qjZXneVvKoiepuUQyDEJ2GcqvhU2YKY1zBFAiEA4ZkIXXyjEPExcMGtW6kJXqYv7UHgjxJR5h3H9w9FV7gCIFGdhxZDqwCQKplDi-LU4WJ45OyCpNK6lGa72eZqUR_k"
+        # Authentication data
+        transaction_id = "05871369157706202013"
+        challenge = "1616515928c389ba9e028d83eb5f63782cbf351ca6abbc81aeb0dddd4895b609"
+        # challenge = "FhZRWSjDibqeAo2D619jeCy_NRymq7yBrrDd3UiVtgk"
+        key_handle = "X_EUn8sCwqQ9PMojBSU8iMZkOwua_R6fYjJrXtjPxfw5Lz1-7HBk68SiT41A4pRMk_dq239FV7d0QBur-I63IA"
+        client_data_auth = "eyJ0eXAiOiJuYXZpZ2F0b3IuaWQuZ2V0QXNzZXJ0aW9uIiwiY2hhbGxlbmdlIjoiRmhaUldTakRpYnFlQW8yRDYxOWplQ3lfTlJ5bXE3eUJyckRkM1VpVnRnayIsIm9yaWdpbiI6Imh0dHBzOi8vcHVjay5hei5pbnRlcm4iLCJjaWRfcHVia2V5IjoidW51c2VkIn0"
+        signature_data = "AQAAAAMwRQIgU8d6waOIRVVydg_AXxediEZGkfFioUjd6FG3OxH2wUMCIQDpxzavJyxRlMwgNmD1Kw-iw_oP2egdshU9hrpxFHTRzQ"
+
+        # step 1
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "u2f",
+                                                 "serial": serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("status"), True)
+            self.assertEqual(result.get("value"), True)
+
+        # Init step 2
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "u2f",
+                                                 "serial": serial,
+                                                 "regdata": reg_data,
+                                                 "clientdata": client_data},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("status"), True)
+            self.assertEqual(result.get("value"), True)
+
+        # create a challenge in the database
+        db_challenge = Challenge(serial,
+                                 transaction_id=transaction_id,
+                                 challenge=challenge,
+                                 data=None)
+        db_challenge.save()
+
+        set_policy(name="u2f01", scope=SCOPE.AUTHZ,
+                   action="{0!s}=issuer/.*Yubico.*/".format(U2FACTION.REQ) )
+
+        # Successful C/R authentication
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "pass": "",
+                                                 "transaction_id":
+                                                     transaction_id,
+                                                 "clientdata":
+                                                     client_data_auth,
+                                                 "signaturedata":
+                                                     signature_data}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("status"), True)
+            self.assertEqual(result.get("value"), True)
+
+        delete_policy("u2f01")
+        remove_token(serial)
+
+    def test_05_u2f_auth_fails_wrong_issuer(self):
+        # test data taken from
+        # https://fidoalliance.org/specs/fido-u2f-v1.0-ps-20141009/fido-u2f-raw-message-formats-ps-20141009.html#examples
+        serial = "U2F0010BF6F"
+        set_privacyidea_config("u2f.appId",
+                               "https://puck.az.intern")
+        pin = "test"
+        # Registration data
+        client_data = "eyJ0eXAiOiJuYXZpZ2F0b3IuaWQuZmluaXNoRW5yb2xsbWVudCIsImNoYWxsZW5nZSI6ImpIakIxaEM2VjA3dDl4ZnNNaDRfOEQ3U1JuSHRFY1BqUTdsaVl3cWxkX009Iiwib3JpZ2luIjoiaHR0cHM6Ly9wdWNrLmF6LmludGVybiIsImNpZF9wdWJrZXkiOiJ1bnVzZWQifQ"
+        reg_data = "BQRHjwxEYFCkLHz3xdrmifKOHl2h17BmRJQ_S1Y9PRAhS2R186T391YE-ryqWis9HSmdp0XpRqUaKk9L8lxJTPpTQF_xFJ_LAsKkPTzKIwUlPIjGZDsLmv0en2Iya17Yz8X8OS89fuxwZOvEok-NQOKUTJP3att_RVe3dEAbq_iOtyAwggJEMIIBLqADAgECAgRVYr6gMAsGCSqGSIb3DQEBCzAuMSwwKgYDVQQDEyNZdWJpY28gVTJGIFJvb3QgQ0EgU2VyaWFsIDQ1NzIwMDYzMTAgFw0xNDA4MDEwMDAwMDBaGA8yMDUwMDkwNDAwMDAwMFowKjEoMCYGA1UEAwwfWXViaWNvIFUyRiBFRSBTZXJpYWwgMTQzMjUzNDY4ODBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABEszH3c9gUS5mVy-RYVRfhdYOqR2I2lcvoWsSCyAGfLJuUZ64EWw5m8TGy6jJDyR_aYC4xjz_F2NKnq65yvRQwmjOzA5MCIGCSsGAQQBgsQKAgQVMS4zLjYuMS40LjEuNDE0ODIuMS41MBMGCysGAQQBguUcAgEBBAQDAgUgMAsGCSqGSIb3DQEBCwOCAQEArBbZs262s6m3bXWUs09Z9Pc-28n96yk162tFHKv0HSXT5xYU10cmBMpypXjjI-23YARoXwXn0bm-BdtulED6xc_JMqbK-uhSmXcu2wJ4ICA81BQdPutvaizpnjlXgDJjq6uNbsSAp98IStLLp7fW13yUw-vAsWb5YFfK9f46Yx6iakM3YqNvvs9M9EUJYl_VrxBJqnyLx2iaZlnpr13o8NcsKIJRdMUOBqt_ageQg3ttsyq_3LyoNcu7CQ7x8NmeCGm_6eVnZMQjDmwFdymwEN4OxfnM5MkcKCYhjqgIGruWkVHsFnJa8qjZXneVvKoiepuUQyDEJ2GcqvhU2YKY1zBFAiEA4ZkIXXyjEPExcMGtW6kJXqYv7UHgjxJR5h3H9w9FV7gCIFGdhxZDqwCQKplDi-LU4WJ45OyCpNK6lGa72eZqUR_k"
+        # Authentication data
+        transaction_id = "05871369157706202013"
+        challenge = "1616515928c389ba9e028d83eb5f63782cbf351ca6abbc81aeb0dddd4895b609"
+        # challenge = "FhZRWSjDibqeAo2D619jeCy_NRymq7yBrrDd3UiVtgk"
+        key_handle = "X_EUn8sCwqQ9PMojBSU8iMZkOwua_R6fYjJrXtjPxfw5Lz1-7HBk68SiT41A4pRMk_dq239FV7d0QBur-I63IA"
+        client_data_auth = "eyJ0eXAiOiJuYXZpZ2F0b3IuaWQuZ2V0QXNzZXJ0aW9uIiwiY2hhbGxlbmdlIjoiRmhaUldTakRpYnFlQW8yRDYxOWplQ3lfTlJ5bXE3eUJyckRkM1VpVnRnayIsIm9yaWdpbiI6Imh0dHBzOi8vcHVjay5hei5pbnRlcm4iLCJjaWRfcHVia2V5IjoidW51c2VkIn0"
+        signature_data = "AQAAAAMwRQIgU8d6waOIRVVydg_AXxediEZGkfFioUjd6FG3OxH2wUMCIQDpxzavJyxRlMwgNmD1Kw-iw_oP2egdshU9hrpxFHTRzQ"
+
+        # step 1
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "u2f",
+                                                 "user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "serial": serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("status"), True)
+            self.assertEqual(result.get("value"), True)
+
+        # Init step 2
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "u2f",
+                                                 "serial": serial,
+                                                 "regdata": reg_data,
+                                                 "clientdata": client_data},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("status"), True)
+            self.assertEqual(result.get("value"), True)
+
+        # create a challenge in the database
+        db_challenge = Challenge(serial,
+                                 transaction_id=transaction_id,
+                                 challenge=challenge,
+                                 data=None)
+        db_challenge.save()
+
+        set_policy(name="u2f01", scope=SCOPE.AUTHZ,
+                   action="{0!s}=issuer/.*Plugup.*/".format(U2FACTION.REQ) )
+
+        # Successful C/R authentication
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "pass": "",
+                                                 "transaction_id":
+                                                     transaction_id,
+                                                 "clientdata":
+                                                     client_data_auth,
+                                                 "signaturedata":
+                                                     signature_data}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("status"), False)
+            self.assertEqual(result.get("error").get("message"),
+                             u'The U2F device is not allowed to authenticate due to policy restriction.')
+
+        delete_policy("u2f01")
+        remove_token(serial)
+
+    def test_06_u2f_enrollment_fails_wrong_issuer(self):
+        # test data taken from
+        # https://fidoalliance.org/specs/fido-u2f-v1.0-ps-20141009/fido-u2f-raw-message-formats-ps-20141009.html#examples
+        serial = "U2F0010BF6F"
+        set_privacyidea_config("u2f.appId",
+                               "https://puck.az.intern")
+        pin = "test"
+        # Registration data
+        client_data = "eyJ0eXAiOiJuYXZpZ2F0b3IuaWQuZmluaXNoRW5yb2xsbWVudCIsImNoYWxsZW5nZSI6ImpIakIxaEM2VjA3dDl4ZnNNaDRfOEQ3U1JuSHRFY1BqUTdsaVl3cWxkX009Iiwib3JpZ2luIjoiaHR0cHM6Ly9wdWNrLmF6LmludGVybiIsImNpZF9wdWJrZXkiOiJ1bnVzZWQifQ"
+        reg_data = "BQRHjwxEYFCkLHz3xdrmifKOHl2h17BmRJQ_S1Y9PRAhS2R186T391YE-ryqWis9HSmdp0XpRqUaKk9L8lxJTPpTQF_xFJ_LAsKkPTzKIwUlPIjGZDsLmv0en2Iya17Yz8X8OS89fuxwZOvEok-NQOKUTJP3att_RVe3dEAbq_iOtyAwggJEMIIBLqADAgECAgRVYr6gMAsGCSqGSIb3DQEBCzAuMSwwKgYDVQQDEyNZdWJpY28gVTJGIFJvb3QgQ0EgU2VyaWFsIDQ1NzIwMDYzMTAgFw0xNDA4MDEwMDAwMDBaGA8yMDUwMDkwNDAwMDAwMFowKjEoMCYGA1UEAwwfWXViaWNvIFUyRiBFRSBTZXJpYWwgMTQzMjUzNDY4ODBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABEszH3c9gUS5mVy-RYVRfhdYOqR2I2lcvoWsSCyAGfLJuUZ64EWw5m8TGy6jJDyR_aYC4xjz_F2NKnq65yvRQwmjOzA5MCIGCSsGAQQBgsQKAgQVMS4zLjYuMS40LjEuNDE0ODIuMS41MBMGCysGAQQBguUcAgEBBAQDAgUgMAsGCSqGSIb3DQEBCwOCAQEArBbZs262s6m3bXWUs09Z9Pc-28n96yk162tFHKv0HSXT5xYU10cmBMpypXjjI-23YARoXwXn0bm-BdtulED6xc_JMqbK-uhSmXcu2wJ4ICA81BQdPutvaizpnjlXgDJjq6uNbsSAp98IStLLp7fW13yUw-vAsWb5YFfK9f46Yx6iakM3YqNvvs9M9EUJYl_VrxBJqnyLx2iaZlnpr13o8NcsKIJRdMUOBqt_ageQg3ttsyq_3LyoNcu7CQ7x8NmeCGm_6eVnZMQjDmwFdymwEN4OxfnM5MkcKCYhjqgIGruWkVHsFnJa8qjZXneVvKoiepuUQyDEJ2GcqvhU2YKY1zBFAiEA4ZkIXXyjEPExcMGtW6kJXqYv7UHgjxJR5h3H9w9FV7gCIFGdhxZDqwCQKplDi-LU4WJ45OyCpNK6lGa72eZqUR_k"
+        # Authentication data
+        transaction_id = "05871369157706202013"
+        challenge = "1616515928c389ba9e028d83eb5f63782cbf351ca6abbc81aeb0dddd4895b609"
+        # challenge = "FhZRWSjDibqeAo2D619jeCy_NRymq7yBrrDd3UiVtgk"
+        key_handle = "X_EUn8sCwqQ9PMojBSU8iMZkOwua_R6fYjJrXtjPxfw5Lz1-7HBk68SiT41A4pRMk_dq239FV7d0QBur-I63IA"
+        client_data_auth = "eyJ0eXAiOiJuYXZpZ2F0b3IuaWQuZ2V0QXNzZXJ0aW9uIiwiY2hhbGxlbmdlIjoiRmhaUldTakRpYnFlQW8yRDYxOWplQ3lfTlJ5bXE3eUJyckRkM1VpVnRnayIsIm9yaWdpbiI6Imh0dHBzOi8vcHVjay5hei5pbnRlcm4iLCJjaWRfcHVia2V5IjoidW51c2VkIn0"
+        signature_data = "AQAAAAMwRQIgU8d6waOIRVVydg_AXxediEZGkfFioUjd6FG3OxH2wUMCIQDpxzavJyxRlMwgNmD1Kw-iw_oP2egdshU9hrpxFHTRzQ"
+
+        # step 1
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "u2f",
+                                                 "user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "serial": serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("status"), True)
+            self.assertEqual(result.get("value"), True)
+
+        set_policy(name="u2f01", scope=SCOPE.ENROLL,
+                   action="{0!s}=issuer/.*Plugup.*/".format(U2FACTION.REQ))
+
+        # Init step 2
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "u2f",
+                                                 "serial": serial,
+                                                 "regdata": reg_data,
+                                                 "clientdata": client_data},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("status"), False)
+            self.assertEqual(result.get("error").get("message"),
+                             u'The U2F device is not allowed to be registered '
+                             u'due to policy restriction.')
+
+        delete_policy("u2f01")
+        remove_token(serial)

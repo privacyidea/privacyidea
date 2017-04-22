@@ -7,12 +7,14 @@ from .base import MyTestCase
 from privacyidea.lib.tokens.u2ftoken import U2fTokenClass
 from privacyidea.lib.tokens.u2f import (check_registration_data,
                                         parse_registration_data, url_decode,
-                                        check_response, parse_response_data)
+                                        check_response, parse_response_data,
+                                        x509name_to_string)
 from privacyidea.lib.token import init_token
 from privacyidea.lib.config import set_privacyidea_config
 import binascii
 from hashlib import sha256
 from OpenSSL import crypto
+import base64
 
 
 REG_DATA = "BQRFnd8XtfZzsTK68VPK64Bcjiog_ZzyYNuzjaaGwpPnSpifxaqQV4_4IMxVlGS3CLoQmNAR41MSMxZHG0dENLRmQGnk4OqRxGRHmUOOLmDkGgdIJycQe79JCERV1gqGnWAOFBg_bH4WFSxZwnX-IMRcl3zW_X442QNrrdFySvXrba4wggIcMIIBBqADAgECAgQ4Zt91MAsGCSqGSIb3DQEBCzAuMSwwKgYDVQQDEyNZdWJpY28gVTJGIFJvb3QgQ0EgU2VyaWFsIDQ1NzIwMDYzMTAgFw0xNDA4MDEwMDAwMDBaGA8yMDUwMDkwNDAwMDAwMFowKzEpMCcGA1UEAwwgWXViaWNvIFUyRiBFRSBTZXJpYWwgMTM4MzExNjc4NjEwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQ3jfx0DHOblHJO09Ujubh2gQZWwT3ob6-uzzjZD1XiyAob_gsw3FOzXefQRblty48r-U-o4LkDFjx_btwuSHtxoxIwEDAOBgorBgEEAYLECgEBBAAwCwYJKoZIhvcNAQELA4IBAQIaR2TKAInPkq24f6hIU45yzD79uzR5KUMEe4IWqTm69METVio0W2FHWXlpeUe85nGqanwGeW7U67G4_WAnGbcd6zz2QumNsdlmb_AebbdPRa95Z8BG1ub_S04JoxQYNLaa8WRlzN7POgqAnAqkmnsZQ_W9Tj2uO9zP3mpxOkkmnqz7P5zt4Lp5xrv7p15hGOIPD5V-ph7tUmiCJsq0LfeRA36X7aXi32Ap0rt_wyfnRef59YYr7SmwaMuXKjbIZSLesscZZTMzXd-uuLb6DbUCasqEVBkGGqTRfAcOmPov1nHUrNDCkOR0obR4PsJG4PiamIfApNeoXGYpGbok6nucMEYCIQC_yerJqB3mnuAJGfbdKuOIx-Flxr-VSQ2nAkUUE_50dQIhAJE2NL1Xs2oVEG4bFzEM86TfS7nkHxad89aYmUrII49V"
@@ -149,6 +151,14 @@ class U2FTokenTestCase(MyTestCase):
         subject = idetail.get("u2fRegisterResponse").get("subject")
         self.assertEqual(subject, 'Yubico U2F EE Serial 13831167861')
 
+        # check the tokeninfo of the attestation certificate
+        issuer = token.get_tokeninfo("attestation_issuer")
+        subject = token.get_tokeninfo("attestation_subject")
+        serial = token.get_tokeninfo("attestation_serial")
+        self.assertEqual(issuer, "CN=Yubico U2F Root CA Serial 457200631")
+        self.assertEqual(subject, "CN=Yubico U2F EE Serial 13831167861")
+        self.assertEqual(serial, "946265973")
+
         #
         # Do some authentication
         #
@@ -175,3 +185,19 @@ class U2FTokenTestCase(MyTestCase):
         self.assertEqual(u2f_sign_request.get("appId"), APP_ID)
         self.assertEqual(len(u2f_sign_request.get("challenge")), 43)
 
+    def test_02_parse_regdata(self):
+        client_data = "eyJ0eXAiOiJuYXZpZ2F0b3IuaWQuZmluaXNoRW5yb2xsbWVudCIsImNoYWxsZW5nZSI6IlNna3pUekdyYnNVREUyNEJSMV9kUTRYbXJtNTVqU2MzVml3Sm5DRjVmWm8iLCJvcmlnaW4iOiJodHRwczovL2RlbW8ueXViaWNvLmNvbSIsImNpZF9wdWJrZXkiOiJ1bnVzZWQifQ"
+        reg_data = "BQT3NET2RTTcgzAiZRW5gkg3TT6mgQBepZl96iMtj-nXU25VdwBXCL1EjWOY-q1M76vT_iX9ebDhkZ1kvosbi3_AQGVopI2hcyIsc8q-KpzerJIZgWtN25bCy6g_hTk_M1khCjQGaiGJFwnk8GIn2OnkNOJRe7V00Q9PBZHn5mFwfFwwggJEMIIBLqADAgECAgRVYr6gMAsGCSqGSIb3DQEBCzAuMSwwKgYDVQQDEyNZdWJpY28gVTJGIFJvb3QgQ0EgU2VyaWFsIDQ1NzIwMDYzMTAgFw0xNDA4MDEwMDAwMDBaGA8yMDUwMDkwNDAwMDAwMFowKjEoMCYGA1UEAwwfWXViaWNvIFUyRiBFRSBTZXJpYWwgMTQzMjUzNDY4ODBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABEszH3c9gUS5mVy-RYVRfhdYOqR2I2lcvoWsSCyAGfLJuUZ64EWw5m8TGy6jJDyR_aYC4xjz_F2NKnq65yvRQwmjOzA5MCIGCSsGAQQBgsQKAgQVMS4zLjYuMS40LjEuNDE0ODIuMS41MBMGCysGAQQBguUcAgEBBAQDAgUgMAsGCSqGSIb3DQEBCwOCAQEArBbZs262s6m3bXWUs09Z9Pc-28n96yk162tFHKv0HSXT5xYU10cmBMpypXjjI-23YARoXwXn0bm-BdtulED6xc_JMqbK-uhSmXcu2wJ4ICA81BQdPutvaizpnjlXgDJjq6uNbsSAp98IStLLp7fW13yUw-vAsWb5YFfK9f46Yx6iakM3YqNvvs9M9EUJYl_VrxBJqnyLx2iaZlnpr13o8NcsKIJRdMUOBqt_ageQg3ttsyq_3LyoNcu7CQ7x8NmeCGm_6eVnZMQjDmwFdymwEN4OxfnM5MkcKCYhjqgIGruWkVHsFnJa8qjZXneVvKoiepuUQyDEJ2GcqvhU2YKY1zBFAiEAqqVKbLnZuWYyzjcsb1YnHEyuk-dmM77Q66iExrj8h2cCIHAvpisjLj-D2KvnZZcIQ_fFjFj9OX5jkfmJ65QVQ9bE"
+        cert, user_pub_key, key_handle, signature , description = \
+            parse_registration_data(reg_data)
+        self.assertEqual(user_pub_key,
+                         '04f73444f64534dc8330226515b98248374d3ea681005ea5997dea232d8fe9d7536e5577005708bd448d6398faad4cefabd3fe25fd79b0e1919d64be8b1b8b7fc0')
+        self.assertEqual(key_handle,
+                         '6568a48da173222c73cabe2a9cdeac9219816b4ddb96c2cba83f85393f3359210a34066a21891709e4f06227d8e9e434e2517bb574d10f4f0591e7e661707c5c')
+        self.assertEqual(description, 'Yubico U2F EE Serial 1432534688')
+
+        client_data_str = base64.b64decode(client_data+"==")
+        r = check_registration_data(cert, "https://demo.yubico.com",
+                                    client_data_str,
+                                    user_pub_key, key_handle, signature)
+        self.assertTrue(r)

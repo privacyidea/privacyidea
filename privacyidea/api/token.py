@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2017-04-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add U2F policy to /token/init
 # 2016-08-09 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add number of tokens, searched by get_serial_by_otp
 # 2016-07-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -80,7 +82,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            init_tokenlabel, init_random_pin,
                                            encrypt_pin, check_otp_pin,
                                            check_external, init_token_defaults,
-                                           enroll_pin, papertoken_count)
+                                           enroll_pin, papertoken_count,
+                                           u2ftoken_allowed)
 from privacyidea.api.lib.postpolicy import (save_pin_change,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -115,6 +118,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(check_external, request, action="init")
 @prepolicy(init_token_defaults, request)
 @prepolicy(papertoken_count, request)
+@prepolicy(u2ftoken_allowed, request)
 @postpolicy(save_pin_change, request)
 @event("token_init", request, g)
 @log_with(log, log_entry=False)

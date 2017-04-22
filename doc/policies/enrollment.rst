@@ -236,3 +236,20 @@ type: int
 
 This is a specific action of the paper token. Here the administrator can
 define how many OTP values should be printed on the paper token.
+
+
+u2f_req
+~~~~~~~
+
+type: string
+
+Only the specified U2F devices are allowed to be registered.
+The action can be specified like this:
+
+    u2f_req=subject/.*Yubico.*/
+
+The the key word can be "subject", "issuer" or "serial". Followed by a
+regular expression. During registration of the U2F device the information
+is fetched from the attestation certificate.
+Only if the attribute in the attestation certificate matches accordingly the
+token can be registered.
