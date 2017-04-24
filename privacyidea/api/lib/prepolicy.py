@@ -1086,3 +1086,34 @@ def u2ftoken_allowed(request, action):
                 # usable U2F token, now.
 
     return True
+
+
+def allowed_audit_realm(request=None, action=None):
+    """
+    This decorator function takes the request and adds additional parameters 
+    to the request according to the policy
+    for the SCOPE.ADMIN or ACTION.AUDIT
+    :param request:
+    :param action:
+    :return: True
+    """
+    admin_user = g.logged_in_user
+    policy_object = g.policy_object
+    pols = policy_object.get_policies(
+        action=ACTION.AUDIT,
+        scope=SCOPE.ADMIN,
+        user=admin_user.get("username"),
+        client=g.client_ip)
+
+    if pols:
+        # get all values in realm:
+        allowed_audit_realms = []
+        for pol in pols:
+            if pol.get("realm"):
+                allowed_audit_realms += pol.get("realm")
+        request.all_data["allowed_audit_realm"] = list(set(
+            allowed_audit_realms))
+
+    return True
+
+

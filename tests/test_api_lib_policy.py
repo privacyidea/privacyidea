@@ -21,7 +21,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_external, api_key_required,
                                            mangle, is_remote_user_allowed,
                                            required_email, auditlog_age,
-                                           papertoken_count)
+                                           papertoken_count, allowed_audit_realm)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             no_detail_on_success,
                                             no_detail_on_fail, autoassign,
@@ -1124,6 +1124,43 @@ class PrePolicyDecoratorTestCase(MyTestCase):
 
         # finally delete policy
         delete_policy("paperpol")
+
+    def test_20_allowed_audit_realm(self):
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        #
+        set_policy(name="auditrealm1",
+                   scope=SCOPE.ADMIN,
+                   action=ACTION.AUDIT,
+                   user="admin1",
+                   realm="realm1")
+        set_policy(name="auditrealm2",
+                   scope=SCOPE.ADMIN,
+                   action=ACTION.AUDIT,
+                   user="admin1",
+                   realm=["realm2", "realm3"])
+        g.policy_object = PolicyClass()
+
+        # request, that matches the policy
+        req.all_data = {}
+        req.User = User()
+        allowed_audit_realm(req)
+
+        # Check if the allowed_audit_realm is set
+        self.assertTrue("realm1" in req.all_data.get("allowed_audit_realm"))
+        self.assertTrue("realm2" in req.all_data.get("allowed_audit_realm"))
+        self.assertTrue("realm3" in req.all_data.get("allowed_audit_realm"))
+
+        # finally delete policy
+        delete_policy("auditrealm1")
+        delete_policy("auditrealm2")
 
 
 class PostPolicyDecoratorTestCase(MyTestCase):

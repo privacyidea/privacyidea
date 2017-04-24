@@ -402,7 +402,9 @@ auditlog
 
 type: bool
 
-The administrators are allowed to view the audit log.
+The administrators are allowed to view the audit log. If the policy contains
+a user realm, than the administrator is only allowed to see entries which
+contain this very user realm. A list of user realms may be defined.
 
 To learn more about the audit log, see :ref:`audit`.
 

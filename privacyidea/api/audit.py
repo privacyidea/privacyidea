@@ -33,7 +33,8 @@ from flask import (Blueprint,
                    request, current_app, Response,
                    stream_with_context)
 from lib.utils import (send_result, getParam)
-from ..api.lib.prepolicy import prepolicy, check_base_action, auditlog_age
+from ..api.lib.prepolicy import (prepolicy, check_base_action, auditlog_age,
+                                 allowed_audit_realm)
 from ..api.auth import admin_required
 from ..lib.policy import ACTION
 from flask import g
@@ -50,6 +51,7 @@ audit_blueprint = Blueprint('audit_blueprint', __name__)
 
 @audit_blueprint.route('/', methods=['GET'])
 @prepolicy(check_base_action, request, ACTION.AUDIT)
+@prepolicy(allowed_audit_realm, request, ACTION.AUDIT)
 @prepolicy(auditlog_age, request)
 def search_audit():
     """

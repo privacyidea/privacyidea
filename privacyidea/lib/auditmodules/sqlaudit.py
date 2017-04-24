@@ -41,14 +41,11 @@ token database.
 import logging
 from privacyidea.lib.auditmodules.base import (Audit as AuditBase, Paginate)
 from privacyidea.lib.crypto import Sign
-from sqlalchemy import Table, MetaData, Column
-from sqlalchemy import Integer, String, DateTime, asc, desc, and_
-from sqlalchemy.orm import mapper
-from alembic.migration import MigrationContext
-from alembic.operations import Operations
+from sqlalchemy import MetaData
+from sqlalchemy import asc, desc, and_, or_
 import datetime
 import traceback
-from sqlalchemy.exc import OperationalError
+
 
 log = logging.getLogger(__name__)
 try:
@@ -130,8 +127,16 @@ class Audit(AuditBase):
         param = param or {}
         for search_key in param.keys():
             search_value = param.get(search_key)
+            if search_key == "allowed_audit_realm":
+                # Add each realm in the allowed_audit_realm list to the
+                # search condition
+                realm_conditions = []
+                for realm in search_value:
+                    realm_conditions.append(LogEntry.realm == realm)
+                filter_realm = or_(*realm_conditions)
+                conditions.append(filter_realm)
             # We do not search if the search value only consists of '*'
-            if search_value.strip() != '' and search_value.strip('*') != '':
+            elif search_value.strip() != '' and search_value.strip('*') != '':
                 try:
                     if search_key == "success":
                         # "success" is the only integer.
