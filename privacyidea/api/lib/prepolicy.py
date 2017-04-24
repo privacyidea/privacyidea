@@ -770,10 +770,8 @@ def check_base_action(request=None, action=None, anonymous=False):
     role = g.logged_in_user.get("role")
     scope = SCOPE.ADMIN
     admin_realm = g.logged_in_user.get("realm")
-    realm = params.get("realm")
-    resolver = params.get("resolver")
-    if type(realm) == list and len(realm) == 1:
-        realm = realm[0]
+    realm = None
+    resolver = None
 
     if role == ROLE.USER:
         scope = SCOPE.USER
@@ -783,6 +781,10 @@ def check_base_action(request=None, action=None, anonymous=False):
 
     # In certain cases we can not resolve the user by the serial!
     if action not in [ACTION.AUDIT]:
+        realm = params.get("realm")
+        if type(realm) == list and len(realm) == 1:
+            realm = realm[0]
+        resolver = params.get("resolver")
         # get the realm by the serial:
         if not realm and params.get("serial"):
             realm = get_realms_of_token(params.get("serial"),
@@ -1084,3 +1086,34 @@ def u2ftoken_allowed(request, action):
                 # usable U2F token, now.
 
     return True
+
+
+def allowed_audit_realm(request=None, action=None):
+    """
+    This decorator function takes the request and adds additional parameters 
+    to the request according to the policy
+    for the SCOPE.ADMIN or ACTION.AUDIT
+    :param request:
+    :param action:
+    :return: True
+    """
+    admin_user = g.logged_in_user
+    policy_object = g.policy_object
+    pols = policy_object.get_policies(
+        action=ACTION.AUDIT,
+        scope=SCOPE.ADMIN,
+        user=admin_user.get("username"),
+        client=g.client_ip)
+
+    if pols:
+        # get all values in realm:
+        allowed_audit_realms = []
+        for pol in pols:
+            if pol.get("realm"):
+                allowed_audit_realms += pol.get("realm")
+        request.all_data["allowed_audit_realm"] = list(set(
+            allowed_audit_realms))
+
+    return True
+
+
