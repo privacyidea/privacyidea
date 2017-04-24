@@ -14,7 +14,7 @@ from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User, get_username, create_user)
 from privacyidea.lib.usercache import (get_cache_time,
                                        cache_username, delete_user_cache,
-                                       EXPIRATION_SECONDS, retrieve_latest_entry)
+                                       EXPIRATION_SECONDS, retrieve_latest_entry, is_cache_enabled)
 from privacyidea.lib.config import set_privacyidea_config, get_from_config
 from datetime import timedelta
 from datetime import datetime
@@ -70,6 +70,7 @@ class UserCacheTestCase(MyTestCase):
 
         exp_delta = get_cache_time()
         self.assertEqual(exp_delta, timedelta(seconds=600))
+        self.assertTrue(is_cache_enabled())
 
     def test_01_get_username_from_cache(self):
         # If a username is already contained in the cache, the function
@@ -451,3 +452,19 @@ class UserCacheTestCase(MyTestCase):
         delete_realm(self.sql_realm)
         delete_resolver('reso_a')
         delete_resolver('reso_b')
+
+    def test_99_unset_config(self):
+        # Test early exit!
+        # Assert that the function `retrieve_latest_entry` is called if the cache is enabled
+        with patch('privacyidea.lib.usercache.retrieve_latest_entry') as mock_retrieve:
+            mock_retrieve.return_value = None
+            get_username('some-userid', 'resolver1')
+            self.assertEqual(mock_retrieve.call_count, 1)
+        set_privacyidea_config(EXPIRATION_SECONDS, 0)
+
+        self.assertFalse(is_cache_enabled())
+        # Assert that the function `retrieve_latest_entry` is not called anymore
+        with patch('privacyidea.lib.usercache.retrieve_latest_entry') as mock_retrieve:
+            mock_retrieve.return_value = None
+            get_username('some-userid', 'resolver1')
+            self.assertEqual(mock_retrieve.call_count, 0)
