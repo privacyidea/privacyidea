@@ -8,8 +8,7 @@ Creating a simple pass token for a user, eases the performance testing.
 
 Then you can run
 
-   ab -n 200 -c 8 -s 30 'https://localhost/validate/check?user=yourUser&pass
- =yourPassword'
+   ab -l -n 200 -c 8 -s 30 'https://localhost/validate/check?user=yourUser&pass=yourPassword'
 
 The performance depends on several aspects like the connection speed to your
 database and the connection speed to your user stores.
