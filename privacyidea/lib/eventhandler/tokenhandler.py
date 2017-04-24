@@ -240,8 +240,12 @@ class TokenEventHandler(BaseEventHandler):
                     unassign_token(serial)
                 elif action.lower() == ACTION_TYPE.SET_DESCRIPTION:
                     s_now = datetime.datetime.now().strftime(AUTH_DATE_FORMAT)
-                    set_description(serial, (handler_options.get("description") or "").format(
-                            current_time=s_now))
+                    set_description(serial,
+                                    (handler_options.get("description") or
+                                     "").format(current_time=s_now,
+                                                client_ip=g.client_ip,
+                                                ua_browser=request.user_agent.browser,
+                                                ua_string=request.user_agent.string))
                 elif action.lower() == ACTION_TYPE.SET_COUNTWINDOW:
                     set_count_window(serial,
                                      int(handler_options.get("count window",
@@ -250,7 +254,10 @@ class TokenEventHandler(BaseEventHandler):
                     s_now = datetime.datetime.now().strftime(AUTH_DATE_FORMAT)
                     add_tokeninfo(serial, handler_options.get("key"),
                                   (handler_options.get("value") or "").format(
-                                      current_time=s_now))
+                                      current_time=s_now,
+                                      client_ip=g.client_ip,
+                                      ua_browser=request.user_agent.browser,
+                                      ua_string=request.user_agent.string))
                 elif action.lower() == ACTION_TYPE.SET_VALIDITY:
                     start_date = handler_options.get(VALIDITY.START)
                     end_date = handler_options.get(VALIDITY.END)
