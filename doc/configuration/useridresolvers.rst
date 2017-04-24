@@ -301,6 +301,47 @@ The available attributes for the ``Attribute mapping`` are:
  * mobile,
  * email.
 
+.. _usercache:
+
+User Cache
+..........
+
+.. index:: user cache, caching
+
+privacyIDEA does not implement local user management by design and relies on UserIdResolvers to
+connect to external user stores instead. Consequently, privacyIDEA queries user stores quite frequently,
+e.g. to resolve a login name to a user ID while processing an authentication request, which
+may introduce a significant slowdown.
+In order to optimize the response time of authentication requests, privacyIDEA 2.19 introduces the *user cache*
+which is located in the local database. It can be enabled in the system configuration (see :ref:`user_cache_timeout`).
+
+A user cache entry stores the association of a login name in a specific UserIdResolver with a specific
+user ID for a predefined time called the *expiration timeout*, e.g. for one week.
+The processing of further authentication requests by the same user during this timespan
+does not require any queries to the user store, but only to the user cache.
+
+The user cache should only be enabled if the association of users and user ID is not expected to change often:
+In case a user is deleted from the user store, but can still be found in the user cache and still has assigned
+tokens, the user will still be able to authenticate during the expiration timeout! Likewise, any changes to the
+user ID will not be noticed by privacyIDEA until the corresponding cache entry expires.
+
+Expired cache entries are *not* deleted from the user cache table automatically. Instead, the tool
+``privacyidea-usercache-cleanup`` should be used to delete expired cache entries from the database,
+e.g. in a cronjob.
+
+However, cache entries are removed at some defined places:
+
+* If a UserIdResolver is modified or deleted, all cache entries belonging to this resolver are deleted.
+* If a user is modified or deleted in an editable UserIdResolver, all cache entries belonging to this user
+  are deleted.
+
+.. note:: Realms with multiple UserIdResolvers are a special case: If a user ``userX`` tries to authenticate in a
+   realm with two UserIdResolvers ``resolverA`` (with highest priority) and ``resolverB``, the user cache is queried
+   to find the user ID of ``userX`` in the UserIdResolver ``resolverA``. If the cache contains no matching entry,
+   ``resolverA`` itself is queried for a matching user ID! Only if ``resolverA`` does not find a corresponding
+   user, the user cache is queried to determine the user ID of ``userX`` in ``resolverB``. If no matching entry
+   can be found, ``resolverB`` is queried.
+
 .. rubric:: Footnotes
 
 .. [#adreferrals] http://blogs.technet.com/b/ad/archive/2009/07/06/referral-chasing.aspx
