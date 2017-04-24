@@ -313,6 +313,8 @@ class U2fTokenClass(TokenClass):
             self.add_tokeninfo("attestation_serial", serial)
             self.add_tokeninfo("attestation_subject", subject)
 
+        # If a description is given we use the given description
+        description = getParam(param, "description", default=description)
         self.set_description(description)
 
     @log_with(log)
