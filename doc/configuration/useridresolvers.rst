@@ -329,7 +329,7 @@ Expired cache entries are *not* deleted from the user cache table automatically.
 ``privacyidea-usercache-cleanup`` should be used to delete expired cache entries from the database,
 e.g. in a cronjob.
 
-However, cache entries are removed at some defined places:
+However, cache entries are removed at some defined events:
 
 * If a UserIdResolver is modified or deleted, all cache entries belonging to this resolver are deleted.
 * If a user is modified or deleted in an editable UserIdResolver, all cache entries belonging to this user
