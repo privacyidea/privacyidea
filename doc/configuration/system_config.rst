@@ -92,6 +92,20 @@ provides a wrong OTP value. AutoResync works like this:
 
 .. index:: authenticating client, client, override client
 
+.. _user_cache_timeout:
+
+User Cache
+~~~~~~~~~~
+
+The setting ``User Cache expiration in seconds`` is used to enable the user cache and
+configure its expiration timeout. If its value is set to ``0`` (which is the default value),
+the user cache is disabled.
+Otherwise, the value determines the time in seconds after which entries of the user
+cache expire. For more information read :ref:`usercache`.
+
+.. note:: If the user cache is already enabled and you increase the expiration timeout,
+   expired entries that still exist in the user cache could be considered active again!
+
 .. _override_client:
 
 Override Authorization Client

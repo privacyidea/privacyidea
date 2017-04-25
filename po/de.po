@@ -468,7 +468,7 @@ msgstr "Zähler"
 msgid "Count Window"
 msgstr "Zählerfenster"
 
-#: privacyidea/static/components/config/views/config.system.html:182
+#: privacyidea/static/components/config/views/config.system.html:195
 msgid ""
 "Count Window of\n"
 "                    newly enrolled tokens"
@@ -1378,7 +1378,7 @@ msgstr "Zuordnung"
 msgid "Mark the token to be lost"
 msgstr "Den Token als verloren markieren"
 
-#: privacyidea/static/components/config/views/config.system.html:195
+#: privacyidea/static/components/config/views/config.system.html:208
 msgid ""
 "Max Failcount of\n"
 "                    newly enrolled tokens"
@@ -1532,7 +1532,7 @@ msgstr "OTP-Wert"
 msgid "OTP length"
 msgstr "OTP-Länge "
 
-#: privacyidea/static/components/config/views/config.system.html:168
+#: privacyidea/static/components/config/views/config.system.html:181
 msgid ""
 "OTP length of\n"
 "                    newly enrolled tokens"
@@ -1598,7 +1598,7 @@ msgstr "Allgemeine Tokennutzung"
 msgid "Overlap Period"
 msgstr "Überlappungsdauer"
 
-#: privacyidea/static/components/config/views/config.system.html:133
+#: privacyidea/static/components/config/views/config.system.html:146
 msgid "Override Authorization Clients"
 msgstr "Überschreibe den authorisierenden Client"
 
@@ -1980,7 +1980,7 @@ msgstr "SMTP-Konfiguration erfolgreich gespeichert."
 msgid "SMTP server configuration"
 msgstr "SMTP-Server Konfiguration"
 
-#: privacyidea/static/components/config/views/config.system.html:151
+#: privacyidea/static/components/config/views/config.system.html:164
 msgid "SMTP server for password recovery"
 msgstr "SMTP-Server für die Passwort-Wiederherstellung"
 
@@ -2034,7 +2034,7 @@ msgstr "SMS-Gateway speichern"
 msgid "Save SMTP server"
 msgstr "SMTP-Server speichern"
 
-#: privacyidea/static/components/config/views/config.system.html:261
+#: privacyidea/static/components/config/views/config.system.html:274
 msgid "Save System Config"
 msgstr "Systemkonfiguration speichern"
 
@@ -2082,7 +2082,7 @@ msgstr "Secret"
 msgid "Select Realm"
 msgstr "Realm auswählen"
 
-#: privacyidea/static/components/config/views/config.system.html:160
+#: privacyidea/static/components/config/views/config.system.html:173
 msgid ""
 "Select a predefined\n"
 "                    <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
@@ -2257,7 +2257,7 @@ msgstr "Nachname"
 msgid "Sync Window"
 msgstr "Sync-Fenster"
 
-#: privacyidea/static/components/config/views/config.system.html:207
+#: privacyidea/static/components/config/views/config.system.html:220
 msgid ""
 "Sync Window of\n"
 "                    newly enrolled tokens"
@@ -2687,7 +2687,7 @@ msgstr ""
 msgid "The certificate was enrolled successfully."
 msgstr "Das Zertifikat wurde erfolgreich ausgestellt."
 
-#: privacyidea/static/components/config/views/config.system.html:220
+#: privacyidea/static/components/config/views/config.system.html:233
 msgid "The challenge validity time"
 msgstr "Die Gültigkeitszeit der Challenge"
 
@@ -2983,7 +2983,7 @@ msgstr ""
 "nach erfolgreichen und fehlgeschlagenen Authentisierungsanfragen "
 "unterschieden."
 
-#: privacyidea/static/components/config/views/config.system.html:143
+#: privacyidea/static/components/config/views/config.system.html:156
 msgid ""
 "These client IP addresses or subnets are\n"
 "                    allowed to masquerade as another client."
@@ -3344,6 +3344,12 @@ msgstr "TLS verwenden"
 #: privacyidea/static/templates/menu.html:52
 msgid "User"
 msgstr "Benutzer "
+
+#: privacyidea/static/components/config/views/config.system.html:133
+msgid ""
+"User Cache\n"
+"                expiration in seconds"
+msgstr "Benutzer Cache - Gültigkeit in Sekunden"
 
 #: privacyidea/static/components/token/views/token.details.html:402
 msgid "User Id"

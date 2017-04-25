@@ -2299,3 +2299,19 @@ class Audit(MethodsMixin, db.Model):
         self.client = client
         self.loglevel = loglevel
         self.clearance_level = clearance_level
+
+### User Cache
+
+class UserCache(MethodsMixin, db.Model):
+    __tablename__ = 'usercache'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.Unicode(64), default=u"", index=True)
+    resolver = db.Column(db.Unicode(120), default=u'')
+    user_id = db.Column(db.Unicode(320), default=u'', index=True)
+    timestamp = db.Column(db.DateTime)
+
+    def __init__(self, username, resolver, user_id, timestamp):
+        self.username = username
+        self.resolver = resolver
+        self.user_id = user_id
+        self.timestamp = timestamp

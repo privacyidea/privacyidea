@@ -46,6 +46,7 @@ import logging
 from log import log_with
 from config import (get_resolver_types,
                      get_resolver_class_dict)
+from privacyidea.lib.usercache import delete_user_cache
 from ..models import (Resolver,
                       ResolverConfig)
 from ..api.lib.utils import required
@@ -160,6 +161,10 @@ def save_resolver(params):
                        Value=value,
                        Type=types.get(key, ""),
                        Description=desc.get(key, "")).save()
+
+    # Remove corresponding entries from the user cache
+    delete_user_cache(resolver=resolvername)
+
     return resolver_id
 
 
@@ -239,6 +244,9 @@ def delete_resolver(resolvername):
     if 'resolver_objects' in g:
         if g.resolver_objects.get(resolvername):
             del(g.resolver_objects[resolvername])
+
+    # Remove corresponding entries from the user cache
+    delete_user_cache(resolver=resolvername)
 
     return ret
 
