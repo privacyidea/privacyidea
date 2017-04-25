@@ -182,6 +182,26 @@ class TokenClass(object):
                                realm=realmname)
         return user_object
 
+    def is_orphaned(self):
+        """
+        Return True is the token is orphaned. 
+        
+        An orphaned token means, that it has a user assigned, but the user 
+        does not exist in the user store (anymore)
+        :return: True / False
+        """
+        orphaned = False
+        if self.token.user_id:
+            try:
+                if not self.user or not self.user.login:
+                    # The token is assigned, but the username does not resolve
+                    orphaned = True
+            except Exception:
+                # If any other resolving error occurs, we also assume the
+                # token to be orphaned
+                orphaned = True
+        return orphaned
+
     def get_user_displayname(self):
         """
         Returns a tuple of a user identifier like user@realm and the

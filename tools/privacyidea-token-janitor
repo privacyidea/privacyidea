@@ -1,0 +1,214 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# 2017-04-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#
+# Copyright (c) 2017, Cornelius Kölbel
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+# contributors may be used to endorse or promote products derived from this
+# software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+__doc__ = """
+This script can be used to clean up the token database.
+
+It can list, disable, delete or mark tokens based on
+
+Conditions:
+
+* last_auth
+* orphaned tokens
+* any tokeninfo
+* unassigned token / token has no user
+* tokentype
+
+Actions:
+
+* list
+* unassign
+* mark
+* disable
+* delete
+
+
+    privacyidea-token-janitor find 
+        --last_auth=10h|7d|2y
+        --tokeninfo_key=<key>
+        --tokeninfo_value=<value>
+        --unassigned
+        --orphaned
+        --tokentype=<type>
+        --serial=<regexp>
+        --description=<regexp>
+        
+        --action=delete|unassign|disable|mark
+        
+        --set-description="new description"
+        --set-tokeninfo-key=<key>
+        --set-tokeninfo-value=<value>    
+    
+
+"""
+from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
+                                   unassign_token)
+from privacyidea.app import create_app
+from flask.ext.script import Manager
+import re
+import sys
+
+__version__ = "0.1"
+
+app = create_app(config_name='production', silent=True)
+manager = Manager(app)
+
+def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
+                   tokeninfo_value, orphaned, tokentype, serial, description):
+    tlist = []
+    filter_tokentype = None
+    filter_active = None
+    filter_assigned = None
+
+    if assigned is not None:
+        filter_assigned = assigned.lower() == "true"
+    if active is not None:
+        filter_active = active.lower() == "true"
+
+    tokenobj_list = get_tokens(tokentype=tokentype,
+                               active=filter_active,
+                               assigned=filter_assigned)
+    for token_obj in tokenobj_list:
+        if last_auth and token_obj.check_last_auth_newer(last_auth):
+            continue
+        if serial and not re.search(serial, token_obj.token.serial):
+            continue
+        if description and not re.search(description,
+                                         token_obj.token.description):
+            continue
+        if tokeninfo_value and tokeninfo_key and not re.search(tokeninfo_value,
+                                                               token_obj.get_tokeninfo(tokeninfo_key)):
+            continue
+        if orphaned and not token_obj.is_orphaned():
+            continue
+
+        # if everything matched, we append the token object
+        tlist.append(token_obj)
+
+    return tlist
+
+
+@manager.option('--last_auth', help='Can be something like 10h, 7d, or 2y')
+@manager.option('--assigned', help='True|False|None')
+@manager.option('--active', help='True|False|None')
+@manager.option('--tokeninfo-key', help='The tokeninfo key to match')
+@manager.option('--tokeninfo-value', help='The tokeninfo key to match')
+@manager.option('--orphaned',
+                help='Whether the token is an orphaned token. Set to 1')
+@manager.option('--tokentype', help='The tokentype to search.')
+@manager.option('--serial', help='A regular expression on the serial')
+@manager.option('--description', help='A regular expression on the description')
+@manager.option('--action', help='Which action should be performed on the '
+                                 'found tokens')
+@manager.option('--set-description', help='')
+@manager.option('--set-tokeninfo-key', help='')
+@manager.option('--set-tokeninfo-value', help='')
+def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
+         orphaned, tokentype, serial, description, action, set_description,
+         set_tokeninfo_key, set_tokeninfo_value):
+    """
+    finds all tokens which match the conditions
+    """
+    if action and action not in ["disable", "delete", "unassign", "mark"]:
+            sys.stderr.write("Unknown action. Allowed actions are 'disable', "
+                        "'delete', 'unassign', 'mark'\n")
+            sys.exit(1)
+
+    tlist = _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
+                           tokeninfo_value, orphaned, tokentype, serial,
+                           description)
+
+    if not action:
+        print("Token serial\tTokeninfo")
+        print("="*42)
+        for token_obj in tlist:
+            print("{0!s} ({1!s})\n\t\t{2!s}\n\t\t{3!s}".format(
+                token_obj.token.serial,
+                token_obj.token.tokentype,
+                token_obj.token.description,
+                token_obj.get_tokeninfo()))
+
+    else:
+        for token_obj in tlist:
+            if action == "disable":
+                enable_token(serial=token_obj.token.serial, enable=False)
+                print("Disabling token {0!s}".format(token_obj.token.serial))
+            elif action == "delete":
+                remove_token(serial=token_obj.token.serial)
+                print("Deleting token {0!s}".format(token_obj.token.serial))
+            elif action == "unassign":
+                unassign_token(serial=token_obj.token.serial)
+                print("Unassigning token {0!s}".format(token_obj.token.serial))
+            elif action == "mark":
+                if set_description:
+                    print("Setting description for token {0!s}: {1!s}".format(
+                        token_obj.token.serial, description))
+                    token_obj.set_description(description)
+                    token_obj.save()
+                if set_tokeninfo_value and set_tokeninfo_key:
+                    print("Setting tokeninfo for token {0!s}: {1!s}={2!s}".format(
+                        token_obj.token.serial, set_tokeninfo_key, set_tokeninfo_value))
+                    token_obj.add_tokeninfo(set_tokeninfo_key, set_tokeninfo_value)
+                    token_obj.save()
+
+
+@manager.option('age', help='Can be something like 10h, 7d, or 2y')
+@manager.option('-d', '--description', help='The description that will be set.')
+@manager.option('-t', '--tokeninfo',
+                help='The tokeninfo that will be set. It needs a key and a '
+                     'value and should be specified like key=value.')
+def mark(age, description=None, tokeninfo=None):
+    """
+    Find unused tokens and mark them either by setting the description or by
+    setting a tokeninfo.
+
+    Tokeninfo parameter needs to be provided like key=value.
+    """
+    tlist = _get_tokenlist(age)
+    for token_obj in tlist:
+        if description:
+            print("Setting description for token {0!s}: {1!s}".format(
+                token_obj.token.serial, description))
+            token_obj.set_description(description)
+            token_obj.save()
+        if tokeninfo:
+            key, value = tokeninfo.split("=")
+            print("Setting tokeninfo for token {0!s}: {1!s}={2!s}".format(
+                token_obj.token.serial, key, value))
+            token_obj.add_tokeninfo(key, value)
+            token_obj.save()
+
+
+if __name__ == '__main__':
+    manager.run()
+

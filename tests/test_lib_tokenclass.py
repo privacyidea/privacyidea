@@ -6,8 +6,8 @@ The lib.tokenclass depends on the DB model and lib.user
 PWFILE = "tests/testdata/passwords"
 
 from .base import MyTestCase
-from privacyidea.lib.resolver import (save_resolver)
-from privacyidea.lib.realm import (set_realm)
+from privacyidea.lib.resolver import (save_resolver, delete_resolver)
+from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import (TokenClass,
                                         DATE_FORMAT)
@@ -672,3 +672,56 @@ class TokenBaseTestCase(MyTestCase):
         # check that the pin needs to be changed
         r = token.is_pin_change()
         self.assertEqual(r, True)
+
+    def test_37_is_orphaned(self):
+        resolver = "orphreso"
+        realm = "orphrealm"
+        rid = save_resolver({"resolver": resolver,
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
+        self.assertTrue(rid > 0, rid)
+        (added, failed) = set_realm(realm,
+                                    [resolver])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+
+        # Assign token to user "cornelius" "realm1", "resolver1" "uid=1000
+        db_token = Token("orphaned", tokentype="spass", userid=1000,
+                         resolver=resolver, realm=realm)
+        db_token.save()
+        token_obj = TokenClass(db_token)
+        orph = token_obj.is_orphaned()
+        self.assertFalse(orph)
+        # clean up token
+        token_obj.delete_token()
+
+        # Assign a token to a user in a resolver. user_id does not exist
+        db_token = Token("orphaned", tokentype="spass", userid=872812,
+                         resolver=resolver, realm=realm)
+        db_token.save()
+        token_obj = TokenClass(db_token)
+        orph = token_obj.is_orphaned()
+        self.assertTrue(orph)
+        # clean up token
+        token_obj.delete_token()
+
+        # A token, which a resolver name, that does not exist anymore
+        db_token = Token("orphaned", tokentype="spass", userid=1000,
+                         resolver=resolver, realm=realm)
+        db_token.save()
+
+        # delete the realm
+        delete_realm(realm)
+        # token is orphaned
+        token_obj = TokenClass(db_token)
+        orph = token_obj.is_orphaned()
+        self.assertTrue(orph)
+
+        # delete the resolver
+        delete_resolver(resolver)
+        # token is orphaned
+        token_obj = TokenClass(db_token)
+        orph = token_obj.is_orphaned()
+        self.assertTrue(orph)
+        # clean up token
+        token_obj.delete_token()

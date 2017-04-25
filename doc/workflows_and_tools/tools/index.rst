@@ -8,6 +8,26 @@ Tools
 privacyIDEA comes with a list of command line tools, which also help to
 automate tasks.
 
+.. _token_janitor:
+
+privacyidea-token-janitor
+-------------------------
+
+.. index:: orphaned tokens
+
+Starting with version 2.19 privacyIDEA comes with a token janitor script.
+This script can find orphaned tokens, unused tokens or tokens of specific
+type, description or token info.
+
+It can unassign, delete or disable those tokens and it can set additional
+tokeninfo or descriptions.
+
+If you are unsure to directly delete orphaned tokens, because there might be
+a glimpse in the connection to your user store, you could as well in a first
+step *mark* the orphaned tokens. A day later you could run the script again
+and delete those tokens, which are (still) *orphaned* and *marked*.
+
+
 .. _get_unused_tokens:
 
 privacyidea-get-unused-tokens
