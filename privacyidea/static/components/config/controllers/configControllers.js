@@ -845,7 +845,9 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
         AUTHTYPE: "Simple",
         SCOPE: "SUBTREE",
         CACHE_TIMEOUT: 120,
-        NOSCHEMAS: false
+        NOSCHEMAS: false,
+        TLS_VERIFY: true,
+        START_TLS: true
     };
     $scope.result = {};
     $scope.resolvername = $stateParams.resolvername;
