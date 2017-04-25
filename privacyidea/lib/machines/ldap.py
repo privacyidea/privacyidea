@@ -257,8 +257,7 @@ class LdapMachineResolver(BaseMachineResolver):
         self.search_filter = config.get("SEARCHFILTER",
                                         "(objectClass=computer)")
 
-        self.noreferrals = config.get("NOREFERRALS", False)
-        self.editable = config.get("EDITABLE", False)
+        self.noreferrals = is_true(config.get("NOREFERRALS", False))
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
         self.start_tls = is_true(config.get("START_TLS", False))
         self.tls_verify = is_true(config.get("TLS_VERIFY", False))
@@ -284,7 +283,6 @@ class LdapMachineResolver(BaseMachineResolver):
                                              "IPATTRIBUTE": "string",
                                              "SEARCHFILTER": "string",
                                              "NOREFERRALS": "bool",
-                                             "EDITABLE": "bool",
                                              "AUTHTYPE": "string",
                                              "TLS_VERIFY": "bool",
                                              "TLS_CA_FILE": "string",
