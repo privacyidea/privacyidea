@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 import os
-import glob
+import stat
 import sys
 
 #VERSION="2.1dev4"
@@ -76,6 +76,35 @@ try:
 except ImportError:
     install_requires.append('importlib')
 
+
+def get_man_pages(dir):
+    """
+    Get man pages in a directory.
+    :param dir: 
+    :return: list of file names
+    """
+    files = os.listdir(dir)
+    r_files = []
+    for file in files:
+        if file.endswith(".1"):
+            r_files.append(dir + "/" + file)
+    return r_files
+
+
+def get_scripts(dir):
+    """
+    Get files that are executable
+    :param dir: 
+    :return: list of file names
+    """
+    files = os.listdir(dir)
+    r_files = []
+    for file in files:
+        if os.stat(dir + "/" + file)[stat.ST_MODE] & stat.S_IEXEC:
+            r_files.append(dir + "/" + file)
+    return r_files
+
+
 setup(
     name='privacyIDEA',
     version=VERSION,
@@ -87,18 +116,7 @@ setup(
     url='http://www.privacyidea.org',
     keywords='OTP, two factor authentication, management, security',
     packages=find_packages(),
-    scripts=['pi-manage',
-             'tools/privacyidea-convert-token',
-             'tools/privacyidea-create-pwidresolver-user',
-             'tools/privacyidea-create-sqlidresolver-user',
-             'tools/privacyidea-pip-update',
-             'tools/privacyidea-create-certificate',
-             'tools/privacyidea-fix-access-rights',
-             'tools/privacyidea-create-ad-users',
-             'tools/privacyidea-fetchssh',
-             'tools/privacyidea-create-userdb',
-             'tools/privacyidea-get-serial'
-             ],
+    scripts=["pi-manage"] + get_scripts("tools"),
     extras_require={
         'dev': ["Sphinx>=1.3.1",
                 "sphinxcontrib-httpdomain>=1.3.0"],
@@ -117,17 +135,7 @@ setup(
                   'deploy/privacyidea/enckey',
                   'deploy/privacyidea/private.pem',
                   'deploy/privacyidea/public.pem']),
-                ('share/man/man1',
-                 ["tools/privacyidea-convert-token.1",
-                  "tools/privacyidea-create-pwidresolver-user.1",
-                  "tools/privacyidea-create-sqlidresolver-user.1",
-                  "tools/privacyidea-pip-update.1",
-                  "tools/privacyidea-create-certificate.1",
-                  "tools/privacyidea-fix-access-rights.1",
-		  "tools/privacyidea-create-userdb.1",
-		  "tools/privacyidea-create-ad-users.1",
-		  "tools/privacyidea-fetchssh.1"
-                  ]),
+                ('share/man/man1', get_man_pages("tools")),
                 ('lib/privacyidea/authmodules/FreeRADIUS',
                  ["authmodules/FreeRADIUS/LICENSE",
                   "authmodules/FreeRADIUS/privacyidea_radius.pm"]),
