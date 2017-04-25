@@ -34,6 +34,8 @@ class user_cache(object):
     """
     This is the decorator wrapper to call a specific resolver function to
     allow user caching.
+    If the user cache is disabled, the decorator wrapper is not called and
+    the original function's result is returned instead.
     """
 
     def __init__(self, decorator_function):
@@ -47,20 +49,34 @@ class user_cache(object):
     def __call__(self, wrapped_function):
         """
         This decorates the given function.
+        The returned wrapper checks if the cache is enabled. If it is disabled, the
+        original function is called.
 
         :param wrapped_function: The function, that is decorated.
         :return: None
         """
         @functools.wraps(wrapped_function)
         def cache_wrapper(*args, **kwds):
-            return self.decorator_function(wrapped_function, *args, **kwds)
+            if is_cache_enabled():
+                return self.decorator_function(wrapped_function, *args, **kwds)
+            else:
+                return wrapped_function(*args, **kwds)
 
         return cache_wrapper
 
 
 def get_cache_time():
+    """
+    :return: UserCacheExpiration config value as a timedelta
+    """
     seconds = int(get_from_config(EXPIRATION_SECONDS, '0'))
     return datetime.timedelta(seconds=seconds)
+
+def is_cache_enabled():
+    """
+    :return: True if the user cache is enabled (i.e. UserCacheExpiration is non-zero)
+    """
+    return bool(get_cache_time())
 
 
 def delete_user_cache(resolver=None, username=None, expired=None):
@@ -94,8 +110,7 @@ def add_to_cache(username, resolver, user_id):
     :param resolver: resolver name of the user
     :param user_id: ID of the user in its resolver
     """
-    cache_time = get_cache_time()
-    if cache_time:
+    if is_cache_enabled():
         timestamp = datetime.datetime.now()
         record = UserCache(username, resolver, user_id, timestamp)
         log.debug('Adding record to cache: ({!r}, {!r}, {!r}, {!r})'.format(
