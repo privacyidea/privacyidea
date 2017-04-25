@@ -1,14 +1,14 @@
 """Add table usercache
 
 Revision ID: d6b40a745e5
-Revises: 1edda52b619f
+Revises: 307a4fbe8a05
 Create Date: 2017-04-13 15:25:44.050719
 
 """
 
 # revision identifiers, used by Alembic.
 revision = 'd6b40a745e5'
-down_revision = '1edda52b619f'
+down_revision = '307a4fbe8a05'
 
 from alembic import op
 import sqlalchemy as sa
