@@ -1183,6 +1183,69 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(user_info.get("surname"), "Cooper")
         self.assertEqual(user_info.get("givenname"), "Alice")
 
+    @ldap3mock.activate
+    def test_23_start_tls(self):
+        # Check that START_TLS and TLS_VERIFY are actually passed to the ldap3 Connection
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        config = {'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn",'
+                                '"phone" : "telephoneNumber", '
+                                '"mobile" : "mobile"'
+                                ', "email" : "mail", '
+                                '"surname" : "sn", '
+                                '"givenname" : "givenName" }',
+                  'UIDTYPE': 'unknownType',
+                  'CACHE_TIMEOUT': 0,
+                  'START_TLS': '1',
+                  'TLS_VERIFY': '1'
+        }
+        start_tls_resolver = LDAPResolver()
+        start_tls_resolver.loadConfig(config)
+        result = start_tls_resolver.getUserList({'username': '*'})
+        self.assertEqual(len(result), 3)
+        # We check two things:
+        # 1) start_tls has actually been called!
+        self.assertTrue(start_tls_resolver.l.start_tls_called)
+        # 2) All Server objects were constructed with a non-None TLS context, but use_ssl=False
+        for _, kwargs in ldap3mock.get_server_mock().call_args_list:
+            self.assertIsNotNone(kwargs['tls'])
+            self.assertFalse(kwargs['use_ssl'])
+
+
+    @ldap3mock.activate
+    def test_24_ldaps(self):
+        # Check that use_ssl and tls are actually passed to the Connection
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        config = {'LDAPURI': 'ldaps://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn",'
+                                '"phone" : "telephoneNumber", '
+                                '"mobile" : "mobile"'
+                                ', "email" : "mail", '
+                                '"surname" : "sn", '
+                                '"givenname" : "givenName" }',
+                  'UIDTYPE': 'unknownType',
+                  'CACHE_TIMEOUT': 0,
+                  'TLS_VERIFY': '1'
+        }
+        start_tls_resolver = LDAPResolver()
+        start_tls_resolver.loadConfig(config)
+        result = start_tls_resolver.getUserList({'username': '*'})
+        self.assertEqual(len(result), 3)
+        # We check that all Server objects were constructed with a non-None TLS context and use_ssl=True
+        for _, kwargs in ldap3mock.get_server_mock().call_args_list:
+            self.assertIsNotNone(kwargs['tls'])
+            self.assertTrue(kwargs['use_ssl'])
+
 
 class BaseResolverTestCase(MyTestCase):
 

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+2017-04-26 Friedrich Weber <friedrich.weber@netknights.it>
+           Make it possible to check for correct LDAPS/STARTTLS settings
 2017-01-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
            Remove objectGUID. Since we stick with ldap3 version 2.1,
            the objectGUID is returned in a human readable format.
@@ -144,6 +146,7 @@ class Connection(object):
         import copy
         self.directory = copy.deepcopy(directory)
         self.bound = False
+        self.start_tls_called = False
         self.extend = self.Extend(self)
 
         self.operation = {
@@ -159,11 +162,14 @@ class Connection(object):
         return next(i for (i, d) in enumerate(self.directory) if d["dn"] == dn)
 
     @staticmethod
-    def open():
+    def open(read_server_info=True):
         return
 
-    def bind(self):
+    def bind(self, read_server_info=True):
         return self.bound
+
+    def start_tls(self, read_server_info=True):
+        self.start_tls_called = True
 
     def add(self, dn, object_class=None, attributes=None):
 
@@ -663,6 +669,7 @@ class Ldap3Mock(object):
 
     def __init__(self):
         self._calls = CallList()
+        self._server_mock = None
         self.directory = []
         self.reset()
 
@@ -777,8 +784,10 @@ class Ldap3Mock(object):
             return self._on_Server(host, port,
                               use_ssl,
                               connect_timeout, *a, **kwargs)
+        self._server_mock = mock.MagicMock()
+        self._server_mock.side_effect = unbound_on_Server
         self._patcher = mock.patch('ldap3.Server',
-                                   unbound_on_Server)
+                                   self._server_mock)
         self._patcher.start()
 
         def unbound_on_Connection(server, user,
@@ -804,6 +813,10 @@ class Ldap3Mock(object):
     def stop(self):
         self._patcher.stop()
         self._patcher2.stop()
+        self._server_mock = None
+
+    def get_server_mock(self):
+        return self._server_mock
 
 # expose default mock namespace
 mock = _default_mock = Ldap3Mock()
