@@ -29,6 +29,8 @@ from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.user import create_user, User
 from privacyidea.lib.policy import ACTION
 from datetime import datetime, timedelta
+from dateutil.parser import parse as parse_date_string
+from dateutil.tz import tzlocal
 import json
 
 
@@ -676,11 +678,11 @@ class TokenEventTestCase(MyTestCase):
         t = get_tokens(serial="SPASS01")
         end = t[0].get_validity_period_end()
         start = t[0].get_validity_period_start()
-        d_end = datetime.strptime(end, DATE_FORMAT)
-        d_start = datetime.strptime(start, DATE_FORMAT)
-        self.assertTrue(datetime.now() + timedelta(minutes=9) < d_start)
-        self.assertTrue(datetime.now() + timedelta(days=9) < d_end)
-        self.assertTrue(datetime.now() + timedelta(days=11) > d_end)
+        d_end = parse_date_string(end)
+        d_start = parse_date_string(start)
+        self.assertTrue(datetime.now(tzlocal()) + timedelta(minutes=9) < d_start)
+        self.assertTrue(datetime.now(tzlocal()) + timedelta(days=9) < d_end)
+        self.assertTrue(datetime.now(tzlocal()) + timedelta(days=11) > d_end)
 
         remove_token("SPASS01")
 
@@ -1192,7 +1194,7 @@ class UserNotificationTestCase(MyTestCase):
         self.assertEqual(r, True)
 
         # token is outside validity period
-        end_date = datetime.now() - timedelta(1)
+        end_date = datetime.now(tzlocal()) - timedelta(1)
         end = end_date.strftime(DATE_FORMAT)
         tok.set_validity_period_end(end)
         r = uhandler.check_condition(

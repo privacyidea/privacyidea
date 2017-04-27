@@ -32,6 +32,8 @@ from privacyidea.lib.crypto import urandom, geturandom
 import string
 import re
 from datetime import timedelta, datetime, time
+from dateutil.parser import parse as parse_date_string
+from dateutil.tz import tzlocal
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 import traceback
 ENCODING = "utf-8"
@@ -374,18 +376,19 @@ def parse_date(date_string):
     in the future.
 
     It can also parse fixed date_strings like
-
+    
       23.12.2016 23:30
       23.12.2016
       2016/12/23 11:30pm
       2016/12/23
+      2017-04-27T20:00+0200
 
     :param date_string: a string containing a date or an offset
     :return: datetime object
     """
     date_string = date_string.strip()
     if date_string == "":
-        return datetime.now()
+        return datetime.now(tzlocal())
     if date_string.startswith("+"):
         # We are using an offset
         delta_specifier = date_string[-1].lower()
@@ -398,19 +401,14 @@ def parse_date(date_string):
             td = timedelta(days=delta_amount)
         else:
             td = timedelta()
-        return datetime.now() + td
+        return datetime.now(tzlocal()) + td
 
     # check 2016/12/23, 23.12.2016 and including hour and minutes.
     d = None
-    for date_format in ["%Y/%m/%d", "%d.%m.%Y",
-                        "%Y/%m/%d %I:%M%p",
-                        "%d.%m.%Y %H:%M"]:
-        try:
-            d = datetime.strptime(date_string, date_format)
-            break
-        except ValueError:
-            log.debug("Dateformat {1!s} did not match date {0!s}".format(
-                date_string, date_format))
+    try:
+        d = parse_date_string(date_string)
+    except ValueError:
+        log.debug("Dateformat {0!s} could not be parsed".format(date_string))
 
     return d
 

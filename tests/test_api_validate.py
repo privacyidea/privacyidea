@@ -855,7 +855,7 @@ class ValidateAPITestCase(MyTestCase):
 
         # Set validity period
         token_obj = get_tokens(serial=serial)[0]
-        token_obj.set_validity_period_end("01/01/15 10:00")
+        token_obj.set_validity_period_end("2015-01-01T10:00+0200")
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
@@ -867,8 +867,8 @@ class ValidateAPITestCase(MyTestCase):
             details = json.loads(res.data).get("detail")
             self.assertTrue("Outside validity period" in details.get("message"))
 
-        token_obj.set_validity_period_end("01/01/99 10:00")
-        token_obj.set_validity_period_start("01/01/98 10:00")
+        token_obj.set_validity_period_end("1999-01-01T10:00+0200")
+        token_obj.set_validity_period_start("1998-01-01T10:00+0200")
 
         with self.app.test_request_context('/validate/check',
                                            method='POST',

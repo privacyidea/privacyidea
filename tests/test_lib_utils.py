@@ -10,6 +10,7 @@ from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
                                    get_data_from_params)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
+from dateutil.tz import tzlocal
 
 
 class UtilsTestCase(MyTestCase):
@@ -183,19 +184,19 @@ class UtilsTestCase(MyTestCase):
 
     def test_07_parse_date(self):
         d = parse_date("+12m")
-        self.assertTrue(datetime.now() < d)
+        self.assertTrue(datetime.now(tzlocal()) < d)
 
         d = parse_date(" +12m ")
-        self.assertTrue(datetime.now() < d)
+        self.assertTrue(datetime.now(tzlocal()) < d)
 
         d = parse_date(" +12H ")
-        self.assertTrue(datetime.now() + timedelta(hours=11) < d)
+        self.assertTrue(datetime.now(tzlocal()) + timedelta(hours=11) < d)
 
         d = parse_date(" +12d ")
-        self.assertTrue(datetime.now() + timedelta(days=11) < d)
+        self.assertTrue(datetime.now(tzlocal()) + timedelta(days=11) < d)
 
         d = parse_date("")
-        self.assertTrue(datetime.now() >= d)
+        self.assertTrue(datetime.now(tzlocal()) >= d)
 
         d = parse_date("2016/12/23")
         self.assertEqual(d, datetime(2016, 12, 23))
@@ -215,9 +216,14 @@ class UtilsTestCase(MyTestCase):
         d = parse_date("23.12.2016 6:30")
         self.assertEqual(d, datetime(2016, 12, 23, hour=6, minute=30))
 
-        # Non-matching date returns None
         d = parse_date("23.12.16")
-        self.assertEqual(d, None)
+        self.assertEqual(d, datetime(2016, 12, 23, 0, 0))
+
+        d = parse_date("2017-04-27T12:00+0200")
+        self.assertEqual(d, datetime(2017, 04, 27, 12, 0, tzinfo=tzlocal()))
+
+        # Non matching date returns None
+        self.assertEqual(parse_date("7 Januar 17"), None)
 
     def test_08_compare_condition(self):
         self.assertTrue(compare_condition("100", 100))

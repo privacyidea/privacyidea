@@ -1,4 +1,31 @@
 
+function date_object_to_string(date_obj) {
+    s = "";
+    if (date_obj) {
+        Y = date_obj.getFullYear();
+        D = date_obj.getDate();
+        D = (D>9 ? '' : '0') + D;
+        M = date_obj.getMonth()+1;
+        M = (M>9 ? '' : '0') + M;
+        h = date_obj.getHours();
+        h = (h>9 ? '' : '0') + h;
+        m = date_obj.getMinutes();
+        m = (m>9 ? '' : '0') + m;
+        o = date_obj.toTimeString().split(" ")[1];
+        // 10:20:11 GMT+0200 (CEST)
+        o = o.substring(3);
+        s = Y + "-" + M + "-" + D + "T" + h + ":" + m + o;
+    }
+    return s;
+}
+
+function string_to_date_object(s) {
+    date_obj = new Date();
+    d = Date.parse(s);
+    date_obj.setTime(d);
+    return date_obj;
+}
+
 myApp.controller("tokenDetailController", function ($scope,
                                                     TokenFactory, UserFactory,
                                                     $stateParams,
@@ -38,6 +65,8 @@ myApp.controller("tokenDetailController", function ($scope,
             $scope.token = data.result.value.tokens[0];
             $scope.max_auth_count = parseInt($scope.token.info.count_auth_max);
             $scope.max_success_auth_count = parseInt($scope.token.info.count_auth_success_max);
+            $scope.validity_period_start = string_to_date_object($scope.token.info.validity_period_start);
+            $scope.validity_period_end = string_to_date_object($scope.token.info.validity_period_end);
             console.log($scope.token);
             // Add a certificateBlob, if it exists
             if ($scope.token.info.certificate) {
@@ -116,11 +145,13 @@ myApp.controller("tokenDetailController", function ($scope,
     };
 
     $scope.saveTokenInfo = function () {
+        start = date_object_to_string($scope.validity_period_start);
+        end = date_object_to_string($scope.validity_period_end);
         TokenFactory.set_dict($scope.tokenSerial,
             {count_auth_max: $scope.max_auth_count,
              count_auth_success_max: $scope.max_success_auth_count,
-             validity_period_end: $scope.validity_period_end,
-             validity_period_start: $scope.validity_period_start},
+             validity_period_end: end,
+             validity_period_start: start},
             $scope.get);
     };
 

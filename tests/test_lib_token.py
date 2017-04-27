@@ -946,15 +946,15 @@ class TokenTestCase(MyTestCase):
                     "pin": "Hallo"})
         tokenobj = get_tokens(serial=serial)[0]
 
-        r = set_validity_period_start(serial, None, "22/05/15 20:21")
+        r = set_validity_period_start(serial, None, "2015-05-22T20:21+0200")
         self.assertEqual(r, 1)
-        r = set_validity_period_end(serial, None, "28/05/15 20:22")
+        r = set_validity_period_end(serial, None, "2015-05-28T20:22+0200")
         self.assertEqual(r, 1)
 
         vp = tokenobj.get_validity_period_start()
-        self.assertEqual(vp, "22/05/15 20:21")
+        self.assertEqual(vp, "2015-05-22T20:21+0200")
         vp = tokenobj.get_validity_period_end()
-        self.assertEqual(vp, "28/05/15 20:22")
+        self.assertEqual(vp, "2015-05-28T20:22+0200")
 
     def test_45_check_realm_pass(self):
         # create a bunch of tokens in the realm
@@ -1016,13 +1016,13 @@ class TokenTestCase(MyTestCase):
     def test_46_init_with_validity_period(self):
         token = init_token({"type": "hotp",
                             "genkey": 1,
-                            "validity_period_start": "22/05/14 22:00",
-                            "validity_period_end": "23/10/14 23:00"})
+                            "validity_period_start": "2014-05-22T22:00+0200",
+                            "validity_period_end": "2014-10-23T23:00+0200"})
         self.assertEqual(token.type, "hotp")
         start = token.get_tokeninfo("validity_period_start")
         end = token.get_tokeninfo("validity_period_end")
-        self.assertEqual(start, "22/05/14 22:00")
-        self.assertEqual(end, "23/10/14 23:00")
+        self.assertEqual(start, "2014-05-22T22:00+0200")
+        self.assertEqual(end, "2014-10-23T23:00+0200")
 
     def test_47_use_yubikey_and_hotp(self):
         # fix problem https://github.com/privacyidea/privacyidea/issues/279
