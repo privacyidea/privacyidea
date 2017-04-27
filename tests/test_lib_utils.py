@@ -10,7 +10,7 @@ from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
                                    get_data_from_params)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
-from dateutil.tz import tzlocal
+from dateutil.tz import tzlocal, tzoffset
 
 
 class UtilsTestCase(MyTestCase):
@@ -220,7 +220,8 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(d, datetime(2016, 12, 23, 0, 0))
 
         d = parse_date("2017-04-27T12:00+0200")
-        self.assertEqual(d, datetime(2017, 04, 27, 12, 0, tzinfo=tzlocal()))
+        self.assertEqual(d, datetime(2017, 04, 27, 12, 0,
+                                     tzinfo=tzoffset(None, 7200)))
 
         # Non matching date returns None
         self.assertEqual(parse_date("7 Januar 17"), None)
