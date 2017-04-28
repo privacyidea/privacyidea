@@ -628,9 +628,14 @@ def set_api(serial=None):
         * count_auth_success_max
         * hashlib,
         * max_failcount
+        * validity_period_start
+        * validity_period_end
 
     The token is identified by the unique serial number or by the token owner.
     In the later case all tokens of the owner will be modified.
+    
+    The validity period needs to be provided in the format
+    YYYY-MM-DDThh:mm+oooo
 
     :jsonparam basestring serial: the serial number of the single token to reset
     :jsonparam basestring user: The username of the token owner

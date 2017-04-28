@@ -127,11 +127,11 @@ msgstr "Alle Token"
 msgid "All users"
 msgstr "Alle Benutzer"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:117
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:160
 msgid "An Attribute or the DN to identify the machine"
 msgstr "Ein Attribut oder DN zur Identifizierung der Maschine"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:148
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:191
 msgid "An Attribute that contains the IP address."
 msgstr "Ein Attribut, das die IP-Adresse der Maschine enthält"
 
@@ -230,22 +230,22 @@ msgstr "Fehlerhafte U2F-Anfrage"
 msgid "Base Config"
 msgstr "Basiskonfiguration"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:37
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:80
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:77
 msgid "Base DN"
 msgstr "Base-DN"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:47
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:90
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:100
 msgid "Bind DN"
 msgstr "Bind-DN"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:57
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:100
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:112
 msgid "Bind Password"
 msgstr "Bind-Passwort"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:68
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:111
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:123
 msgid "Bind Type"
 msgstr "Bind-Typ"
@@ -825,7 +825,7 @@ msgstr "Token aktivieren"
 msgid "Enroll New Token"
 msgstr "Neuen Token ausrollen"
 
-#: privacyidea/static/components/token/views/token.enroll.html:104
+#: privacyidea/static/components/token/views/token.enroll.html:109
 #: privacyidea/static/components/token/views/token.html:25
 msgid "Enroll Token"
 msgstr "Token ausrollen"
@@ -833,11 +833,11 @@ msgstr "Token ausrollen"
 #: privacyidea/static/components/login/controllers/loginControllers.js:66
 #: privacyidea/static/components/token/controllers/tokenControllers.js:133
 #: privacyidea/static/components/token/views/token.enroll.html:1
-#: privacyidea/static/components/token/views/token.enroll.html:152
+#: privacyidea/static/components/token/views/token.enroll.html:157
 msgid "Enroll a new token"
 msgstr "Neuen Token ausrollen "
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:27
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:54
 msgid "Enter OTP + PIN to check the token."
 msgstr "OTP und PIN eingeben, um den Token zu prüfen."
 
@@ -850,7 +850,7 @@ msgstr "OTP Schlüssel eingeben..."
 msgid "Enter PIN again"
 msgstr "PIN wiederholen"
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:21
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:48
 msgid "Enter PIN and OTP to check the token."
 msgstr "PIN und OTP eingeben, um den Token zu prüfen."
 
@@ -1111,7 +1111,7 @@ msgstr "Vorlagen ausblenden"
 msgid "Hostname"
 msgstr "Hostname"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:131
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:174
 msgid "Hostname Attribute"
 msgstr "Attribut für Hostnamen"
 
@@ -1120,7 +1120,7 @@ msgstr "Attribut für Hostnamen"
 msgid "IP Address"
 msgstr "IP-Adresse"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:142
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:185
 msgid "IP Address Attribute"
 msgstr "Attribut für IP-Adresse"
 
@@ -1330,7 +1330,7 @@ msgstr "Als {{ remoteUser }} anmelden"
 msgid "Login with credentials"
 msgstr "Als anderer Benutzer anmelden"
 
-#: privacyidea/static/components/token/views/token.enroll.html:156
+#: privacyidea/static/components/token/views/token.enroll.html:161
 #: privacyidea/static/templates/menu.html:132
 msgid "Logout"
 msgstr "Abmelden"
@@ -1352,7 +1352,7 @@ msgstr "Maschine"
 msgid "Machine ID"
 msgstr "Maschinen-ID"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:110
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:153
 msgid "Machine ID Attribute"
 msgstr "Attribut für Maschinen-ID"
 
@@ -1463,7 +1463,7 @@ msgstr "Nein"
 msgid "No Serial number could be found for OTP value {{ otp }}."
 msgstr "Zu dem OTP-Wert {{ otp }} konnte keine Seriennummer gefunden werden."
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:107
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:150
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:252
 msgid "No anonymous referral chasing"
 msgstr "Referrals werden nicht (anonym) verfolgt."
@@ -1710,7 +1710,7 @@ msgstr ""
 "OTP-PIN dem OTP-Wert voranstellen. Ansonsten wird die OTP-PIN hinten "
 "angehängt."
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:100
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:143
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:198
 msgid "Preset Active Directory"
 msgstr "Active Directory vorbelegen"
@@ -2000,6 +2000,7 @@ msgstr "SSH Public Key: Der öffentliche SSH-Schlüssel"
 msgid "SSH public Key"
 msgstr "Öffentlicher SSH-Schlüssel"
 
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:38
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:35
 msgid "STARTTLS"
 msgstr "STARTTLS"
@@ -2047,7 +2048,7 @@ msgid "Save realms"
 msgstr "Realms speichern"
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:39
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:159
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:202
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:270
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:38
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:86
@@ -2064,7 +2065,7 @@ msgstr "Benutzer speichern"
 msgid "Scope"
 msgstr "Geltungsbereich"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:121
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:164
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:214
 msgid "Search Filter"
 msgstr "Suchfilter"
@@ -2208,7 +2209,7 @@ msgstr "Passwort anzeigen"
 msgid "Show selected actions only"
 msgstr "Zeige nur aktivierte Aktionen"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:89
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:132
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:153
 msgid "Size Limit"
 msgstr "Größenbeschränkung"
@@ -2238,7 +2239,7 @@ msgstr "Subskription ausgestellt für"
 msgid "Subscriptions"
 msgstr "Subskriptionen"
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:185
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:216
 msgid "Successfully authenticated."
 msgstr "Erfolgreich authentisiert."
 
@@ -2304,7 +2305,7 @@ msgstr "Bestätigen Sie mit Ihrem Token"
 msgid "Test Email sent successfully."
 msgstr "Test Email wurde erfolgreich versendet."
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:155
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:198
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:265
 msgid "Test LDAP Resolver"
 msgstr "LDAP-Resolver testen"
@@ -2700,6 +2701,7 @@ msgid "The client device can not be used for this type of request."
 msgstr ""
 "Das Client-Geräte kann für diese Art des Requests nicht verwendet werden."
 
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:66
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:63
 msgid ""
 "The file containing the CA certificate which signed the\n"
@@ -2864,6 +2866,15 @@ msgstr ""
 "Der Server erzeugt den geheimen Schlüssel und es wird ein QR-Code angezeigt, "
 "den Sie mit der Token2-App scannen können."
 
+#: privacyidea/static/components/token/views/token.enroll.html:100
+msgid ""
+"The start time and the end time of the validity period\n"
+"                    should be entered in the format\n"
+"                    <em>YYYY-MM-DDThh:mm+oooo</em>."
+msgstr ""
+"Die Start- und Endzeit des Gültigkeitszeitraums muss im Format <em>YYYY-MM-"
+"DDThh:mm+oooo</em> angegeben werden."
+
 #: privacyidea/static/components/config/views/config.token.email.html:20
 msgid ""
 "The time in seconds for which the sent OTP value is valid for\n"
@@ -2884,7 +2895,7 @@ msgstr "Der Token ist bis   {{ lostResult.end_date }} gültig."
 msgid "The token was marked lost successfully."
 msgstr "Der Token wurde erfolgreich als verloren markiert."
 
-#: privacyidea/static/components/token/views/token.enroll.html:121
+#: privacyidea/static/components/token/views/token.enroll.html:126
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -2901,7 +2912,7 @@ msgstr ""
 "Benutzer <a ui-sref=\"user.details({username:newUser.user, realmname:newUser."
 "realm})\">{{ newUser.user }}</a> in Realm {{ newUser.realm }} ausgerollt."
 
-#: privacyidea/static/components/token/views/token.enroll.html:130
+#: privacyidea/static/components/token/views/token.enroll.html:135
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -3168,7 +3179,7 @@ msgstr "TiQR: Authentisierung mit Smartphone durch Scannen eines QR-Codes."
 msgid "Timeout"
 msgstr "Time-out"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:80
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:123
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:135
 msgid "Timeout (seconds)"
 msgstr "Time-out (Sekunden)"
@@ -3232,11 +3243,11 @@ msgid ""
 "                                wizard"
 msgstr "Assistent zum Ausrollen von Token"
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:165
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:196
 msgid "Token resync failed."
 msgstr "Token Resync fehlgeschlagen."
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:162
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:193
 msgid "Token resync successful."
 msgstr "Token wurde erfolgreich resynchronisiert."
 
@@ -3330,6 +3341,7 @@ msgid ""
 msgstr ""
 "Verwende das @-Zeichen, um den Benutzernamen und den Realm abzutrennen."
 
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:46
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:43
 msgid "Use STARTTLS on a plain LDAP connection usually on port 389."
 msgstr "STARTTLS mit einer LDAP-Verbindung auf Port 389 benutzen."
@@ -3440,10 +3452,12 @@ msgstr "Begin Gültigkeit"
 msgid "Verify SSL certificate"
 msgstr "SSL-Zertifikat verifizieren"
 
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:54
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:51
 msgid "Verify TLS"
 msgstr "TLS verifizieren"
 
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:62
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:59
 msgid "Verify the TLS cerificate of the server."
 msgstr "Das TLS Zertifikat des LDAP Servers wird verifiziert."
