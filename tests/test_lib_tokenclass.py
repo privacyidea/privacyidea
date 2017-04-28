@@ -357,6 +357,21 @@ class TokenBaseTestCase(MyTestCase):
         token.set_validity_period_start(start)
         self.assertFalse(token.check_validity_period())
 
+    def test_11_old_validity_time(self):
+        old_time_1 = "11/04/17 22:00"  # April 4th
+        old_time_2 = "24/04/17 22:00"  # April 24th
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = TokenClass(db_token)
+        token.add_tokeninfo("validity_period_start", old_time_1)
+        token.add_tokeninfo("validity_period_end", old_time_2)
+        info = token.get_tokeninfo()
+        self.assertEqual(info.get("validity_period_start"), old_time_1)
+        self.assertEqual(info.get("validity_period_end"), old_time_2)
+        e = token.get_validity_period_end()
+        self.assertTrue(e.startswith("2017-04-24T22:00"), e)
+        s = token.get_validity_period_start()
+        self.assertTrue(s.startswith("2017-04-11T22:00"), s)
+
     def test_11_tokeninfo_with_type(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)

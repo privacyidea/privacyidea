@@ -626,3 +626,24 @@ def int_to_hex(serial):
     serial_hex = hex(int(serial)).upper()
     serial_hex = serial_hex.split("X")[1]
     return serial_hex
+
+
+def parse_legacy_time(ts):
+    """
+    The new timestrings are of the format YYYY-MM-DDThh:mm+oooo.
+    They contain the timezone offset!
+    
+    Old legancy time strings are of format DD/MM/YY hh:mm without time zone 
+    offset.
+    
+    This function parses string and returns the new formatted time string 
+    including the timezone offset.
+    :param timestring: 
+    :return: 
+    """
+    from privacyidea.lib.tokenclass import DATE_FORMAT
+    d = parse_date_string(ts)
+    if not d.tzinfo:
+        # we need to reparse the string
+        d = parse_date_string(ts, tzinfos=tzlocal, dayfirst=True)
+    return d.strftime(DATE_FORMAT)

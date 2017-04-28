@@ -81,7 +81,7 @@ from .crypto import encryptPassword
 from .crypto import decryptPassword
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .decorators import check_token_locked
-from .utils import parse_timedelta
+from .utils import parse_timedelta, parse_legacy_time
 from policy import ACTION
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
@@ -850,8 +850,10 @@ class TokenClass(object):
         :return: the end of the validity period
         :rtype: string
         """
-        ret = self.get_tokeninfo("validity_period_end", "")
-        return ret
+        end = self.get_tokeninfo("validity_period_end", "")
+        if end:
+            end = parse_legacy_time(end)
+        return end
 
     @check_token_locked
     def set_validity_period_end(self, end_date):
@@ -873,8 +875,10 @@ class TokenClass(object):
         :return: the start of the validity period
         :rtype: string
         """
-        ret = self.get_tokeninfo("validity_period_start", "")
-        return ret
+        start = self.get_tokeninfo("validity_period_start", "")
+        if start:
+            start = parse_legacy_time(start)
+        return start
 
     @check_token_locked
     def set_validity_period_start(self, start_date):

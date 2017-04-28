@@ -7,7 +7,7 @@ from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
                                    check_time_in_range, parse_proxy,
                                    check_proxy, reduce_realms, is_true,
                                    parse_date, compare_condition,
-                                   get_data_from_params)
+                                   get_data_from_params, parse_legacy_time)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset
@@ -264,3 +264,13 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(data.get("cakey"), "key")
         self.assertEqual(data.get("bindpw"), "secret")
         self.assertEqual(types.get("bindpw"), "password")
+
+    def test_10_parse_legacy_time(self):
+        s = parse_legacy_time("01/04/17 10:00")
+        self.assertTrue(s.startswith("2017-04-01T10:00"))
+
+        s = parse_legacy_time("30/04/17 10:00")
+        self.assertTrue(s.startswith("2017-04-30T10:00"))
+
+        s = parse_legacy_time("2017-04-01T10:00+0200")
+        self.assertEqual(s, "2017-04-01T10:00+0200")
