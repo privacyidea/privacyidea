@@ -172,8 +172,8 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
             elif action == "mark":
                 if set_description:
                     print("Setting description for token {0!s}: {1!s}".format(
-                        token_obj.token.serial, description))
-                    token_obj.set_description(description)
+                        token_obj.token.serial, set_description))
+                    token_obj.set_description(set_description)
                     token_obj.save()
                 if set_tokeninfo_value and set_tokeninfo_key:
                     print("Setting tokeninfo for token {0!s}: {1!s}={2!s}".format(
