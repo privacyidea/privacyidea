@@ -923,7 +923,7 @@ class TokenClass(object):
             key = "next_password_change"
         sdate = self.get_tokeninfo(key)
         #date_change = datetime.datetime.strptime(sdate, DATE_FORMAT)
-        date_change = parse_date_string(sdate)
+        date_change = parse_date_string(parse_legacy_time(sdate))
         return datetime.datetime.now(tzlocal()) > date_change
 
 

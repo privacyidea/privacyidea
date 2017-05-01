@@ -680,6 +680,11 @@ class TokenBaseTestCase(MyTestCase):
         r = token.is_pin_change(password=True)
         self.assertEqual(r, False)
 
+        datestring = "03/04/01 10:00"
+        token.add_tokeninfo("next_pin_change", datestring)
+        r = token.is_pin_change()
+        self.assertTrue(r)
+
     def test_36_change_pin(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
