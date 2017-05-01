@@ -223,6 +223,14 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(d, datetime(2017, 04, 27, 12, 0,
                                      tzinfo=tzoffset(None, 7200)))
 
+        d = parse_date("2016/04/03")
+        # April 3rd
+        self.assertEqual(d, datetime(2016, 4, 3, 0, 0))
+
+        d = parse_date("03.04.2016")
+        # April 3rd
+        self.assertEqual(d, datetime(2016, 4, 3, 0, 0))
+
         # Non matching date returns None
         self.assertEqual(parse_date("7 Januar 17"), None)
 

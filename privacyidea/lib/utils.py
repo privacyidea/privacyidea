@@ -406,7 +406,7 @@ def parse_date(date_string):
     # check 2016/12/23, 23.12.2016 and including hour and minutes.
     d = None
     try:
-        d = parse_date_string(date_string)
+        d = parse_date_string(date_string, dayfirst=True)
     except ValueError:
         log.debug("Dateformat {0!s} could not be parsed".format(date_string))
 
