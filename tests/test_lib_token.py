@@ -29,8 +29,7 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_token_type, check_serial,
                                    get_num_tokens_in_realm,
                                    get_realms_of_token,
-                                   token_exist, token_has_owner,
-                                   get_token_owner, is_token_owner,
+                                   token_exist, get_token_owner, is_token_owner,
                                    get_tokenclass_info,
                                    get_tokens_in_resolver,
                                    get_all_token_users, get_otp,
@@ -200,10 +199,6 @@ class TokenTestCase(MyTestCase):
         self.assertFalse(token_exist(""))
 
     def test_08_token_owner(self):
-        # token_has_owner
-        self.assertTrue(token_has_owner("hotptoken"))
-        self.assertFalse(token_has_owner(self.serials[0]))
-
         # get_token_owner
         user = get_token_owner("hotptoken")
         self.assertTrue(user.login == "cornelius", user)

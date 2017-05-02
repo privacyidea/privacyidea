@@ -255,18 +255,14 @@ class BaseEventHandler(object):
         if serial:
             # We have determined the serial number from the request.
             token_obj_list = get_tokens(serial=serial)
-            if token_obj_list:
-                token_obj = token_obj_list[0]
-                tokenrealms = token_obj.get_realms()
-                tokentype = token_obj.get_tokentype()
         else:
             # We have to determine the token via the user object. But only if
             #  the user has only one token
             token_obj_list = get_tokens(user=user)
-            if len(token_obj_list) == 1:
-                token_obj = token_obj_list[0]
-                tokenrealms = token_obj.get_realms()
-                tokentype = token_obj.get_tokentype()
+        if len(token_obj_list) == 1:
+            token_obj = token_obj_list[0]
+            tokenrealms = token_obj.get_realms()
+            tokentype = token_obj.get_tokentype()
 
         if "realm" in conditions:
             res = user.realm == conditions.get("realm")

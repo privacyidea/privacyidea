@@ -171,15 +171,16 @@ class TokenClass(object):
         """
         user_object = None
         realmname = ""
-        username = get_username(self.token.user_id, self.token.resolver)
-        rlist = self.token.realm_list
-        # FIXME: What if the token has more than one realm assigned?
-        if len(rlist) == 1:
-            realmname = rlist[0].realm.name
-        if username and realmname:
-            user_object = User(login=username,
-                               resolver=self.token.resolver,
-                               realm=realmname)
+        if self.token.user_id and self.token.resolver:
+            username = get_username(self.token.user_id, self.token.resolver)
+            rlist = self.token.realm_list
+            # FIXME: What if the token has more than one realm assigned?
+            if len(rlist) == 1:
+                realmname = rlist[0].realm.name
+            if username and realmname:
+                user_object = User(login=username,
+                                   resolver=self.token.resolver,
+                                   realm=realmname)
         return user_object
 
     def is_orphaned(self):
