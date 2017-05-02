@@ -543,20 +543,15 @@ def token_exist(serial):
 
 
 @log_with(log)
-def token_has_owner(serial):
-    """
-    returns true if the token is owned by any user
-    """
-    return get_tokens(serial=serial, count=True, assigned=True) > 0
-
-
-@log_with(log)
 def get_token_owner(serial):
     """
     returns the user object, to which the token is assigned.
     the token is identified and retrieved by it's serial number
 
     If the token has no owner, None is returned
+    
+    In case the serial number matches several tokens (like when containing a 
+    wildcard), also None is returned.
 
     :param serial: serial number of the token
     :type serial: basestring
@@ -568,7 +563,7 @@ def get_token_owner(serial):
 
     tokenobject_list = get_tokens(serial=serial)
 
-    if tokenobject_list and token_has_owner(serial):
+    if len(tokenobject_list) == 1:
         tokenobject = tokenobject_list[0]
         user = tokenobject.user
 
