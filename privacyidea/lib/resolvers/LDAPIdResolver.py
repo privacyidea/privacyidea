@@ -751,6 +751,7 @@ class IdResolver (UserIdResolver):
         uidtype = param.get("UIDTYPE")
         timeout = float(param.get("TIMEOUT", 5))
         ldap_uri = param.get("LDAPURI")
+        size_limit = int(param.get("SIZELIMIT", 500))
         if is_true(param.get("TLS_VERIFY")) \
                 and (ldap_uri.lower().startswith("ldaps") or
                                     param.get("START_TLS")):
@@ -788,6 +789,7 @@ class IdResolver (UserIdResolver):
                 search_scope=param.get("SCOPE") or ldap3.SUBTREE,
                 attributes=attributes,
                 paged_size=100,
+                size_limit=size_limit,
                 generator=True)
             # returns a generator of dictionaries
             count = 0

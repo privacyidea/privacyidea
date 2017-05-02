@@ -262,6 +262,11 @@
     </div>
 
     <div class="text-center">
+        <button ng-click="testResolver(1)"
+                ng-disabled="formResolverAddLdap.$invalid"
+                class="btn btn-success"
+                translate>Quick Resolver Test
+        </button>
         <button ng-click="testResolver()"
                 ng-disabled="formResolverAddLdap.$invalid"
                 class="btn btn-success"
