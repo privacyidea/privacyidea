@@ -550,7 +550,7 @@ def get_token_owner(serial):
 
     If the token has no owner, None is returned
     
-    In case the serial number matches several tokens (like when havin a 
+    In case the serial number matches several tokens (like when containing a 
     wildcard), also None is returned.
 
     :param serial: serial number of the token
