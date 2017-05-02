@@ -549,6 +549,9 @@ def get_token_owner(serial):
     the token is identified and retrieved by it's serial number
 
     If the token has no owner, None is returned
+    
+    In case the serial number matches several tokens (like when havin a 
+    wildcard), also None is returned.
 
     :param serial: serial number of the token
     :type serial: basestring
