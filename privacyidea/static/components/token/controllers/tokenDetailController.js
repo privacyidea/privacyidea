@@ -20,6 +20,12 @@ function date_object_to_string(date_obj) {
 }
 
 function string_to_date_object(s) {
+    if (s.substring(2,3) === "/") {
+        day = s.substring(0,2);
+        month = s.substring(3,5);
+        rest = s.substring(6);
+        s = month + "/" + day + "/" + rest;
+    }
     date_obj = new Date();
     d = Date.parse(s);
     date_obj.setTime(d);
