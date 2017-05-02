@@ -43,6 +43,7 @@ from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timelimit, parse_timedelta
 import datetime
+from dateutil.tz import tzlocal
 from privacyidea.lib.radiusserver import get_radius
 
 log = logging.getLogger(__name__)
@@ -425,7 +426,8 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
 
             # set the last successful authentication, if res still true
             if res:
-                token.add_tokeninfo(ACTION.LASTAUTH, datetime.datetime.utcnow())
+                token.add_tokeninfo(ACTION.LASTAUTH,
+                                    datetime.datetime.now(tzlocal()))
 
     return res, reply_dict
 

@@ -84,13 +84,13 @@ from .decorators import check_token_locked
 from .utils import parse_timedelta, parse_legacy_time
 from policy import ACTION
 from dateutil.parser import parse as parse_date_string
-from dateutil.tz import tzlocal
+from dateutil.tz import tzlocal, tzutc
 
 
 #DATE_FORMAT = "%d/%m/%y %H:%M"
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
 # LASTAUTH is utcnow()
-AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
+AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
 optional = True
 required = False
 
@@ -1489,18 +1489,21 @@ class TokenClass(object):
         tdelta = parse_timedelta(last_auth)
 
         # The last successful authentication of the token
-        last_success_auth = self.get_tokeninfo(ACTION.LASTAUTH)
-        if last_success_auth:
+        date_s = self.get_tokeninfo(ACTION.LASTAUTH)
+        if date_s:
             log.debug("Compare the last successful authentication of "
                       "token %s with policy "
-                      "tdelat %s: %s" % (self.token.serial, tdelta,
-                                         last_success_auth))
-            # convert string of last_success_auth
-            #last_success_auth = datetime.datetime.strptime(
-            #    last_success_auth, AUTH_DATE_FORMAT)
-            last_success_auth = parse_date_string(last_success_auth)
+                      "tdelta %s: %s" % (self.token.serial, tdelta,
+                                         date_s))
+            # parse the string from the database
+            last_success_auth = parse_date_string(date_s)
+            if not last_success_auth.tzinfo:
+                # the date string has no timezone, default timezone is UTC
+                # We need to reparse
+                last_success_auth = parse_date_string(date_s,
+                                                      tzinfos=tzutc)
             # The last auth is to far in the past
-            if last_success_auth + tdelta < datetime.datetime.utcnow():
+            if last_success_auth + tdelta < datetime.datetime.now(tzlocal()):
                 res = False
                 log.debug("The last successful authentication is too old: "
                           "{0!s}".format(last_success_auth))

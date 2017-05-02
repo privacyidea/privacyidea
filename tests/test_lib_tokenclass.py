@@ -9,10 +9,10 @@ from .base import MyTestCase
 from privacyidea.lib.resolver import (save_resolver, delete_resolver)
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User)
-from privacyidea.lib.tokenclass import (TokenClass,
-                                        DATE_FORMAT)
+from privacyidea.lib.policy import ACTION
+from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT)
 from privacyidea.models import (Token,
-                                 Config,
+                                Config,
                                 Challenge)
 import datetime
 from dateutil.tz import tzlocal
@@ -745,4 +745,25 @@ class TokenBaseTestCase(MyTestCase):
         orph = token_obj.is_orphaned()
         self.assertTrue(orph)
         # clean up token
+        token_obj.delete_token()
+
+    def test_38_last_auth(self):
+        db_token = Token("lastauth001", tokentype="spass", userid=1000)
+        db_token.save()
+        token_obj = TokenClass(db_token)
+        tdelta = datetime.timedelta(days=1)
+        token_obj.add_tokeninfo(ACTION.LASTAUTH,
+                                datetime.datetime.now(tzlocal())-tdelta)
+        r = token_obj.check_last_auth_newer("10h")
+        self.assertFalse(r)
+        r = token_obj.check_last_auth_newer("2d")
+        self.assertTrue(r)
+
+        # Old time format
+        # lastauth_alt = datetime.datetime.utcnow().isoformat()
+        token_obj.add_tokeninfo(ACTION.LASTAUTH,
+                                datetime.datetime.utcnow() - tdelta)
+        r = token_obj.check_last_auth_newer("10h")
+        self.assertFalse(r)
+        r = token_obj.check_last_auth_newer("2d")
         token_obj.delete_token()
