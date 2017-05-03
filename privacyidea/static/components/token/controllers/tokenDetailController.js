@@ -1,17 +1,17 @@
 
 function date_object_to_string(date_obj) {
-    s = "";
+    var s = "";
     if (date_obj) {
-        Y = date_obj.getFullYear();
-        D = date_obj.getDate();
+        var Y = date_obj.getFullYear();
+        var D = date_obj.getDate();
         D = (D>9 ? '' : '0') + D;
-        M = date_obj.getMonth()+1;
+        var M = date_obj.getMonth()+1;
         M = (M>9 ? '' : '0') + M;
-        h = date_obj.getHours();
+        var h = date_obj.getHours();
         h = (h>9 ? '' : '0') + h;
-        m = date_obj.getMinutes();
+        var m = date_obj.getMinutes();
         m = (m>9 ? '' : '0') + m;
-        o = date_obj.toTimeString().split(" ")[1];
+        var o = date_obj.toTimeString().split(" ")[1];
         // 10:20:11 GMT+0200 (CEST)
         o = o.substring(3);
         s = Y + "-" + M + "-" + D + "T" + h + ":" + m + o;
@@ -21,13 +21,13 @@ function date_object_to_string(date_obj) {
 
 function string_to_date_object(s) {
     if (s.substring(2,3) === "/") {
-        day = s.substring(0,2);
-        month = s.substring(3,5);
-        rest = s.substring(6);
+        var day = s.substring(0,2);
+        var month = s.substring(3,5);
+        var rest = s.substring(6);
         s = month + "/" + day + "/" + rest;
     }
-    date_obj = new Date();
-    d = Date.parse(s);
+    var date_obj = new Date();
+    var d = Date.parse(s);
     date_obj.setTime(d);
     return date_obj;
 }
