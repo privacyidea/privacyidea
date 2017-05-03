@@ -161,8 +161,8 @@ myApp.controller("tokenDetailController", function ($scope,
     };
 
     $scope.saveTokenInfo = function () {
-        start = date_object_to_string($scope.validity_period_start);
-        end = date_object_to_string($scope.validity_period_end);
+        var start = date_object_to_string($scope.validity_period_start);
+        var end = date_object_to_string($scope.validity_period_end);
         TokenFactory.set_dict($scope.tokenSerial,
             {count_auth_max: $scope.max_auth_count,
              count_auth_success_max: $scope.max_success_auth_count,
