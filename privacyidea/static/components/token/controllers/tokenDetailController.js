@@ -11,9 +11,19 @@ function date_object_to_string(date_obj) {
         h = (h>9 ? '' : '0') + h;
         var m = date_obj.getMinutes();
         m = (m>9 ? '' : '0') + m;
-        var o = date_obj.toTimeString().split(" ")[1];
-        // 10:20:11 GMT+0200 (CEST)
-        o = o.substring(3);
+
+        var tz = date_obj.getTimezoneOffset();
+        var tz_abs = Math.abs(tz);
+        var hours = Math.floor(tz_abs/60);
+        hours = (hours>9 ? '': '0') + hours;
+        var minutes = tz_abs % 60;
+        minutes = (minutes>9 ? '': '0') + minutes;
+        var sign = "-";
+        if (tz < 0) {
+            // The offset for +0100 is -60!
+            sign = "+";
+        }
+        var o = sign + hours + minutes;
         s = Y + "-" + M + "-" + D + "T" + h + ":" + m + o;
     }
     return s;
