@@ -45,6 +45,8 @@ from privacyidea.lib import _
 import json
 import logging
 import datetime
+from dateutil.parser import parse as parse_date_string
+from dateutil.tz import tzlocal
 
 log = logging.getLogger(__name__)
 
@@ -239,7 +241,7 @@ class TokenEventHandler(BaseEventHandler):
                 elif action.lower() == ACTION_TYPE.UNASSIGN:
                     unassign_token(serial)
                 elif action.lower() == ACTION_TYPE.SET_DESCRIPTION:
-                    s_now = datetime.datetime.now().strftime(AUTH_DATE_FORMAT)
+                    s_now = datetime.datetime.now(tzlocal()).strftime(AUTH_DATE_FORMAT)
                     set_description(serial,
                                     (handler_options.get("description") or
                                      "").format(current_time=s_now,
@@ -251,7 +253,7 @@ class TokenEventHandler(BaseEventHandler):
                                      int(handler_options.get("count window",
                                                              50)))
                 elif action.lower() == ACTION_TYPE.SET_TOKENINFO:
-                    s_now = datetime.datetime.now().strftime(AUTH_DATE_FORMAT)
+                    s_now = datetime.datetime.now(tzlocal()).strftime(AUTH_DATE_FORMAT)
                     add_tokeninfo(serial, handler_options.get("key"),
                                   (handler_options.get("value") or "").format(
                                       current_time=s_now,

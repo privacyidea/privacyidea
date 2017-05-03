@@ -9,6 +9,8 @@ from privacyidea.lib.user import User
 from privacyidea.lib.caconnector import save_caconnector
 from urllib import urlencode
 from privacyidea.lib.token import check_serial_pass
+from privacyidea.lib.tokenclass import DATE_FORMAT
+from dateutil.tz import tzlocal
 
 PWFILE = "tests/testdata/passwords"
 IMPORTFILE = "tests/testdata/import.oath"
@@ -580,9 +582,9 @@ class APITokenTestCase(MyTestCase):
                                                   "max_failcount": 15,
                                                   "description": "Some Token",
                                                   "validity_period_start":
-                                                      "22/05/14 22:00",
+                                                      "2014-05-22T22:00+0200",
                                                   "validity_period_end":
-                                                      "23/10/14 23:00"},
+                                                      "2014-05-22T23:00+0200"},
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -613,9 +615,9 @@ class APITokenTestCase(MyTestCase):
             self.assertTrue(tokeninfo.get("count_auth_success_max") == "8",
                             tokeninfo)
             self.assertEqual(tokeninfo.get("validity_period_start"),
-                             "22/05/14 22:00")
+                             "2014-05-22T22:00+0200")
             self.assertEqual(tokeninfo.get("validity_period_end"),
-                             "23/10/14 23:00")
+                             "2014-05-22T23:00+0200")
 
     def test_10_set_token_realms(self):
         self._create_temp_token("REALM001")
@@ -1153,8 +1155,8 @@ class APITokenTestCase(MyTestCase):
             serial = detail.get("serial")
             token = get_tokens(serial=serial)[0]
             ti = token.get_tokeninfo("next_pin_change")
-            ndate = datetime.datetime.now().strftime("%d/%m/%y")
-            self.assertTrue(ti.startswith(ndate))
+            ndate = datetime.datetime.now(tzlocal()).strftime(DATE_FORMAT)
+            self.assertEqual(ti, ndate)
 
         # If the administrator sets a PIN of the user, the next_pin_change
         # must also be created!
@@ -1177,7 +1179,7 @@ class APITokenTestCase(MyTestCase):
             serial = "SP001"
             token = get_tokens(serial=serial)[0]
             ti = token.get_tokeninfo("next_pin_change")
-            ndate = datetime.datetime.now().strftime("%d/%m/%y")
-            self.assertTrue(ti.startswith(ndate))
+            ndate = datetime.datetime.now(tzlocal()).strftime(DATE_FORMAT)
+            self.assertEqual(ti, ndate)
 
         delete_policy("firstuse")

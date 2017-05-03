@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2017-04-27 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Change dateformat
 #  2016-06-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add method to set the next_pin_change and next_password_change.
 #  2016-04-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -79,11 +81,16 @@ from .crypto import encryptPassword
 from .crypto import decryptPassword
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .decorators import check_token_locked
-from .utils import parse_timedelta
+from .utils import parse_timedelta, parse_legacy_time
 from policy import ACTION
+from dateutil.parser import parse as parse_date_string
+from dateutil.tz import tzlocal, tzutc
 
-DATE_FORMAT = "%d/%m/%y %H:%M"
-AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
+
+#DATE_FORMAT = "%d/%m/%y %H:%M"
+DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
+# LASTAUTH is utcnow()
+AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
 optional = True
 required = False
 
@@ -844,28 +851,23 @@ class TokenClass(object):
         :return: the end of the validity period
         :rtype: string
         """
-        ret = self.get_tokeninfo("validity_period_end", "")
-        return ret
+        end = self.get_tokeninfo("validity_period_end", "")
+        if end:
+            end = parse_legacy_time(end)
+        return end
 
     @check_token_locked
     def set_validity_period_end(self, end_date):
         """
         sets the end date of the validity period for a token
-        :param end_date: the end date in the format "%d/%m/%y %H:%M"
+        :param end_date: the end date in the format YYYY-MM-DDTHH:MM+OOOO
                          if the format is wrong, the method will
                          throw an exception
         :type end_date: string
         """
-        try:
-            # try the first date format
-            dt = datetime.datetime.strptime(end_date,
-                                            "%Y-%m-%dT%H:%M:%S.000Z")
-            end_date = dt.strftime(DATE_FORMAT)
-        except ValueError:
-            # upper layer will catch. we just try to verify the date format
-            datetime.datetime.strptime(end_date, DATE_FORMAT)
-
-        self.add_tokeninfo("validity_period_end", end_date)
+        #  upper layer will catch. we just try to verify the date format
+        d = parse_date_string(end_date)
+        self.add_tokeninfo("validity_period_end", d.strftime(DATE_FORMAT))
 
     def get_validity_period_start(self):
         """
@@ -874,28 +876,22 @@ class TokenClass(object):
         :return: the start of the validity period
         :rtype: string
         """
-        ret = self.get_tokeninfo("validity_period_start", "")
-        return ret
+        start = self.get_tokeninfo("validity_period_start", "")
+        if start:
+            start = parse_legacy_time(start)
+        return start
 
     @check_token_locked
     def set_validity_period_start(self, start_date):
         """
         sets the start date of the validity period for a token
-        :param start_date: the start date in the format "%d/%m/%y %H:%M"
+        :param start_date: the start date in the format YYYY-MM-DDTHH:MM+OOOO
                            if the format is wrong, the method will
                            throw an exception
         :type start_date: string
         """
-        try:
-            # try the first date format
-            dt = datetime.datetime.strptime(start_date,
-                                            "%Y-%m-%dT%H:%M:%S.000Z")
-            start_date = dt.strftime(DATE_FORMAT)
-        except ValueError:
-            #  upper layer will catch. we just try to verify the date format
-            datetime.datetime.strptime(start_date, DATE_FORMAT)
-
-        self.add_tokeninfo("validity_period_start", start_date)
+        d = parse_date_string(start_date)
+        self.add_tokeninfo("validity_period_start", d.strftime(DATE_FORMAT))
 
     def set_next_pin_change(self, diff=None, password=False):
         """
@@ -912,7 +908,7 @@ class TokenClass(object):
         key = "next_pin_change"
         if password:
             key = "next_password_change"
-        new_date = datetime.datetime.now() + datetime.timedelta(days=days)
+        new_date = datetime.datetime.now(tzlocal()) + datetime.timedelta(days=days)
         self.add_tokeninfo(key, new_date.strftime(DATE_FORMAT))
 
     def is_pin_change(self, password=False):
@@ -927,8 +923,9 @@ class TokenClass(object):
         if password:
             key = "next_password_change"
         sdate = self.get_tokeninfo(key)
-        return datetime.datetime.now() > datetime.datetime.strptime(sdate,
-                                                              DATE_FORMAT)
+        #date_change = datetime.datetime.strptime(sdate, DATE_FORMAT)
+        date_change = parse_date_string(parse_legacy_time(sdate))
+        return datetime.datetime.now(tzlocal()) > date_change
 
 
     @check_token_locked
@@ -997,13 +994,15 @@ class TokenClass(object):
         end = self.get_validity_period_end()
 
         if start:
-            dt_start = datetime.datetime.strptime(start, DATE_FORMAT)
-            if dt_start > datetime.datetime.now():
+            #dt_start = datetime.datetime.strptime(start, DATE_FORMAT)
+            dt_start = parse_date_string(start)
+            if dt_start > datetime.datetime.now(tzlocal()):
                 return False
 
         if end:
-            dt_end = datetime.datetime.strptime(end, DATE_FORMAT)
-            if dt_end < datetime.datetime.now():
+            #dt_end = datetime.datetime.strptime(end, DATE_FORMAT)
+            dt_end = parse_date_string(end)
+            if dt_end < datetime.datetime.now(tzlocal()):
                 return False
 
         return True
@@ -1491,17 +1490,21 @@ class TokenClass(object):
         tdelta = parse_timedelta(last_auth)
 
         # The last successful authentication of the token
-        last_success_auth = self.get_tokeninfo(ACTION.LASTAUTH)
-        if last_success_auth:
+        date_s = self.get_tokeninfo(ACTION.LASTAUTH)
+        if date_s:
             log.debug("Compare the last successful authentication of "
                       "token %s with policy "
-                      "tdelat %s: %s" % (self.token.serial, tdelta,
-                                         last_success_auth))
-            # convert string of last_success_auth
-            last_success_auth = datetime.datetime.strptime(
-                last_success_auth, AUTH_DATE_FORMAT)
+                      "tdelta %s: %s" % (self.token.serial, tdelta,
+                                         date_s))
+            # parse the string from the database
+            last_success_auth = parse_date_string(date_s)
+            if not last_success_auth.tzinfo:
+                # the date string has no timezone, default timezone is UTC
+                # We need to reparse
+                last_success_auth = parse_date_string(date_s,
+                                                      tzinfos=tzutc)
             # The last auth is to far in the past
-            if last_success_auth + tdelta < datetime.datetime.now():
+            if last_success_auth + tdelta < datetime.datetime.now(tzlocal()):
                 res = False
                 log.debug("The last successful authentication is too old: "
                           "{0!s}".format(last_success_auth))

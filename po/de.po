@@ -825,7 +825,7 @@ msgstr "Token aktivieren"
 msgid "Enroll New Token"
 msgstr "Neuen Token ausrollen"
 
-#: privacyidea/static/components/token/views/token.enroll.html:104
+#: privacyidea/static/components/token/views/token.enroll.html:109
 #: privacyidea/static/components/token/views/token.html:25
 msgid "Enroll Token"
 msgstr "Token ausrollen"
@@ -833,11 +833,11 @@ msgstr "Token ausrollen"
 #: privacyidea/static/components/login/controllers/loginControllers.js:66
 #: privacyidea/static/components/token/controllers/tokenControllers.js:133
 #: privacyidea/static/components/token/views/token.enroll.html:1
-#: privacyidea/static/components/token/views/token.enroll.html:152
+#: privacyidea/static/components/token/views/token.enroll.html:157
 msgid "Enroll a new token"
 msgstr "Neuen Token ausrollen "
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:27
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:70
 msgid "Enter OTP + PIN to check the token."
 msgstr "OTP und PIN eingeben, um den Token zu prüfen."
 
@@ -850,7 +850,7 @@ msgstr "OTP Schlüssel eingeben..."
 msgid "Enter PIN again"
 msgstr "PIN wiederholen"
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:21
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:64
 msgid "Enter PIN and OTP to check the token."
 msgstr "PIN und OTP eingeben, um den Token zu prüfen."
 
@@ -1330,7 +1330,7 @@ msgstr "Als {{ remoteUser }} anmelden"
 msgid "Login with credentials"
 msgstr "Als anderer Benutzer anmelden"
 
-#: privacyidea/static/components/token/views/token.enroll.html:156
+#: privacyidea/static/components/token/views/token.enroll.html:161
 #: privacyidea/static/templates/menu.html:132
 msgid "Logout"
 msgstr "Abmelden"
@@ -2243,7 +2243,7 @@ msgstr "Subskription ausgestellt für"
 msgid "Subscriptions"
 msgstr "Subskriptionen"
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:185
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:232
 msgid "Successfully authenticated."
 msgstr "Erfolgreich authentisiert."
 
@@ -2870,6 +2870,15 @@ msgstr ""
 "Der Server erzeugt den geheimen Schlüssel und es wird ein QR-Code angezeigt, "
 "den Sie mit der Token2-App scannen können."
 
+#: privacyidea/static/components/token/views/token.enroll.html:100
+msgid ""
+"The start time and the end time of the validity period\n"
+"                    should be entered in the format\n"
+"                    <em>YYYY-MM-DDThh:mm+oooo</em>."
+msgstr ""
+"Die Start- und Endzeit des Gültigkeitszeitraums muss im Format <em>YYYY-MM-"
+"DDThh:mm+oooo</em> angegeben werden."
+
 #: privacyidea/static/components/config/views/config.token.email.html:20
 msgid ""
 "The time in seconds for which the sent OTP value is valid for\n"
@@ -2890,7 +2899,7 @@ msgstr "Der Token ist bis   {{ lostResult.end_date }} gültig."
 msgid "The token was marked lost successfully."
 msgstr "Der Token wurde erfolgreich als verloren markiert."
 
-#: privacyidea/static/components/token/views/token.enroll.html:121
+#: privacyidea/static/components/token/views/token.enroll.html:126
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -2907,7 +2916,7 @@ msgstr ""
 "Benutzer <a ui-sref=\"user.details({username:newUser.user, realmname:newUser."
 "realm})\">{{ newUser.user }}</a> in Realm {{ newUser.realm }} ausgerollt."
 
-#: privacyidea/static/components/token/views/token.enroll.html:130
+#: privacyidea/static/components/token/views/token.enroll.html:135
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -3238,11 +3247,11 @@ msgid ""
 "                                wizard"
 msgstr "Assistent zum Ausrollen von Token"
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:165
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:212
 msgid "Token resync failed."
 msgstr "Token Resync fehlgeschlagen."
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:162
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:209
 msgid "Token resync successful."
 msgstr "Token wurde erfolgreich resynchronisiert."
 

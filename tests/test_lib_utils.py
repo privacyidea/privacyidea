@@ -7,9 +7,10 @@ from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
                                    check_time_in_range, parse_proxy,
                                    check_proxy, reduce_realms, is_true,
                                    parse_date, compare_condition,
-                                   get_data_from_params)
+                                   get_data_from_params, parse_legacy_time)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
+from dateutil.tz import tzlocal, tzoffset
 
 
 class UtilsTestCase(MyTestCase):
@@ -183,19 +184,19 @@ class UtilsTestCase(MyTestCase):
 
     def test_07_parse_date(self):
         d = parse_date("+12m")
-        self.assertTrue(datetime.now() < d)
+        self.assertTrue(datetime.now(tzlocal()) < d)
 
         d = parse_date(" +12m ")
-        self.assertTrue(datetime.now() < d)
+        self.assertTrue(datetime.now(tzlocal()) < d)
 
         d = parse_date(" +12H ")
-        self.assertTrue(datetime.now() + timedelta(hours=11) < d)
+        self.assertTrue(datetime.now(tzlocal()) + timedelta(hours=11) < d)
 
         d = parse_date(" +12d ")
-        self.assertTrue(datetime.now() + timedelta(days=11) < d)
+        self.assertTrue(datetime.now(tzlocal()) + timedelta(days=11) < d)
 
         d = parse_date("")
-        self.assertTrue(datetime.now() >= d)
+        self.assertTrue(datetime.now(tzlocal()) >= d)
 
         d = parse_date("2016/12/23")
         self.assertEqual(d, datetime(2016, 12, 23))
@@ -215,9 +216,23 @@ class UtilsTestCase(MyTestCase):
         d = parse_date("23.12.2016 6:30")
         self.assertEqual(d, datetime(2016, 12, 23, hour=6, minute=30))
 
-        # Non-matching date returns None
         d = parse_date("23.12.16")
-        self.assertEqual(d, None)
+        self.assertEqual(d, datetime(2016, 12, 23, 0, 0))
+
+        d = parse_date("2017-04-27T12:00+0200")
+        self.assertEqual(d, datetime(2017, 04, 27, 12, 0,
+                                     tzinfo=tzoffset(None, 7200)))
+
+        d = parse_date("2016/04/03")
+        # April 3rd
+        self.assertEqual(d, datetime(2016, 4, 3, 0, 0))
+
+        d = parse_date("03.04.2016")
+        # April 3rd
+        self.assertEqual(d, datetime(2016, 4, 3, 0, 0))
+
+        # Non matching date returns None
+        self.assertEqual(parse_date("7 Januar 17"), None)
 
     def test_08_compare_condition(self):
         self.assertTrue(compare_condition("100", 100))
@@ -257,3 +272,13 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(data.get("cakey"), "key")
         self.assertEqual(data.get("bindpw"), "secret")
         self.assertEqual(types.get("bindpw"), "password")
+
+    def test_10_parse_legacy_time(self):
+        s = parse_legacy_time("01/04/17 10:00")
+        self.assertTrue(s.startswith("2017-04-01T10:00"))
+
+        s = parse_legacy_time("30/04/17 10:00")
+        self.assertTrue(s.startswith("2017-04-30T10:00"))
+
+        s = parse_legacy_time("2017-04-01T10:00+0200")
+        self.assertEqual(s, "2017-04-01T10:00+0200")

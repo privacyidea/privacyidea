@@ -16,6 +16,7 @@ from privacyidea.models import (Token,
                                  Challenge)
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
 import datetime
+from dateutil.tz import tzlocal
 
 
 class DaplugTokenTestCase(MyTestCase):
@@ -264,15 +265,15 @@ class DaplugTokenTestCase(MyTestCase):
         self.assertFalse(token.check_auth_counter())
 
         # handle validity end date
-        token.set_validity_period_end("30/12/14 16:00")
+        token.set_validity_period_end("2014-12-30T16:00+0200")
         end = token.get_validity_period_end()
-        self.assertTrue(end == "30/12/14 16:00", end)
+        self.assertEqual("2014-12-30T16:00+0200", end)
         self.assertRaises(Exception,
                           token.set_validity_period_end, "wrong date")
         # handle validity start date
-        token.set_validity_period_start("30/12/13 16:00")
+        token.set_validity_period_start("2013-12-30T16:00+0200")
         start = token.get_validity_period_start()
-        self.assertTrue(start == "30/12/13 16:00", start)
+        self.assertEqual("2013-12-30T16:00+0200", start)
         self.assertRaises(Exception,
                           token.set_validity_period_start, "wrong date")
 
@@ -280,33 +281,33 @@ class DaplugTokenTestCase(MyTestCase):
 
         # check validity period
         # +5 days
-        end_date = datetime.datetime.now() + datetime.timedelta(5)
+        end_date = datetime.datetime.now(tzlocal()) + datetime.timedelta(5)
         end = end_date.strftime(DATE_FORMAT)
         token.set_validity_period_end(end)
         # - 5 days
-        start_date = datetime.datetime.now() - datetime.timedelta(5)
+        start_date = datetime.datetime.now(tzlocal()) - datetime.timedelta(5)
         start = start_date.strftime(DATE_FORMAT)
         token.set_validity_period_start(start)
         self.assertTrue(token.check_validity_period())
 
         # check before start date
         # +5 days
-        end_date = datetime.datetime.now() + datetime.timedelta(5)
+        end_date = datetime.datetime.now(tzlocal()) + datetime.timedelta(5)
         end = end_date.strftime(DATE_FORMAT)
         token.set_validity_period_end(end)
         # + 2 days
-        start_date = datetime.datetime.now() + datetime.timedelta(2)
+        start_date = datetime.datetime.now(tzlocal()) + datetime.timedelta(2)
         start = start_date.strftime(DATE_FORMAT)
         token.set_validity_period_start(start)
         self.assertFalse(token.check_validity_period())
 
         # check after enddate
         # -1 day
-        end_date = datetime.datetime.now() - datetime.timedelta(1)
+        end_date = datetime.datetime.now(tzlocal()) - datetime.timedelta(1)
         end = end_date.strftime(DATE_FORMAT)
         token.set_validity_period_end(end)
         # - 10 days
-        start_date = datetime.datetime.now() - datetime.timedelta(10)
+        start_date = datetime.datetime.now(tzlocal()) - datetime.timedelta(10)
         start = start_date.strftime(DATE_FORMAT)
         token.set_validity_period_start(start)
         self.assertFalse(token.check_validity_period())

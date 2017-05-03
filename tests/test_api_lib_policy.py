@@ -42,6 +42,8 @@ from privacyidea.lib.machine import attach_token
 from privacyidea.lib.auth import ROLE
 import jwt
 from datetime import datetime, timedelta
+from dateutil.tz import tzlocal
+from privacyidea.lib.tokenclass import DATE_FORMAT
 
 
 HOSTSFILE = "tests/testdata/hosts"
@@ -1712,8 +1714,8 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                             "type": "spass"}, tokenrealms=[self.realm1])
         save_pin_change(req, resp)
         ti = token.get_tokeninfo("next_pin_change")
-        ndate = datetime.now().strftime("%d/%m/%y")
-        self.assertTrue(ti.startswith(ndate))
+        ndate = datetime.now(tzlocal()).strftime(DATE_FORMAT)
+        self.assertEqual(ti, ndate)
 
         #
         # check a token without a given serial
@@ -1739,8 +1741,8 @@ class PostPolicyDecoratorTestCase(MyTestCase):
 
         save_pin_change(req, resp)
         ti = token.get_tokeninfo("next_pin_change")
-        ndate = datetime.now().strftime("%d/%m/%y")
-        self.assertTrue(ti.startswith(ndate))
+        ndate = datetime.now(tzlocal()).strftime(DATE_FORMAT)
+        self.assertTrue(ti, ndate)
 
         # Now the user changes the PIN. Afterwards the next_pin_change is empty
         g.logged_in_user = {"username": "hans",
@@ -1756,8 +1758,8 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         g.policy_object = PolicyClass()
         save_pin_change(req, resp)
         ti = token.get_tokeninfo("next_pin_change")
-        ndate = (datetime.now() + timedelta(1)).strftime("%d/%m/%y")
-        self.assertTrue(ti.startswith(ndate))
+        ndate = (datetime.now(tzlocal()) + timedelta(1)).strftime(DATE_FORMAT)
+        self.assertTrue(ti, ndate)
 
         # finally delete policy
         delete_policy("pol1")

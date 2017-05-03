@@ -274,54 +274,6 @@ class TOTPTokenTestCase(MyTestCase):
         token.set_count_auth_max(1000)
         token.set_count_auth_success_max(10)
         self.assertFalse(token.check_auth_counter())
-        
-        # handle validity end date
-        token.set_validity_period_end("30/12/14 16:00")
-        end = token.get_validity_period_end()
-        self.assertTrue(end == "30/12/14 16:00", end)
-        self.assertRaises(Exception,
-                          token.set_validity_period_end, "wrong date")
-        # handle validity start date
-        token.set_validity_period_start("30/12/13 16:00")
-        start = token.get_validity_period_start()
-        self.assertTrue(start == "30/12/13 16:00", start)
-        self.assertRaises(Exception,
-                          token.set_validity_period_start, "wrong date")
-        
-        self.assertFalse(token.check_validity_period())
-        
-        # check validity period
-        # +5 days
-        end_date = datetime.datetime.now() + datetime.timedelta(5)
-        end = end_date.strftime(DATE_FORMAT)
-        token.set_validity_period_end(end)
-        # - 5 days
-        start_date = datetime.datetime.now() - datetime.timedelta(5)
-        start = start_date.strftime(DATE_FORMAT)
-        token.set_validity_period_start(start)
-        self.assertTrue(token.check_validity_period())
-        
-        # check before start date
-        # +5 days
-        end_date = datetime.datetime.now() + datetime.timedelta(5)
-        end = end_date.strftime(DATE_FORMAT)
-        token.set_validity_period_end(end)
-        # + 2 days
-        start_date = datetime.datetime.now() + datetime.timedelta(2)
-        start = start_date.strftime(DATE_FORMAT)
-        token.set_validity_period_start(start)
-        self.assertFalse(token.check_validity_period())
-        
-        # check after enddate
-        # -1 day
-        end_date = datetime.datetime.now() - datetime.timedelta(1)
-        end = end_date.strftime(DATE_FORMAT)
-        token.set_validity_period_end(end)
-        # - 10 days
-        start_date = datetime.datetime.now() - datetime.timedelta(10)
-        start = start_date.strftime(DATE_FORMAT)
-        token.set_validity_period_start(start)
-        self.assertFalse(token.check_validity_period())
 
     def test_12_inc_otp_counter(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

@@ -176,7 +176,7 @@
                         <p class="input-group">
                             <input type="text" class="form-control"
                                    name="validity_start"
-                                   datepicker-popup="dd/MM/yy"
+                                   datepicker-popup="yyyy-MM-ddTHH:mmZ"
                                    ng-model="validity_period_start"
                                    is-open="startOpened"
                                    min-date="today"
@@ -184,8 +184,8 @@
                                    ng-required="true" close-text="Close"/>
                           <span class="input-group-btn">
                             <button type="button" class="btn btn-default"
-                                    ng-click="startOpened = openDate($event)"><i
-                                    class="glyphicon glyphicon-calendar"></i>
+                                    ng-click="startOpened = openDate($event)">
+                                <i class="glyphicon glyphicon-calendar"></i>
                             </button>
                           </span>
                         </p>
@@ -197,7 +197,7 @@
                         <p class="input-group">
                             <input type="text" class="form-control"
                                    name="validity_end"
-                                   datepicker-popup="dd/MM/yy"
+                                   datepicker-popup="yyyy-MM-ddTHH:mmZ"
                                    ng-model="validity_period_end"
                                    is-open="endOpened"
                                    min-date="today"
@@ -205,8 +205,8 @@
                                    ng-required="true" close-text="Close"/>
                           <span class="input-group-btn">
                             <button type="button" class="btn btn-default"
-                                    ng-click="endOpened = openDate($event)"><i
-                                    class="glyphicon glyphicon-calendar"></i>
+                                    ng-click="endOpened = openDate($event)">
+                                    <i class="glyphicon glyphicon-calendar"></i>
                             </button>
                           </span>
                         </p>

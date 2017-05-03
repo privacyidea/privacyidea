@@ -793,7 +793,7 @@ msgstr ""
 msgid "Enroll New Token"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.html:104
+#: privacyidea/static/components/token/views/token.enroll.html:109
 #: privacyidea/static/components/token/views/token.html:25
 msgid "Enroll Token"
 msgstr ""
@@ -801,11 +801,11 @@ msgstr ""
 #: privacyidea/static/components/login/controllers/loginControllers.js:66
 #: privacyidea/static/components/token/controllers/tokenControllers.js:133
 #: privacyidea/static/components/token/views/token.enroll.html:1
-#: privacyidea/static/components/token/views/token.enroll.html:152
+#: privacyidea/static/components/token/views/token.enroll.html:157
 msgid "Enroll a new token"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:27
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:70
 msgid "Enter OTP + PIN to check the token."
 msgstr ""
 
@@ -818,7 +818,7 @@ msgstr ""
 msgid "Enter PIN again"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:21
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:64
 msgid "Enter PIN and OTP to check the token."
 msgstr ""
 
@@ -1251,7 +1251,7 @@ msgstr ""
 msgid "Login with credentials"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.html:156
+#: privacyidea/static/components/token/views/token.enroll.html:161
 #: privacyidea/static/templates/menu.html:132
 msgid "Logout"
 msgstr ""
@@ -2139,7 +2139,7 @@ msgstr ""
 msgid "Subscriptions"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:185
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:232
 msgid "Successfully authenticated."
 msgstr ""
 
@@ -2618,6 +2618,13 @@ msgid ""
 "            displayed to you to be scanned with the Token2 app."
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.enroll.html:100
+msgid ""
+"The start time and the end time of the validity period\n"
+"                    should be entered in the format\n"
+"                    <em>YYYY-MM-DDThh:mm+oooo</em>."
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.token.email.html:20
 msgid ""
 "The time in seconds for which the sent OTP value is valid for\n"
@@ -2636,7 +2643,7 @@ msgstr ""
 msgid "The token was marked lost successfully."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.html:121
+#: privacyidea/static/components/token/views/token.enroll.html:126
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})\">\n"
@@ -2646,7 +2653,7 @@ msgid ""
 "            {{ newUser.realm }}."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.html:130
+#: privacyidea/static/components/token/views/token.enroll.html:135
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})\">\n"
@@ -2915,11 +2922,11 @@ msgid ""
 "                                wizard"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:165
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:212
 msgid "Token resync failed."
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:162
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:209
 msgid "Token resync successful."
 msgstr ""
 

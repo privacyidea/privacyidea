@@ -326,6 +326,9 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         console.log($scope.newUser.realm);
         console.log($scope.newUser.pin);
         $scope.newUser.user = fixUser($scope.newUser.user);
+        // convert the date object to a string
+        $scope.form.validity_period_start = date_object_to_string($scope.form.validity_period_start);
+        $scope.form.validity_period_end = date_object_to_string($scope.form.validity_period_end);
         TokenFactory.enroll($scope.newUser,
             $scope.form, $scope.callback);
     };
