@@ -247,7 +247,7 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
             continue
         if tokeninfo_value_filter and tokeninfo_key:
             value = token_obj.get_tokeninfo(tokeninfo_key)
-            # if the tokeninfo value is not even set, it does not match the filter
+            # if the tokeninfo key is not even set, it does not match the filter
             if value is None:
                 continue
             # suppose not all comparator functions return True
@@ -345,33 +345,6 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                         token_obj.token.serial, set_tokeninfo_key, set_tokeninfo_value))
                     token_obj.add_tokeninfo(set_tokeninfo_key, set_tokeninfo_value)
                     token_obj.save()
-
-
-@manager.option('age', help='Can be something like 10h, 7d, or 2y')
-@manager.option('-d', '--description', help='The description that will be set.')
-@manager.option('-t', '--tokeninfo',
-                help='The tokeninfo that will be set. It needs a key and a '
-                     'value and should be specified like key=value.')
-def mark(age, description=None, tokeninfo=None):
-    """
-    Find unused tokens and mark them either by setting the description or by
-    setting a tokeninfo.
-
-    Tokeninfo parameter needs to be provided like key=value.
-    """
-    tlist = _get_tokenlist(age)
-    for token_obj in tlist:
-        if description:
-            print("Setting description for token {0!s}: {1!s}".format(
-                token_obj.token.serial, description))
-            token_obj.set_description(description)
-            token_obj.save()
-        if tokeninfo:
-            key, value = tokeninfo.split("=")
-            print("Setting tokeninfo for token {0!s}: {1!s}={2!s}".format(
-                token_obj.token.serial, key, value))
-            token_obj.add_tokeninfo(key, value)
-            token_obj.save()
 
 
 if __name__ == '__main__':
