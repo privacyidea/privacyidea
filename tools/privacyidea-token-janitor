@@ -140,7 +140,7 @@ def _parse_datetime(key, value):
         return last_auth
     else:
         # Other values are given in local time
-        return parse_legacy_time(value)
+        return parser.parse(parse_legacy_time(value))
 
 
 def _try_convert_to_datetime(given_value_string):
