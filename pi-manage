@@ -48,6 +48,9 @@ from datetime import timedelta
 import re
 from subprocess import call, Popen, PIPE
 from getpass import getpass
+
+import flask
+
 from privacyidea.lib.security.default import DefaultSecurityModule
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.auth import (create_db_admin, list_db_admin,
@@ -476,6 +479,8 @@ def profile(length=30, profile_dir=None):
     Start the application in profiling mode.
     """
     from werkzeug.contrib.profiler import ProfilerMiddleware
+    if flask.has_request_context():
+        print("WARNING: The app may behave unrealistically during profiling.")
     app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[length],
                                       profile_dir=profile_dir)
     app.run()
@@ -483,7 +488,12 @@ def profile(length=30, profile_dir=None):
 # If flask_script's `Command` is used here instead of `CommandOutsideRequestContext`,
 # the request context will persist over requests. Thus, `g` is not
 # cleared properly between requests, which makes privacyIDEA behave unrealistically.
-manager.add_command('profile', CommandOutsideRequestContext(profile))
+try:
+    manager.add_command('profile', CommandOutsideRequestContext(profile))
+except TypeError:
+    # Apparently, we are using Flask-Script 0.6.7, which does not support the API used above.
+    # So we just add the `profile` command without using `CommandOutsideRequestContext`.
+    profile = manager.command(profile)
 
 
 @manager.option('--highwatermark', '--hw', help="If entries exceed this value, "
