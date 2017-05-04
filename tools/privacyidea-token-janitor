@@ -33,8 +33,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 from dateutil import parser
-from dateutil.tz import tzlocal
+from dateutil.tz import tzlocal, tzutc
 from flask.ext.script.commands import InvalidCommand
+
+from privacyidea.lib.policy import ACTION
+from privacyidea.lib.utils import parse_legacy_time
 
 __doc__ = """
 This script can be used to clean up the token database.
@@ -99,7 +102,7 @@ def _try_convert_to_integer(given_value_string):
         raise InvalidCommand('Not an integer: {}'.format(given_value_string))
 
 
-def _compare_greater_than(given_value_string):
+def _compare_greater_than(key, given_value_string):
     """
     :return: a function which returns True if its parameter (converted to an integer) is greater than
     *given_value_string* (converted to an integer).
@@ -114,7 +117,7 @@ def _compare_greater_than(given_value_string):
     return comparator
 
 
-def _compare_less_than(given_value_string):
+def _compare_less_than(key, given_value_string):
     """
     :return: a function which returns True if its parameter (converted to an integer) is less than
     *given_value_string* (converted to an integer).
@@ -128,19 +131,29 @@ def _compare_less_than(given_value_string):
             return False
     return comparator
 
-def _parse_datetime(value):
-    # TODO: Use privacyIDEA's datetime parsing routine!
-    return parser.parse(value, dayfirst=True, tzinfos=tzlocal)
+def _parse_datetime(key, value):
+    if key == ACTION.LASTAUTH:
+        # Special case for last_auth: Legacy values are given in UTC time!
+        last_auth = parser.parse(value)
+        if not last_auth.tzinfo:
+            last_auth = parser.parse(value, tzinfos=tzutc)
+        return last_auth
+    else:
+        # Other values are given in local time
+        return parse_legacy_time(value)
 
 
 def _try_convert_to_datetime(given_value_string):
     try:
-        return _parse_datetime(given_value_string)
+        parsed = parser.parse(given_value_string, dayfirst=True)
+        if not parsed.tzinfo:
+            parsed = parser.parse(given_value_string, dayfirst=True, tzinfos=tzlocal)
+        return parsed
     except ValueError:
         raise InvalidCommand('Not a valid datetime format: {}'.format(given_value_string))
 
 
-def _compare_after(given_value_string):
+def _compare_after(key, given_value_string):
     """
     :return: a function which returns True if its parameter (converted to a datetime) occurs after
     *given_value_string* (converted to a datetime).
@@ -149,13 +162,13 @@ def _compare_after(given_value_string):
 
     def comparator(value):
         try:
-            return _parse_datetime(value) > given_value
+            return _parse_datetime(key, value) > given_value
         except ValueError:
             return False
     return comparator
 
 
-def _compare_before(given_value_string):
+def _compare_before(key, given_value_string):
     """
     :return: a function which returns True if its parameter (converted to a datetime) occurs before
     *given_value_string* (converted to a datetime).
@@ -164,19 +177,20 @@ def _compare_before(given_value_string):
 
     def comparator(value):
         try:
-            return _parse_datetime(value) < given_value
+            return _parse_datetime(key, value) < given_value
         except ValueError:
             return False
     return comparator
 
 
-def _compare_regex(given_regex):
+def _compare_regex(key, given_regex):
     def comparator(value):
         return re.search(given_regex, value)
     return comparator
 
 
-def build_tokenvalue_filter(tokeninfo_value,
+def build_tokenvalue_filter(key,
+                            tokeninfo_value,
                             tokeninfo_value_greater_than,
                             tokeninfo_value_less_than,
                             tokeninfo_value_after,
@@ -186,6 +200,7 @@ def build_tokenvalue_filter(tokeninfo_value,
     takes a tokeninfo value and returns True if the user-defined criterion matches.
     The filter matches a record if *all* comparator functions return True, i.e. if the conjunction of
     all comparators returns True.
+    :param key: user-supplied --tokeninfo-key= value
     :param tokeninfo_value: user-supplied --tokeninfo-value= value
     :param tokeninfo_value_greater_than: user-supplied --tokeninfo-value-greater-than= value
     :param tokeninfo_value_less_than: user-supplied --tokeninfo-value-less-than= value
@@ -195,15 +210,15 @@ def build_tokenvalue_filter(tokeninfo_value,
     """
     filter = []
     if tokeninfo_value:
-        filter.append(_compare_regex(tokeninfo_value))
+        filter.append(_compare_regex(key, tokeninfo_value))
     if tokeninfo_value_greater_than:
-        filter.append(_compare_greater_than(tokeninfo_value_greater_than))
+        filter.append(_compare_greater_than(key, tokeninfo_value_greater_than))
     if tokeninfo_value_less_than:
-        filter.append(_compare_less_than(tokeninfo_value_less_than))
+        filter.append(_compare_less_than(key, tokeninfo_value_less_than))
     if tokeninfo_value_after:
-        filter.append(_compare_after(tokeninfo_value_after))
+        filter.append(_compare_after(key, tokeninfo_value_after))
     if tokeninfo_value_before:
-        filter.append(_compare_before(tokeninfo_value_before))
+        filter.append(_compare_before(key, tokeninfo_value_before))
     return filter
 
 
@@ -287,7 +302,8 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
             sys.stderr.write("Unknown action. Allowed actions are 'disable', "
                         "'delete', 'unassign', 'mark'\n")
             sys.exit(1)
-    filter = build_tokenvalue_filter(tokeninfo_value,
+    filter = build_tokenvalue_filter(tokeninfo_key,
+                                     tokeninfo_value,
                                      tokeninfo_value_greater_than,
                                      tokeninfo_value_less_than,
                                      tokeninfo_value_after,
