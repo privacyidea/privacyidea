@@ -55,10 +55,22 @@
 This is the Token Base class, which is inherited by all token types.
 It depends on lib.user and lib.config.
 
-You can add your own Tokens by adding the modules comma
-separated to the directive
-              privacyideaTokenModules
-in the privacyidea.ini file.
+The token object also contains a database token object as self.token.
+The token object runs the self.update() method during the initialization 
+process in the API /token/init.
+
+The update method takes a dictionary. Some of the following parameters:
+
+otpkey      -> the token gets created with this OTPKey
+genkey      -> genkey=1 : privacyIDEA generates an OTPKey, creates the token
+               and sends it to the client.
+2stepinit   -> use in conjunction with genkey=1.
+               privacyIDEA creates the first part of the OTPKey, sends it
+               to the client and the clients needs to send back the second part.
+               
+In case of 2stepinit the key is generated from the server_component and the 
+client_component using the TokenClass method generate_symmetric_key.
+This method is supposed to be overwritten bei the corresponding token classes.
 """
 import logging
 import hashlib
