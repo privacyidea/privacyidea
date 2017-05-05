@@ -767,3 +767,37 @@ class TokenBaseTestCase(MyTestCase):
         self.assertFalse(r)
         r = token_obj.check_last_auth_newer("2d")
         token_obj.delete_token()
+
+    def test_39_generate_sym_key(self):
+        db_token = Token("symkey", tokentype="no_matter", userid=1000)
+        db_token.save()
+        token_obj = TokenClass(db_token)
+        key = token_obj.generate_symmetric_key("1234567890", "abc")
+        self.assertEqual(key, "1234567abc")
+        self.assertRaises(Exception, token_obj.generate_symmetric_key,
+                          "1234", "1234")
+        self.assertRaises(Exception, token_obj.generate_symmetric_key,
+                          "1234", "12345")
+
+        # Now run the init/update process
+        # 1. step
+        token_obj.update({"2stepinit": "1",
+                          "genkey": "1"
+                          })
+
+        self.assertEqual(db_token.rollout_state, "clientwait")
+        self.assertEqual(db_token.active, False)
+        serial = db_token.serial
+        details = token_obj.init_details
+        server_component = details.get("otpkey")
+
+        # 2. step
+        client_component = "AAAAAA"
+        token_obj.update({"serial": serial,
+                          "otpkey": client_component
+                          })
+        self.assertEqual(db_token.rollout_state, "")
+        self.assertEqual(db_token.active, True)
+
+        token_obj.delete_token()
+
