@@ -1183,3 +1183,107 @@ class APITokenTestCase(MyTestCase):
             self.assertEqual(ti, ndate)
 
         delete_policy("firstuse")
+
+    def test_24_modify_tokeninfo(self):
+        self._create_temp_token("INF001")
+        # Set two tokeninfo values
+        with self.app.test_request_context('/token/info/INF001/key1',
+                                            method="POST",
+                                            data={"value": "value 1"},
+                                            headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value"), result)
+        with self.app.test_request_context('/token/info/INF001/key2',
+                                            method="POST",
+                                            data={"value": "value 2"},
+                                            headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value"), result)
+
+        with self.app.test_request_context('/token/',
+                                           method="GET",
+                                           query_string=urlencode(
+                                                   {"serial": "INF001"}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            token = value.get("tokens")[0]
+            self.assertTrue(value.get("count") == 1, result)
+
+            tokeninfo = token.get("info")
+            self.assertDictContainsSubset({'key1': 'value 1', 'key2': 'value 2'}, tokeninfo)
+
+        # Overwrite an existing tokeninfo value
+        with self.app.test_request_context('/token/info/INF001/key1',
+                                            method="POST",
+                                            data={"value": 'value 1 new'},
+                                            headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value"), result)
+
+        with self.app.test_request_context('/token/',
+                                           method="GET",
+                                           query_string=urlencode(
+                                                   {"serial": "INF001"}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            token = value.get("tokens")[0]
+            self.assertTrue(value.get("count") == 1, result)
+
+            tokeninfo = token.get("info")
+            self.assertDictContainsSubset({'key1': 'value 1 new', 'key2': 'value 2'}, tokeninfo)
+
+        # Delete an existing tokeninfo value
+        with self.app.test_request_context('/token/info/INF001/key1',
+                                           method="DELETE",
+                                           headers={'Authorization': self.at}):
+           res = self.app.full_dispatch_request()
+           self.assertTrue(res.status_code == 200, res)
+           result = json.loads(res.data).get("result")
+           self.assertTrue(result.get("value"), result)
+
+        # Delete a non-existing tokeninfo value
+        with self.app.test_request_context('/token/info/INF001/key1',
+                                            method="DELETE",
+                                            headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value"), result)
+
+        # Try to delete with an unknown serial
+        with self.app.test_request_context('/token/info/UNKNOWN/key1',
+                                            method="DELETE",
+                                            headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value") == False, result)
+
+        # Check that the tokeninfo is correct
+        with self.app.test_request_context('/token/',
+                                           method="GET",
+                                           query_string=urlencode(
+                                               {"serial": "INF001"}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            token = value.get("tokens")[0]
+            self.assertTrue(value.get("count") == 1, result)
+
+            tokeninfo = token.get("info")
+            self.assertDictContainsSubset({'key2': 'value 2'}, tokeninfo)
+            self.assertNotIn('key1', tokeninfo)

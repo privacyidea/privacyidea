@@ -65,7 +65,7 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          set_hashlib, set_max_failcount, set_realms,
                          copy_token_user, copy_token_pin, lost_token,
                          get_serial_by_otp, get_tokens,
-                         set_validity_period_end, set_validity_period_start)
+                         set_validity_period_end, set_validity_period_start, add_tokeninfo, delete_tokeninfo)
 from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
 from privacyidea.lib.error import (ParameterError, TokenAdminError)
@@ -997,3 +997,47 @@ def get_serial_by_otp_api(otp=None):
 
     return send_result({"serial": serial,
                         "count": count})
+
+
+@token_blueprint.route('/info/<serial>/<key>', methods=['POST'])
+@event("token_info", request, g)
+@admin_required
+@log_with(log)
+def set_tokeninfo_api(serial, key):
+    """
+    Add a specific tokeninfo entry to a token. Already existing entries
+    with the same key are overwritten.
+
+    :param serial: the serial number/identifier of the token
+    :param key: token info key that should be set
+    :query value: token info value that should be set
+    :return: returns value=True in case the token info could be set
+    :rtype: bool
+    """
+    value = getParam(request.all_data, "value", required)
+    g.audit_object.log({"serial": serial})
+    count = add_tokeninfo(serial, key, value)
+    success = count > 0
+    g.audit_object.log({"success": success})
+    return send_result(success)
+
+
+@token_blueprint.route('/info/<serial>/<key>', methods=['DELETE'])
+@event("token_info", request, g)
+@admin_required
+@log_with(log)
+def delete_tokeninfo_api(serial, key):
+    """
+    Delete a specific tokeninfo entry of a token.
+
+    :param serial: the serial number/identifier of the token
+    :param key: token info key that should be deleted
+    :return: returns value=True in case a matching token was found, which does not necessarily mean
+    that the matching token had a tokeninfo value set in the first place.
+    :rtype: bool
+    """
+    g.audit_object.log({"serial": serial})
+    count = delete_tokeninfo(serial, key)
+    success = count > 0
+    g.audit_object.log({"success": success})
+    return send_result(success)
