@@ -233,25 +233,17 @@ class HotpTokenClass(TokenClass):
         else:
             hashlibStr = 'sha1'
 
-        # check if the key_size id provided
+        # check if the key_size is provided
         # if not, we could derive it from the hashlib
-        key_size = getParam(upd_param, 'key_size', optional)
+        key_size = getParam(upd_param, 'key_size', optional) \
+                   or getParam(upd_param, 'keysize', optional)
         if key_size is None:
-            upd_param['key_size'] = keylen.get(hashlibStr)
-        otpKey = ''
-        if self.hKeyRequired is True:
-            genkey = int(getParam(upd_param, "genkey", optional) or 0)
-            if 1 == genkey:
-                # if hashlibStr not in keylen dict, this will
-                # raise an Exception
-                otpKey = generate_otpkey(upd_param['key_size'])
-                del upd_param['genkey']
-            else:
-                # genkey not set: check otpkey is given
-                # this will raise an exception if otpkey is not present
-                otpKey = getParam(upd_param, "otpkey", required)
-                # finally set the values for the update
-            upd_param['otpkey'] = otpKey
+            upd_param['keysize'] = keylen.get(hashlibStr)
+
+        if "genkey" in upd_param and "otpkey" in upd_param:
+            # The Base TokenClass does not allow otpkey and genkey at the
+            # same time
+            del upd_param['otpkey']
         upd_param['hashlib'] = hashlibStr
         self.add_tokeninfo("hashlib", hashlibStr)
         val = getParam(upd_param, "otplen", optional)
