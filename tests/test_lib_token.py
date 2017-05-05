@@ -51,7 +51,7 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_dynamic_policy_definitions,
                                    get_tokens_paginate,
                                    set_validity_period_end,
-                                   set_validity_period_start, remove_token)
+                                   set_validity_period_start, remove_token, delete_tokeninfo)
 
 from privacyidea.lib.error import (TokenAdminError, ParameterError,
                                    privacyIDEAError)
@@ -515,13 +515,26 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(tinfo.get("count_auth_success") == "102", tinfo)
         self.assertTrue(tinfo.get("count_auth_success_max") == "103", tinfo)
 
-    def test_25_add_tokeninfo(self):
+    def test_25_add_delete_tokeninfo(self):
         serial = "t1"
         tokenobject = init_token({"serial": serial, "genkey": 1})
         r = add_tokeninfo(serial, "something", "new")
         self.assertTrue(r == 1, r)
-        tinfo = tokenobject.token.get_info()
-        self.assertTrue(tinfo.get("something") == "new", tinfo)
+        tinfo1 = tokenobject.token.get_info()
+        self.assertTrue(tinfo1.get("something") == "new", tinfo1)
+        # delete existing tokeninfo entry
+        r = delete_tokeninfo(serial, "something")
+        self.assertEqual(r, 1)
+        tinfo2 = tokenobject.token.get_info()
+        self.assertNotIn("something", tinfo2)
+        # delete non-existing tokeninfo entry
+        r = delete_tokeninfo(serial, "somethingelse")
+        self.assertEqual(r, 1) # this still returns 1, because 1 token was matched!
+        # tokeninfo has not changed
+        self.assertEqual(tokenobject.token.get_info(), tinfo2)
+        # try to delete non-existing tokeninfo
+        r = delete_tokeninfo('UNKNOWN-SERIAL', 'something')
+        self.assertEqual(r, 0)
         remove_token(serial)
 
     def test_26_set_sync_window(self):
