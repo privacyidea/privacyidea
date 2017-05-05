@@ -1439,6 +1439,30 @@ def add_tokeninfo(serial, info, value=None,
 
 @log_with(log)
 @check_user_or_serial
+def delete_tokeninfo(serial, key, user=None):
+    """
+    Delete a specific token info field in the database.
+
+    :param serial: The serial number of the token
+    :type serial: basestring
+    :param key: The key of the info in the dict
+    :param value: The value of the info
+    :param user: The owner of the tokens, that should be modified
+    :type user: User object
+    :return: the number of tokens matching the serial and user. This number also includes tokens that did not have
+    the token info *key* set in the first place!
+    :rtype: int
+    """
+    tokenobject_list = get_tokens(serial=serial, user=user)
+    for tokenobject in tokenobject_list:
+        tokenobject.del_tokeninfo(key)
+        tokenobject.save()
+
+    return len(tokenobject_list)
+
+
+@log_with(log)
+@check_user_or_serial
 def set_validity_period_start(serial, user, start):
     """
     Set the validity period for the given token.
