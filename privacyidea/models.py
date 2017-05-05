@@ -478,6 +478,7 @@ class Token(MethodsMixin, db.Model):
         ret['count'] = self.count
         ret['count_window'] = self.count_window
         ret['sync_window'] = self.sync_window
+        ret['rollout_state'] = self.rollout_state
         # list of Realm names
         realm_list = []
         for realm_entry in self.realm_list:

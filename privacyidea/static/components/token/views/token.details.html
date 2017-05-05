@@ -31,6 +31,7 @@
                   translate>locked</span>
             <span class="label label-danger" ng-show="token.revoked"
                   translate>revoked</span>
+            </td>
             <td>
             <span ng-show="token.active"
                   ng-click="disable()">
@@ -54,6 +55,11 @@
                     Revoke</button>
             </span>
             </td>
+        </tr>
+        <tr ng-if="token.rollout_state">
+            <td translate>Rollout State</td>
+            <td>{{ token.rollout_state }}</td>
+            <td></td>
         </tr>
         <tr token-data-edit text="{{'Maxfail' | translate }}"
             button-text="{{ 'Set max fail'|translate}}"
