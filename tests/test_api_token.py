@@ -139,7 +139,7 @@ class APITokenTestCase(MyTestCase):
             next = result.get("value").get("next")
             prev = result.get("value").get("prev")
             self.assertTrue(result.get("status"), result)
-            self.assertTrue(len(tokenlist) == 1, tokenlist)
+            self.assertEqual(len(tokenlist), 1)
             self.assertTrue(count == 1, count)
             self.assertTrue(next is None, next)
             self.assertTrue(prev is None, prev)

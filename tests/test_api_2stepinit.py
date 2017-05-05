@@ -60,3 +60,9 @@ class TwoStepInitTestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
+
+        with self.app.test_request_context('/token/'+ serial,
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
