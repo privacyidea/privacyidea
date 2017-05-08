@@ -17,10 +17,10 @@
 # built documents.
 #
 # The short X.Y version.
-version = '2.18'
+version = '2.19dev'
 # The full version, including alpha/beta/rc tags.
 #release = '2.16dev5'
-release = '2.18'
+release = '2.19dev'
 
 
 import sys
