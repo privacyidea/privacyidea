@@ -1000,9 +1000,10 @@ def get_serial_by_otp_api(otp=None):
 
 
 @token_blueprint.route('/info/<serial>/<key>', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.SETTOKENINFO)
 @event("token_info", request, g)
-@admin_required
 @log_with(log)
+@admin_required
 def set_tokeninfo_api(serial, key):
     """
     Add a specific tokeninfo entry to a token. Already existing entries
@@ -1023,9 +1024,10 @@ def set_tokeninfo_api(serial, key):
 
 
 @token_blueprint.route('/info/<serial>/<key>', methods=['DELETE'])
+@prepolicy(check_base_action, request, action=ACTION.SETTOKENINFO)
 @event("token_info", request, g)
-@admin_required
 @log_with(log)
+@admin_required
 def delete_tokeninfo_api(serial, key):
     """
     Delete a specific tokeninfo entry of a token.
