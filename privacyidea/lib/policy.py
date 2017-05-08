@@ -261,6 +261,7 @@ class ACTION(object):
     SYSTEMDELETE = "configdelete"
     SYSTEMWRITE = "configwrite"
     CONFIGDOCUMENTATION = "system_documentation"
+    SETTOKENINFO = "settokeninfo"
     TOKENISSUER = "tokenissuer"
     TOKENLABEL = "tokenlabel"
     TOKENPAGESIZE = "token_page_size"
@@ -1026,6 +1027,10 @@ def get_static_policy_definitions(scope=None):
                                 'tokens.'),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.TOKEN},
+            ACTION.SETTOKENINFO: {'type': 'bool',
+                               'desc': _('Admin is allowed to manually set and delete token info.'),
+                               'mainmenu': [MAIN_MENU.TOKENS],
+                               'group': GROUP.TOKEN},
             ACTION.ENROLLPIN: {'type': 'bool',
                                "desc": _("Admin is allowed to set the OTP "
                                          "PIN during enrollment."),
