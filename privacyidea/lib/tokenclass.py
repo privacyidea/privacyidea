@@ -64,13 +64,13 @@ The update method takes a dictionary. Some of the following parameters:
 otpkey      -> the token gets created with this OTPKey
 genkey      -> genkey=1 : privacyIDEA generates an OTPKey, creates the token
                and sends it to the client.
-2stepinit   -> use in conjunction with genkey=1.
+2stepinit   -> Will do a two step rollout.
                privacyIDEA creates the first part of the OTPKey, sends it
                to the client and the clients needs to send back the second part.
                
 In case of 2stepinit the key is generated from the server_component and the 
 client_component using the TokenClass method generate_symmetric_key.
-This method is supposed to be overwritten bei the corresponding token classes.
+This method is supposed to be overwritten by the corresponding token classes.
 """
 import logging
 import hashlib
