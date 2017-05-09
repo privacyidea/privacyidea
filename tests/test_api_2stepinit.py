@@ -33,6 +33,22 @@ class TwoStepInitTestCase(MyTestCase):
             server_component = otpkey_url.split("/")[2]
 
         client_component = "AAAAAAAA"
+        # Try to do a 2stepinit on a second step will raise an error
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp",
+                                                 "2stepinit": "1",
+                                                 "serial": serial,
+                                                 "otpkey": client_component},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("error").get("message"),
+                             u'ERR905: 2stepinit is only to be used '
+                             u'in the first initialization step.')
+
+        # Now doing the correct 2nd step
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "hotp",
@@ -66,3 +82,4 @@ class TwoStepInitTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
+
