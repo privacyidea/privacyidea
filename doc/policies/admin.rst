@@ -18,7 +18,8 @@ The ``user`` in the admin policies refers to the name of the administrator.
 
 Starting with privacyIDEA 2.4 admin policies can also store a field "admin
 realm". This is used, if you define realms to be superuser realms. See
-:ref:`cfgfile` for information how to do this.
+:ref:`cfgfile` for information how to do this. Read :ref:`faq_admins` for
+more information on the admin realms.
 
 This way it is easy to define administrative rights for big groups of
 administrative users like help desk users in the IT department.

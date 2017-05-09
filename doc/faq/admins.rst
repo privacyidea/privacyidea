@@ -1,3 +1,5 @@
+.. _faq_admins:
+
 So what's the thing with all the admins?
 ----------------------------------------
 
@@ -16,6 +18,10 @@ These admins are used to get a simple quick start.
 Then you can define realms (see :ref:`realms`), that should be administrative
 realms. I.e. each user in this realm will have administrative rights in the
 WebUI.
+
+.. note:: You need to configure these realms within privacyIDEA. Only
+   after these realms exist, you can raise their rights to an administrative
+   role.
 
 .. note:: Use this carefully. Imagine you defined a resolver to a specific
    group in your Active Directory to be the pricacyIDEA admins. Then the Active
