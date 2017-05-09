@@ -476,10 +476,15 @@ class TokenClass(object):
         two_step_init = int(getParam(param, "2stepinit", optional) or 0)
 
         if two_step_init:
+            if self.token.rollout_state == "clientwait":
+                # We do not do 2stepinit in the second step
+                raise ParameterError("2stepinit is only to be used in the "
+                                     "first initialization step.")
             # In a 2-step enrollment, the server always generates a key
             genkey = 1
             # The token is disabled
             self.token.active = False
+
 
         if genkey not in [0, 1]:
             raise ParameterError("TokenClass supports only genkey in  range ["
