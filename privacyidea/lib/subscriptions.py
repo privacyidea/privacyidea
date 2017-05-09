@@ -63,7 +63,7 @@ SIGN_FORMAT = """{application}
 
 
 APPLICATIONS = {"demo_application": 0,
-                "owncloud": 5,
+                "owncloud": 50,
                 "privacyidea-cp": 0}
 
 log = logging.getLogger(__name__)
