@@ -29,3 +29,6 @@ contrib/python-pymysql_sa/
 htmlcov/
 tests/testdata/ca/*.req
 privacyidea/static/customize/views/
+_build
+_static
+_templates
