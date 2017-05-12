@@ -36,6 +36,10 @@ But it can also look like this::
    SSL_CHECK = true
    DEBUG = true
 
+   [Mapping]
+
+   [Mapping user]
+
 .. note:: The default behaviour is to not check the SSL certificate.
    So in a productive environment where the privacyIDEA system is located on
    another server than the RADIUS server, you should set "SSL_CHECK = true".
@@ -110,8 +114,18 @@ in privacyIDEA.
 .. note:: You can define a realm in ``/opt/privacyIDEA/rlm_perl.ini``. Such a
    realm definition will override a RADIUS realm in the ``User-Name``.
 
+Mapping privacyIDEA return values to RADIUS Attribute-Value pairs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The plugin can use information from the ``detail`` section
+(see :ref:`rest_validate`) of the
+privacyIDEA response to map these values to arbitrary RADIUS Attribute-Value
+pairs.
+
+To do this use the ``[Mapping]`` section in the ``rlm_perl.ini`` file.
+
 Using the Token serial number
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.............................
 
 In case of a successful authentication privacyIDEA returns the serial number
 of the token used.
@@ -119,12 +133,41 @@ of the token used.
 If available (see :ref:`policy_no_detail_on_success` and
 :ref:`policy_no_detail_on_fail`) the FreeRADIUS server can receive this
 serial number.
-The serial number is contained in the response value ``privacyIDEA-Serial``.
 
-To see the ``privacyIDEA-Serial`` in the RADIUS response, you need to include
+In ``rlm_perl_ini`` use::
+
+    [Mapping]
+    serial = privacyIDEA-Serial
+
+This will map the ``detail->serial`` in the privacyIDEA response and add an
+attribute ``privacyIDEA-Serial`` in your RADIUS response.
+
+To use the ``privacyIDEA-Serial`` in the RADIUS response, you need to include
 the ``dictionary.netknights`` in your FreeRADIUS dictionary.
-
 You can get it here [#netknights_dict]_.
+
+Return user attributes
+......................
+
+If the authorization policy :ref:`policy_add_user_in_response` is configured
+the privacyIDEA response contains an additional tree ``detail->user`` with
+user information.
+
+The FreeRADIUS plugin can also map these user information to RADIUS
+Attribute-Value pairs. Certain VPN systems use RADIUS return values to put
+users into certain groups to allow access to special sub networks.
+
+If you want to map such user values you need to add a section in
+``rlm_perl.ini``::
+
+   [Mapping user]
+   a_user_attribute = any_RADIUS_Attribute_even_vendor_specific
+
+This way you can map any user attribute like name, email, realm, group to any
+arbitrary RADIUS attribute.
+
+You can also address different sections in the privacyIDEA detail response by
+changing the keyword in ``rlm_perl.ini`` to ``[Mapping other_section]``.
 
 
 Debugging RADIUS

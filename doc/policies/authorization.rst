@@ -203,3 +203,14 @@ regular expression. During registration of the U2F device the information
 from the attestation certificate is stored in the tokeninfo.
 Only if the regexp matches this value, the authentication with such U2F
 device is authorized.
+
+.. _policy_add_user_in_response:
+
+add_user_in_response
+~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+In case of a successful authentication additional user information is added
+to the response. A dictionary containing user information is added in
+``detail->user``.
