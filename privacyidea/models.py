@@ -2169,8 +2169,8 @@ class Subscription(MethodsMixin, db.Model):
     """
     __tablename__ = 'subscription'
     id = db.Column(db.Integer, primary_key=True, index=True)
-    application = db.Column(db.Unicode(30), index=True)
-    for_name = db.Column(db.Unicode(50), nullable=False)
+    application = db.Column(db.Unicode(80), index=True)
+    for_name = db.Column(db.Unicode(80), nullable=False)
     for_address = db.Column(db.Unicode(128))
     for_email = db.Column(db.Unicode(128), nullable=False)
     for_phone = db.Column(db.Unicode(50), nullable=False)
@@ -2186,7 +2186,7 @@ class Subscription(MethodsMixin, db.Model):
     num_users = db.Column(db.Integer)
     num_tokens = db.Column(db.Integer)
     num_clients = db.Column(db.Integer)
-    level = db.Column(db.Unicode(30))
+    level = db.Column(db.Unicode(80))
     signature = db.Column(db.Unicode(640))
 
     def save(self):
