@@ -733,7 +733,7 @@ class IdResolver (UserIdResolver):
         """
         This function lets you test the to be saved LDAP connection.
 
-        This is taken from controllers/admin.py
+        
 
         :param param: A dictionary with all necessary parameter to test
                         the connection.

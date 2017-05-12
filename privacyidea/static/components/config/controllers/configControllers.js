@@ -902,11 +902,9 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
         });
     };
 
-    $scope.testResolver = function (quick) {
+    $scope.testResolver = function (size_limit) {
         var params = $.extend({}, $scope.params);
-        if (quick) {
-            params["SIZELIMIT"] = 1;
-        }
+        params["SIZELIMIT"] = size_limit;
         ConfigFactory.testResolver(params, function (data) {
             if (data.result.value === true) {
                 inform.add(data.detail.description,

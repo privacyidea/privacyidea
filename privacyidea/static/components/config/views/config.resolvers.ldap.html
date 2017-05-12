@@ -267,7 +267,9 @@
                 class="btn btn-success"
                 translate>Quick Resolver Test
         </button>
-        <button ng-click="testResolver()"
+        <!-- the size_limit "0" will be passed to the testconnection and mean
+         no user limit. It will return the complete number of users. -->
+        <button ng-click="testResolver(0)"
                 ng-disabled="formResolverAddLdap.$invalid"
                 class="btn btn-success"
                 translate>Test LDAP Resolver
