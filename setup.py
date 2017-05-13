@@ -5,7 +5,7 @@ import stat
 import sys
 
 #VERSION="2.1dev4"
-VERSION="2.19dev3"
+VERSION="2.19dev4"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -136,11 +136,11 @@ setup(
                   'deploy/privacyidea/private.pem',
                   'deploy/privacyidea/public.pem']),
                 ('share/man/man1', get_man_pages("tools")),
-#                ('lib/privacyidea/authmodules/FreeRADIUS',
-#                 ["authmodules/FreeRADIUS/LICENSE",
-#                  "authmodules/FreeRADIUS/privacyidea_radius.pm"]),
-#               ('lib/privacyidea/authmodules/OTRS',
-#                 ["authmodules/OTRS/privacyIDEA.pm"]),
+                ('lib/privacyidea/authmodules/FreeRADIUS',
+                 ["authmodules/FreeRADIUS/LICENSE",
+                  "authmodules/FreeRADIUS/privacyidea_radius.pm"]),
+               ('lib/privacyidea/authmodules/OTRS',
+                 ["authmodules/OTRS/privacyIDEA.pm"]),
                 ('lib/privacyidea/migrations',
                  ["migrations/alembic.ini",
                   "migrations/env.py",

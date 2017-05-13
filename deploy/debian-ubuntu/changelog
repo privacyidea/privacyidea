@@ -1,8 +1,8 @@
-python-privacyidea (2.19~dev3-1trusty) trusty; urgency=low
+python-privacyidea (2.19~dev4-1trusty) trusty; urgency=low
 
   * Allow {givenname} and {surname} in tokenlabel (#646)
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 04 May 2017 13:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Sat, 13 May 2017 09:30:00 +0200
 
 python-privacyidea (2.18-1trusty) trusty; urgency=low
 
