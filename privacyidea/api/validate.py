@@ -83,7 +83,7 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
                                             no_detail_on_fail,
                                             no_detail_on_success, autoassign,
                                             offline_info,
-                                            add_user_detail_to_response)
+                                            add_user_detail_to_response, construct_radius_response)
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.config import ConfigClass
 from privacyidea.lib.event import EventConfiguration
@@ -158,6 +158,8 @@ def after_request(response):
 
 
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
+@validate_blueprint.route('/radiuscheck', methods=['POST', 'GET'])
+@postpolicy(construct_radius_response, request=request)
 @postpolicy(no_detail_on_fail, request=request)
 @postpolicy(no_detail_on_success, request=request)
 @postpolicy(add_user_detail_to_response, request=request)
@@ -178,6 +180,12 @@ def check():
     Either a ``serial`` or a ``user`` is required to authenticate.
     The PIN and OTP value is sent in the parameter ``pass``.
     In case of successful authentication it returns ``result->value: true``.
+
+    In case ``/validate/radiuscheck`` is requested, the responses are
+    modified as follows: A successful authentication returns an empty HTTP
+    204 response. An unsuccessful authentication returns an empty HTTP
+    400 response. Error responses are the same responses as for the
+    ``/validate/check`` endpoint.
 
     :param serial: The serial number of the token, that tries to authenticate.
     :param user: The loginname/username of the user, who tries to authenticate.

@@ -43,7 +43,7 @@ import datetime
 import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.error import PolicyError
-from flask import g, current_app
+from flask import g, current_app, make_response
 from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token
@@ -54,7 +54,7 @@ import json
 import re
 import netaddr
 from privacyidea.lib.crypto import Sign
-from privacyidea.api.lib.utils import get_all_params
+from privacyidea.api.lib.utils import get_all_params, getParam
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.user import (split_user, User)
 from privacyidea.lib.realm import get_default_realm
@@ -645,3 +645,24 @@ def autoassign(request, response):
                                 break
 
     return response
+
+def construct_radius_response(request, response):
+    """
+    This decorator implements the /validate/radiuscheck endpoint.
+    In case this URL was requested, a successful authentication
+    results in an empty response with a HTTP 204 status code.
+    An unsuccessful authentication results in an empty response
+    with a HTTP 400 status code.
+    :return:
+    """
+    if request.url_rule.rule == '/validate/radiuscheck':
+        return_code = 400 # generic 400 error by default
+        content = json.loads(response.data)
+        if content['result']['status']:
+            if content['result']['value']:
+                # user was successfully authenticated
+                return_code = 204
+        # send empty body
+        return make_response('', return_code)
+    else:
+        return response

@@ -1582,3 +1582,36 @@ class ValidateAPITestCase(MyTestCase):
         remove_token("CR2B")
         delete_policy("test49")
 
+    def test_28_validate_radiuscheck(self):
+        # setup a spass token
+        token_obj = init_token({"serial": "pass3", "pin": "123456",
+                                "type": "spass"})
+
+        # test successful authentication
+        with self.app.test_request_context('/validate/radiuscheck',
+                                           method='POST',
+                                           data={"serial": "pass3",
+                                                 "pass": "123456"}):
+            res = self.app.full_dispatch_request()
+            # HTTP 204 status code signals a successful authentication
+            self.assertEqual(res.status_code, 204)
+            self.assertEqual(res.data, '')
+
+        # test authentication fails with wrong PIN
+        with self.app.test_request_context('/validate/radiuscheck',
+                                           method='POST',
+                                           data={"serial": "pass3",
+                                                 "pass": "wrong"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400)
+            self.assertEqual(res.data, '')
+
+        # test authentication fails with an unknown user
+        # here, we get an ordinary JSON response
+        with self.app.test_request_context('/validate/radiuscheck',
+                                           method='POST',
+                                           data={"user": "unknown",
+                                                 "pass": "123456"}):
+            res = self.app.full_dispatch_request()
+            result = json.loads(res.data).get("result")
+            self.assertFalse(result.get("status"))
