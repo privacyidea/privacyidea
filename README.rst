@@ -114,6 +114,11 @@ Getting and updating submodules
 Some authentication modules and the admin client are located in git submodules.
 To fetch the latest release of these run::
 
+   git submodule init
+   git submodule update
+
+Later you can update the submodules like this::
+
    git pull --recurse-submodules
 
 Running it
