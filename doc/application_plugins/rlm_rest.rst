@@ -5,12 +5,12 @@ Configuration of rlm_rest
 
 Starting with version 3.0.x FreeRADIUS is shipped with the ``rlm_rest`` module, which can be used to transform
 RADIUS authentication requests to HTTP requests to a suitable REST endpoint. Starting with version 2.19,
-privacyIDEA implements such an endpoint (``/validate/radiuscheck``, see :ref:`rest_validate`).
+privacyIDEA implements such an endpoint (``/validate/radiuscheck``, see :ref:`rest_validate`). However, the endpoint
+currently does not implement all features of the :ref:`rlm_perl` such as challenge-response authentication
+and attribute mapping.
 
-Please note that the endpoint currently does not implement all features of the :ref:`rlm_perl` such as
-challenge-response authentication and attribute mapping.
-
-On Ubuntu 17.04, FreeRADIUS and ``rlm_rest`` can be installed as follows::
+Please note that Ubuntu 17.04 and Debian 9 are the first releases to include FreeRADIUS 3.0.x. Here, the required
+packages can be installed as follows::
 
     apt-get install freeradius freeradius-rest
 

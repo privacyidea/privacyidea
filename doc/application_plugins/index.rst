@@ -148,10 +148,9 @@ FreeRADIUS
 Starting with privacyIDEA 2.19, there are two ways to integrate FreeRADIUS:
 
  * Using a Perl-based privacyIDEA plugin, which is available for FreeRADIUS 2.0.x and above.
-   It supports advanced use cases (such as challenge-response authentication or attribute mapping),
-   but does not implement concurrent handling of multiple requests. Read more about it at :ref:`rlm_perl`.
- * Using the rlm_rest plugin provided by FreeRADIUS 3.0.x and above. As it implements multithreading,
-   it is suitable for use cases in which high performance is crucial. However, it currently does not support
+   It supports advanced use cases (such as challenge-response authentication or attribute mapping).
+   Read more about it at :ref:`rlm_perl`.
+ * Using the rlm_rest plugin provided by FreeRADIUS 3.0.x and above. However, this setup does not support
    challenge-response or attribute mapping. Read more about it at :ref:`rlm_rest`.
 
 With either setup, you can test the RADIUS setup using a command like this::

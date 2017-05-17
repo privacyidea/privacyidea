@@ -6,7 +6,7 @@ RADIUS plugin
 Installation
 ------------
 
-If you want to install the FreeRADIUS Plugin on Ubuntu 14.04 LTS this can be
+If you want to install the FreeRADIUS Plugin on Ubuntu 14.04 LTS or 16.04 LTS, this can be
 easily done, since there is a ready made package (see
 :ref:`install_ubuntu_freeradius`).
 
