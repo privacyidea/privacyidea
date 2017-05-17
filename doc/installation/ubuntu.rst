@@ -55,7 +55,7 @@ To install this module run::
 
    apt-get install privacyidea-radius
 
-For further details see :ref:`freeradius_plugin`.
+For further details see :ref:`rlm_perl`.
 
 .. _install_ubuntu_simplesaml:
 

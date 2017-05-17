@@ -5,8 +5,8 @@ Welcome to privacyIDEA
 privacyIDEA is a modular authentication system.
 Using privacyIDEA you can enhance your existing applications like
 :ref:`local login <pam_plugin>`,
-:ref:`VPN <freeradius_plugin>`,
-:ref:`remote access <freeradius_plugin>`,
+:ref:`VPN <freeradius>`,
+:ref:`remote access <freeradius>`,
 :ref:`SSH connections <pam_plugin>`,
 access to web sites or
 :ref:`web portals <rest_api>`

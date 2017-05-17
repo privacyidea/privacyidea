@@ -92,7 +92,7 @@ Integration of OpenVPN directly with RADIUS
 This configuration does not use PAM, so might be preferred in some installations.
 You will need the package *openvpn-auth-radius* which should be part of your
 distribution. Before you can configure your OpenVPN you need to install freeradius
-on your privacyIDEA server and configure it according to :ref:`freeradius_plugin`.
+on your privacyIDEA server and configure it according to :ref:`freeradius`.
 Be sure that RADIUS works before you start.
 
 Copy the file */usr/share/doc/openvpn-auth-radius/examples/radiusplugn.cnf* into */etc/openvpn*
