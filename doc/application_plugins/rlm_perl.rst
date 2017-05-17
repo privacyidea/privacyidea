@@ -1,8 +1,16 @@
-.. _rlm_perl_ini:
+.. _rlm_perl:
 
-RADIUS plugin configuration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+RADIUS plugin
+=============
 
+Installation
+------------
+
+If you want to install the FreeRADIUS Plugin on Ubuntu 14.04 LTS this can be
+easily done, since there is a ready made package (see
+:ref:`install_ubuntu_freeradius`).
+
+However, it can also be installed on other distributions.
 The FreeRADIUS plugin is a perl module, that e.g. requires on a Debian system
 the following packages to be installed:
 
@@ -10,6 +18,46 @@ the following packages to be installed:
 * libdata-dump-perl
 * libtry-tiny-perl
 * libjson-perl
+
+The module itself may be downloaded at [#rlmPerl]_ and placed at, e.g.,
+``/usr/share/privacyidea/freeradius/privacyidea_radius.pm``.
+
+Setup
+-----
+
+Then you need to configure your FreeRADIUS site and the perl module. The
+latest FreeRADIUS plugin uses the ``/validate/check`` REST API of privacyIDEA.
+
+You need to configure the perl module in FreeRADIUS ``modules/perl`` to look
+something like this::
+
+   perl {
+       module = /usr/share/privacyidea/freeradius/privacyidea_radius.pm
+   }
+
+Your freeradius enabled site config should contain something like this::
+
+   authenticate {
+        Auth-Type Perl {
+           perl
+        }
+        digest
+        unix
+   }
+
+While you define the default authenticate type to be ``Perl`` in the
+``users`` file::
+
+   DEFAULT Auth-Type := Perl
+
+.. note:: The privacyIDEA module uses other perl modules that were not thread
+   safe in the
+   past. So in case you are using old perl dependencies and are experiencing
+   thread problems, please start FreeRADIUS with the -t switch.
+   (Everything works fine with Ubuntu 14.04 and Debian 7.)
+
+Configuration
+-------------
 
 The RADIUS plugin configuration is read from the file
 ``/opt/privacyIDEA/rlm_perl.ini``.
@@ -191,3 +239,4 @@ secret "test" with your clients secret.
 .. rubric:: Footnotes
 
 .. [#netknights_dict] https://github.com/privacyidea/privacyidea/blob/master/authmodules/FreeRADIUS/dictionary.netknights
+.. [#rlmPerl] https://github.com/privacyidea/freeradius

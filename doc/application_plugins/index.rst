@@ -132,7 +132,7 @@ to the UBAM token, but this is right now not possible with the WebUI.
 
 In the WebUI, test the UBAM token without a Token PIN, test the UBCM token
 with the stored Token PIN, and check the token info afterwards.
-Check the yubikey token via ``/ttype/yubikey``, for example with:
+Check the yubikey token via ``/ttype/yubikey``, for example with::
 
    ykclient --debug --url https://<privacyidea>/ttype/yubikey --apikey "<API key>" "apiid" <otp>
 
@@ -140,57 +140,26 @@ There should be successful authentications (count_auth_success),
 but no failures.
 
 
-.. _freeradius_plugin:
+.. _freeradius:
 
-FreeRADIUS Plugin
------------------
+FreeRADIUS
+----------
 
-If you want to install the FreeRADIUS Plugin on Ubuntu 14.04 LTS this can be
-easily done, since there is a ready made package (see
-:ref:`install_ubuntu_freeradius`).
+Starting with privacyIDEA 2.19, there are two ways to integrate FreeRADIUS:
 
-If you want to run your FreeRADIUS server on another distribution, you
-may download the module at [#rlmPerl]_.
+ * Using a Perl-based privacyIDEA plugin, which is available for FreeRADIUS 2.0.x and above.
+   It supports advanced use cases (such as challenge-response authentication or attribute mapping),
+   but does not implement concurrent handling of multiple requests. Read more about it at :ref:`rlm_perl`.
+ * Using the rlm_rest plugin provided by FreeRADIUS 3.0.x and above. As it implements multithreading,
+   it is suitable for use cases in which high performance is crucial. However, it currently does not support
+   challenge-response or attribute mapping. Read more about it at :ref:`rlm_rest`.
 
-Then you need to configure your FreeRADIUS site and the perl module. The
-latest FreeRADIUS plugin uses the ``/validate/check`` REST API of privacyIDEA.
-
-You need to configure the perl module in FreeRADIUS ``modules/perl`` to look
-something like this::
-
-   perl {
-       module = /usr/share/privacyidea/freeradius/privacyidea_radius.pm
-   }
-
-Your freeradius enabled site config should contain something like this::
-
-   authenticate {
-        Auth-Type Perl {
-           perl
-        }
-        digest
-        unix
-   }
-
-While you define the default authenticate type to be ``Perl`` in the
-``users`` file::
-
-   DEFAULT Auth-Type := Perl
-
-.. note:: The privacyIDEA module uses other perl modules that were not thread
-   safe in the
-   past. So in case you are using old perl dependencies and are experiencing
-   thread problems, please start FreeRADIUS with the -t switch.
-   (Everything works fine with Ubuntu 14.04 and Debian 7.)
-
-You can test the RADIUS setup using a command like this::
+With either setup, you can test the RADIUS setup using a command like this::
 
    echo "User-Name=user, Password=password" | radclient -sx yourRadiusServer \
       auth topsecret
 
 .. note:: Do not forget to configure the ``clients.conf`` accordingly.
-
-Read more about :ref:`radius_and_realms` or :ref:`rlm_perl_ini`.
 
 Microsoft NPS server
 --------------------
@@ -510,7 +479,6 @@ You can find further plugins for
 Dokuwiki, Wordpress, Contao and Django at [#cornelinuxGithub]_.
 
 
-.. [#rlmPerl] https://github.com/privacyidea/privacyidea/tree/master/authmodules/FreeRADIUS
 .. [#simpleSAML] https://github.com/privacyidea/simplesamlphp-module-privacyidea
 .. [#privacyideaGithub] https://github.com/privacyidea/privacyidea/tree/master/authmodules
 .. [#cornelinuxGithub] https://github.com/cornelinux?tab=repositories
