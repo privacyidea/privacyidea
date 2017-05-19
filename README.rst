@@ -87,8 +87,8 @@ web UI is based on angularJS and bootstrap.
 A MachineToken design lets you assign tokens to machines. Thus you can use
 your Yubikey to unlock LUKS, assign SSH keys to SSH servers or use Offline OTP with PAM.
 
-You may join the Google Group to give feedback, discuss questions and ideas:
-https://groups.google.com/forum/#!forum/privacyidea
+You may join the discourse discussion forum to give feedback, help other users, discuss questions and ideas:
+https://community.privacyidea.org
 
 
 Setup
