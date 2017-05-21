@@ -83,10 +83,14 @@ But it can also look like this::
    RESCONF = someResolver
    SSL_CHECK = true
    DEBUG = true
+   TIMEOUT = 10
 
    [Mapping]
+   serial = privacyIDEA-Serial
 
    [Mapping user]
+   group = Class
+
 
 .. note:: The default behaviour is to not check the SSL certificate.
    So in a productive environment where the privacyIDEA system is located on
