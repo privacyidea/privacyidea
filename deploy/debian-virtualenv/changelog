@@ -1,3 +1,50 @@
+privacyidea-venv (2.19-1) wheezy; urgency=low
+
+  Features:
+  * Add generic User Cache to speed up authentication (#670, #683)
+  * Support multiple challenge-response tokens with the same PIN (#654)
+  * Restrict U2F registration based on assertion certificte (#648)
+  * Restrict authentication with U2F devices based on assertion 
+    certificate (#648)
+  * Add privacyidea-token-janitor script, that can clean orpaned or 
+    expired tokens (#692)
+  * Add API for mutual key generation during enrollment for easy 
+    Smartphone App development by introducing a generic 
+    2-step-rollout process (#627)
+  * Add /validate/radiuscheck which works with rlm_rest and only uses 
+    HTTP return codes. (#703)
+
+  Enhancements:
+  * Allow to unset token validity period and other tokeninfo
+    fields (#691)
+  * Add a quick-resolver test for LDAP resolvers (#688)
+  * Add additional tokeninfo tags {client_ip}, {ua_browser}, 
+    {ua_string} in token handler (#687)
+  * Allow to set decription of U2F tokens during enrollment (#685)
+  * Reduce the number of LDAP requests to increase authentication
+    performance (#664, #655, #650)
+  * Realm administrator is only allowed to see actions on this allowed
+    user realms (#663)
+  * Add audit rotation to pi-manage (#657)
+  * Speed up Audit Log calls by adding a second index (#656)
+  * Allow to either lock und logout the UI after timeout (#653)
+  * Allow string format {user}, {realm}, {serial}, {surname} in 
+    tokenlabel policy (#646)
+  * Move to a consistent time format for validity period and all other 
+    user specific times also containing the timezone (#644)
+  * Add TLS certificate check to LDAP machine resolver (#638)
+  * Make TLS certificate the default option in LDAP resolvers (#639)
+  * Allow to use privacyIDEA ownCloud App without subscription
+    file with up to 50 users.
+
+  Fixes:
+  * Fix the datepicker for the token validity period (#644 / #693)
+  * Fix LDAP resolver to respect all boolean configuration 
+    options (#658)
+  * Fix serial number in challenge response validation response (#649)
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 26 May 2017 08:30:00 +0200
+
 privacyidea-venv (2.18-1) wheezy; urgency=low
 
   Features:
