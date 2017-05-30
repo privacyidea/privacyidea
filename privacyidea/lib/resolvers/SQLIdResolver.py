@@ -356,6 +356,9 @@ class IdResolver (UserIdResolver):
             digest = binascii.hexlify(hr.digest())
             return pw_hash == digest
 
+        def _check_crypt(pw_hash, password):
+           return crypt.crypt(password, pw_hash) == pw_hash
+
         res = False
         userinfo = self.getUserInfo(uid)
 
@@ -379,6 +382,8 @@ class IdResolver (UserIdResolver):
         elif len(userinfo.get("password")) == 64:
             # OTRS sha256 password
             res = _otrs_sha256(database_pw, password)
+        else:
+            res = _check_crypt(database_pw, password)
 
         return res
 
