@@ -95,7 +95,6 @@ create_database() {
 }
 
 enable_apache() {
-        rm -f /etc/apache2/sites-enabled/*
         a2enmod wsgi
         a2enmod headers
         a2enmod ssl
