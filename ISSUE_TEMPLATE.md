@@ -6,7 +6,7 @@ https://www.privacyidea.org/getting-help/
 The more information you provide, the easier it is to identify 
 the problem!
 
-Issues are not ment for asking questions!
+Issues are not meant for asking questions!
 If you simply wonder how things work and need some explanation 
 please visit the community forum:
 
