@@ -16,12 +16,46 @@ This will make privacyIDEA wider known and attract new contributors.
 Talk to us
 ----------
 
-You may join talking in the Google Group or
-the newly setup Gitter Chat Root:
+You may join talking in the privacyIDEA Forum.
+Talk to other users and share your experience!
 
-https://groups.google.com/forum/#!forum/privacyidea
+https://community.privacyidea.org
 
-https://gitter.im/privacyidea/Lobby
+A word about community
+~~~~~~~~~~~~~~~~~~~~~~
+
+Community does not mean that some developers are responsible
+for solving all your problems. Read the AGPL! 
+**THIS SOFTWARE COMES WITH NO WARRANTY**
+
+As soon as you start using privacyIDEA you are becoming part of
+the community and this also comes with some kind of responsibility.
+So you can make privacyIDEA better and earn karma points by
+sharing your experience and helping other, younger users.
+
+By doing so the developers have more time to develop and 
+improving your beloved project and hopefully allowing
+the developers to earn some money to make a living.
+
+So **you are "the community"**, go and help others!
+
+https://community.privacyidea.org
+
+Money
+-----
+
+This is an important part to contribute to privacyIDEA.
+To allow developers to work full time on privacyIDEA they
+have to make money. 
+
+One possibility to do this and also get rid of the NO-WARRANTY 
+label is to get privacyIDEA Enterprise Edition including a
+Service Level Agreement or corresponding consultancy.
+
+- consultancy 
+  https://netknights.it/en/leistungen/one-time-services/
+- privacyIDEA Enterprise Edition 
+  https://netknights.it/en/leistungen/service-level-agreements/
 
 
 Tell us your ideas
