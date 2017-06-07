@@ -137,11 +137,9 @@ def get_info_configuration(noschemas):
 
 def cache(func):
     """
-    Decorator to check if a token is locked or not.
-    The decorator is to be used in token class methods.
-    It can be used to avoid performing an action on a locked token.
-
-    If the token is locked, a TokenAdminError is raised.
+    cache the user with his loginname, resolver and UID in a local 
+    dictionary cache.
+    This is a per process cache.
     """
     @functools.wraps(func)
     def cache_wrapper(self, *args, **kwds):
