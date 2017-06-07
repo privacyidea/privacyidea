@@ -58,6 +58,10 @@ authentication) should be allowed.
 
 Possible values are "disable" and "allowed".
 
+.. note:: The policy is evaluated before the user is logged in. At this point
+   in time there is no realm known, so a policy to allow remote_user must not
+   select any realm.
+
 .. note:: The policy *login_mode* and *remote_user* work independent of each
    other. I.e. you can disable *login_mode* and allow *remote_user*.
    
