@@ -736,11 +736,73 @@ def delete(name):
     r = delete_policy(name)
     print(r)
 
+
+@policy_manager.command
+def p_export(filename=None):
+    """
+    Export all policies to a file as a JSON format, list of dictionaries.
+    If the filename is omitted, the policies are written to stdout.    
+    """
+    import pprint
+    pp = pprint.PrettyPrinter(indent=4)
+    P = PolicyClass()
+    policies = P.get_policies()
+    pol_str = pp.pformat(policies)
+    if filename:
+        f = open(filename, 'w')
+        f.write(pol_str)
+        f.close()
+    else:
+        print(pol_str)
+
+
+@policy_manager.command
+def p_import(filename, cleanup=False):
+    """
+    Import the policies from a file.
+    If 'cleanup' is specified the existing policies are deleted before the 
+    policies from the file are imported.
+    """
+    if cleanup:
+        print("Cleanup old policies.")
+        P = PolicyClass()
+        policies = P.get_policies()
+        for policy in policies:
+            name = policy.get("name")
+            r = delete_policy(name)
+            print("Deleted policy {0!s} with result {1!s}".format(name, r))
+
+    f = open(filename, 'r')
+    contents = f.read()
+    f.close()
+    policies = ast.literal_eval(contents)
+    for policy in policies:
+        name = policy.get("name")
+        r = set_policy(name,
+                       action=policy.get("action"),
+                       active=policy.get("active", True),
+                       adminrealm=policy.get("adminrealm"),
+                       check_all_resolvers=policy.get(
+                           "check_all_resolvers", False),
+                       client=policy.get("client"),
+                       #condition=policy.get("condition"),
+                       realm=policy.get("realm"),
+                       resolver=policy.get("resolver"),
+                       scope=policy.get("scope"),
+                       time=policy.get("time"),
+                       user=policy.get("user"))
+        print("Added policy {0!s} with result {1!s}".format(name, r))
+
+
 @policy_manager.command
 def create(name, scope, action, filename=None):
     """
     create a new policy. 'FILENAME' must contain a dictionary and its content
-    takes precedence over CLI parameters.
+    takes precedence over CLI parameters. 
+    I.e. if you are specifying a FILENAME,
+    the parameters name, scope and action need to be specified, but are ignored.
+    
+    Note: This will only create one policy per file.
     """
     if filename:
         try:

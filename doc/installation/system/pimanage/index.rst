@@ -110,3 +110,13 @@ You can now use this API key to enroll tokens as administrator.
    only restricted rights!
 
 .. note:: The API key is valid for 365 days.
+
+Policies
+--------
+
+You can use ``pi-manage policy`` to enable, disable, create and delete policies.
+Using the sub commands ``p_export`` and ``p_import`` you can also export a
+backup of your policies and import this policy set later.
+
+This could also be used to transfer the policies from one privacyIDEA
+instance to another.
