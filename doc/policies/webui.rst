@@ -84,20 +84,16 @@ in /etc/apache2/sites-available/privacyidea.conf::
                 Krb5KeyTab /etc/apache2/http.keytab
                 KrbServiceName HTTP
                 KrbSaveCredentials On
-                require valid-user
+                <RequireAny>
+                    # Either we need a URL with no authentication or we need a valid user
+                    <RequireAny>
+                        # Any of these URL do NOT need a basic authentication
+                        Require expr %{REQUEST_URI} =~ m#^/validate#
+                        Require expr %{REQUEST_URI} =~ m#^/ttype#
+                    </RequireAny>
+                    Require valid-user
+                </RequireAny>
         </Directory>
-
-        <Location /validate/check>
-                Require all granted
-                Options FollowSymLinks
-                AllowOverride None
-        </Location>
-
-        <Location /ttype>
-                Require all granted
-                Options FollowSymLinks
-                AllowOverride None
-        </Location>
 
 
 logout_time
