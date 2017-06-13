@@ -58,7 +58,7 @@ possible white spaces!)
    *Enroll a Yubikey AES mode token*
 
 In the field "Test Yubikey" push the Yubikey button. This will grab the
-yubikey's public identifier and also determin the lenght of the *otp value*.
+yubikey's public identifier and also determine the lenght of the *otp value*.
 The field *OTP value* is automatically filled.
 
 Redirect api url to privacyideas /ttype/yubikey
