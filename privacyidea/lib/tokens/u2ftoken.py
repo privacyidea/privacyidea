@@ -450,8 +450,7 @@ class U2fTokenClass(TokenClass):
             clientdata_dict = json.loads(clientdata)
             client_challenge = clientdata_dict.get("challenge")
             if challenge_url != client_challenge:
-                raise ValidateError("Challenge mismatch. The U2F key did not "
-                                    "send the original challenge.")
+                return ret
             if clientdata_dict.get("typ") != "navigator.id.getAssertion":
                 raise ValidateError("Incorrect navigator.id")
             #client_origin = clientdata_dict.get("origin")

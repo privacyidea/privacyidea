@@ -51,6 +51,12 @@ angular.module("privacyideaAuth")
                 sign_request: function (data, username, transactionid,
                                         login_callback) {
                     var signRequests = [data.detail.attributes.u2fSignRequest];
+                    if (data.detail.multi_challenge) {
+                        var signRequests = [data.detail.attributes.u2fSignRequest];
+                        for (var i in data.detail.multi_challenge) {
+                           signRequests[i] = data.detail.multi_challenge[i].attributes.u2fSignRequest;
+                        }
+                    }
                     u2f.sign(signRequests, function (result) {
                         inform.clear();
                         if (result.errorCode > 0) {
