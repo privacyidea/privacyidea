@@ -284,7 +284,7 @@ def der_encode(signature_bin_asn):
     :return: DER encoded signature
     """
     if len(signature_bin_asn) != 64:
-        raise Exception("The signatrue needs to be 64 bytes.")
+        raise Exception("The signature needs to be 64 bytes.")
     vr = signature_bin_asn[:32]
     b2 = 32
     if ord(vr[0]) >= 128:
