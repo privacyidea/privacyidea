@@ -55,6 +55,8 @@ angular.module("privacyideaApp")
     obj = angular.element(document.querySelector('#REALMS'));
     $scope.piRealms = obj.val().mysplit(",");
     console.log($scope.piRealms);
+    obj = angular.element(document.querySelector('#LOGO'));
+    $scope.piLogo = obj.val();
     // Check if registration is allowed
     $scope.registrationAllowed = false;
     RegisterFactory.status(function (data) {
