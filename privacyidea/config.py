@@ -17,6 +17,7 @@ class Config(object):
     PI_LOGLEVEL = logging.INFO
     PI_LOGLEVEL = 9
     CACHE_TYPE = "simple"
+    PI_EXTERNAL_LINKS = True
     # PI_AUDIT_SQL_URI = sqlite://
 
 

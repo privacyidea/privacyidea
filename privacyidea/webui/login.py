@@ -65,6 +65,8 @@ def single_page_application():
     #    PI_CUSTOMIZATION/views/includes/token.enroll.pre.bottom.html
     #    PI_CUSTOMIZATION/views/includes/token.enroll.post.top.html
     #    PI_CUSTOMIZATION/views/includes/token.enroll.post.bottom.html
+    # Get the hidden external links
+    external_links = current_app.config.get("PI_EXTERNAL_LINKS", True)
     browser_lang = request.accept_languages.best_match(["en", "de"])
     # check if login with REMOTE_USER is allowed.
     remote_user = ""
@@ -110,5 +112,6 @@ def single_page_application():
                            password_reset=password_reset,
                            hsm_ready=hsm_ready,
                            customization=customization,
-                           realms=realms)
+                           realms=realms,
+                           external_links=external_links)
 

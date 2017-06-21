@@ -21,16 +21,20 @@
             class="navbar-text pull-left">
             privacyIDEA
             {{ privacyideaVersionNumber }}
-        </a>	
+        </a>
+{% endraw %}
+{% if external_links %}
         <a class="navbar-btn btn btn-success pull-right"
            href="https://netknights.it/en/leistungen/service-level-agreements/"
            target="_external">
             <translate>Support</translate>
         </a>
         <a class="navbar-text pull-right"
-                href="https://groups.google.com/forum/#!forum/privacyidea"
+                href="https://community.privacyidea.org"
                 target="_external">
-            privacyIDEA google group</a>
+            privacyIDEA Forum</a>
+{% endif %}
+{% raw %}
         <a class="navbar-text pull-right"
            ng-show="privacyideaVersionNumber"
                 href="http://privacyidea.readthedocs.org/en/v{{ privacyideaVersionNumber }}"
