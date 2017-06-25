@@ -198,7 +198,7 @@ msgstr ""
 msgid "Authentication Server URI"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:221
+#: privacyidea/static/components/login/controllers/loginControllers.js:223
 msgid "Authentication failed."
 msgstr ""
 
@@ -319,7 +319,7 @@ msgstr ""
 msgid "Certificates Templates file"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:193
+#: privacyidea/static/components/login/controllers/loginControllers.js:195
 msgid "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr ""
 
@@ -798,7 +798,7 @@ msgstr ""
 msgid "Enroll Token"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:66
+#: privacyidea/static/components/login/controllers/loginControllers.js:68
 #: privacyidea/static/components/token/controllers/tokenControllers.js:133
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:157
@@ -1201,7 +1201,7 @@ msgstr ""
 msgid "List SMTP server definitions"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:74
+#: privacyidea/static/components/login/controllers/loginControllers.js:76
 msgid "List tokens"
 msgstr ""
 
@@ -1233,7 +1233,7 @@ msgstr ""
 msgid "Log In"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:81
+#: privacyidea/static/components/login/controllers/loginControllers.js:83
 msgid "Log out"
 msgstr ""
 
@@ -1295,7 +1295,7 @@ msgstr ""
 msgid "Mapping"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.lost.html:23
+#: privacyidea/static/components/token/views/token.lost.html:27
 msgid "Mark the token to be lost"
 msgstr ""
 
@@ -1479,7 +1479,7 @@ msgid ""
 "          default realm for you from the machines /etc/passwd?"
 msgstr ""
 
-#: privacyidea/static/templates/index.html:38
+#: privacyidea/static/templates/index.html:43
 #: privacyidea/static/templates/menu.html:119
 msgid "Online Documentation"
 msgstr ""
@@ -1532,7 +1532,7 @@ msgstr ""
 msgid "PIN"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:383
+#: privacyidea/static/components/login/controllers/loginControllers.js:385
 msgid "PIN changed successfully."
 msgstr ""
 
@@ -1722,7 +1722,7 @@ msgstr ""
 msgid "Realm"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:354
+#: privacyidea/static/components/login/controllers/loginControllers.js:356
 msgid "Realm defrealm created."
 msgstr ""
 
@@ -2147,7 +2147,7 @@ msgstr ""
 msgid "Successfully authenticated."
 msgstr ""
 
-#: privacyidea/static/templates/index.html:28
+#: privacyidea/static/templates/index.html:31
 #: privacyidea/static/templates/menu.html:124
 msgid "Support"
 msgstr ""
@@ -2523,14 +2523,19 @@ msgid "The number of lookahead OTP values. Default 10."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.lost.html:17
-msgid "The old token is disabled and can be deleted or enabled later."
+msgid ""
+"The old token\n"
+"    <a ui-sref=\"token.details({tokenSerial:selectedToken.serial})\">\n"
+"        {{ selectedToken.serial }}\n"
+"    </a>\n"
+"    is disabled and can be deleted or enabled later."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.lost.html:44
+#: privacyidea/static/components/token/views/token.lost.html:48
 msgid "The password can not be shown again, later!"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.lost.html:40
+#: privacyidea/static/components/token/views/token.lost.html:44
 msgid ""
 "The password that needs to be combined with the OTP PIN:\n"
 "        <b>{{ lostResult.password }}</b>"
@@ -2589,7 +2594,7 @@ msgstr ""
 msgid "The serial number on the remote server"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.lost.html:34
+#: privacyidea/static/components/token/views/token.lost.html:38
 msgid ""
 "The serial of the new token is\n"
 "        <a ui-sref=\"token.details({tokenSerial:lostResult.serial})\">\n"
@@ -2639,11 +2644,11 @@ msgstr ""
 msgid "The token is enrolled."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.lost.html:48
+#: privacyidea/static/components/token/views/token.lost.html:52
 msgid "The token is valid till {{ lostResult.end_date }}."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.lost.html:30
+#: privacyidea/static/components/token/views/token.lost.html:34
 msgid "The token was marked lost successfully."
 msgstr ""
 
@@ -3215,7 +3220,7 @@ msgstr ""
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:263
+#: privacyidea/static/components/login/controllers/loginControllers.js:265
 msgid "Your OTP pin expires on"
 msgstr ""
 

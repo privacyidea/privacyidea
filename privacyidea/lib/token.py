@@ -88,6 +88,8 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_timelimit,
                                               auth_lastauth,
                                               config_lost_token)
+from privacyidea.lib.tokenclass import DATE_FORMAT
+from dateutil.tz import tzlocal
 
 log = logging.getLogger(__name__)
 
@@ -1730,10 +1732,8 @@ def lost_token(serial, new_serial=None, password=None,
         res['pin'] = copy_token_pin(serial, new_serial)
 
         # set validity period
-        end_date = (datetime.date.today()
-                    + datetime.timedelta(days=validity)).strftime("%d/%m/%y")
-
-        end_date = "{0!s} 23:59".format(end_date)
+        end_date = (datetime.datetime.now(tzlocal())
+                    + datetime.timedelta(days=validity)).strftime(DATE_FORMAT)
         tokenobject_list = get_tokens(serial=new_serial)
         for tokenobject in tokenobject_list:
             tokenobject.set_validity_period_end(end_date)
