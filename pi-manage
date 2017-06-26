@@ -209,6 +209,11 @@ def create(directory="/var/lib/privacyidea/backup/",
     BASE_NAME = "privacyidea-backup"
     
     call(["mkdir", "-p", directory])
+    # set correct owner, if possible
+    if os.geteuid() == 0:
+        directory_stat = os.stat(os.path.join(directory, '..'))
+        os.chown(directory, directory_stat.st_uid, directory_stat.st_gid)
+
     sqlfile = "%s/dbdump-%s.sql" % (directory, DATE)
     backup_file = "%s/%s-%s.tgz" % (directory, BASE_NAME, DATE)
 
@@ -262,6 +267,10 @@ user={0!s}
 password={1!s}""".format(username, password))
     f.close()
     os.chmod(filename, 0600)
+    # set correct owner, if possible
+    if os.geteuid() == 0:
+        directory_stat = os.stat(os.path.dirname(filename))
+        os.chown(filename, directory_stat.st_uid, directory_stat.st_gid)
 
 
 @backup_manager.command
