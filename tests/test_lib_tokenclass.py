@@ -372,6 +372,17 @@ class TokenBaseTestCase(MyTestCase):
         s = token.get_validity_period_start()
         self.assertTrue(s.startswith("2017-04-11T22:00"), s)
 
+        # old date format has problems with check_validity_date
+        start_date = datetime.datetime.now() - datetime.timedelta(days=15)
+        end_date = datetime.datetime.now() + datetime.timedelta(days=15)
+        start = start_date.strftime("%d/%m/%Y")
+        end = end_date.strftime("%d/%m/%Y")
+        # Need to write the old format to the database
+        token.add_tokeninfo("validity_period_start", start)
+        token.add_tokeninfo("validity_period_end", end)
+        r = token.check_validity_period()
+        self.assertTrue(r)
+
     def test_11_tokeninfo_with_type(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
