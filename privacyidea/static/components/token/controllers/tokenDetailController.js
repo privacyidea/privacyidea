@@ -30,15 +30,18 @@ function date_object_to_string(date_obj) {
 }
 
 function string_to_date_object(s) {
-    if (s.substring(2,3) === "/") {
-        var day = s.substring(0,2);
-        var month = s.substring(3,5);
-        var rest = s.substring(6);
-        s = month + "/" + day + "/" + rest;
+    date_obj = null;
+    if (s) {
+        if (s.substring(2, 3) === "/") {
+            var day = s.substring(0, 2);
+            var month = s.substring(3, 5);
+            var rest = s.substring(6);
+            s = month + "/" + day + "/" + rest;
+        }
+        var date_obj = new Date();
+        var d = Date.parse(s);
+        date_obj.setTime(d);
     }
-    var date_obj = new Date();
-    var d = Date.parse(s);
-    date_obj.setTime(d);
     return date_obj;
 }
 
@@ -102,6 +105,10 @@ myApp.controller("tokenDetailController", function ($scope,
             }
         });
     };
+
+    // initialize
+    $scope.get();
+
 
     $scope.return_to = function () {
         // After deleting the token, we return here.
@@ -237,10 +244,6 @@ myApp.controller("tokenDetailController", function ($scope,
             }
         });
     };
-
-
-    // initialize
-    $scope.get();
 
     //----------------------------------------------------------------
     //   Admin functions
