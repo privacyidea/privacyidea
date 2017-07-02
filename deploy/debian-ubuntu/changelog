@@ -1,4 +1,4 @@
-python-privacyidea (2.19.1~dev0-1trusty) trusty; urgency=low
+python-privacyidea (2.19.1-1trusty) trusty; urgency=low
 
   Enhancements:
   * Add "pi-manage policy load" and "pi-manage policy export". (#721)
@@ -15,7 +15,7 @@ python-privacyidea (2.19.1~dev0-1trusty) trusty; urgency=low
   * Improve documentation for cache decorator
   * Improve documentation for webui policy
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Tue, 27 Jun 2017 21:30:00 +0200
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Sun, 02 Jul 2017 08:00:00 +0200
 
 python-privacyidea (2.19-1trusty) trusty; urgency=low
 
