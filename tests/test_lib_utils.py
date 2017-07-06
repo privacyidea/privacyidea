@@ -7,7 +7,8 @@ from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
                                    check_time_in_range, parse_proxy,
                                    check_proxy, reduce_realms, is_true,
                                    parse_date, compare_condition,
-                                   get_data_from_params, parse_legacy_time)
+                                   get_data_from_params, parse_legacy_time,
+                                   int_to_hex)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset
@@ -282,3 +283,24 @@ class UtilsTestCase(MyTestCase):
 
         s = parse_legacy_time("2017-04-01T10:00+0200")
         self.assertEqual(s, "2017-04-01T10:00+0200")
+
+    def test_11_int_to_hex(self):
+        h = int_to_hex(32)
+        self.assertEqual(h, "20")
+
+        h = int_to_hex(1)
+        self.assertEqual(h, "01")
+
+        h = int_to_hex(10)
+        self.assertEqual(h, "0A")
+
+        h = int_to_hex(256)
+        self.assertEqual(h, "0100")
+
+        h = int_to_hex(4096)
+        self.assertEqual(h, "1000")
+
+        h = int_to_hex(65536)
+        self.assertEqual(h, "010000")
+
+

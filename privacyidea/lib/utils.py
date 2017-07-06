@@ -625,6 +625,8 @@ def int_to_hex(serial):
     """
     serial_hex = hex(int(serial)).upper()
     serial_hex = serial_hex.split("X")[1]
+    if len(serial_hex)%2 != 0:
+        serial_hex = "0" + serial_hex
     return serial_hex
 
 
