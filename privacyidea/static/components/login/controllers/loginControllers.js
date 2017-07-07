@@ -186,11 +186,10 @@ angular.module("privacyideaApp")
         }).error(function (error) {
             console.log("challenge response");
             console.log(error);
-            $scope.transactionid = "";
             $scope.login.password = "";
-            // In case of error.detail.transaction_id is present, we
-            // have a challenge response and we need to go to the state response
             if (error.detail && error.detail.transaction_id) {
+                // In case of error.detail.transaction_id is present, we
+                // have a challenge response and we need to go to the state response
                 $state.go("response");
                 inform.add(gettextCatalog.getString("Challenge Response " +
                     "Authentication. You" +
@@ -199,7 +198,7 @@ angular.module("privacyideaApp")
                 $scope.challenge_message = error.detail.message;
                 $scope.transactionid = error.detail["transaction_id"];
                 $scope.image = error.detail.attributes.img;
-                if ($scope.image.indexOf("data:image") == -1) {
+                if ($scope.image.indexOf("data:image") === -1) {
                     // In case of an Image link, we prepend the instanceUrl
                     $scope.image = $scope.instanceUrl + "/" + $scope.image;
                 }
@@ -212,17 +211,35 @@ angular.module("privacyideaApp")
                     PollingAuthFactory.start($scope.check_authentication);
                 // In case of u2f we do:
                 if (error.detail.attributes['u2fSignRequest']) {
+                    $scope.u2f_first_error = error;
                     U2fFactory.sign_request(error, $scope.login.username,
                         $scope.transactionid, $scope.do_login_stuff);
                 }
             } else {
-                // TODO: Do we want to display the error message?
-                // This can show an attacker, if a username exists.
-				// But this can also be due to a problem like
-				// "HSM not ready".
-                inform.add(gettextCatalog.getString("Authentication failed. ")
-                    + error.result.error.message,
-                {type: "danger", ttl: 10000});
+                if ($state.current.name === "response") {
+                    // We are already in the response state, but the first
+                    // response was not valid.
+                    inform.add(gettextCatalog.getString("Challenge Response " +
+                            "Authentication. Your response was not valid!"),
+                        {type: "warning", ttl: 5000});
+                    $scope.login.password = "";
+                    // in case of U2F we try for a 2nd signature
+                    // In case of u2f we do:
+                    if ($scope.u2f_first_error) {
+                        U2fFactory.sign_request($scope.u2f_first_error,
+                            $scope.login.username,
+                            $scope.transactionid, $scope.do_login_stuff);
+                    }
+                } else {
+                        // TODO: Do we want to display the error message?
+                        // This can show an attacker, if a username exists.
+                        // But this can also be due to a problem like
+                        // "HSM not ready".
+                        $scope.transactionid = "";
+                        inform.add(gettextCatalog.getString("Authentication failed. ")
+                            + error.result.error.message,
+                            {type: "danger", ttl: 10000});
+                }
             }
         }).then(function () {
             // We delete the login object, so that the password is not
