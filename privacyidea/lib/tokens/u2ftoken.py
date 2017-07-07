@@ -540,6 +540,6 @@ class U2fTokenClass(TokenClass):
                                   }
                                  ]
                }
-        return "json", res
+        return "fido.trusted-apps+json", res
 
 

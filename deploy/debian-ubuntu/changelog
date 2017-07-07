@@ -1,3 +1,28 @@
+python-privacyidea (2.20~dev0-1trusty) trusty; urgency=low
+
+  * Challenge Response Login #708
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 07 Jul 2017 08:30:00 +0200
+
+python-privacyidea (2.19.1-1trusty) trusty; urgency=low
+
+  Enhancements:
+  * Add "pi-manage policy load" and "pi-manage policy export". (#721)
+  * Allow customization via pi.cfg file.
+  * Add {username} and {realm} as tags for the tokenhandler. (#735)
+
+  Fixes:
+  * Fix pi-manage file permission for backup
+  * Fix search for resolver in audit log
+  * Allow to read old legacy time from validity period
+  * Fix wrong enddate with lost_token
+  * Fix typos
+  * Improve documentation for yubikey
+  * Improve documentation for cache decorator
+  * Improve documentation for webui policy
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Sun, 02 Jul 2017 08:00:00 +0200
+
 python-privacyidea (2.19-1trusty) trusty; urgency=low
 
   Features:

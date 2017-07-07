@@ -1030,13 +1030,13 @@ class TokenClass(object):
 
         if start:
             #dt_start = datetime.datetime.strptime(start, DATE_FORMAT)
-            dt_start = parse_date_string(start)
+            dt_start = parse_legacy_time(start, return_date=True)
             if dt_start > datetime.datetime.now(tzlocal()):
                 return False
 
         if end:
             #dt_end = datetime.datetime.strptime(end, DATE_FORMAT)
-            dt_end = parse_date_string(end)
+            dt_end = parse_legacy_time(end, return_date=True)
             if dt_end < datetime.datetime.now(tzlocal()):
                 return False
 

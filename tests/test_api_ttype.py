@@ -39,3 +39,13 @@ class TtypeAPITestCase(MyTestCase):
             service = data.get("service")
             self.assertEqual(identity.get("displayName"), "Cornelius ")
             self.assertEqual(service.get("displayName"), "privacyIDEA")
+
+    def test_02_u2f(self):
+        set_privacyidea_config("u2f.appId", "https://puck.az.intern")
+        with self.app.test_request_context('/ttype/u2f',
+                                           method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertEqual(res.mimetype, u'application/fido.trusted-apps+json')
+            data = json.loads(res.data)
+            self.assertTrue("trustedFacets" in data)

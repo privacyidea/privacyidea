@@ -11,8 +11,9 @@ VERSION3=2.1.1
 URL3=https://pypi.python.org/packages/f8/15/f8a33118b8e909e3953e5d9db6459693754ea42ae2aa481f4cab12e68c67/ldap3-$(VERSION3).tar.gz
 
 CONTRIB4=python-flask-sqlalchemy
-VERSION4=2.0
-URL4=https://pypi.python.org/packages/source/F/Flask-SQLAlchemy/Flask-SQLAlchemy-$(VERSION4).tar.gz
+VERSION4=2.1
+#URL4=https://pypi.python.org/packages/source/F/Flask-SQLAlchemy/Flask-SQLAlchemy-$(VERSION4).tar.gz
+URL4=https://pypi.python.org/packages/b3/52/227aaf4e8cebb153e239c518a9e916590b2fe0e4350e6b02d92b546b69b7/Flask-SQLAlchemy-2.1.tar.gz
 
 CONTRIB5=python-pymysql
 VERSION5=0.7.1
@@ -32,7 +33,7 @@ ME=Cornelius Kölbel <cornelius@privacyidea.org>
 series=xenial
 
 info:
-	@echo "make ubuntu  - build packages for ubuntu 14.04LTS"
+	@echo "make ubuntu  - build packages for ubuntu $(series)"
 	@echo "make ppa-dev - upload to ppa devel"
 	@echo "make ppa     - upload to ppa"
 	@echo "make clean."
@@ -146,4 +147,7 @@ clean:
 	rm -fr $(CONTRIB3)
 	rm -fr $(CONTRIB4)
 	rm -fr $(CONTRIB5)
+	rm -fr $(CONTRIB6)
+	rm -fr $(CONTRIB7)
+	rm -fr pymysql_sa
 	rm -fr DEBUILD

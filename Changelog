@@ -1,9 +1,22 @@
-Version 2.19.1, 2017-06-29
+Version 2.19.1, 2017-07-02
 
   Enhancements:
 
   * Add "pi-manage policy load" and "pi-manage policy export". (#721)
   * Allow customization via pi.cfg file.
+  * Add {username} and {realm} as tags for the tokenhandler. (#735)
+
+ Fixes:
+
+  * Fix pi-manage file permission for backup
+  * Fix search for resolver in audit log
+  * Allow to read old legacy time from validity period
+  * Fix wrong enddate with lost_token
+  * Fix typos
+  * Improve documentation for yubikey
+  * Improve documentation for cache decorator
+  * Improve documentation for webui policy
+
 
 Version 2.19, 2017-05-25
 

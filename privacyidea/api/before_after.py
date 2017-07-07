@@ -62,6 +62,7 @@ from ..lib.error import (privacyIDEAError,
                          AuthError, UserError,
                          PolicyError)
 from privacyidea.lib.utils import get_client_ip
+from privacyidea.lib.user import User
 
 log = logging.getLogger(__name__)
 
@@ -115,7 +116,7 @@ def before_request():
     except UserError:
         # In cases like the policy API, the parameter "user" is part of the
         # policy and will not resolve to a user object
-        pass
+        request.User = User()
 
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)

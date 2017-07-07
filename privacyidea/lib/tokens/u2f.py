@@ -193,7 +193,7 @@ def sign_challenge(user_priv_key, app_id, client_data, counter,
     This creates a signature for the U2F data.
     Only used in test scenario
 
-    The calculation of the signatrue is described here:
+    The calculation of the signature is described here:
     https://fidoalliance.org/specs/fido-u2f-v1.0-nfc-bt-amendment-20150514/fido-u2f-raw-message-formats.html#authentication-response-message-success
 
     The input_data is a concatenation of:
@@ -326,7 +326,7 @@ def der_decode(signature_bin):
         vs = vs[1:]
     signature_bin_asn = vr + vs
     if len(signature_bin_asn) != 64:
-        raise Exception("The signatrue needs to be 64 bytes.")
+        raise Exception("The signature needs to be 64 bytes.")
     return signature_bin_asn
 
 

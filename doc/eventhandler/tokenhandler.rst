@@ -124,7 +124,8 @@ tokeninfo and the ``value``.
 In the value field you can use the tag ``{current_time}`` to set the current
 timestamp,
 ``{client_ip}`` for the client IP address and ``{ua_browser}`` and
-``{ua_string}`` for information on the user agent.
+``{ua_string}`` for information on the user agent and ``{username}`` and
+``{realm}`` for information on the user in the parameters.
 
 .. note:: Some tokens have token specific attributes that are stored in the
    tokeninfo. The TOTP token type has a ``timeWindow``. The TOTP and the HOTP

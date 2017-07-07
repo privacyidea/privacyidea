@@ -55,6 +55,8 @@ from privacyidea.lib.token import (create_tokenclass_object,
 
 from privacyidea.lib.error import (TokenAdminError, ParameterError,
                                    privacyIDEAError)
+from privacyidea.lib.tokenclass import DATE_FORMAT
+from dateutil.tz import tzlocal
 
 
 class TokenTestCase(MyTestCase):
@@ -640,7 +642,10 @@ class TokenTestCase(MyTestCase):
 
         # call the losttoken
         self.assertRaises(TokenAdminError, lost_token, "doesnotexist")
+        validity = 10
         r = lost_token(serial1)
+        end_date = (datetime.datetime.now(tzlocal())
+                    + datetime.timedelta(days=validity)).strftime(DATE_FORMAT)
         """
         r = {'end_date': '16/12/14 23:59',
              'pin': True, 'valid_to': 'xxxx', 'init': True, 'disable': 1,
@@ -651,6 +656,7 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(r.get("init") == True, r)
         self.assertTrue(r.get("user") == True, r)
         self.assertTrue(r.get("serial") == "lost{0!s}".format(serial1), r)
+        self.assertTrue(r.get("end_date") == end_date, r)
         remove_token("losttoken")
         remove_token("lostlosttoken")
 

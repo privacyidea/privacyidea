@@ -55,7 +55,7 @@ from privacyidea.api.subscriptions import subscriptions_blueprint
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
 from privacyidea.config import config
 from privacyidea.models import db
-from flask.ext.migrate import Migrate
+from flask_migrate import Migrate
 from flask_babel import Babel
 
 

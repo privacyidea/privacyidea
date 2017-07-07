@@ -254,10 +254,18 @@ class TokenEventHandler(BaseEventHandler):
                                                              50)))
                 elif action.lower() == ACTION_TYPE.SET_TOKENINFO:
                     s_now = datetime.datetime.now(tzlocal()).strftime(AUTH_DATE_FORMAT)
+                    try:
+                        username = request.User.loginname
+                        realm = request.User.realm
+                    except Exception:
+                        username = "N/A"
+                        realm = "N/A"
                     add_tokeninfo(serial, handler_options.get("key"),
                                   (handler_options.get("value") or "").format(
                                       current_time=s_now,
                                       client_ip=g.client_ip,
+                                      username=username,
+                                      realm=realm,
                                       ua_browser=request.user_agent.browser,
                                       ua_string=request.user_agent.string))
                 elif action.lower() == ACTION_TYPE.SET_VALIDITY:
