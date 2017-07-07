@@ -1,3 +1,9 @@
+python-privacyidea (2.20~dev0-1trusty) trusty; urgency=low
+
+  * Challenge Response Login #708
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 07 Jul 2017 08:30:00 +0200
+
 python-privacyidea (2.19.1-1trusty) trusty; urgency=low
 
   Enhancements:
