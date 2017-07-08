@@ -812,3 +812,24 @@ class TokenBaseTestCase(MyTestCase):
 
         token_obj.delete_token()
 
+    def test_40_failcounter_exceeded(self):
+        from privacyidea.lib.tokenclass import FAILCOUNTER_EXCEEDED
+        db_token = Token("failcounter", tokentype="spass")
+        db_token.save()
+        token_obj = TokenClass(db_token)
+        for i in range(0, 11):
+            token_obj.inc_failcount()
+        now = datetime.datetime.now(tzlocal()).strftime(DATE_FORMAT)
+        # Now the FAILCOUNTER_EXCEEDED is set
+        ti = token_obj.get_tokeninfo(FAILCOUNTER_EXCEEDED)
+        # We only compare the date
+        self.assertEqual(ti[:10], now[:10])
+        # and the timezone
+        self.assertEqual(ti[-5:], now[-5:])
+        # reset the failcounter
+        token_obj.reset()
+        ti = token_obj.get_tokeninfo(FAILCOUNTER_EXCEEDED)
+        self.assertEqual(ti, None)
+        token_obj.delete_token()
+
+

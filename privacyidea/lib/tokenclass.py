@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2017-07-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Failcount unlock
 #  2017-04-27 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Change dateformat
 #  2016-06-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -105,6 +107,7 @@ DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
 AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
 optional = True
 required = False
+FAILCOUNTER_EXCEEDED = "fail_counter_exceeded"
 
 log = logging.getLogger(__name__)
 
@@ -257,7 +260,7 @@ class TokenClass(object):
         """
         if self.token.failcount:
             # reset the failcounter and write to database
-            self.token.failcount = 0
+            self.set_failcount(0)
             self.token.save()
 
     @check_token_locked
@@ -605,6 +608,8 @@ class TokenClass(object):
         Set the failcounter in the database
         """
         self.token.failcount = failcount
+        if failcount == 0:
+            self.del_tokeninfo(FAILCOUNTER_EXCEEDED)
 
     def get_max_failcount(self):
         return self.token.maxfail
@@ -730,6 +735,10 @@ class TokenClass(object):
     def inc_failcount(self):
         if self.token.failcount < self.token.maxfail:
             self.token.failcount = (self.token.failcount + 1)
+            if self.token.failcount == self.token.maxfail:
+                self.add_tokeninfo(FAILCOUNTER_EXCEEDED,
+                                   datetime.datetime.now(tzlocal()).strftime(
+                                       DATE_FORMAT))
         try:
             self.token.save()
         except:  # pragma: no cover
@@ -1097,7 +1106,7 @@ class TokenClass(object):
 
         if (reset_counter and self.token.active and self.token.failcount <
             self.token.maxfail):
-            self.token.failcount = 0
+            self.set_failcount(0)
 
         # make DB persistent immediately, to avoid the re-usage of the counter
         self.token.save()
