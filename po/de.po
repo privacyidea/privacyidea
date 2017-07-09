@@ -210,15 +210,15 @@ msgstr "Audit"
 msgid "Authentication Server URI"
 msgstr "URI des Authentisierungsservers"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:223
+#: privacyidea/static/components/login/controllers/loginControllers.js:239
 msgid "Authentication failed."
 msgstr "Authentisierung fehlgeschlagen."
 
-#: privacyidea/static/components/config/views/config.system.html:120
+#: privacyidea/static/components/config/views/config.system.html:131
 msgid "Auto resync timeout"
 msgstr "Zeitüberschreitung der automatischen Resynchronisation"
 
-#: privacyidea/static/components/config/views/config.system.html:116
+#: privacyidea/static/components/config/views/config.system.html:127
 msgid "Automatic resync during authentication"
 msgstr "Automatische Resynchronisation während der Authentifizierung"
 
@@ -336,10 +336,14 @@ msgstr "Zertifikate: x509 Zertifikate ausrollen."
 msgid "Certificates Templates file"
 msgstr "Datei mit Zertifikatstemplates"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:195
+#: privacyidea/static/components/login/controllers/loginControllers.js:194
 msgid ""
 "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr "Challenge-Response Anmeldung. Sie sind noch nicht fertig angemeldet."
+
+#: privacyidea/static/components/login/controllers/loginControllers.js:222
+msgid "Challenge Response Authentication. Your response was not valid!"
+msgstr "Challenge-Response Anmeldung. Ihre Antwort war ungültig!"
 
 #: privacyidea/static/components/login/views/pinchange.html:23
 #: privacyidea/static/components/login/views/pinchange.html:4
@@ -370,6 +374,12 @@ msgstr "OTP PIN und OTP Wert prüfen."
 #: privacyidea/static/components/config/views/config.realms.html:9
 msgid "Clear default realm"
 msgstr "Standard-Realm zurücksetzen"
+
+#: privacyidea/static/components/config/views/config.system.html:79
+msgid ""
+"Clear failcounter\n"
+"                after minutes"
+msgstr "Lösche den Fehlerzähler nach Minuten"
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:13
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:12
@@ -468,7 +478,7 @@ msgstr "Zähler"
 msgid "Count Window"
 msgstr "Zählerfenster"
 
-#: privacyidea/static/components/config/views/config.system.html:195
+#: privacyidea/static/components/config/views/config.system.html:206
 msgid ""
 "Count Window of\n"
 "                    newly enrolled tokens"
@@ -837,7 +847,7 @@ msgstr "Token ausrollen"
 msgid "Enroll a new token"
 msgstr "Neuen Token ausrollen "
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:70
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:73
 msgid "Enter OTP + PIN to check the token."
 msgstr "OTP und PIN eingeben, um den Token zu prüfen."
 
@@ -850,7 +860,7 @@ msgstr "OTP Schlüssel eingeben..."
 msgid "Enter PIN again"
 msgstr "PIN wiederholen"
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:64
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:67
 msgid "Enter PIN and OTP to check the token."
 msgstr "PIN und OTP eingeben, um den Token zu prüfen."
 
@@ -1206,13 +1216,13 @@ msgstr "Token importieren"
 msgid "Import tokens from a file"
 msgstr "Tokendatei importieren"
 
-#: privacyidea/static/components/config/views/config.system.html:106
+#: privacyidea/static/components/config/views/config.system.html:117
 msgid "Include SAML attributes even if the user failed to authenticate."
 msgstr ""
 "SAML Attribute einbinden, auch wenn die Authentisierungsanfrage "
 "fehlgeschlagen ist."
 
-#: privacyidea/static/components/config/views/config.system.html:93
+#: privacyidea/static/components/config/views/config.system.html:104
 msgid ""
 "Include SAML attributes in the\n"
 "                authentication response."
@@ -1378,7 +1388,7 @@ msgstr "Zuordnung"
 msgid "Mark the token to be lost"
 msgstr "Den Token als verloren markieren"
 
-#: privacyidea/static/components/config/views/config.system.html:208
+#: privacyidea/static/components/config/views/config.system.html:219
 msgid ""
 "Max Failcount of\n"
 "                    newly enrolled tokens"
@@ -1532,7 +1542,7 @@ msgstr "OTP-Wert"
 msgid "OTP length"
 msgstr "OTP-Länge "
 
-#: privacyidea/static/components/config/views/config.system.html:181
+#: privacyidea/static/components/config/views/config.system.html:192
 msgid ""
 "OTP length of\n"
 "                    newly enrolled tokens"
@@ -1598,7 +1608,7 @@ msgstr "Allgemeine Tokennutzung"
 msgid "Overlap Period"
 msgstr "Überlappungsdauer"
 
-#: privacyidea/static/components/config/views/config.system.html:146
+#: privacyidea/static/components/config/views/config.system.html:157
 msgid "Override Authorization Clients"
 msgstr "Überschreibe den authorisierenden Client"
 
@@ -1616,7 +1626,7 @@ msgstr "PAPER: OTP-Liste auf einem Stück Papier"
 msgid "PIN"
 msgstr "PIN"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:385
+#: privacyidea/static/components/login/controllers/loginControllers.js:402
 msgid "PIN changed successfully."
 msgstr "PIN erfolgreich geändert."
 
@@ -1702,7 +1712,7 @@ msgstr "Port"
 msgid "Pre Shared Key"
 msgstr "Preshared Key"
 
-#: privacyidea/static/components/config/views/config.system.html:83
+#: privacyidea/static/components/config/views/config.system.html:94
 msgid ""
 "Prepend the PIN in front of the OTP value\n"
 "                . Otherwise it will be post pended."
@@ -1811,7 +1821,7 @@ msgstr ""
 msgid "Realm"
 msgstr "Realm "
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:356
+#: privacyidea/static/components/login/controllers/loginControllers.js:373
 msgid "Realm defrealm created."
 msgstr "Der Realm defrealm wurde erzeugt."
 
@@ -1988,7 +1998,7 @@ msgstr "SMTP-Konfiguration erfolgreich gespeichert."
 msgid "SMTP server configuration"
 msgstr "SMTP-Server Konfiguration"
 
-#: privacyidea/static/components/config/views/config.system.html:164
+#: privacyidea/static/components/config/views/config.system.html:175
 msgid "SMTP server for password recovery"
 msgstr "SMTP-Server für die Passwort-Wiederherstellung"
 
@@ -2043,7 +2053,7 @@ msgstr "SMS-Gateway speichern"
 msgid "Save SMTP server"
 msgstr "SMTP-Server speichern"
 
-#: privacyidea/static/components/config/views/config.system.html:274
+#: privacyidea/static/components/config/views/config.system.html:285
 msgid "Save System Config"
 msgstr "Systemkonfiguration speichern"
 
@@ -2091,7 +2101,7 @@ msgstr "Secret"
 msgid "Select Realm"
 msgstr "Realm auswählen"
 
-#: privacyidea/static/components/config/views/config.system.html:173
+#: privacyidea/static/components/config/views/config.system.html:184
 msgid ""
 "Select a predefined\n"
 "                    <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
@@ -2247,7 +2257,7 @@ msgstr "Subskription ausgestellt für"
 msgid "Subscriptions"
 msgstr "Subskriptionen"
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:232
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:239
 msgid "Successfully authenticated."
 msgstr "Erfolgreich authentisiert."
 
@@ -2266,7 +2276,7 @@ msgstr "Nachname"
 msgid "Sync Window"
 msgstr "Sync-Fenster"
 
-#: privacyidea/static/components/config/views/config.system.html:220
+#: privacyidea/static/components/config/views/config.system.html:231
 msgid ""
 "Sync Window of\n"
 "                    newly enrolled tokens"
@@ -2696,7 +2706,7 @@ msgstr ""
 msgid "The certificate was enrolled successfully."
 msgstr "Das Zertifikat wurde erfolgreich ausgestellt."
 
-#: privacyidea/static/components/config/views/config.system.html:233
+#: privacyidea/static/components/config/views/config.system.html:244
 msgid "The challenge validity time"
 msgstr "Die Gültigkeitszeit der Challenge"
 
@@ -3010,7 +3020,7 @@ msgstr ""
 "nach erfolgreichen und fehlgeschlagenen Authentisierungsanfragen "
 "unterschieden."
 
-#: privacyidea/static/components/config/views/config.system.html:156
+#: privacyidea/static/components/config/views/config.system.html:167
 msgid ""
 "These client IP addresses or subnets are\n"
 "                    allowed to masquerade as another client."
@@ -3259,11 +3269,11 @@ msgid ""
 "                                wizard"
 msgstr "Assistent zum Ausrollen von Token"
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:212
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:219
 msgid "Token resync failed."
 msgstr "Token Resync fehlgeschlagen."
 
-#: privacyidea/static/components/token/controllers/tokenDetailController.js:209
+#: privacyidea/static/components/token/controllers/tokenDetailController.js:216
 msgid "Token resync successful."
 msgstr "Token wurde erfolgreich resynchronisiert."
 
@@ -3373,7 +3383,7 @@ msgstr "TLS verwenden"
 msgid "User"
 msgstr "Benutzer "
 
-#: privacyidea/static/components/config/views/config.system.html:133
+#: privacyidea/static/components/config/views/config.system.html:144
 msgid ""
 "User Cache\n"
 "                expiration in seconds"
@@ -3565,7 +3575,7 @@ msgstr ""
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr "Sie werden nach {{ myCountdown }} Sekunden abgemeldet."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:265
+#: privacyidea/static/components/login/controllers/loginControllers.js:282
 msgid "Your OTP pin expires on"
 msgstr "Ihre OTP PIN läuft ab: "
 
