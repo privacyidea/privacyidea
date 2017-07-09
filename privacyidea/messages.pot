@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-05-26 08:11+0200\n"
+"POT-Creation-Date: 2017-07-09 13:26+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -589,25 +589,25 @@ msgstr ""
 msgid "The RADIUS secret is too long"
 msgstr ""
 
-#: lib/token.py:2157
+#: lib/token.py:2177
 #, python-format
 msgid "Admin is allowed to initalize %s tokens."
 msgstr ""
 
-#: lib/token.py:2166
+#: lib/token.py:2186
 #, python-format
 msgid "The user is allowed to enroll a %s token."
 msgstr ""
 
-#: lib/token.py:2197
+#: lib/token.py:2217
 msgid "Set the maximum allowed PIN length of the {0!s} token."
 msgstr ""
 
-#: lib/token.py:2204
+#: lib/token.py:2224
 msgid "Set the minimum required PIN length of the {0!s} token."
 msgstr ""
 
-#: lib/token.py:2210
+#: lib/token.py:2230
 msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
@@ -714,60 +714,64 @@ msgid ""
 "parameter like '--logged_in_role <role>'."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:103
+#: lib/eventhandler/tokenhandler.py:105
 msgid "set a new realm of the token"
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:107
+#: lib/eventhandler/tokenhandler.py:109
 msgid ""
 "The new realm will be the only realm of the token. I.e. all other realms "
 "will be removed from this token. Otherwise the realm will be added to the"
 " token."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:122
+#: lib/eventhandler/tokenhandler.py:124
 msgid "Token type to create"
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:127
+#: lib/eventhandler/tokenhandler.py:129
 msgid "Assign token to user in request or to tokenowner."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:132
+#: lib/eventhandler/tokenhandler.py:134
 msgid "Set the realm of the newly created token."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:139
+#: lib/eventhandler/tokenhandler.py:141
 msgid ""
 "Set the MOTP PIN of the MOTP token during enrollment. This is a required "
 "value for enrolling MOTP tokens."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:148
+#: lib/eventhandler/tokenhandler.py:150
 msgid "The new description of the token."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:155
+#: lib/eventhandler/tokenhandler.py:157
 msgid ""
 "The token will be valid starting at the given date. Can be a fixed date "
 "or an offset like +10m, +24h, +7d."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:162
+#: lib/eventhandler/tokenhandler.py:164
 msgid ""
 "The token will be valid until the given date. Can be a fixed date or an "
 "offset like +10m, +24h, +7d."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:175
+#: lib/eventhandler/tokenhandler.py:177
 msgid "Set the new count window of the token."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:184
+#: lib/eventhandler/tokenhandler.py:187
+msgid "Set the failcounter of the token."
+msgstr ""
+
+#: lib/eventhandler/tokenhandler.py:196
 msgid "Set this tokeninfo key."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:189
+#: lib/eventhandler/tokenhandler.py:201
 msgid "Set the above key the this value."
 msgstr ""
 
@@ -809,14 +813,14 @@ msgstr ""
 msgid "Your LDAP config seems to be OK, %i machine objects found."
 msgstr ""
 
-#: lib/resolvers/LDAPIdResolver.py:810
+#: lib/resolvers/LDAPIdResolver.py:808
 #, python-format
 msgid ""
 "Your LDAP config found %i user objects, but only %i with the specified "
 "uidtype"
 msgstr ""
 
-#: lib/resolvers/LDAPIdResolver.py:812
+#: lib/resolvers/LDAPIdResolver.py:810
 #, python-format
 msgid "Your LDAP config seems to be OK, %i user objects found."
 msgstr ""

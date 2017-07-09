@@ -38,7 +38,8 @@ from privacyidea.lib.token import (get_token_types, set_validity_period_end,
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.token import (set_realms, remove_token, enable_token,
                                    unassign_token, init_token, set_description,
-                                   set_count_window, add_tokeninfo)
+                                   set_count_window, add_tokeninfo,
+                                   set_failcounter)
 from privacyidea.lib.utils import parse_date, is_true
 from privacyidea.lib.tokenclass import DATE_FORMAT, AUTH_DATE_FORMAT
 from privacyidea.lib import _
@@ -65,6 +66,7 @@ class ACTION_TYPE(object):
     SET_VALIDITY = "set validity"
     SET_COUNTWINDOW = "set countwindow"
     SET_TOKENINFO = "set tokeninfo"
+    SET_FAILCOUNTER = "set failcounter"
 
 
 class VALIDITY(object):
@@ -176,6 +178,16 @@ class TokenEventHandler(BaseEventHandler):
                                                  "the token.")
                             }
                        },
+                   ACTION_TYPE.SET_FAILCOUNTER:
+                       {
+                           "fail counter":
+                               {
+                                   "type": "str",
+                                   "required": True,
+                                   "description": _("Set the failcounter of "
+                                                    "the token.")
+                               }
+                       },
                    ACTION_TYPE.SET_TOKENINFO:
                        {"key":
                            {
@@ -221,7 +233,8 @@ class TokenEventHandler(BaseEventHandler):
                               ACTION_TYPE.ENABLE, ACTION_TYPE.UNASSIGN,
                               ACTION_TYPE.SET_VALIDITY,
                               ACTION_TYPE.SET_COUNTWINDOW,
-                              ACTION_TYPE.SET_TOKENINFO]:
+                              ACTION_TYPE.SET_TOKENINFO,
+                              ACTION_TYPE.SET_FAILCOUNTER]:
             if serial:
                 log.info("{0!s} for token {1!s}".format(action, serial))
                 if action.lower() == ACTION_TYPE.SET_TOKENREALM:
@@ -279,7 +292,13 @@ class TokenEventHandler(BaseEventHandler):
                         d = parse_date(end_date)
                         set_validity_period_end(serial, None,
                                                 d.strftime(DATE_FORMAT))
-
+                elif action.lower() == ACTION_TYPE.SET_FAILCOUNTER:
+                    try:
+                        set_failcounter(serial,
+                                        int(handler_options.get("fail counter")))
+                    except Exception as exx:
+                        log.warning("Misconfiguration: Failed to set fail "
+                                    "counter!")
             else:
                 log.info("Action {0!s} requires serial number. But no serial "
                          "number could be found in request.")

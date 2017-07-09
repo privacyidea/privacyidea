@@ -135,6 +135,13 @@ timestamp,
 .. note:: You can use this to set the ``timeWindow`` of a TOTP token for
    :ref:`faq_initial_synchronization`.
 
+set failcounter
+...............
+
+Using the action ``set failcounter`` you can reset the fail counter by
+setting it to 0 or also "block" the token by setting the fail counter to what
+ ever value the "max_fail" is, e.g. 10. Only integer values are allowed.
+
 Code
 ~~~~
 

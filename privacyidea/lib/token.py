@@ -1576,6 +1576,26 @@ def set_description(serial, description, user=None):
 
 @log_with(log)
 @check_user_or_serial
+def set_failcounter(serial, counter, user=None):
+    """
+    Set the fail counter of a  token.
+    
+    :param serial: The serial number of the token
+    :param counter: THe counter to which the fail counter should be set
+    :param user: An optional user
+    :return: Number of tokens, where the fail counter was set.
+    """
+    tokenobject_list = get_tokens(serial=serial, user=user)
+
+    for tokenobject in tokenobject_list:
+        tokenobject.set_failcount(counter)
+        tokenobject.save()
+
+    return len(tokenobject_list)
+
+
+@log_with(log)
+@check_user_or_serial
 def set_max_failcount(serial, maxfail, user=None):
     """
     Set the maximum fail counts of tokens. This is the maximum number a
