@@ -107,7 +107,8 @@ DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
 AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
 optional = True
 required = False
-FAILCOUNTER_EXCEEDED = "fail_counter_exceeded"
+FAILCOUNTER_EXCEEDED = "failcounter_exceeded"
+FAILCOUNTER_CLEAR_TIMEOUT = "failcounter_clear_timeout"
 
 log = logging.getLogger(__name__)
 
@@ -1003,6 +1004,20 @@ class TokenClass(object):
         failcounter is less than maxfail
         :return: True or False
         """
+        timeout = 0
+        try:
+            timeout = int(get_from_config(FAILCOUNTER_CLEAR_TIMEOUT, 0))
+        except Exception as exx:
+            log.warning("Misconfiguration. Error retrieving "
+                        "failcounter_clear_timeout: "
+                        "{0!s}".format(exx))
+        if timeout:
+            now = datetime.datetime.now(tzlocal())
+            failcounter_exceeded = parse_legacy_time(self.get_tokeninfo(
+                FAILCOUNTER_EXCEEDED), return_date=True)
+            if now > failcounter_exceeded + datetime.timedelta(minutes=timeout):
+                self.reset()
+
         return self.token.failcount < self.token.maxfail
 
     def check_auth_counter(self):

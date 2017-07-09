@@ -11,6 +11,8 @@ from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT)
+from privacyidea.lib.config import (set_privacyidea_config,
+                                    delete_privacyidea_config)
 from privacyidea.models import (Token,
                                 Config,
                                 Challenge)
@@ -813,7 +815,8 @@ class TokenBaseTestCase(MyTestCase):
         token_obj.delete_token()
 
     def test_40_failcounter_exceeded(self):
-        from privacyidea.lib.tokenclass import FAILCOUNTER_EXCEEDED
+        from privacyidea.lib.tokenclass import (FAILCOUNTER_EXCEEDED,
+                                                FAILCOUNTER_CLEAR_TIMEOUT)
         db_token = Token("failcounter", tokentype="spass")
         db_token.save()
         token_obj = TokenClass(db_token)
@@ -830,6 +833,29 @@ class TokenBaseTestCase(MyTestCase):
         token_obj.reset()
         ti = token_obj.get_tokeninfo(FAILCOUNTER_EXCEEDED)
         self.assertEqual(ti, None)
+
+        # Now check with failcounter clear, with timeout 5 minutes
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 5)
+        token_obj.set_failcount(10)
+        failed_recently = (datetime.datetime.now(tzlocal()) -
+                           datetime.timedelta(minutes=3)).strftime(DATE_FORMAT)
+        token_obj.add_tokeninfo(FAILCOUNTER_EXCEEDED, failed_recently)
+
+        r = token_obj.check_failcount()
+        # the fail is only 3 minutes ago, so we will not reset and check will
+        #  be false
+        self.assertFalse(r)
+
+        # Set the timeout to a shorter value
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 2)
+        r = token_obj.check_failcount()
+        # The fail is longer ago.
+        self.assertTrue(r)
+
+        # The tokeninfo of this token is deleted and the failcounter is 0
+        self.assertEqual(token_obj.get_tokeninfo(FAILCOUNTER_EXCEEDED), None)
+        self.assertEqual(token_obj.get_failcount(), 0)
+
         token_obj.delete_token()
 
 
