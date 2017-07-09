@@ -614,6 +614,38 @@ def compare_condition(condition, value):
         return value < compare_value
 
 
+def compare_value_value(value1, comparator, value2):
+    """
+    This function compares value1 and value2 with the comparator.
+    The comparator may be "==", ">" or "<".
+    
+    If the values can be converted to integers, they are compared as integers 
+    otherwise as strings.
+    
+    :param value1: First value 
+    :param value2: Seconf value
+    :param comparator: The comparator
+    :return: True or False
+    """
+    try:
+        int1 = int(value1)
+        int2 = int(value2)
+        # We only converts BOTH values if possible
+        value1 = int1
+        value2 = int2
+    except Exception:
+        log.debug("can not compare values as integers.")
+
+    if comparator == "==":
+        return value1 == value2
+    elif comparator == ">":
+        return value1 > value2
+    elif comparator == "<":
+        return value1 < value2
+
+    raise Exception("Unknown comparator: {0!s}".format(comparator))
+
+
 def int_to_hex(serial):
     """
     Converts a string with an integer to a hexstring.

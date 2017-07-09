@@ -238,6 +238,74 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
         remove_token(serial)
 
+    def test_04_tokeninfo_condition(self):
+        self.setUp_user_realms()
+        serial = "pw01"
+        user = User("cornelius", "realm1")
+        remove_token(user=user)
+        tok = init_token({"serial": serial,
+                          "type": "pw", "otppin": "test",
+                          "otpkey": "secret"},
+                         user=user)
+        self.assertEqual(tok.type, "pw")
+        uhandler = BaseEventHandler()
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "secret"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        # This is a kind of authentication request
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "secret"}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        tok.add_tokeninfo("myValue", "99")
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.TOKENINFO:
+                                                "myValue<100"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertEqual(r, True)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.TOKENINFO:
+                                                "myValue<98"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertEqual(r, False)
+
+        tok.add_tokeninfo("myValue", "Hallo")
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.TOKENINFO:
+                                                "myValue== Hallo"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertEqual(r, True)
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.TOKENINFO:
+                                                "myValue==hallo"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertEqual(r, False)
+
+
+        remove_token(serial)
+
 
 class ScriptEventTestCase(MyTestCase):
 

@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-07-09 13:26+0200\n"
-"PO-Revision-Date: 2017-07-09 13:26+0200\n"
+"POT-Creation-Date: 2017-07-09 21:17+0200\n"
+"PO-Revision-Date: 2017-07-09 21:18+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language: de\n"
 "Language-Team: de <LL@li.org>\n"
@@ -713,35 +713,35 @@ msgstr ""
 "Definiere den notwendigen Inhalte der OTP PIN für den {0!s} Token. (c) "
 "Buchstaben, (n) Ziffern, (s) Sonderzeichen, (o) Andere [+/-]!"
 
-#: lib/eventhandler/base.py:102
+#: lib/eventhandler/base.py:103
 msgid "The user realm, for which this event should apply."
 msgstr "Benutzer-Realm, für den das Event greifen soll."
 
-#: lib/eventhandler/base.py:107
+#: lib/eventhandler/base.py:108
 msgid "The token realm, for which this event should apply."
 msgstr "Token-Ream, für den das Event greifen soll."
 
-#: lib/eventhandler/base.py:113
+#: lib/eventhandler/base.py:114
 msgid "The type of the token."
 msgstr "Der Tokentyp."
 
-#: lib/eventhandler/base.py:118
+#: lib/eventhandler/base.py:119
 msgid "The logged in user is of the following type."
 msgstr "Der angemeldete Benutzer ist vom Typ"
 
-#: lib/eventhandler/base.py:123
+#: lib/eventhandler/base.py:124
 msgid "The result.value within the response is True or False."
 msgstr "Das result.value in der Server-Antwort ist 'True' oder 'False'."
 
-#: lib/eventhandler/base.py:129
+#: lib/eventhandler/base.py:130
 msgid "Check if the max failcounter of the token is reached."
 msgstr "Der maximale Fehlerzähler des Tokens wurde erreicht."
 
-#: lib/eventhandler/base.py:135
+#: lib/eventhandler/base.py:136
 msgid "The token has a user assigned."
 msgstr "Der Token ist einem Benutzer zugewiesen."
 
-#: lib/eventhandler/base.py:140
+#: lib/eventhandler/base.py:141
 msgid ""
 "The token has a user assigned, but the user does not exist in the userstore "
 "anymore."
@@ -749,26 +749,26 @@ msgstr ""
 "Dem Token ist ein Benutzer zugewiesen, aber dieser Benutzer existiert nicht mehr "
 "in der Benutzerquelle."
 
-#: lib/eventhandler/base.py:146
+#: lib/eventhandler/base.py:147
 msgid "Check if the token is within its validity period."
 msgstr "Überprüfe, ob der Token innerhalb des Gültigkeitszeitraums liegt."
 
-#: lib/eventhandler/base.py:151
+#: lib/eventhandler/base.py:152
 msgid "Action is triggered, if the serial matches this regular expression."
 msgstr ""
 "Die Aktion wird ausgeführt, wenn die Seriennummer auf den regulären Ausdruck "
 "passt."
 
-#: lib/eventhandler/base.py:156
+#: lib/eventhandler/base.py:157
 msgid "Action is triggered, if the user has this number of tokens assigned."
 msgstr ""
 "Die Aktion wird ausgeführt, wenn der Benutzer diese Anzahl an Tokens besitzt."
 
-#: lib/eventhandler/base.py:161
+#: lib/eventhandler/base.py:162
 msgid "Action is triggered, if the counter of the token equals this setting."
 msgstr "Die Aktion wird ausgeführt, wenn der Token-Counter diesem Wert entspricht."
 
-#: lib/eventhandler/base.py:166
+#: lib/eventhandler/base.py:167
 msgid ""
 "Action is triggered, if the last authentication of the token is older than 7h, "
 "10d or 1y."
@@ -776,7 +776,7 @@ msgstr ""
 "Die Aktion wird ausgeführt, wenn die letzte Authentisierung mit diesem Token "
 "länger als 7 Stunden, 10 Tage oder 1 Jahr (7h, 10d, 1y) zurückliegt."
 
-#: lib/eventhandler/base.py:171
+#: lib/eventhandler/base.py:172
 msgid ""
 "This can be '>100', '<99', or '=100', to trigger the action, if the tokeninfo "
 "field 'count_auth' is bigger than 100, less than 99 or exactly 100."
@@ -784,7 +784,7 @@ msgstr ""
 "Dies kann '>100', '<99' oder '=100' sein, um eine Aktion auszulösen. Das Feld "
 "'count_auth' in Tokeninfo ist dann größer als 100, kleiner als 99 oder exakt 100."
 
-#: lib/eventhandler/base.py:177
+#: lib/eventhandler/base.py:178
 msgid ""
 "This can be '>100', '<99', or '=100', to trigger the action, if the tokeninfo "
 "field 'count_auth_success' is bigger than 100, less than 99 or exactly 100."
@@ -793,7 +793,7 @@ msgstr ""
 "'count_auth_success' in Tokeninfo ist dann größer als 100, kleiner als 99 oder "
 "exakt 100."
 
-#: lib/eventhandler/base.py:184
+#: lib/eventhandler/base.py:185
 msgid ""
 "This can be '>100', '<99', or '=100', to trigger the action, if the difference "
 "between the tokeninfo field 'count_auth' and 'count_auth_success is bigger than "
@@ -802,6 +802,16 @@ msgstr ""
 "Dies kann '>100', '<99' oder '=100' sein, um eine Aktion auszulösen. Das Feld "
 "'count_auth' und 'count_auth_success' in Tokeninfo ist dann größer als 100, "
 "kleiner als 99 oder exakt 100."
+
+#: lib/eventhandler/base.py:192
+msgid ""
+"This condition can check any arbitrary tokeninfo field. You need to enter "
+"something like '<fieldname> == <fieldvalue>', '<fieldname> > <fieldvalue>' or "
+"'<fieldname> < <fieldvalue>'"
+msgstr ""
+"Diese Bedingung kann jedes beliebige Tokeninfo Feld überprüfen. Hier können Sie "
+"Ausdrücke wie '<Feldname> == <Feldwert>', '<Feldname> > <Feldwert>' oder "
+"'<Feldname> < <Feldwert>' eingeben."
 
 #: lib/eventhandler/scripthandler.py:77
 msgid "Add '--serial <serial number>' as script parameter."

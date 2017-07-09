@@ -176,6 +176,21 @@ This can be used to e.g. automatically enroll a token for the user if the
 user has no tokens left (token_number == 0) of to notify the administrator if
 the user has to many tokens assigned.
 
+**tokeninfo**
+
+The tokeninfo condition can compare any arbitrary tokeninfo field against a
+fixed value. You can compare strings and integers. Integers are converted
+automatically. Valid compares are:
+
+    myValue == 1000
+    myValue > 1000
+    myValue < 99
+    myTokenInfoField == EnrollmentState
+    myTokenInfoField < ABC
+    myTokenInfoField > abc
+
+"myValue" and "myTokenInfoField" being any possible tokeninfo fields.
+
 
 Available Handler Modules
 -------------------------

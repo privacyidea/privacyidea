@@ -34,7 +34,7 @@ from privacyidea.lib.auth import ROLE
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import get_token_owner, get_tokens
 from privacyidea.lib.user import User, UserError
-from privacyidea.lib.utils import compare_condition
+from privacyidea.lib.utils import compare_condition, compare_value_value
 import re
 import json
 import logging
@@ -56,6 +56,7 @@ class CONDITION(object):
     COUNT_AUTH = "count_auth"
     COUNT_AUTH_SUCCESS = "count_auth_success"
     COUNT_AUTH_FAIL = "count_auth_fail"
+    TOKENINFO = "tokeninfo"
 
 
 class BaseEventHandler(object):
@@ -185,6 +186,13 @@ class BaseEventHandler(object):
                           "the action, if the difference between the tokeninfo "
                           "field 'count_auth' and 'count_auth_success is "
                           "bigger than 100, less than 99 or exactly 100.")
+            },
+            CONDITION.TOKENINFO: {
+                "type": "str",
+                "desc": _("This condition can check any arbitrary tokeninfo "
+                          "field. You need to enter something like "
+                          "'<fieldname> == <fieldvalue>', '<fieldname> > "
+                          "<fieldvalue>' or '<fieldname> < <fieldvalue>'")
             }
         }
         return cond
@@ -372,6 +380,25 @@ class BaseEventHandler(object):
                 c_fail = count - c_success
                 cond = conditions.get(CONDITION.COUNT_AUTH_FAIL)
                 res = compare_condition(cond, c_fail)
+            if CONDITION.TOKENINFO in conditions and res:
+                cond = conditions.get(CONDITION.TOKENINFO)
+                if len(cond.split("==")) == 2:
+                    key, value = [x.strip() for x in cond.split("==")]
+                    res = compare_value_value(token_obj.get_tokeninfo(key),
+                                              "==", value)
+                elif len(cond.split(">")) == 2:
+                    key, value = [x.strip() for x in cond.split(">")]
+                    res = compare_value_value(token_obj.get_tokeninfo(key),
+                                              ">", value)
+                elif len(cond.split("<")) == 2:
+                    key, value = [x.strip() for x in cond.split("<")]
+                    res = compare_value_value(token_obj.get_tokeninfo(key),
+                                              "<", value)
+                else:
+                    # There is a condition, but we do not know it!
+                    log.warning("Misconfiguration in your tokeninfo "
+                                "condition: {0!s}".format(cond))
+                    res = False
 
         return res
 

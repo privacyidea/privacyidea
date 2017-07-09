@@ -8,7 +8,7 @@ from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
                                    check_proxy, reduce_realms, is_true,
                                    parse_date, compare_condition,
                                    get_data_from_params, parse_legacy_time,
-                                   int_to_hex)
+                                   int_to_hex, compare_value_value)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset
@@ -303,4 +303,9 @@ class UtilsTestCase(MyTestCase):
         h = int_to_hex(65536)
         self.assertEqual(h, "010000")
 
+    def test_12_compare_value_value(self):
+        self.assertTrue(compare_value_value("1000", ">", "999"))
+        self.assertTrue(compare_value_value("ABD", ">", "ABC"))
+        self.assertTrue(compare_value_value(1000, "==", "1000"))
+        self.assertTrue(compare_value_value("99", "<", "1000"))
 

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-07-09 13:26+0200\n"
+"POT-Creation-Date: 2017-07-09 21:17+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -613,81 +613,88 @@ msgid ""
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
 msgstr ""
 
-#: lib/eventhandler/base.py:102
+#: lib/eventhandler/base.py:103
 msgid "The user realm, for which this event should apply."
 msgstr ""
 
-#: lib/eventhandler/base.py:107
+#: lib/eventhandler/base.py:108
 msgid "The token realm, for which this event should apply."
 msgstr ""
 
-#: lib/eventhandler/base.py:113
+#: lib/eventhandler/base.py:114
 msgid "The type of the token."
 msgstr ""
 
-#: lib/eventhandler/base.py:118
+#: lib/eventhandler/base.py:119
 msgid "The logged in user is of the following type."
 msgstr ""
 
-#: lib/eventhandler/base.py:123
+#: lib/eventhandler/base.py:124
 msgid "The result.value within the response is True or False."
 msgstr ""
 
-#: lib/eventhandler/base.py:129
+#: lib/eventhandler/base.py:130
 msgid "Check if the max failcounter of the token is reached."
 msgstr ""
 
-#: lib/eventhandler/base.py:135
+#: lib/eventhandler/base.py:136
 msgid "The token has a user assigned."
 msgstr ""
 
-#: lib/eventhandler/base.py:140
+#: lib/eventhandler/base.py:141
 msgid ""
 "The token has a user assigned, but the user does not exist in the "
 "userstore anymore."
 msgstr ""
 
-#: lib/eventhandler/base.py:146
+#: lib/eventhandler/base.py:147
 msgid "Check if the token is within its validity period."
 msgstr ""
 
-#: lib/eventhandler/base.py:151
+#: lib/eventhandler/base.py:152
 msgid "Action is triggered, if the serial matches this regular expression."
 msgstr ""
 
-#: lib/eventhandler/base.py:156
+#: lib/eventhandler/base.py:157
 msgid "Action is triggered, if the user has this number of tokens assigned."
 msgstr ""
 
-#: lib/eventhandler/base.py:161
+#: lib/eventhandler/base.py:162
 msgid "Action is triggered, if the counter of the token equals this setting."
 msgstr ""
 
-#: lib/eventhandler/base.py:166
+#: lib/eventhandler/base.py:167
 msgid ""
 "Action is triggered, if the last authentication of the token is older "
 "than 7h, 10d or 1y."
 msgstr ""
 
-#: lib/eventhandler/base.py:171
+#: lib/eventhandler/base.py:172
 msgid ""
 "This can be '>100', '<99', or '=100', to trigger the action, if the "
 "tokeninfo field 'count_auth' is bigger than 100, less than 99 or exactly "
 "100."
 msgstr ""
 
-#: lib/eventhandler/base.py:177
+#: lib/eventhandler/base.py:178
 msgid ""
 "This can be '>100', '<99', or '=100', to trigger the action, if the "
 "tokeninfo field 'count_auth_success' is bigger than 100, less than 99 or "
 "exactly 100."
 msgstr ""
 
-#: lib/eventhandler/base.py:184
+#: lib/eventhandler/base.py:185
 msgid ""
 "This can be '>100', '<99', or '=100', to trigger the action, if the "
 "difference between the tokeninfo field 'count_auth' and "
 "'count_auth_success is bigger than 100, less than 99 or exactly 100."
+msgstr ""
+
+#: lib/eventhandler/base.py:192
+msgid ""
+"This condition can check any arbitrary tokeninfo field. You need to enter"
+" something like '<fieldname> == <fieldvalue>', '<fieldname> > "
+"<fieldvalue>' or '<fieldname> < <fieldvalue>'"
 msgstr ""
 
 #: lib/eventhandler/scripthandler.py:77
