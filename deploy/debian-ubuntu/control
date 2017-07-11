@@ -98,7 +98,7 @@ Description: 2FA system. This is a meta package to install privacyidea with ngin
 Package: privacyidea-apache2
 Architecture: all
 Depends: ${misc:Depends}, python-privacyidea, python-mysqldb, apache2,
- mysql-server|mariadb-server, mysql-client|mariadb-client, libapache2-mod-wsgi
+ mysql-server|mariadb-server, mysql-client|mariadb-client, libapache2-mod-wsgi, rng-tools
 Conflicts: nginx, nginx-full, privacyidea-nginx
 Description: 2FA system. This is a meta package to install privacyidea with apache2
  privacyIDEA: identity, multifactor authentication, authorization.
