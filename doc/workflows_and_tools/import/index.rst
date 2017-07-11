@@ -20,15 +20,15 @@ GPG Encryption
 Starting with privacyIDEA 2.14 you can import GPG encrypted seed files.
 All files mentioned below can be encrypted this way.
 
-privacyIDEA needs its own GPG key. You may create one like this:
+privacyIDEA needs its own GPG key. You may create one like this::
 
-   mkdir /etc/privacyidea/gpg
-   GNUPGHOME=/etc/privacyidea/gpg gpg --gen-key
+    mkdir /etc/privacyidea/gpg
+    GNUPGHOME=/etc/privacyidea/gpg gpg --gen-key
 
 Then make sure, that the directory /etc/privacyidea/gpg is *chown 700* for
 the user *privacyidea*.
 
-Now you can export the public key and hand it to your token vendor.
+Now you can export the public key and hand it to your token vendor::
 
    GNUPGHOME=/etc/privacyidea/gpg gpg -a --export <keyid>
 
@@ -40,7 +40,8 @@ import the GPG encrypted file to privacyIDEA!
    above mentioned *GNUPGHOME* directory.
 
 .. note:: privacyIDEA imports an ASCII armored file. If you get a binary file
-   you can easily convert this binary file to an ASCII armored output like this:
+   you can easily convert this binary file to an ASCII armored output like
+   this::
 
       gpg --enarmor import.csv.gpg
 
@@ -57,7 +58,7 @@ The file format looks like this::
    <serial>, <seed>, <type>, <otp length>, <time step>
 
 For OCRA tokens it looks like this::
-   
+
    <serial>, <seed>, OCRA, <ocra suite>
 
 **serial** is the serial number of the token that will also be used

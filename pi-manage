@@ -402,6 +402,26 @@ def create_enckey():
 
 
 @manager.command
+def create_pgp_keys(keysize=2048, force=False):
+    """
+    Generate PGP keys to allow encrypted token import.
+    """
+    import gnupg
+    GPG_HOME = app.config.get("PI_GNUPG_HOME", "/etc/privacyidea/gpg")
+    gpg = gnupg.GPG(gnupghome=GPG_HOME)
+    keys = gpg.list_keys(True)
+    if len(keys) and not force:
+        print("There are already private keys. If you want to "
+              "generate a new private key, use the parameter --force.")
+        print(keys)
+        sys.exit(1)
+    input_data = gpg.gen_key_input(key_type="RSA", key_length=keysize,
+                                   name_real="privacyIDEA Server",
+                                   name_comment="Import")
+    gpg.gen_key(input_data)
+
+
+@manager.command
 def create_audit_keys(keysize=2048):
     """
     Create the RSA signing keys for the audit log.
