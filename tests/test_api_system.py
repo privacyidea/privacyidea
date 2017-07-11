@@ -839,3 +839,16 @@ class APIConfigTestCase(MyTestCase):
             # This is base64. We can decode
             import base64
             base64.b64decode(value)
+
+    def test_19_get_gpg_keys(self):
+        with self.app.test_request_context('/system/gpgkeys',
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            value = result.get("value")
+            # We probably have no keys in here
+            # But value returns a dictionary with the KeyID and "armor" and
+            # "fingerprint"
+            pass

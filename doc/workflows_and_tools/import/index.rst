@@ -39,11 +39,10 @@ import the GPG encrypted file to privacyIDEA!
 .. note:: Using the key *PI_GNUPG_HOME* in pi.cfg you can change the default
    above mentioned *GNUPGHOME* directory.
 
-.. note:: privacyIDEA imports an ASCII armored file. If you get a binary file
-   you can easily convert this binary file to an ASCII armored output like
-   this::
+.. note:: privacyIDEA imports an ASCII armored file. The file needs to be
+   encrypted like this:
 
-      gpg --enarmor import.csv.gpg
+      gpg -e -a -r <keyid>  import.csv
 
 
 OATH CSV

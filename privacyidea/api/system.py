@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2017-07-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Allow to return GPG keys
 # 2015-12-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Remove the complete before and after logic
 # 2015-10-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -70,6 +72,7 @@ from privacyidea.lib.policy import PolicyClass, ACTION
 from privacyidea.lib.auth import get_db_admins
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.crypto import geturandom
+from privacyidea.lib.importotp import GPGImport
 import base64
 import binascii
 
@@ -108,6 +111,18 @@ def get_config_documentation():
     # Three or more line breaks will be changed to two.
     return re.sub("\n{3,}", "\n\n", render_template("documentation.rst",
                                                context=context))
+
+@system_blueprint.route('/gpgkeys', methods=['GET'])
+def get_gpg_keys():
+    """
+    Returns the GPG keys in the config directory specified by PI_GNUPG_HOME.
+    
+    :return: A json list of the public GPG keys 
+    """
+    GPG = GPGImport(current_app.config)
+    keys = GPG.get_publickeys()
+    g.audit_object.log({"success": True})
+    return send_result(keys)
 
 
 @system_blueprint.route('/<key>', methods=['GET'])
