@@ -67,6 +67,11 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
     };
 
     return {
+        getPGPKeys: function(callback) {
+            $http.get(systemUrl + "/gpgkeys", {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+            }).success(callback).error(error_func);
+        },
         getSMSProviders: function(callback) {
             $http.get(smsgatewayUrl + "/providers", {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken()}

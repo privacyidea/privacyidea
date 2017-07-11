@@ -907,6 +907,10 @@ msgstr ""
 msgid "File name"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.import.html:102
+msgid "Fingerprint"
+msgstr ""
+
 #: privacyidea/static/components/audit/views/audit.log.html:18
 #: privacyidea/static/components/machine/views/machine.details.html:43
 #: privacyidea/static/components/machine/views/machine.list.html:5
@@ -1592,6 +1596,12 @@ msgstr ""
 msgid "Please answer at least {{ num_answers }} of the following questions."
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.import.html:97
+msgid ""
+"Please pass the public key and the fingerprint to the token\n"
+"                provider."
+msgstr ""
+
 #: privacyidea/static/components/login/views/login.html:48
 msgid "Please sign in"
 msgstr ""
@@ -1655,7 +1665,7 @@ msgstr ""
 msgid "Print the OTP list"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:101
+#: privacyidea/static/components/token/views/token.import.html:117
 msgid "Progress: {{ progressPercentage }}%"
 msgstr ""
 
@@ -2040,7 +2050,7 @@ msgid ""
 "        <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:93
+#: privacyidea/static/components/token/views/token.import.html:109
 msgid "Select file and import"
 msgstr ""
 
@@ -3024,11 +3034,11 @@ msgstr ""
 msgid "Upload Subscription File"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:104
+#: privacyidea/static/components/token/views/token.import.html:120
 msgid "Uploaded File: {{ uploadedFile }}"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:107
+#: privacyidea/static/components/token/views/token.import.html:123
 msgid "Uploaded Tokens: {{ uploadedTokens }}"
 msgstr ""
 

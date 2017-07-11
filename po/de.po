@@ -941,6 +941,10 @@ msgstr "Aktualisieren des Benutzers fehlgeschlagen."
 msgid "File name"
 msgstr "Dateiname"
 
+#: privacyidea/static/components/token/views/token.import.html:102
+msgid "Fingerprint"
+msgstr "Fingerabdruck"
+
 #: privacyidea/static/components/audit/views/audit.log.html:18
 #: privacyidea/static/components/machine/views/machine.details.html:43
 #: privacyidea/static/components/machine/views/machine.list.html:5
@@ -1677,6 +1681,14 @@ msgid "Please answer at least {{ num_answers }} of the following questions."
 msgstr ""
 "Bitte beantworten Sie wenigstens {{ num_answers }} der folgenden Fragen."
 
+#: privacyidea/static/components/token/views/token.import.html:97
+msgid ""
+"Please pass the public key and the fingerprint to the token\n"
+"                provider."
+msgstr ""
+"Bitte übergeben Sie den öffentlichen Schlüssel und den Fingerabdruck an den "
+"Token-Lieferanten."
+
 #: privacyidea/static/components/login/views/login.html:48
 msgid "Please sign in"
 msgstr "Anmelden"
@@ -1742,7 +1754,7 @@ msgstr "Zurück"
 msgid "Print the OTP list"
 msgstr "OTP-Liste drucken"
 
-#: privacyidea/static/components/token/views/token.import.html:101
+#: privacyidea/static/components/token/views/token.import.html:117
 msgid "Progress: {{ progressPercentage }}%"
 msgstr "Fortschritt: {{ progressPercentage }}%"
 
@@ -2144,7 +2156,7 @@ msgstr ""
 "Wählen Sie eine bestehende <a ui-sref=\"config.smtp\">SMTP-Server "
 "Konfiguration</a>."
 
-#: privacyidea/static/components/token/views/token.import.html:93
+#: privacyidea/static/components/token/views/token.import.html:109
 msgid "Select file and import"
 msgstr "Datei auswählen und importieren"
 
@@ -3352,11 +3364,11 @@ msgstr "Zertifikatsanforderung hochladen"
 msgid "Upload Subscription File"
 msgstr "Subskriptionsdatei hochladen"
 
-#: privacyidea/static/components/token/views/token.import.html:104
+#: privacyidea/static/components/token/views/token.import.html:120
 msgid "Uploaded File: {{ uploadedFile }}"
 msgstr "Hochgeladene Datei: {{ uploadedFile }}"
 
-#: privacyidea/static/components/token/views/token.import.html:107
+#: privacyidea/static/components/token/views/token.import.html:123
 msgid "Uploaded Tokens: {{ uploadedTokens }}"
 msgstr "Hochgeladene Token: {{ uploadedTokens }}"
 

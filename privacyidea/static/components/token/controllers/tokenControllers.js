@@ -490,6 +490,11 @@ myApp.controller("tokenImportController", function ($scope, $upload,
             });
     });
 
+    // get PGP keys
+    ConfigFactory.getPGPKeys(function (data) {
+        $scope.pgpkeys = data.result.value;
+    });
+
     $scope.upload = function (files) {
         if (files && files.length) {
             for (var i = 0; i < files.length; i++) {
