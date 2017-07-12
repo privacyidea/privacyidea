@@ -1624,6 +1624,10 @@ msgstr "ownCloud"
 msgid "PAPER: OTP values on a sheet of paper."
 msgstr "PAPER: OTP-Liste auf einem Stück Papier"
 
+#: privacyidea/static/components/token/views/token.import.html:95
+msgid "PGP Key"
+msgstr "PGP-Schlüssel"
+
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:22
 #: privacyidea/static/components/directives/views/directive.assignuser.html:31
 #: privacyidea/static/components/token/views/token.enroll.html:43
@@ -3932,6 +3936,9 @@ msgstr "Fenster"
 #: privacyidea/static/components/audit/views/audit.log.html:21
 msgid "{{ auditdata.count }} entries found."
 msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."
+
+#~ msgid "PGP Key {{ keyid }}"
+#~ msgstr "PGP Schlüssel {{ keyid }}"
 
 #~ msgid "The old token is disabled and can be deleted or enabled later."
 #~ msgstr ""

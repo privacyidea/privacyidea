@@ -1540,6 +1540,10 @@ msgstr ""
 msgid "PAPER: OTP values on a sheet of paper."
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.import.html:95
+msgid "PGP Key"
+msgstr ""
+
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:22
 #: privacyidea/static/components/directives/views/directive.assignuser.html:31
 #: privacyidea/static/components/token/views/token.enroll.html:43
