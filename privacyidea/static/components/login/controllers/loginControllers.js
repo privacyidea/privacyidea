@@ -257,6 +257,7 @@ angular.module("privacyideaApp")
                     // In case of u2f we do:
                     if ($scope.u2f_first_error) {
                         U2fFactory.sign_request($scope.u2f_first_error,
+                            $scope.u2fSignRequests,
                             $scope.login.username,
                             $scope.transactionid, $scope.do_login_stuff);
                     }
