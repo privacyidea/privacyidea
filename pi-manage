@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# 2017-02-23 Cornelius Kölbel <cornelisu.koelbel@netknights.it>
+# 2017-07-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add generation of PGP keys
+# 2017-02-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add CA sub commands
 # 2017-01-27 Diogenes S. Jesus
 #            Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -48,6 +50,7 @@ from datetime import timedelta
 import re
 from subprocess import call, Popen, PIPE
 from getpass import getpass
+import gnupg
 
 import flask
 
@@ -406,7 +409,6 @@ def create_pgp_keys(keysize=2048, force=False):
     """
     Generate PGP keys to allow encrypted token import.
     """
-    import gnupg
     GPG_HOME = app.config.get("PI_GNUPG_HOME", "/etc/privacyidea/gpg")
     gpg = gnupg.GPG(gnupghome=GPG_HOME)
     keys = gpg.list_keys(True)
