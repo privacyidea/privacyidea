@@ -198,7 +198,7 @@ msgstr ""
 msgid "Authentication Server URI"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:239
+#: privacyidea/static/components/login/controllers/loginControllers.js:269
 msgid "Authentication failed."
 msgstr ""
 
@@ -323,7 +323,7 @@ msgstr ""
 msgid "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:222
+#: privacyidea/static/components/login/controllers/loginControllers.js:252
 msgid "Challenge Response Authentication. Your response was not valid!"
 msgstr ""
 
@@ -858,7 +858,7 @@ msgstr ""
 msgid "Error fetching policy templates."
 msgstr ""
 
-#: privacyidea/static/components/login/factories/u2f.js:77
+#: privacyidea/static/components/login/factories/u2f.js:76
 msgid "Error in U2F response."
 msgstr ""
 
@@ -1550,7 +1550,7 @@ msgstr ""
 msgid "PIN"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:402
+#: privacyidea/static/components/login/controllers/loginControllers.js:432
 msgid "PIN changed successfully."
 msgstr ""
 
@@ -1598,6 +1598,10 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.question.html:8
 msgid "Please answer at least {{ num_answers }} of the following questions."
+msgstr ""
+
+#: privacyidea/static/components/login/controllers/loginControllers.js:205
+msgid "Please confirm with one of these tokens:"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.import.html:97
@@ -1746,7 +1750,7 @@ msgstr ""
 msgid "Realm"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:373
+#: privacyidea/static/components/login/controllers/loginControllers.js:403
 msgid "Realm defrealm created."
 msgstr ""
 
@@ -3244,7 +3248,7 @@ msgstr ""
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:282
+#: privacyidea/static/components/login/controllers/loginControllers.js:312
 msgid "Your OTP pin expires on"
 msgstr ""
 
