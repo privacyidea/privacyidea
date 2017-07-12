@@ -195,24 +195,54 @@ angular.module("privacyideaApp")
                     "Authentication. You" +
                     " are not completely authenticated, yet."),
                     {type: "warning", ttl:5000});
-                $scope.challenge_message = error.detail.message;
-                $scope.transactionid = error.detail["transaction_id"];
-                $scope.image = error.detail.attributes.img;
-                if ($scope.image.indexOf("data:image") === -1) {
-                    // In case of an Image link, we prepend the instanceUrl
-                    $scope.image = $scope.instanceUrl + "/" + $scope.image;
+
+                // Challenge Response always containes mult_challenge!
+                $scope.hideResponseInput = true;
+                $scope.u2fSignRequests = Array();
+
+                var multi_challenge = error.detail.multi_challenge;
+                if (multi_challenge.length > 1) {
+                    $scope.challenge_message = gettextCatalog.getString('Please confirm with one of these tokens:');
+                    $scope.challenge_multiple_tokens = true;
+                } else {
+                    $scope.challenge_message = error.detail.message;
+                    $scope.challenge_multiple_tokens = false;
                 }
-                $scope.hideResponseInput = error.detail.attributes.hideResponseInput;
-                $scope.polling = error.detail.attributes.poll;
+                for (var i in multi_challenge) {
+                    if (multi_challenge.length > 1)
+                        $scope.challenge_message = $scope.challenge_message + ' ' + multi_challenge[i].serial;
+                    var attributes = multi_challenge[i].attributes;
+                    if (attributes === null || attributes.hideResponseInput === false) {
+                        $scope.hideResponseInput = false;
+                    }
+                    if (attributes !== null) {
+                        if (attributes.u2fSignRequest !== null) {
+                           $scope.u2fSignRequests.push(attributes.u2fSignRequest);
+                        }
+                        if (attributes.img !== null) {
+                            $scope.image = attributes.img;
+                            if ($scope.image.indexOf("data:image") === -1) {
+                                // In case of an Image link, we prepend the instanceUrl
+                                $scope.image = $scope.instanceUrl + "/" + $scope.image;
+                            }
+                        }
+                        if (attributes.poll !== null) {
+                            $scope.polling = attributes.poll;
+                        }
+                    }
+                }
+
+                $scope.transactionid = error.detail["transaction_id"];
                 console.log($scope.polling);
                 $scope.login.password = "";
                 // In case of TiQR we need to start the poller
                 if ($scope.polling)
                     PollingAuthFactory.start($scope.check_authentication);
                 // In case of u2f we do:
-                if (error.detail.attributes['u2fSignRequest']) {
+                if ($scope.u2fSignRequests) {
                     $scope.u2f_first_error = error;
-                    U2fFactory.sign_request(error, $scope.login.username,
+                    U2fFactory.sign_request(error, $scope.u2fSignRequests,
+                        $scope.login.username,
                         $scope.transactionid, $scope.do_login_stuff);
                 }
             } else {

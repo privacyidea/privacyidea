@@ -210,7 +210,7 @@ msgstr "Audit"
 msgid "Authentication Server URI"
 msgstr "URI des Authentisierungsservers"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:239
+#: privacyidea/static/components/login/controllers/loginControllers.js:269
 msgid "Authentication failed."
 msgstr "Authentisierung fehlgeschlagen."
 
@@ -341,7 +341,7 @@ msgid ""
 "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr "Challenge-Response Anmeldung. Sie sind noch nicht fertig angemeldet."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:222
+#: privacyidea/static/components/login/controllers/loginControllers.js:252
 msgid "Challenge Response Authentication. Your response was not valid!"
 msgstr "Challenge-Response Anmeldung. Ihre Antwort war ungültig!"
 
@@ -892,7 +892,7 @@ msgstr "Fehler beim Laden der Richtlinien-Vorlage."
 msgid "Error fetching policy templates."
 msgstr "Fehler beim Laden der Richtlinien-Vorlagen."
 
-#: privacyidea/static/components/login/factories/u2f.js:77
+#: privacyidea/static/components/login/factories/u2f.js:76
 msgid "Error in U2F response."
 msgstr "Fehler in der U2F-Antwort."
 
@@ -1634,7 +1634,7 @@ msgstr "PGP-Schlüssel"
 msgid "PIN"
 msgstr "PIN"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:402
+#: privacyidea/static/components/login/controllers/loginControllers.js:432
 msgid "PIN changed successfully."
 msgstr "PIN erfolgreich geändert."
 
@@ -1684,6 +1684,10 @@ msgstr "Telefonnummer"
 msgid "Please answer at least {{ num_answers }} of the following questions."
 msgstr ""
 "Bitte beantworten Sie wenigstens {{ num_answers }} der folgenden Fragen."
+
+#: privacyidea/static/components/login/controllers/loginControllers.js:205
+msgid "Please confirm with one of these tokens:"
+msgstr "Bitte bestätigen Sie mit einem dieser Token:"
 
 #: privacyidea/static/components/token/views/token.import.html:97
 msgid ""
@@ -1837,7 +1841,7 @@ msgstr ""
 msgid "Realm"
 msgstr "Realm "
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:373
+#: privacyidea/static/components/login/controllers/loginControllers.js:403
 msgid "Realm defrealm created."
 msgstr "Der Realm defrealm wurde erzeugt."
 
@@ -3591,7 +3595,7 @@ msgstr ""
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr "Sie werden nach {{ myCountdown }} Sekunden abgemeldet."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:282
+#: privacyidea/static/components/login/controllers/loginControllers.js:312
 msgid "Your OTP pin expires on"
 msgstr "Ihre OTP PIN läuft ab: "
 
