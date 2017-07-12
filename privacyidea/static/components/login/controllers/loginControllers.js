@@ -208,9 +208,10 @@ angular.module("privacyideaApp")
                     $scope.challenge_message = error.detail.message;
                     $scope.challenge_multiple_tokens = false;
                 }
-                for (var i in multi_challenge) {
-                    if (multi_challenge.length > 1)
+                for (var i = 0; i < multi_challenge.length; i++) {
+                    if (multi_challenge.length > 1) {
                         $scope.challenge_message = $scope.challenge_message + ' ' + multi_challenge[i].serial;
+                    }
                     var attributes = multi_challenge[i].attributes;
                     if (attributes === null || attributes.hideResponseInput === false) {
                         $scope.hideResponseInput = false;
@@ -236,8 +237,9 @@ angular.module("privacyideaApp")
                 console.log($scope.polling);
                 $scope.login.password = "";
                 // In case of TiQR we need to start the poller
-                if ($scope.polling)
+                if ($scope.polling) {
                     PollingAuthFactory.start($scope.check_authentication);
+                }
                 // In case of u2f we do:
                 if ($scope.u2fSignRequests) {
                     $scope.u2f_first_error = error;
