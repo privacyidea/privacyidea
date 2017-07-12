@@ -195,6 +195,14 @@ angular.module("privacyideaApp")
                     "Authentication. You" +
                     " are not completely authenticated, yet."),
                     {type: "warning", ttl:5000});
+
+                if (error.detail && error.detail.multi_challenge) {
+                    error.detail.message = 'Please confirm with one of these tokens:'
+                    for (var i in error.detail.multi_challenge) {
+                        error.detail.message = error.detail.message + ' ' + error.detail.multi_challenge[i].serial;
+                    }
+                }
+
                 $scope.challenge_message = error.detail.message;
                 $scope.transactionid = error.detail["transaction_id"];
                 $scope.image = error.detail.attributes.img;
