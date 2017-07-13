@@ -167,6 +167,7 @@ angular.module("privacyideaApp")
 
     $scope.authenticate_remote_user = function () {
         $scope.login = {username: $scope.remoteUser, password: ""};
+        $scope.unlocking = false;
         $scope.authenticate();
     };
 
@@ -190,16 +191,20 @@ angular.module("privacyideaApp")
             if (error.detail && error.detail.transaction_id) {
                 // In case of error.detail.transaction_id is present, we
                 // have a challenge response and we need to go to the state response
-                $state.go("response");
+                if ($scope.unlocking === false) {
+                    // If we are not unlocking, then we do a "login".
+                    // For this we go to the response-state.
+                    $state.go("response");
+                }
                 inform.add(gettextCatalog.getString("Challenge Response " +
                     "Authentication. You" +
                     " are not completely authenticated, yet."),
                     {type: "warning", ttl:5000});
-
-                // Challenge Response always containes mult_challenge!
                 $scope.hideResponseInput = true;
                 $scope.u2fSignRequests = Array();
+                $scope.transactionid = error.detail["transaction_id"];
 
+                // Challenge Response always containes mult_challenge!
                 var multi_challenge = error.detail.multi_challenge;
                 if (multi_challenge.length > 1) {
                     $scope.challenge_message = gettextCatalog.getString('Please confirm with one of these tokens:');
@@ -233,7 +238,6 @@ angular.module("privacyideaApp")
                     }
                 }
 
-                $scope.transactionid = error.detail["transaction_id"];
                 console.log($scope.polling);
                 $scope.login.password = "";
                 // In case of TiQR we need to start the poller
