@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 #
-#  privacyIDEA is a fork of LinOTP
-#
+#  2017-07-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add period to key uri for TOTP token
 #  2016-05-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             urlencode token isuuer.
-#  * 2015-07-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
-#               Add SHA Algorithms to QR Code
-#  * 2014-12-01 Cornelius Kölbel <cornelius@privacyidea.org>
-#               Migrate to flask
+#  2015-07-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add SHA Algorithms to QR Code
+#  2014-12-01 Cornelius Kölbel <cornelius@privacyidea.org>
+#             Migrate to flask
 #
 #  * May 08, 2014 Cornelius Kölbel
 #  * 2014-09-12 added Motp URL. Cornelius Kölbel
@@ -76,7 +76,7 @@ def create_motp_url(key, user=None, realm=None, serial=""):
 
 @log_with(log)
 def create_google_authenticator_url(key=None, user=None,
-                                    realm=None, tokentype="hotp",
+                                    realm=None, tokentype="hotp", period=30,
                                     serial="mylabel", tokenlabel="<s>",
                                     hash_algo="SHA1", digits="6",
                                     issuer="privacyIDEA", user_obj=None):
@@ -90,8 +90,11 @@ def create_google_authenticator_url(key=None, user=None,
     # policy depends on some lib.util
 
     user_obj = user_obj or User()
-    if "hotp" == tokentype.lower():
+    if tokentype.lower() == "hotp":
         tokentype = "hotp"
+        counter = "counter=1&"
+    else:
+        counter = ""
 
     # We need realm und user to be a string
     realm = realm or ""
@@ -111,8 +114,8 @@ def create_google_authenticator_url(key=None, user=None,
                                serial).replace("<u>",
                                                user).replace("<r>", realm)
     label = label.format(serial=serial, user=user, realm=realm,
-                         givenname=user_obj.info.get("givenname"),
-                         surname=user_obj.info.get("surname"))
+                         givenname=user_obj.info.get("givenname", ""),
+                         surname=user_obj.info.get("surname", ""))
 
     label = label[0:allowed_label_len]
     url_label = quote(label.encode("utf-8"))
@@ -125,11 +128,19 @@ def create_google_authenticator_url(key=None, user=None,
         # the QR code simpler
         hash_algo = ""
 
-    return ("otpauth://%s/%s?secret=%s&"
-            "counter=1&%s"
-            "digits=%s&"
-            "issuer=%s" % (tokentype, url_label, otpkey,
-                           hash_algo, digits, url_issuer))
+    if tokentype.lower() == "totp":
+        period = "period={0!s}&".format(period)
+    else:
+        period = 0
+
+    return ("otpauth://{tokentype!s}/{label!s}?secret={secret!s}&"
+            "{counter!s}{hash!s}{period!s}"
+            "digits={digits!s}&"
+            "issuer={issuer!s}".format(tokentype=tokentype,
+                                       label=url_label, secret=otpkey,
+                                       hash=hash_algo, period=period,
+                                       digits=digits, issuer=url_issuer,
+                                       counter=counter))
 
 @log_with(log)
 def create_oathtoken_url(otpkey=None, user=None, realm=None,

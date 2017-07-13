@@ -5,6 +5,9 @@
 #  License: AGPLv3
 #  contact: http://www.privacyidea.org
 #
+#  2017-07-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add period to key uri for TOTP token
+#
 #  2016-04-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add get_default_settings to change the parameters before
 #             the token is created
@@ -178,9 +181,9 @@ class HotpTokenClass(TokenClass):
                                         tokentype=tok_type.lower(),
                                         serial=self.get_serial(),
                                         tokenlabel=tokenlabel,
-                                        hash_algo=params.get("hashlib",
-                                                             "sha1"),
+                                        hash_algo=params.get("hashlib", "sha1"),
                                         digits=params.get("otplen", 6),
+                                        period=params.get("timeStep", 30),
                                         issuer=tokenissuer,
                                         user_obj=user)
                     response_detail["googleurl"] = {"description":
