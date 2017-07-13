@@ -131,7 +131,7 @@ def create_google_authenticator_url(key=None, user=None,
     if tokentype.lower() == "totp":
         period = "period={0!s}&".format(period)
     else:
-        period = 0
+        period = ""
 
     return ("otpauth://{tokentype!s}/{label!s}?secret={secret!s}&"
             "{counter!s}{hash!s}{period!s}"
