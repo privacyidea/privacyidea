@@ -1287,3 +1287,38 @@ class APITokenTestCase(MyTestCase):
             tokeninfo = token.get("info")
             self.assertDictContainsSubset({'key2': 'value 2'}, tokeninfo)
             self.assertNotIn('key1', tokeninfo)
+
+    def test_25_user_init_defaults(self):
+        self.authenticate_selfservice_user()
+        # Now this user is authenticated
+        # selfservice@realm1
+
+        # Create policy for sha256
+        set_policy(name="init_details",
+                   scope=SCOPE.USER,
+                   action="totp_otplen=8,totp_hashlib=sha256,"
+                          "totp_timestep=60,enrollTOTP")
+
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={
+                                               "type": "totp",
+                                               "totp.hashlib": "sha1",
+                                               "hashlib": "sha1",
+                                               "genkey": 1,
+                                               "user": "selfservice",
+                                               "realm": "realm1"},
+                                           headers={'Authorization':
+                                                        self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value"))
+            detail = json.loads(res.data).get("detail")
+            googleurl = detail.get("googleurl")
+            self.assertTrue("sha256" in googleurl.get("value"))
+            serial = detail.get("serial")
+            token = get_tokens(serial=serial)[0]
+            self.assertEqual(token.hashlib, "sha256")
+
+        delete_policy("init_details")
