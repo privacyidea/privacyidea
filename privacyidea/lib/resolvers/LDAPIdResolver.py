@@ -156,7 +156,7 @@ def cache(func):
                         datetime.datetime.now() < r_cache[args[0]][
                     "timestamp"] + \
                         datetime.timedelta(seconds=self.cache_timeout):
-            log.debug("Reading {0!s} from cache for {1!s}".format(args[0],
+            log.debug("Reading {0!r} from cache for {1!r}".format(args[0],
                                                               func.func_name))
             return r_cache[args[0]]["value"]
 
@@ -461,8 +461,9 @@ class IdResolver (UserIdResolver):
         """
         userid = ""
         self._bind()
-        filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter, self.loginname_attribute,
-             self._escape_loginname(LoginName))
+        filter = u"(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
+                                                 self.loginname_attribute,
+                                                 self._escape_loginname(LoginName))
 
         # create search attributes
         attributes = self.userinfo.values()
