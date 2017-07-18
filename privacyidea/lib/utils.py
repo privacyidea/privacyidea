@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-07-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add time offset parsing
 #  2015-04-05 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Added time test function
 #
@@ -685,3 +687,63 @@ def parse_legacy_time(ts, return_date=False):
         return d
     else:
         return d.strftime(DATE_FORMAT)
+
+
+def parse_time_delta(s):
+    """
+    parses a string like +5d or -30m and returns a timedelta.
+    Allowed identifiers are s, m, h, d.
+    
+    :param s: a string like +30m or -5d
+    :return: timedelta 
+    """
+    seconds = 0
+    minutes = 0
+    hours = 0
+    days = 0
+    m = re.match("([+-])(\d+)([smhd])$", s)
+    if not m:
+        log.warning("Unsupported timedelta: {0!r}".format(s))
+        raise Exception("Unsupported timedelta")
+    count = int(m.group(2))
+    if m.group(1) == "-":
+        count = - count
+    if m.group(3) == "s":
+        seconds = count
+    elif m.group(3) == "m":
+        minutes = count
+    elif m.group(3) == "h":
+        hours = count
+    elif m.group(3) == "d":
+        days = count
+
+    td = timedelta(seconds=seconds, minutes=minutes, hours=hours, days=days)
+    return td
+
+
+def parse_time_offset_from_now(s):
+    """
+    Parses a string as used in the token event handler
+        "New date {now}+5d. Some {other} {tags}" or
+        "New date {now}-30m! Some {other} {tags}".
+    This returns the string "New date {now}. Some {other} {tags}" and the 
+    timedelta of 5 days.
+    Allowed tags are {now} and {current_time}. Only one tag of {now} or {
+    current_time} is allowed.
+    Allowed offsets are "s": seconds, "m": minutes, "h": hours, "d": days.
+        
+    :param s: The string to be parsed.
+    :return: tuple of modified string and timedelta 
+    """
+    td = timedelta()
+    m1 = re.search("(^.*{current_time})([+-]\d+[smhd])(.*$)", s)
+    m2 = re.search("(^.*{now})([+-]\d+[smhd])(.*$)", s)
+    m = m1 or m2
+    if m:
+        s1 = m.group(1)
+        s2 = m.group(2)
+        s3 = m.group(3)
+        s = s1 + s3
+        td = parse_time_delta(s2)
+
+    return s, td

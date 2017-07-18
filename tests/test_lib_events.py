@@ -680,7 +680,7 @@ class TokenEventTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        # Now the initiailized token will be set in realm2
+        # Now the initialized token will be set in realm2
         options = {"g": g,
                    "request": req,
                    "response": resp,
@@ -695,6 +695,23 @@ class TokenEventTestCase(MyTestCase):
         # Check if the token was unassigned
         t = get_tokens(serial="SPASS01")
         self.assertEqual(t[0].token.description, "New Description")
+
+        # Now the initialized token will be to a date in the future
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options": {
+                       "description": "valid for {now}+5d you know"
+                   }}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.SET_DESCRIPTION, options=options)
+        self.assertTrue(res)
+        # Check if the token was unassigned
+        t = get_tokens(serial="SPASS01")
+        self.assertTrue(t[0].token.description.startswith("valid for 20"))
+        self.assertTrue(t[0].token.description.endswith("0 you know"))
 
         remove_token("SPASS01")
 
@@ -852,6 +869,25 @@ class TokenEventTestCase(MyTestCase):
         t = get_tokens(serial="SPASS01")
         tw = t[0].get_tokeninfo("timeWindow")
         self.assertEqual(tw, "33000")
+
+        # Set token info into past
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options": {"key": "pastText",
+                                               "value": "it was {"
+                                                        "current_time}-12h..."}
+                                   }
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.SET_TOKENINFO, options=options)
+        self.assertTrue(res)
+        # Check if the token has the correct sync window
+        t = get_tokens(serial="SPASS01")
+        tw = t[0].get_tokeninfo("pastText")
+        self.assertTrue(tw.startswith("it was 20"))
+        self.assertTrue(tw.endswith("0..."))
 
         remove_token("SPASS01")
 

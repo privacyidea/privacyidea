@@ -8,7 +8,8 @@ from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
                                    check_proxy, reduce_realms, is_true,
                                    parse_date, compare_condition,
                                    get_data_from_params, parse_legacy_time,
-                                   int_to_hex, compare_value_value)
+                                   int_to_hex, compare_value_value,
+                                   parse_time_offset_from_now, parse_time_delta)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset
@@ -309,3 +310,29 @@ class UtilsTestCase(MyTestCase):
         self.assertTrue(compare_value_value(1000, "==", "1000"))
         self.assertTrue(compare_value_value("99", "<", "1000"))
 
+    def test_13_parse_time_offset_from_now(self):
+        td = parse_time_delta("+5s")
+        self.assertEqual(td, timedelta(seconds=5))
+        td = parse_time_delta("-12m")
+        self.assertEqual(td, timedelta(minutes=-12))
+        td = parse_time_delta("+123h")
+        self.assertEqual(td, timedelta(hours=123))
+        td = parse_time_delta("+2d")
+        self.assertEqual(td, timedelta(days=2))
+
+        # Does not start with plus or minus
+        self.assertRaises(Exception, parse_time_delta, "12d")
+        # Does not contains numbers
+        self.assertRaises(Exception, parse_time_delta, "+twod")
+
+        s, td = parse_time_offset_from_now("Hello {now}+5d with 5 days.")
+        self.assertEqual(s, "Hello {now} with 5 days.")
+        self.assertEqual(td, timedelta(days=5))
+
+        s, td = parse_time_offset_from_now("Hello {current_time}+5m!")
+        self.assertEqual(s, "Hello {current_time}!")
+        self.assertEqual(td, timedelta(minutes=5))
+
+        s, td = parse_time_offset_from_now("Hello {current_time}-3habc")
+        self.assertEqual(s, "Hello {current_time}abc")
+        self.assertEqual(td, timedelta(hours=-3))

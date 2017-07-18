@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-07-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Allow setting time with timedelta
 #  2017-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add required mobile number and email address when enrolling tokens
 #             added with the help of splashx
@@ -40,7 +42,8 @@ from privacyidea.lib.token import (set_realms, remove_token, enable_token,
                                    unassign_token, init_token, set_description,
                                    set_count_window, add_tokeninfo,
                                    set_failcounter)
-from privacyidea.lib.utils import parse_date, is_true
+from privacyidea.lib.utils import (parse_date, is_true,
+                                   parse_time_offset_from_now)
 from privacyidea.lib.tokenclass import DATE_FORMAT, AUTH_DATE_FORMAT
 from privacyidea.lib import _
 import json
@@ -254,19 +257,26 @@ class TokenEventHandler(BaseEventHandler):
                 elif action.lower() == ACTION_TYPE.UNASSIGN:
                     unassign_token(serial)
                 elif action.lower() == ACTION_TYPE.SET_DESCRIPTION:
-                    s_now = datetime.datetime.now(tzlocal()).strftime(AUTH_DATE_FORMAT)
+                    description = handler_options.get("description") or ""
+                    description, td = parse_time_offset_from_now(description)
+                    s_now = (datetime.datetime.now(tzlocal()) + td).strftime(
+                        AUTH_DATE_FORMAT)
                     set_description(serial,
-                                    (handler_options.get("description") or
-                                     "").format(current_time=s_now,
-                                                client_ip=g.client_ip,
-                                                ua_browser=request.user_agent.browser,
-                                                ua_string=request.user_agent.string))
+                                    description.format(
+                                        current_time=s_now,
+                                        now=s_now,
+                                        client_ip=g.client_ip,
+                                        ua_browser=request.user_agent.browser,
+                                        ua_string=request.user_agent.string))
                 elif action.lower() == ACTION_TYPE.SET_COUNTWINDOW:
                     set_count_window(serial,
                                      int(handler_options.get("count window",
                                                              50)))
                 elif action.lower() == ACTION_TYPE.SET_TOKENINFO:
-                    s_now = datetime.datetime.now(tzlocal()).strftime(AUTH_DATE_FORMAT)
+                    tokeninfo = handler_options.get("value") or ""
+                    tokeninfo, td = parse_time_offset_from_now(tokeninfo)
+                    s_now = (datetime.datetime.now(tzlocal()) + td).strftime(
+                        AUTH_DATE_FORMAT)
                     try:
                         username = request.User.loginname
                         realm = request.User.realm
@@ -274,8 +284,9 @@ class TokenEventHandler(BaseEventHandler):
                         username = "N/A"
                         realm = "N/A"
                     add_tokeninfo(serial, handler_options.get("key"),
-                                  (handler_options.get("value") or "").format(
+                                  tokeninfo.format(
                                       current_time=s_now,
+                                      now=s_now,
                                       client_ip=g.client_ip,
                                       username=username,
                                       realm=realm,
