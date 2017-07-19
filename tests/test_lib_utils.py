@@ -13,6 +13,7 @@ from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset
+from privacyidea.lib.tokenclass import DATE_FORMAT
 
 
 class UtilsTestCase(MyTestCase):
@@ -309,6 +310,18 @@ class UtilsTestCase(MyTestCase):
         self.assertTrue(compare_value_value("ABD", ">", "ABC"))
         self.assertTrue(compare_value_value(1000, "==", "1000"))
         self.assertTrue(compare_value_value("99", "<", "1000"))
+
+        # compare dates
+        self.assertTrue(compare_value_value(
+                        datetime.now(tzlocal()).strftime(DATE_FORMAT), ">",
+                        "2017-01-01T10:00+0200"))
+        self.assertFalse(compare_value_value(
+            datetime.now(tzlocal()).strftime(DATE_FORMAT), "<",
+            "2017-01-01T10:00+0200"))
+        # The timestamp in 10 hours is bigger than the current time
+        self.assertTrue(compare_value_value(
+            (datetime.now(tzlocal()) + timedelta(hours=10)).strftime(DATE_FORMAT),
+            ">", datetime.now(tzlocal()).strftime(DATE_FORMAT)))
 
     def test_13_parse_time_offset_from_now(self):
         td = parse_time_delta("+5s")

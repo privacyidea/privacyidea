@@ -625,7 +625,7 @@ def compare_value_value(value1, comparator, value2):
     otherwise as strings.
     
     :param value1: First value 
-    :param value2: Seconf value
+    :param value2: Second value
     :param comparator: The comparator
     :return: True or False
     """
@@ -637,6 +637,18 @@ def compare_value_value(value1, comparator, value2):
         value2 = int2
     except Exception:
         log.debug("can not compare values as integers.")
+
+    if type(value1) != int and type(value2) != int:
+        # try to convert both values to a timestamp
+        try:
+            date1 = parse_date(value1)
+            date2 = parse_date(value2)
+            if date1 and date2:
+                # Only use dates, if both values can be converted to dates
+                value1 = date1
+                value2 = date2
+        except Exception:
+            log.debug("error during date conversion.")
 
     if comparator == "==":
         return value1 == value2

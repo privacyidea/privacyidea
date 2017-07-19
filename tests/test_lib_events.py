@@ -303,6 +303,34 @@ class BaseEventHandlerTestCase(MyTestCase):
         )
         self.assertEqual(r, False)
 
+        # The beginning of the year 2017 in smaller than now
+        tok.add_tokeninfo("myDate", "2017-01-01T10:00+0200")
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.TOKENINFO:
+                                                "myDate < {now}"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        # myDate is one hour in the future
+        tok.add_tokeninfo("myDate",
+                          (datetime.now(tzlocal())
+                           + timedelta(hours=1)
+                           ).strftime(DATE_FORMAT))
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.TOKENINFO:
+                                                "myDate > {now}-2h"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+
 
         remove_token(serial)
 

@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-07-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add possibility to compare tokeninfo field against fixed time
+#             and also {now} with offset.
 #  2016-05-04 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Initial writup
 #
@@ -34,10 +37,14 @@ from privacyidea.lib.auth import ROLE
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import get_token_owner, get_tokens
 from privacyidea.lib.user import User, UserError
-from privacyidea.lib.utils import compare_condition, compare_value_value
+from privacyidea.lib.utils import (compare_condition, compare_value_value,
+                                   parse_time_offset_from_now)
+import datetime
+from dateutil.tz import tzlocal
 import re
 import json
 import logging
+from privacyidea.lib.tokenclass import DATE_FORMAT
 
 log = logging.getLogger(__name__)
 
@@ -382,6 +389,11 @@ class BaseEventHandler(object):
                 res = compare_condition(cond, c_fail)
             if CONDITION.TOKENINFO in conditions and res:
                 cond = conditions.get(CONDITION.TOKENINFO)
+                # replace {now} in condition
+                cond, td = parse_time_offset_from_now(cond)
+                s_now = (datetime.datetime.now(tzlocal()) + td).strftime(
+                    DATE_FORMAT)
+                cond = cond.format(now=s_now)
                 if len(cond.split("==")) == 2:
                     key, value = [x.strip() for x in cond.split("==")]
                     res = compare_value_value(token_obj.get_tokeninfo(key),

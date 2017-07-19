@@ -191,6 +191,23 @@ automatically. Valid compares are:
 
 "myValue" and "myTokenInfoField" being any possible tokeninfo fields.
 
+Starting with version 2.20 you can also compare dates in the isoformat like
+that:
+
+    myValue > 2017-10-12T10:00+0200
+    myValue < 2020-01-01T00:00+0000
+
+In addition you can also use the tag *{now}* to compare to the curren time
+*and* you can add offsets to *{now}* in seconds, minutes, hours or days:
+
+    myValue < {now}
+    myValue > {now}+10d
+    myValue < {now}-5h
+
+Which would match if the tokeninfo *myValue* is a date, which is later than
+10 days from now or it the tokeninfo *myValue* is a date, which is 5 more
+than 5 hours in the past.
+
 
 Available Handler Modules
 -------------------------
