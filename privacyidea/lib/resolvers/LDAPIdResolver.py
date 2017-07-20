@@ -156,7 +156,7 @@ def cache(func):
                         datetime.datetime.now() < r_cache[args[0]][
                     "timestamp"] + \
                         datetime.timedelta(seconds=self.cache_timeout):
-            log.debug("Reading {0!s} from cache for {1!s}".format(args[0],
+            log.debug("Reading {0!r} from cache for {1!r}".format(args[0],
                                                               func.func_name))
             return r_cache[args[0]]["value"]
 
@@ -193,7 +193,7 @@ class IdResolver (UserIdResolver):
         self.timeout = 5.0  # seconds!
         self.sizelimit = 500
         self.loginname_attribute = ""
-        self.searchfilter = ""
+        self.searchfilter = u""
         self.userinfo = {}
         self.uidtype = ""
         self.noreferrals = False
@@ -340,8 +340,9 @@ class IdResolver (UserIdResolver):
             # get the DN for the Object
             self._bind()
             search_userId = self._trim_user_id(userId)
-            filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
-                                                    self.uidtype, search_userId)
+            filter = u"(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
+                                                     self.uidtype,
+                                                     search_userId)
             self.l.search(search_base=self.basedn,
                           search_scope=self.scope,
                           search_filter=filter,
@@ -353,7 +354,7 @@ class IdResolver (UserIdResolver):
             elif len(r) == 1:
                 dn = r[0].get("dn")
             else:
-                log.info("The filter {0!s} returned no DN.".format(filter))
+                log.info("The filter {0!r} returned no DN.".format(filter))
 
         return dn
 
@@ -392,12 +393,13 @@ class IdResolver (UserIdResolver):
             # encode utf8, so that also german ulauts work in the DN
             self.l.search(search_base=to_utf8(userId),
                           search_scope=self.scope,
-                          search_filter="(&" + self.searchfilter + ")",
+                          search_filter=u"(&" + self.searchfilter + u")",
                           attributes=self.userinfo.values())
         else:
             search_userId = self._trim_user_id(userId)
-            filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
-                                                    self.uidtype, search_userId)
+            filter = u"(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
+                                                     self.uidtype,
+                                                     search_userId)
             self.l.search(search_base=self.basedn,
                               search_scope=self.scope,
                               search_filter=filter,
@@ -461,8 +463,9 @@ class IdResolver (UserIdResolver):
         """
         userid = ""
         self._bind()
-        filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter, self.loginname_attribute,
-             self._escape_loginname(LoginName))
+        filter = u"(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
+                                                 self.loginname_attribute,
+                                                 self._escape_loginname(LoginName))
 
         # create search attributes
         attributes = self.userinfo.values()
@@ -506,10 +509,9 @@ class IdResolver (UserIdResolver):
                 comperator = ">="
                 if searchDict[search_key] in ["1", 1]:
                     comperator = "<="
-                filter += "(&({0!s}{1!s}{2!s})(!({3!s}=0)))".format(self.userinfo[search_key],
-                                                  comperator,
-                                                  get_ad_timestamp_now(),
-                                                  self.userinfo[search_key])
+                filter += u"(&({0!s}{1!s}{2!s})(!({3!s}=0)))".format(
+                    self.userinfo[search_key], comperator,
+                    get_ad_timestamp_now(), self.userinfo[search_key])
             else:
                 filter += u"({0!s}={1!s})".format(self.userinfo[search_key],
                                                   searchDict[search_key])
@@ -544,9 +546,9 @@ class IdResolver (UserIdResolver):
         This should be an Identifier of the resolver, preferable the type
         and the name of the resolver.
         """
-        s = "{0!s}{1!s}{2!s}{3!s}".format(self.uri, self.basedn,
+        s = u"{0!s}{1!s}{2!s}{3!s}".format(self.uri, self.basedn,
                                           self.searchfilter, self.userinfo)
-        r = binascii.hexlify(hashlib.sha1(s).digest())
+        r = binascii.hexlify(hashlib.sha1(s.encode("utf-8")).digest())
         return r
 
     @staticmethod
@@ -783,7 +785,7 @@ class IdResolver (UserIdResolver):
             # search for users...
             g = l.extend.standard.paged_search(
                 search_base=param["LDAPBASE"],
-                search_filter="(&" + param["LDAPSEARCHFILTER"] + ")",
+                search_filter=u"(&" + param["LDAPSEARCHFILTER"] + ")",
                 search_scope=param.get("SCOPE") or ldap3.SUBTREE,
                 attributes=attributes,
                 paged_size=100,
@@ -853,7 +855,8 @@ class IdResolver (UserIdResolver):
             raise privacyIDEAError(e)
 
         if self.l.result.get('result') != 0:
-            log.error("Error during adding of user {0}: {1}".format(dn, self.l.result.get('message')))
+            log.error("Error during adding of user {0!r}: "
+                      "{1!r}".format(dn, self.l.result.get('message')))
             raise privacyIDEAError(self.l.result.get('message'))
 
         return self.getUserId(attributes.get("username"))
@@ -981,7 +984,8 @@ class IdResolver (UserIdResolver):
             return False
 
         if self.l.result.get('result') != 0:
-            log.error("Error during update of user {0!s}: {1!s}".format(uid, self.l.result.get("message")))
+            log.error("Error during update of user {0!r}: "
+                      "{1!r}".format(uid, self.l.result.get("message")))
             return False
 
         return True
