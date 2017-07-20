@@ -30,7 +30,8 @@ from privacyidea.models import ResolverConfig
 objectGUIDs = [
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d31',
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d77',
-    '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d54'
+    '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d54',
+    '7dd0533c-afe3-4c6f-b49e-af82eaed045c'
 ]
 
 
@@ -65,7 +66,17 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 'userPassword': 'ldaptest',
                                 "accountExpires": 9223372036854775807,
                                 "objectGUID": objectGUIDs[2],
-                                'oid': "1"}}]
+                                'oid': "1"}},
+                 {"dn": 'cn=kölbel,ou=example,o=test',
+                  "attributes": {'cn': "kölbel",
+                                 "givenName": "Cornelius",
+                                 "sn": "Kölbel",
+                                 "email": "cko@o",
+                                 "mobile": "123456",
+                                 "userPassword": "mySecret",
+                                 "accoutnExpires": 9223372036854775807,
+                                 "objectGUID": objectGUIDs[3],
+                                 "oid": "4"}}]
 
 LDAPDirectory_small = [{"dn": 'cn=bob,ou=example,o=test',
                  "attributes": {'cn': 'bob',
@@ -512,7 +523,7 @@ class LDAPResolverTestCase(MyTestCase):
         })
 
         result = y.getUserList({'username': '*'})
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), len(LDAPDirectory))
 
         user = "bob"
         user_id = y.getUserId(user)
@@ -564,7 +575,7 @@ class LDAPResolverTestCase(MyTestCase):
         })
 
         result = y.getUserList({'username': '*'})
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), len(LDAPDirectory))
 
         user = "bob"
         user_id = y.getUserId(user)
@@ -635,7 +646,7 @@ class LDAPResolverTestCase(MyTestCase):
         })
 
         result = y.getUserList({'username': '*'})
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), len(LDAPDirectory))
 
         rid = y.getResolverId()
         self.assertTrue(rid == "d6ce19abbc3c23e24e1cefa41cbe6f9f118613b9", rid)
@@ -673,7 +684,7 @@ class LDAPResolverTestCase(MyTestCase):
         })
 
         result = y.getUserList({'username': '*'})
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), len(LDAPDirectory))
 
         user = "bob"
         user_id = y.getUserId(user)
@@ -726,7 +737,7 @@ class LDAPResolverTestCase(MyTestCase):
         })
 
         self.assertTrue(res[0], res)
-        self.assertTrue("3" in res[1])
+        self.assertTrue("{!s}".format(len(LDAPDirectory)) in res[1], res[1])
         # 'Your LDAP config seems to be OK, 3 user objects found.'
 
     @ldap3mock.activate
@@ -749,7 +760,7 @@ class LDAPResolverTestCase(MyTestCase):
         })
 
         self.assertTrue(res[0], res)
-        self.assertTrue("3" in res[1])
+        self.assertTrue("{!s}".format(len(LDAPDirectory)) in res[1])
         #'Your LDAP config seems to be OK, 3 user objects found.'
 
     @ldap3mock.activate
@@ -1207,7 +1218,7 @@ class LDAPResolverTestCase(MyTestCase):
         start_tls_resolver = LDAPResolver()
         start_tls_resolver.loadConfig(config)
         result = start_tls_resolver.getUserList({'username': '*'})
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), len(LDAPDirectory))
         # We check two things:
         # 1) start_tls has actually been called!
         self.assertTrue(start_tls_resolver.l.start_tls_called)
@@ -1240,11 +1251,118 @@ class LDAPResolverTestCase(MyTestCase):
         start_tls_resolver = LDAPResolver()
         start_tls_resolver.loadConfig(config)
         result = start_tls_resolver.getUserList({'username': '*'})
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), len(LDAPDirectory))
         # We check that all Server objects were constructed with a non-None TLS context and use_ssl=True
         for _, kwargs in ldap3mock.get_server_mock().call_args_list:
             self.assertIsNotNone(kwargs['tls'])
             self.assertTrue(kwargs['use_ssl'])
+
+    @ldap3mock.activate
+    def test_25_LDAP_DN_with_utf8(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'DN',
+                      })
+
+        result = y.getUserList({'username': '*'})
+        self.assertEqual(len(result), len(LDAPDirectory))
+
+        user = u"kölbel".encode("utf-8")
+        user_id = y.getUserId(user)
+        self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
+
+        rid = y.getResolverId()
+        self.assertTrue(rid == "d6ce19abbc3c23e24e1cefa41cbe6f9f118613b9", rid)
+
+        rtype = y.getResolverType()
+        self.assertTrue(rtype == "ldapresolver", rtype)
+
+        rdesc = y.getResolverClassDescriptor()
+        rdesc = y.getResolverDescriptor()
+        self.assertTrue("ldapresolver" in rdesc, rdesc)
+        self.assertTrue("config" in rdesc.get("ldapresolver"), rdesc)
+        self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
+
+        uinfo = y.getUserInfo(user_id)
+        self.assertEqual(uinfo.get("username"), user)
+
+        ret = y.getUserList({"username": user})
+        self.assertTrue(len(ret) == 1, ret)
+
+        username = y.getUsername(user_id)
+        self.assertTrue(username == "kölbel", username)
+
+        res = y.checkPass(user_id, "mySecret")
+        self.assertTrue(res)
+
+        res = y.checkPass(user_id, "wrong pw")
+        self.assertFalse(res)
+
+    @ldap3mock.activate
+    def test_26_LDAP_DN_with_unicode(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'DN',
+                      })
+
+        result = y.getUserList({'username': '*'})
+        self.assertEqual(len(result), len(LDAPDirectory))
+
+        user = u"kölbel"
+        user_id = y.getUserId(user)
+        self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
+
+        rid = y.getResolverId()
+        self.assertTrue(rid == "d6ce19abbc3c23e24e1cefa41cbe6f9f118613b9", rid)
+
+        rtype = y.getResolverType()
+        self.assertTrue(rtype == "ldapresolver", rtype)
+
+        rdesc = y.getResolverClassDescriptor()
+        rdesc = y.getResolverDescriptor()
+        self.assertTrue("ldapresolver" in rdesc, rdesc)
+        self.assertTrue("config" in rdesc.get("ldapresolver"), rdesc)
+        self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
+
+        uinfo = y.getUserInfo(user_id)
+        self.assertEqual(uinfo.get("username"), user)
+
+        ret = y.getUserList({"username": user})
+        self.assertTrue(len(ret) == 1, ret)
+
+        username = y.getUsername(user_id)
+        self.assertTrue(username == "kölbel", username)
+
+        res = y.checkPass(user_id, "mySecret")
+        self.assertTrue(res)
+
+        res = y.checkPass(user_id, "wrong pw")
+        self.assertFalse(res)
+
 
 
 class BaseResolverTestCase(MyTestCase):
