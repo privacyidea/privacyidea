@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This tests the file lib.utils
 """
@@ -9,7 +10,8 @@ from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
                                    parse_date, compare_condition,
                                    get_data_from_params, parse_legacy_time,
                                    int_to_hex, compare_value_value,
-                                   parse_time_offset_from_now, parse_time_delta)
+                                   parse_time_offset_from_now,
+                                   parse_time_delta, to_unicode)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset
@@ -349,3 +351,12 @@ class UtilsTestCase(MyTestCase):
         s, td = parse_time_offset_from_now("Hello {current_time}-3habc")
         self.assertEqual(s, "Hello {current_time}abc")
         self.assertEqual(td, timedelta(hours=-3))
+
+    def test_14_to_unicode(self):
+        s = "kölbel"
+        su = to_unicode(s)
+        self.assertEqual(su, u"kölbel")
+
+        s = u"kölbel"
+        su = to_unicode(s)
+        self.assertEqual(su, u"kölbel")

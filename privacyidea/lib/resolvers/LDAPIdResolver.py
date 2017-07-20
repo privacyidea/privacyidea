@@ -2,6 +2,8 @@
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
+#  2017-07-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Fix unicode usernames
 #  2017-01-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add certificate verification
 #  2017-01-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -71,7 +73,7 @@ from privacyidea.lib.utils import is_true
 import datetime
 
 from privacyidea.lib import _
-from privacyidea.lib.utils import to_utf8
+from privacyidea.lib.utils import to_utf8, to_unicode
 from privacyidea.lib.error import privacyIDEAError
 import uuid
 from ldap3.utils.conv import escape_bytes
@@ -396,7 +398,7 @@ class IdResolver (UserIdResolver):
                           search_filter=u"(&" + self.searchfilter + u")",
                           attributes=self.userinfo.values())
         else:
-            search_userId = self._trim_user_id(userId)
+            search_userId = to_unicode(self._trim_user_id(userId))
             filter = u"(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
                                                      self.uidtype,
                                                      search_userId)
@@ -462,6 +464,7 @@ class IdResolver (UserIdResolver):
         :return: UserId as found for the LoginName
         """
         userid = ""
+        LoginName = to_unicode(LoginName)
         self._bind()
         filter = u"(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
                                                  self.loginname_attribute,
@@ -505,6 +508,8 @@ class IdResolver (UserIdResolver):
         # do the filter depending on the searchDict
         filter = u"(&" + self.searchfilter
         for search_key in searchDict.keys():
+            # convert to unicode
+            searchDict[search_key] = to_unicode(searchDict[search_key])
             if search_key == "accountExpires":
                 comperator = ">="
                 if searchDict[search_key] in ["1", 1]:
