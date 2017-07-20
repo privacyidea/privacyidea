@@ -21,8 +21,8 @@ from privacyidea.lib.policydecorators import (auth_otppin,
                                               auth_user_timelimit,
                                               auth_lastauth)
 from privacyidea.lib.user import User
-from privacyidea.lib.resolver import save_resolver
-from privacyidea.lib.realm import set_realm
+from privacyidea.lib.resolver import save_resolver, delete_resolver
+from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.token import (init_token, remove_token, check_user_pass,
                                    get_tokens)
 from privacyidea.lib.error import UserError, PolicyError
@@ -438,3 +438,55 @@ class LibPolicyTestCase(MyTestCase):
 
         remove_token(serial)
         delete_policy("pol_lastauth")
+
+    def test_11_otppin_with_resolvers(self):
+        # This tests, if the otppin policy differentiates between users in
+        # the same realm but in different resolvers.
+        r = save_resolver({"resolver": "reso001",
+                           "type": "passwdresolver",
+                           "fileName": "tests/testdata/passwords"})
+        # user "cornelius" is in resolver reso001
+        self.assertTrue(r > 0)
+        r = save_resolver({"resolver": "reso002",
+                           "type": "passwdresolver",
+                           "fileName": "tests/testdata/pw-2nd-resolver"})
+        # user "userresolver2" is in resolver reso002
+        self.assertTrue(r > 0)
+        (added, failed) = set_realm("myrealm", ["reso001", "reso002"])
+        self.assertEqual(len(added), 2)
+        self.assertEqual(len(failed), 0)
+        my_user_1 = User("cornelius", realm="myrealm")
+        my_user_2 = User("userresolver2", realm="myrealm")
+        # We set a policy only for resolver reso002
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTH,
+                   realm="myrealm",
+                   resolver="reso002",
+                   action="{0!s}={1!s}".format(ACTION.OTPPIN, ACTIONVALUE.NONE))
+        g = FakeFlaskG()
+        P = PolicyClass()
+        g.policy_object = P
+        options = {"g": g}
+
+        # user in reso001 fails with empty PIN, since the policy does not
+        # match for him
+        r = auth_otppin(self.fake_check_otp, None,
+                        "", options=options, user=my_user_1)
+        self.assertFalse(r)
+
+        # user in reso002 succeeds with empty PIN, since policy pol1 matches
+        # for him
+        r = auth_otppin(self.fake_check_otp, None,
+                        "", options=options, user=my_user_2)
+        self.assertTrue(r)
+
+        # user in reso002 fails with any PIN, since policy pol1 matches
+        # for him
+        r = auth_otppin(self.fake_check_otp, None,
+                        "anyPIN", options=options, user=my_user_2)
+        self.assertFalse(r)
+
+        delete_policy("pol1")
+        delete_realm("myrealm")
+        delete_resolver("reso001")
+        delete_resolver("reso002")

@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-07-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             add resolver dependent policy for lastauth, otppin, passthru,
+#             timelimit, losttoken
 #  2015-10-31 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Added time_limit and last_auth
 #  2015-03-15 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -114,6 +117,7 @@ def challenge_response_allowed(func):
                 action=ACTION.CHALLENGERESPONSE,
                 scope=SCOPE.AUTH,
                 realm=user_object.realm,
+                resolver=user_object.resolver,
                 user=user_object.login,
                 client=clientip)
             log.debug("Found these allowed tokentypes: {0!s}".format(allowed_tokentypes))
@@ -163,6 +167,7 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
         pass_no_token = policy_object.get_policies(action=ACTION.PASSNOTOKEN,
                                                    scope=SCOPE.AUTH,
                                                    realm=user_object.realm,
+                                                   resolver=user_object.resolver,
                                                    user=user_object.login,
                                                    client=clientip, active=True)
         if pass_no_token:
@@ -200,6 +205,7 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw,
         pass_no_user = policy_object.get_policies(action=ACTION.PASSNOUSER,
                                                   scope=SCOPE.AUTH,
                                                   realm=user_object.realm,
+                                                  resolver=user_object.resolver,
                                                   user=user_object.login,
                                                   client=clientip,
                                                   active=True)
@@ -239,6 +245,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
         pass_thru = policy_object.get_policies(action=ACTION.PASSTHRU,
                                                scope=SCOPE.AUTH,
                                                realm=user_object.realm,
+                                               resolver=user_object.resolver,
                                                user=user_object.login,
                                                client=clientip, active=True)
         if len(pass_thru) > 1:
@@ -301,12 +308,14 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
         max_success = policy_object.get_action_values(action=ACTION.AUTHMAXSUCCESS,
                                                       scope=SCOPE.AUTHZ,
                                                       realm=user_object.realm,
+                                                      resolver=user_object.resolver,
                                                       user=user_object.login,
                                                       client=clientip)
         max_fail = policy_object.get_action_values(
             action=ACTION.AUTHMAXFAIL,
             scope=SCOPE.AUTHZ,
             realm=user_object.realm,
+            resolver=user_object.resolver,
             user=user_object.login,
             client=clientip)
         # Check for maximum failed authentications
@@ -390,11 +399,13 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
         try:
             # Assume we have a user
             realm = user_or_serial.realm
+            resolver = user_or_serial.resolver
             login = user_or_serial.login
             serial = reply_dict.get("serial")
         except Exception:
             # in case of a serial:
             realm = None
+            resolver = None
             login = None
             serial = user_or_serial
 
@@ -413,6 +424,7 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
                 action=ACTION.LASTAUTH,
                 scope=SCOPE.AUTHZ,
                 realm=realm,
+                resolver=resolver,
                 user=login,
                 client=clientip, unique=True)
 
@@ -459,6 +471,7 @@ def login_mode(wrapped_function, *args, **kwds):
         login_mode_list = policy_object.get_action_values(ACTION.LOGINMODE,
                                                           scope=SCOPE.WEBUI,
                                                           realm=user_object.realm,
+                                                          resolver=user_object.resolver,
                                                           user=user_object.login,
                                                           client=clientip)
 
@@ -522,6 +535,7 @@ def auth_otppin(wrapped_function, *args, **kwds):
         otppin_list = policy_object.get_action_values(ACTION.OTPPIN,
                                                       scope=SCOPE.AUTH,
                                                       realm=user_object.realm,
+                                                      resolver=user_object.resolver,
                                                       user=user_object.login,
                                                       client=clientip)
         if otppin_list:
@@ -573,10 +587,12 @@ def config_lost_token(wrapped_function, *args, **kwds):
         if len(toks) == 1:
             username = None
             realm = None
+            resolver = None
             user_object = toks[0].user
             if user_object:
                 username = user_object.login
                 realm = user_object.realm
+                resolver = user_object.resolver
             clientip = options.get("clientip")
             # get the policy
             policy_object = g.policy_object
@@ -584,18 +600,21 @@ def config_lost_token(wrapped_function, *args, **kwds):
                 ACTION.LOSTTOKENPWCONTENTS,
                 scope=SCOPE.ENROLL,
                 realm=realm,
+                resolver=resolver,
                 user=username,
                 client=clientip)
             validity_list = policy_object.get_action_values(
                 ACTION.LOSTTOKENVALID,
                 scope=SCOPE.ENROLL,
                 realm=realm,
+                resolver=resolver,
                 user=username,
                 client=clientip)
             pw_len_list = policy_object.get_action_values(
                 ACTION.LOSTTOKENPWLEN,
                 scope=SCOPE.ENROLL,
                 realm=realm,
+                resolver=resolver,
                 user=username,
                 client=clientip)
 
