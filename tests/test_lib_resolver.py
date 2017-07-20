@@ -1259,6 +1259,7 @@ class LDAPResolverTestCase(MyTestCase):
 
     @ldap3mock.activate
     def test_25_LDAP_DN_with_utf8(self):
+        # This tests usernames are entered in the LDAPresolver as utf-8 encoded
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         y = LDAPResolver()
         y.loadConfig({'LDAPURI': 'ldap://localhost',
@@ -1312,6 +1313,7 @@ class LDAPResolverTestCase(MyTestCase):
 
     @ldap3mock.activate
     def test_26_LDAP_DN_with_unicode(self):
+        # This tests usernames are entered in the LDAPresolver as unicode.
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         y = LDAPResolver()
         y.loadConfig({'LDAPURI': 'ldap://localhost',

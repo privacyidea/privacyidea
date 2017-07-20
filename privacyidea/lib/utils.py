@@ -129,6 +129,18 @@ def to_utf8(password):
     return password
 
 
+def to_unicode(s, encoding="utf-8"):
+    """
+    converts a value to unicode if it is of type str.
+    
+    :param s: The utf-8 encoded str 
+    :return: unicode string
+    """
+    if type(s) == str:
+        s = s.decode(encoding)
+    return s
+
+
 def generate_otpkey(key_size=20):
     """
     generates the HMAC key of keysize. Should be 20 or 32
