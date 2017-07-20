@@ -1349,13 +1349,13 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
 
         uinfo = y.getUserInfo(user_id)
-        self.assertEqual(uinfo.get("username"), user)
+        self.assertEqual(uinfo.get("username"), user.encode("utf-8"))
 
         ret = y.getUserList({"username": user})
         self.assertTrue(len(ret) == 1, ret)
 
         username = y.getUsername(user_id)
-        self.assertTrue(username == "kölbel", username)
+        self.assertTrue(username == user.encode("utf-8"), username)
 
         res = y.checkPass(user_id, "mySecret")
         self.assertTrue(res)
