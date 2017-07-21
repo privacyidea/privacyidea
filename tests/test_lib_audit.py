@@ -206,19 +206,3 @@ class AuditTestCase(MyTestCase):
         self.assertEqual(audit_log.total, 1)
         self.assertEqual(audit_log.auditdata[0].get("user"), u"kölbel")
         self.assertEqual(audit_log.auditdata[0].get("sig_check"), "OK")
-
-        # Log a username as utf-8 with a non-ascii character
-        username = u"kölbel".encode("utf-8")
-        # hm, even if we should log a utf8 username...
-        self.Audit.log({"serial": "1234",
-                        "action": "token/assign",
-                        "success": True,
-                        "user": username})
-        self.Audit.finalize_log()
-        # ...we will find a unicode username
-        audit_log = self.Audit.search({"user": u"kölbel"})
-        self.assertEqual(audit_log.total, 1)
-        self.assertEqual(audit_log.auditdata[0].get("user"), u"kölbel")
-        self.assertEqual(audit_log.auditdata[0].get("sig_check"), "OK")
-
-        # TODO: Do we need to be able to find utf8 usernames?
