@@ -319,6 +319,8 @@ class Audit(AuditBase):
                                                   le.client,
                                                   le.loglevel,
                                                   le.clearance_level)
+        if type(s) == unicode:
+            s = s.encode("utf-8")
         return s
 
     @staticmethod
