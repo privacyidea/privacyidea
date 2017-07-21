@@ -133,7 +133,7 @@ def get_info_configuration(noschemas):
     get_schema_info = ldap3.SCHEMA
     if noschemas:
         get_schema_info = ldap3.NONE
-    log.debug("Get LDAP schema info: {0!s}".format(get_schema_info))
+    log.debug("Get LDAP schema info: {0!r}".format(get_schema_info))
     return get_schema_info
 
 
@@ -855,7 +855,7 @@ class IdResolver (UserIdResolver):
             self.l.add(dn, self.object_classes, params)
 
         except Exception as e:
-            log.error("Error accessing LDAP server: {0}".format(e))
+            log.error("Error accessing LDAP server: {0!r}".format(e))
             log.debug("{0}".format(traceback.format_exc()))
             raise privacyIDEAError(e)
 
@@ -882,7 +882,7 @@ class IdResolver (UserIdResolver):
 
             self.l.delete(self._getDN(uid))
         except Exception as exx:
-            log.error("Error deleting user: {0}".format(exx))
+            log.error("Error deleting user: {0!r}".format(exx))
             res = False
         return res
 
@@ -984,7 +984,7 @@ class IdResolver (UserIdResolver):
             params = self._attributes_to_ldap_attributes(mapped)
             self.l.modify(self._getDN(uid), params)
         except Exception as e:
-            log.error("Error accessing LDAP server: {0!s}".format(e))
+            log.error("Error accessing LDAP server: {0!r}".format(e))
             log.debug("{0!s}".format(traceback.format_exc()))
             return False
 
