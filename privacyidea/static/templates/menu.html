@@ -94,11 +94,7 @@
                     <spinner name="spinner" show="false"></spinner>
                 </li>
                 <li ng-show="loggedInUser.username">
-                    <a ng-click="refresh()" style="cursor: pointer">
-                        <span class="glyphicon glyphicon-refresh"
-                              aria-hidden="true"></span>
-                        <translate>Refresh</translate>
-                    </a>
+                    <refreshbutton name="refresh" show="true" on-refresh="refresh()"></refreshbutton>
                 </li>
                 <li ng-class="{active: $state.includes('register')}"
                     ng-show="registrationAllowed">

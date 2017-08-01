@@ -381,3 +381,39 @@ myApp.directive('spinner', function() {
         }
     };
 });
+
+myApp.directive('refreshbutton', function() {
+    return {
+        scope: {
+            name: '@?',
+            show: '=?',
+            onRefresh: '&'
+        },
+        template: [
+            '<a ng-click="onRefresh()" ng-show="show" style="cursor: pointer">',
+            '<span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>\n',
+            '<translate>Refresh</translate>',
+            '</a>'
+        ].join(''),
+        replace: true,
+        controller: function($scope) {
+            $scope.loading_queue = 0;
+            $scope.$watch('loading_queue', function(loading_queue) {
+                if (loading_queue > 0) {
+                    $scope.show = false;
+                } else if (loading_queue < 0) {
+                    $scope.loading_queue = 0;
+                } else {
+                    $scope.show = true;
+                }
+            });
+            $scope.$on('spinnerEvent', function(event, data) {
+                if(data.action === 'increment') {
+                    $scope.loading_queue++;
+                } else if(data.action === 'decrement') {
+                    $scope.loading_queue--;
+                }
+            });
+        }
+    };
+});
