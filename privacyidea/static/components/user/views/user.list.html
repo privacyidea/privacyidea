@@ -12,24 +12,28 @@
                 <pi-filter ng-model="params.usernameFilter"
                            ng-change="_getUsers('livesearch')"
                            ng-keypress="($event.which==13)?_getUsers():return"
+                           persist-as="usernameFilter"
                            ></pi-filter>
             </th>
             <th><translate>surname</translate>
                 <pi-filter ng-model="params.surnameFilter"
                            ng-change="_getUsers('livesearch')"
                            ng-keypress="($event.which==13)?_getUsers():return"
+                           persist-as="surnameFilter"
                 ></pi-filter>
             </th>
             <th><translate>givenname</translate>
                 <pi-filter ng-model="params.givennameFilter"
                            ng-change="_getUsers('livesearch')"
                            ng-keypress="($event.which==13)?_getUsers():return"
+                           persist-as="givennameFilter"
                 ></pi-filter>
             </th>
             <th><translate>email</translate>
                 <pi-filter ng-model="params.emailFilter"
                            ng-change="_getUsers('livesearch')"
                            ng-keypress="($event.which==13)?_getUsers():return"
+                           persist-as="emailFilter"
                 ></pi-filter>
             </th>
             <th translate>phone</th>

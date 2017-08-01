@@ -44,15 +44,46 @@ myApp.directive("piFilter", function (instanceUrl) {
     return {
         require: 'ngModel',
         restrict: 'E',
-        scope: {},
+        scope: {
+            'persistAs': '@?'
+        },
         templateUrl: instanceUrl + "/static/components/directives/views/directive.filter.table.html",
         link: function (scope, element, attr, ctrl) {
+            // make it possible to persist filters per session
+            if(scope.hasOwnProperty("persistAs")
+                && !angular.isUndefined(Storage)) {
+                scope.storageItem = "piFilter:" + scope.persistAs;
+            }
+
+            scope.retrieveFilter = function () {
+                if(scope.hasOwnProperty("storageItem")) {
+                    var stored = sessionStorage.getItem(scope.storageItem);
+                    if(stored) {
+                        scope.filterValue = stored;
+                        scope.filterVisible = true;
+                        scope.updateFilter();
+                    }
+                }
+            };
+
+            scope.persistFilter = function () {
+                if(scope.hasOwnProperty("storageItem")) {
+                    sessionStorage.setItem(scope.storageItem, scope.filterValue);
+                }
+            };
+
             scope.updateFilter = function() {
                 ctrl.$setViewValue(scope.filterValue);
+                if(!angular.isUndefined(scope.filterValue)) {
+                    scope.persistFilter();
+                }
             };
+
             ctrl.$viewChangeListeners.push(function(){
               scope.$eval(attr.ngChange);
             });
+
+            scope.retrieveFilter();
         }
     };
 });
