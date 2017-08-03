@@ -333,7 +333,7 @@ class Token(MethodsMixin, db.Model):
         seed_str = self._fix_spaces(self.pin_seed)
         seed = binascii.unhexlify(seed_str)
         hPin = hash(pin, seed)
-        log.debug("hPin: {0!s}, pin: {1!s}, seed: {2!s}".format(binascii.hexlify(hPin),
+        log.debug("hPin: {0!s}, pin: {1!r}, seed: {2!s}".format(binascii.hexlify(hPin),
                                                    pin,
                                                    self.pin_seed))
         return binascii.hexlify(hPin)
