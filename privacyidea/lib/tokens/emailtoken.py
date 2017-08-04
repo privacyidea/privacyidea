@@ -284,7 +284,7 @@ class EmailTokenClass(HotpTokenClass):
             success, message = self._compose_email(message=message,
                                                 subject=subject)
             log.debug("AutoEmail: send new SMS: {0!s}".format(success))
-            log.debug("AutoEmail: {0!s}".format(message))
+            log.debug("AutoEmail: {0!r}".format(message))
         return ret
 
     @staticmethod

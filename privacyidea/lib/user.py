@@ -408,7 +408,7 @@ class User(object):
             attributes["password"] = password
         success = False
         try:
-            log.info("User info for user {0!s}@{1!s} about to be updated.".format(self.login, self.realm))
+            log.info("User info for user {0!r}@{1!r} about to be updated.".format(self.login, self.realm))
             if type(self.login) != unicode:
                 self.login = self.login.decode(ENCODING)
             res = self._get_resolvers()
@@ -448,7 +448,7 @@ class User(object):
         """
         success = False
         try:
-            log.info("User {0!s}@{1!s} about to be deleted.".format(self.login, self.realm))
+            log.info("User {0!r}@{1!r} about to be deleted.".format(self.login, self.realm))
             if type(self.login) != unicode:
                 self.login = self.login.decode(ENCODING)
             res = self._get_resolvers()
