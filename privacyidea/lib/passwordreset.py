@@ -121,7 +121,7 @@ def check_recoverycode(user, recoverycode):
     for pwr in sql_query:
         if verify_with_pepper(pwr.recoverycode, recoverycode):
             recoverycode_valid = True
-            log.debug("Found valid recoverycode for user {0!s}".format(user))
+            log.debug("Found valid recoverycode for user {0!r}".format(user))
             # Delete the recovery code, so that it can only be used once!
             r = pwr.delete()
             log.debug("{0!s} used password recoverycode deleted.".format(r))
