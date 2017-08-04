@@ -58,7 +58,7 @@ class HttpSMSProvider(ISMSProvider):
         :param message: the message to submit to the phone
         :return:
         """
-        log.debug("submitting message {0!s} to {1!s}".format(message, phone))
+        log.debug("submitting message {0!r} to {1!s}".format(message, phone))
         parameter = {}
         if self.smsgateway:
             url = self.smsgateway.option_dict.get("URL")
