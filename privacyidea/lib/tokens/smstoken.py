@@ -322,7 +322,7 @@ class SmsTokenClass(HotpTokenClass):
             self.inc_otp_counter(ret, reset=False)
             success, message = self._send_sms(message=message)
             log.debug("AutoSMS: send new SMS: {0!s}".format(success))
-            log.debug("AutoSMS: {0!s}".format(message))
+            log.debug("AutoSMS: {0!r}".format(message))
         return ret
 
     @log_with(log)
