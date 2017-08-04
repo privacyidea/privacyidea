@@ -353,7 +353,7 @@ class User(object):
                 y = get_resolver_object(self.resolver)
                 uid, _rtype, _rname = self.get_user_identifiers()
                 if y.checkPass(uid, password):
-                    success = "{0!s}@{1!s}".format(self.login, self.realm)
+                    success = u"{0!s}@{1!s}".format(self.login, self.realm)
                     log.debug("Successfully authenticated user {0!r}.".format(self))
                 else:
                     log.info("user {0!r} failed to authenticate.".format(self))

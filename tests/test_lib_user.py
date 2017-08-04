@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This test file tests the lib.user
 
@@ -338,3 +339,24 @@ class UserTestCase(MyTestCase):
         self.assertEqual(r[3], "resolver1")
 
         delete_realm("sort_realm")
+
+    def test_17_check_nonascii_user(self):
+        realm = "sqlrealm"
+        resolver = "SQL1"
+        parameters = self.parameters
+        parameters["resolver"] = resolver
+        parameters["type"] = "sqlresolver"
+
+        rid = save_resolver(parameters)
+        self.assertTrue(rid > 0, rid)
+
+        (added, failed) = set_realm(realm, [resolver])
+        self.assertEqual(len(failed), 0)
+        self.assertEqual(len(added), 1)
+
+        # check ascii password of non-ascii user
+        self.assertFalse(User(login=u"nönäscii",
+                             realm=realm).check_password("wrong"))
+        self.assertTrue(User(login=u"nönäscii",
+                             realm=realm).check_password("somepassword"))
+
