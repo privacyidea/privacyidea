@@ -433,3 +433,12 @@ class HttpSMSTestCase(MyTestCase):
         self.assertTrue(r)
 
         delete_smsgateway(identifier)
+
+    @responses.activate
+    def test_11_send_nonascii_sms_post_success(self):
+        responses.add(responses.POST,
+                      self.post_url,
+                      body=self.success_body)
+        # Here we need to send the SMS
+        r = self.post_provider.submit_message("123456", u"Hallöle Smørrebrød")
+        self.assertTrue(r)
