@@ -154,13 +154,19 @@ class AuditTestCase(MyTestCase):
         self.Audit.log({"serial": "oath"})
         self.Audit.finalize_log()
 
+        self.Audit.log({"serial": "oath", "user": u"nöäscii"})
+        self.Audit.finalize_log()
+
         audit_log = self.Audit.csv_generator()
         self.assertTrue(type(audit_log).__name__ == "generator",
                         type(audit_log).__name__)
 
+        count = 0
         for audit_entry in audit_log:
             self.assertTrue(type(audit_entry).__name__ in ["unicode", "str"],
                             type(audit_entry).__name__)
+            count += 1
+        self.assertEqual(count, 5)
 
     def test_05_dataframe(self):
         self.Audit.log({"action": "action1",
