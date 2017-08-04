@@ -362,7 +362,7 @@ class Audit(AuditBase):
         for le in logentries:
             audit_dict = self.audit_entry_to_dict(le)
             audit_list = audit_dict.values()
-            string_list = ["'{0!s}'".format(x) for x in audit_list]
+            string_list = [u"'{0!s}'".format(x) for x in audit_list]
             yield ",".join(string_list)+"\n"
 
     def get_count(self, search_dict, timedelta=None, success=None):
