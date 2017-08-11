@@ -209,6 +209,41 @@ Which would match if the tokeninfo *myValue* is a date, which is later than
 than 5 hours in the past.
 
 
+**detail_error_message**
+
+This condition checks a regular expression against the ``detail`` section in
+the HTTP response. The field ``detail->error->message`` is evaluated.
+
+Error messages can be manyfold. In case of authentication you could get error
+messages like:
+
+"The user can not be found in any resolver in this realm!"
+
+With ``token/init`` you could get:
+
+"missing Authorization header"
+
+..note:: The field ``detail->error->message is only available in case of an
+   internal error, i.e. if the response status is ``False``.
+
+**detail_message**
+
+This condition checks a regular expression against the ``detail`` section in
+the HTTP response. The field ``detail->message`` is evaluated.
+
+Those messages can be manyfold like:
+
+"wrong otp pin"
+
+"wrong otp value"
+
+"Only 2 failed authentications per 1:00:00"
+
+
+..note:: The field ``detail->message`` is available in case of status ``True``,
+   like an authentication request that was handled successfully but failed.
+
+
 Available Handler Modules
 -------------------------
 

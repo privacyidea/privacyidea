@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-#
+#  2017-08-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add condition for detail->error->message
 #  2017-07-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add possibility to compare tokeninfo field against fixed time
 #             and also {now} with offset.
@@ -64,6 +65,8 @@ class CONDITION(object):
     COUNT_AUTH_SUCCESS = "count_auth_success"
     COUNT_AUTH_FAIL = "count_auth_fail"
     TOKENINFO = "tokeninfo"
+    DETAIL_ERROR_MESSAGE = "detail_error_message"
+    DETAIL_MESSAGE = "detail_message"
 
 
 class BaseEventHandler(object):
@@ -200,6 +203,18 @@ class BaseEventHandler(object):
                           "field. You need to enter something like "
                           "'<fieldname> == <fieldvalue>', '<fieldname> > "
                           "<fieldvalue>' or '<fieldname> < <fieldvalue>'")
+            },
+            CONDITION.DETAIL_ERROR_MESSAGE: {
+                "type": "str",
+                "desc": _("Here you can enter a regular expression. The "
+                          "condition only applies if the regular expression "
+                          "matches the detail->error->message in the response.")
+            },
+            CONDITION.DETAIL_MESSAGE: {
+                "type": "str",
+                "desc": _("Here you can enter a regular expression. The "
+                          "condition only applies if the regular expression "
+                          "matches the detail->message in the response.")
             }
         }
         return cond
@@ -325,6 +340,18 @@ class BaseEventHandler(object):
         if CONDITION.USER_TOKEN_NUMBER in conditions and res and user:
             num_tokens = get_tokens(user=user, count=True)
             res = num_tokens == int(conditions.get(CONDITION.USER_TOKEN_NUMBER))
+
+        if CONDITION.DETAIL_ERROR_MESSAGE in conditions and res:
+            message = content.get("detail", {}).get("error", {}).get("message")
+            search_exp = conditions.get(CONDITION.DETAIL_ERROR_MESSAGE)
+            m = re.search(search_exp, message)
+            res = bool(m)
+
+        if CONDITION.DETAIL_MESSAGE in conditions and res:
+            message = content.get("detail", {}).get("message")
+            search_exp = conditions.get(CONDITION.DETAIL_MESSAGE)
+            m = re.search(search_exp, message)
+            res = bool(m)
 
         # Token specific conditions
         if token_obj:

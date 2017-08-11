@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-07-09 21:17+0200\n"
-"PO-Revision-Date: 2017-07-09 21:18+0200\n"
+"POT-Creation-Date: 2017-08-11 09:24+0200\n"
+"PO-Revision-Date: 2017-08-11 09:25+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language: de\n"
 "Language-Team: de <LL@li.org>\n"
@@ -713,35 +713,35 @@ msgstr ""
 "Definiere den notwendigen Inhalte der OTP PIN für den {0!s} Token. (c) "
 "Buchstaben, (n) Ziffern, (s) Sonderzeichen, (o) Andere [+/-]!"
 
-#: lib/eventhandler/base.py:103
+#: lib/eventhandler/base.py:113
 msgid "The user realm, for which this event should apply."
 msgstr "Benutzer-Realm, für den das Event greifen soll."
 
-#: lib/eventhandler/base.py:108
+#: lib/eventhandler/base.py:118
 msgid "The token realm, for which this event should apply."
 msgstr "Token-Ream, für den das Event greifen soll."
 
-#: lib/eventhandler/base.py:114
+#: lib/eventhandler/base.py:124
 msgid "The type of the token."
 msgstr "Der Tokentyp."
 
-#: lib/eventhandler/base.py:119
+#: lib/eventhandler/base.py:129
 msgid "The logged in user is of the following type."
 msgstr "Der angemeldete Benutzer ist vom Typ"
 
-#: lib/eventhandler/base.py:124
+#: lib/eventhandler/base.py:134
 msgid "The result.value within the response is True or False."
 msgstr "Das result.value in der Server-Antwort ist 'True' oder 'False'."
 
-#: lib/eventhandler/base.py:130
+#: lib/eventhandler/base.py:140
 msgid "Check if the max failcounter of the token is reached."
 msgstr "Der maximale Fehlerzähler des Tokens wurde erreicht."
 
-#: lib/eventhandler/base.py:136
+#: lib/eventhandler/base.py:146
 msgid "The token has a user assigned."
 msgstr "Der Token ist einem Benutzer zugewiesen."
 
-#: lib/eventhandler/base.py:141
+#: lib/eventhandler/base.py:151
 msgid ""
 "The token has a user assigned, but the user does not exist in the userstore "
 "anymore."
@@ -749,26 +749,26 @@ msgstr ""
 "Dem Token ist ein Benutzer zugewiesen, aber dieser Benutzer existiert nicht mehr "
 "in der Benutzerquelle."
 
-#: lib/eventhandler/base.py:147
+#: lib/eventhandler/base.py:157
 msgid "Check if the token is within its validity period."
 msgstr "Überprüfe, ob der Token innerhalb des Gültigkeitszeitraums liegt."
 
-#: lib/eventhandler/base.py:152
+#: lib/eventhandler/base.py:162
 msgid "Action is triggered, if the serial matches this regular expression."
 msgstr ""
 "Die Aktion wird ausgeführt, wenn die Seriennummer auf den regulären Ausdruck "
 "passt."
 
-#: lib/eventhandler/base.py:157
+#: lib/eventhandler/base.py:167
 msgid "Action is triggered, if the user has this number of tokens assigned."
 msgstr ""
 "Die Aktion wird ausgeführt, wenn der Benutzer diese Anzahl an Tokens besitzt."
 
-#: lib/eventhandler/base.py:162
+#: lib/eventhandler/base.py:172
 msgid "Action is triggered, if the counter of the token equals this setting."
 msgstr "Die Aktion wird ausgeführt, wenn der Token-Counter diesem Wert entspricht."
 
-#: lib/eventhandler/base.py:167
+#: lib/eventhandler/base.py:177
 msgid ""
 "Action is triggered, if the last authentication of the token is older than 7h, "
 "10d or 1y."
@@ -776,7 +776,7 @@ msgstr ""
 "Die Aktion wird ausgeführt, wenn die letzte Authentisierung mit diesem Token "
 "länger als 7 Stunden, 10 Tage oder 1 Jahr (7h, 10d, 1y) zurückliegt."
 
-#: lib/eventhandler/base.py:172
+#: lib/eventhandler/base.py:182
 msgid ""
 "This can be '>100', '<99', or '=100', to trigger the action, if the tokeninfo "
 "field 'count_auth' is bigger than 100, less than 99 or exactly 100."
@@ -784,7 +784,7 @@ msgstr ""
 "Dies kann '>100', '<99' oder '=100' sein, um eine Aktion auszulösen. Das Feld "
 "'count_auth' in Tokeninfo ist dann größer als 100, kleiner als 99 oder exakt 100."
 
-#: lib/eventhandler/base.py:178
+#: lib/eventhandler/base.py:188
 msgid ""
 "This can be '>100', '<99', or '=100', to trigger the action, if the tokeninfo "
 "field 'count_auth_success' is bigger than 100, less than 99 or exactly 100."
@@ -793,7 +793,7 @@ msgstr ""
 "'count_auth_success' in Tokeninfo ist dann größer als 100, kleiner als 99 oder "
 "exakt 100."
 
-#: lib/eventhandler/base.py:185
+#: lib/eventhandler/base.py:195
 msgid ""
 "This can be '>100', '<99', or '=100', to trigger the action, if the difference "
 "between the tokeninfo field 'count_auth' and 'count_auth_success is bigger than "
@@ -803,7 +803,7 @@ msgstr ""
 "'count_auth' und 'count_auth_success' in Tokeninfo ist dann größer als 100, "
 "kleiner als 99 oder exakt 100."
 
-#: lib/eventhandler/base.py:192
+#: lib/eventhandler/base.py:202
 msgid ""
 "This condition can check any arbitrary tokeninfo field. You need to enter "
 "something like '<fieldname> == <fieldvalue>', '<fieldname> > <fieldvalue>' or "
@@ -812,6 +812,23 @@ msgstr ""
 "Diese Bedingung kann jedes beliebige Tokeninfo Feld überprüfen. Hier können Sie "
 "Ausdrücke wie '<Feldname> == <Feldwert>', '<Feldname> > <Feldwert>' oder "
 "'<Feldname> < <Feldwert>' eingeben."
+
+#: lib/eventhandler/base.py:209
+msgid ""
+"Here you can enter a regular expression. The condition only applies if the "
+"regular expression matches the detail->error->message in the response."
+msgstr ""
+"Hier können Sie einen regulären Ausdruck eingeben. Die Bedingung greift nur, "
+"wenn der reguläre Ausdruck auf das Feld detail->error->message im HTTP Response "
+"passt."
+
+#: lib/eventhandler/base.py:215
+msgid ""
+"Here you can enter a regular expression. The condition only applies if the "
+"regular expression matches the detail->message in the response."
+msgstr ""
+"Hier können Sie einen regulären Ausdruck eingeben. Die Bedingung greift nur, "
+"wenn der reguläre Ausdruck auf das Feld detail->message im HTTP Response passt."
 
 #: lib/eventhandler/scripthandler.py:77
 msgid "Add '--serial <serial number>' as script parameter."
@@ -841,11 +858,11 @@ msgstr ""
 "Nutze die Rolle des angemeldeten Benutzers als Skript-Parameter '--"
 "logged_in_role <role>'."
 
-#: lib/eventhandler/tokenhandler.py:105
+#: lib/eventhandler/tokenhandler.py:108
 msgid "set a new realm of the token"
 msgstr "Setze einen neuen Token-Realm"
 
-#: lib/eventhandler/tokenhandler.py:109
+#: lib/eventhandler/tokenhandler.py:112
 msgid ""
 "The new realm will be the only realm of the token. I.e. all other realms will be "
 "removed from this token. Otherwise the realm will be added to the token."
@@ -853,19 +870,19 @@ msgstr ""
 "Der neue Realm ist der einzige Realm des Tokens. D.h. alle anderen evtl. "
 "zugeordneten Realms dieses Tokens werden gelöscht. "
 
-#: lib/eventhandler/tokenhandler.py:124
+#: lib/eventhandler/tokenhandler.py:127
 msgid "Token type to create"
 msgstr "Tokentyp der angelegt werden soll"
 
-#: lib/eventhandler/tokenhandler.py:129
+#: lib/eventhandler/tokenhandler.py:132
 msgid "Assign token to user in request or to tokenowner."
 msgstr "Token dem Benutzer aus dem Request oder dem Tokenbesitzer zuweisen."
 
-#: lib/eventhandler/tokenhandler.py:134
+#: lib/eventhandler/tokenhandler.py:137
 msgid "Set the realm of the newly created token."
 msgstr "Realm des neu angelegten Tokens."
 
-#: lib/eventhandler/tokenhandler.py:141
+#: lib/eventhandler/tokenhandler.py:144
 msgid ""
 "Set the MOTP PIN of the MOTP token during enrollment. This is a required value "
 "for enrolling MOTP tokens."
@@ -873,11 +890,11 @@ msgstr ""
 "Setze die MOTP PIN während des Rollout-Prozesses. MOTP Token benötigen eine MOTP "
 "PIN."
 
-#: lib/eventhandler/tokenhandler.py:150
+#: lib/eventhandler/tokenhandler.py:153
 msgid "The new description of the token."
 msgstr "Die neue Beschreibung des Tokens."
 
-#: lib/eventhandler/tokenhandler.py:157
+#: lib/eventhandler/tokenhandler.py:160
 msgid ""
 "The token will be valid starting at the given date. Can be a fixed date or an "
 "offset like +10m, +24h, +7d."
@@ -885,7 +902,7 @@ msgstr ""
 "Der Token ist ab dem angegebenen Datum gültig. Dies kann ein fixes Datum oder "
 "eine Differenz wie +10m, +24h, +7d (10 Minuten, 24 Stunden, 7 Tage) sein."
 
-#: lib/eventhandler/tokenhandler.py:164
+#: lib/eventhandler/tokenhandler.py:167
 msgid ""
 "The token will be valid until the given date. Can be a fixed date or an offset "
 "like +10m, +24h, +7d."
@@ -894,19 +911,19 @@ msgstr ""
 "Datum oder eine Differenz wie +10m, +24h, +7d sein (10 Minuten, 24 Stunden, 7 "
 "Tage)"
 
-#: lib/eventhandler/tokenhandler.py:177
+#: lib/eventhandler/tokenhandler.py:180
 msgid "Set the new count window of the token."
 msgstr "Das neue Zähler-Fenster des Tokens setzen."
 
-#: lib/eventhandler/tokenhandler.py:187
+#: lib/eventhandler/tokenhandler.py:190
 msgid "Set the failcounter of the token."
 msgstr "Setze den Fehlerzähler des Tokens."
 
-#: lib/eventhandler/tokenhandler.py:196
+#: lib/eventhandler/tokenhandler.py:199
 msgid "Set this tokeninfo key."
 msgstr "Setze diesen Schlüssel in der Tokeninfo-Tabelle."
 
-#: lib/eventhandler/tokenhandler.py:201
+#: lib/eventhandler/tokenhandler.py:204
 msgid "Set the above key the this value."
 msgstr "Setze der oben genannten Schlüssel auf diesen Wert."
 
@@ -950,7 +967,7 @@ msgstr ""
 "Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden %i Maschinen-"
 "Objekte gefunden."
 
-#: lib/resolvers/LDAPIdResolver.py:808
+#: lib/resolvers/LDAPIdResolver.py:815
 #, python-format
 msgid ""
 "Your LDAP config found %i user objects, but only %i with the specified uidtype"
@@ -958,7 +975,7 @@ msgstr ""
 "Es wurden %i Benutzerobjekte gefunden. Aber nur %i mit dem spezifizierten UID-"
 "Typ."
 
-#: lib/resolvers/LDAPIdResolver.py:810
+#: lib/resolvers/LDAPIdResolver.py:817
 #, python-format
 msgid "Your LDAP config seems to be OK, %i user objects found."
 msgstr ""
@@ -1011,31 +1028,31 @@ msgstr ""
 "Vier-Augen-Token: Zwei oder mehr Personen müssen zusammenkommen, damit sich ein "
 "Account anmelden kann."
 
-#: lib/tokens/hotptoken.py:104
+#: lib/tokens/hotptoken.py:107
 msgid "Specify the hashlib to be used. Can be sha1 (1) or sha2-256 (2)."
 msgstr "Der zu verwendende Hash-Algorithmus. SHA1 (1) oder SHA2-256 (2)."
 
-#: lib/tokens/hotptoken.py:106
+#: lib/tokens/hotptoken.py:109
 msgid "Specify the otplen to be used. Can be 6 or 8 digits."
 msgstr "Die OTP-Länge. Entweder 6 oder 8 Zeichen."
 
-#: lib/tokens/hotptoken.py:109
+#: lib/tokens/hotptoken.py:112
 msgid "HOTP: Event based One Time Passwords."
 msgstr "HOTP: Ereignisbasiertes Einmalpasswort."
 
-#: lib/tokens/hotptoken.py:117
+#: lib/tokens/hotptoken.py:120
 msgid "The Yubikey access code used to initialize Yubikeys."
 msgstr "Yubikey Access Code, der benötigt wird, um Yubikeys zu initialisieren."
 
-#: lib/tokens/hotptoken.py:130 lib/tokens/totptoken.py:131
+#: lib/tokens/hotptoken.py:133 lib/tokens/totptoken.py:131
 msgid "Force the key to be generated on the server."
 msgstr "Den Key auf dem Server generieren."
 
-#: lib/tokens/hotptoken.py:187
+#: lib/tokens/hotptoken.py:190
 msgid "URL for google Authenticator"
 msgstr "URL für Google Authenticator und vergleichbare Apps"
 
-#: lib/tokens/hotptoken.py:200
+#: lib/tokens/hotptoken.py:203
 msgid "URL for OATH token"
 msgstr "URL für OATH Token"
 

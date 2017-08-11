@@ -329,10 +329,75 @@ class BaseEventHandlerTestCase(MyTestCase):
              }
         )
         self.assertTrue(r)
-
-
-
         remove_token(serial)
+
+    def test_05_detail_messages_condition(self):
+        self.setUp_user_realms()
+        uhandler = BaseEventHandler()
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "secret"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        # This is a kind of authentication request
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "secret"}
+        req.User = User("cornelius", "realm1")
+
+        # Check DETAIL_MESSAGE
+        resp = Response()
+        resp.data = """{"result": {"value": true, "status": true},
+        "detail": {"message": "something very special happened"}
+        }
+        """
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.DETAIL_MESSAGE:
+                                                "special"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertEqual(r, True)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.DETAIL_MESSAGE:
+                                                "^special"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertEqual(r, False)
+
+        # Check DETAIL_ERROR_MESSAGE
+        resp = Response()
+        resp.data = """{"result": {"value": false, "status": false},
+            "detail": {"error": {"message": "user does not exist"}}
+            }
+            """
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.DETAIL_ERROR_MESSAGE:
+                                                "does not exist$"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertEqual(r, True)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.DETAIL_ERROR_MESSAGE:
+                                                "^does not exist"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertEqual(r, False)
 
 
 class ScriptEventTestCase(MyTestCase):
