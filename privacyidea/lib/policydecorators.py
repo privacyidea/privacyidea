@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-08-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add authcache decorator
 #  2017-07-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             add resolver dependent policy for lastauth, otppin, passthru,
 #             timelimit, losttoken
@@ -45,6 +47,7 @@ import functools
 from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timelimit, parse_timedelta
+from privacyidea.lib.authcache import verify_in_cache
 import datetime
 from dateutil.tz import tzlocal
 from privacyidea.lib.radiusserver import get_radius
@@ -141,6 +144,48 @@ def challenge_response_allowed(func):
         return f_result
 
     return challenge_response_wrapper
+
+
+def auth_cache(wrapped_function, user_object, passw, options=None):
+    """
+    Decorate lib.token:check_user_pass. Verify, if the authentication can 
+    be found in the auth_cache. 
+    
+    :param wrapped_function: usually "check_user_pass"
+    :param user_object: User who tries to authenticate
+    :param passw: The PIN and OTP
+    :param options: Dict containing values for "g" and "clientip".
+    :return: Tuple of True/False and reply-dictionary
+    """
+    options = options or {}
+    g = options.get("g")
+    if g:
+        clientip = options.get("clientip")
+        policy_object = g.policy_object
+        auth_cache = policy_object.get_action_values(
+            action=ACTION.AUTH_CACHE,
+            scope=SCOPE.AUTH,
+            realm=user_object.realm,
+            resolver=user_object.resolver,
+            user=user_object.login,
+            client=clientip)
+        if auth_cache:
+            # verify in cache and return an early success
+            # TODO determine first_auth and last_auth from policy!
+            # TODO: Test this decorator!
+            first_auth = datetime.datetime.utcnow() - datetime.timedelta(
+                hours=4)
+            last_auth = datetime.datetime.utcnow() - datetime.timedelta(
+                minutes=5)
+            result = verify_in_cache(user_object.login, user_object.realm,
+                                     user_object.resolver, passw,
+                                     first_auth=first_auth,
+                                     last_auth=last_auth)
+            if result:
+                return True, {"message": "Authenticated by AuthCache."}
+
+    # If nothing else returned, we return the wrapped function
+    return wrapped_function(user_object, passw, options)
 
 
 def auth_user_has_no_token(wrapped_function, user_object, passw,

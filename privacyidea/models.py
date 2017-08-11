@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-08-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add AuthCache
 #  2017-04-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add support for multiple challenge response token
 #  2016-02-19 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -2331,3 +2333,27 @@ class UserCache(MethodsMixin, db.Model):
         self.resolver = resolver
         self.user_id = user_id
         self.timestamp = timestamp
+
+
+class AuthCache(MethodsMixin, db.Model):
+    __tablename__ = 'authcache'
+    id = db.Column(db.Integer, Sequence("usercache_seq"), primary_key=True)
+    first_auth = db.Column(db.DateTime)
+    last_auth = db.Column(db.DateTime)
+    username = db.Column(db.Unicode(64), default=u"", index=True)
+    resolver = db.Column(db.Unicode(120), default=u'', index=True)
+    realm = db.Column(db.Unicode(120), default=u'', index=True)
+    client_ip = db.Column(db.Unicode(40), default=u"")
+    user_agent = db.Column(db.Unicode(120), default=u"")
+    # We can hash the password like this:
+    # binascii.hexlify(hashlib.sha256("secret123456").digest())
+    authentication = db.Column(db.Unicode(64), default=u"")
+
+    def __init__(self, username, realm, resolver, authentication,
+                 first_auth=None, last_auth=None):
+        self.username = username
+        self.realm = realm
+        self.resolver = resolver
+        self.authentication = authentication
+        self.first_auth = first_auth
+        self.last_auth = last_auth

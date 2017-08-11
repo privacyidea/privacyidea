@@ -293,6 +293,7 @@ class ACTION(object):
     MANAGESUBSCRIPTION = "managesubscription"
     SEARCH_ON_ENTER = "search_on_enter"
     TIMEOUT_ACTION = "timeout_action"
+    AUTH_CACHE = "auth_cache"
 
 
 class GROUP(object):
@@ -1504,8 +1505,14 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _('If a user authenticates successfully reset the '
                           'failcounter of all of his tokens.')
+            },
+            ACTION.AUTH_CACHE: {
+                'type': 'str',
+                'desc': _('Cache the password used for authentication and '
+                          'allow authentication with the same credentials for a '
+                          'certain amount of time. '
+                          'Specify timeout like 4h or 4h/5m.')
             }
-
         },
         SCOPE.AUTHZ: {
             ACTION.AUTHMAXSUCCESS: {

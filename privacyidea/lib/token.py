@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2017-08-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add auth_cache
 #  2017-04-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add support for multiple challenge response token
 #  2016-08-31 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -87,6 +89,7 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_passthru,
                                               auth_user_timelimit,
                                               auth_lastauth,
+                                              auth_cache,
                                               config_lost_token)
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from dateutil.tz import tzlocal
@@ -1856,6 +1859,7 @@ def check_otp(serial, otpval):
     return res, reply_dict
 
 
+@libpolicy(auth_cache)
 @libpolicy(auth_user_does_not_exist)
 @libpolicy(auth_user_has_no_token)
 @libpolicy(auth_user_timelimit)
