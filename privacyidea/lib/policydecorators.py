@@ -168,15 +168,23 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
             realm=user_object.realm,
             resolver=user_object.resolver,
             user=user_object.login,
-            client=clientip)
+            client=clientip,
+            unique=True)
         if auth_cache:
             # verify in cache and return an early success
-            # TODO determine first_auth and last_auth from policy!
-            # TODO: Test this decorator!
-            first_auth = datetime.datetime.utcnow() - datetime.timedelta(
-                hours=4)
-            last_auth = datetime.datetime.utcnow() - datetime.timedelta(
-                minutes=5)
+            auth_times = auth_cache[0].split("/")
+            # determine first_auth from policy!
+            first_offset = parse_timedelta(auth_times[0])
+
+            if len(auth_times) == 2:
+                # Determine last_auth from policy
+                last_offset = parse_timedelta(auth_times[1])
+            else:
+                # If there is no last_auth, it is equal to first_auth
+                last_offset = first_offset
+
+            first_auth = datetime.datetime.utcnow() - first_offset
+            last_auth = datetime.datetime.utcnow() - last_offset
             result = verify_in_cache(user_object.login, user_object.realm,
                                      user_object.resolver, passw,
                                      first_auth=first_auth,

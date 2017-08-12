@@ -18,7 +18,7 @@ from privacyidea.lib.policydecorators import (auth_otppin,
                                               auth_user_has_no_token,
                                               login_mode, config_lost_token,
                                               challenge_response_allowed,
-                                              auth_user_timelimit,
+                                              auth_user_timelimit, auth_cache,
                                               auth_lastauth)
 from privacyidea.lib.user import User
 from privacyidea.lib.resolver import save_resolver, delete_resolver
@@ -29,6 +29,11 @@ from privacyidea.lib.error import UserError, PolicyError
 from privacyidea.lib.radiusserver import add_radius
 import datetime
 import radiusmock
+import binascii
+import hashlib
+from privacyidea.models import AuthCache
+from privacyidea.lib.authcache import delete_from_cache
+from datetime import timedelta
 
 
 def _check_policy_name(polname, policies):
@@ -490,3 +495,89 @@ class LibPolicyTestCase(MyTestCase):
         delete_realm("myrealm")
         delete_resolver("reso001")
         delete_resolver("reso002")
+
+    def test_12_authcache(self):
+        password = "secret123456"
+        username = "cornelius"
+        realm = "myrealm"
+        resolver = "reso001"
+        pw_hash = binascii.hexlify(hashlib.sha256(password).digest())
+
+        r = save_resolver({"resolver": "reso001",
+                           "type": "passwdresolver",
+                           "fileName": "tests/testdata/passwords"})
+        (added, failed) = set_realm("myrealm", ["reso001"])
+
+        def fake_check_user_pass(user, passw, options=None):
+            return True, {"message": "Fake Authentication"}
+
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTH,
+                   realm=realm,
+                   resolver=resolver,
+                   action="{0!s}={1!s}".format(ACTION.AUTH_CACHE, "4h/5m"))
+        g = FakeFlaskG()
+        P = PolicyClass()
+        g.policy_object = P
+        options = {"g": g}
+
+        # This successfully authenticates against the authcache
+        # We have an authentication, that is within the policy timeout
+        AuthCache(username, realm, resolver, pw_hash,
+                  first_auth=datetime.datetime.utcnow() - timedelta(hours=3),
+                  last_auth=datetime.datetime.utcnow() - timedelta(minutes=1)).save()
+        r = auth_cache(fake_check_user_pass, User("cornelius", "myrealm"),
+                        password, options=options)
+        self.assertTrue(r[0])
+        self.assertEqual(r[1].get("message"), "Authenticated by AuthCache." )
+
+        # We have an authentication, that is not read from the authcache,
+        # since the authcache first_auth is too old.
+        delete_from_cache(username, realm, resolver, pw_hash)
+        AuthCache(username, realm, resolver, pw_hash,
+                  first_auth=datetime.datetime.utcnow() - timedelta(hours=5),
+                  last_auth=datetime.datetime.utcnow() - timedelta(
+                      minutes=1)).save()
+        r = auth_cache(fake_check_user_pass, User("cornelius", "myrealm"),
+                       password, options=options)
+        self.assertTrue(r[0])
+        self.assertEqual(r[1].get("message"), "Fake Authentication")
+
+        # We have an authentication, that is not read from authcache, since
+        # the last_auth is too old = 10 minutes.
+        delete_from_cache(username, realm, resolver, pw_hash)
+        AuthCache(username, realm, resolver, pw_hash,
+                  first_auth=datetime.datetime.utcnow() - timedelta(hours=1),
+                  last_auth=datetime.datetime.utcnow() - timedelta(
+                      minutes=10)).save()
+        r = auth_cache(fake_check_user_pass, User("cornelius", "myrealm"),
+                       password, options=options)
+        self.assertTrue(r[0])
+        self.assertEqual(r[1].get("message"), "Fake Authentication")
+
+        # We have a policy, with no special last_auth
+        delete_policy("pol1")
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTH,
+                   realm=realm,
+                   resolver=resolver,
+                   action="{0!s}={1!s}".format(ACTION.AUTH_CACHE, "4h"))
+        g = FakeFlaskG()
+        P = PolicyClass()
+        g.policy_object = P
+        options = {"g": g}
+
+        delete_from_cache(username, realm, resolver, pw_hash)
+        AuthCache(username, realm, resolver, pw_hash,
+                  first_auth=datetime.datetime.utcnow() - timedelta(hours=2),
+                  last_auth=datetime.datetime.utcnow() - timedelta(
+                      hours=1)).save()
+        r = auth_cache(fake_check_user_pass, User("cornelius", "myrealm"),
+                       password, options=options)
+        self.assertTrue(r[0])
+        self.assertEqual(r[1].get("message"), "Authenticated by AuthCache.")
+
+        # Clean up
+        delete_policy("pol1")
+        delete_realm("myrealm")
+        delete_resolver("reso001")
