@@ -1646,8 +1646,9 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.REALMDROPDOWN: {
                 'type': 'str',
-                'desc': _("If this is checked, a dropdown combobox with the "
-                          "realms is displayed in the login screen.")
+                'desc': _("A comma separated list of realm names, which are "
+                          "displayed in a drop down menu in the WebUI login "
+                          "screen.")
             },
             ACTION.HIDE_WELCOME: {
                 'type': 'bool',

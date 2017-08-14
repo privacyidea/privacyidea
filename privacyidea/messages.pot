@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-08-14 11:22+0200\n"
+"POT-Creation-Date: 2017-08-14 11:43+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -588,11 +588,11 @@ msgstr ""
 
 #: lib/policy.py:1649
 msgid ""
-"If this is checked, a dropdown combobox with the realms is displayed in "
-"the login screen."
+"A comma separated list of realm names, which are displayed in a drop down"
+" menu in the WebUI login screen."
 msgstr ""
 
-#: lib/policy.py:1654
+#: lib/policy.py:1655
 msgid ""
 "If this checked, the administrator will not see the welcome dialog "
 "anymore."

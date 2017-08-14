@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-08-14 11:22+0200\n"
-"PO-Revision-Date: 2017-08-14 11:23+0200\n"
+"POT-Creation-Date: 2017-08-14 11:43+0200\n"
+"PO-Revision-Date: 2017-08-14 11:44+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language: de\n"
 "Language-Team: de <LL@li.org>\n"
@@ -688,11 +688,13 @@ msgstr "Die Voreinstellung des Tokentyps im Rollout-Dialog."
 
 #: lib/policy.py:1649
 msgid ""
-"If this is checked, a dropdown combobox with the realms is displayed in the "
-"login screen."
-msgstr "Auf dem Anmeldebildschirm wird eine Auswahl-Box mit den Realms angezeigt."
+"A comma separated list of realm names, which are displayed in a drop down menu "
+"in the WebUI login screen."
+msgstr ""
+"Eine Liste an Realmnamen, die im WebUI-Login in einer Dropdown-Box angezeigt "
+"werden. Die Einträge der Liste sind durch Komma getrennt."
 
-#: lib/policy.py:1654
+#: lib/policy.py:1655
 msgid "If this checked, the administrator will not see the welcome dialog anymore."
 msgstr "Dem Administrator wird der Willkommen-Dialog nicht mehr angezeigt."
 
@@ -1198,3 +1200,9 @@ msgstr "Yubikey AES Modus: Einmalpasswörter nach Yubicos eigenem OTP-Algorithmu
 
 #~ msgid "general"
 #~ msgstr "Allgemein"
+
+#~ msgid ""
+#~ "If this is checked, a dropdown combobox with the realms is displayed in the "
+#~ "login screen."
+#~ msgstr ""
+#~ "Auf dem Anmeldebildschirm wird eine Auswahl-Box mit den Realms angezeigt."
