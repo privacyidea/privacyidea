@@ -194,7 +194,7 @@ class IdResolver (UserIdResolver):
         self.dn_template = ""
         self.timeout = 5.0  # seconds!
         self.sizelimit = 500
-        self.loginname_attribute = ""
+        self.loginname_attribute = [""]
         self.searchfilter = u""
         self.userinfo = {}
         self.uidtype = ""
@@ -464,11 +464,22 @@ class IdResolver (UserIdResolver):
         :return: UserId as found for the LoginName
         """
         userid = ""
-        LoginName = to_unicode(LoginName)
         self._bind()
-        filter = u"(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
-                                                 self.loginname_attribute,
-                                                 self._escape_loginname(LoginName))
+        LoginName = to_unicode(LoginName)
+        login_name = self._escape_loginname(LoginName)
+
+        if len(self.loginname_attribute) > 1:
+            loginname_filter = u""
+            for l_attribute in self.loginname_attribute:
+                loginname_filter += u"({!s}={!s})".format(l_attribute.strip(),
+                                                          login_name)
+            loginname_filter = u"|" + loginname_filter
+        else:
+            loginname_filter = u"{!s}={!s}".format(self.loginname_attribute[0],
+                                                   login_name)
+
+        log.error("Filter: {!s}".format(loginname_filter))
+        filter = u"(&{0!s}({1!s}))".format(self.searchfilter, loginname_filter)
 
         # create search attributes
         attributes = self.userinfo.values()
@@ -602,11 +613,11 @@ class IdResolver (UserIdResolver):
         self.timeout = float(config.get("TIMEOUT", 5))
         self.cache_timeout = int(config.get("CACHE_TIMEOUT", 120))
         self.sizelimit = int(config.get("SIZELIMIT", 500))
-        self.loginname_attribute = config.get("LOGINNAMEATTRIBUTE")
+        self.loginname_attribute = config.get("LOGINNAMEATTRIBUTE","").split(",")
         self.searchfilter = config.get("LDAPSEARCHFILTER")
         userinfo = config.get("USERINFO", "{}")
         self.userinfo = yaml.safe_load(userinfo)
-        self.userinfo["username"] = self.loginname_attribute
+        self.userinfo["username"] = self.loginname_attribute[0]
         self.map = yaml.safe_load(userinfo)
         self.uidtype = config.get("UIDTYPE", "DN")
         self.noreferrals = is_true(config.get("NOREFERRALS", False))
