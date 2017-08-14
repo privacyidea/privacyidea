@@ -23,6 +23,109 @@ msgstr "#"
 msgid "45% Complete"
 msgstr "45% abgeschlossen"
 
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:13
+msgid ""
+"<p>Hello,</p>\n"
+"                    <p>first, we would like to give you some background\n"
+"                       information on privacyIDEA.</p>\n"
+"                    <p>privacyIDEA is an Enterprise Level\n"
+"                        Open Source Multi Factor Authentication System.\n"
+"                    </p>\n"
+"                    <p>\n"
+"                        You can find the complete source code\n"
+"                        of privacyIDEA at\n"
+"                        <a href=\"https://github.com/privacyidea/privacyidea"
+"\" target=\"github\">Github</a>.\n"
+"                    </p>\n"
+"\n"
+"                    <p>\n"
+"                        If you find a bug or if you want to contribute\n"
+"                        to privacyIDEA, please open an issue or pull "
+"request\n"
+"                        there.\n"
+"                    </p>"
+msgstr ""
+"<p>Hallo,</p>\n"
+"                    <p>Zu Beginn möchten wir Ihnen Hintergrundinformationen "
+"zu privacyIDEA geben.</p>\n"
+"                    <p>privacyIDEA ist ein Open Source Multi-Faktor-"
+"Authentifizierungs-System für den Unternehmenseinsatz.</p>\n"
+"                    <p>\n"
+"                        Sie können den kompletten Quellcode von privacyIDEA "
+"bei\n"
+"                        <a href=\"https://github.com/privacyidea/privacyidea"
+"\" target=\"github\">Github</a>.\n"
+"\t\t\tfinden.\n"
+"                    </p>\n"
+"                    <p>\n"
+"\t\t\tWenn Sie einen Bug finden oder anderweitig zu privacyIDEA beitragen "
+"wollen,\n"
+"\t\t\terstellen Sie bitte bei Github ein Issue oder ein Pull-Request.\n"
+"                    </p>"
+
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:102
+msgid ""
+"<p>If you do not want to this information again, please\n"
+"                        create your first policy in the scope \"webui\". "
+"You\n"
+"                        can use the template <b>hide_welcome</b>. Such "
+"policy\n"
+"                        will\n"
+"                        prevent this information from being displayed.</p>\n"
+"                    <p>Policies are the way in privacyIDEA to define many\n"
+"                        behaviours. You can read more about policies in the\n"
+"                        <a href=\"http://privacyidea.readthedocs.io/en/"
+"latest/policies/index.html\" target=\"policy\">online\n"
+"                            documentation</a>.</p>"
+msgstr ""
+"<p>Wenn Sie diese Informationen nicht nochmal lesen möchte, erstellen Sei "
+"bitte eine Richtlinie im Bereich \"webui\".\n"
+"Sie können dazu die Vorlage <b>hide_welcome</b> verwenden.\n"
+"Diese Richtlinie wird verhindern, dass diese Informationen angezeigt werden."
+"</p>\n"
+"<p>Mittels Richtlinien kann der Administrator das Verhalten von privacyIDEA "
+"bestimmen.\n"
+"Mehr zu Richtlinie erfahren Sie in der <a href=\"http://privacyidea."
+"readthedocs.io/en/latest/policies/index.html\" target=\"policy\">Online\n"
+"Dokumentation</a>.</p>"
+
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:45
+msgid ""
+"<p>If you have any question regarding privacyIDEA, please\n"
+"                        visit\n"
+"our <a href=\"https://community.privacyidea.org\" target=\"forum\">community "
+"forum</a>.\n"
+"                        Your question might already been answered there.\n"
+"                        You are welcome to file any new question or discuss\n"
+"                        any new idea there.</p>\n"
+"                    <p>With <b>you</b> starting to use privacyIDEA, you\n"
+"                        become a part of\n"
+"                        this community. Every question you ask in the forum "
+"and\n"
+"                        every question you answer there helps others, to "
+"get\n"
+"                        started with privacyIDEA.</p>"
+msgstr ""
+"<p>Wenn Sie irgendwelche Fragen zu privacyIDEA haben, besuchen Sie bitte "
+"das\n"
+"<a href=\"https://community.privacyidea.org\" target=\"forum\">Community "
+"Forum</a>.\n"
+"Ihre Frage könnte dort vielleicht schon beantwortet worden sein!\n"
+"Gerne können Sie neue Fragen stellen und neue Ideen diskutieren.</p>\n"
+"<p>Indem Sie privacyIDEA nutzen, werden auch <b>Sie</b> Teil der Community! "
+"Jede Frage, die Sie im Forum stellen und jede Antwort, die Sie geben, hilft "
+"auch anderen mit privacyIDEA zurecht zu kommen.</p>"
+
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:125
+msgid ""
+"<p>Thank you for using privacyIDEA and making your network\n"
+"                        and thus this world a more secure place!</p>\n"
+"                    <p>Have fun using privacyIDEA!</p>"
+msgstr ""
+"<p>Vielen Dank, dass Sie privacyIDEA nutzen und Ihr Netzwerk absichen und "
+"die damit auch die Welt ein Stückchen sicheren machen!</p>\n"
+"<p>Viel Freude bei der Nutzung von privacyIDEA!</p>"
+
 #: privacyidea/static/components/login/views/offline.html:1
 msgid ""
 "<p>The privacyIDEA API seems to be offline!</p>\n"
@@ -31,6 +134,49 @@ msgid ""
 msgstr ""
 "<p>Die privacyIDEA-API scheint offline zu sein!</p><p>Bitte laden Sie die "
 "Seite neu. Ansonsten wenden Sie sich an Ihren Systemadministrator!</p>"
+
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:70
+msgid ""
+"<p>privacyIDEA is Open Source and\n"
+"                        stays Open Source under the\n"
+"<a href=\"https://github.com/privacyidea/privacyidea/blob/master/LICENSE\" "
+"target=\"license\">GNU Affero General Public License</a>.\n"
+"                        As such privacyIDEA comes <b>without any warranty "
+"and\n"
+"                            liability!</b>\n"
+"                    </p><p>\n"
+"                        If you are running privacyIDEA in an enterprise\n"
+"                        environment or in a critical setup you might need\n"
+"                        professional help. The company NetKnights employs "
+"the\n"
+"                    main developers of privacyIDEA and can help you with\n"
+"                    integrating\n"
+"                        privacyIDEA into your environment. You can also get\n"
+"                        <a href=\"https://netknights.it/en/leistungen/"
+"service-level-agreements/\" target=\"netknights\">professional service "
+"level\n"
+"                            agreements</a> (a.k.a. support contracts) and "
+"an\n"
+"                    <a href=\"https://netknights.it/en/produkte/privacyidea/"
+"\" target=\"netknights\">Enterprise Edition</a>\n"
+"                        providing additional ready made packages and\n"
+"                    appliance features.</p>"
+msgstr ""
+"<p>privacyIDEA ist Open Source und bleibt auch Open Source unter der <a href="
+"\"https://github.com/privacyidea/privacyidea/blob/master/LICENSE\" target="
+"\"license\">GNU Affero General Public License</a>.\n"
+"Entsprechend der Open-Source-Lizenz gibt es für die Open-Source-Software "
+"aber auch <b>keine Gewährleistung oder Haftung</b> durch die Entwickler!</"
+"b>\n"
+"<p>Wenn Sie privacyIDEA im Unternehmen oder kritischen Installationen "
+"einsetzen, benötigen Sie evtl. professionalle Unterstützung und eine "
+"entsprechende Haftbarkeit. Das Unternehmen NetKnights GmbH beschäftigt die "
+"Hauptentwickler von privacyIDEA und kann Sie bei der Integration in Ihre "
+"Umgebung unterstützen. Weiterhin erhalten Sie  <a href=\"https://netknights."
+"it/leistungen/service-level-agreements/\" target=\"netknights\">Service "
+"Level Agreements</a>, Support und eine <a href=\"https://netknights.it/"
+"produkte/privacyidea/\" target=\"netknights\">Enterprise Edition</a>, die "
+"zustätzliche Paketierungen und Appliance-Funktionalitäten mitbringt.</p>"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:25
 #: privacyidea/static/components/config/views/config.token.yubico.html:29
@@ -210,7 +356,7 @@ msgstr "Audit"
 msgid "Authentication Server URI"
 msgstr "URI des Authentisierungsservers"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:276
+#: privacyidea/static/components/login/controllers/loginControllers.js:277
 msgid "Authentication failed."
 msgstr "Authentisierung fehlgeschlagen."
 
@@ -328,7 +474,7 @@ msgstr "Zertifikatsanforderung (PEM)"
 msgid "Certificate Template"
 msgstr "Zertifikatsvorlage"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:192
+#: privacyidea/static/components/token/controllers/tokenControllers.js:199
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr "Zertifikate: x509 Zertifikate ausrollen."
 
@@ -336,12 +482,12 @@ msgstr "Zertifikate: x509 Zertifikate ausrollen."
 msgid "Certificates Templates file"
 msgstr "Datei mit Zertifikatstemplates"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:199
+#: privacyidea/static/components/login/controllers/loginControllers.js:200
 msgid ""
 "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr "Challenge-Response Anmeldung. Sie sind noch nicht fertig angemeldet."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:258
+#: privacyidea/static/components/login/controllers/loginControllers.js:259
 msgid "Challenge Response Authentication. Your response was not valid!"
 msgstr "Challenge-Response Anmeldung. Ihre Antwort war ungültig!"
 
@@ -680,6 +826,10 @@ msgstr "Deaktivieren"
 msgid "Disable token"
 msgstr "Token deaktivieren"
 
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:131
+msgid "Dive In!"
+msgstr "Los geht's!"
+
 #: privacyidea/static/components/user/views/dialog.ask_user_delete.html:15
 msgid "Do you really want to delete the user in the user store?"
 msgstr "Wollen Sie wirklich den Benutzer in der Benutzerquelle löschen?"
@@ -708,7 +858,7 @@ msgstr "Drupal"
 msgid "EMail Token settings"
 msgstr "Email-Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:188
+#: privacyidea/static/components/token/controllers/tokenControllers.js:195
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr ""
 "EMail: Ein Einmal-Passwort per Email an die Email-Adresse des Benutzers "
@@ -840,8 +990,8 @@ msgstr "Neuen Token ausrollen"
 msgid "Enroll Token"
 msgstr "Token ausrollen"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:68
-#: privacyidea/static/components/token/controllers/tokenControllers.js:133
+#: privacyidea/static/components/login/controllers/loginControllers.js:69
+#: privacyidea/static/components/token/controllers/tokenControllers.js:140
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:157
 msgid "Enroll a new token"
@@ -995,7 +1145,7 @@ msgstr ""
 "Damit Yubico-Token richtig funktionieren, müssen Sie die <a ui-sref=\"config."
 "tokens({tokentype:'yubico'})\">Yubico-Token Konfiguration</a> setzen."
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:194
+#: privacyidea/static/components/token/controllers/tokenControllers.js:201
 msgid "Four Eyes: Two or more users are required to log in."
 msgstr "Vier-Augen: Zwei oder mehr Benutzer werden für den Login benötigt."
 
@@ -1043,7 +1193,7 @@ msgstr "Vorname"
 msgid "HOTP Token settings"
 msgstr "HOTP-Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:175
+#: privacyidea/static/components/token/controllers/tokenControllers.js:182
 msgid "HOTP: event based One Time Passwords"
 msgstr "HOTP: Ereignisbasiertes Einmal-Passwort"
 
@@ -1294,7 +1444,7 @@ msgstr "Alle RADIUS-Server anzeigen"
 msgid "List SMTP server definitions"
 msgstr "Alle SMTP-Server anzeigen"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:76
+#: privacyidea/static/components/login/controllers/loginControllers.js:77
 msgid "List tokens"
 msgstr "Tokenliste anzeigen"
 
@@ -1326,7 +1476,7 @@ msgstr "Logbuch"
 msgid "Log In"
 msgstr "Anmelden"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:83
+#: privacyidea/static/components/login/controllers/loginControllers.js:84
 msgid "Log out"
 msgstr "Abmelden"
 
@@ -1461,6 +1611,10 @@ msgid "New {{ resolvertype }}"
 msgstr "Neuer {{ resolvertype }}"
 
 #: privacyidea/static/components/audit/views/audit.log.html:16
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:114
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:34
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:59
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:91
 #: privacyidea/static/components/machine/views/machine.details.html:41
 #: privacyidea/static/components/machine/views/machine.list.html:3
 #: privacyidea/static/components/token/views/token.challenges.html:8
@@ -1620,7 +1774,7 @@ msgstr "Überschreibe den authorisierenden Client"
 msgid "Owncloud"
 msgstr "ownCloud"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:199
+#: privacyidea/static/components/token/controllers/tokenControllers.js:206
 msgid "PAPER: OTP values on a sheet of paper."
 msgstr "PAPER: OTP-Liste auf einem Stück Papier"
 
@@ -1634,7 +1788,7 @@ msgstr "PGP-Schlüssel"
 msgid "PIN"
 msgstr "PIN"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:439
+#: privacyidea/static/components/login/controllers/loginControllers.js:446
 msgid "PIN changed successfully."
 msgstr "PIN erfolgreich geändert."
 
@@ -1685,7 +1839,7 @@ msgid "Please answer at least {{ num_answers }} of the following questions."
 msgstr ""
 "Bitte beantworten Sie wenigstens {{ num_answers }} der folgenden Fragen."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:210
+#: privacyidea/static/components/login/controllers/loginControllers.js:211
 msgid "Please confirm with one of these tokens:"
 msgstr "Bitte bestätigen Sie mit einem dieser Token:"
 
@@ -1762,6 +1916,10 @@ msgstr "Zurück"
 msgid "Print the OTP list"
 msgstr "OTP-Liste drucken"
 
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:67
+msgid "Professional Services and Enterprise Edition"
+msgstr "Professionelle Leistungen und Enterprise Edition"
+
 #: privacyidea/static/components/token/views/token.import.html:117
 msgid "Progress: {{ progressPercentage }}%"
 msgstr "Fortschritt: {{ progressPercentage }}%"
@@ -1828,7 +1986,7 @@ msgstr "RADIUS-Server Konfiguration"
 msgid "RADIUS servers"
 msgstr "RADIUS-Server"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:186
+#: privacyidea/static/components/token/controllers/tokenControllers.js:193
 msgid "RADIUS: Forward authentication request to a RADIUS server"
 msgstr ""
 "RADIUS: Die Authentisierungsanfrage wird an einen RADIUS-Server "
@@ -1841,7 +1999,7 @@ msgstr ""
 msgid "Realm"
 msgstr "Realm "
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:410
+#: privacyidea/static/components/login/controllers/loginControllers.js:413
 msgid "Realm defrealm created."
 msgstr "Der Realm defrealm wurde erzeugt."
 
@@ -1897,7 +2055,7 @@ msgstr "Remote-Server"
 msgid "Remote Token settings"
 msgstr "Remote-Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:182
+#: privacyidea/static/components/token/controllers/tokenControllers.js:189
 msgid "Remote Token: Forward authentication request to another server"
 msgstr ""
 "Remote: Die Authentisierungsanfrage wird an einen anderen privacyIDEA-Server "
@@ -1977,7 +2135,7 @@ msgstr "Token resynchronisieren"
 msgid "Revoke"
 msgstr "Widerrufen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:142
+#: privacyidea/static/components/token/controllers/tokenControllers.js:149
 msgid "Roll the token"
 msgstr "Token ausrollen"
 
@@ -2005,7 +2163,7 @@ msgstr "SMS-Provider"
 msgid "SMS Token settings"
 msgstr "SMS-Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:190
+#: privacyidea/static/components/token/controllers/tokenControllers.js:197
 msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr ""
 "SMS: Einmal-Passwort wird per SMS an das Mobiltelefon des Benutzers gesendet."
@@ -2026,11 +2184,11 @@ msgstr "SMTP-Server für die Passwort-Wiederherstellung"
 msgid "SMTP servers"
 msgstr "SMTP-Server"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:177
+#: privacyidea/static/components/token/controllers/tokenControllers.js:184
 msgid "SPass: Simple Pass token. Static passwords"
 msgstr "SPass: Simple-Pass-Token. Statisches Passwort."
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:179
+#: privacyidea/static/components/token/controllers/tokenControllers.js:186
 msgid "SSH Public Key: The public SSH key"
 msgstr "SSH Public Key: Der öffentliche SSH-Schlüssel"
 
@@ -2327,7 +2485,7 @@ msgstr "TLS"
 msgid "TOTP Token settings"
 msgstr "TOTP-Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:176
+#: privacyidea/static/components/token/controllers/tokenControllers.js:183
 msgid "TOTP: time based One Time Passwords"
 msgstr "TOTP: Zeitbasiertes Einmal-Passwort."
 
@@ -2368,6 +2526,10 @@ msgstr "Yubikey testen"
 msgid "Test token"
 msgstr " Token testen"
 
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:122
+msgid "Thank you for improving security!"
+msgstr "Vielen Dank, dass Sie die Sicherheit verbessern!"
+
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:1
 msgid ""
 "The 4 Eyes token will only authenticate if two or more users are\n"
@@ -2401,6 +2563,10 @@ msgid ""
 msgstr ""
 "Der Zertifikatstoken wird dazu verwendet, um x509-Zertifikate von einer "
 "konfigurierten Zertifizierungsstelle ausstellen zu lassen."
+
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:42
+msgid "The Community"
+msgstr "Die Community"
 
 #: privacyidea/static/components/config/views/config.token.email.html:2
 msgid ""
@@ -2484,6 +2650,10 @@ msgstr ""
 "Der Paper-Token ist eine ausgedruckte Liste mit OTP-Werten. Mit diesen OTP-"
 "Werten kann sich der Benutzer authentisieren. Er streicht dann die Werte aus "
 "der Liste, nachdem er sie benutzt hat."
+
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:99
+msgid "The Policies"
+msgstr "Die Richtlinien"
 
 #: privacyidea/static/components/token/views/token.enroll.question.html:1
 msgid ""
@@ -3217,7 +3387,7 @@ msgstr "TiQR Service Anzeigename"
 msgid "TiQR Token settings"
 msgstr "TiQR Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:196
+#: privacyidea/static/components/token/controllers/tokenControllers.js:203
 msgid "TiQR: Authenticate with Smartphone by scanning a QR code."
 msgstr "TiQR: Authentisierung mit Smartphone durch Scannen eines QR-Codes."
 
@@ -3344,7 +3514,7 @@ msgstr "TYPO3"
 msgid "U2F Token settings"
 msgstr "U2F Token Einstellungen"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:198
+#: privacyidea/static/components/token/controllers/tokenControllers.js:205
 msgid "U2F: Universal 2nd Factor hardware token."
 msgstr "U2F: Universal 2nd Factor. Hardware Token."
 
@@ -3517,6 +3687,10 @@ msgstr "Token im Audit-Log anzeigen"
 msgid "View user in Audit log"
 msgstr "Benutzer im Audit-Log anzeigen"
 
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:10
+msgid "Welcome"
+msgstr "Willkommen"
+
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:157
 msgid "Where statement"
 msgstr "WHERE-Ausdruck"
@@ -3595,7 +3769,7 @@ msgstr ""
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr "Sie werden nach {{ myCountdown }} Sekunden abgemeldet."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:319
+#: privacyidea/static/components/login/controllers/loginControllers.js:320
 msgid "Your OTP pin expires on"
 msgstr "Ihre OTP PIN läuft ab: "
 
@@ -3634,11 +3808,11 @@ msgstr "Yubico Token Einstellungen"
 msgid "Yubico URL"
 msgstr "Yubico URL"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:180
+#: privacyidea/static/components/token/controllers/tokenControllers.js:187
 msgid "Yubikey AES mode: One Time Passwords with Yubikey"
 msgstr "Yubikey AES Mode: Einmalpasswort mit dem Yubikey."
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:184
+#: privacyidea/static/components/token/controllers/tokenControllers.js:191
 msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud"
 msgstr ""
 "Yubikey Cloud Mode: Die Authentifisierungsanfrage wird an den YubiCloud "
@@ -3754,7 +3928,7 @@ msgstr "Logstufe"
 msgid "mOTP PIN"
 msgstr "mOTP-PIN"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:178
+#: privacyidea/static/components/token/controllers/tokenControllers.js:185
 msgid "mOTP: classical mobile One Time Passwords"
 msgstr "mOTP: Klassischer Mobiles Einmal-Passwort."
 

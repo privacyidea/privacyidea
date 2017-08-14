@@ -294,6 +294,7 @@ class ACTION(object):
     SEARCH_ON_ENTER = "search_on_enter"
     TIMEOUT_ACTION = "timeout_action"
     AUTH_CACHE = "auth_cache"
+    HIDE_WELCOME = "hide_welcome_info"
 
 
 class GROUP(object):
@@ -1647,6 +1648,11 @@ def get_static_policy_definitions(scope=None):
                 'type': 'str',
                 'desc': _("If this is checked, a dropdown combobox with the "
                           "realms is displayed in the login screen.")
+            },
+            ACTION.HIDE_WELCOME: {
+                'type': 'bool',
+                'desc': _("If this checked, the administrator will not see "
+                          "the welcome dialog anymore.")
             }
         }
 
