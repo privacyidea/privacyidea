@@ -478,7 +478,7 @@ class IdResolver (UserIdResolver):
             loginname_filter = u"{!s}={!s}".format(self.loginname_attribute[0],
                                                    login_name)
 
-        log.error("Filter: {!s}".format(loginname_filter))
+        log.debug("login name filter: {!r}".format(loginname_filter))
         filter = u"(&{0!s}({1!s}))".format(self.searchfilter, loginname_filter)
 
         # create search attributes
