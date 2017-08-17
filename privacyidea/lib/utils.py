@@ -33,11 +33,32 @@ import urllib
 from privacyidea.lib.crypto import urandom, geturandom
 import string
 import re
-from datetime import timedelta, datetime, time
+from datetime import timedelta, datetime
+from datetime import time as dt_time
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
 from netaddr import IPAddress, IPNetwork, AddrFormatError
+import hashlib
+import crypt
 import traceback
+import os
+import time
+from base64 import (b64decode, b64encode)
+
+
+try:
+    import bcrypt
+    _bcrypt_hashpw = bcrypt.hashpw
+except ImportError:  # pragma: no cover
+    _bcrypt_hashpw = None
+
+# On App Engine, this function is not available.
+if hasattr(os, 'getpid'):
+    _pid = os.getpid()
+else:  # pragma: no cover
+    # Fake PID
+    _pid = urandom.randint(0, 100000)
+
 ENCODING = "utf-8"
 
 
@@ -73,7 +94,7 @@ def check_time_in_range(time_range, check_time=None):
 
     check_time = check_time or datetime.now()
     check_day = check_time.isoweekday()
-    check_hour = time(check_time.hour, check_time.minute)
+    check_hour =dt_time(check_time.hour, check_time.minute)
     # remove whitespaces
     time_range = ''.join(time_range.split())
     # split into list of time ranges
@@ -91,13 +112,13 @@ def check_time_in_range(time_range, check_time=None):
             ts = [int(x) for x in t_start.split(":")]
             te = [int(x) for x in t_end.split(":")]
             if len(ts) == 2:
-                time_start = time(ts[0], ts[1])
+                time_start =dt_time(ts[0], ts[1])
             else:
-                time_start = time(ts[0])
+                time_start =dt_time(ts[0])
             if len(te) == 2:
-                time_end = time(te[0], te[1])
+                time_end =dt_time(te[0], te[1])
             else:
-                time_end = time(te[0])
+                time_end =dt_time(te[0])
 
             # check the day and the time
             if (dow_index.get(dow_start) <= check_day <= dow_index.get(dow_end)
@@ -771,3 +792,241 @@ def parse_time_offset_from_now(s):
         td = parse_time_delta(s2)
 
     return s, td
+
+
+def hash_password(password, hashtype):
+    """
+    Hash a password with phppass, SHA, SSHA, SSHA256, SSHA512, OTRS
+
+    :param password: The password in plain text 
+    :param hashtype: One of the hash types as string
+    :return: The hashed password
+    """
+    hashtype = hashtype.upper()
+    if hashtype == "PHPASS":
+        PH = PasswordHash()
+        password = PH.hash_password(password)
+    elif hashtype == "SHA":
+        password = hashlib.sha1(password).digest()
+        password = "{SHA}" + b64encode(password)
+    elif hashtype == "SSHA":
+        salt = geturandom(20)
+        hr = hashlib.sha1(password)
+        hr.update(salt)
+        pw = b64encode(hr.digest() + salt)
+        return "{SSHA}" + pw
+    elif hashtype == "SSHA256":
+        salt = geturandom(32)
+        hr = hashlib.sha256(password)
+        hr.update(salt)
+        pw = b64encode(hr.digest() + salt)
+        return "{SSHA256}" + pw
+    elif hashtype == "SSHA512":
+        salt = geturandom(64)
+        hr = hashlib.sha512(password)
+        hr.update(salt)
+        pw = b64encode(hr.digest() + salt)
+        return "{SSHA512}" + pw
+    elif hashtype == "OTRS":
+        password = hashlib.sha256(password).hexdigest()
+    else:
+        raise Exception("Unsupported password hashtype. Use PHPASS, SHA, "
+                        "SSHA, SSHA256, SSHA512, OTRS.")
+    return password
+
+
+def check_ssha(pw_hash, password, hashfunc, length):
+    pw_hash_bin = b64decode(pw_hash.split("}")[1])
+    digest = pw_hash_bin[:length]
+    salt = pw_hash_bin[length:]
+    hr = hashfunc(password)
+    hr.update(salt)
+    return digest == hr.digest()
+
+
+def check_sha(pw_hash, password):
+    b64_db_password = pw_hash[5:]
+    hr = hashlib.sha1(password).digest()
+    b64_password = b64encode(hr)
+    return b64_password == b64_db_password
+
+
+def otrs_sha256(pw_hash, password):
+    hr = hashlib.sha256(password)
+    digest = binascii.hexlify(hr.digest())
+    return pw_hash == digest
+
+
+class PasswordHash(object):
+    def __init__(self, iteration_count_log2=8, portable_hashes=True,
+                 algorithm=''):
+        alg = algorithm.lower()
+        if alg in ['blowfish', 'bcrypt'] and _bcrypt_hashpw is None:
+            raise NotImplementedError('The bcrypt module is required')
+        self.itoa64 = \
+            './0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+        if not (4 <= iteration_count_log2 <= 31):
+            iteration_count_log2 = 8
+        self.iteration_count_log2 = iteration_count_log2
+        self.portable_hashes = portable_hashes
+        self.algorithm = algorithm
+        self.random_state = '{0!r}{1!r}'.format(time.time(), _pid)
+
+    def get_random_bytes(self, count):
+        outp = ''
+        try:
+            outp = os.urandom(count)
+        except Exception as exx:  # pragma: no cover
+            log.debug("problem getting os.urandom: {0!s}".format(exx))
+        if len(outp) < count:  # pragma: no cover
+            outp = ''
+            rem = count
+            while rem > 0:
+                self.random_state = hashlib.md5(str(time.time())
+                                                + self.random_state).hexdigest()
+                outp += hashlib.md5(self.random_state).digest()
+                rem -= 1
+            outp = outp[:count]
+        return outp
+
+    def encode64(self, inp, count):
+        outp = ''
+        cur = 0
+        while cur < count:
+            value = ord(inp[cur])
+            cur += 1
+            outp += self.itoa64[value & 0x3f]
+            if cur < count:
+                value |= (ord(inp[cur]) << 8)
+            outp += self.itoa64[(value >> 6) & 0x3f]
+            if cur >= count:
+                break
+            cur += 1
+            if cur < count:
+                value |= (ord(inp[cur]) << 16)
+            outp += self.itoa64[(value >> 12) & 0x3f]
+            if cur >= count:
+                break
+            cur += 1
+            outp += self.itoa64[(value >> 18) & 0x3f]
+        return outp
+
+    def gensalt_private(self, inp):  # pragma: no cover
+        outp = '$P$'
+        outp += self.itoa64[min([self.iteration_count_log2 + 5, 30])]
+        outp += self.encode64(inp, 6)
+        return outp
+
+    def crypt_private(self, pw, setting):  # pragma: no cover
+        outp = '*0'
+        if setting.startswith(outp):
+            outp = '*1'
+        if setting[0:3] not in ['$P$', '$H$', '$S$']:
+            return outp
+        count_log2 = self.itoa64.find(setting[3])
+        if not (7 <= count_log2 <= 30):
+            return outp
+        count = 1 << count_log2
+        salt = setting[4:12]
+        if len(salt) != 8:
+            return outp
+        if not isinstance(pw, str):
+            pw = pw.encode('utf-8')
+
+        hash_func = hashlib.md5
+        encoding_len = 16
+        if setting.startswith('$S$'):
+            hash_func = hashlib.sha512
+            encoding_len = 33
+
+        hx = hash_func(salt + pw).digest()
+        while count:
+            hx = hash_func(hx + pw).digest()
+            count -= 1
+        hashed_pw = self.encode64(hx, encoding_len)
+
+        if setting.startswith('$S$'):
+            hashed_pw = hashed_pw[:-1]
+        return setting[:12] + hashed_pw
+
+    def gensalt_extended(self, inp):  # pragma: no cover
+        count_log2 = min([self.iteration_count_log2 + 8, 24])
+        count = (1 << count_log2) - 1
+        outp = '_'
+        outp += self.itoa64[count & 0x3f]
+        outp += self.itoa64[(count >> 6) & 0x3f]
+        outp += self.itoa64[(count >> 12) & 0x3f]
+        outp += self.itoa64[(count >> 18) & 0x3f]
+        outp += self.encode64(inp, 3)
+        return outp
+
+    def gensalt_blowfish(self, inp):  # pragma: no cover
+        itoa64 = \
+            './ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+        outp = '$2a$'
+        outp += chr(ord('0') + self.iteration_count_log2 / 10)
+        outp += chr(ord('0') + self.iteration_count_log2 % 10)
+        outp += '$'
+        cur = 0
+        while True:
+            c1 = ord(inp[cur])
+            cur += 1
+            outp += itoa64[c1 >> 2]
+            c1 = (c1 & 0x03) << 4
+            if cur >= 16:
+                outp += itoa64[c1]
+                break
+            c2 = ord(inp[cur])
+            cur += 1
+            c1 |= c2 >> 4
+            outp += itoa64[c1]
+            c1 = (c2 & 0x0f) << 2
+            c2 = ord(inp[cur])
+            cur += 1
+            c1 |= c2 >> 6
+            outp += itoa64[c1]
+            outp += itoa64[c2 & 0x3f]
+        return outp
+
+    def hash_password(self, pw):  # pragma: no cover
+        rnd = ''
+        alg = self.algorithm.lower()
+        if (not alg or alg in ['blowfish', 'bcrypt'] and not
+        self.portable_hashes):
+            if _bcrypt_hashpw is None and alg in ['blowfish', 'bcrypt']:
+                raise NotImplementedError('The bcrypt module is required')
+            else:
+                rnd = self.get_random_bytes(16)
+                salt = self.gensalt_blowfish(rnd)
+                hx = _bcrypt_hashpw(pw, salt)
+                if len(hx) == 60:
+                    return hx
+        if (not alg or alg == 'ext-des') and not self.portable_hashes:
+            if len(rnd) < 3:
+                rnd = self.get_random_bytes(3)
+            hx = crypt.crypt(pw, self.gensalt_extended(rnd))
+            if len(hx) == 20:
+                return hx
+        if len(rnd) < 6:
+            rnd = self.get_random_bytes(6)
+        hx = self.crypt_private(pw, self.gensalt_private(rnd))
+        if len(hx) == 34:
+            return hx
+        return '*'
+
+    def check_password(self, pw, stored_hash):
+        # This part is different with the original PHP
+        if stored_hash.startswith('$2a$'):
+            # bcrypt
+            if _bcrypt_hashpw is None:  # pragma: no cover
+                raise NotImplementedError('The bcrypt module is required')
+            hx = _bcrypt_hashpw(pw, stored_hash)
+        elif stored_hash.startswith('_'):
+            # ext-des
+            stored_hash = stored_hash[1:]
+            hx = crypt.crypt(pw, stored_hash)
+        else:
+            # portable hash
+            hx = self.crypt_private(pw, stored_hash)
+        return stored_hash == hx
+

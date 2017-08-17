@@ -268,6 +268,10 @@ database.
    *{SSHA256}* or *{SSHA512}*. Password hashes of length 64 are interpreted as
    OTRS sha256 hashes.
 
+You can mark the users as ``Editable``. The ``Password_Hash_Type`` can be
+used to determine wich hash algorithm should be used, if a password of an
+editable user is written to the database.
+
 You can add an additional ``Where statement`` if you do not want to use
 all users from the table.
 

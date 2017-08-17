@@ -99,6 +99,23 @@
                 </p>
             </div>
         </div>
+        <div class="form-group" ng-show="params.Editable">
+            <label for="passwordhash" class="col-sm-3 control-label" translate>
+                Password Hash for editable users
+            </label>
+            <div class="col-sm-9">
+                <select class="form-control"
+                        ng-model="params.Password_Hash_Type"
+                        name="passwordhash"
+                        ng-options="hashtype for hashtype in hashtypes">
+                </select>
+                <p class="help-block" translate>
+                    The hashing algorithm for the passwords of newly created
+                    users. Can be PHPASS, SHA, SSHA, SSHA256, SHA512, OTRS.
+                </p>
+            </div>
+        </div>
+
         <div class="well">
             <div class="form-group">
                 <button class="btn btn-info" ng-click="presetWordpress()"

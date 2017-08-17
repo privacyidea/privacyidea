@@ -533,7 +533,7 @@ msgstr ""
 msgid "Config"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:177
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:190
 msgid "Connection Parameters"
 msgstr ""
 
@@ -648,7 +648,7 @@ msgstr ""
 msgid "Database"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:167
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:180
 msgid "Database Encoding"
 msgstr ""
 
@@ -774,7 +774,7 @@ msgstr ""
 msgid "Driver"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:119
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:132
 msgid "Drupal"
 msgstr ""
 
@@ -1307,7 +1307,7 @@ msgstr ""
 msgid "Licensed under"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:133
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:146
 msgid "Limit"
 msgstr ""
 
@@ -1413,7 +1413,7 @@ msgstr ""
 msgid "Machines this token is attached to"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:144
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:157
 msgid "Mapping"
 msgstr ""
 
@@ -1587,7 +1587,7 @@ msgstr ""
 msgid "OTP validity time"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:107
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:120
 msgid "OTRS"
 msgstr ""
 
@@ -1644,7 +1644,7 @@ msgstr ""
 msgid "Override Authorization Clients"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:113
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:126
 msgid "Owncloud"
 msgstr ""
 
@@ -1688,6 +1688,10 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.import.html:75
 #: privacyidea/static/components/user/views/user.password.html:50
 msgid "Password"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:103
+msgid "Password Hash for editable users"
 msgstr ""
 
 #: privacyidea/static/components/user/controllers/userControllers.js:89
@@ -1739,11 +1743,11 @@ msgstr ""
 msgid "Policy Templates"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:187
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:200
 msgid "Pool size"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:198
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:211
 msgid "Pool timeout"
 msgstr ""
 
@@ -2083,7 +2087,7 @@ msgstr ""
 msgid "Save RADIUS server"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:223
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:236
 msgid "Save Resolver"
 msgstr ""
 
@@ -2341,7 +2345,7 @@ msgstr ""
 msgid "TOTP: time based One Time Passwords"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:124
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:137
 msgid "Table"
 msgstr ""
 
@@ -2366,7 +2370,7 @@ msgstr ""
 msgid "Test SCIM Resolver"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:219
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:232
 msgid "Test SQL Resolver"
 msgstr ""
 
@@ -2671,6 +2675,12 @@ msgstr ""
 msgid ""
 "The file containing the CA certificate which signed the\n"
 "                    LDAP TLS certificate."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:109
+msgid ""
+"The hashing algorithm for the passwords of newly created\n"
+"                    users. Can be PHPASS, SHA, SSHA, SSHA256, SHA512, OTRS."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.motp.html:33
@@ -3059,7 +3069,7 @@ msgstr ""
 msgid "Timestep"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:110
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:123
 msgid "Tine 2.0"
 msgstr ""
 
@@ -3155,7 +3165,7 @@ msgstr ""
 msgid "Type a password"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:116
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:129
 msgid "Typo3"
 msgstr ""
 
@@ -3339,7 +3349,7 @@ msgstr ""
 msgid "Welcome"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:157
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:170
 msgid "Where statement"
 msgstr ""
 
@@ -3347,7 +3357,7 @@ msgstr ""
 msgid "Which administrative request where the most popular."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:104
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:117
 msgid "Wordpress"
 msgstr ""
 

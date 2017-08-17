@@ -970,6 +970,7 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory,
     };
     $scope.result = {};
     $scope.resolvername = $stateParams.resolvername;
+    $scope.hashtypes = Array("PHPASS", "SHA", "SSHA","SSHA256", "SSHA512", "OTRS");
 
     if ($scope.resolvername) {
         /* If we have a resolvername, we do an Edit

@@ -111,6 +111,7 @@ class SQLResolverTestCase(MyTestCase):
                   'Database': "testuser.sqlite",
                   'Table': 'users',
                   'Encoding': 'utf8',
+                  'Passwort_Hash_Type': "SSHA",
                   'Map': '{ "username": "username", \
                     "userid" : "id", \
                     "email" : "email", \
@@ -234,9 +235,12 @@ class SQLResolverTestCase(MyTestCase):
         y = SQLResolver()
         y.loadConfig(self.parameters)
         uid = y.add_user({"username":"achmed",
-                         "email": "achmed@world.net",
-                         "mobile": "12345"})
+                          "email": "achmed@world.net",
+                          "password": "passw0rd",
+                          "mobile": "12345"})
         self.assertTrue(uid > 6)
+        self.assertTrue(y.checkPass(uid, "passw0rd"))
+        self.assertFalse(y.checkPass(uid, "password"))
 
         uid = y.getUserId("achmed")
         self.assertTrue(uid > 6)
