@@ -171,6 +171,8 @@ def set_event(name, event, handlermodule, action, conditions=None,
     :type id: int
     :return: The id of the event.
     """
+    if type(event) == list:
+        event = ",".join(event)
     conditions = conditions or {}
     if id:
         id = int(id)

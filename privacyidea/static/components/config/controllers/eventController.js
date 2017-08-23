@@ -53,6 +53,13 @@ myApp.controller("eventController", function($scope, $stateParams, $state,
             $scope.getEvents();
         });
     };
+    $scope.orderChanged = function (event) {
+        console.log(event);
+        ConfigFactory.setEvent(event, function() {
+            $scope.getEvents();
+        }
+        );
+    };
 
     // Get all events
     $scope.getEvents();
