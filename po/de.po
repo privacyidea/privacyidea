@@ -25,11 +25,15 @@ msgstr "45% abgeschlossen"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:13
 msgid ""
-"<p>Hello,</p>\n"
-"                    <p>first, we would like to give you some background\n"
+"<p>First, we would like to give you some background\n"
 "                       information on privacyIDEA.</p>\n"
 "                    <p>privacyIDEA is an Enterprise Level\n"
 "                        Open Source Multi Factor Authentication System.\n"
+"                        You can use privacyIDEA with up to 50 assigned\n"
+"                        tokens without subscription. For more than 50 "
+"tokens\n"
+"                        you need a valid subscription with support and\n"
+"                        service level agreement.\n"
 "                    </p>\n"
 "                    <p>\n"
 "                        You can find the complete source code\n"
@@ -37,7 +41,6 @@ msgid ""
 "                        <a href=\"https://github.com/privacyidea/privacyidea"
 "\" target=\"github\">Github</a>.\n"
 "                    </p>\n"
-"\n"
 "                    <p>\n"
 "                        If you find a bug or if you want to contribute\n"
 "                        to privacyIDEA, please open an issue or pull "
@@ -45,16 +48,19 @@ msgid ""
 "                        there.\n"
 "                    </p>"
 msgstr ""
-"<p>Hallo,</p>\n"
 "                    <p>Zu Beginn möchten wir Ihnen Hintergrundinformationen "
 "zu privacyIDEA geben.</p>\n"
 "                    <p>privacyIDEA ist ein Open Source Multi-Faktor-"
-"Authentifizierungs-System für den Unternehmenseinsatz.</p>\n"
+"Authentifizierungs-System für den Unternehmenseinsatz. Sie können "
+"privacyIDEA mit bis\n"
+"zu 50 zugewiesenen Authentifizierungsobjekten ohne Subskription betreiben. "
+"Für mehr als 50 Authentifizierungsobjekte benötigen Sie eine gültige "
+"Subskription mit Support und Service Level Agreement.</p>\n"
 "                    <p>\n"
 "                        Sie können den kompletten Quellcode von privacyIDEA "
 "bei\n"
 "                        <a href=\"https://github.com/privacyidea/privacyidea"
-"\" target=\"github\">Github</a>.\n"
+"\" target=\"github\">Github</a>\n"
 "\t\t\tfinden.\n"
 "                    </p>\n"
 "                    <p>\n"
@@ -63,7 +69,7 @@ msgstr ""
 "\t\t\terstellen Sie bitte bei Github ein Issue oder ein Pull-Request.\n"
 "                    </p>"
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:102
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:104
 msgid ""
 "<p>If you do not want to this information again, please\n"
 "                        create your first policy in the scope \"webui\". "
@@ -89,7 +95,7 @@ msgstr ""
 "readthedocs.io/en/latest/policies/index.html\" target=\"policy\">Online\n"
 "Dokumentation</a>.</p>"
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:45
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:47
 msgid ""
 "<p>If you have any question regarding privacyIDEA, please\n"
 "                        visit\n"
@@ -116,7 +122,7 @@ msgstr ""
 "Jede Frage, die Sie im Forum stellen und jede Antwort, die Sie geben, hilft "
 "auch anderen mit privacyIDEA zurecht zu kommen.</p>"
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:125
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:127
 msgid ""
 "<p>Thank you for using privacyIDEA and making your network\n"
 "                        and thus this world a more secure place!</p>\n"
@@ -135,7 +141,7 @@ msgstr ""
 "<p>Die privacyIDEA-API scheint offline zu sein!</p><p>Bitte laden Sie die "
 "Seite neu. Ansonsten wenden Sie sich an Ihren Systemadministrator!</p>"
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:70
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:72
 msgid ""
 "<p>privacyIDEA is Open Source and\n"
 "                        stays Open Source under the\n"
@@ -826,7 +832,7 @@ msgstr "Deaktivieren"
 msgid "Disable token"
 msgstr "Token deaktivieren"
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:131
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:133
 msgid "Dive In!"
 msgstr "Los geht's!"
 
@@ -1610,10 +1616,10 @@ msgid "New {{ resolvertype }}"
 msgstr "Neuer {{ resolvertype }}"
 
 #: privacyidea/static/components/audit/views/audit.log.html:16
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:114
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:34
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:59
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:91
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:116
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:36
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:61
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:93
 #: privacyidea/static/components/machine/views/machine.details.html:41
 #: privacyidea/static/components/machine/views/machine.list.html:3
 #: privacyidea/static/components/token/views/token.challenges.html:8
@@ -1924,7 +1930,7 @@ msgstr "Zurück"
 msgid "Print the OTP list"
 msgstr "OTP-Liste drucken"
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:67
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:69
 msgid "Professional Services and Enterprise Edition"
 msgstr "Professionelle Leistungen und Enterprise Edition"
 
@@ -2534,7 +2540,7 @@ msgstr "Yubikey testen"
 msgid "Test token"
 msgstr " Token testen"
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:122
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:124
 msgid "Thank you for improving security!"
 msgstr "Vielen Dank, dass Sie die Sicherheit verbessern!"
 
@@ -2572,7 +2578,7 @@ msgstr ""
 "Der Zertifikatstoken wird dazu verwendet, um x509-Zertifikate von einer "
 "konfigurierten Zertifizierungsstelle ausstellen zu lassen."
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:42
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:44
 msgid "The Community"
 msgstr "Die Community"
 
@@ -2659,7 +2665,7 @@ msgstr ""
 "Werten kann sich der Benutzer authentisieren. Er streicht dann die Werte aus "
 "der Liste, nachdem er sie benutzt hat."
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:99
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:101
 msgid "The Policies"
 msgstr "Die Richtlinien"
 

@@ -88,6 +88,7 @@ from privacyidea.api.lib.postpolicy import (save_pin_change,
                                             postpolicy)
 from privacyidea.lib.event import event
 from privacyidea.api.auth import admin_required
+from privacyidea.lib.subscriptions import CheckSubscription
 
 
 token_blueprint = Blueprint('token_blueprint', __name__)
@@ -120,6 +121,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(papertoken_count, request)
 @prepolicy(u2ftoken_allowed, request)
 @postpolicy(save_pin_change, request)
+@CheckSubscription(request)
 @event("token_init", request, g)
 @log_with(log, log_entry=False)
 def init():
@@ -391,6 +393,7 @@ def list_api():
 @prepolicy(encrypt_pin, request)
 @prepolicy(check_otp_pin, request)
 @prepolicy(check_external, request, action="assign")
+@CheckSubscription(request)
 @event("token_assign", request, g)
 @log_with(log)
 def assign_api():
