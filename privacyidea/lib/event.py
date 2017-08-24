@@ -92,6 +92,8 @@ class event(object):
 
                     event_handler.do(e_handler_def.get("action"),
                                      options=options)
+                    # In case the handler has modified the response
+                    f_result = options.get("response")
                     # set audit object to success
                     event_audit.log({"success": True})
                     event_audit.finalize_log()

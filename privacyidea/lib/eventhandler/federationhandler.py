@@ -24,11 +24,13 @@ __doc__ = """This is the event handler module for privacyIDEA federations.
 Requests can be forwarded to other privacyIDEA servers.
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
-from privacyidea.lib.privacyideaserver import get_privacyideaservers
+from privacyidea.lib.privacyideaserver import (get_privacyideaservers,
+                                               get_privacyideaserver)
 from privacyidea.lib import _
 import json
 import logging
 import requests
+from flask import jsonify
 
 
 log = logging.getLogger(__name__)
@@ -104,22 +106,48 @@ class FederationEventHandler(BaseEventHandler):
         :type options: dict
         :return:
         """
-        ret = True
         g = options.get("g")
         request = options.get("request")
 
-        # We will modify the response!
-        response = options.get("response")
-        content = json.loads(response.data)
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
 
-        method = request.method
-        # request.headers
-        path = request.path
-        data = request.all_data
-        # compose requests to remote server.
-        # Then we overwrite the originial response.
+        if handler_def.get("action") == ACTION_TYPE.FORWARD:
+            server_def = handler_options.get("privacyIDEA")
+            pi_server = get_privacyideaserver(server_def)
 
-        return ret
+            # the new url is the configured server url and the original path
+            url = pi_server.config.url + request.path
+            # We use the originial method
+            method = request.method
+            tls = pi_server.config.tls
+            # We also transfer the original payload
+            data = request.all_data
+
+            # TODO: We need to pass an authoriztaion header if we forward
+            # administrative requests
+            log.info(u"Sending {0} request to {1!r}".format(method, url))
+            requestor = None
+            params = None
+            if method.upper() == "GET":
+                params = data
+                data = None
+                requestor = requests.get
+            elif method.upper() == "POST":
+                requestor = requests.post
+            elif method.upper() == "DELETE":
+                requestor = requests.delete
+
+            if requestor:
+                r = requestor(url, params=params, data=data, verify=tls)
+                # convert requests Response to werkzeug Response
+                response_dict = json.loads(r.text)
+                if "detail" in response_dict:
+                    response_dict.get("detail")["origin"] = url
+                # We will modify the response!
+                options["response"] = jsonify(response_dict)
+            else:
+                log.warning(u"Unsupported method: {0!r}".format(method))
+
+        return True
 
