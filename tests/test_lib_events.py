@@ -6,12 +6,14 @@ lib/event.py (the decorator)
 """
 
 import smtpmock
+import responses
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.eventhandler.usernotification import (
     UserNotificationEventHandler, NOTIFY_TYPE)
 from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
                                                        ACTION_TYPE, VALIDITY)
 from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler
+from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
 from privacyidea.lib.smtpserver import add_smtpserver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
@@ -444,6 +446,14 @@ class ScriptEventTestCase(MyTestCase):
         res = t_handler.do(script_name, options=options)
         self.assertTrue(res)
         remove_token("SPASS01")
+
+
+class FederationEventTestCase(MyTestCase):
+
+    def test_00_static_actions(self):
+        from privacyidea.lib.eventhandler.federationhandler import ACTION_TYPE
+        actions = FederationEventHandler().actions
+        self.assertTrue(ACTION_TYPE.FORWARD in actions)
 
 
 class TokenEventTestCase(MyTestCase):
