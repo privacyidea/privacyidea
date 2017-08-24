@@ -106,9 +106,7 @@ class FederationEventHandler(BaseEventHandler):
         :type options: dict
         :return:
         """
-        g = options.get("g")
         request = options.get("request")
-
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
 
