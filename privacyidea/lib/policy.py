@@ -281,6 +281,7 @@ class ACTION(object):
     SETHSM = "set_hsm_password"
     SMTPSERVERWRITE = "smtpserver_write"
     RADIUSSERVERWRITE = "radiusserver_write"
+    PRIVACYIDEASERVERWRITE = "privacyideaserver_write"
     REALMDROPDOWN = "realm_dropdown"
     EVENTHANDLINGWRITE = "eventhandling_write"
     SMSGATEWAYWRITE = "smsgateway_write"
@@ -1262,6 +1263,13 @@ def get_static_policy_definitions(scope=None):
                                                  "definitions."),
                                        'mainmenu': [MAIN_MENU.CONFIG],
                                        'group': GROUP.SYSTEM},
+            ACTION.PRIVACYIDEASERVERWRITE: {'type': 'bool',
+                                            'desc': _("Admin is allowed to "
+                                                      "write remote "
+                                                      "privacyIDEA server "
+                                                      "definitions."),
+                                            'mainmenu': [MAIN_MENU.CONFIG],
+                                            'group': GROUP.SYSTEM},
             ACTION.EVENTHANDLINGWRITE: {'type': 'bool',
                                         'desc': _("Admin is allowed to write "
                                                   "and modify the event "

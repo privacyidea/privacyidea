@@ -51,6 +51,7 @@ from .token import token_blueprint
 from .system import system_blueprint
 from .smtpserver import smtpserver_blueprint
 from .radiusserver import radiusserver_blueprint
+from .privacyideaserver import privacyideaserver_blueprint
 from .recover import recover_blueprint
 from .register import register_blueprint
 from .event import eventhandling_blueprint
@@ -73,6 +74,7 @@ log = logging.getLogger(__name__)
 @caconnector_blueprint.before_request
 @system_blueprint.before_request
 @radiusserver_blueprint.before_request
+@privacyideaserver_blueprint.before_request
 @user_required
 def before_user_request():
     before_request()
@@ -196,6 +198,7 @@ def before_request():
 @caconnector_blueprint.after_request
 @smtpserver_blueprint.after_request
 @radiusserver_blueprint.after_request
+@privacyideaserver_blueprint.after_request
 @client_blueprint.after_request
 @subscriptions_blueprint.after_request
 @postrequest(sign_response, request=request)
