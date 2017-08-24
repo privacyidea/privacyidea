@@ -3,19 +3,19 @@
         <thead>
         <tr>
             <th translate>Identifier</th>
-            <th translate>IP/FQDN</th>
+            <th translate>URL</th>
             <th translate>Verify TLS</th>
             <th translate>Description</th>
         </tr>
         </thead>
         <tbody>
-        <tr ng-repeat="(identifier, server) in privacyideaServer">
+        <tr ng-repeat="(identifier, server) in privacyideaServers">
             <td>
                 <a ui-sref="config.privacyideaserver.edit({identifier:identifier})">
                         {{ identifier }}</a>
             </td>
             <td>
-                {{ server.server }}
+                {{ server.url }}
             </td>
             <td>
                 {{ server.tls }}
@@ -25,7 +25,7 @@
             </td>
             <td>
                 <button class="btn btn-danger"
-                        ng-click="delprivacyideaServer(identifier)">
+                        ng-click="delPrivacyideaServer(identifier)">
                         <span class="glyphicon glyphicon-trash"></span>
                     <span translate>Delete</span>
                 </button>
