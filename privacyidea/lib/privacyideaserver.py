@@ -67,7 +67,7 @@ class PrivacyIDEAServer(object):
         :param password: the password/OTP to test
         :return: True or False. If any error occurs, an exception is raised.
         """
-        response = requests.post(config.url,
+        response = requests.post(config.url + "/validate/check",
                           data={"user": user, "pass": password},
                           verify=config.tls
                           )
