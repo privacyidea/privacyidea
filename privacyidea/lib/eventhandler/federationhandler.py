@@ -24,22 +24,12 @@ __doc__ = """This is the event handler module for privacyIDEA federations.
 Requests can be forwarded to other privacyIDEA servers.
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
-from privacyidea.lib.token import (get_token_types, set_validity_period_end,
-                                   set_validity_period_start)
-from privacyidea.lib.realm import get_realms
-from privacyidea.lib.token import (set_realms, remove_token, enable_token,
-                                   unassign_token, init_token, set_description,
-                                   set_count_window, add_tokeninfo,
-                                   set_failcounter)
-from privacyidea.lib.utils import (parse_date, is_true,
-                                   parse_time_offset_from_now)
-from privacyidea.lib.tokenclass import DATE_FORMAT, AUTH_DATE_FORMAT
+from privacyidea.lib.privacyideaserver import get_privacyideaservers
 from privacyidea.lib import _
 import json
 import logging
-import datetime
-from dateutil.parser import parse as parse_date_string
-from dateutil.tz import tzlocal
+import requests
+
 
 log = logging.getLogger(__name__)
 
@@ -72,20 +62,15 @@ class FederationEventHandler(BaseEventHandler):
 
         :return: dict with actions
         """
+        pi_servers = [x.config.identifier for x in get_privacyideaservers()]
         actions = {ACTION_TYPE.FORWARD:
-                       {"URL":
+                       {"privacyIDEA":
                             {"type": "str",
                              "required": True,
-                             "description": _("The URL of the child "
-                                              "privacyIDEA server.")
+                             "value": pi_servers,
+                             "description": _("The remote/child privacyIDEA "
+                                              "Server.")
                              },
-                        "do_not_check_ssl":
-                            {"type": "bool",
-                             "description": _("The SSL certificate of the "
-                                              "privacyIDEA server will not be "
-                                              "checked. Do not use this in "
-                                              "production!")
-                            },
                         "realm":
                             {"type": "str",
                              "description": _("Change the realm name to a "
@@ -122,10 +107,19 @@ class FederationEventHandler(BaseEventHandler):
         ret = True
         g = options.get("g")
         request = options.get("request")
+
+        # We will modify the response!
         response = options.get("response")
         content = json.loads(response.data)
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
+
+        method = request.method
+        # request.headers
+        path = request.path
+        data = request.all_data
+        # compose requests to remote server.
+        # Then we overwrite the originial response.
 
         return ret
 
