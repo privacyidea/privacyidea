@@ -30,7 +30,7 @@ from privacyidea.lib import _
 import json
 import logging
 import requests
-from flask import jsonify
+from flask import Response
 
 
 log = logging.getLogger(__name__)
@@ -106,11 +106,12 @@ class FederationEventHandler(BaseEventHandler):
         :type options: dict
         :return:
         """
+        g = options.get("g")
         request = options.get("request")
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
 
-        if handler_def.get("action") == ACTION_TYPE.FORWARD:
+        if action == ACTION_TYPE.FORWARD:
             server_def = handler_options.get("privacyIDEA")
             pi_server = get_privacyideaserver(server_def)
 
@@ -121,12 +122,19 @@ class FederationEventHandler(BaseEventHandler):
             tls = pi_server.config.tls
             # We also transfer the original payload
             data = request.all_data
+            if handler_options.get("forward_client_ip"):
+                data["client"] = g.client_ip
+            if handler_options.get("realm"):
+                data["realm"] = handler_options.get("realm")
+            if handler_options.get("resolver"):
+                data["resolver"] = handler_options.get("resolver")
 
-            # TODO: We need to pass an authoriztaion header if we forward
+            # TODO: We need to pass an authorization header if we forward
             # administrative requests
             log.info(u"Sending {0} request to {1!r}".format(method, url))
             requestor = None
             params = None
+
             if method.upper() == "GET":
                 params = data
                 data = None
@@ -141,9 +149,13 @@ class FederationEventHandler(BaseEventHandler):
                 # convert requests Response to werkzeug Response
                 response_dict = json.loads(r.text)
                 if "detail" in response_dict:
-                    response_dict.get("detail")["origin"] = url
+                    response_dict.get("detail", {})["origin"] = url
                 # We will modify the response!
-                options["response"] = jsonify(response_dict)
+                # We can not use flask.jsonify(response_dict) here, since we
+                # would work outside of application context!
+                options["response"] = Response()
+                options["response"].content_type = "application/json"
+                options["response"].data = json.dumps(response_dict)
             else:
                 log.warning(u"Unsupported method: {0!r}".format(method))
 
