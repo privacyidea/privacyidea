@@ -690,7 +690,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.events.details.html:31
 #: privacyidea/static/components/config/views/config.events.list.html:8
-#: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:48
+#: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:55
 #: privacyidea/static/components/config/views/config.privacyideaserver.list.html:8
 #: privacyidea/static/components/config/views/config.radius.edit.html:68
 #: privacyidea/static/components/config/views/config.radius.list.html:8
@@ -1179,7 +1179,6 @@ msgstr ""
 msgid "IP or FQDN"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.privacyideaserver.list.html:6
 #: privacyidea/static/components/config/views/config.radius.list.html:6
 #: privacyidea/static/components/config/views/config.smtp.list.html:6
 msgid "IP/FQDN"
@@ -1677,7 +1676,7 @@ msgstr ""
 msgid "Parameters"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:65
+#: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:72
 #: privacyidea/static/components/config/views/config.radius.edit.html:85
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:77
 #: privacyidea/static/components/config/views/config.smtp.edit.html:77
@@ -1728,6 +1727,10 @@ msgstr ""
 msgid ""
 "Please pass the public key and the fingerprint to the token\n"
 "                provider."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:34
+msgid "Please provide the base URL of the privacyIDEA server."
 msgstr ""
 
 #: privacyidea/static/components/login/views/login.html:48
@@ -2115,7 +2118,7 @@ msgstr ""
 msgid "Save Token Info"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:79
+#: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:86
 msgid "Save privacyIDEA server"
 msgstr ""
 
@@ -2206,7 +2209,7 @@ msgstr ""
 msgid "Send test RADIUS request"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:71
+#: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:78
 msgid "Send test request to privacyIDEA server"
 msgstr ""
 
@@ -2662,6 +2665,12 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:1
 msgid "The certificate was enrolled successfully."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:46
+msgid ""
+"The certificate will be checked for a valid hostname and for\n"
+"                a trusted certificate. Do not uncheck this in productive use!"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.system.html:251
@@ -3182,6 +3191,10 @@ msgstr ""
 msgid "UID Type"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.privacyideaserver.list.html:6
+msgid "URL"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:27
 msgid "URL of the privacyIDEA server"
 msgstr ""
@@ -3231,7 +3244,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.details.html:288
 #: privacyidea/static/components/config/views/config.policies.list.html:10
-#: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:59
+#: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:66
 #: privacyidea/static/components/config/views/config.radius.edit.html:79
 #: privacyidea/static/templates/menu.html:52
 msgid "User"
@@ -3343,7 +3356,7 @@ msgstr ""
 msgid "Verify the TLS cerificate of the server."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:37
+#: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:40
 msgid "Verify the certificate"
 msgstr ""
 
