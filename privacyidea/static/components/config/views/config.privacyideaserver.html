@@ -1,0 +1,24 @@
+<div class="row">
+    <div class="col-lg-3">
+        <div class="pa-sidebar panel">
+            <ul class="nav nav-pills nav-stacked">
+                <li role="presentation"
+                    ng-class="{ active: $state.includes('config.privacyideaserver.list')}">
+                    <a ui-sref="config.privacyideaserver.list"
+                            translate>List privacyIDEA server
+                        definitions</a></li>
+                <li role="presentation"
+                    >
+                    <a ui-sref="config.privacyideaserver.edit" translate>
+                        New privacyIDEA server
+                    </a>
+
+                </li>
+            </ul>
+        </div>
+
+    </div>
+    <div ui-view class="col-lg-9 slide panel">
+    </div>
+</div>
+

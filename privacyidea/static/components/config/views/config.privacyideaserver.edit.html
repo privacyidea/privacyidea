@@ -1,12 +1,12 @@
 
 <h2 class="form-signin-heading"
         ng-show="identifier"
-        translate>Edit RADIUS server {{ identifier }}</h2>
+        translate>Edit privacyIDEA server {{ identifier }}</h2>
 <h2 class="form-signin-heading"
         ng-hide="identifier"
-        translate>Create a new RADIUS server {{ params.identifier }}</h2>
+        translate>Create a new privacyIDEA server {{ params.identifier }}</h2>
 
-<form name="formRadius" role="form" validate
+<form name="formPrivacyidea" role="form" validate
       class="form-horizontal">
 
     <div class="form-group"
@@ -16,54 +16,34 @@
         <div class="col-sm-9">
             <input name="identifier" id="identifier" class="form-control"
                    ng-model="params.identifier" required
-                   placeholder="myRadiusServer"
+                   placeholder="myRemotePrivacyIDEAServer"
                    autofocus/>
             <p class="help-block" translate>This is the unique identifying name
-                of the RADIUS server definition.</p>
+                of the privacyIDEA server definition.</p>
         </div>
     </div>
     <div class="form-group"
         ng-class="{'has-error': !params.server }">
         <label for="server" class="col-sm-3 control-label" translate>
-            IP or FQDN</label>
+            URL of the privacyIDEA server</label>
 
         <div class="col-sm-9">
             <input name="server" class="form-control"
                    ng-model="params.server" required
-                   placeholder="1.2.3.4"/>
+                   placeholder="https://pi17.example.com/"/>
         </div>
     </div>
     <div class="form-group">
         <label for="port" class="col-sm-3 control-label" translate>
-            Port</label>
+            Verify the certificate</label>
 
         <div class="col-sm-9">
-            <input name="port" class="form-control"
-                   ng-model="params.port"
-                   placeholder="1812"/>
+            <input name="tls" class="form-control"
+                   type="checkbox"
+                   ng-model="params.tls"/>
         </div>
     </div>
 
-    <div class="form-group"
-        ng-class="{'has-error': !params.secret}">
-        <label for="secret" class="col-sm-3 control-label"
-               translate>Secret</label>
-        <div class="col-sm-9">
-            <input name="secret" class="form-control"
-                   type="secret"
-                   ng-model="params.secret"
-                   placeholder="testing123"/>
-        </div>
-    </div>
-    <div class="form-group">
-        <label for="dictionary" class="col-sm-3 control-label"
-               translate>Dictionary</label>
-        <div class="col-sm-9">
-            <input name="dictionary" class="form-control"
-                   ng-model="params.dictionary"
-                   placeholder="/etc/privacyidea/dictionary"/>
-        </div>
-    </div>
     <div class="form-group">
         <label for="description" class="col-sm-3 control-label"
                translate>Description</label>
@@ -89,17 +69,17 @@
         </div>
         <div class="col-sm-3">
             <button class="btn btn-default" translate
-                    ng-click="testRadiusRequest()">
-                Send test RADIUS request
+                    ng-click="testPrivacyideaRequest()">
+                Send test request to privacyIDEA server
             </button>
         </div>
     </div>
 
     <div class="text-center">
-        <button ng-click="saveRadiusServer()"
-                ng-disabled="formRadius.$invalid"
+        <button ng-click="savePrivacyideaServer()"
+                ng-disabled="formPrivacyidea.$invalid"
                 class="btn btn-primary"
-                translate>Save RADIUS server
+                translate>Save privacyIDEA server
         </button>
     </div>
 

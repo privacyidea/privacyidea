@@ -206,6 +206,21 @@ angular.module('privacyideaApp.configStates', ['ui.router']).config(
                     templateUrl: configpath + "config.radius.edit.html",
                     controller: "radiusServerController"
                 })
+                .state('config.privacyideaserver', {
+                    url: "/privacyideaserver",
+                    templateUrl: configpath + "config.privacyideaserver.html",
+                    controller: "privacyideaServerController"
+                })
+                .state('config.privacyideaserver.list', {
+                    url: "/list",
+                    templateUrl: configpath + "config.privacyideaserver.list.html",
+                    controller: "privacyideaServerController"
+                })
+                .state('config.privacyideaserver.edit', {
+                    url: "/edit/{identifier:.*}",
+                    templateUrl: configpath + "config.privacyideaserver.edit.html",
+                    controller: "privacyideaServerController"
+                })
                 .state('config.events', {
                     url: "/events",
                     templateUrl: configpath + "config.events.html",

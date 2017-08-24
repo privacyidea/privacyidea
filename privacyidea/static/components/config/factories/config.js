@@ -54,6 +54,7 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
                                          policyUrl, eventUrl, smtpServerUrl,
                                          radiusServerUrl, smsgatewayUrl,
                                          defaultRealmUrl, systemUrl,
+                                         privacyideaServerUrl,
                                          CAConnectorUrl, inform) {
     /**
      Each service - just like this service factory - is a singleton.
@@ -408,6 +409,32 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
         },
         testRadius: function(params, callback) {
             $http.post(radiusServerUrl + "/test_request", params, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
+        getPrivacyidea: function(callback, identifier) {
+            if (!identifier) {identifier = "";}
+            $http.get(privacyideaServerUrl + "/" + identifier, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
+        delPrivacyidea: function(identifier, callback) {
+            $http.delete(privacyideaServerUrl + "/" + identifier, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
+        addPrivacyidea: function(params, callback) {
+            var identifier = params["identifier"];
+            $http.post(privacyideaServerUrl + "/" + identifier, params, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
+        testPrivacyidea: function(params, callback) {
+            $http.post(privacyideaServerUrl + "/test_request", params, {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken(),
                           'Content-Type': 'application/json'}
             }).success(callback).error(error_func);
