@@ -482,6 +482,7 @@ class FederationEventTestCase(MyTestCase):
                    "response": resp,
                    "handler_def": {"options":
                                        {"realm": "xyz",
+                                        "resolver": "resoremote",
                                         "forward_client_ip": True,
                                         "privacyIDEA": "remotePI"}
                                    }
@@ -548,6 +549,84 @@ class FederationEventTestCase(MyTestCase):
         response = json.loads(options.get("response").data)
         self.assertEqual(response.get("detail").get("origin"),
                          "https://remote/validate/check")
+
+        # The same with a DELETE Request
+        builder = EnvironBuilder(method='DELETE',
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {}
+        req.path = "/token/serial"
+        resp = Response()
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"realm": "xyz",
+                                        "forward_client_ip": True,
+                                        "privacyIDEA": "remotePI"}
+                                   }
+                   }
+        responses.add(responses.DELETE, "https://remote/token/serial",
+                      body="""{
+                                        "jsonrpc": "2.0",
+                                        "detail": {},
+                                        "version": "privacyIDEA 2.20.dev2",
+                                        "result": {
+                                          "status": true,
+                                          "value": true},
+                                        "time": 1503561105.028947,
+                                        "id": 1
+                                        }""",
+                      content_type="application/json",
+                      )
+        add_privacyideaserver("remotePI", url="https://remote", tls=False)
+        res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
+        self.assertTrue(res)
+        response = json.loads(options.get("response").data)
+        self.assertEqual(response.get("detail").get("origin"),
+                         "https://remote/token/serial")
+
+        # The same with an unsupported Request method
+        builder = EnvironBuilder(method='PUT',
+                                 data={'user': "root", "pass": "lakjsiqdf"},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {'user': "root", "pass": "lakjsiqdf"}
+        req.path = "/token"
+        resp = Response()
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"realm": "xyz",
+                                        "forward_client_ip": True,
+                                        "privacyIDEA": "remotePI"}
+                                   }
+                   }
+        responses.add(responses.PUT, "https://remote/token",
+                      body="""{
+                                        "jsonrpc": "2.0",
+                                        "detail": {},
+                                        "version": "privacyIDEA 2.20.dev2",
+                                        "result": {
+                                          "status": true,
+                                          "value": true},
+                                        "time": 1503561105.028947,
+                                        "id": 1
+                                        }""",
+                      content_type="application/json",
+                      )
+        add_privacyideaserver("remotePI", url="https://remote", tls=False)
+        res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
+        self.assertTrue(res)
+        # No Response data, since this method is not supported
+        self.assertEqual(options.get("response").data, "")
 
 
 class TokenEventTestCase(MyTestCase):
