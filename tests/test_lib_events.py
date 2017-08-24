@@ -455,6 +455,100 @@ class FederationEventTestCase(MyTestCase):
         actions = FederationEventHandler().actions
         self.assertTrue(ACTION_TYPE.FORWARD in actions)
 
+    @responses.activate
+    def test_01_forward(self):
+        # setup realms
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        g.audit_object = audit_object
+
+        # An authentication request for user root with a password, which does
+        #  not exist on the local privacyIDEA system
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "root", "pass": "lakjsiqdf"},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {'user': "root", "pass": "lakjsiqdf"}
+        req.path = "/validate/check"
+        resp = Response()
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"realm": "xyz",
+                                        "forward_client_ip": True,
+                                        "privacyIDEA": "remotePI"}
+                                   }
+                   }
+        f_handler = FederationEventHandler()
+        from privacyidea.lib.eventhandler.federationhandler import ACTION_TYPE
+        from privacyidea.lib.privacyideaserver import add_privacyideaserver
+        responses.add(responses.POST, "https://remote/validate/check",
+                      body="""{
+                        "jsonrpc": "2.0",
+                        "detail": {},
+                        "version": "privacyIDEA 2.20.dev2",
+                        "result": {
+                          "status": true,
+                          "value": true},
+                        "time": 1503561105.028947,
+                        "id": 1
+                        }""",
+                      content_type="application/json",
+                      )
+        add_privacyideaserver("remotePI", url="https://remote", tls=False)
+        res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
+        self.assertTrue(res)
+        response = json.loads(options.get("response").data)
+        self.assertEqual(response.get("detail").get("origin"),
+                         "https://remote/validate/check")
+
+        # The same with a GET Request
+        builder = EnvironBuilder(method='GET',
+                                 data={'user': "root", "pass": "lakjsiqdf"},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {'user': "root", "pass": "lakjsiqdf"}
+        req.path = "/validate/check"
+        resp = Response()
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"realm": "xyz",
+                                        "forward_client_ip": True,
+                                        "privacyIDEA": "remotePI"}
+                                   }
+                   }
+        responses.add(responses.GET, "https://remote/validate/check",
+                      body="""{
+                                "jsonrpc": "2.0",
+                                "detail": {},
+                                "version": "privacyIDEA 2.20.dev2",
+                                "result": {
+                                  "status": true,
+                                  "value": true},
+                                "time": 1503561105.028947,
+                                "id": 1
+                                }""",
+                      content_type="application/json",
+                      )
+        add_privacyideaserver("remotePI", url="https://remote", tls=False)
+        res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
+        self.assertTrue(res)
+        response = json.loads(options.get("response").data)
+        self.assertEqual(response.get("detail").get("origin"),
+                         "https://remote/validate/check")
+
 
 class TokenEventTestCase(MyTestCase):
 
