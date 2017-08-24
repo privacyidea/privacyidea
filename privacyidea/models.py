@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-08-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Remote privacyIDEA Server
 #  2017-08-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add AuthCache
 #  2017-04-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -2025,6 +2027,42 @@ class SMSGatewayOption(MethodsMixin, db.Model):
                                               ).update({'Value': self.Value,
                                                         'Type': self.Type})
             ret = go.id
+        db.session.commit()
+        return ret
+
+
+class PrivacyIDEAServer(MethodsMixin, db.Model):
+    """
+    This table can store remote privacyIDEA server definitions
+    """
+    __tablename__ = 'privacyideaserver'
+    id = db.Column(db.Integer, Sequence("privacyideaserver_seq"),
+                   primary_key=True)
+    # This is a name to refer to
+    identifier = db.Column(db.Unicode(255), nullable=False, unique=True)
+    # This is the FQDN or the IP address
+    url = db.Column(db.Unicode(255), nullable=False)
+    tls = db.Column(db.Boolean, default=False)
+    description = db.Column(db.Unicode(2000), default=u'')
+
+    def save(self):
+        pi = PrivacyIDEAServer.query.filter(PrivacyIDEAServer.identifier ==
+                                            self.identifier).first()
+        if pi is None:
+            # create a new one
+            db.session.add(self)
+            db.session.commit()
+            ret = self.id
+        else:
+            # update
+            values = {"url": self.url}
+            if self.tls is not None:
+                values["tls"] = self.tls
+            if self.description is not None:
+                values["description"] = self.description
+            PrivacyIDEAServer.query.filter(PrivacyIDEAServer.identifier ==
+                                           self.identifier).update(values)
+            ret = pi.id
         db.session.commit()
         return ret
 
