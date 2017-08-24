@@ -30,6 +30,7 @@ from privacyidea.lib.token import (init_token, remove_token, unassign_token,
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.user import create_user, User
 from privacyidea.lib.policy import ACTION
+from privacyidea.lib.error import ParameterError
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
@@ -45,7 +46,7 @@ class EventHandlerLibTestCase(MyTestCase):
         self.assertEqual(eid, 1)
 
         # create a new event!
-        r = set_event("name2", "token_init, token_assign",
+        r = set_event("name2", ["token_init", "token_assign"],
                       "UserNotification", "sendmail",
                       conditions={},
                       options={"emailconfig": "themis",
@@ -87,6 +88,16 @@ class EventHandlerLibTestCase(MyTestCase):
         events = event_config.get_handled_events("token_init")
         self.assertEqual(len(events), 1)
 
+        # If eventid is None, then the whole list is returned
+        r = event_config.get_event(None)
+        self.assertEqual(r, event_config.events)
+        # return a destinct eventid
+        r = event_config.get_event(events[0].get("id"))
+        self.assertEqual(r[0].get("id"), events[0].get("id"))
+
+        # We can not enable an event, that does not exist.
+        self.assertRaises(ParameterError, enable_event, 1234567, True)
+
         # Cleanup
         r = delete_event(n_eid)
         self.assertTrue(r)
@@ -96,6 +107,15 @@ class EventHandlerLibTestCase(MyTestCase):
     def test_02_get_handler_object(self):
         h_obj = get_handler_object("UserNotification")
         self.assertEqual(type(h_obj), UserNotificationEventHandler)
+
+        h_obj = get_handler_object("Token")
+        self.assertEqual(type(h_obj), TokenEventHandler)
+
+        h_obj = get_handler_object("Script")
+        self.assertEqual(type(h_obj), ScriptEventHandler)
+
+        h_obj = get_handler_object("Federation")
+        self.assertEqual(type(h_obj), FederationEventHandler)
 
 
 class BaseEventHandlerTestCase(MyTestCase):
