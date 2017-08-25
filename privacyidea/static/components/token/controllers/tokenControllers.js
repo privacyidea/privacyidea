@@ -342,7 +342,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     };
 
     $scope.regenerateToken = function () {
-        params = $scope.form;
+        var params = $scope.form;
         params.serial = $scope.enrolledToken.serial;
         TokenFactory.enroll($scope.newUser, params, $scope.callback);
     };
