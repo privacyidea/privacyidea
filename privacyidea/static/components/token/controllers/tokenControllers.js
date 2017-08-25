@@ -341,6 +341,12 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             $scope.form, $scope.callback);
     };
 
+    $scope.regenerateToken = function () {
+        params = $scope.form;
+        params.serial = $scope.enrolledToken.serial;
+        TokenFactory.enroll($scope.newUser, params, $scope.callback);
+    };
+
     // Special Token functions
     $scope.sshkeyChanged = function () {
         var keyArr = $scope.form.sshkey.split(" ");

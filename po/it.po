@@ -1931,6 +1931,11 @@ msgstr ""
 msgid "Refresh"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.enrolled.hotp.html:23
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:22
+msgid "Regenerate QR Code"
+msgstr ""
+
 #: privacyidea/static/components/register/views/register.html:14
 #: privacyidea/static/components/register/views/register.html:89
 #: privacyidea/static/templates/menu.html:97
@@ -2530,6 +2535,15 @@ msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:101
 msgid "The Policies"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.hotp.html:18
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:17
+msgid ""
+"The QR Code contains the secret key of your token. You need to\n"
+"            protect it. <b>If you are in doubt, that someone else saw it, "
+"please\n"
+"            regenerate the QR Code, when noone else is watching.</b>"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.question.html:1
