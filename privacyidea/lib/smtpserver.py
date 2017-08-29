@@ -53,13 +53,14 @@ class SMTPServer(object):
         """
         self.config = db_smtpserver_object
 
-    def send_email(self, recipient, subject, body, sender=None, reply_to=None):
+    def send_email(self, recipient, subject, body, sender=None,
+                   reply_to=None, mimetype="plain"):
         return self.test_email(self.config, recipient, subject, body, sender,
-                               reply_to)
+                               reply_to, mimetype)
 
     @staticmethod
     def test_email(config, recipient, subject, body, sender=None,
-                   reply_to=None):
+                   reply_to=None, mimetype="plain"):
         """
         Sends an email via the SMTP Database Object
 
@@ -77,13 +78,14 @@ class SMTPServer(object):
         :type sender: basestring
         :param reply_to: The Reply-To parameter
         :type reply_to: basestring
+        :param mimetype: The type of the email to send. Can by plain or html
         :return: True or False
         """
         if type(recipient) != list:
             recipient = [recipient]
         mail_from = sender or config.sender
         reply_to = reply_to or mail_from
-        msg = MIMEText(body.encode('utf-8'), 'plain', 'utf-8')
+        msg = MIMEText(body.encode('utf-8'), mimetype, 'utf-8')
         msg['Subject'] = subject
         msg['From'] = mail_from
         msg['To'] = ",".join(recipient)
@@ -122,7 +124,7 @@ class SMTPServer(object):
 
 @log_with(log)
 def send_email_identifier(identifier, recipient, subject, body, sender=None,
-                          reply_to=None):
+                          reply_to=None, mimetype="plain"):
     """
     Send the an email via the specified SMTP server configuration.
 
@@ -137,7 +139,8 @@ def send_email_identifier(identifier, recipient, subject, body, sender=None,
     :return: True or False
     """
     smtp_server = get_smtpserver(identifier)
-    return smtp_server.send_email(recipient, subject, body, sender, reply_to)
+    return smtp_server.send_email(recipient, subject, body, sender, reply_to,
+                                  mimetype)
 
 
 @log_with(log)
