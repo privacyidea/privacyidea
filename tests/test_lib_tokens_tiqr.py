@@ -5,11 +5,13 @@ This depends on lib.tokenclass
 
 from .base import MyTestCase
 from privacyidea.lib.tokens.tiqrtoken import TiqrTokenClass
+from privacyidea.lib.tokens.ocratoken import OcraTokenClass
 from privacyidea.lib.tokens.ocra import OCRASuite, OCRA
 from privacyidea.lib.token import init_token
 from privacyidea.lib.error import ParameterError
 import re
 import binascii
+import hashlib
 from urllib import urlencode
 import json
 from flask import Request, g
@@ -298,6 +300,57 @@ class OCRATestCase(MyTestCase):
         ocrasuite = u"OCRA-1:HOTP-SHA1-6:QN10-T1M"
         ocra_object=OCRA(ocrasuite, binascii.unhexlify(KEY20))
         self.assertRaises(Exception, ocra_object.create_data_input, question)
+
+        ocrasuite = u"OCRA-1:HOTP-SHA1-8:QH40"
+        dTAN = "83507112  ~320,00~1399458665_G6HNVF"
+        question = binascii.hexlify(hashlib.sha1(dTAN).digest())
+        ocra_object = OCRA(ocrasuite, binascii.unhexlify(KEY20))
+        r = ocra_object.create_data_input(question)
+        self.assertEqual(len(r), 128 + len(ocrasuite) + 1)
+
+
+class OcraTokenTestCase(MyTestCase):
+
+    def test_00_users(self):
+        self.setUp_user_realms()
+
+    def test_01_create_token(self):
+        pin = "test"
+        token = init_token({"type": "ocra",
+                            "pin": pin,
+                            "serial": "OCRA1",
+                            "user": "cornelius",
+                            "realm": self.realm1,
+                            "otpkey": KEY20
+                            })
+        self.assertEqual(token.type, "ocra")
+
+        prefix = OcraTokenClass.get_class_prefix()
+        self.assertEqual(prefix, "OCRA")
+
+        info = OcraTokenClass.get_class_info()
+        self.assertEqual(info.get("type"), "ocra")
+
+        info = OcraTokenClass.get_class_info("type")
+        self.assertEqual(info, "ocra")
+
+        # Check the challenge request
+        r = token.is_challenge_request(pin)
+        self.assertEqual(r, True)
+        r = token.is_challenge_request(pin + "123456")
+        self.assertEqual(r, False)
+
+        # Check create_challenge
+        displayTAN_challenge = "83507112  ~320,00~1399458665_G6HNVF"
+        challengeQH40 = binascii.hexlify(hashlib.sha1(
+            displayTAN_challenge).digest())
+        r = token.create_challenge(options={"challenge": challengeQH40})
+        self.assertEqual(r[0], True)
+        self.assertEqual(r[1], "Please answer the challenge")
+
+        # answer the challenge
+        r = token.verify_response(passw="90065298", challenge=challengeQH40)
+        self.assertTrue(r > 0, r)
 
 
 class TiQRTokenTestCase(MyTestCase):
