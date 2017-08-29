@@ -129,7 +129,7 @@ msgid ""
 "                    <p>Have fun using privacyIDEA!</p>"
 msgstr ""
 "<p>Vielen Dank, dass Sie privacyIDEA nutzen und Ihr Netzwerk absichen und "
-"die damit auch die Welt ein Stückchen sicheren machen!</p>\n"
+"Sie damit auch die Welt ein Stückchen sicheren machen!</p>\n"
 "<p>Viel Freude bei der Nutzung von privacyIDEA!</p>"
 
 #: privacyidea/static/components/login/views/offline.html:1
