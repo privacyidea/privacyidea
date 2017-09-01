@@ -41,6 +41,8 @@ Version 2.20
    * GPG keys are generated during package installation and
      show the GPG key in the import dialog (#742)
    * Failcounter clearing timeout in UI (#719)
+   * Allow to send challenge data (like banking transaction) in
+     email text and SMS text.
 
   Fixes:
 

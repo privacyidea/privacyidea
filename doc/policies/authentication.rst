@@ -118,6 +118,10 @@ This is the text that is sent via SMS to the user trying to
 authenticate with an SMS token.
 You can use the tags *<otp>* and *<serial>*.
 
+Starting with version 2.20 you can use the tag *{challenge}*. This will add
+the challenge data that was passed in the first authentication request in the
+challenge parameter. This could contain banking transaction data.
+
 Default: *<otp>*
 
 smsautosend
@@ -142,6 +146,10 @@ type: string
 This is the text that is sent via Email to be used with Email Token. This
 text should contain the OTP value.
 You can use the tags *<otp>* and *<serial>*.
+
+Starting with version 2.20 you can use the tag *{challenge}*. This will add
+the challenge data that was passed in the first authentication request in the
+challenge parameter. This could contain banking transaction data.
 
 Default: *<otp>*
 
