@@ -27,51 +27,63 @@
                 <th translate>number</th>
                 <th><translate>date</translate>
                     <pi-filter ng-model="dateFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList()"
+                               persist-as="audit:dateFilter">
                 </th>
                 <th><translate>action</translate>
                     <pi-filter ng-model="actionFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList()"
+                               persist-as="audit:actionFilter">
                 </th>
                 <th><translate>success</translate>
                     <pi-filter ng-model="successFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList()"
+                               persist-as="audit:successFilter">
                 </th>
                 <th><translate>action detail</translate>
                     <pi-filter ng-model="action_detailFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList()"
+                               persist-as="audit:detailFilter">
                 </th>
                 <th><translate>serial</translate>
                     <pi-filter ng-model="serialFilter"
-                               ng-change="getAuditList()"></pi-filter>
+                               ng-change="getAuditList()"
+                               persist-as="audit:serialFilter"></pi-filter>
                 </th>
                 <th><translate>token type</translate>
                     <pi-filter ng-model="typeFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList()"
+                               persist-as="audit:typeFilter">
                 </th>
                 <th><translate>administrator</translate>
                     <pi-filter ng-model="administratorFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList()"
+                               persist-as="audit:administratorFilter">
                 </th>
                 <th><translate>user</translate>
                     <pi-filter ng-model="userFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList()"
+                               persist-as="audit:userFilter">
                 </th>
                 <th><translate>realm</translate>
                     <pi-filter ng-model="realmFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList()"
+                               persist-as="audit:realmFilter">
                 </th>
                 <th><translate>resolver</translate>
                     <pi-filter ng-model="resolverFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList()"
+                               persist-as="audit:resolverFilter">
                 </th>
                 <th><translate>client</translate>
                     <pi-filter ng-model="clientFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList()"
+                               persist-as="audit:clientFilter">
                 </th>
                 <th><translate>info</translate>
                     <pi-filter ng-model="infoFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList()"
+                               persist-as="audit:infoFilter">
                 </th>
                 <th translate>sig_check</th>
                 <th translate>missing_line</th>
@@ -79,7 +91,8 @@
                 <th translate>log level</th>
                 <th><translate>privacyidea server</translate>
                     <pi-filter ng-model="serverFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList()"
+                               persist-as="audit:serverFilter">
                 </th>
             </tr>
             </thead>

@@ -23,6 +23,7 @@
                 <pi-filter ng-model="serialFilter"
                            ng-change="get('livesearch')"
                            ng-keypress="($event.which==13)?get():return"
+                           persist-as="tokens:serialFilter"
                 ></pi-filter>
             </th>
             <th>
@@ -33,6 +34,7 @@
                 <pi-filter ng-model="typeFilter"
                            ng-change="get('livesearch')"
                            ng-keypress="($event.which==13)?get():return"
+                           persist-as="tokens:typeFilter"
                 ></pi-filter>
             </th>
             <th>
@@ -51,6 +53,7 @@
                 <pi-filter ng-model="descriptionFilter"
                            ng-change="get('livesearch')"
                            ng-keypress="($event.which==13)?get():return"
+                           persist-as="tokens:descriptionFilter"
                 ></pi-filter>
             </th>
             <th>
@@ -72,6 +75,7 @@
                 <pi-filter ng-model="userIdFilter"
                            ng-change="get('livesearch')"
                            ng-keypress="($event.which==13)?get():return"
+                           persist-as="tokens:userIdFilter"
                 ></pi-filter>
             </th>
             <th ng-show="loggedInUser.role == 'admin' &&
@@ -84,6 +88,7 @@
                 <pi-filter ng-model="resolverFilter"
                            ng-change="get('livesearch')"
                            ng-keypress="($event.which==13)?get():return"
+                           persist-as="tokens:resolverFilter"
                 ></pi-filter>
             </th>
         </tr>

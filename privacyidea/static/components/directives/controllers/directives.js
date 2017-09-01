@@ -55,6 +55,7 @@ myApp.directive("piFilter", function (instanceUrl) {
                 scope.storageItem = "piFilter:" + scope.persistAs;
             }
 
+            // retrieve and display a persisted filter (if any)
             scope.retrieveFilter = function () {
                 if(scope.hasOwnProperty("storageItem")) {
                     var stored = sessionStorage.getItem(scope.storageItem);
@@ -66,6 +67,7 @@ myApp.directive("piFilter", function (instanceUrl) {
                 }
             };
 
+            // persist the current filter
             scope.persistFilter = function () {
                 if(scope.hasOwnProperty("storageItem")) {
                     sessionStorage.setItem(scope.storageItem, scope.filterValue);
