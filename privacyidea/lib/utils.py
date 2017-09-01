@@ -441,7 +441,11 @@ def parse_date(date_string):
     # check 2016/12/23, 23.12.2016 and including hour and minutes.
     d = None
     try:
-        d = parse_date_string(date_string, dayfirst=True)
+        # We only do dayfirst, if the datestring really starts with a 01/
+        # If it stars with a year 2017/... we do NOT dayfirst.
+        # See https://github.com/dateutil/dateutil/issues/457
+        d = parse_date_string(date_string,
+                              dayfirst=re.match("^\d\d[/\.]", date_string))
     except ValueError:
         log.debug("Dateformat {0!s} could not be parsed".format(date_string))
 
@@ -727,7 +731,9 @@ def parse_legacy_time(ts, return_date=False):
     d = parse_date_string(ts)
     if not d.tzinfo:
         # we need to reparse the string
-        d = parse_date_string(ts, tzinfos=tzlocal, dayfirst=True)
+        d = parse_date_string(ts,
+                              dayfirst=re.match("^\d\d[/\.]",ts)).replace(
+                                  tzinfo=tzlocal())
     if return_date:
         return d
     else:
