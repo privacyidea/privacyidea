@@ -92,6 +92,9 @@
                 <li>
                     <spinner name="spinner" show="false"></spinner>
                 </li>
+                <li ng-show="loggedInUser.username">
+                    <refreshbutton name="refresh" show="true" on-refresh="refresh()"></refreshbutton>
+                </li>
                 <li ng-class="{active: $state.includes('register')}"
                     ng-show="registrationAllowed">
                     <a ui-sref="register" ng-hide="loggedInUser.username"

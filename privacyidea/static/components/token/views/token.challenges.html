@@ -30,7 +30,8 @@
                         translate>serial
                 </button>
                 <pi-filter ng-model="serialFilter"
-                           ng-change="get()"></pi-filter>
+                           ng-change="get()"
+                           persist-as="challenges:serialFilter"></pi-filter>
             </th>
             <th>
                 <button pi-sort-by="transaction_id"

@@ -375,6 +375,10 @@ angular.module("privacyideaApp")
         $('html,body').scrollTop(0);
     };
 
+    $scope.refresh = function () {
+        $state.reload();
+    };
+
     $scope.lock_screen = function () {
         // We need to destroy the auth_token
         $scope.loggedInUser.auth_token = null;

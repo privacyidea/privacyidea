@@ -44,15 +44,48 @@ myApp.directive("piFilter", function (instanceUrl) {
     return {
         require: 'ngModel',
         restrict: 'E',
-        scope: {},
+        scope: {
+            'persistAs': '@?'
+        },
         templateUrl: instanceUrl + "/static/components/directives/views/directive.filter.table.html",
         link: function (scope, element, attr, ctrl) {
+            // make it possible to persist filters per session
+            if(scope.hasOwnProperty("persistAs")
+                && !angular.isUndefined(Storage)) {
+                scope.storageItem = "piFilter:" + scope.persistAs;
+            }
+
+            // retrieve and display a persisted filter (if any)
+            scope.retrieveFilter = function () {
+                if(scope.hasOwnProperty("storageItem")) {
+                    var stored = sessionStorage.getItem(scope.storageItem);
+                    if(stored) {
+                        scope.filterValue = stored;
+                        scope.filterVisible = true;
+                        scope.updateFilter();
+                    }
+                }
+            };
+
+            // persist the current filter
+            scope.persistFilter = function () {
+                if(scope.hasOwnProperty("storageItem")) {
+                    sessionStorage.setItem(scope.storageItem, scope.filterValue);
+                }
+            };
+
             scope.updateFilter = function() {
                 ctrl.$setViewValue(scope.filterValue);
+                if(!angular.isUndefined(scope.filterValue)) {
+                    scope.persistFilter();
+                }
             };
+
             ctrl.$viewChangeListeners.push(function(){
               scope.$eval(attr.ngChange);
             });
+
+            scope.retrieveFilter();
         }
     };
 });
@@ -348,7 +381,7 @@ myApp.directive('csvDownload', function(AuthFactory, $http, instanceUrl) {
     }
 });
 
-myApp.directive('spinner', function() {
+myApp.directive('spinner', function($rootScope) {
     return {
         scope: {
             name: '@?',
@@ -357,25 +390,51 @@ myApp.directive('spinner', function() {
         },
         template: [
             '<div ng-show="show">',
-            '<span class="glyphicon glyphicon-refresh spin" style="margin: 50% 5px 0 0; font-size:120%; color: #787878;" aria-hidden="true"></span>',
+            '<span class="glyphicon glyphicon-refresh spin" style="margin: 0 5px 0 0; font-size:120%; color: #787878; padding: 15px 0px;" aria-hidden="true"></span>',
             '</div>'
         ].join(''),
         controller: function($scope) {
-            $scope.loading_queue = 0;
-            $scope.$watch('loading_queue', function(loading_queue) {
+            $rootScope.loading_queue = 0;
+            $rootScope.$watch('loading_queue', function(loading_queue) {
                 if (loading_queue > 0) {
                     $scope.show = true;
-                } else if (loading_queue < 0) {
-                    $scope.loading_queue = 0;
+                } else if ($rootScope.loading_queue < 0) {
+                    $rootScope.loading_queue = 0;
                 } else {
                     $scope.show = false;
                 }
             });
-            $scope.$on('spinnerEvent', function(event, data) {
+            $rootScope.$on('spinnerEvent', function(event, data) {
                 if(data.action === 'increment') {
-                    $scope.loading_queue++;
+                    $rootScope.loading_queue++;
                 } else if(data.action === 'decrement') {
-                    $scope.loading_queue--;
+                    $rootScope.loading_queue--;
+                }
+            });
+        }
+    };
+});
+
+myApp.directive('refreshbutton', function($rootScope) {
+    return {
+        scope: {
+            name: '@?',
+            show: '=?',
+            onRefresh: '&'
+        },
+        template: [
+            '<a ng-click="onRefresh()" ng-show="show" style="cursor: pointer">',
+            '<span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>\n',
+            '<translate>Refresh</translate>',
+            '</a>'
+        ].join(''),
+        replace: true,
+        controller: function($scope) {
+            $rootScope.$watch('loading_queue', function(loading_queue) {
+                if (loading_queue > 0) {
+                    $scope.show = false;
+                }  else {
+                    $scope.show = true;
                 }
             });
         }
