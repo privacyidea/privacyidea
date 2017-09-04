@@ -381,7 +381,7 @@ myApp.directive('csvDownload', function(AuthFactory, $http, instanceUrl) {
     }
 });
 
-myApp.directive('spinner', function() {
+myApp.directive('spinner', function($rootScope) {
     return {
         scope: {
             name: '@?',
@@ -394,28 +394,28 @@ myApp.directive('spinner', function() {
             '</div>'
         ].join(''),
         controller: function($scope) {
-            $scope.loading_queue = 0;
-            $scope.$watch('loading_queue', function(loading_queue) {
+            $rootScope.loading_queue = 0;
+            $rootScope.$watch('loading_queue', function(loading_queue) {
                 if (loading_queue > 0) {
                     $scope.show = true;
-                } else if (loading_queue < 0) {
-                    $scope.loading_queue = 0;
+                } else if ($rootScope.loading_queue < 0) {
+                    $rootScope.loading_queue = 0;
                 } else {
                     $scope.show = false;
                 }
             });
-            $scope.$on('spinnerEvent', function(event, data) {
+            $rootScope.$on('spinnerEvent', function(event, data) {
                 if(data.action === 'increment') {
-                    $scope.loading_queue++;
+                    $rootScope.loading_queue++;
                 } else if(data.action === 'decrement') {
-                    $scope.loading_queue--;
+                    $rootScope.loading_queue--;
                 }
             });
         }
     };
 });
 
-myApp.directive('refreshbutton', function() {
+myApp.directive('refreshbutton', function($rootScope) {
     return {
         scope: {
             name: '@?',
@@ -430,21 +430,11 @@ myApp.directive('refreshbutton', function() {
         ].join(''),
         replace: true,
         controller: function($scope) {
-            $scope.loading_queue = 0;
-            $scope.$watch('loading_queue', function(loading_queue) {
+            $rootScope.$watch('loading_queue', function(loading_queue) {
                 if (loading_queue > 0) {
                     $scope.show = false;
-                } else if (loading_queue < 0) {
-                    $scope.loading_queue = 0;
-                } else {
+                }  else {
                     $scope.show = true;
-                }
-            });
-            $scope.$on('spinnerEvent', function(event, data) {
-                if(data.action === 'increment') {
-                    $scope.loading_queue++;
-                } else if(data.action === 'decrement') {
-                    $scope.loading_queue--;
                 }
             });
         }
