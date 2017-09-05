@@ -197,9 +197,9 @@ class UserNotificationEventHandler(BaseEventHandler):
             logged_in_user = {}
 
         tokenowner = self._get_tokenowner(request)
-        log.debug("Executing event for action {0!s}, user {1!s},"
-                  "logged_in_user {2!s}".format(action, tokenowner,
-                                                logged_in_user))
+        log.debug(u"Executing event for action {0!r}, user {1!r}, "
+                  u"logged_in_user {2!r}".format(action, tokenowner,
+                                                 logged_in_user))
 
         # Determine recipient
         recipient = None
