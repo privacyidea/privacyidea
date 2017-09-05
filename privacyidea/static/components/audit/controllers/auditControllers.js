@@ -44,6 +44,8 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         $scope.userFilter = $stateParams.user;
     }
 
+    $scope.$on("piReload", $scope.getAuditList);
+
     // get statistics
     $scope.getStatistics = function() {
         AuditFactory.statistics($scope.params, function(data) {

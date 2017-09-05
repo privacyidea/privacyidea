@@ -352,23 +352,24 @@ myApp.directive('spinner', function() {
     return {
         scope: {
             name: '@?',
-            show: '=?',
             register: '=?'
         },
         template: [
-            '<div ng-show="show">',
+            '<div ng-show="showSpinner">',
             '<span class="glyphicon glyphicon-refresh spin" style="margin: 50% 5px 0 0; font-size:120%; color: #787878;" aria-hidden="true"></span>',
             '</div>'
         ].join(''),
-        controller: function($scope) {
+        controller: function($scope, $rootScope) {
             $scope.loading_queue = 0;
             $scope.$watch('loading_queue', function(loading_queue) {
                 if (loading_queue > 0) {
-                    $scope.show = true;
+                    $scope.showSpinner = true;
+                    $rootScope.showReload = false;
                 } else if (loading_queue < 0) {
                     $scope.loading_queue = 0;
                 } else {
-                    $scope.show = false;
+                    $scope.showSpinner = false;
+                    $rootScope.showReload = true;
                 }
             });
             $scope.$on('spinnerEvent', function(event, data) {
