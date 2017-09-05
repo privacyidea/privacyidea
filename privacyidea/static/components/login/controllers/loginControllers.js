@@ -99,6 +99,8 @@ angular.module("privacyideaApp")
                 state: from.name,
                 params: fromParams
             };
+
+            $scope.checkReloadListeners();
         });
     $scope.$on('IdleStart', function () {
         console.log("start idle");
@@ -423,7 +425,41 @@ angular.module("privacyideaApp")
 
     $scope.welcomeNext = function () {
         $scope.welcomeStep += 1;
-    }
+    };
+
+    $scope.reload = function() {
+        // emit a signal to the scope, that just listens
+        $scope.$broadcast("piReload");
+    };
+
+    $scope.checkReloadListeners = function () {
+        var currentListeners = $scope.$$listenerCount["piReload"];
+        var oldListeners = $scope.reloadListeners;
+        /*
+        After a state change the number of listeners can be:
+        2: if the previous state and the current state listen to the event.
+           since the previous state was not deregisteres.
+        1: if the previous state was NOT listeneing and the current IS
+           listening
+           OR if the previous was listening and the current is not
+        0: If the previous and the current state do not listen.
+         */
+        console.log("old Listener: " + oldListeners);
+        console.log("current Listener: " + currentListeners);
+        if ((oldListeners >= 2) && (currentListeners === 1)) {
+            $scope.reloadListeners = 0;
+        } else if ((oldListeners === 1) && (currentListeners === 1)) {
+            // Change to state without reload. Listener is not deregistered
+            $scope.reloadListeners = 0;
+        } else if ((currentListeners === 0) || (currentListeners === undefined)) {
+            // change between states without listeners
+            $scope.reloadListeners = 0;
+        } else {
+            $scope.reloadListeners = 1;
+        }
+        // TODO: The logic is broken!
+        $scope.reloadListeners = 1;
+    };
 
 });
 

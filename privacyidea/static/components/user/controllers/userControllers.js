@@ -228,6 +228,10 @@ angular.module("privacyideaApp")
             $location.path("/user/list");
         }
 
+        $scope.$on("piReload", function () {
+            $scope._getUsers(false);
+        });
+
         $scope._getUsers = function (live_search) {
             if ((!$rootScope.search_on_enter) || ($rootScope.search_on_enter && !live_search)) {
                 // We shall only search, if either we do not search on enter or

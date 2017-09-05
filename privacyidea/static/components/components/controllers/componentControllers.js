@@ -42,6 +42,12 @@ myApp.controller("componentController", function (ComponentFactory, $scope,
         $location.path("/component/clienttype");
     }
 
+    // listen to the reload broadcast
+    $scope.$on("piReload", function () {
+        $scope.getSubscriptions();
+        ComponentFactory.getClientType();
+    });
+
     /*
     Functions for subscriptions
      */
