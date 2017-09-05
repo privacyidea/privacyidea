@@ -29,9 +29,6 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
     $scope.loggedInUser = AuthFactory.getUser();
     $scope.selectedToken = {serial: null};
 
-    // listen to the reload broadcast
-    $scope.$on("piReload", $scope.get);
-
     // Change the pagination
     $scope.pageChanged = function () {
         console.log('Page changed to: ' + $scope.params.page);
@@ -113,6 +110,9 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
     if ($scope.pin_change) {
         $location.path("/pinchange");
     }
+
+    // listen to the reload broadcast
+    $scope.$on("piReload", $scope.get);
 
 });
 
