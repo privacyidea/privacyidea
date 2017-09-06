@@ -433,31 +433,20 @@ angular.module("privacyideaApp")
     };
 
     $scope.checkReloadListeners = function () {
-        var currentListeners = $scope.$$listenerCount["piReload"];
-        var oldListeners = $scope.reloadListeners;
         /*
-        After a state change the number of listeners can be:
-        2: if the previous state and the current state listen to the event.
-           since the previous state was not deregisteres.
-        1: if the previous state was NOT listeneing and the current IS
-           listening
-           OR if the previous was listening and the current is not
-        0: If the previous and the current state do not listen.
-         */
-        console.log("old Listener: " + oldListeners);
-        console.log("current Listener: " + currentListeners);
-        if ((oldListeners >= 2) && (currentListeners === 1)) {
-            $scope.reloadListeners = 0;
-        } else if ((oldListeners === 1) && (currentListeners === 1)) {
-            // Change to state without reload. Listener is not deregistered
-            $scope.reloadListeners = 0;
-        } else if ((currentListeners === 0) || (currentListeners === undefined)) {
-            // change between states without listeners
-            $scope.reloadListeners = 0;
-        } else {
-            $scope.reloadListeners = 1;
-        }
-        // TODO: The logic is broken!
+         TODO: The a logic, that can hide the reload button.
+         This is not straighforward, since the current number of connected
+         listeners might be confusing:
+
+         connected numbers:
+         var currentListeners = $scope.$$listenerCount["piReload"];
+
+         When the state changes, the scope and thus the current listener is
+         destroyed. But the statechange-success is called, before the scope
+         is destroyed, so there can be two connected listeners, when
+         changing from a state to another state and both have a listener
+         defined.
+        */
         $scope.reloadListeners = 1;
     };
 
