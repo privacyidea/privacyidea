@@ -1706,3 +1706,35 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(res.status_code, 400)
             result = json.loads(res.data).get("result")
             self.assertFalse(result.get("status"))
+
+    def test_00_several_CR_one_locked(self):
+        # A user has several CR tokens. One of the tokens is locked.
+        self.setUp_user_realms()
+        user = User("multichal", self.realm1)
+        pin = "test"
+        token_a = init_token({"serial": "CR2A",
+                              "type": "hotp",
+                              "otpkey": self.otpkey,
+                              "pin": pin}, user)
+        token_b = init_token({"serial": "CR2B",
+                              "type": "hotp",
+                              "otpkey": self.otpkey,
+                              "pin": pin}, user)
+        set_policy("test48", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
+            ACTION.CHALLENGERESPONSE))
+        # both tokens will be a valid challenge response token!
+
+        # One token is locked
+        revoke_token("CR2B")
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "multichal",
+                                                 "realm": self.realm1,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        delete_policy("test48")
+        remove_token("CR2A")
+        remove_token("CR2B")
