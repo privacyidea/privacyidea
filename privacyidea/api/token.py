@@ -895,7 +895,7 @@ def loadtokens_api(filename=None):
 
         init_token(init_param, tokenrealms=tokenrealms)
 
-    g.audit_object.log({'info': "{0!s}, {1!s} (imported: {2:d})".format(file_type,
+    g.audit_object.log({'info': u"{0!s}, {1!s} (imported: {2:d})".format(file_type,
                                                            token_file,
                                                            len(TOKENS)),
                         'serial': ', '.join(TOKENS.keys())})
@@ -1033,7 +1033,7 @@ def get_serial_by_otp_api(otp=None):
         serial = get_serial_by_otp(tokenobj_list, otp=otp, window=window)
 
     g.audit_object.log({"success": True,
-                        "info": "get {0!s} by OTP. {1!s} tokens".format(
+                        "info": u"get {0!s} by OTP. {1!s} tokens".format(
                             serial, count)})
 
     return send_result({"serial": serial,

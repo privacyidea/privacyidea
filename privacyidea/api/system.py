@@ -251,7 +251,7 @@ def set_default():
             res = set_privacyidea_config(k, value)
             result[k] = res
             g.audit_object.log({"success": True})
-            g.audit_object.add_to_log({"info": "{0!s}={1!s}, ".format(k, value)})
+            g.audit_object.add_to_log({"info": u"{0!s}={1!s}, ".format(k, value)})
 
     if not result:
         log.warning("Failed saving config. Could not find any "
