@@ -130,7 +130,7 @@ def delete_user(resolvername=None, username=None):
     user_obj = User(login=username, resolver=resolvername)
     res = user_obj.delete()
     g.audit_object.log({"success": res,
-                        "info": "{0!s}".format(user_obj)})
+                        "info": u"{0!s}".format(user_obj)})
     return send_result(res)
 
 
@@ -172,7 +172,7 @@ def create_user_api():
     del attributes["password"]
     r = create_user(resolvername, attributes, password=password)
     g.audit_object.log({"success": True,
-                        "info": "{0!s}: {1!s}/{2!s}".format(r, username,
+                        "info": u"{0!s}: {1!s}/{2!s}".format(r, username,
                                                             resolvername)})
     return send_result(r)
 
@@ -220,7 +220,7 @@ def update_user():
         del attributes["password"]
     r = user_obj.update_user_info(attributes, password=password)
     g.audit_object.log({"success": True,
-                        "info": "{0!s}: {1!s}/{2!s}".format(r, username, resolvername)})
+                        "info": u"{0!s}: {1!s}/{2!s}".format(r, username, resolvername)})
     return send_result(r)
 
 
