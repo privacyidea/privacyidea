@@ -430,6 +430,9 @@ class SmsTokenClass(HotpTokenClass):
     def _get_sms_text(options):
         """
         This returns the SMSTEXT from the policy "smstext"
+        
+        options contains data like clientip, g, user and also the Request 
+        parameters like "challenge" or "pass".
 
         :param options: contains user and g object.
         :type options: dict
@@ -459,6 +462,8 @@ class SmsTokenClass(HotpTokenClass):
             if len(messages) == 1:
                 message = messages[0]
 
+        # Replace the {challenge}:
+        message = message.format(challenge=options.get("challenge"))
         return message
 
     @staticmethod

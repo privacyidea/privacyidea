@@ -62,6 +62,7 @@ angular.module("privacyideaApp")
     RegisterFactory.status(function (data) {
         $scope.registrationAllowed = data.result.value;
     });
+    $scope.welcomeStep = 0;
 
     hotkeys.add({
         combo: 'alt+e',
@@ -332,6 +333,7 @@ angular.module("privacyideaApp")
             $scope.user_details_in_tokenlist = data.result.value.user_details;
             $scope.default_tokentype = data.result.value.default_tokentype;
             $scope.timeout_action = data.result.value.timeout_action;
+            $scope.hide_welcome = data.result.value.hide_welcome;
             $rootScope.search_on_enter = data.result.value.search_on_enter;
             var timeout = data.result.value.logout_time;
             PolicyTemplateFactory.setUrl(data.result.value.policy_template_url);
@@ -366,6 +368,7 @@ angular.module("privacyideaApp")
         $scope.privacyideaVersionNumber = null;
         $scope.logoutWarning = false;
         $scope.myCountdown = "";
+        $scope.welcomeStep = 0;
         $state.go("login");
         Idle.unwatch();
         // Jump to top when the policy is saved
@@ -417,6 +420,10 @@ angular.module("privacyideaApp")
         });
 
     };
+
+    $scope.welcomeNext = function () {
+        $scope.welcomeStep += 1;
+    }
 
 });
 

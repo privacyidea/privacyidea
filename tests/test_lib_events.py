@@ -6,12 +6,14 @@ lib/event.py (the decorator)
 """
 
 import smtpmock
+import responses
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.eventhandler.usernotification import (
     UserNotificationEventHandler, NOTIFY_TYPE)
 from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
                                                        ACTION_TYPE, VALIDITY)
 from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler
+from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
 from privacyidea.lib.smtpserver import add_smtpserver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
@@ -28,6 +30,7 @@ from privacyidea.lib.token import (init_token, remove_token, unassign_token,
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.user import create_user, User
 from privacyidea.lib.policy import ACTION
+from privacyidea.lib.error import ParameterError
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
@@ -43,7 +46,7 @@ class EventHandlerLibTestCase(MyTestCase):
         self.assertEqual(eid, 1)
 
         # create a new event!
-        r = set_event("name2", "token_init, token_assign",
+        r = set_event("name2", ["token_init", "token_assign"],
                       "UserNotification", "sendmail",
                       conditions={},
                       options={"emailconfig": "themis",
@@ -85,6 +88,16 @@ class EventHandlerLibTestCase(MyTestCase):
         events = event_config.get_handled_events("token_init")
         self.assertEqual(len(events), 1)
 
+        # If eventid is None, then the whole list is returned
+        r = event_config.get_event(None)
+        self.assertEqual(r, event_config.events)
+        # return a destinct eventid
+        r = event_config.get_event(events[0].get("id"))
+        self.assertEqual(r[0].get("id"), events[0].get("id"))
+
+        # We can not enable an event, that does not exist.
+        self.assertRaises(ParameterError, enable_event, 1234567, True)
+
         # Cleanup
         r = delete_event(n_eid)
         self.assertTrue(r)
@@ -94,6 +107,15 @@ class EventHandlerLibTestCase(MyTestCase):
     def test_02_get_handler_object(self):
         h_obj = get_handler_object("UserNotification")
         self.assertEqual(type(h_obj), UserNotificationEventHandler)
+
+        h_obj = get_handler_object("Token")
+        self.assertEqual(type(h_obj), TokenEventHandler)
+
+        h_obj = get_handler_object("Script")
+        self.assertEqual(type(h_obj), ScriptEventHandler)
+
+        h_obj = get_handler_object("Federation")
+        self.assertEqual(type(h_obj), FederationEventHandler)
 
 
 class BaseEventHandlerTestCase(MyTestCase):
@@ -329,10 +351,75 @@ class BaseEventHandlerTestCase(MyTestCase):
              }
         )
         self.assertTrue(r)
-
-
-
         remove_token(serial)
+
+    def test_05_detail_messages_condition(self):
+        self.setUp_user_realms()
+        uhandler = BaseEventHandler()
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "secret"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        # This is a kind of authentication request
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "secret"}
+        req.User = User("cornelius", "realm1")
+
+        # Check DETAIL_MESSAGE
+        resp = Response()
+        resp.data = """{"result": {"value": true, "status": true},
+        "detail": {"message": "something very special happened"}
+        }
+        """
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.DETAIL_MESSAGE:
+                                                "special"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertEqual(r, True)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.DETAIL_MESSAGE:
+                                                "^special"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertEqual(r, False)
+
+        # Check DETAIL_ERROR_MESSAGE
+        resp = Response()
+        resp.data = """{"result": {"value": false, "status": false},
+            "detail": {"error": {"message": "user does not exist"}}
+            }
+            """
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.DETAIL_ERROR_MESSAGE:
+                                                "does not exist$"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertEqual(r, True)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.DETAIL_ERROR_MESSAGE:
+                                                "^does not exist"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertEqual(r, False)
 
 
 class ScriptEventTestCase(MyTestCase):
@@ -379,6 +466,187 @@ class ScriptEventTestCase(MyTestCase):
         res = t_handler.do(script_name, options=options)
         self.assertTrue(res)
         remove_token("SPASS01")
+
+
+class FederationEventTestCase(MyTestCase):
+
+    def test_00_static_actions(self):
+        from privacyidea.lib.eventhandler.federationhandler import ACTION_TYPE
+        actions = FederationEventHandler().actions
+        self.assertTrue(ACTION_TYPE.FORWARD in actions)
+
+    @responses.activate
+    def test_01_forward(self):
+        # setup realms
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        g.audit_object = audit_object
+
+        # An authentication request for user root with a password, which does
+        #  not exist on the local privacyIDEA system
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "root", "pass": "lakjsiqdf"},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {'user': "root", "pass": "lakjsiqdf"}
+        req.path = "/validate/check"
+        resp = Response()
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"realm": "xyz",
+                                        "resolver": "resoremote",
+                                        "forward_client_ip": True,
+                                        "privacyIDEA": "remotePI"}
+                                   }
+                   }
+        f_handler = FederationEventHandler()
+        from privacyidea.lib.eventhandler.federationhandler import ACTION_TYPE
+        from privacyidea.lib.privacyideaserver import add_privacyideaserver
+        responses.add(responses.POST, "https://remote/validate/check",
+                      body="""{
+                        "jsonrpc": "2.0",
+                        "detail": {},
+                        "version": "privacyIDEA 2.20.dev2",
+                        "result": {
+                          "status": true,
+                          "value": true},
+                        "time": 1503561105.028947,
+                        "id": 1
+                        }""",
+                      content_type="application/json",
+                      )
+        add_privacyideaserver("remotePI", url="https://remote", tls=False)
+        res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
+        self.assertTrue(res)
+        response = json.loads(options.get("response").data)
+        self.assertEqual(response.get("detail").get("origin"),
+                         "https://remote/validate/check")
+
+        # The same with a GET Request
+        builder = EnvironBuilder(method='GET',
+                                 data={'user': "root", "pass": "lakjsiqdf"},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {'user': "root", "pass": "lakjsiqdf"}
+        req.path = "/validate/check"
+        resp = Response()
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"realm": "xyz",
+                                        "forward_client_ip": True,
+                                        "privacyIDEA": "remotePI"}
+                                   }
+                   }
+        responses.add(responses.GET, "https://remote/validate/check",
+                      body="""{
+                                "jsonrpc": "2.0",
+                                "detail": {},
+                                "version": "privacyIDEA 2.20.dev2",
+                                "result": {
+                                  "status": true,
+                                  "value": true},
+                                "time": 1503561105.028947,
+                                "id": 1
+                                }""",
+                      content_type="application/json",
+                      )
+        add_privacyideaserver("remotePI", url="https://remote", tls=False)
+        res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
+        self.assertTrue(res)
+        response = json.loads(options.get("response").data)
+        self.assertEqual(response.get("detail").get("origin"),
+                         "https://remote/validate/check")
+
+        # The same with a DELETE Request
+        builder = EnvironBuilder(method='DELETE',
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {}
+        req.path = "/token/serial"
+        resp = Response()
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"realm": "xyz",
+                                        "forward_client_ip": True,
+                                        "privacyIDEA": "remotePI"}
+                                   }
+                   }
+        responses.add(responses.DELETE, "https://remote/token/serial",
+                      body="""{
+                                        "jsonrpc": "2.0",
+                                        "detail": {},
+                                        "version": "privacyIDEA 2.20.dev2",
+                                        "result": {
+                                          "status": true,
+                                          "value": true},
+                                        "time": 1503561105.028947,
+                                        "id": 1
+                                        }""",
+                      content_type="application/json",
+                      )
+        add_privacyideaserver("remotePI", url="https://remote", tls=False)
+        res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
+        self.assertTrue(res)
+        response = json.loads(options.get("response").data)
+        self.assertEqual(response.get("detail").get("origin"),
+                         "https://remote/token/serial")
+
+        # The same with an unsupported Request method
+        builder = EnvironBuilder(method='PUT',
+                                 data={'user': "root", "pass": "lakjsiqdf"},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {'user': "root", "pass": "lakjsiqdf"}
+        req.path = "/token"
+        resp = Response()
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"realm": "xyz",
+                                        "forward_client_ip": True,
+                                        "privacyIDEA": "remotePI"}
+                                   }
+                   }
+        responses.add(responses.PUT, "https://remote/token",
+                      body="""{
+                                        "jsonrpc": "2.0",
+                                        "detail": {},
+                                        "version": "privacyIDEA 2.20.dev2",
+                                        "result": {
+                                          "status": true,
+                                          "value": true},
+                                        "time": 1503561105.028947,
+                                        "id": 1
+                                        }""",
+                      content_type="application/json",
+                      )
+        add_privacyideaserver("remotePI", url="https://remote", tls=False)
+        res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
+        self.assertTrue(res)
+        # No Response data, since this method is not supported
+        self.assertEqual(options.get("response").data, "")
 
 
 class TokenEventTestCase(MyTestCase):

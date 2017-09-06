@@ -147,7 +147,8 @@ class User(object):
             conf = ''
             if self.resolver is not None and self.resolver:
                 conf = '.{0!s}'.format((unicode(self.resolver)))
-            ret = '<{0!s}{1!s}@{2!s}>'.format(loginname, conf, unicode(self.realm))
+            ret = u'<{0!s}{1!s}@{2!s}>'.format(loginname, conf, unicode(
+                self.realm))
 
         return ret
 

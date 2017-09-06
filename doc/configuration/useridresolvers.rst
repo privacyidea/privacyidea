@@ -107,14 +107,19 @@ as "NTLM".
    *cn=administrator,cn=users,dc=domain,dc=name*. When using bind type "NTLM"
    you need to specify Bind DN like *DOMAINNAME\\username*.
 
-The ``LoginName`` attribute is the attribute that holds the loginname. It
+The ``LoginName attribute`` is the attribute that holds the loginname. It
 can be changed to your needs.
 
-The searchfilter is used for forward and backward
-search the object in LDAP.
+Starting with version 2.20 you can provide a list of attributes in
+``LoginName Attribute`` like:
+
+    sAMAccountName, userPrincipalName
+
+This way a user can login with either his sAMAccountName or his principalName.
 
 The ``searchfilter`` is used to list all possible users, that can be used
-in this resolver.
+in this resolver. The searchfilter is used for forward and backward
+search the object in LDAP.
 
 The ``attribute mapping`` maps LDAP object attributes to user attributes in
 privacyIDEA. privacyIDEA knows the following attributes:
@@ -262,6 +267,10 @@ database.
    starting with *{SHA}* or salted secure hashes starting with *{SSHA}*,
    *{SSHA256}* or *{SSHA512}*. Password hashes of length 64 are interpreted as
    OTRS sha256 hashes.
+
+You can mark the users as ``Editable``. The ``Password_Hash_Type`` can be
+used to determine wich hash algorithm should be used, if a password of an
+editable user is written to the database.
 
 You can add an additional ``Where statement`` if you do not want to use
 all users from the table.

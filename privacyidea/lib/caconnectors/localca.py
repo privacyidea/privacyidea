@@ -399,7 +399,13 @@ class LocalCAConnector(BaseCAConnector):
                 csr_obj.get_subject(), file_extension="pem")
             #csr_extensions = csr_obj.get_extensions()
         csr_filename = csr_filename.replace(" ", "_")
+        if type(csr_filename) == str:
+            csr_filename = csr_filename.decode("utf-8")
+        csr_filename = csr_filename.encode("ascii", "ignore")
         certificate_filename = certificate_filename.replace(" ", "_")
+        if type(certificate_filename) == str:
+            certificate_filename = certificate_filename.decode("utf-8")
+        certificate_filename = certificate_filename.encode("ascii", "ignore")
         # dump the file
         with open(csrdir + "/" + csr_filename, "w") as f:
             f.write(csr)

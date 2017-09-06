@@ -11,11 +11,14 @@ from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
                                    get_data_from_params, parse_legacy_time,
                                    int_to_hex, compare_value_value,
                                    parse_time_offset_from_now,
-                                   parse_time_delta, to_unicode)
+                                   parse_time_delta, to_unicode,
+                                   hash_password, PasswordHash, check_ssha,
+                                   check_sha, otrs_sha256)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset
 from privacyidea.lib.tokenclass import DATE_FORMAT
+import hashlib
 
 
 class UtilsTestCase(MyTestCase):
@@ -360,3 +363,34 @@ class UtilsTestCase(MyTestCase):
         s = u"kölbel"
         su = to_unicode(s)
         self.assertEqual(su, u"kölbel")
+
+    def test_15_hash_passwords(self):
+        p_hash = hash_password("pass0rd", "phpass")
+        PH = PasswordHash()
+        self.assertTrue(PH.check_password("pass0rd", p_hash))
+        self.assertFalse(PH.check_password("passord", p_hash))
+
+        # {SHA}
+        p_hash = hash_password("passw0rd", "sha")
+        self.assertTrue(check_sha(p_hash, "passw0rd"))
+        self.assertFalse(check_sha(p_hash, "password"))
+
+        # OTRS
+        p_hash = hash_password("passw0rd", "otrs")
+        self.assertTrue(otrs_sha256(p_hash, "passw0rd"))
+        self.assertFalse(otrs_sha256(p_hash, "password"))
+
+        # {SSHA}
+        p_hash = hash_password("passw0rd", "ssha")
+        self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha1, 20))
+        self.assertFalse(check_ssha(p_hash, "password", hashlib.sha1, 20))
+
+        # {SSHA256}
+        p_hash = hash_password("passw0rd", "ssha256")
+        self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha256, 32))
+        self.assertFalse(check_ssha(p_hash, "password", hashlib.sha256, 32))
+
+        # {SSHA512}
+        p_hash = hash_password("passw0rd", "ssha512")
+        self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha512, 64))
+        self.assertFalse(check_ssha(p_hash, "password", hashlib.sha512, 64))

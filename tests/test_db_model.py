@@ -11,7 +11,7 @@ from privacyidea.models import (Token,
                                 CAConnector, CAConnectorConfig, SMTPServer,
                                 PasswordReset, EventHandlerOption,
                                 EventHandler, SMSGatewayOption, SMSGateway,
-                                EventHandlerCondition,
+                                EventHandlerCondition, PrivacyIDEAServer,
                                 ClientApplication, Subscription, UserCache)
 from .base import MyTestCase
 from datetime import datetime
@@ -665,3 +665,29 @@ class TokenModelTestCase(MyTestCase):
         find_user = UserCache.query.filter(UserCache.username ==
                                            username).first()
         self.assertFalse(find_user)
+
+    def test_24_add_and_delete_privacyideaserver(self):
+        pi1 = PrivacyIDEAServer(identifier="myserver",
+                                url="https://pi.example.com")
+        pi1.save()
+        pi2 = PrivacyIDEAServer.query.filter_by(identifier="myserver").first()
+        self.assertEqual(pi2.url, "https://pi.example.com")
+        self.assertFalse(pi2.tls)
+
+        # Update the server
+        r = PrivacyIDEAServer(identifier="myserver",
+                              url="https://pi2.example.com", tls=True,
+                              description="test").save()
+        modified_server = PrivacyIDEAServer.query.filter_by(
+            identifier="myserver").first()
+
+        self.assertTrue(modified_server.tls, "100.2.3.4")
+        self.assertEqual(modified_server.description, "test")
+        self.assertEqual(modified_server.url, "https://pi2.example.com")
+
+        # Delete the server
+        pi2.delete()
+        # Try to find the server
+        pi2 = PrivacyIDEAServer.query.filter_by(identifier="myserver").first()
+        # The server does not exist anymore
+        self.assertEqual(pi2, None)

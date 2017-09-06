@@ -66,6 +66,30 @@ The body may contain the following tags
   * {registrationcode} the registration code in the detail response.
   * {recipient_givenname} the given name of the recipient.
   * {recipient_surname} the surname of the recipient.
+  * {googleurl_value} is the KEY URI for a google authenticator.
+  * {googleurl_img} is the data image source of the google authenticator QR
+  code.
+
+**mimetype**
+
+You can choose if the email should be sent as plain text or HTML. If the
+email is sent as HTML, you can do the following:
+
+   <a href={googleurl_value}>Your new token</a>
+
+Which will create a clickable link. Clicked on the smartphone, the token will
+be imported to the smartphone app.
+
+You can also do this:
+
+  <img src={googleurl_img}>
+
+This will add the QR Code into the HTML email.
+
+.. warning:: The KEY URI and the QR Code contain the secret OTP key in plain
+   text. Everyone who receives this data has a detailed copy of this token.
+   Thus we very much recommend to **never** send these data in an unencrypted
+   email!
 
 **To**
 

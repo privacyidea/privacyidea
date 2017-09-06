@@ -102,14 +102,15 @@ class UserNotificationEventHandler(BaseEventHandler):
                                                        "email via this "
                                                        "email server."),
                                       "value": smtpservers},
+                                "mimetype": {"type": "str",
+                                             "description": _("Either send "
+                                                              "email as plain text or HTML."),
+                                             "value": ["plain", "html"]},
                                 "subject": {"type": "str",
                                             "required": False,
                                             "description": _("The subject of "
                                                              "the mail that "
-                                                             "is sent.")
-
-
-                                },
+                                                             "is sent.")},
                                 "reply_to": {"type": "str",
                                              "required": False,
                                              "description": _("The Reply-To "
@@ -196,9 +197,9 @@ class UserNotificationEventHandler(BaseEventHandler):
             logged_in_user = {}
 
         tokenowner = self._get_tokenowner(request)
-        log.debug("Executing event for action {0!s}, user {1!s},"
-                  "logged_in_user {2!s}".format(action, tokenowner,
-                                                logged_in_user))
+        log.debug(u"Executing event for action {0!r}, user {1!r}, "
+                  u"logged_in_user {2!r}".format(action, tokenowner,
+                                                 logged_in_user))
 
         # Determine recipient
         recipient = None
@@ -268,6 +269,10 @@ class UserNotificationEventHandler(BaseEventHandler):
                      content.get("detail", {}).get("serial") or \
                      g.audit_object.audit_data.get("serial")
             registrationcode = content.get("detail", {}).get("registrationcode")
+            googleurl_value = content.get("detail", {}).get("googleurl",
+                                                            {}).get("value")
+            googleurl_img = content.get("detail", {}).get("googleurl",
+                                                          {}).get("img")
             tokentype = None
             if serial:
                 tokens = get_tokens(serial=serial)
@@ -291,12 +296,15 @@ class UserNotificationEventHandler(BaseEventHandler):
                 tokentype=tokentype,
                 registrationcode=registrationcode,
                 recipient_givenname=recipient.get("givenname"),
-                recipient_surname=recipient.get("surname")
+                recipient_surname=recipient.get("surname"),
+                googleurl_img=googleurl_img,
+                googleurl_value=googleurl_value
             )
 
             # Send notification
             if action.lower() == "sendmail":
                 emailconfig = handler_options.get("emailconfig")
+                mimetype = handler_options.get("mimetype", "plain")
                 useremail = recipient.get("email")
                 reply_to = handler_options.get("reply_to")
                 subject = handler_options.get("subject") or \
@@ -305,7 +313,8 @@ class UserNotificationEventHandler(BaseEventHandler):
                     ret = send_email_identifier(emailconfig,
                                                 recipient=useremail,
                                                 subject=subject, body=body,
-                                                reply_to=reply_to)
+                                                reply_to=reply_to,
+                                                mimetype=mimetype)
                 except Exception as exx:
                     log.error("Failed to send email: {0!s}".format(exx))
                     ret = False

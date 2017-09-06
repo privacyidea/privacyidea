@@ -33,6 +33,13 @@
                         </a>
                     </li>
                     <li role="presentation"
+                        ng-class="{ active: $state.includes('config.privacyideaserver')}">
+                        <a ui-sref="config.privacyideaserver">
+                            <span class="glyphicon glyphicon-forward"></span>
+                            <span translate>privacyIDEA servers</span>
+                        </a>
+                    </li>
+                    <li role="presentation"
                         ng-class="{ active: $state.includes('config.smsgateway')}">
                         <a ui-sref="config.smsgateway">
                             <span class="glyphicon glyphicon-phone"></span>

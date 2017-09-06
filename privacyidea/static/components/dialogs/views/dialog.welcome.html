@@ -1,0 +1,142 @@
+<div>
+    <!-- Modal -->
+    <div class="modal fade" id="dialogWelcome" tabindex="-1"
+         role="dialog"
+         aria-labelledby="myModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content" ng-show="welcomeStep === 0">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myModalLabel" translate
+                    >Welcome</h4>
+                </div>
+                <div class="modal-body" translate>
+                    <p>First, we would like to give you some background
+                       information on privacyIDEA.</p>
+                    <p>privacyIDEA is an Enterprise Level
+                        Open Source Multi Factor Authentication System.
+                        You can use privacyIDEA with up to 50 assigned
+                        tokens without subscription. For more than 50 tokens
+                        you need a valid subscription with support and
+                        service level agreement.
+                    </p>
+                    <p>
+                        You can find the complete source code
+                        of privacyIDEA at
+                        <a href="https://github.com/privacyidea/privacyidea"
+                           target=github>Github</a>.
+                    </p>
+                    <p>
+                        If you find a bug or if you want to contribute
+                        to privacyIDEA, please open an issue or pull request
+                        there.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default"
+                            ng-click="welcomeNext()" translate>Next
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-content" ng-show="welcomeStep === 1">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myModalLabel" translate
+                    >The Community</h4>
+                </div>
+                <div class="modal-body" translate>
+                    <p>If you have any question regarding privacyIDEA, please
+                        visit
+our <a href="https://community.privacyidea.org" target=forum>community forum</a>.
+                        Your question might already been answered there.
+                        You are welcome to file any new question or discuss
+                        any new idea there.</p>
+                    <p>With <b>you</b> starting to use privacyIDEA, you
+                        become a part of
+                        this community. Every question you ask in the forum and
+                        every question you answer there helps others, to get
+                        started with privacyIDEA.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default"
+                            ng-click="welcomeNext()" translate>Next
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-content" ng-show="welcomeStep === 2">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myModalLabel" translate
+                    >Professional Services and Enterprise Edition</h4>
+                </div>
+                <div class="modal-body" translate>
+                    <p>privacyIDEA is Open Source and
+                        stays Open Source under the
+<a href="https://github.com/privacyidea/privacyidea/blob/master/LICENSE" target=license>GNU Affero General Public License</a>.
+                        As such privacyIDEA comes <b>without any warranty and
+                            liability!</b>
+                    </p><p>
+                        If you are running privacyIDEA in an enterprise
+                        environment or in a critical setup you might need
+                        professional help. The company NetKnights employs the
+                    main developers of privacyIDEA and can help you with
+                    integrating
+                        privacyIDEA into your environment. You can also get
+                        <a href="https://netknights.it/en/leistungen/service-level-agreements/"
+                           target="netknights">professional service level
+                            agreements</a> (a.k.a. support contracts) and an
+                    <a href="https://netknights.it/en/produkte/privacyidea/" target="netknights">Enterprise Edition</a>
+                        providing additional ready made packages and
+                    appliance features.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default"
+                            ng-click="welcomeNext()" translate>Next
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-content" ng-show="welcomeStep === 3">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myModalLabel" translate
+                    >The Policies</h4>
+                </div>
+                <div class="modal-body" translate>
+                    <p>If you do not want to this information again, please
+                        create your first policy in the scope "webui". You
+                        can use the template <b>hide_welcome</b>. Such policy
+                        will
+                        prevent this information from being displayed.</p>
+                    <p>Policies are the way in privacyIDEA to define many
+                        behaviours. You can read more about policies in the
+                        <a href="http://privacyidea.readthedocs.io/en/latest/policies/index.html" target=policy>online
+                            documentation</a>.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default"
+                            ng-click="welcomeNext()" translate>Next
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-content" ng-show="welcomeStep === 4">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myModalLabel" translate
+                    >Thank you for improving security!</h4>
+                </div>
+                <div class="modal-body" translate>
+                    <p>Thank you for using privacyIDEA and making your network
+                        and thus this world a more secure place!</p>
+                    <p>Have fun using privacyIDEA!</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default"
+                            ng-click="welcomeNext()" translate>Dive In!
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>

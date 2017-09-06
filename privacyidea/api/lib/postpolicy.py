@@ -511,6 +511,13 @@ def get_webui_settings(request, response):
             realm=realm,
             client=client
         )
+        hide_welcome = policy_object.get_policies(
+            action=ACTION.SEARCH_ON_ENTER,
+            scope=SCOPE.WEBUI,
+            realm=realm,
+            client=client
+        )
+        hide_welcome = bool(hide_welcome)
         default_tokentype_pol = policy_object.get_action_values(
             action=ACTION.DEFAULT_TOKENTYPE,
             scope=SCOPE.WEBUI,
@@ -557,6 +564,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["token_wizard_2nd"] = token_wizard_2nd
         content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
         content["result"]["value"]["timeout_action"] = timeout_action
+        content["result"]["value"]["hide_welcome"] = hide_welcome
         response.data = json.dumps(content)
     return response
 

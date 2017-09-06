@@ -58,12 +58,12 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
         }
     };
 
-    /*
-     * Functions to check and to create a default realm. At the moment this is
-     * in the tokenview, as the token view is the first view. This could be
-     * changed to be located anywhere else.
-     */
     if ($scope.loggedInUser.role == "admin") {
+        /*
+        * Functions to check and to create a default realm. At the moment this is
+        * in the tokenview, as the token view is the first view. This could be
+        * changed to be located anywhere else.
+        */
         ConfigFactory.getRealms(function (data) {
             // Check if there is a realm defined, or if we should display the
             // Auto Create Dialog
@@ -72,6 +72,13 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
                 $('#dialogAutoCreateRealm').modal();
             }
         });
+        /*
+        Welcome dialog, which displays a lot of information to the
+         administrator.
+         */
+        if (!$scope.hide_welcome) {
+            $('#dialogWelcome').modal();
+        }
     }
 
     // single token function
@@ -332,6 +339,12 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         $scope.form.validity_period_end = date_object_to_string($scope.form.validity_period_end);
         TokenFactory.enroll($scope.newUser,
             $scope.form, $scope.callback);
+    };
+
+    $scope.regenerateToken = function () {
+        var params = $scope.form;
+        params.serial = $scope.enrolledToken.serial;
+        TokenFactory.enroll($scope.newUser, params, $scope.callback);
     };
 
     // Special Token functions

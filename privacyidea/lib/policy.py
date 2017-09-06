@@ -281,6 +281,7 @@ class ACTION(object):
     SETHSM = "set_hsm_password"
     SMTPSERVERWRITE = "smtpserver_write"
     RADIUSSERVERWRITE = "radiusserver_write"
+    PRIVACYIDEASERVERWRITE = "privacyideaserver_write"
     REALMDROPDOWN = "realm_dropdown"
     EVENTHANDLINGWRITE = "eventhandling_write"
     SMSGATEWAYWRITE = "smsgateway_write"
@@ -293,6 +294,8 @@ class ACTION(object):
     MANAGESUBSCRIPTION = "managesubscription"
     SEARCH_ON_ENTER = "search_on_enter"
     TIMEOUT_ACTION = "timeout_action"
+    AUTH_CACHE = "auth_cache"
+    HIDE_WELCOME = "hide_welcome_info"
 
 
 class GROUP(object):
@@ -1260,6 +1263,13 @@ def get_static_policy_definitions(scope=None):
                                                  "definitions."),
                                        'mainmenu': [MAIN_MENU.CONFIG],
                                        'group': GROUP.SYSTEM},
+            ACTION.PRIVACYIDEASERVERWRITE: {'type': 'bool',
+                                            'desc': _("Admin is allowed to "
+                                                      "write remote "
+                                                      "privacyIDEA server "
+                                                      "definitions."),
+                                            'mainmenu': [MAIN_MENU.CONFIG],
+                                            'group': GROUP.SYSTEM},
             ACTION.EVENTHANDLINGWRITE: {'type': 'bool',
                                         'desc': _("Admin is allowed to write "
                                                   "and modify the event "
@@ -1504,8 +1514,14 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _('If a user authenticates successfully reset the '
                           'failcounter of all of his tokens.')
+            },
+            ACTION.AUTH_CACHE: {
+                'type': 'str',
+                'desc': _('Cache the password used for authentication and '
+                          'allow authentication with the same credentials for a '
+                          'certain amount of time. '
+                          'Specify timeout like 4h or 4h/5m.')
             }
-
         },
         SCOPE.AUTHZ: {
             ACTION.AUTHMAXSUCCESS: {
@@ -1638,8 +1654,14 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.REALMDROPDOWN: {
                 'type': 'str',
-                'desc': _("If this is checked, a dropdown combobox with the "
-                          "realms is displayed in the login screen.")
+                'desc': _("A comma separated list of realm names, which are "
+                          "displayed in a drop down menu in the WebUI login "
+                          "screen.")
+            },
+            ACTION.HIDE_WELCOME: {
+                'type': 'bool',
+                'desc': _("If this checked, the administrator will not see "
+                          "the welcome dialog anymore.")
             }
         }
 

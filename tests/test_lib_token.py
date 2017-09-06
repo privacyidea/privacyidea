@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This test file tests the lib.token methods.
 
@@ -786,6 +787,23 @@ class TokenTestCase(MyTestCase):
         # 4: '736127', 5: '229903', 6: '436521', 7: '186581',
         # 8: '447589', 9: '903435', 10: '578337', 11: '328281',
         # 12: '191635', 13: '184416', 14: '574561', 15: '797908'
+
+    def test_36b_check_nonascii_pin(self):
+        user = User("cornelius", self.realm1)
+        serial = "nonasciipin"
+        token = init_token({"type": "hotp",
+                            "otpkey": self.otpkey,
+                            "pin": u"ünicøde",
+                            "serial": serial}, user)
+        r = check_user_pass(user, u"µröng287082")
+        self.assertEqual(r[0], False)
+        self.assertEqual(r[1]['message'], 'wrong otp pin')
+        r = check_user_pass(user, u"ünicøde287082")
+        self.assertEqual(r[0], True)
+        r = check_user_pass(user, u"ünicøde666666")
+        self.assertEqual(r[0], False)
+        self.assertEqual(r[1]['message'], 'wrong otp value')
+        remove_token(serial)
 
     def test_37_challenge(self):
         # We create a challenge by first sending the PIN of the HOTP token

@@ -106,7 +106,7 @@ def list_radius():
 
 @radiusserver_blueprint.route('/<identifier>', methods=['DELETE'])
 @admin_required
-@prepolicy(check_base_action, request, ACTION.SMTPSERVERWRITE)
+@prepolicy(check_base_action, request, ACTION.RADIUSSERVERWRITE)
 @log_with(log)
 def delete_server(identifier=None):
     """
@@ -123,7 +123,7 @@ def delete_server(identifier=None):
 
 @radiusserver_blueprint.route('/test_request', methods=['POST'])
 @admin_required
-@prepolicy(check_base_action, request, ACTION.SMTPSERVERWRITE)
+@prepolicy(check_base_action, request, ACTION.RADIUSSERVERWRITE)
 @log_with(log)
 def test():
     """

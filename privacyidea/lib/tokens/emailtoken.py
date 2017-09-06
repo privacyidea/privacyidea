@@ -325,6 +325,7 @@ class EmailTokenClass(HotpTokenClass):
             if len(messages) == 1:
                 message = messages[0]
 
+        message = message.format(challenge=options.get("challenge"))
         return message
 
     @staticmethod
