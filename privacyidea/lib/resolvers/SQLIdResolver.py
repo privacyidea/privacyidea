@@ -143,12 +143,15 @@ class IdResolver (UserIdResolver):
     def checkPass(self, uid, password):
         """
         This function checks the password for a given uid.
+        If ``password`` is a unicode object, it is converted to the database encoding first.
         - returns true in case of success
         -         false if password does not match
 
         """
         res = False
         userinfo = self.getUserInfo(uid)
+        if isinstance(password, unicode):
+            password = password.encode(self.encoding)
 
         database_pw = userinfo.get("password", "XXXXXXX")
         if database_pw[:2] in ["$P", "$S"]:

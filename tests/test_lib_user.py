@@ -354,9 +354,9 @@ class UserTestCase(MyTestCase):
         self.assertEqual(len(failed), 0)
         self.assertEqual(len(added), 1)
 
-        # check ascii password of non-ascii user
+        # check non-ascii password of non-ascii user
         self.assertFalse(User(login=u"nönäscii",
                              realm=realm).check_password("wrong"))
         self.assertTrue(User(login=u"nönäscii",
-                             realm=realm).check_password("somepassword"))
+                             realm=realm).check_password(u"sömepassword"))
 
