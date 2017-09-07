@@ -291,10 +291,6 @@ class TotpTokenClass(HotpTokenClass):
         otplen = int(self.token.otplen)
         options = options or {}
         secretHOtp = self.token.get_otpkey()
-        # oldCounter we have to remove one, as the normal otp handling will
-        # increment
-        # TODO: Migration: Really?
-        # oCount = self.get_otp_count() - 1
         oCount = self.get_otp_count()
         inow = int(time.time())
         window = window or self.timewindow
@@ -310,8 +306,6 @@ class TotpTokenClass(HotpTokenClass):
             # No counter, so we take the current token_time
             counter = self._time2counter(server_time,
                                          timeStepping=self.timestep)
-        otime = self._getTimeFromCounter(oCount, timeStepping=self.timestep)
-        ttime = self._getTimeFromCounter(counter, timeStepping=self.timestep)
 
         hmac2Otp = HmacOtp(secretHOtp,
                            counter,

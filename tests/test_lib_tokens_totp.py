@@ -643,20 +643,63 @@ class TOTPTokenTestCase(MyTestCase):
 
     def test_25_sha256_token(self):
         # taken from https://tools.ietf.org/html/rfc6238#appendix-B
+        # sha256 with a 20 byte seed
         serial = "sha25T"
-        db_token = Token(serial, tokentype="hotp")
+        db_token = Token(serial, tokentype="totp")
         db_token.save()
         token = TotpTokenClass(db_token)
         token.set_otpkey(binascii.hexlify("12345678901234567890"))
         token.set_hashlib("sha256")
         token.set_otplen(8)
-        token.set_otp_count(0x00000000023523ED - 2)
         token.save()
         # get it from the database again
         # |  1111111111 |  2005-03-18  | 00000000023523ED | 67062674 | SHA256 |
         db_token = Token.query.filter_by(serial=serial).first()
         token = TotpTokenClass(db_token)
         r = token.check_otp("67062674", options={"initTime": 1111111111})
+        self.assertTrue(r)
+
+        # sha256 with a 32 byte seed
+        serial = "sha256"
+        db_token = Token(serial, tokentype="totp")
+        db_token.save()
+        token = TotpTokenClass(db_token)
+        token.set_otpkey(binascii.hexlify("12345678901234567890123456789012"))
+        token.set_hashlib("sha256")
+        token.set_otplen(8)
+        token.save()
+        db_token = Token.query.filter_by(serial=serial).first()
+        token = TotpTokenClass(db_token)
+        r = token.check_otp("67062674", options={"initTime": 1111111111})
+        self.assertTrue(r)
+
+        # sha512 with a 20 byte seed
+        serial = "sha512"
+        db_token = Token(serial, tokentype="totp")
+        db_token.save()
+        token = TotpTokenClass(db_token)
+        token.set_otpkey(binascii.hexlify("12345678901234567890"))
+        token.set_hashlib("sha512")
+        token.set_otplen(8)
+        token.save()
+        db_token = Token.query.filter_by(serial=serial).first()
+        token = TotpTokenClass(db_token)
+        r = token.check_otp("99943326", options={"initTime": 1111111111})
+        self.assertTrue(r)
+
+        # sha512 with a 64byte seed
+        serial = "sha512b"
+        db_token = Token(serial, tokentype="totp")
+        db_token.save()
+        token = TotpTokenClass(db_token)
+        token.set_otpkey(binascii.hexlify(
+            "1234567890123456789012345678901234567890123456789012345678901234"))
+        token.set_hashlib("sha512")
+        token.set_otplen(8)
+        token.save()
+        db_token = Token.query.filter_by(serial=serial).first()
+        token = TotpTokenClass(db_token)
+        r = token.check_otp("93441116", options={"initTime": 1234567890})
         self.assertTrue(r)
 
     def test_26_get_setting_type(self):
