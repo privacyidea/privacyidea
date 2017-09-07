@@ -221,6 +221,13 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         } else {
             $scope.hidePin = false;
         }
+        if ($scope.form.type === "hotp") {
+            // preset HOTP hashlib
+            $scope.form.hashlib = $scope.form['hotp.hashlib'];
+        } else if ($scope.form.type === "totp") {
+            // preset TOTP hashlib
+            $scope.form.hashlib = $scope.form['totp.hashlib'];
+        }
     };
 
     // A watch function to change the form data in case another user is selected
@@ -422,6 +429,8 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                 $scope.form[entry] = systemDefault[entry];
             }
         });
+        // Default HOTP hashlib
+        $scope.form.hashlib = $scope.form["hotp.hashlib"];
         // Now add the questions
         angular.forEach(systemDefault, function(value, key) {
             if (key.indexOf("question.question.") === 0) {

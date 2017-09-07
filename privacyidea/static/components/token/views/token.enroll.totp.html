@@ -58,7 +58,7 @@ The TOTP token is a time based token. You can paste a secret key or
     <label for="hashlib" translate>Hash algorithm</label>
     <select class="form-control"
             id="hashlib"
-            ng-model="form['totp.hashlib']"
+            ng-model="form.hashlib"
             ng-options="hashlib for hashlib in formInit.hashlibs">
     </select>
     <p class="help-block" ng-show="form.genkey" translate>

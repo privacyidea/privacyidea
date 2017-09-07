@@ -51,6 +51,8 @@ from urllib import quote
 from privacyidea.lib.log import log_with
 from privacyidea.lib.user import User
 
+MAX_QRCODE_LEN = 180
+
 @log_with(log)
 def create_motp_url(key, user=None, realm=None, serial=""):
     """
@@ -105,8 +107,7 @@ def create_google_authenticator_url(key=None, user=None,
     otpkey = base64.b32encode(key_bin).strip('=')
 
     base_len = len("otpauth://{0!s}/?secret={1!s}&counter=1".format(tokentype, otpkey))
-    max_len = 119
-    allowed_label_len = max_len - base_len
+    allowed_label_len = MAX_QRCODE_LEN - base_len
     log.debug("we have got {0!s} characters left for the token label".format(
               str(allowed_label_len)))
     # Deprecated

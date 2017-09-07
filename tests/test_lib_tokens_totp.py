@@ -721,7 +721,7 @@ class TOTPTokenTestCase(MyTestCase):
                                                 logged_in_user=logged_in_user,
                                                 policy_object=pol)
         self.assertEqual(p.get("otplen"), "8")
-        self.assertEqual(p.get("totp.hashlib"), "sha256")
+        self.assertEqual(p.get("hashlib"), "sha256")
         self.assertEqual(p.get("timeStep"), "60")
         delete_policy("pol1")
 

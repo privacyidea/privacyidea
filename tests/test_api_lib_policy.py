@@ -1665,7 +1665,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         init_token_defaults(req)
 
         # Check, if the token defaults were added
-        self.assertEqual(req.all_data.get("totp.hashlib"), "sha256")
+        self.assertEqual(req.all_data.get("hashlib"), "sha256")
         self.assertEqual(req.all_data.get("otplen"), "8")
         self.assertEqual(req.all_data.get("timeStep"), "60")
         # finally delete policy

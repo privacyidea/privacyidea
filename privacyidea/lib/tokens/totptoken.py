@@ -146,7 +146,7 @@ class TotpTokenClass(HotpTokenClass):
     @log_with(log)
     def update(self, param, reset_failcount=True):
         """
-        This is called during initialzaton of the token
+        This is called during initializaton of the token
         to add additional attributes to the token object.
 
         :param param: dict of initialization parameters
@@ -166,9 +166,8 @@ class TotpTokenClass(HotpTokenClass):
                               get_from_config("totp.timeShift") or 0)
         # we support various hashlib methods, but only on create
         # which is effectively set in the update
-        hashlibStr = param.get("totp.hashlib",
-                               get_from_config("totp.hashlib",
-                                               u'sha1'))
+        hashlibStr = param.get("hashlib", get_from_config("totp.hashlib",
+                                                          u'sha1'))
 
         self.add_tokeninfo("timeWindow", timeWindow)
         self.add_tokeninfo("timeShift", timeShift)
@@ -638,7 +637,7 @@ class TotpTokenClass(HotpTokenClass):
                 client=client_ip,
                 unique=True)
             if hashlib_pol:
-                ret["totp.hashlib"] = hashlib_pol[0]
+                ret["hashlib"] = hashlib_pol[0]
 
             timestep_pol = policy_object.get_action_values(
                 action="totp_timestep",
@@ -661,17 +660,3 @@ class TotpTokenClass(HotpTokenClass):
                 ret["otplen"] = otplen_pol[0]
 
         return ret
-
-    @log_with(log)
-    def get_init_detail(self, params=None, user=None):
-        """
-        to complete the token initialization some additional details
-        should be returned, which are displayed at the end of
-        the token initialization.
-        This is the e.g. the enrollment URL for a Google Authenticator.
-        """
-        params = params or {}
-        if params.get("totp.hashlib"):
-            params["hashlib"] = params.get("totp.hashlib")
-        response_detail = HotpTokenClass.get_init_detail(self, params, user)
-        return response_detail
