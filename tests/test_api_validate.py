@@ -1707,7 +1707,7 @@ class ValidateAPITestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             self.assertFalse(result.get("status"))
 
-    def test_00_several_CR_one_locked(self):
+    def test_29_several_CR_one_locked(self):
         # A user has several CR tokens. One of the tokens is locked.
         self.setUp_user_realms()
         user = User("multichal", self.realm1)
@@ -1734,6 +1734,14 @@ class ValidateAPITestCase(MyTestCase):
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            # This is a challene, the value is False
+            self.assertEqual(result.get("value"), False)
+            detail = json.loads(res.data).get("detail")
+            serial = detail.get("serial")
+            self.assertEqual(serial, "CR2A")
+            # Only one challenge, the 2nd token was revoked.
+            self.assertEqual(len(detail.get("multi_challenge")), 1)
 
         delete_policy("test48")
         remove_token("CR2A")

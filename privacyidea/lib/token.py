@@ -1933,11 +1933,18 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
     invalid_token_list = []
     valid_token_list = []
 
-    for tokenobject in tokenobject_list:
-        audit = {'serial': tokenobject.get_serial(),
-                 'token_type': tokenobject.get_type(),
-                 'weight': 0}
+    # Remove locked tokens from tokenobject_list
+    if len(tokenobject_list) > 1:
+        for tokenobject in tokenobject_list:
+            if tokenobject.is_revoked():
+                tokenobject_list.remove(tokenobject)
 
+        if len(tokenobject_list) == 0:
+            # If there is no unlocked token left.
+            raise TokenAdminError(_("This action is not possible, since the "
+                                    "token is locked"), id=1007)
+
+    for tokenobject in tokenobject_list:
         log.debug("Found user with loginId {0!r}: {1!r}".format(
                   tokenobject.user, tokenobject.get_serial()))
 
