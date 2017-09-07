@@ -37,6 +37,11 @@ angular.module("privacyideaApp")
             $location.path("/machine/list");
         }
 
+        // listen to the reload broadcast
+        $scope.$on("piReload", function() {
+            $scope._getMachines();
+        });
+
         if ($stateParams.resolver) {
             $scope.params.resolverFilter = $stateParams.resolver;
         }

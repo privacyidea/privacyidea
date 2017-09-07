@@ -489,6 +489,11 @@ myApp.controller("configController", function ($scope, $location,
         $location.path("/config/realms/list");
     }
 
+    // listen to the reload broadcast
+    $scope.$on("piReload", function() {
+        $scope.getSystemConfig();
+    });
+
     $scope.items = ["item1", "item2", "item3"];
     $scope.dragControlListeners = {
       accept: function (sourceItemHandleScope, destSortableScope) {

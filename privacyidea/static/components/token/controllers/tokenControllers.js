@@ -111,6 +111,9 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
         $location.path("/pinchange");
     }
 
+    // listen to the reload broadcast
+    $scope.$on("piReload", $scope.get);
+
 });
 
 

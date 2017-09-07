@@ -42,6 +42,7 @@ myApp.controller("componentController", function (ComponentFactory, $scope,
         $location.path("/component/clienttype");
     }
 
+
     /*
     Functions for subscriptions
      */
@@ -87,4 +88,10 @@ myApp.controller("componentController", function (ComponentFactory, $scope,
      };
 
     $scope.getSubscriptions();
+
+    // listen to the reload broadcast
+    $scope.$on("piReload", function () {
+        $scope.getSubscriptions();
+        ComponentFactory.getClientType();
+    });
 });

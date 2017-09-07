@@ -361,4 +361,8 @@ angular.module("privacyideaApp")
             $scope.rightColumn = userFields.slice(middle, end);
         };
 
+        $scope.$on("piReload", function () {
+            $scope._getUsers(false);
+        });
+
     });
