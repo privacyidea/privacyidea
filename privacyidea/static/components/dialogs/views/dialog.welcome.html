@@ -1,10 +1,12 @@
 <div>
     <!-- Modal -->
-    <div class="modal fade" id="dialogWelcome" tabindex="-1"
+    <div class="modal fade in" id="dialogWelcome" tabindex="-1"
+         data-backdrop="static" data-keyboard="false"
+         ng-show="welcomeStep < 5"
          role="dialog"
          aria-labelledby="myModalLabel"
          aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog fade in">
             <div class="modal-content" ng-show="welcomeStep === 0">
                 <div class="modal-header">
                     <h4 class="modal-title" id="myModalLabel" translate
@@ -34,7 +36,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default"
-                            ng-click="welcomeNext()" translate>Next
+                            ng-click="welcomeStep = 1" translate>Next
                     </button>
                 </div>
             </div>
@@ -59,7 +61,7 @@ our <a href="https://community.privacyidea.org" target=forum>community forum</a>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default"
-                            ng-click="welcomeNext()" translate>Next
+                            ng-click="welcomeStep = 2" translate>Next
                     </button>
                 </div>
             </div>
@@ -91,7 +93,7 @@ our <a href="https://community.privacyidea.org" target=forum>community forum</a>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default"
-                            ng-click="welcomeNext()" translate>Next
+                            ng-click="welcomeStep = 3" translate>Next
                     </button>
                 </div>
             </div>
@@ -114,7 +116,7 @@ our <a href="https://community.privacyidea.org" target=forum>community forum</a>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default"
-                            ng-click="welcomeNext()" translate>Next
+                            ng-click="welcomeStep = 4" translate>Next
                     </button>
                 </div>
             </div>
@@ -131,12 +133,14 @@ our <a href="https://community.privacyidea.org" target=forum>community forum</a>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default"
-                            ng-click="welcomeNext()" translate>Dive In!
+                        ng-click="welcomeStep=0" translate>
+                        Read again
+                    </button>
+                    <button type="button" class="btn btn-success"
+                            ng-click="welcomeStep=5" translate>Dive In!
                     </button>
                 </div>
             </div>
         </div>
     </div>
-
-
 </div>

@@ -423,10 +423,6 @@ angular.module("privacyideaApp")
 
     };
 
-    $scope.welcomeNext = function () {
-        $scope.welcomeStep += 1;
-    };
-
     $scope.reload = function() {
         // emit a signal to the scope, that just listens
         $scope.$broadcast("piReload");
