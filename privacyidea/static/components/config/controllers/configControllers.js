@@ -489,11 +489,6 @@ myApp.controller("configController", function ($scope, $location,
         $location.path("/config/realms/list");
     }
 
-    // listen to the reload broadcast
-    $scope.$on("piReload", function() {
-        $scope.getSystemConfig();
-    });
-
     $scope.items = ["item1", "item2", "item3"];
     $scope.dragControlListeners = {
       accept: function (sourceItemHandleScope, destSortableScope) {
@@ -536,10 +531,10 @@ myApp.controller("configController", function ($scope, $location,
             console.log("SMS Identifiers");
             // Argh when will we have array comprehension?
             // $scope.smsIdentifiers = [sms.name for (sms of data.result.value)];
-            $scope.smsIdentifiers = Array()
+            $scope.smsIdentifiers = Array();
             angular.forEach(data.result.value, function(sms){
                 $scope.smsIdentifiers.push(sms.name);
-            })
+            });
             console.log($scope.smsIdentifiers);
         });
     };
@@ -691,6 +686,11 @@ myApp.controller("configController", function ($scope, $location,
     };
     $scope.getSystemConfig();
 
+    // listen to the reload broadcast
+    $scope.$on("piReload", function() {
+        $scope.getSystemConfig();
+    });
+
 });
 
 myApp.controller("PasswdResolverController", function ($scope, ConfigFactory, $state, $stateParams) {
@@ -745,7 +745,6 @@ myApp.controller("hostsResolverController", function ($scope,
             $state.go("config.mresolvers.list");
         });
     };
-
 });
 
 myApp.controller("CAConnectorController", function($scope, ConfigFactory,
@@ -774,6 +773,9 @@ myApp.controller("CAConnectorController", function($scope, ConfigFactory,
                 {'connectorname': connectorname});
         $rootScope.returnTo = "config.caconnectors.list";
     };
+
+    // listen to the reload broadcast
+    $scope.$on("piReload", $scope.getCAConnectors);
 });
 
 myApp.controller("LocalCAConnectorController", function($scope, $stateParams,
@@ -832,6 +834,9 @@ myApp.controller("machineResolverController", function ($scope,
         $state.go("config.mresolvers.edit" + r_type, {'resolvername': resolvername});
         $rootScope.returnTo = "config.mresolvers.list";
     };
+
+    // listen to the reload broadcast
+    $scope.$on("piReload", $scope.getMachineResolvers);
 });
 
 myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $state,

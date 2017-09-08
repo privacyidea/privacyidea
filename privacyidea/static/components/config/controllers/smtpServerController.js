@@ -79,4 +79,6 @@ myApp.controller("smtpServerController", function($scope, $stateParams, inform,
         });
     };
 
+    // listen to the reload broadcast
+    $scope.$on("piReload", $scope.getSmtpServers);
 });

@@ -101,6 +101,8 @@ myApp.controller("smsgatewayController", function($scope, $stateParams,
         $scope.opts[$scope.newoption] = $scope.newvalue;
         $scope.newoption = "";
         $scope.newvalue = "";
-    }
+    };
 
+    // listen to the reload broadcast
+    $scope.$on("piReload", $scope.getSMSGateways);
 });

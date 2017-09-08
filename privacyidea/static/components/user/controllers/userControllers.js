@@ -64,6 +64,9 @@ angular.module("privacyideaApp")
                     $location.path("/user/list");
             });
         };
+
+        // listen to the reload broadcast
+        $scope.$on("piReload", $scope.getEditableResolvers);
     });
 
 angular.module("privacyideaApp")
@@ -92,6 +95,9 @@ angular.module("privacyideaApp")
                     $scope.password2 = "";
                 });
         };
+
+        // listen to the reload broadcast
+        $scope.$on("piReload", $scope.getUserDetails);
     });
 
 angular.module("privacyideaApp")
@@ -205,6 +211,12 @@ angular.module("privacyideaApp")
 
         $scope.getUserDetails();
         $scope._getUserToken();
+
+        // listen to the reload broadcast
+        $scope.$on("piReload", function() {
+            $scope.getUserDetails();
+            $scope._getUserToken();
+        });
     });
 
 angular.module("privacyideaApp")

@@ -81,4 +81,7 @@ myApp.controller("privacyideaServerController", function($scope, $stateParams,
         });
     };
 
+    // listen to the reload broadcast
+    $scope.$on("piReload", $scope.getPrivacyideaServers);
+
 });

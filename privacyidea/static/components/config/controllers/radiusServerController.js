@@ -80,4 +80,6 @@ myApp.controller("radiusServerController", function($scope, $stateParams,
         });
     };
 
+        // listen to the reload broadcast
+    $scope.$on("piReload", $scope.getRadiusServers);
 });

@@ -63,6 +63,9 @@ myApp.controller("eventController", function($scope, $stateParams, $state,
 
     // Get all events
     $scope.getEvents();
+
+    // listen to the reload broadcast
+    $scope.$on("piReload", $scope.getEvents);
 });
 
 myApp.controller("eventDetailController", function($scope, $stateParams,

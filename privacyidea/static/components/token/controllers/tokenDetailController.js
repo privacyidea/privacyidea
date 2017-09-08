@@ -340,5 +340,8 @@ myApp.controller("tokenDetailController", function ($scope,
         return true;
     };
 
+    // listen to the reload broadcast
+    $scope.$on("piReload", $scope.get);
+
 
 });
