@@ -34,6 +34,8 @@ The file should contain the following contents::
    # This is used to sign the audit log
    PI_AUDIT_KEY_PRIVATE = '/home/cornelius/src/privacyidea/private.pem'
    PI_AUDIT_KEY_PUBLIC = '/home/cornelius/src/privacyidea/public.pem'
+   # PI_AUDIT_MODUL = <python audit module>
+   # PI_AUDIT_SQL_URI = <special audit log DB uri>
    # PI_LOGFILE = '....'
    # PI_LOGLEVEL = 20
    # PI_INIT_CHECK_HOOK = 'your.module.function'
@@ -78,3 +80,25 @@ own UI and you do not want to present the UI to the user or the outside world.
 
 .. note:: The API calls are all still accessable, i.e. privacyIDEA is
    technically fully functional.
+
+Audit parameters
+----------------
+
+``PI_AUDIT_MODULE`` lets you specify an alternative auditing module. The
+default which is shipped with privacyIDEA is
+``privacyidea.lib.auditmodules.sqlaudit``. There is no need to change this,
+unless you know exactly what you are doing.
+
+You can change the servername of the privacyIDEA node, which will be logged
+to the audit log using the variable ``PI_AUDIT_SERVERNAME``.
+
+You can run the database for the audit module on another database or even
+server. For this you can specify the database URI via ``PI_AUDIT_SQL_URI``.
+
+``PI_AUDIT_TRUNCATE = True`` lets you truncate audit entries, that to the length
+of the database fields.
+
+In certain cases when you experiencing problems you may use the parameters
+``PI_AUDIT_POOL_SIZE`` and ``PI_AUDIT_POOL_RECYCLE``.
+
+
