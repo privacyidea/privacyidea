@@ -529,7 +529,7 @@ def get_client_ip(request, proxy_settings):
     client_ip = request.remote_addr
     # We only do the mapping for authentication requests!
     if not hasattr(request, "blueprint") or \
-                    request.blueprint in ["validate_blueprint",
+                    request.blueprint in ["validate_blueprint", "ttype_blueprint"
                                           "jwtauth"]:
         # The "client" parameter should overrule a possible X-Forwarded-For
         mapped_ip = request.all_data.get("client") or \
