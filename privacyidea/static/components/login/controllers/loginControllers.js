@@ -377,6 +377,16 @@ angular.module("privacyideaApp")
         $('html,body').scrollTop(0);
     };
 
+    $scope.nextWelcome = function() {
+        $scope.welcomeStep += 1;
+        if ($scope.welcomeStep === 5) {
+            $('#dialogWelcome').modal().hide();
+            // Hack, since we can not close the modal and thus the body
+            // keeps the modal-open and thus has no scroll-bars
+            $("body").removeClass("modal-open");
+        }
+    };
+
     $scope.lock_screen = function () {
         // We need to destroy the auth_token
         $scope.loggedInUser.auth_token = null;

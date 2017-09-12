@@ -16,62 +16,62 @@ msgstr ""
 msgid "45% Complete"
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:13
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:16
 msgid ""
 "<p>First, we would like to give you some background\n"
-"                       information on privacyIDEA.</p>\n"
-"                    <p>privacyIDEA is an Enterprise Level\n"
-"                        Open Source Multi Factor Authentication System.\n"
-"                        You can use privacyIDEA with up to 50 assigned\n"
-"                        tokens without subscription. For more than 50 tokens\n"
-"                        you need a valid subscription with support and\n"
-"                        service level agreement.\n"
-"                    </p>\n"
-"                    <p>\n"
-"                        You can find the complete source code\n"
-"                        of privacyIDEA at\n"
-"                        <a href=\"https://github.com/privacyidea/privacyidea\" target=\"github\">Github</a>.\n"
-"                    </p>\n"
-"                    <p>\n"
-"                        If you find a bug or if you want to contribute\n"
-"                        to privacyIDEA, please open an issue or pull request\n"
-"                        there.\n"
-"                    </p>"
+"                    information on privacyIDEA.</p>\n"
+"                <p>privacyIDEA is an Enterprise Level\n"
+"                    Open Source Multi Factor Authentication System.\n"
+"                    You can use privacyIDEA with up to 50 assigned\n"
+"                    tokens without subscription. For more than 50 tokens\n"
+"                    you need a valid subscription with support and\n"
+"                    service level agreement.\n"
+"                </p>\n"
+"                <p>\n"
+"                    You can find the complete source code\n"
+"                    of privacyIDEA at\n"
+"                    <a href=\"https://github.com/privacyidea/privacyidea\" target=\"github\">Github</a>.\n"
+"                </p>\n"
+"                <p>\n"
+"                    If you find a bug or if you want to contribute\n"
+"                    to privacyIDEA, please open an issue or pull request\n"
+"                    there.\n"
+"                </p>"
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:104
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:111
 msgid ""
 "<p>If you do not want to this information again, please\n"
-"                        create your first policy in the scope \"webui\". You\n"
-"                        can use the template <b>hide_welcome</b>. Such policy\n"
-"                        will\n"
-"                        prevent this information from being displayed.</p>\n"
-"                    <p>Policies are the way in privacyIDEA to define many\n"
-"                        behaviours. You can read more about policies in the\n"
-"                        <a href=\"http://privacyidea.readthedocs.io/en/latest/policies/index.html\" target=\"policy\">online\n"
-"                            documentation</a>.</p>"
+"                    create your first policy in the scope \"webui\". You\n"
+"                    can use the template <b>hide_welcome</b>. Such policy\n"
+"                    will\n"
+"                    prevent this information from being displayed.</p>\n"
+"                <p>Policies are the way in privacyIDEA to define many\n"
+"                    behaviours. You can read more about policies in the\n"
+"                    <a href=\"http://privacyidea.readthedocs.io/en/latest/policies/index.html\" target=\"policy\">online\n"
+"                        documentation</a>.</p>"
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:47
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:50
 msgid ""
 "<p>If you have any question regarding privacyIDEA, please\n"
-"                        visit\n"
-"our <a href=\"https://community.privacyidea.org\" target=\"forum\">community forum</a>.\n"
-"                        Your question might already been answered there.\n"
-"                        You are welcome to file any new question or discuss\n"
-"                        any new idea there.</p>\n"
-"                    <p>With <b>you</b> starting to use privacyIDEA, you\n"
-"                        become a part of\n"
-"                        this community. Every question you ask in the forum and\n"
-"                        every question you answer there helps others, to get\n"
-"                        started with privacyIDEA.</p>"
+"                    visit\n"
+"                    our <a href=\"https://community.privacyidea.org\" target=\"forum\">community forum</a>.\n"
+"                    Your question might already been answered there.\n"
+"                    You are welcome to file any new question or discuss\n"
+"                    any new idea there.</p>\n"
+"                <p>With <b>you</b> starting to use privacyIDEA, you\n"
+"                    become a part of\n"
+"                    this community. Every question you ask in the forum and\n"
+"                    every question you answer there helps others, to get\n"
+"                    started with privacyIDEA.</p>"
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:127
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:135
 msgid ""
 "<p>Thank you for using privacyIDEA and making your network\n"
-"                        and thus this world a more secure place!</p>\n"
-"                    <p>Have fun using privacyIDEA!</p>"
+"                    and thus this world a more secure place!</p>\n"
+"                <p>Have fun using privacyIDEA!</p>"
 msgstr ""
 
 #: privacyidea/static/components/login/views/offline.html:1
@@ -80,24 +80,25 @@ msgid ""
 "    <p>Please try to reload and otherwise contact your system administrator!</p>"
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:72
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:76
 msgid ""
 "<p>privacyIDEA is Open Source and\n"
-"                        stays Open Source under the\n"
-"<a href=\"https://github.com/privacyidea/privacyidea/blob/master/LICENSE\" target=\"license\">GNU Affero General Public License</a>.\n"
-"                        As such privacyIDEA comes <b>without any warranty and\n"
-"                            liability!</b>\n"
-"                    </p><p>\n"
-"                        If you are running privacyIDEA in an enterprise\n"
-"                        environment or in a critical setup you might need\n"
-"                        professional help. The company NetKnights employs the\n"
+"                    stays Open Source under the\n"
+"                    <a href=\"https://github.com/privacyidea/privacyidea/blob/master/LICENSE\" target=\"license\">GNU Affero General Public License</a>.\n"
+"                    As such privacyIDEA comes <b>without any warranty and\n"
+"                        liability!</b>\n"
+"                </p>\n"
+"                <p>\n"
+"                    If you are running privacyIDEA in an enterprise\n"
+"                    environment or in a critical setup you might need\n"
+"                    professional help. The company NetKnights employs the\n"
 "                    main developers of privacyIDEA and can help you with\n"
 "                    integrating\n"
-"                        privacyIDEA into your environment. You can also get\n"
-"                        <a href=\"https://netknights.it/en/leistungen/service-level-agreements/\" target=\"netknights\">professional service level\n"
-"                            agreements</a> (a.k.a. support contracts) and an\n"
+"                    privacyIDEA into your environment. You can also get\n"
+"                    <a href=\"https://netknights.it/en/leistungen/service-level-agreements/\" target=\"netknights\">professional service level\n"
+"                        agreements</a> (a.k.a. support contracts) and an\n"
 "                    <a href=\"https://netknights.it/en/produkte/privacyidea/\" target=\"netknights\">Enterprise Edition</a>\n"
-"                        providing additional ready made packages and\n"
+"                    providing additional ready made packages and\n"
 "                    appliance features.</p>"
 msgstr ""
 
@@ -736,7 +737,7 @@ msgstr ""
 msgid "Disable token"
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:137
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:145
 msgid "Dive In!"
 msgstr ""
 
@@ -1487,10 +1488,10 @@ msgid "New {{ resolvertype }}"
 msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.log.html:13
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:116
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:36
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:61
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:93
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:100
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:124
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:39
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:65
 #: privacyidea/static/components/machine/views/machine.details.html:41
 #: privacyidea/static/components/machine/views/machine.list.html:3
 #: privacyidea/static/components/token/views/token.challenges.html:8
@@ -1664,7 +1665,7 @@ msgstr ""
 msgid "PIN"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:471
+#: privacyidea/static/components/login/controllers/loginControllers.js:477
 msgid "PIN changed successfully."
 msgstr ""
 
@@ -1796,7 +1797,7 @@ msgstr ""
 msgid "Print the OTP list"
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:69
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:73
 msgid "Professional Services and Enterprise Edition"
 msgstr ""
 
@@ -1870,7 +1871,7 @@ msgstr ""
 msgid "RADIUS: Forward authentication request to a RADIUS server"
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:133
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:141
 msgid "Read again"
 msgstr ""
 
@@ -1881,7 +1882,7 @@ msgstr ""
 msgid "Realm"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:415
+#: privacyidea/static/components/login/controllers/loginControllers.js:425
 msgid "Realm defrealm created."
 msgstr ""
 
@@ -2409,7 +2410,7 @@ msgstr ""
 msgid "Test token"
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:124
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:132
 msgid "Thank you for improving security!"
 msgstr ""
 
@@ -2440,7 +2441,7 @@ msgid ""
 "    by the given CA."
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:44
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:47
 msgid "The Community"
 msgstr ""
 
@@ -2506,7 +2507,7 @@ msgid ""
 "    after the other."
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:101
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:108
 msgid "The Policies"
 msgstr ""
 
@@ -3385,7 +3386,7 @@ msgstr ""
 msgid "View user in Audit log"
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:10
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:13
 msgid "Welcome"
 msgstr ""
 
