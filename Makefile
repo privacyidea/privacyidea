@@ -47,9 +47,9 @@ setversion:
 translate:
 	grunt nggettext_extract
 	(cd po; msgmerge de.po template.pot > tmp.po; mv tmp.po de.po)
-	(cd po; msgmerge it.po template.pot > tmp.po; mv tmp.po it.po)
+#	(cd po; msgmerge it.po template.pot > tmp.po; mv tmp.po it.po)
 	poedit po/de.po
-	poedit po/it.po
+#	poedit po/it.po
 	grunt nggettext_compile
 
 translate-server:
