@@ -499,7 +499,7 @@ msgstr ""
 msgid "Client ID"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:32
+#: privacyidea/static/components/components/views/component.subscriptions.html:34
 msgid "Clients"
 msgstr ""
 
@@ -676,7 +676,7 @@ msgstr ""
 msgid "Default Time Window"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:71
+#: privacyidea/static/components/components/views/component.subscriptions.html:73
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:26
 #: privacyidea/static/components/config/views/config.events.details.html:19
 #: privacyidea/static/components/config/views/config.events.list.html:63
@@ -1067,7 +1067,7 @@ msgstr ""
 msgid "Four Eyes: Two or more users are required to log in."
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:33
+#: privacyidea/static/components/components/views/component.subscriptions.html:35
 msgid "From"
 msgstr ""
 
@@ -1279,7 +1279,7 @@ msgstr ""
 msgid "Info"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:57
+#: privacyidea/static/components/components/views/component.subscriptions.html:59
 msgid "Issuer"
 msgstr ""
 
@@ -2330,7 +2330,7 @@ msgstr ""
 msgid "Subscription expired"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:40
+#: privacyidea/static/components/components/views/component.subscriptions.html:42
 msgid "Subscription issued to"
 msgstr ""
 
@@ -3141,7 +3141,7 @@ msgstr ""
 msgid "Tine 2.0"
 msgstr ""
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:34
+#: privacyidea/static/components/components/views/component.subscriptions.html:36
 msgid "To"
 msgstr ""
 
@@ -3556,6 +3556,10 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.list.html:39
 #: privacyidea/static/components/token/views/token.list.html:99
 msgid "active"
+msgstr ""
+
+#: privacyidea/static/components/components/views/component.subscriptions.html:33
+msgid "active, assigned tokens"
 msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.log.html:49
