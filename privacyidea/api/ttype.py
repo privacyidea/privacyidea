@@ -113,11 +113,13 @@ def token(ttype=None):
     res = tokenc.api_endpoint(request, g)
     serial = getParam(request.all_data, "serial")
     user = get_user_from_param(request.all_data)
+    url_rule = str(request.url_rule)
     g.audit_object.log({"success": 1,
                         "user": user.login,
                         "realm": user.realm,
                         "serial": serial,
-                        "tokentype": ttype})
+                        "token_type": ttype,
+                        "action": "{0!s} {1!s}".format(request.method, url_rule[:url_rule.rfind('/') + 1] + ttype)})
     if res[0] == "json":
         return jsonify(res[1])
     elif res[0] in ["html", "plain"]:
