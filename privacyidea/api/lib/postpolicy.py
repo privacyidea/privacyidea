@@ -512,7 +512,7 @@ def get_webui_settings(request, response):
             client=client
         )
         hide_welcome = policy_object.get_policies(
-            action=ACTION.SEARCH_ON_ENTER,
+            action=ACTION.HIDE_WELCOME,
             scope=SCOPE.WEBUI,
             realm=realm,
             client=client
