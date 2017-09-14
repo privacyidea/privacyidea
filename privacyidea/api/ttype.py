@@ -117,7 +117,7 @@ def token(ttype=None):
                         "user": user.login,
                         "realm": user.realm,
                         "serial": serial,
-                        "tokentype": ttype})
+                        "token_type": ttype})
     if res[0] == "json":
         return jsonify(res[1])
     elif res[0] in ["html", "plain"]:
