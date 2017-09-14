@@ -210,7 +210,7 @@ def set_config():
             desc = getParam(param, key + ".desc", optional)
             res = set_privacyidea_config(key, value, typ, desc)
             result[key] = res
-            g.audit_object.add_to_log({"info": "{0!s}={1!s}, ".format(key, value)})
+            g.audit_object.add_to_log({"info": u"{0!s}={1!s}, ".format(key, value)})
     g.audit_object.log({"success": True})
     return send_result(result)
 
