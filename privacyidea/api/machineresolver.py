@@ -28,10 +28,10 @@ The code of this module is tested in tests/test_api_machineresolver.py
 """
 from flask import (Blueprint,
                    request)
-from lib.utils import (getParam,
-                       optional,
-                       required,
-                       send_result)
+from .lib.utils import (getParam,
+                        optional,
+                        required,
+                        send_result)
 from ..lib.log import log_with
 from ..lib.machineresolver import (get_resolver_list, save_resolver, delete_resolver,
                            pretestresolver)

@@ -64,9 +64,9 @@ In case if authenitcating a serial number:
 """
 from flask import (Blueprint, request, g, current_app)
 from privacyidea.lib.user import get_user_from_param
-from lib.utils import send_result, getParam
+from .lib.utils import send_result, getParam
 from ..lib.decorators import (check_user_or_serial_in_request)
-from lib.utils import required
+from .lib.utils import required
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp)
 from privacyidea.api.lib.utils import get_all_params

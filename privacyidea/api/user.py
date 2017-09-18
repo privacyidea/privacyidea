@@ -25,8 +25,8 @@
 
 from flask import (Blueprint,
                    request)
-from lib.utils import (getParam,
-                       send_result)
+from .lib.utils import (getParam,
+                        send_result)
 from ..api.lib.prepolicy import prepolicy, check_base_action, realmadmin
 from ..lib.policy import ACTION
 from privacyidea.api.auth import admin_required, user_required

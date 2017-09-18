@@ -26,9 +26,9 @@ Remote-Tokens and for Federation-Events.
 The code of this module is tested in tests/test_api_privacyideaserver.py
 """
 from flask import (Blueprint, request)
-from lib.utils import (getParam,
-                       required,
-                       send_result)
+from .lib.utils import (getParam,
+                        required,
+                        send_result)
 from ..lib.log import log_with
 from ..lib.policy import ACTION
 from ..api.lib.prepolicy import prepolicy, check_base_action

@@ -25,7 +25,7 @@ privacyIDDEA authentication clients, which used privacyIDEA to authenticate.
   GET /clients
 """
 from flask import (Blueprint, request)
-from lib.utils import (send_result, getParam)
+from .lib.utils import (send_result, getParam)
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..api.auth import admin_required
 from ..lib.policy import ACTION

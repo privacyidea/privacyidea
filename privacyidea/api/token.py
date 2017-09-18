@@ -52,9 +52,9 @@
 
 from flask import (Blueprint, request, g, current_app)
 from ..lib.log import log_with
-from lib.utils import (optional,
-                       send_result, send_error,
-                       send_csv_result, required, get_all_params)
+from .lib.utils import (optional,
+                        send_result, send_error,
+                        send_csv_result, required, get_all_params)
 from ..lib.user import get_user_from_param
 from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          unassign_token, remove_token, enable_token,
@@ -72,7 +72,7 @@ from privacyidea.lib.error import (ParameterError, TokenAdminError)
 from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
                                        parseYubicoCSV, parsePSKCdata, GPGImport)
 import logging
-from lib.utils import getParam
+from .lib.utils import getParam
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.challenge import get_challenges_paginate
 from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,

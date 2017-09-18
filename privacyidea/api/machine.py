@@ -26,8 +26,7 @@ The code is tested in tests/test_api_machines
 """
 from flask import (Blueprint,
                    request, g)
-from lib.utils import (getParam,
-                       send_result)
+from .lib.utils import (getParam, send_result)
 from ..api.lib.prepolicy import prepolicy, check_base_action, mangle
 from ..lib.policy import ACTION
 

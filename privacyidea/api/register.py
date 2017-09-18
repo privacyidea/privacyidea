@@ -30,8 +30,8 @@ register.
 The methods are tested in the file tests/test_api_register.py
 """
 from flask import (Blueprint, request, g, current_app)
-from lib.utils import send_result, getParam
-from lib.utils import required
+from .lib.utils import send_result, getParam
+from .lib.utils import required
 import logging
 from privacyidea.lib.policy import ACTION, SCOPE
 from privacyidea.lib.user import create_user

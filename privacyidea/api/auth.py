@@ -44,8 +44,8 @@ from flask import (Blueprint,
                    request,
                    current_app,
                    g)
-from lib.utils import (send_result, get_all_params,
-                       verify_auth_token)
+from .lib.utils import (send_result, get_all_params,
+                        verify_auth_token)
 from ..lib.crypto import geturandom, init_hsm
 from ..lib.error import AuthError
 from ..lib.auth import verify_db_admin, db_admin_exist

@@ -33,10 +33,10 @@ The TiQR Token uses this API to implement its special functionalities. See
 """
 from flask import (Blueprint,
                    request)
-from lib.utils import (getParam,
-                       optional,
-                       required,
-                       send_result)
+from .lib.utils import (getParam,
+                        optional,
+                        required,
+                        send_result)
 from ..lib.log import log_with
 from flask import g, jsonify, current_app, Response
 import logging

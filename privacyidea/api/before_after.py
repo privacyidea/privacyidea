@@ -25,10 +25,10 @@ Flask endpoints.
 It also contains the error handlers.
 """
 
-from lib.utils import (send_error, get_all_params)
+from .lib.utils import (send_error, get_all_params)
 from ..lib.user import get_user_from_param
 import logging
-from lib.utils import getParam
+from .lib.utils import getParam
 from flask import request, g
 from privacyidea.lib.audit import getAudit
 from flask import current_app
