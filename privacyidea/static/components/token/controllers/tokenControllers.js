@@ -73,11 +73,19 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
             }
         });
         /*
-        Welcome dialog, which displays a lot of information to the
+         Welcome dialog, which displays a lot of information to the
          administrator.
+
+         We display it if
+         subscription_state = 0 and hide_welcome = false
+         subscription_state = 1
+         subscription_state = 2
          */
-        if (!$scope.hide_welcome) {
+        if (($scope.subscription_state === 0 && !$scope.hide_welcome) ||
+            ($scope.subscription_state === 1) ||
+            ($scope.subscription_state === 2)) {
             $('#dialogWelcome').modal();
+            $("body").addClass("modal-open");
         }
     }
 

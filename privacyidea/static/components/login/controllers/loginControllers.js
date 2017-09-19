@@ -336,6 +336,7 @@ angular.module("privacyideaApp")
             $scope.default_tokentype = data.result.value.default_tokentype;
             $scope.timeout_action = data.result.value.timeout_action;
             $scope.hide_welcome = data.result.value.hide_welcome;
+            $scope.subscription_state = data.result.value.subscription_status;
             $rootScope.search_on_enter = data.result.value.search_on_enter;
             var timeout = data.result.value.logout_time;
             PolicyTemplateFactory.setUrl(data.result.value.policy_template_url);
@@ -379,17 +380,21 @@ angular.module("privacyideaApp")
 
     $scope.nextWelcome = function() {
         $scope.welcomeStep += 1;
-        if ($scope.welcomeStep === 5) {
+        if ($scope.welcomeStep === 4) {
             $('#dialogWelcome').modal().hide();
             // Hack, since we can not close the modal and thus the body
             // keeps the modal-open and thus has no scroll-bars
             $("body").removeClass("modal-open");
         }
     };
+    $scope.resetWelcome = function() {
+        $scope.welcomeStep = 0;
+    };
 
     $scope.lock_screen = function () {
         // We need to destroy the auth_token
         $scope.loggedInUser.auth_token = null;
+        $scope.welcomeStep = 0;
         Idle.unwatch();
         $('#dialogLock').modal().show();
     };

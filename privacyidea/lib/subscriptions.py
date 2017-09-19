@@ -72,6 +72,34 @@ APPLICATIONS = {"demo_application": 0,
 log = logging.getLogger(__name__)
 
 
+def subscription_status():
+    """
+    Return the status of the subscription
+
+    0: Token count <= 50
+    1: Token count > 50, no subscription at all
+    2: subscription expired
+    3: subscription OK
+
+    :return: subscription state
+    """
+    token_count = get_tokens(assigned=True, active=True, count=True)
+    if token_count <= APPLICATIONS.get("privacyidea", 50):
+        return 0
+
+    subscriptions = get_subscription("privacyidea")
+    if len(subscriptions) == 0:
+        return 1
+
+    try:
+        check_subscription("privacyidea")
+    except SubscriptionError as exx:
+        log.warning(u"{0}".format(exx))
+        return 2
+
+    return 3
+
+
 @log_with(log)
 def save_subscription(subscription):
     """
@@ -283,7 +311,7 @@ class CheckSubscription(object):
             ua_str = "{0!s}".format(ua) or "unknown"
             application = ua_str.split()[0]
             # check and raise if fails
-            check_subscription("privacyidea")
+            #check_subscription("privacyidea")
             check_subscription(application)
             f_result = func(*args, **kwds)
             return f_result

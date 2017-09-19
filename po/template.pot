@@ -16,58 +16,96 @@ msgstr ""
 msgid "45% Complete"
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:16
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:139
 msgid ""
-"<p>First, we would like to give you some background\n"
-"                    information on privacyIDEA.</p>\n"
-"                <p>privacyIDEA is an Enterprise Level\n"
-"                    Open Source Multi Factor Authentication System.\n"
-"                    You can use privacyIDEA with up to 50 assigned\n"
-"                    tokens without subscription. For more than 50 tokens\n"
-"                    you need a valid subscription with support and\n"
-"                    service level agreement.\n"
+"<a target=\"netknights\" href=\"https://netknights.it/en/unternehmen/kontakt/\">\n"
+"                        Ask for the privacyIDEA Enterprise Edition, now!</a>"
+msgstr ""
+
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:109
+msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
+msgstr ""
+
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:116
+msgid ""
+"<li>Support and\n"
+"                        <a target=\"netknights\" href=\"https://netknights.it/en/leistungen/service-level-agreements/\">\n"
+"                            Service Level Agreements by NetKnights</a>, Germany.\n"
+"                    </li>\n"
+"                    <li>Stable enterprise packages for Debian, Ubuntu, RHEL allow for an easy update and secure\n"
+"                        operations.\n"
+"                    </li>\n"
+"                    <li>An exclusive <b>Appliance</b>-Tool, which allows easy setup of RADIUS clients, MySQL master\n"
+"                        master replications,\n"
+"                        backup and restore...\n"
+"                    </li>\n"
+"                    <li>Exclusive timely news and bug reports.</li>\n"
+"                    <li>Depending on the support level you get help with updates and yearly consultancy.</li>\n"
+"                    <li>By buying the\n"
+"                        <a target=\"netknights\" href=\"https://netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
+"                        you ensure that professional developers can work full time\n"
+"                        on privacyIDEA, add new features and fix bugs in a timely manner. In addition you allow for\n"
+"                        external services\n"
+"                        like code audits.\n"
+"                    </li>"
+msgstr ""
+
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:70
+msgid ""
+"<p>\n"
+"                    You are reading books, which do not belong to you anymore. Your ebook reader\n"
+"                    only provides them for the time of reading. You are using software as a service\n"
+"                    and you do not have any control, when the software will be updated,\n"
+"                    which features will be added or removed or if the service might even be stopped.\n"
+"                    You only get a legal right of time limited use.\n"
 "                </p>\n"
 "                <p>\n"
-"                    You can find the complete source code\n"
-"                    of privacyIDEA at\n"
-"                    <a href=\"https://github.com/privacyidea/privacyidea\" target=\"github\">Github</a>.\n"
+"                    You could install proprietary software on your own server, but you also have only\n"
+"                    limited rights in regards to this installation. You are not allowed to modify or pass along\n"
+"                    this proprietary software.\n"
 "                </p>\n"
 "                <p>\n"
-"                    If you find a bug or if you want to contribute\n"
-"                    to privacyIDEA, please open an issue or pull request\n"
-"                    there.\n"
+"                    The open source software privacyIDEA now is <b>your property</b>! No one can take away this software\n"
+"                    or this installation. According to the license AGPLv3 you can modify or distribute this software.\n"
+"                    You do not have to worry about end-of-life.\n"
+"                </p>\n"
+"                <p>\n"
+"                    <b>Using open source is not about spending no money, but is is about full control you get over\n"
+"                        your own system! Forever!</b>\n"
 "                </p>"
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:111
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:34
 msgid ""
-"<p>If you do not want to this information again, please\n"
-"                    create your first policy in the scope \"webui\". You\n"
-"                    can use the template <b>hide_welcome</b>. Such policy\n"
-"                    will\n"
-"                    prevent this information from being displayed.</p>\n"
-"                <p>Policies are the way in privacyIDEA to define many\n"
-"                    behaviours. You can read more about policies in the\n"
-"                    <a href=\"http://privacyidea.readthedocs.io/en/latest/policies/index.html\" target=\"policy\">online\n"
-"                        documentation</a>.</p>"
+"<p><b>You are using privacyIDEA with more than 50 users.</b></p>\n"
+"                <p>Thank you for your trust!</p>\n"
+"                <p>For the productive enterprise use we recommend the\n"
+"                    <a target=\"netknights\" href=\"https://netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>.\n"
+"                </p>\n"
+"                <p>NetKnights provides the\n"
+"                    <a target=\"netknights\" href=\"https://netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
+"                    including <b>Support and Service Level Agreements</b>.\n"
+"                    Moreover NetKnights provides services, consultancy and\n"
+"                    payed programming of new features.\n"
+"                </p>"
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:50
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:18
 msgid ""
-"<p>If you have any question regarding privacyIDEA, please\n"
-"                    visit\n"
-"                    our <a href=\"https://community.privacyidea.org\" target=\"forum\">community forum</a>.\n"
-"                    Your question might already been answered there.\n"
-"                    You are welcome to file any new question or discuss\n"
-"                    any new idea there.</p>\n"
-"                <p>With <b>you</b> starting to use privacyIDEA, you\n"
-"                    become a part of\n"
-"                    this community. Every question you ask in the forum and\n"
-"                    every question you answer there helps others, to get\n"
-"                    started with privacyIDEA.</p>"
+"<p>First, we would like to give you some background\n"
+"                    information on privacyIDEA.</p>\n"
+"                <p>privacyIDEA is an <b>Enterprise Level</b>\n"
+"                    Multi Factor Authentication System. It is open source.\n"
+"                    The core developers are employed at NetKnights GmbH, Germany.\n"
+"                    NetKnights provides the\n"
+"                    <a target=\"netknights\" href=\"https://netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
+"                    including <b>Support and Service Level Agreements</b>.\n"
+"                    Moreover NetKnights provides services, consultancy and\n"
+"                    payed programming of new features.\n"
+"                </p>"
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:135
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:156
 msgid ""
 "<p>Thank you for using privacyIDEA and making your network\n"
 "                    and thus this world a more secure place!</p>\n"
@@ -80,26 +118,11 @@ msgid ""
 "    <p>Please try to reload and otherwise contact your system administrator!</p>"
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:76
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:51
 msgid ""
-"<p>privacyIDEA is Open Source and\n"
-"                    stays Open Source under the\n"
-"                    <a href=\"https://github.com/privacyidea/privacyidea/blob/master/LICENSE\" target=\"license\">GNU Affero General Public License</a>.\n"
-"                    As such privacyIDEA comes <b>without any warranty and\n"
-"                        liability!</b>\n"
-"                </p>\n"
-"                <p>\n"
-"                    If you are running privacyIDEA in an enterprise\n"
-"                    environment or in a critical setup you might need\n"
-"                    professional help. The company NetKnights employs the\n"
-"                    main developers of privacyIDEA and can help you with\n"
-"                    integrating\n"
-"                    privacyIDEA into your environment. You can also get\n"
-"                    <a href=\"https://netknights.it/en/leistungen/service-level-agreements/\" target=\"netknights\">professional service level\n"
-"                        agreements</a> (a.k.a. support contracts) and an\n"
-"                    <a href=\"https://netknights.it/en/produkte/privacyidea/\" target=\"netknights\">Enterprise Edition</a>\n"
-"                    providing additional ready made packages and\n"
-"                    appliance features.</p>"
+"<p>Your subscription is not valid anymore. Either you exceeded the number of tokens or the\n"
+"                    subscription expired. Please check, if you need to renew your subscription.\n"
+"                </p>"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:25
@@ -115,6 +138,12 @@ msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:12
 msgid "About privacyIDEA Web Client"
+msgstr ""
+
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:106
+msgid ""
+"According to the\n"
+"                    <a target=\"license\" href=\"https://github.com/privacyidea/privacyidea/blob/master/LICENSE\">AGPLv3</a>"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.events.details.html:146
@@ -391,7 +420,7 @@ msgstr ""
 msgid "Certificate Template"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:202
+#: privacyidea/static/components/token/controllers/tokenControllers.js:210
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr ""
 
@@ -737,7 +766,7 @@ msgstr ""
 msgid "Disable token"
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:145
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:166
 msgid "Dive In!"
 msgstr ""
 
@@ -769,7 +798,7 @@ msgstr ""
 msgid "EMail Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:198
+#: privacyidea/static/components/token/controllers/tokenControllers.js:206
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr ""
 
@@ -904,7 +933,7 @@ msgid "Enroll Token"
 msgstr ""
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:69
-#: privacyidea/static/components/token/controllers/tokenControllers.js:143
+#: privacyidea/static/components/token/controllers/tokenControllers.js:151
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:157
 msgid "Enroll a new token"
@@ -1047,7 +1076,7 @@ msgid ""
 "    <a ui-sref=\"config.tokens({tokentype:'yubico'})\">Yubico Token Config</a>!"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:204
+#: privacyidea/static/components/token/controllers/tokenControllers.js:212
 msgid "Four Eyes: Two or more users are required to log in."
 msgstr ""
 
@@ -1095,7 +1124,7 @@ msgstr ""
 msgid "HOTP Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:185
+#: privacyidea/static/components/token/controllers/tokenControllers.js:193
 msgid "HOTP: event based One Time Passwords"
 msgstr ""
 
@@ -1488,10 +1517,9 @@ msgid "New {{ resolvertype }}"
 msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.log.html:13
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:100
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:124
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:39
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:65
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:145
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:59
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:94
 #: privacyidea/static/components/machine/views/machine.details.html:41
 #: privacyidea/static/components/machine/views/machine.list.html:3
 #: privacyidea/static/components/token/views/token.challenges.html:8
@@ -1651,7 +1679,7 @@ msgstr ""
 msgid "Owncloud"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:209
+#: privacyidea/static/components/token/controllers/tokenControllers.js:217
 msgid "PAPER: OTP values on a sheet of paper."
 msgstr ""
 
@@ -1665,7 +1693,7 @@ msgstr ""
 msgid "PIN"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:477
+#: privacyidea/static/components/login/controllers/loginControllers.js:482
 msgid "PIN changed successfully."
 msgstr ""
 
@@ -1797,10 +1825,6 @@ msgstr ""
 msgid "Print the OTP list"
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:73
-msgid "Professional Services and Enterprise Edition"
-msgstr ""
-
 #: privacyidea/static/components/token/views/token.import.html:117
 msgid "Progress: {{ progressPercentage }}%"
 msgstr ""
@@ -1867,11 +1891,11 @@ msgstr ""
 msgid "RADIUS servers"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:196
+#: privacyidea/static/components/token/controllers/tokenControllers.js:204
 msgid "RADIUS: Forward authentication request to a RADIUS server"
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:141
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:162
 msgid "Read again"
 msgstr ""
 
@@ -1882,7 +1906,7 @@ msgstr ""
 msgid "Realm"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:425
+#: privacyidea/static/components/login/controllers/loginControllers.js:430
 msgid "Realm defrealm created."
 msgstr ""
 
@@ -1942,7 +1966,7 @@ msgstr ""
 msgid "Remote Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:192
+#: privacyidea/static/components/token/controllers/tokenControllers.js:200
 msgid "Remote Token: Forward authentication request to another server"
 msgstr ""
 
@@ -2024,7 +2048,7 @@ msgstr ""
 msgid "Revoke"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:152
+#: privacyidea/static/components/token/controllers/tokenControllers.js:160
 msgid "Roll the token"
 msgstr ""
 
@@ -2052,7 +2076,7 @@ msgstr ""
 msgid "SMS Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:200
+#: privacyidea/static/components/token/controllers/tokenControllers.js:208
 msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr ""
 
@@ -2072,11 +2096,11 @@ msgstr ""
 msgid "SMTP servers"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:187
+#: privacyidea/static/components/token/controllers/tokenControllers.js:195
 msgid "SPass: Simple Pass token. Static passwords"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:189
+#: privacyidea/static/components/token/controllers/tokenControllers.js:197
 msgid "SSH Public Key: The public SSH key"
 msgstr ""
 
@@ -2369,7 +2393,7 @@ msgstr ""
 msgid "TOTP Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:186
+#: privacyidea/static/components/token/controllers/tokenControllers.js:194
 msgid "TOTP: time based One Time Passwords"
 msgstr ""
 
@@ -2410,8 +2434,8 @@ msgstr ""
 msgid "Test token"
 msgstr ""
 
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:132
-msgid "Thank you for improving security!"
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:153
+msgid "Thank you for improving your security!"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:1
@@ -2439,10 +2463,6 @@ msgstr ""
 msgid ""
 "The Certificate Token lets you enroll an x509 ceritificate\n"
 "    by the given CA."
-msgstr ""
-
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:47
-msgid "The Community"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.email.html:2
@@ -2505,10 +2525,6 @@ msgid ""
 "The Paper token will let you print a list of OTP values.\n"
 "    These OTP values can be used to authenticate. You need to use on value\n"
 "    after the other."
-msgstr ""
-
-#: privacyidea/static/components/dialogs/views/dialog.welcome.html:108
-msgid "The Policies"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:18
@@ -2662,6 +2678,17 @@ msgid ""
 "    you a UID with 12 characters.\n"
 "    You also need to choose, if the Yubikey emits the additional UID, which\n"
 "    is either 12 or 16 characters long. You can check this in the test field."
+msgstr ""
+
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:102
+msgid "The added value of privacyIDEA Enterprise Edition"
+msgstr ""
+
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:112
+msgid ""
+"The added values of the\n"
+"                    <a target=\"netknights\" href=\"https://netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
+"                    are"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.yubikey.html:7
@@ -2903,6 +2930,10 @@ msgstr ""
 msgid "The username on the remote server"
 msgstr ""
 
+#: privacyidea/static/components/dialogs/views/dialog.welcome.html:67
+msgid "The value of open source"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.token.question.html:23
 msgid "These are the possible questions, a user may define answers to."
 msgstr ""
@@ -3076,7 +3107,7 @@ msgstr ""
 msgid "TiQR Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:206
+#: privacyidea/static/components/token/controllers/tokenControllers.js:214
 msgid "TiQR: Authenticate with Smartphone by scanning a QR code."
 msgstr ""
 
@@ -3200,7 +3231,7 @@ msgstr ""
 msgid "U2F Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:208
+#: privacyidea/static/components/token/controllers/tokenControllers.js:216
 msgid "U2F: Universal 2nd Factor hardware token."
 msgstr ""
 
@@ -3486,11 +3517,11 @@ msgstr ""
 msgid "Yubico URL"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:190
+#: privacyidea/static/components/token/controllers/tokenControllers.js:198
 msgid "Yubikey AES mode: One Time Passwords with Yubikey"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:194
+#: privacyidea/static/components/token/controllers/tokenControllers.js:202
 msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud"
 msgstr ""
 
@@ -3608,7 +3639,7 @@ msgstr ""
 msgid "mOTP PIN"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:188
+#: privacyidea/static/components/token/controllers/tokenControllers.js:196
 msgid "mOTP: classical mobile One Time Passwords"
 msgstr ""
 

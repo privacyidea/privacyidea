@@ -58,6 +58,7 @@ from privacyidea.api.lib.utils import get_all_params, getParam
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.user import (split_user, User)
 from privacyidea.lib.realm import get_default_realm
+from privacyidea.lib.subscriptions import subscription_status
 
 
 optional = True
@@ -565,6 +566,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
         content["result"]["value"]["timeout_action"] = timeout_action
         content["result"]["value"]["hide_welcome"] = hide_welcome
+        content["result"]["value"]["subscription_status"] = subscription_status()
         response.data = json.dumps(content)
     return response
 
