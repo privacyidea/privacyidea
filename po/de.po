@@ -244,7 +244,7 @@ msgid ""
 msgstr ""
 "Entsprechend der <a target=\"license\" href=\"https://github.com/privacyidea/"
 "privacyidea/blob/master/LICENSE\">AGPLv3</a>\n"
-" gibt es für die Open-Source-Software"
+" gibt es für diese Software (privacyIDEA)"
 
 #: privacyidea/static/components/config/views/config.events.details.html:146
 #: privacyidea/static/components/config/views/config.events.details.html:148
