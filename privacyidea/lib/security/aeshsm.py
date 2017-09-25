@@ -195,6 +195,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         while True:
             try:
                 r = self.session.decrypt(k, bytes(data), m)
+                break
             except PyKCS11.PyKCS11Error as exx:
                 log.warning(u"Decryption failed: {0!s}".format(exx))
                 self.initialize_hsm()
