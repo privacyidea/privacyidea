@@ -1,4 +1,4 @@
-Version 2.20
+Version 2.20, 2017-09-27
 
   Features:
 
@@ -8,8 +8,6 @@ Version 2.20
      requests and other REST API requests to a child
      privacyIDEA system (#711)
    * Improved Subscription Handling 
-     !!!WARNING!!! privacyIDEA will only allow to enroll
-     up to 50 acttive tokens without subscription!
    * Allow to login with multiple loginnames (#713)
    * Authentication Cache policy (#729)
 

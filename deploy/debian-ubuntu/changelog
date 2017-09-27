@@ -1,8 +1,57 @@
-python-privacyidea (2.20~dev5-1trusty) trusty; urgency=low
+python-privacyidea (2.20-1trusty) trusty; urgency=low
 
-  * Challenge Response Login #708
+  Features:
+   * New Token-Type OCRA and DisplayTAN to support 
+     transaction signing for online banking (#767)
+   * Federation Handler allows to forward authentication
+     requests and other REST API requests to a child
+     privacyIDEA system (#711)
+   * Improved Subscription Handling 
+   * Allow to login with multiple loginnames (#713)
+   * Authentication Cache policy (#729)
 
- -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Tue, 19 Sep 2017 10:00:00 +0200
+  Enhancements:
+   * !!!NOTE!!! following policies now also honor the resolvers,
+    which they did not previously:
+    (AUTH, challenge_response), (AUTH, otppin), 
+    (AUTHZ, auth_max_success), (AUTHZ, auth_max_fail),
+    (AUTHZ, last_auth), (WEBUI, login_mode),
+    (ENROLL,losttoken_pw_contents), (ENROLL,losttoken_validity),
+    (ENROLL, losttoken_pw_len) (#736)
+   * User can regenerate the QR Code during enrollment
+     of smartphone app (#766)
+   * Administrator can define remote privacyIDEA servers
+     centrally (#711)
+   * Events can now be ordered. This is important for the
+     federation handling (#711)
+   * Specify the hash algorithm that is used to save 
+     SQL users passwords (#745)
+   * Add welcome dialog for administrator (#716)
+   * Allow creating oracle DB (#752)
+   * Event Handler can use timestamps and time offsets in
+     conditions (#741)
+   * Use challenge/response token to unlock the screen of 
+     the web UI (#702)
+   * Support multiple challenge/response token at the same
+     time (#722)
+   * GPG keys are generated during package installation and
+     show the GPG key in the import dialog (#742)
+   * Failcounter clearing timeout in UI (#719)
+   * Allow to send challenge data (like banking transaction) in
+     email text and SMS text.
+
+  Fixes:
+   * Set default loglevel from DEBUG to INFO (#765)
+   * Fixed PIN logging, which could lead to exceptions
+   * Fixed unicode handling in log messages
+   * Make LDAP Resolver work with utf8 (#738)
+   * User can only choose hash algo according to policy (#723)
+   * Add time period 30/60s to rollout URI (#744)
+   * Fix deprecation warning for flask_migrate (#734)
+   * Allow multiple tries for challenge/response (#708)
+   * Fix problem with certificate serial number (#737)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 27 Sep 2017 11:30:00 +0200
 
 python-privacyidea (2.19.1-1trusty) trusty; urgency=low
 
