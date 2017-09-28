@@ -126,6 +126,44 @@ class APITokenTestCase(MyTestCase):
             self.assertTrue("value" in detail.get("googleurl"), detail)
             self.assertTrue("OATH" in detail.get("serial"), detail)
 
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp",
+                                                 "otpkey": self.otpkey,
+                                                 "genkey": 0},
+                                           headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                data = json.loads(res.data)
+                self.assertTrue(res.status_code == 200, res)
+                result = data.get("result")
+                detail = data.get("detail")
+                self.assertTrue(result.get("status"), result)
+                self.assertTrue(result.get("value"), result)
+                self.assertTrue("value" in detail.get("googleurl"), detail)
+                serial = detail.get("serial")
+                self.assertTrue("OATH" in serial, detail)
+        remove_token(serial)
+
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "HOTP",
+                                                 "otpkey": self.otpkey,
+                                                 "pin": "1234",
+                                                 "user": "cornelius",
+                                                 "realm": self.realm1},
+                                           headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                data = json.loads(res.data)
+                self.assertTrue(res.status_code == 200, res)
+                result = data.get("result")
+                detail = data.get("detail")
+                self.assertTrue(result.get("status"), result)
+                self.assertTrue(result.get("value"), result)
+                self.assertTrue("value" in detail.get("googleurl"), detail)
+                serial = detail.get("serial")
+                self.assertTrue("OATH" in serial, detail)
+        remove_token(serial)
+
     def test_01_list_tokens(self):
         with self.app.test_request_context('/token/',
                                            method='GET',

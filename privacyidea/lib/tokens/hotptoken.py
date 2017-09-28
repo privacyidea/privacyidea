@@ -243,7 +243,9 @@ class HotpTokenClass(TokenClass):
         if key_size is None:
             upd_param['keysize'] = keylen.get(hashlibStr)
 
-        if "genkey" in upd_param and "otpkey" in upd_param:
+        otpKey = getParam(upd_param, "otpkey", optional)
+        genkey = int(getParam(upd_param, "genkey", optional) or 0)
+        if genkey and otpKey:
             # The Base TokenClass does not allow otpkey and genkey at the
             # same time
             del upd_param['otpkey']
