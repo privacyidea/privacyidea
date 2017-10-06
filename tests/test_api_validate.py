@@ -1396,6 +1396,30 @@ class ValidateAPITestCase(MyTestCase):
             detail = json.loads(res.data).get("detail")
             self.assertEqual(detail, None)
 
+    def test_23a_pass_no_user_resolver(self):
+        # Now we set a policy, that a non existing user will authenticate
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTH,
+                   action="{0}, {1}, {2}, {3}=none".format(
+                       ACTION.RESETALLTOKENS,
+                       ACTION.PASSNOUSER,
+                       ACTION.PASSNOTOKEN,
+                       ACTION.OTPPIN
+                   ),
+                   realm=self.realm1)
+        # Check that the non existing user MisterX is allowed to authenticate
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "MisterX",
+                                                 "realm": self.realm1,
+                                                 "pass": "secret"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(detail.get("message"),
+                             u'The user does not exist, but is accepted due to policy \'pol1\'.')
+        delete_policy("pol1")
+
     @responses.activate
     def test_24_trigger_challenge(self):
         from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway

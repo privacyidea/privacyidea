@@ -189,6 +189,31 @@ class LibPolicyTestCase(MyTestCase):
                          u"to policy 'pol1'.")
         delete_policy("pol1")
 
+    def test_04a_user_does_not_exist_without_resolver(self):
+        user = User("MisterX", realm=self.realm1)
+        passw = "somePW"
+
+        # Now we set a policy, that a non existing user will authenticate
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTH,
+                   action="{0}, {1}, {2}, {3}=none".format(
+                       ACTION.RESETALLTOKENS,
+                       ACTION.PASSNOUSER,
+                       ACTION.PASSNOTOKEN,
+                       ACTION.OTPPIN
+                   ),
+                   realm=self.realm1)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        options = {"g": g}
+        rv = auth_user_does_not_exist(check_user_pass, user, passw,
+                                      options=options)
+        self.assertTrue(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         u"The user does not exist, but is accepted due "
+                         u"to policy 'pol1'.")
+        delete_policy("pol1")
+
     def test_05_user_has_no_tokens(self):
         user = User("cornelius", realm="r1")
         passw = "test"
