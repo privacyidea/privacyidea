@@ -1,3 +1,9 @@
+Version 2.20.1, 2017-10-xx
+
+  Fixes:
+   * /token/init allows to pass otpkey AND genkey=false (#793)
+   * Cast date to string, to fix audit search for postgresql (#786)
+
 Version 2.20, 2017-09-27
 
   Features:
