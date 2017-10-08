@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+# 2017-10-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Allow cleaning up different actions with different
+#            retention times.
 # 2017-07-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add generation of PGP keys
 # 2017-02-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -51,6 +54,7 @@ import re
 from subprocess import call, Popen, PIPE
 from getpass import getpass
 import gnupg
+import yaml
 
 import flask
 
@@ -70,7 +74,7 @@ from flask_script import Manager, Command
 from privacyidea.app import db
 from flask_migrate import MigrateCommand
 # Wee need to import something, so that the models will be created.
-from privacyidea.models import Admin
+from privacyidea.models import Audit
 from sqlalchemy import create_engine, desc, MetaData
 from sqlalchemy.orm import sessionmaker
 from privacyidea.lib.auditmodules.sqlaudit import LogEntry
@@ -532,12 +536,13 @@ except TypeError:
 @manager.option('--lowwatermark', '--lw', help="Keep this number of entries.")
 @manager.option('--age', help="Delete audit entries older than these number "
                               "of days.")
-def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0):
+@manager.option('--config', help="Read config from the specified yaml file.")
+def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None):
     """
     Clean the SQL audit log.
 
     You can either clean the audit log based on the number of entries of
-    based on the age of the entires.
+    based on the age of the entries.
 
     Cleaning based on number of entries:
 
@@ -547,6 +552,11 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0):
     Cleaning based on age:
 
     Entries older than the specified number of days are deleted.
+
+    Cleaning based on config file:
+
+    You can clean different type of entries with different ages or watermark.
+    See the documentation for the format of the config file
     """
     metadata = MetaData()
     highwatermark = int(highwatermark or 10000)
@@ -556,10 +566,18 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0):
     token_db_uri = app.config.get("SQLALCHEMY_DATABASE_URI")
     audit_db_uri = app.config.get("PI_AUDIT_SQL_URI", token_db_uri)
     audit_module = app.config.get("PI_AUDIT_MODULE", default_module)
+    actions = []
     if audit_module != default_module:
         raise Exception("We only rotate SQL audit module. You are using %s" %
                         audit_module)
-    if age:
+    if config:
+        actions = Audit.query.with_entities(Audit.action).distinct().all()
+        actions = [x[0] for x in actions if x[0]]
+        print("Actions in the log:")
+        for action in actions:
+            print("- [{0!s}, '']".format(action))
+        print("There are {0!s} different actions in the audit log.".format(len(actions)))
+    elif age:
         age = int(age)
         print("Cleaning up with age: %s. %s" % (age, audit_db_uri))
     else:
@@ -572,11 +590,29 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0):
     session = sessionmaker(bind=engine)()
     # create a Session
     metadata.create_all(engine)
-    if age:
+    if config:
+        with open(config, 'r') as f:
+            Config = yaml.load(f)
+        # clean up every action
+        for action in actions:
+            for rule in Config:
+                if re.search(rule[0], action):
+                    age = int(rule[1])
+                    now = datetime.datetime.now() - datetime.timedelta(days=age)
+                    r = session.query(LogEntry.date).\
+                        filter(LogEntry.action == action).\
+                        filter(LogEntry.date < now).delete()
+                    session.commit()
+                    print("{0!s} entries of action {1!s} deleted.".format(r, action))
+                    # leave the rule set!
+                    break
+
+    elif age:
         now = datetime.datetime.now() - datetime.timedelta(days=age)
         print("Deleting entries older than {0!s}".format(now))
-        session.query(LogEntry.date).filter(LogEntry.date < now).delete()
+        r = session.query(LogEntry.date).filter(LogEntry.date < now).delete()
         session.commit()
+        print("{0!s} entries deleted.".format(r))
     else:
         count = session.query(LogEntry.id).count()
         for l in session.query(LogEntry.id).order_by(desc(LogEntry.id)).limit(1):
