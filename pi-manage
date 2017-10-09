@@ -537,7 +537,10 @@ except TypeError:
 @manager.option('--age', help="Delete audit entries older than these number "
                               "of days.")
 @manager.option('--config', help="Read config from the specified yaml file.")
-def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None):
+@manager.option('--dryrun', help="Do not actually delete, only show "
+                                 "what would be done.", action="store_true")
+def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
+                 dryrun=False):
     """
     Clean the SQL audit log.
 
@@ -599,19 +602,27 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None):
                 if re.search(rule[0], action):
                     age = int(rule[1])
                     now = datetime.datetime.now() - datetime.timedelta(days=age)
-                    r = session.query(LogEntry.date).\
+                    sqlquery = session.query(LogEntry.date).\
                         filter(LogEntry.action == action).\
-                        filter(LogEntry.date < now).delete()
-                    session.commit()
-                    print("{0!s} entries of action {1!s} deleted.".format(r, action))
+                        filter(LogEntry.date < now)
+                    if dryrun:
+                        r = len(sqlquery.all())
+                    else:
+                        r = sqlquery.delete()
+                        session.commit()
+                    print("{0!s} entries of action {1!s} deleted due to {2!s}.".format(r, action, rule))
                     # leave the rule set!
                     break
 
     elif age:
         now = datetime.datetime.now() - datetime.timedelta(days=age)
         print("Deleting entries older than {0!s}".format(now))
-        r = session.query(LogEntry.date).filter(LogEntry.date < now).delete()
-        session.commit()
+        sqlquery = session.query(LogEntry.date).filter(LogEntry.date < now)
+        if dryrun:
+            r = len(sqlquery.all())
+        else:
+            r = session.query(LogEntry.date).filter(LogEntry.date < now).delete()
+            session.commit()
         print("{0!s} entries deleted.".format(r))
     else:
         count = session.query(LogEntry.id).count()
@@ -625,8 +636,13 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None):
             cut_id = last_id - lowwatermark
             # delete all entries less than cut_id
             print("Deleting entries smaller than %i" % cut_id)
-            session.query(LogEntry.id).filter(LogEntry.id < cut_id).delete()
-            session.commit()
+            sqlquery = session.query(LogEntry.id).filter(LogEntry.id < cut_id)
+            if dryrun:
+                r = len(sqlquery.all())
+            else:
+                r = session.query(LogEntry.id).filter(LogEntry.id < cut_id).delete()
+                session.commit()
+            print("{0!s} entries deleted.".format(r))
 
 
 @resolver_manager.command
