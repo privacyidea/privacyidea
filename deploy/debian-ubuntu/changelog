@@ -1,3 +1,11 @@
+python-privacyidea (2.20.1-1trusty) trusty; urgency=low
+
+  Fixes:
+   * /token/init allows to pass otpkey AND genkey=false (#793)
+   * Cast date to string, to fix audit search for postgresql (#786)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Sun, 08 Oct 2017 11:30:00 +0200
+
 python-privacyidea (2.20-1trusty) trusty; urgency=low
 
   Features:

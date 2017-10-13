@@ -252,9 +252,15 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     if (AuthFactory.getRole() == 'admin') {
         ConfigFactory.getRealms(function (data) {
             $scope.realms = data.result.value;
+            // Set the default realm
+            var size = Object.keys($scope.realms).length;
             angular.forEach($scope.realms, function (realm, realmname) {
+                if (size === 1) {
+                    // if there is only one realm, preset it
+                    $scope.newUser = {user: "", realm: realmname};
+                }
+                // if there is a default realm, preset the default realm
                 if (realm.default && !$stateParams.realmname) {
-                    // Set the default realm
                     $scope.newUser = {user: "", realm: realmname};
                     console.log("tokenEnrollController");
                     console.log($scope.newUser);
