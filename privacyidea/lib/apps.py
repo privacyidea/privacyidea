@@ -118,6 +118,10 @@ def create_google_authenticator_url(key=None, user=None,
                          givenname=user_obj.info.get("givenname", ""),
                          surname=user_obj.info.get("surname", ""))
 
+    issuer = issuer.format(serial=serial, user=user, realm=realm,
+                           givenname=user_obj.info.get("givenname", ""),
+                           surname=user_obj.info.get("surname", ""))
+
     label = label[0:allowed_label_len]
     url_label = quote(label.encode("utf-8"))
     url_issuer = quote(issuer.encode("utf-8"))
