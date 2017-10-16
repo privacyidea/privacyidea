@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 import json
 import binascii
+
+from passlib.utils.pbkdf2 import pbkdf2
+
 from .base import MyTestCase
 from privacyidea.lib.tokens.HMAC import HmacOtp
 
@@ -30,16 +33,17 @@ class TwoStepInitTestCase(MyTestCase):
             detail = json.loads(res.data).get("detail")
             serial = detail.get("serial")
             otpkey_url = detail.get("otpkey", {}).get("value")
-            server_component = otpkey_url.split("/")[2]
+            server_component = binascii.unhexlify(otpkey_url.split("/")[2])
 
-        client_component = "AAAAAAAA"
+        client_component = "VERYSECRET"
+        hex_client_component = binascii.hexlify(client_component)
         # Try to do a 2stepinit on a second step will raise an error
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "hotp",
                                                  "2stepinit": "1",
                                                  "serial": serial,
-                                                 "otpkey": client_component},
+                                                 "otpkey": hex_client_component},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
@@ -48,12 +52,26 @@ class TwoStepInitTestCase(MyTestCase):
                              u'ERR905: 2stepinit is only to be used '
                              u'in the first initialization step.')
 
+        # Authentication does not work yet!
+        wrong_otp_value = HmacOtp().generate(key=server_component, counter=1)
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "pass": wrong_otp_value}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data)
+            self.assertTrue(result.get("result").get("status"))
+            self.assertFalse(result.get("result").get("value"))
+            self.assertEqual(result.get("detail").get("message"),
+                         u'matching 1 tokens, Token is disabled')
+
         # Now doing the correct 2nd step
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "hotp",
                                                  "serial": serial,
-                                                 "otpkey": client_component},
+                                                 "otpkey": hex_client_component},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -77,9 +95,14 @@ class TwoStepInitTestCase(MyTestCase):
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
+        # Check that the OTP key is what we expected it to be
+        expected_secret = pbkdf2(server_component, client_component, 1000, 20)
+        self.assertEqual(otpkey_bin, expected_secret)
+
         with self.app.test_request_context('/token/'+ serial,
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
+
 
