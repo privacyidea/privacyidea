@@ -3,6 +3,7 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
+
 PWFILE = "tests/testdata/passwords"
 
 from .base import MyTestCase
@@ -21,6 +22,7 @@ import binascii
 import datetime
 from dateutil.tz import tzlocal
 
+from passlib.utils.pbkdf2 import pbkdf2
 
 class HOTPTokenTestCase(MyTestCase):
     """
@@ -698,3 +700,25 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertEqual(p.get("otplen"), "8")
         self.assertEqual(p.get("hashlib"), "sha256")
         delete_policy("pol1")
+
+    def test_28_2step_generation(self):
+        serial = "2step"
+        db_token = Token(serial, tokentype="hotp")
+        db_token.save()
+        token = HotpTokenClass(db_token)
+        token.update({"2stepinit": "1"})
+        # fetch the server component for later tests
+        server_component = binascii.unhexlify(token.token.get_otpkey().getKey())
+        # generate a 10-byte client component
+        client_component = b'abcdefghij'
+        # construct a secret
+        token.update({"otpkey": binascii.hexlify(client_component)})
+        # check the generated secret
+        secret = binascii.unhexlify(token.token.get_otpkey().getKey())
+        # check the correct lengths
+        self.assertEqual(len(server_component), 20)
+        self.assertEqual(len(client_component), 10)
+        self.assertEqual(len(secret), 20)
+        # check the secret has been generated according to the specification
+        expected_secret = pbkdf2(server_component, client_component, 1000, 20)
+        self.assertEqual(secret, expected_secret)
