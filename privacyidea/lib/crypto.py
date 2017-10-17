@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-10-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add encryption/decryption for PSKC containers.
 #  2016-04-08 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Avoid consecutive if statements
 #
@@ -47,6 +49,8 @@ from Crypto.Hash import SHA as SHA1
 from Crypto.Hash import SHA256 as HashFunc
 from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA
+import os
+import base64
 try:
     from Crypto.Signature import pkcs1_15
     SIGN_WITH_RSA = False
@@ -421,8 +425,63 @@ def aes_decrypt(key, iv, cipherdata, mode=AES.MODE_CBC):
     """
     aes = AES.new(key, mode, iv)
     output = aes.decrypt(cipherdata)
+    l = len(output)
+    o_hex = binascii.hexlify(output)
+    padding = ord(output[-1])
     # remove padding
-    output = output[0:-ord(output[-1])]
+    output = output[0:-padding]
+    return output
+
+
+def aes_encrypt(key, iv, data, mode=AES.MODE_CBC):
+    """
+    encrypts the given data with key/iv
+
+    :param key: The encryption key
+    :type key: binary string
+    :param iv: The initialization vector
+    :type iv: binary string
+    :param cipherdata: The cipher text
+    :type cipherdata: binary string
+    :param mode: The AES MODE
+    :return: plain text in binary data
+    """
+    aes = AES.new(key, mode, iv)
+    # pad data
+    num_pad = aes.block_size - (len(data) % aes.block_size)
+    data = data + chr(num_pad) * num_pad
+    output = aes.encrypt(data)
+    return output
+
+
+def aes_encrypt_b64(key, data):
+    """
+    This function encrypts the data using AES-128-CBC. It generates
+    and adds an IV.
+    This is used for PSKC.
+
+    :param key: Encryption key (binary format)
+    :param data: Data to encrypt
+    :return: base64 encrypted output, containing IV
+    """
+    iv = os.urandom(16)
+    encdata = aes_encrypt(key, iv, data)
+    return base64.b64encode(iv + encdata)
+
+
+def aes_decrypt_b64(key, data_b64):
+    """
+    This function decrypts base64 encoded data (containing the IV)
+    using AES-128-CBC. Used for PSKC
+
+    :param key: binary key
+    :param data_b64: base64 encoded data (IV + encdata)
+    :return: encrypted data
+    """
+    data_bin = base64.b64decode(data_b64)
+    iv = data_bin[:16]
+    encdata = data_bin[16:]
+    output = aes_decrypt(key, iv, encdata)
     return output
 
 

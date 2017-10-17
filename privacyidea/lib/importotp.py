@@ -47,7 +47,7 @@ import base64
 from privacyidea.lib.utils import modhex_decode
 from privacyidea.lib.utils import modhex_encode
 from privacyidea.lib.log import log_with
-from privacyidea.lib.crypto import aes_decrypt
+from privacyidea.lib.crypto import aes_decrypt_b64
 from Crypto.Cipher import AES
 from bs4 import BeautifulSoup
 import traceback
@@ -485,11 +485,8 @@ def parsePSKCdata(xml_data,
                     raise ImportException("We only import PSKC files with "
                                           "AES128-CBC.")
                 enc_data = key.data.secret.encryptedvalue.ciphervalue.text
-                enc_data = base64.b64decode(enc_data.strip())
-                enc_iv = enc_data[:16]
-                enc_cipher = enc_data[16:]
-                secret = aes_decrypt(binascii.unhexlify(preshared_key_hex),
-                                     enc_iv, enc_cipher)
+                enc_data = enc_data.strip()
+                secret = aes_decrypt_b64(binascii.unhexlify(preshared_key_hex), enc_data)
                 token["otpkey"] = binascii.hexlify(secret)
         except Exception as exx:
             log.error("Failed to import tokendata: {0!s}".format(exx))
