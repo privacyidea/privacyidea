@@ -205,6 +205,8 @@ class IdResolver (UserIdResolver):
         self.cache_timeout = 120
         self.tls_context = None
         self.start_tls = False
+        self.serverpool_rounds = SERVERPOOL_ROUNDS
+        self.serverpool_skip = SERVERPOOL_SKIP
 
     def checkPass(self, uid, password):
         """
@@ -228,7 +230,9 @@ class IdResolver (UserIdResolver):
 
         server_pool = self.get_serverpool(self.uri, self.timeout,
                                           get_info=ldap3.NONE,
-                                          tls_context=self.tls_context)
+                                          tls_context=self.tls_context,
+                                          rounds=self.serverpool_rounds,
+                                          exhaust=self.serverpool_skip)
 
         try:
             log.debug("Authtype: {0!r}".format(self.authtype))
@@ -364,7 +368,9 @@ class IdResolver (UserIdResolver):
         if not self.i_am_bound:
             server_pool = self.get_serverpool(self.uri, self.timeout,
                                               get_info=self.get_info,
-                                              tls_context=self.tls_context)
+                                              tls_context=self.tls_context,
+                                              rounds=self.serverpool_rounds,
+                                              exhaust=self.serverpool_skip)
             self.l = self.create_connection(authtype=self.authtype,
                                             server=server_pool,
                                             user=self.binddn,
@@ -636,6 +642,8 @@ class IdResolver (UserIdResolver):
                                    ca_certs_file=self.tls_ca_file)
         else:
             self.tls_context = None
+        self.serverpool_rounds = int(config.get("SERVERPOOL_ROUNDS") or SERVERPOOL_ROUNDS)
+        self.serverpool_skip = int(config.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
 
         return self
 
@@ -673,7 +681,8 @@ class IdResolver (UserIdResolver):
         return server, port, ssl
 
     @classmethod
-    def get_serverpool(cls, urilist, timeout, get_info=None, tls_context=None):
+    def get_serverpool(cls, urilist, timeout, get_info=None, tls_context=None, rounds=SERVERPOOL_ROUNDS,
+                       exhaust=SERVERPOOL_SKIP):
         """
         This create the serverpool for the ldap3 connection.
         The URI from the LDAP resolver can contain a comma separated list of
@@ -691,13 +700,17 @@ class IdResolver (UserIdResolver):
             of a bind.
         :param tls_context: A ldap3.tls object, which defines if certificate
             verification should be performed
+        :param rounds: The number of rounds we should cycle through the server pool
+            before giving up
+        :param exhaust: The seconds, for how long a non-reachable server should be
+            removed from the serverpool
         :return: Server Pool
         :rtype: LDAP3 Server Pool Instance
         """
         get_info = get_info or ldap3.SCHEMA
         server_pool = ldap3.ServerPool(None, ldap3.ROUND_ROBIN,
-                                       active=SERVERPOOL_ROUNDS,
-                                       exhaust=SERVERPOOL_SKIP)
+                                       active=rounds,
+                                       exhaust=exhaust)
         for uri in urilist.split(","):
             uri = uri.strip()
             host, port, ssl = cls.split_uri(uri)
@@ -761,13 +774,15 @@ class IdResolver (UserIdResolver):
         Parameters are:
             BINDDN, BINDPW, LDAPURI, TIMEOUT, LDAPBASE, LOGINNAMEATTRIBUTE,
             LDAPSEARCHFILTER, USERINFO, SIZELIMIT, NOREFERRALS, CACERTIFICATE,
-            AUTHTYPE, TLS_VERIFY, TLS_CA_FILE
+            AUTHTYPE, TLS_VERIFY, TLS_CA_FILE, SERVERPOOL_ROUNDS, SERVERPOOL_SKIP
         """
         success = False
         uidtype = param.get("UIDTYPE")
         timeout = float(param.get("TIMEOUT", 5))
         ldap_uri = param.get("LDAPURI")
         size_limit = int(param.get("SIZELIMIT", 500))
+        serverpool_rounds = int(param.get("SERVERPOOL_ROUNDS") or SERVERPOOL_ROUNDS)
+        serverpool_skip = int(param.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
         if is_true(param.get("TLS_VERIFY")) \
                 and (ldap_uri.lower().startswith("ldaps") or
                                     param.get("START_TLS")):
@@ -781,7 +796,9 @@ class IdResolver (UserIdResolver):
         try:
             server_pool = cls.get_serverpool(ldap_uri, timeout,
                                              tls_context=tls_context,
-                                             get_info=get_info)
+                                             get_info=get_info,
+                                             rounds=serverpool_rounds,
+                                             exhaust=serverpool_skip)
             l = cls.create_connection(authtype=param.get("AUTHTYPE",
                                                           AUTHTYPE.SIMPLE),
                                       server=server_pool,
