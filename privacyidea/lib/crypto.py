@@ -425,8 +425,6 @@ def aes_decrypt(key, iv, cipherdata, mode=AES.MODE_CBC):
     """
     aes = AES.new(key, mode, iv)
     output = aes.decrypt(cipherdata)
-    l = len(output)
-    o_hex = binascii.hexlify(output)
     padding = ord(output[-1])
     # remove padding
     output = output[0:-padding]
