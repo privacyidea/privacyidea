@@ -754,7 +754,12 @@ class IdResolver (UserIdResolver):
                                 'AUTHTYPE': 'string',
                                 'TLS_VERIFY': 'bool',
                                 'TLS_CA_FILE': 'string',
-                                'START_TLS': 'bool'}
+                                'START_TLS': 'bool',
+                                'CACHE_TIMEOUT': 'int',
+                                'SERVERPOOL_ROUNDS': 'int',
+                                'SERVERPOOL_SKIP': 'int',
+                                'OBJECT_CLASSES': 'string',
+                                'DN_TEMPLATE': 'string'}
         return {typ: descriptor}
 
     @classmethod

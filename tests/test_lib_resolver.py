@@ -866,6 +866,15 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(server_pool.servers[0].name, "ldap://themis:389")
         self.assertEqual(server_pool.servers[1].name, "ldaps://server2:636")
 
+        urilist = "ldap://themis, ldaps://server2"
+        server_pool = LDAPResolver.get_serverpool(urilist, timeout,
+                                                  rounds=5,
+                                                  exhaust=60)
+        self.assertEqual(len(server_pool), 2)
+        self.assertEqual(server_pool.active, 5)
+        self.assertEqual(server_pool.exhaust, 60)
+        self.assertEqual(server_pool.strategy, "ROUND_ROBIN")
+
     @ldap3mock.activate
     def test_08_trimresult(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
