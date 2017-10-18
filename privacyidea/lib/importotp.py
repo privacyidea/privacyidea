@@ -477,6 +477,10 @@ def parsePSKCdata(xml_data,
         parameters = key.algorithmparameters
         token["otplen"] = parameters.responseformat["length"] or 6
         try:
+            token["hashlib"] = parameters.suite["hashalgo"] or "sha1"
+        except Exception as exx:
+            log.warning("No compatible suite contained.")
+        try:
             if key.data.secret.plainvalue:
                 secret = key.data.secret.plainvalue.string
                 token["otpkey"] = binascii.hexlify(base64.b64decode(secret))
@@ -601,6 +605,7 @@ def export_pskc(tokenobj_list, psk=None):
         serial = tokenobj.token.serial
         otplen = tokenobj.token.otplen
         counter = tokenobj.token.count
+        suite = tokenobj.get_tokeninfo("hashlib", default="sha1")
         if type == "totp":
             timestep = tokenobj.get_tokeninfo("timeStep")
         else:
@@ -621,6 +626,7 @@ def export_pskc(tokenobj_list, psk=None):
              <Issuer>{issuer}</Issuer>
              <AlgorithmParameters>
                  <ResponseFormat Length="{otplen}" Encoding="DECIMAL"/>
+                 <Suite hashalgo="{suite}" />
              </AlgorithmParameters>
              <Data>
                 <Secret>
@@ -631,6 +637,7 @@ def export_pskc(tokenobj_list, psk=None):
                          </xenc:CipherData>
                      </EncryptedValue>
                  </Secret>
+                 <ValueMAC>TODOmissing</ValueMAC>
                 <Time>
                     <PlainValue>0</PlainValue>
                 </Time>
@@ -643,9 +650,9 @@ def export_pskc(tokenobj_list, psk=None):
             </Data>
     </Key>
     </KeyPackage>""".format(serial=serial, type=type, otplen=otplen,
-                        issuer=issuer, manufacturer=manufacturer,
-                        counter=counter, timestep=timestep, encrypted_otpkey=encrypted_otpkey),
-                    "html.parser")
+                            issuer=issuer, manufacturer=manufacturer,
+                            counter=counter, timestep=timestep, encrypted_otpkey=encrypted_otpkey,
+                            suite=suite), "html.parser")
 
         soup.macmethod.insert_after(kp2)
 
