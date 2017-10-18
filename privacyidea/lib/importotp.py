@@ -606,7 +606,11 @@ def export_pskc(tokenobj_list, psk=None):
         else:
             timestep = 0
         otpkey = tokenobj.token.get_otpkey().getKey()
-        encrypted_otpkey = aes_encrypt_b64(psk, binascii.unhexlify(otpkey))
+        try:
+            encrypted_otpkey = aes_encrypt_b64(psk, binascii.unhexlify(otpkey))
+        except TypeError:
+            # Some keys might be odd string length
+            continue
         kp2 = BeautifulSoup("""<KeyPackage>
     <DeviceInfo>
       <Manufacturer>{manufacturer}</Manufacturer>

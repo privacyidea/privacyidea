@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# 2017-10-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add token export (HOTP and TOTP) to PSKC
 # 2017-05-02 Friedrich Weber <friedrich.weber@netknights.it>
 #            Improve token matching
 # 2017-04-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -38,6 +40,7 @@ from flask.ext.script.commands import InvalidCommand
 
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.utils import parse_legacy_time
+from privacyidea.lib.importotp import export_pskc
 
 __doc__ = """
 This script can be used to clean up the token database.
@@ -75,7 +78,7 @@ Actions:
         --serial=<regexp>
         --description=<regexp>
         
-        --action=delete|unassign|disable|mark
+        --action=delete|unassign|disable|mark|export
         
         --set-description="new description"
         --set-tokeninfo-key=<key>
@@ -298,9 +301,9 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
     """
     finds all tokens which match the conditions
     """
-    if action and action not in ["disable", "delete", "unassign", "mark"]:
+    if action and action not in ["disable", "delete", "unassign", "mark", "export"]:
             sys.stderr.write("Unknown action. Allowed actions are 'disable', "
-                        "'delete', 'unassign', 'mark'\n")
+                             "'delete', 'unassign', 'mark', 'export'\n")
             sys.exit(1)
     filter = build_tokenvalue_filter(tokeninfo_key,
                                      tokeninfo_value,
@@ -323,6 +326,11 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                 token_obj.token.description,
                 token_obj.get_tokeninfo()))
 
+    elif action == "export":
+        key, soup = export_pskc(tlist)
+        sys.stderr.write("\nThis is the AES encryption key of the token seeds.\n"
+                         "You need this key to import the tokens again:\n\n\t{0!s}\n\n".format(key))
+        print("{0!s}".format(soup))
     else:
         for token_obj in tlist:
             try:
