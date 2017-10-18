@@ -893,7 +893,9 @@ def loadtokens_api(filename=None):
         #    self.Policy.checkPolicyPre('admin', 'loadtokens',
         #                   {'tokenrealm': tokenrealm })
 
-        init_token(init_param, tokenrealms=tokenrealms)
+        token = init_token(init_param, tokenrealms=tokenrealms)
+        if TOKENS[serial].get("counter"):
+            token.set_otp_count(TOKENS[serial].get("counter"))
 
     g.audit_object.log({'info': u"{0!s}, {1!s} (imported: {2:d})".format(file_type,
                                                            token_file,
