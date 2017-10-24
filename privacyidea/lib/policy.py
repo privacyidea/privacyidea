@@ -427,7 +427,7 @@ class PolicyClass(object):
                 # list
                 # check regular expression only for exact matches
                 # avoid matching user1234 -> user1
-                if re.search("^{0!s}$".format(value), searchvalue):
+                if re.search(u"^{0!s}$".format(value), searchvalue):
                     value_found = True
 
         return value_found, value_excluded
