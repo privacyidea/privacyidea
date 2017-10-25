@@ -135,22 +135,21 @@ class User(object):
                                                 other.resolver) and (
                 self.realm == other.realm)
 
-    def __str__(self):
-        ret = "<empty user>"
-        if self.is_empty() is False:
-            loginname = ""
-            try:
-                loginname = unicode(self.login)
-            except UnicodeEncodeError:  # pragma: no cover
-                loginname = unicode(self.login.encode(ENCODING))
-
-            conf = ''
-            if self.resolver is not None and self.resolver:
-                conf = '.{0!s}'.format((unicode(self.resolver)))
-            ret = u'<{0!s}{1!s}@{2!s}>'.format(loginname, conf, unicode(
-                self.realm))
-
+    def __unicode__(self):
+        ret = u"<empty user>"
+        if not self.is_empty():
+            login = self.login
+            if not isinstance(login, unicode):
+                login = login.decode(ENCODING)
+            # Realm and resolver should always be ASCII
+            conf = u''
+            if self.resolver:
+                conf = u'.{0!s}'.format(self.resolver)
+            ret = u'<{0!s}{1!s}@{2!s}>'.format(login, conf, self.realm)
         return ret
+
+    def __str__(self):
+        return unicode(self).encode('utf-8')
 
     def __repr__(self):
         ret = ('User(login={0!r}, realm={1!r}, resolver={2!r})'.format(
