@@ -118,7 +118,7 @@ def get_ad_timestamp_now():
 
 
 def trim_objectGUID(userId):
-    userId = uuid.UUID("{{{0!s}}}".format(userId)).bytes_le
+    userId = uuid.UUID(u"{{{0!s}}}".format(userId)).bytes_le
     userId = escape_bytes(userId)
     return userId
 
