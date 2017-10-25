@@ -143,9 +143,11 @@
         <label for="cachetimeout" class="col-sm-3 control-label"
                 translate>Cache Timeout (seconds)</label>
 
-        <div class="col-sm-3">
+        <div class="col-sm-3"
+             ng-class="{'has-error': !params.CACHE_TIMEOUT }">
             <input name="cachetimeout" class="form-control"
                    ng-model="params.CACHE_TIMEOUT" required
+                   ng-class="{'has-error': !params.CACHE_TIMEOUT }"
                    placeholder="120"/>
         </div>
     </div>
