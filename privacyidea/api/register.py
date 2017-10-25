@@ -172,14 +172,14 @@ def register_post():
         "Your privacyIDEA registration",
         body.format(regkey=registration_key))
     if not email_sent:
-        log.warning("Failed to send registration email to {0!s}".format(email))
+        log.warning("Failed to send registration email to {0!r}".format(email))
         # delete registration token
         token.delete()
         # delete user
         user.delete()
         raise RegistrationError("Failed to send email!")
 
-    log.debug("Registration email sent to {0!s}".format(email))
+    log.debug("Registration email sent to {0!r}".format(email))
 
     g.audit_object.log({"success": email_sent})
     return send_result(email_sent)

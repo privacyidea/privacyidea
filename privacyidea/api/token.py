@@ -977,7 +977,7 @@ def lost_api(serial=None):
     if userobj:
         toks = get_tokens(serial=serial, user=userobj)
         if not toks:
-            raise TokenAdminError("The user {0!s} does not own the token {1!s}".format(
+            raise TokenAdminError("The user {0!r} does not own the token {1!s}".format(
                 userobj, serial))
 
     options = {"g": g,

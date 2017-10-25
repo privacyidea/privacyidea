@@ -331,7 +331,7 @@ class TokenEventHandler(BaseEventHandler):
                         phone_type='mobile')
                     if not init_param['phone']:
                         log.warning("Enrolling SMS token. But the user "
-                                    "{0!s} has no mobile number!".format(user))
+                                    "{0!r} has no mobile number!".format(user))
                 elif tokentype == "email":
                     init_param['email'] = user.info.get("email", "")
                     if not init_param['email']:
