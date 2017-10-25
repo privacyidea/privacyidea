@@ -270,7 +270,7 @@ def checksum(msg):
     return crc
 
 
-def sanity_name_check(name, name_exp="^[A-Za-z0-9_\-]+$"):
+def sanity_name_check(name, name_exp="^[A-Za-z0-9_\-\.]+$"):
     """
     This function can be used to check the sanity of a name like a resolver,
     ca connector or realm.
