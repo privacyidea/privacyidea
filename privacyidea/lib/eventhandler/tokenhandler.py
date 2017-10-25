@@ -242,12 +242,12 @@ class TokenEventHandler(BaseEventHandler):
                 log.info("{0!s} for token {1!s}".format(action, serial))
                 if action.lower() == ACTION_TYPE.SET_TOKENREALM:
                     realm = handler_options.get("realm")
-                    only_realm = handler_options.get("only_realm")
+                    only_realm = bool(handler_options.get("only_realm"))
                     # Set the realm..
                     log.info("Setting realm of token {0!s} to {1!s}".format(
                         serial, realm))
                     # Add the token realm
-                    set_realms(serial, [realm], add=True)
+                    set_realms(serial, [realm], add=not only_realm)
                 elif action.lower() == ACTION_TYPE.DELETE:
                     remove_token(serial=serial)
                 elif action.lower() == ACTION_TYPE.DISABLE:
