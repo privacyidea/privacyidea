@@ -383,7 +383,7 @@ class EmailTokenClass(HotpTokenClass):
         subject = subject.replace("<otp>", otp)
         subject = subject.replace("<serial>", serial)
 
-        log.debug("sending Email to {0!s} ".format(recipient))
+        log.debug("sending Email to {0!r} ".format(recipient))
 
         identifier = get_from_config("email.identifier")
         if identifier:
