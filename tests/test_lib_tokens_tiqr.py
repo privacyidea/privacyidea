@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 This test file tests the lib.tokens.tiqrtoken and lib.tokens.ocra
 This depends on lib.tokenclass
@@ -361,12 +362,12 @@ class TiQRTokenTestCase(MyTestCase):
     def test_00_users(self):
         self.setUp_user_realms()
 
-    def test_01_create_token(self):
+    def _test_create_token(self, user):
         pin = "test"
         token = init_token({"type": "tiqr",
                             "pin": pin,
                             "serial": "TIQR1",
-                            "user": "cornelius",
+                            "user": user,
                             "realm": self.realm1})
         self.assertEqual(token.type, "tiqr")
 
@@ -398,11 +399,11 @@ class TiQRTokenTestCase(MyTestCase):
         self.assertTrue("img" in r[3], r[3])
         self.assertTrue("value" in r[3], r[3])
 
-    def test_02_api_endpoint(self):
+    def _test_api_endpoint(self, user):
         pin = "tiqr"
         token = init_token({"type": "tiqr",
                             "pin": pin,
-                            "user": "cornelius",
+                            "user": user,
                             "realm": self.realm1})
         idetail = token.get_init_detail()
         value = idetail.get("tiqrenroll").get("value")
@@ -462,7 +463,7 @@ class TiQRTokenTestCase(MyTestCase):
         with self.app.test_request_context('/validate/check',
                                            method='GET',
                                            query_string=urlencode({
-                                               "user": "cornelius",
+                                               "user": user.encode('utf-8'),
                                                "realm": self.realm1,
                                                "pass": pin})):
             res = self.app.full_dispatch_request()
@@ -487,9 +488,10 @@ class TiQRTokenTestCase(MyTestCase):
         # Calculate Response with the challenge.
         response = ocra_object.get_response(challenge)
 
+        encoded_user_id = u"{!s}_{!s}".format(user, self.realm1).encode('utf-8')
         # First, send a wrong response
         req.all_data = {"response": "12345",
-                        "userId": "cornelius_{0!s}".format(self.realm1),
+                        "userId": encoded_user_id,
                         "sessionKey": session,
                         "operation": "login"}
         r = TiqrTokenClass.api_endpoint(req, g)
@@ -498,7 +500,7 @@ class TiQRTokenTestCase(MyTestCase):
 
         # Send the correct response
         req.all_data = {"response": response,
-                        "userId": "cornelius_{0!s}".format(self.realm1),
+                        "userId": encoded_user_id,
                         "sessionKey": session,
                         "operation": "login"}
         r = TiqrTokenClass.api_endpoint(req, g)
@@ -508,7 +510,7 @@ class TiQRTokenTestCase(MyTestCase):
         # Send the same response a second time would not work
         # since the Challenge is marked as answered
         req.all_data = {"response": response,
-                        "userId": "cornelius_{0!s}".format(self.realm1),
+                        "userId": encoded_user_id,
                         "sessionKey": session,
                         "operation": "login"}
         r = TiqrTokenClass.api_endpoint(req, g)
@@ -526,4 +528,14 @@ class TiQRTokenTestCase(MyTestCase):
                                                     transaction_id})
         self.assertTrue(r < 0, r)
 
+    def test_01_create_token(self):
+        self._test_create_token('cornelius')
 
+    def test_02_api_endpoint(self):
+        self._test_api_endpoint('cornelius')
+
+    def test_03_create_token_nonascii(self):
+        self._test_create_token(u'nönäscii')
+
+    def test_04_api_endpoint_nonascii(self):
+        self._test_api_endpoint(u'nönäscii')

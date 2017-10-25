@@ -392,7 +392,10 @@ class TiqrTokenClass(OcraTokenClass):
                                  validitytime=validity)
         db_challenge.save()
 
-        authurl = "tiqrauth://{0!s}@{1!s}/{2!s}/{3!s}".format(user_identifier,
+        # TODO: How are non-ascii characters handled in tiqrauth URLs?
+        # qrcode implicitly converts them to UTF-8 before creating the
+        # QR code, but is this understood by TiQR apps?
+        authurl = u"tiqrauth://{0!s}@{1!s}/{2!s}/{3!s}".format(user_identifier,
                                               service_identifier,
                                               db_challenge.transaction_id,
                                               challenge)
