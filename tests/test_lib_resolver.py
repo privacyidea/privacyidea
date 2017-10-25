@@ -1607,6 +1607,16 @@ class ResolverTestCase(MyTestCase):
         self.assertTrue(y.getUserId(u"cornelius") == "1000",
                         y.getUserId("cornelius"))
         self.assertTrue(y.getUserId("user does not exist") == "")
+        # Check that non-ASCII user was read successfully
+        self.assertEqual(y.getUsername("1116"), u"nönäscii")
+        self.assertEqual(y.getUserId(u"nönäscii"), "1116")
+        self.assertEqual(y.getUserInfo("1116").get('givenname'),
+                         u"Nön")
+        self.assertFalse(y.checkPass("1116", "wrong"))
+        self.assertTrue(y.checkPass("1116", u"pässwörd"))
+        r = y.getUserList({"username": u"*ö*"})
+        self.assertEqual(len(r), 1)
+
         sF = y.getSearchFields({"username": "*"})
         self.assertTrue(sF.get("username") == "text", sF)
         # unknown search fields. We get an empty userlist
