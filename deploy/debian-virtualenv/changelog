@@ -1,3 +1,16 @@
+privacyidea-venv (2.20.1-1trusty) jessie; urgency=low
+
+  Fixes:
+   * /token/init allows to pass otpkey AND genkey=false (#793)
+   * Cast date to string, to fix audit search for postgresql (#786)
+   * Optimize the LDAP Resolver Redundancy to avoid LdapServerPoolExhaustedErrors (#802)
+   * Preset default realm in token enrollment (#804)
+   * Fix PassOnNoUser and PassOnNoToken (#798)
+   * Fix genkey=0 error during token enrollment (#793)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Mon, 30 Oct 2017 11:30:00 +0200
+
+
 privacyidea-venv (2.19.1-1) jessie; urgency=low
 
   Enhancements:
