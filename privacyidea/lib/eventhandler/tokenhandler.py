@@ -242,7 +242,7 @@ class TokenEventHandler(BaseEventHandler):
                 log.info("{0!s} for token {1!s}".format(action, serial))
                 if action.lower() == ACTION_TYPE.SET_TOKENREALM:
                     realm = handler_options.get("realm")
-                    only_realm = bool(handler_options.get("only_realm"))
+                    only_realm = is_true(handler_options.get("only_realm"))
                     # Set the realm..
                     log.info("Setting realm of token {0!s} to {1!s}".format(
                         serial, realm))
