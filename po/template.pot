@@ -295,7 +295,7 @@ msgstr ""
 msgid "Attach to a new Machine"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:225
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:243
 msgid "Attribute mapping"
 msgstr ""
 
@@ -653,7 +653,7 @@ msgstr ""
 msgid "Create realm"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:183
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:201
 msgid "DN of a new created user object"
 msgstr ""
 
@@ -896,7 +896,7 @@ msgstr ""
 msgid "Edit user"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:163
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:181
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:88
 msgid "Edit user store"
 msgstr ""
@@ -1537,11 +1537,11 @@ msgid "No Serial number could be found for OTP value {{ otp }}."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:150
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:252
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:270
 msgid "No anonymous referral chasing"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:259
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:277
 msgid "No retrieval of schema information"
 msgstr ""
 
@@ -1617,7 +1617,7 @@ msgstr ""
 msgid "OTRS"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:177
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:195
 msgid "Object classes of a new created user object"
 msgstr ""
 
@@ -1804,11 +1804,11 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:143
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:198
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:216
 msgid "Preset Active Directory"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:195
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:213
 msgid "Preset OpenLDAP"
 msgstr ""
 
@@ -1857,7 +1857,7 @@ msgstr ""
 msgid "Questionnaire Token settings"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:265
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:283
 msgid "Quick Resolver Test"
 msgstr ""
 
@@ -2161,7 +2161,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:39
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:202
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:277
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:295
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:38
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:86
 msgid "Save resolver"
@@ -2178,7 +2178,7 @@ msgid "Scope"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:164
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:214
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:232
 msgid "Search Filter"
 msgstr ""
 
@@ -2277,6 +2277,14 @@ msgstr ""
 msgid "Server URI"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:153
+msgid "Server pool retry rounds"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:161
+msgid "Server pool skip timeout (seconds)"
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.details.html:331
 msgid "Set PIN"
 msgstr ""
@@ -2314,7 +2322,7 @@ msgid "Show selected actions only"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:132
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:153
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:171
 msgid "Size Limit"
 msgstr ""
 
@@ -2410,7 +2418,7 @@ msgid "Test Email sent successfully."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:198
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:272
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:290
 msgid "Test LDAP Resolver"
 msgstr ""
 
@@ -2910,7 +2918,7 @@ msgid ""
 "                    privacyIDEA."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:171
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:189
 msgid ""
 "The user data in this database can be modified from within\n"
 "                privacyIDEA."
@@ -3235,7 +3243,7 @@ msgstr ""
 msgid "U2F: Universal 2nd Factor hardware token."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:237
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:255
 msgid "UID Type"
 msgstr ""
 
