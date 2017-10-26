@@ -3,7 +3,6 @@
 This test file tests the lib.tokens.tiqrtoken and lib.tokens.ocra
 This depends on lib.tokenclass
 """
-
 from .base import MyTestCase
 from privacyidea.lib.tokens.tiqrtoken import TiqrTokenClass
 from privacyidea.lib.tokens.ocratoken import OcraTokenClass
@@ -13,6 +12,7 @@ from privacyidea.lib.error import ParameterError
 import re
 import binascii
 import hashlib
+from urlparse import urlparse
 from urllib import urlencode
 import json
 from flask import Request, g
@@ -399,7 +399,7 @@ class TiQRTokenTestCase(MyTestCase):
         self.assertTrue("img" in r[3], r[3])
         self.assertTrue("value" in r[3], r[3])
 
-    def _test_api_endpoint(self, user):
+    def _test_api_endpoint(self, user, expected_netloc):
         pin = "tiqr"
         token = init_token({"type": "tiqr",
                             "pin": pin,
@@ -483,6 +483,10 @@ class TiQRTokenTestCase(MyTestCase):
             session = r[3]
             challenge = r[4]
 
+        # check the URL
+        parsed_url = urlparse(image_url)
+        self.assertEqual(parsed_url.netloc, expected_netloc)
+
         ocrasuite = token.get_tokeninfo("ocrasuite")
         ocra_object = OCRA(ocrasuite, key=binascii.unhexlify(KEY20))
         # Calculate Response with the challenge.
@@ -532,10 +536,10 @@ class TiQRTokenTestCase(MyTestCase):
         self._test_create_token('cornelius')
 
     def test_02_api_endpoint(self):
-        self._test_api_endpoint('cornelius')
+        self._test_api_endpoint('cornelius', 'cornelius_realm1@org.privacyidea')
 
     def test_03_create_token_nonascii(self):
         self._test_create_token(u'nönäscii')
 
     def test_04_api_endpoint_nonascii(self):
-        self._test_api_endpoint(u'nönäscii')
+        self._test_api_endpoint(u'nönäscii', 'n%C3%B6n%C3%A4scii_realm1@org.privacyidea')
