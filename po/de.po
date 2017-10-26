@@ -2450,7 +2450,7 @@ msgstr "Absender"
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:48
 msgid "Sender Email"
-msgstr "Ansende-Email-Adresse"
+msgstr "Absende-Email-Adresse"
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:10
 msgid "Separator"
