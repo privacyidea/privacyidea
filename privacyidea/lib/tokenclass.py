@@ -463,9 +463,7 @@ class TokenClass(object):
 
         # key_size as parameter overrules a prevoiusly set
         # value e.g. in hashlib in the upper classes
-        key_size = getParam(param, "keysize", optional)
-        if key_size is None:
-            key_size = 20
+        key_size = int(getParam(param, "keysize", optional) or 20)
 
         #
         # process the otpkey:

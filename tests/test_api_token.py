@@ -1360,3 +1360,29 @@ class APITokenTestCase(MyTestCase):
             self.assertEqual(token.hashlib, "sha256")
 
         delete_policy("init_details")
+
+    def test_26_supply_key_size(self):
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "HOTP",
+                                                 "genkey": '1',
+                                                 "pin": "1234",
+                                                 "user": "cornelius",
+                                                 "keysize": "42",
+                                                 "realm": self.realm1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            data = json.loads(res.data)
+            self.assertTrue(res.status_code == 200, res)
+            result = data.get("result")
+            detail = data.get("detail")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            self.assertTrue("value" in detail.get("googleurl"), detail)
+            serial = detail.get("serial")
+            self.assertTrue("OATH" in serial, detail)
+            seed_url = detail.get("otpkey").get("value")
+            self.assertEqual(seed_url[:len('seed://')], 'seed://')
+            seed = seed_url[len('seed://'):]
+            self.assertEqual(len(seed.decode('hex')), 42)
+        remove_token(serial)
