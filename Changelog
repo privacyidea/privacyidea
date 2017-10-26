@@ -1,8 +1,12 @@
-Version 2.20.1, 2017-10-xx
+Version 2.20.1, 2017-10-30
 
   Fixes:
    * /token/init allows to pass otpkey AND genkey=false (#793)
    * Cast date to string, to fix audit search for postgresql (#786)
+   * Optimize the LDAP Resolver Redundancy to avoid LdapServerPoolExhaustedErrors (#802)
+   * Preset default realm in token enrollment (#804)
+   * Fix PassOnNoUser and PassOnNoToken (#798)
+   * Fix genkey=0 error during token enrollment (#793)
 
 Version 2.20, 2017-09-27
 
