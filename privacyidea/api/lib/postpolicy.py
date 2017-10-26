@@ -204,11 +204,14 @@ def check_tokentype(request, response):
         resolver=user_object.resolver,
         realm=user_object.realm,
         client=g.client_ip)
-    if tokentype and allowed_tokentypes and tokentype not in allowed_tokentypes:
-        g.audit_object.log({"success": False,
-                            'action_detail': "Tokentype not allowed for "
-                                             "authentication"})
-        raise PolicyError("Tokentype not allowed for authentication!")
+    if allowed_tokentypes:
+        if not tokentype or (tokentype not in allowed_tokentypes):
+            # If we have tokentype policies, but either no tokentypes
+            # or the tokentype is not allowed, we raise an exception
+            g.audit_object.log({"success": False,
+                                'action_detail': "Tokentype {0!r} not allowed for "
+                                                 "authentication".format(tokentype)})
+            raise PolicyError("Tokentype not allowed for authentication!")
     return response
 
 
