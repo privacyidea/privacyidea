@@ -1160,6 +1160,17 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         self.assertTrue("realm2" in req.all_data.get("allowed_audit_realm"))
         self.assertTrue("realm3" in req.all_data.get("allowed_audit_realm"))
 
+        # check that the policy is not honored if inactive
+        set_policy(name="auditrealm2",
+                   active=False)
+        g.policy_object = PolicyClass()
+
+        # request, that matches the policy
+        req.all_data = {}
+        req.User = User()
+        allowed_audit_realm(req)
+        self.assertEqual(req.all_data.get("allowed_audit_realm"), ["realm1"])
+
         # finally delete policy
         delete_policy("auditrealm1")
         delete_policy("auditrealm2")
@@ -1636,6 +1647,15 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         jresult = json.loads(new_response.data)
         self.assertEqual(jresult.get("result").get("value").get(
             "token_wizard"), True)
+
+        # Assert the policy is not honored if inactive
+        set_policy(name="pol_wizard",
+                   active=False)
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        jresult = json.loads(new_response.data)
+        self.assertEqual(jresult.get("result").get("value").get(
+            "token_wizard"), False)
 
         delete_policy("pol_wizard")
 
