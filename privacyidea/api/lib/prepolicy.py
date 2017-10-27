@@ -465,6 +465,44 @@ def init_tokenlabel(request=None, action=None):
 
     return True
 
+def twostep_enrollment(request=None, action=None):
+    """
+    This policy enables and configures the two-step enrollment process via
+    the privacyIDEA authenticator app.
+
+    It makes use of the following actions (all in the scope ``ENROLL``):
+
+     * ACTION.TWOSTEP_ENABLE: Enables two-step enrollment
+     * ACTION.TWOSTEP_CLIENTSIZE: Configures the size of the seed component supplied by the client
+     * ACTION.TWOSTEP_SERVERSIZE: Configures the size of the seed component supplied by the server
+     * ACTION.TWOSTEP_DIFFICULTY: Configures the difficulty factor passed to the Key Derivation Function
+        used to generate the seed
+    """
+    params = request.all_data
+    policy_object = g.policy_object
+    user_object = get_user_from_param(params)
+    filter_keywords = {
+        'scope': SCOPE.ENROLL,
+        'user': user_object.login,
+        'realm': user_object.realm,
+        'client': g.client_ip,
+    }
+    twostep_enabled_pols = policy_object.get_policies(action=ACTION.TWOSTEP_ENABLE,
+                                                      active=True,
+                                                      **filter_keywords)
+    if twostep_enabled_pols:
+        # 2-step enrollment is enabled! Check if further options were supplied.
+        for action, option in [(ACTION.TWOSTEP_SERVERSIZE, '2step_serversize'),
+                               (ACTION.TWOSTEP_CLIENTSIZE, '2step_clientsize'),
+                               (ACTION.TWOSTEP_DIFFICULTY, '2step_rounds')]:
+            matching_policies = policy_object.get_action_values(
+                action=action,
+                unique=True,
+                **filter_keywords
+            )
+            if len(matching_policies) == 1:
+                request.all_data[option] = int(matching_policies[0])
+    return True
 
 def check_max_token_user(request=None, action=None):
     """

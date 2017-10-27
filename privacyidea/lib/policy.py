@@ -296,6 +296,10 @@ class ACTION(object):
     TIMEOUT_ACTION = "timeout_action"
     AUTH_CACHE = "auth_cache"
     HIDE_WELCOME = "hide_welcome_info"
+    TWOSTEP_ENABLE = "twostep_enable"
+    TWOSTEP_DIFFICULTY = "twostep_difficulty"
+    TWOSTEP_CLIENTSIZE = "twostep_clientsize"
+    TWOSTEP_SERVERSIZE = "twostep_serversize"
 
 
 class GROUP(object):
@@ -309,6 +313,7 @@ class GROUP(object):
     MACHINE = "machine"
     USER = "user"
     PIN = "pin"
+    TWOSTEP = "twostep"
 
 
 class MAIN_MENU(object):
@@ -1471,6 +1476,26 @@ def get_static_policy_definitions(scope=None):
                 'value': range(1, 61),
                 'desc': _('The length of the validity for the temporary '
                           'token (in days).')},
+            ACTION.TWOSTEP_ENABLE: {
+                'type': 'bool',
+                'desc': _('Enable two-step token enrollment via the privacyIDEA '
+                          'authenticator app.'),
+                'group': GROUP.TWOSTEP},
+            ACTION.TWOSTEP_CLIENTSIZE: {
+                'type': 'int',
+                'desc': _('The size of the OTP seed part contributed '
+                          ' by the client (in bytes)'),
+                'group': GROUP.TWOSTEP},
+            ACTION.TWOSTEP_SERVERSIZE: {
+                'type': 'int',
+                'desc': _('The size of the OTP seed part contributed '
+                          ' by the server (in bytes)'),
+                'group': GROUP.TWOSTEP},
+            ACTION.TWOSTEP_DIFFICULTY: {
+                'type': 'int',
+                'desc': _('The difficulty factor used for the OTP seed '
+                          'generation (should be at least 10000)'),
+                'group': GROUP.TWOSTEP},
         },
         SCOPE.AUTH: {
             ACTION.OTPPIN: {
