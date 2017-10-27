@@ -488,6 +488,9 @@ class TokenClass(object):
             genkey = 1
             # The token is disabled
             self.token.active = False
+            # Use the 2step_serversize setting for the size of the server secret
+            # (if it is set)
+            key_size = int(getParam(param, "2step_serversize", optional, key_size))
 
 
         if genkey not in [0, 1]:

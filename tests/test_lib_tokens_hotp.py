@@ -728,7 +728,10 @@ class HOTPTokenTestCase(MyTestCase):
         db_token = Token(serial, tokentype="hotp")
         db_token.save()
         token = HotpTokenClass(db_token)
-        token.update({"2stepinit": "1"})
+        token.update({
+            "2stepinit": "1",
+            "2step_serversize": "40",
+        })
         # fetch the server component for later tests
         server_component = binascii.unhexlify(token.token.get_otpkey().getKey())
         # generate a 12-byte client component
@@ -742,7 +745,7 @@ class HOTPTokenTestCase(MyTestCase):
         # check the generated secret
         secret = binascii.unhexlify(token.token.get_otpkey().getKey())
         # check the correct lengths
-        self.assertEqual(len(server_component), 20)
+        self.assertEqual(len(server_component), 40)
         self.assertEqual(len(client_component), 12)
         self.assertEqual(len(secret), 42)
         # check the secret has been generated according to the specification
