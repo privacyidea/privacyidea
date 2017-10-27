@@ -487,14 +487,16 @@ def get_webui_settings(request, response):
             policy_object.get_policies(action=ACTION.TOKENWIZARD2ND,
                                        scope=SCOPE.WEBUI,
                                        realm=realm,
-                                       client=client))
+                                       client=client,
+                                       active=True))
         token_wizard = False
         if role == ROLE.USER:
             token_wizard_pol = policy_object.get_policies(
                 action=ACTION.TOKENWIZARD,
                 scope=SCOPE.WEBUI,
                 realm=realm,
-                client=client
+                client=client,
+                active=True
             )
 
             # We also need to check, if the user has not tokens assigned.
@@ -507,19 +509,22 @@ def get_webui_settings(request, response):
             action=ACTION.USERDETAILS,
             scope=SCOPE.WEBUI,
             realm=realm,
-            client=client
+            client=client,
+            active=True
         )
         search_on_enter = policy_object.get_policies(
             action=ACTION.SEARCH_ON_ENTER,
             scope=SCOPE.WEBUI,
             realm=realm,
-            client=client
+            client=client,
+            active=True
         )
         hide_welcome = policy_object.get_policies(
             action=ACTION.HIDE_WELCOME,
             scope=SCOPE.WEBUI,
             realm=realm,
-            client=client
+            client=client,
+            active=True
         )
         hide_welcome = bool(hide_welcome)
         default_tokentype_pol = policy_object.get_action_values(

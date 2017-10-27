@@ -145,7 +145,8 @@ def is_password_reset():
     policy_at_all = Policy.get_policies(scope=SCOPE.USER, active=True)
     log.debug("Policy at all: {0!s}".format(policy_at_all))
     policy_reset_pw = Policy.get_policies(scope=SCOPE.USER,
-                                          action=ACTION.PASSWORDRESET)
+                                          action=ACTION.PASSWORDRESET,
+                                          active=True)
     log.debug("Password reset policy: {0!s}".format(policy_reset_pw))
     pwreset = (policy_at_all and policy_reset_pw) or not policy_at_all
     log.debug("Password reset allowed via policy: {0!s}".format(pwreset))
