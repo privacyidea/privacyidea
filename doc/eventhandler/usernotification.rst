@@ -67,8 +67,12 @@ The body may contain the following tags
   * {recipient_givenname} the given name of the recipient.
   * {recipient_surname} the surname of the recipient.
   * {googleurl_value} is the KEY URI for a google authenticator.
-  * {googleurl_img} is the data image source of the google authenticator QR
-  code.
+  * {googleurl_img} is the data image source of the google authenticator QR code.
+  * {time} the current server time in the format HH:MM:SS.
+  * {date} the current server date in the format YYYY-MM-DD
+  * {client_ip} the client IP of the client, which issued the original request.
+  * {ua_browser} the user agent of the client, which issued the original request.
+  * {ua_string} the complete user agent string (including version number), which issued the original request.
 
 **mimetype**
 

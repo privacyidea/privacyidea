@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-10-27 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add additional tags for notification: date, time, client_ip,
+#             ua_string, ua_browser
 #  2016-10-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add tokentype, tokenrealm and serial
 #             Add multi and regexp
@@ -45,6 +48,7 @@ from privacyidea.lib import _
 from flask import current_app
 import json
 import logging
+import datetime
 
 log = logging.getLogger(__name__)
 
@@ -282,6 +286,8 @@ class UserNotificationEventHandler(BaseEventHandler):
                 token_objects = get_tokens(user=tokenowner)
                 serial = ','.join([tok.get_serial() for tok in token_objects])
 
+            time = datetime.datetime.now().strftime("%H:%M:%S")
+            date = datetime.datetime.now().strftime("%Y-%m-%d")
             body = body.format(
                 admin=logged_in_user.get("username"),
                 realm=logged_in_user.get("realm"),
@@ -298,7 +304,12 @@ class UserNotificationEventHandler(BaseEventHandler):
                 recipient_givenname=recipient.get("givenname"),
                 recipient_surname=recipient.get("surname"),
                 googleurl_img=googleurl_img,
-                googleurl_value=googleurl_value
+                googleurl_value=googleurl_value,
+                time=time,
+                date=date,
+                client_ip=g.client_ip,
+                ua_browser=request.user_agent.browser,
+                ua_string=request.user_agent.string
             )
 
             # Send notification
