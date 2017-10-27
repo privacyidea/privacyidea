@@ -740,7 +740,7 @@ class HOTPTokenTestCase(MyTestCase):
         # construct a secret
         token.update({
             "otpkey": binascii.hexlify(client_component),
-            "2step_rounds": 12345,
+            "2step_difficulty": 12345,
             })
         # check the generated secret
         secret = binascii.unhexlify(token.token.get_otpkey().getKey())

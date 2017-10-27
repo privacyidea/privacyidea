@@ -494,7 +494,7 @@ def twostep_enrollment(request=None, action=None):
         # 2-step enrollment is enabled! Check if further options were supplied.
         for action, option in [(ACTION.TWOSTEP_SERVERSIZE, '2step_serversize'),
                                (ACTION.TWOSTEP_CLIENTSIZE, '2step_clientsize'),
-                               (ACTION.TWOSTEP_DIFFICULTY, '2step_rounds')]:
+                               (ACTION.TWOSTEP_DIFFICULTY, '2step_difficulty')]:
             matching_policies = policy_object.get_action_values(
                 action=action,
                 unique=True,
