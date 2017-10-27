@@ -641,13 +641,14 @@ class HotpTokenClass(TokenClass):
             client (e.g. smartphone)
         :type server_component: hex string
         :param options: an optional dictionary containing extra options:
-          * ``2step_keysize``: length of the resulting secret in bytes. defaults to 20
           * ``2step_rounds``: number of PBKDF2 rounds. defaults to 10000
         :return: the new generated key as hex string
         """
         if options is None:
             options = {}
-        keysize = int(options.get('2step_keysize', 20))
+        # As /token/init has already been called before, self.hashlib
+        # is already set.
+        keysize = keylen[self.hashlib]
         rounds = int(options.get('2step_rounds', 10000))
         decoded_server_component = binascii.unhexlify(server_component)
         decoded_client_component = binascii.unhexlify(client_component)
