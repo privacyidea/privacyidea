@@ -193,7 +193,14 @@ myApp.controller("tokenDetailController", function ($scope,
 
     $scope.setPin = function () {
         TokenFactory.setpin($scope.tokenSerial, "otppin",
-            $scope.pin1, function () {
+            $scope.pin1, function (data) {
+                if (data.result.value >= 1) {
+                    inform.add(gettextCatalog.getString("PIN set successfully."),
+                        {type: "info", ttl: 5000})
+                } else {
+                    inform.add(gettextCatalog.getString("Failed to set PIN."),
+                        {type: "danger", ttl: 10000})
+                }
                 $scope.pin1 = "";
                 $scope.pin2 = "";
                 // in case of certificate tokens we need to reread the token
