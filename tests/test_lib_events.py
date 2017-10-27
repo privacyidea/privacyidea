@@ -1464,6 +1464,7 @@ class UserNotificationTestCase(MyTestCase):
         audit_object = FakeAudit()
         audit_object.audit_data["serial"] = None
         g.audit_object = audit_object
+        g.client_ip = "127.0.0.1"
         options = {"g": g,
                    "handler_def": {"conditions": {"token_locked": "True"}},
                    "response": resp,
