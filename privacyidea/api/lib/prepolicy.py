@@ -190,7 +190,8 @@ def realmadmin(request=None, action=None):
             po = policy_object.get_policies(
                 action=action, scope=SCOPE.ADMIN,
                 user=g.logged_in_user.get("username"),
-                adminrealm=g.logged_in_user.get("realm"), client=g.client_ip)
+                adminrealm=g.logged_in_user.get("realm"), client=g.client_ip,
+                active=True)
             # TODO: fix this: there could be a list of policies with a list
             # of realms!
             if po and po[0].get("realm"):
@@ -1103,7 +1104,8 @@ def allowed_audit_realm(request=None, action=None):
         action=ACTION.AUDIT,
         scope=SCOPE.ADMIN,
         user=admin_user.get("username"),
-        client=g.client_ip)
+        client=g.client_ip,
+        active=True)
 
     if pols:
         # get all values in realm:

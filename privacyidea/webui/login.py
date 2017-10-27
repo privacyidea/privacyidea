@@ -82,7 +82,8 @@ def single_page_application():
         request.remote_addr
     realm_dropdown = policy_object.get_policies(action=ACTION.REALMDROPDOWN,
                                                 scope=SCOPE.WEBUI,
-                                                client=client_ip)
+                                                client=client_ip,
+                                                active=True)
     if realm_dropdown:
         try:
             realm_dropdown_values = policy_object.get_action_values(
