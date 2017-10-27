@@ -512,7 +512,8 @@ class TokenClass(object):
                 server_component = self.token.get_otpkey().getKey()
                 client_component = otpKey
                 otpKey = self.generate_symmetric_key(server_component,
-                                                     client_component)
+                                                     client_component,
+                                                     param)
                 self.token.rollout_state = ""
                 self.token.active = True
             self.add_init_details('otpkey', otpKey)

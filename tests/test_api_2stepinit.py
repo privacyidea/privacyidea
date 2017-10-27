@@ -96,7 +96,7 @@ class TwoStepInitTestCase(MyTestCase):
             self.assertEqual(result.get("value"), True)
 
         # Check that the OTP key is what we expected it to be
-        expected_secret = pbkdf2(server_component, client_component, 1000, 20)
+        expected_secret = pbkdf2(server_component, client_component, 10000, 20)
         self.assertEqual(otpkey_bin, expected_secret)
 
         with self.app.test_request_context('/token/'+ serial,
