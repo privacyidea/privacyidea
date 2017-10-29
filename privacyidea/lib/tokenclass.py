@@ -1009,12 +1009,13 @@ class TokenClass(object):
             log.warning("Misconfiguration. Error retrieving "
                         "failcounter_clear_timeout: "
                         "{0!s}".format(exx))
-        if timeout:
+        if timeout and self.token.failcount > 0:
             now = datetime.datetime.now(tzlocal())
-            failcounter_exceeded = parse_legacy_time(self.get_tokeninfo(
-                FAILCOUNTER_EXCEEDED), return_date=True)
-            if now > failcounter_exceeded + datetime.timedelta(minutes=timeout):
-                self.reset()
+            lastfail = self.get_tokeninfo(FAILCOUNTER_EXCEEDED)
+            if lastfail is not None:
+                failcounter_exceeded = parse_legacy_time(lastfail, return_date=True)
+                if now > failcounter_exceeded + datetime.timedelta(minutes=timeout):
+                    self.reset()
 
         return self.token.failcount < self.token.maxfail
 
