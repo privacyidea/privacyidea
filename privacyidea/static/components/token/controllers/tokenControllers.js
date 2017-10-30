@@ -81,11 +81,14 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
          subscription_state = 1
          subscription_state = 2
          */
-        if (($scope.subscription_state === 0 && !$scope.hide_welcome) ||
-            ($scope.subscription_state === 1) ||
-            ($scope.subscription_state === 2)) {
-            $('#dialogWelcome').modal();
-            $("body").addClass("modal-open");
+        if ($scope.welcomeStep < 4) {
+            // We did not walk throught the welcome dialog, yet.
+            if (($scope.subscription_state === 0 && !$scope.hide_welcome) ||
+                ($scope.subscription_state === 1) ||
+                ($scope.subscription_state === 2)) {
+                $('#dialogWelcome').modal();
+                $("body").addClass("modal-open");
+            }
         }
     }
 
