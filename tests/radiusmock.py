@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+2017-10-30 Add mocking the timeout
+        Cornelius Kölbel <cornelius.koelbel@netknights.it>
 2015-01-29 Change responses.py to be able to run with RADIUS
         Cornelius Kölbel <cornelius@privacyidea.org>
 
@@ -38,6 +40,7 @@ import inspect
 from collections import namedtuple, Sequence, Sized
 from functools import update_wrapper
 from pyrad import packet
+from pyrad.client import Timeout
 
 Call = namedtuple('Call', ['request', 'response'])
 
@@ -102,11 +105,12 @@ class RadiusMock(object):
         self._request_data = {}
         self._calls.reset()
 
-    def setdata(self, server=None, rpacket=None, success=True):
+    def setdata(self, server=None, rpacket=None, success=True, timeout=False):
         self._request_data = {
             'server': server,
             'packet': rpacket,
-            'success': success
+            'success': success,
+            'timeout': timeout
         }
 
     @property
@@ -144,6 +148,8 @@ class RadiusMock(object):
         """
         #reply = pkt.CreateReply(packet=rawreply)
         reply = pkt.CreateReply()
+        if self._request_data.get("timeout"):
+            raise Timeout()
         if self._request_data.get("success"):
             reply.code = packet.AccessAccept
         else:

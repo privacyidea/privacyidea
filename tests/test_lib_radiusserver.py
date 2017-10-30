@@ -64,3 +64,14 @@ class RADIUSServerTestCase(MyTestCase):
         radiusmock.setdata(success=False)
         r = RADIUSServer.request(radius.config, "user", "password")
         self.assertEqual(r, False)
+
+    @radiusmock.activate
+    def test_05_RADIUS_request(self):
+        radiusmock.setdata(success=True, timeout=True)
+        r = add_radius(identifier="myserver", server="1.2.3.4",
+                       secret="testing123", dictionary=DICT_FILE)
+        self.assertTrue(r > 0)
+        radius = get_radius("myserver")
+        # A timeout will return false
+        r = RADIUSServer.request(radius.config, "user", "password")
+        self.assertEqual(r, False)
