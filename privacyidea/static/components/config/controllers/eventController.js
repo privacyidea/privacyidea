@@ -23,6 +23,7 @@ myApp.controller("eventController", function($scope, $stateParams, $state,
     if ($location.path() === "/config/events") {
         $location.path("/config/events/list");
     }
+    $('html,body').scrollTop(0);
 
     // define functions
     $scope.getEvents = function () {
@@ -78,6 +79,7 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
     $scope.conds = {};
     $scope.actionCheckBox = {};
     $scope.conditionCheckBox = {};
+    $('html,body').scrollTop(0);
 
     $scope.getEvent = function () {
         ConfigFactory.getEvent($scope.eventid, function(event) {

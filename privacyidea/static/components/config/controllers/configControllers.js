@@ -23,6 +23,7 @@ myApp.controller("policyListController", function($scope, $stateParams,
     if ($location.path() === "/config/policies") {
         $location.path("/config/policies/list");
     }
+    $('html,body').scrollTop(0);
 
     // Get all policies
     $scope.getPolicies = function () {
@@ -69,6 +70,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
     $scope.policyDefsLoaded = false;
     $scope.scopes = [];
     $scope.viewPolicyTemplates = false;
+    $('html,body').scrollTop(0);
 
     var check_all_loaded = function() {
         if ($scope.resolversLoaded &&
@@ -478,6 +480,7 @@ myApp.controller("configController", function ($scope, $location,
                                                inform, gettextCatalog) {
     $scope.instanceUrl = instanceUrl;
     $scope.params = {};
+    $('html,body').scrollTop(0);
     // go to the system view by default
     if ($location.path() === "/config") {
         $location.path("/config/system");
@@ -866,6 +869,8 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
     $scope.authtypes = ["Simple", "SASL Digest-MD5", "NTLM"];
     $scope.scopes = ["SUBTREE", "BASE", "LEVEL"];
 
+    $('html,body').scrollTop(0);
+
     if ($scope.resolvername) {
         /* If we have a resolvername, we do an Edit
          and we need to fill all the $scope.params */
@@ -983,6 +988,8 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory,
     $scope.result = {};
     $scope.resolvername = $stateParams.resolvername;
     $scope.hashtypes = Array("PHPASS", "SHA", "SSHA","SSHA256", "SSHA512", "OTRS");
+
+    $('html,body').scrollTop(0);
 
     if ($scope.resolvername) {
         /* If we have a resolvername, we do an Edit
