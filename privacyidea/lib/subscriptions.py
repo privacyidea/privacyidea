@@ -72,6 +72,18 @@ APPLICATIONS = {"demo_application": 0,
 log = logging.getLogger(__name__)
 
 
+def get_users_with_active_tokens():
+    """
+    Returns the numbers of users (userId, Resolver) with active tokens.
+
+    :return: Number of users
+    :rtype: int
+    """
+    from privacyidea.models import Token
+    sql_query = Token.query.with_entities(Token.resolver, Token.user_id).filter(Token.active == True).distinct().count()
+    return sql_query
+
+
 def subscription_status():
     """
     Return the status of the subscription

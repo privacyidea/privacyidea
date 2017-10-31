@@ -17,6 +17,7 @@ from privacyidea.lib.token import get_tokens
 from privacyidea.api.lib.prepolicy import check_base_action, prepolicy
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.subscriptions import (get_subscription,
+                                           get_users_with_active_tokens,
                                            delete_subscription,
                                            save_subscription,
                                            SUBSCRIPTION_DATE_FORMAT)
@@ -44,6 +45,7 @@ def api_get(application=None):
         # If subscription is valid, we have a negative timedelta
         sub["timedelta"] = (datetime.datetime.now() - sub.get("date_till")).days
         sub["active_tokens"] = active_tokens
+        sub["active_users"] = get_users_with_active_tokens()
 
     g.audit_object.log({'success': True})
     return send_result(subscription)

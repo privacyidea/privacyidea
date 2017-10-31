@@ -631,7 +631,7 @@ msgstr "Die Client-Konfiguration wird nicht unterstützt."
 msgid "Client ID"
 msgstr "Client-ID"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:34
+#: privacyidea/static/components/components/views/component.subscriptions.html:36
 msgid "Clients"
 msgstr "Clients"
 
@@ -808,7 +808,7 @@ msgstr "Standard Zeitschritt"
 msgid "Default Time Window"
 msgstr "Standard Zeitfenster"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:73
+#: privacyidea/static/components/components/views/component.subscriptions.html:75
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:26
 #: privacyidea/static/components/config/views/config.events.details.html:19
 #: privacyidea/static/components/config/views/config.events.list.html:63
@@ -1217,7 +1217,7 @@ msgstr ""
 msgid "Four Eyes: Two or more users are required to log in."
 msgstr "Vier-Augen: Zwei oder mehr Benutzer werden für den Login benötigt."
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:35
+#: privacyidea/static/components/components/views/component.subscriptions.html:37
 msgid "From"
 msgstr "Von"
 
@@ -1459,7 +1459,7 @@ msgstr "Den Fehlerzähler erhöhen, wenn eine falsche PIN eingegeben wurde."
 msgid "Info"
 msgstr "Info"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:59
+#: privacyidea/static/components/components/views/component.subscriptions.html:61
 msgid "Issuer"
 msgstr "Aussteller"
 
@@ -2555,7 +2555,7 @@ msgstr "Die Subskription läuft in Kürze ab"
 msgid "Subscription expired"
 msgstr "Die Subskription ist abgelaufen"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:42
+#: privacyidea/static/components/components/views/component.subscriptions.html:44
 msgid "Subscription issued to"
 msgstr "Subskription ausgestellt für"
 
@@ -3590,7 +3590,7 @@ msgstr "Zeitschritt"
 msgid "Tine 2.0"
 msgstr "Tine 2.0"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:36
+#: privacyidea/static/components/components/views/component.subscriptions.html:38
 msgid "To"
 msgstr "Bis"
 
@@ -3649,7 +3649,7 @@ msgstr "Token wurde erfolgreich resynchronisiert."
 msgid "Token {{ selectedToken.serial }} is Lost!"
 msgstr "Der Token {{ selectedToken.serial }} ist verloren!"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:31
+#: privacyidea/static/components/components/views/component.subscriptions.html:33
 #: privacyidea/static/components/config/views/config.html:35
 #: privacyidea/static/templates/menu.html:35
 msgid "Tokens"
@@ -4032,7 +4032,7 @@ msgstr "Aktionsdetail"
 msgid "active"
 msgstr "aktiv"
 
-#: privacyidea/static/components/components/views/component.subscriptions.html:33
+#: privacyidea/static/components/components/views/component.subscriptions.html:35
 msgid "active, assigned tokens"
 msgstr "aktive, zugewiesene Token"
 
@@ -4074,6 +4074,10 @@ msgstr "Beschreibung"
 #: privacyidea/static/components/token/views/token.list.html:104
 msgid "disabled"
 msgstr "deaktiviert"
+
+#: privacyidea/static/components/components/views/component.subscriptions.html:32
+msgid "distinct users with active tokens"
+msgstr "eindeutige Benutzer mit aktiven Token"
 
 #: privacyidea/static/components/user/views/user.list.html:29
 msgid "email"
