@@ -68,6 +68,7 @@ class HttpSMSProvider(ISMSProvider):
             ssl_verify = self.smsgateway.option_dict.get("CHECK_SSL",
                                                          "yes") == "yes"
             proxy = self.smsgateway.option_dict.get("PROXY")
+            timeout = self.smsgateway.option_dict.get("TIMEOUT") or 3
             for k, v in self.smsgateway.option_dict.iteritems():
                 if k not in self.parameters().get("parameters"):
                     # This is an additional option
@@ -80,6 +81,7 @@ class HttpSMSProvider(ISMSProvider):
             ssl_verify = self.config.get('CHECK_SSL', True)
             proxy = self.config.get('PROXY')
             parameter = self._get_parameters(message, phone)
+            timeout = 3
 
         if url is None:
             log.warning("can not submit message. URL is missing.")
@@ -118,6 +120,7 @@ class HttpSMSProvider(ISMSProvider):
                       data=data,
                       verify=ssl_verify,
                       auth=basic_auth,
+                      timeout = timeout,
                       proxies=proxies)
         log.debug("queued SMS on the HTTP gateway. status code returned: {0!s}".format(
                   r.status_code))
