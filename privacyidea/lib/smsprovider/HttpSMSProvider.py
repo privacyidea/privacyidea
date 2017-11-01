@@ -101,8 +101,7 @@ class HttpSMSProvider(ISMSProvider):
 
         proxies = None
         if proxy:
-            protocol = proxy.split(":")[0]
-            proxies = {protocol: proxy}
+            proxies = { 'http': proxy, 'https': proxy}
 
         # url, parameter, username, password, method
         requestor = requests.get
