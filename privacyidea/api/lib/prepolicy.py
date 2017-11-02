@@ -475,14 +475,14 @@ def twostep_enrollment(request=None, action=None):
     user_object = get_user_from_param(params)
     serial = getParam(request.all_data, "serial", optional)
     second_step = False
+    token_type = request.all_data.get("type")
     if serial:
         tokensobject_list = get_tokens(serial=serial)
         if len(tokensobject_list) == 1:
             token_type = tokensobject_list[0].token.tokentype
             second_step = True
             # TODO: Should we check for the rollout state here?
-    else:
-        token_type = getParam(request.all_data, "type", default="hotp").lower()
+    token_type = (token_type or "hotp").lower()
     role = g.logged_in_user.get("role")
     # Differentiate between an admin enrolling a token for the
     # user and a user self-enrolling a token.
