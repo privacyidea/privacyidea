@@ -77,6 +77,31 @@ import importlib
 optional = True
 required = False
 
+class PrepolicyCollector(object):
+    """
+    The prepolicy collector is used to collect a number of prepolicy functions
+    to call before invoking a given API endpoint function. It is itself callable.
+    If invoked, it sequentially invokes all collected prepolicy functions
+    before finally invoking the wrapped endpoint function.
+    """
+    def __init__(self, function):
+        self._policies = []
+        self._wrapped_function = function
+        self.__name__ = function.__name__
+
+    def add(self, function, request, action):
+        """
+        Add a policy function along with its request and action parameters to the
+        internal list. It will be called before all already-collected policy functions.
+        """
+        self._policies.insert(0, (function, request, action))
+
+    def __call__(self, *args, **kwargs):
+        # Invoke all prepolicy functions ...
+        for function, request, action in self._policies:
+            function(request=request, action=action)
+        # ... and finally the wrapped function.
+        return self._wrapped_function(*args, **kwargs)
 
 class prepolicy(object):
     """
@@ -98,25 +123,16 @@ class prepolicy(object):
         self.function = function
 
     def __call__(self, wrapped_function):
-        """
-        This decorates the given function. The prepolicy decorator is ment
-        for API functions on the API level.
-
-        If some error occur the a PolicyException is raised.
-
-        The decorator function can modify the request data.
-
-        :param wrapped_function: The function, that is decorated.
-        :type wrapped_function: API function
-        :return: None
-        """
-        @functools.wraps(wrapped_function)
-        def policy_wrapper(*args, **kwds):
-            self.function(request=self.request,
-                          action=self.action)
-            return wrapped_function(*args, **kwds)
-
-        return policy_wrapper
+        # The first @prepolicy decorator will create the
+        # PrepolicyCollector instance (one per API endpoint function).
+        # All subsequent decorators will simply add the policy functions
+        # to that prepolicy collector.
+        if isinstance(wrapped_function, PrepolicyCollector):
+            collector = wrapped_function
+        else:
+            collector = PrepolicyCollector(wrapped_function)
+        collector.add(self.function, self.request, self.action)
+        return collector
 
 
 def init_random_pin(request=None, action=None):
