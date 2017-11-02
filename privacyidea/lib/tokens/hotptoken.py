@@ -32,6 +32,8 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from privacyidea.lib.error import ParameterError
+
 __doc__ = """
 This is the HOTP implementation.
 It is inherited from lib.tokenclass and is thus dependent on models.py
@@ -111,6 +113,10 @@ class HotpTokenClass(TokenClass):
         desc_self1 = _('Specify the hashlib to be used. '
                        'Can be sha1 (1) or sha2-256 (2).')
         desc_self2 = _('Specify the otplen to be used. Can be 6 or 8 digits.')
+        desc_two_step_user =_('Specify whether users are allowed or forced to use '
+                              'two-step enrollment.')
+        desc_two_step_admin = _('Specify whether admins are allowed or forced to use '
+                               'two-step enrollment.')
         res = {'type': 'hotp',
                'title': 'HOTP Event Token',
                'description': _('HOTP: Event based One Time Passwords.'),
@@ -122,6 +128,19 @@ class HotpTokenClass(TokenClass):
                        'yubikey_access_code': {
                            'type': 'str',
                            'desc': _("The Yubikey access code used to initialize Yubikeys.")
+                       },
+                       'hotp_twostep_clientsize': {
+                           'type': 'int',
+                           'desc': _("The size of the OTP seed part contributed by the client (in bytes")
+                       },
+                       'hotp_twostep_serversize': {
+                           'type': 'int',
+                           'desc': _("The size of the OTP seed part contributed by the server (in bytes")
+                       },
+                       'hotp_twostep_difficulty': {
+                           'type': 'int',
+                           'dewsc': _("The difficulty factor used for the OTP seed generation "
+                                      "(should be at least 10000)")
                        }
                    },
                    SCOPE.USER: {
@@ -136,7 +155,15 @@ class HotpTokenClass(TokenClass):
                        'hotp_force_server_generate': {'type': 'bool',
                                                       'desc': _("Force the key to "
                                                                 "be generated on "
-                                                                "the server.")}
+                                                                "the server.")},
+                       'hotp_twostep': {'type': 'str',
+                                        'value': ['allow', 'force', 'none'],
+                                        'desc': desc_two_step_user}
+                   },
+                   SCOPE.ADMIN: {
+                       'hotp_twostep': {'type': 'str',
+                                         'value': ['allow', 'force', 'none'],
+                                         'desc': desc_two_step_admin}
                    }
                }
                }
@@ -642,6 +669,7 @@ class HotpTokenClass(TokenClass):
         :type server_component: hex string
         :param options: an optional dictionary containing extra options:
           * ``2step_difficulty``: number of PBKDF2 rounds. defaults to 10000
+          * ``2step_clientsize``: if set, will be used to validate the length of ``client_component``
         :return: the new generated key as hex string
         """
         if options is None:
@@ -652,6 +680,12 @@ class HotpTokenClass(TokenClass):
         rounds = int(options.get('2step_difficulty', 10000))
         decoded_server_component = binascii.unhexlify(server_component)
         decoded_client_component = binascii.unhexlify(client_component)
+        if '2step_clientsize' in options:
+            expected_client_size = options['2step_clientsize']
+            if expected_client_size != len(decoded_client_component):
+                raise ParameterError('Client Secret Size is expected to be {}, but is {}'.format(
+                    expected_client_size, len(decoded_client_component)
+                ))
         # Based on the two components, we generate a symmetric key using PBKDF2
         # We pass the server component as the password and the client component
         # as the salt.

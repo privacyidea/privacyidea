@@ -469,39 +469,84 @@ def twostep_enrollment(request=None, action=None):
     """
     This policy enables and configures the two-step enrollment process via
     the privacyIDEA authenticator app.
-
-    It makes use of the following actions (all in the scope ``ENROLL``):
-
-     * ACTION.TWOSTEP_ENABLE: Enables two-step enrollment
-     * ACTION.TWOSTEP_CLIENTSIZE: Configures the size of the seed component supplied by the client
-     * ACTION.TWOSTEP_SERVERSIZE: Configures the size of the seed component supplied by the server
-     * ACTION.TWOSTEP_DIFFICULTY: Configures the difficulty factor passed to the Key Derivation Function
-        used to generate the seed
     """
     params = request.all_data
     policy_object = g.policy_object
     user_object = get_user_from_param(params)
-    filter_keywords = {
-        'scope': SCOPE.ENROLL,
-        'user': user_object.login,
-        'realm': user_object.realm,
+    serial = getParam(request.all_data, "serial", optional)
+    second_step = False
+    if serial:
+        tokensobject_list = get_tokens(serial=serial)
+        if len(tokensobject_list) == 1:
+            token_type = tokensobject_list[0].token.tokentype
+            second_step = True
+            # TODO: Should we check for the rollout state here?
+    else:
+        token_type = getParam(request.all_data, "type", default="hotp").lower()
+    role = g.logged_in_user.get("role")
+    # Differentiate between an admin enrolling a token for the
+    # user and a user self-enrolling a token.
+    if role == ROLE.ADMIN:
+        scope = SCOPE.ADMIN
+        adminrealm = g.logged_in_user.get("realm")
+        realm = user_object.realm
+    else:
+        scope = SCOPE.USER
+        adminrealm = None
+        realm = user_object.realm
+    # In any case, the policy's user attribute is matched against the
+    # currently logged-in user (which may be the admin or the
+    # self-enrolling user). TODO: is that correct?
+    user = g.logged_in_user.get("username")
+    # Tokentypes have separate twostep actions
+    action = "{}_twostep".format(token_type)
+    filter_values = {
+        'user': user,
+        'realm': realm,
         'client': g.client_ip,
+        'adminrealm': adminrealm,
     }
-    twostep_enabled_pols = policy_object.get_policies(action=ACTION.TWOSTEP_ENABLE,
-                                                      active=True,
-                                                      **filter_keywords)
+    twostep_enabled_pols = policy_object.get_action_values(action=action,
+                                                           scope=scope,
+                                                           unique=True,
+                                                           **filter_values)
     if twostep_enabled_pols:
-        # 2-step enrollment is enabled! Check if further options were supplied.
-        for action, option in [(ACTION.TWOSTEP_SERVERSIZE, '2step_serversize'),
-                               (ACTION.TWOSTEP_CLIENTSIZE, '2step_clientsize'),
-                               (ACTION.TWOSTEP_DIFFICULTY, '2step_difficulty')]:
-            matching_policies = policy_object.get_action_values(
-                action=action,
-                unique=True,
-                **filter_keywords
-            )
-            if len(matching_policies) == 1:
-                request.all_data[option] = int(matching_policies[0])
+        enabled_setting = twostep_enabled_pols[0]
+        if enabled_setting == "none":
+            # Force two-step initialization to be None
+            # TODO: Silently remove or throw an error?
+            if "2stepinit" in request.all_data:
+                del request.all_data["2stepinit"]
+        else:
+            if enabled_setting == "allow":
+                # We just do nothing: The user is allowed to pass 2stepinit=1
+                pass
+            elif enabled_setting == "force":
+                # We force 2stepinit to be 1
+                request.all_data["2stepinit"] = 1
+            else:
+                raise PolicyError(u'Unexpected action value: {!r}'.format(enabled_setting))
+            if int(getParam(request.all_data, "2stepinit") or 0):
+                # Retrieve the parameters
+                parameters = [("{}_twostep_serversize", "2step_serversize"),
+                              ("{}_twostep_clientsize", "2step_clientsize"),
+                              ("{}_twostep_difficulty", "2step_difficulty")]
+                for action_template, parameter in parameters:
+                    action_values = policy_object.get_action_values(action=action_template.format(token_type),
+                                                                    scope=SCOPE.ENROLL,
+                                                                    unique=True,
+                                                                    **filter_values)
+                    if action_values:
+                        request.all_data[parameter] = int(action_values[0])
+                    elif parameter in request.all_data:
+                        # TODO: Correct to disallow the user to pass custom values?
+                        del request.all_data[parameter]
+                # Finally, if we are in the second step, remove the 2stepinit parameter
+                if second_step:
+                    del request.all_data["2stepinit"]
+    else:
+        # TODO: Allow the user to do 2step enrollment if no policy is set?
+        pass
     return True
 
 def check_max_token_user(request=None, action=None):

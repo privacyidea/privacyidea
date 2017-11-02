@@ -4,6 +4,7 @@ import binascii
 
 from passlib.utils.pbkdf2 import pbkdf2
 
+from privacyidea.lib.policy import set_policy, SCOPE
 from .base import MyTestCase
 from privacyidea.lib.tokens.HMAC import HmacOtp
 
@@ -106,3 +107,113 @@ class TwoStepInitTestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
 
 
+    def test_02_force_parameters(self):
+        set_policy(
+            name="force_2step",
+            action=["hotp_twostep=force", "enrollHOTP=1", "delete"],
+            scope=SCOPE.ADMIN,
+        )
+        set_policy(
+            name="2step_params",
+            action=["hotp_twostep_difficulty=12345",
+                    "hotp_twostep_serversize=33",
+                    "hotp_twostep_clientsize=11"],
+            scope=SCOPE.ENROLL,
+        )
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp",
+                                                 "genkey": "1",
+                                                 "2stepinit": "0", # will be forced nevertheless
+                                                 "twostep_serversize": "3",
+                                                 "twostep_clientsize": "4",
+                                                 "twostep_difficulty": "33333"
+                                                 },
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("status") is True, result)
+            self.assertTrue(result.get("value") is True, result)
+            detail = json.loads(res.data).get("detail")
+            serial = detail.get("serial")
+            otpkey_url = detail.get("otpkey", {}).get("value")
+            server_component = binascii.unhexlify(otpkey_url.split("/")[2])
+
+        # Authentication does not work yet!
+        wrong_otp_value = HmacOtp().generate(key=server_component, counter=1)
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "pass": wrong_otp_value}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data)
+            self.assertTrue(result.get("result").get("status"))
+            self.assertFalse(result.get("result").get("value"))
+            self.assertEqual(result.get("detail").get("message"),
+                         u'matching 1 tokens, Token is disabled')
+
+        client_component = "wrongsize" # 9 bytes
+        hex_client_component = binascii.hexlify(client_component)
+
+        # Supply a client secret of incorrect size
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp",
+                                                 "serial": serial,
+                                                 "otpkey": hex_client_component,
+                                                 },
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = json.loads(res.data).get("result")
+            self.assertFalse(result.get("status"))
+
+        client_component = "correctsize" # 11 bytes
+        hex_client_component = binascii.hexlify(client_component)
+
+        # Now doing the correct 2nd step
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp",
+                                                 "serial": serial,
+                                                 "otpkey": hex_client_component,
+                                                 "twostep_serversize": "3", # will have no effect
+                                                 "twostep_clientsize": "4",
+                                                 "twostep_difficulty": "33333"
+                                                 },
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("status") is True, result)
+            self.assertTrue(result.get("value") is True, result)
+            detail = json.loads(res.data).get("detail")
+            otpkey_url = detail.get("otpkey", {}).get("value")
+            otpkey = otpkey_url.split("/")[2]
+
+        # Now try to authenticate
+        otpkey_bin = binascii.unhexlify(otpkey)
+        otp_value = HmacOtp().generate(key=otpkey_bin, counter=1)
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "pass": otp_value}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("status"), True)
+            self.assertEqual(result.get("value"), True)
+
+        # Check serversize
+        self.assertEqual(len(server_component), 33)
+        # Check that the OTP key is what we expected it to be
+        expected_secret = pbkdf2(server_component, client_component, 12345, 20)
+        self.assertEqual(otpkey_bin, expected_secret)
+
+        with self.app.test_request_context('/token/'+ serial,
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
