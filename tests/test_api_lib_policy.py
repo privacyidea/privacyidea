@@ -1225,6 +1225,39 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         jresult = json.loads(r.data)
         self.assertTrue(jresult.get("result").get("value"))
 
+    def test_01_check_tokentype_no_type(self):
+        # If there is a tokentype policy but the type can not be
+        # determined, authentication fails.
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User()
+        # The response contains the token type SPASS
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": True},
+               "version": "privacyIDEA test",
+               "id": 1,
+               "detail": {"message": "matching 2 tokens"}}
+        resp = Response(json.dumps(res))
+
+        # Set a policy, that does not allow the tokentype
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTHZ,
+                   action="tokentype=hotp", client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+
+        # The token type can not be determined, so an exception
+        #  is raised.
+        self.assertRaises(PolicyError,
+                          check_tokentype,
+                          req, resp)
+
     def test_02_check_serial(self):
         # http://werkzeug.pocoo.org/docs/0.10/test/#environment-building
         builder = EnvironBuilder(method='POST',
