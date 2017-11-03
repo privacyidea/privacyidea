@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-08-24 10:43+0200\n"
+"POT-Creation-Date: 2017-11-03 12:20+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -25,7 +25,7 @@ msgstr ""
 msgid "T'check' is an invalid policy name."
 msgstr ""
 
-#: lib/decorators.py:42
+#: lib/decorators.py:42 lib/token.py:1944
 msgid "This action is not possible, since the token is locked"
 msgstr ""
 
@@ -602,29 +602,29 @@ msgid ""
 "anymore."
 msgstr ""
 
-#: lib/radiusserver.py:185
+#: lib/radiusserver.py:200
 msgid "The RADIUS secret is too long"
 msgstr ""
 
-#: lib/token.py:2181
+#: lib/token.py:2189
 #, python-format
 msgid "Admin is allowed to initalize %s tokens."
 msgstr ""
 
-#: lib/token.py:2190
+#: lib/token.py:2198
 #, python-format
 msgid "The user is allowed to enroll a %s token."
 msgstr ""
 
-#: lib/token.py:2221
+#: lib/token.py:2229
 msgid "Set the maximum allowed PIN length of the {0!s} token."
 msgstr ""
 
-#: lib/token.py:2228
+#: lib/token.py:2236
 msgid "Set the minimum required PIN length of the {0!s} token."
 msgstr ""
 
-#: lib/token.py:2234
+#: lib/token.py:2242
 msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
@@ -727,6 +727,24 @@ msgid ""
 "the regular expression matches the detail->message in the response."
 msgstr ""
 
+#: lib/eventhandler/federationhandler.py:73
+msgid "The remote/child privacyIDEA Server."
+msgstr ""
+
+#: lib/eventhandler/federationhandler.py:78
+msgid "Change the realm name to a realm on the child privacyIDEA system."
+msgstr ""
+
+#: lib/eventhandler/federationhandler.py:84
+msgid "Change the resolver name to a resolver on the child privacyIDEA system."
+msgstr ""
+
+#: lib/eventhandler/federationhandler.py:90
+msgid ""
+"Forward the client IP to the child privacyIDEA server. Otherwise this "
+"server will be the client."
+msgstr ""
+
 #: lib/eventhandler/scripthandler.py:77
 msgid "Add '--serial <serial number>' as script parameter."
 msgstr ""
@@ -812,36 +830,40 @@ msgstr ""
 msgid "Set the above key the this value."
 msgstr ""
 
-#: lib/eventhandler/usernotification.py:101
+#: lib/eventhandler/usernotification.py:105
 msgid "Send notification email via this email server."
 msgstr ""
 
-#: lib/eventhandler/usernotification.py:107
-msgid "The subject of the mail that is sent."
+#: lib/eventhandler/usernotification.py:110
+msgid "Either send email as plain text or HTML."
 msgstr ""
 
 #: lib/eventhandler/usernotification.py:115
-msgid "The Reply-To header in the sent email."
+msgid "The subject of the mail that is sent."
 msgstr ""
 
 #: lib/eventhandler/usernotification.py:120
-msgid "The body of the mail that is sent."
+msgid "The Reply-To header in the sent email."
 msgstr ""
 
 #: lib/eventhandler/usernotification.py:125
-#: lib/eventhandler/usernotification.py:168
+msgid "The body of the mail that is sent."
+msgstr ""
+
+#: lib/eventhandler/usernotification.py:130
+#: lib/eventhandler/usernotification.py:173
 msgid "Send notification to this user."
 msgstr ""
 
-#: lib/eventhandler/usernotification.py:148
+#: lib/eventhandler/usernotification.py:153
 msgid "Any email address, to which the notification should be sent."
 msgstr ""
 
-#: lib/eventhandler/usernotification.py:157
+#: lib/eventhandler/usernotification.py:162
 msgid "Send the user notification via a predefined SMS gateway."
 msgstr ""
 
-#: lib/eventhandler/usernotification.py:164
+#: lib/eventhandler/usernotification.py:169
 msgid "The text of the SMS."
 msgstr ""
 
@@ -850,16 +872,65 @@ msgstr ""
 msgid "Your LDAP config seems to be OK, %i machine objects found."
 msgstr ""
 
-#: lib/resolvers/LDAPIdResolver.py:826
+#: lib/resolvers/LDAPIdResolver.py:848
 #, python-format
 msgid ""
 "Your LDAP config found %i user objects, but only %i with the specified "
 "uidtype"
 msgstr ""
 
-#: lib/resolvers/LDAPIdResolver.py:828
+#: lib/resolvers/LDAPIdResolver.py:850
 #, python-format
 msgid "Your LDAP config seems to be OK, %i user objects found."
+msgstr ""
+
+#: lib/smsprovider/HttpSMSProvider.py:217
+msgid "The base URL of the HTTP Gateway"
+msgstr ""
+
+#: lib/smsprovider/HttpSMSProvider.py:220
+msgid "Should the HTTP Gateway be connected via an HTTP GET or POST request."
+msgstr ""
+
+#: lib/smsprovider/HttpSMSProvider.py:225
+msgid ""
+"Specify a substring, that indicates, that the SMS was delivered "
+"successfully."
+msgstr ""
+
+#: lib/smsprovider/HttpSMSProvider.py:229
+msgid "Specify a substring, that indicates, that the SMS failed to be delivered."
+msgstr ""
+
+#: lib/smsprovider/HttpSMSProvider.py:233
+msgid "Username in case of basic authentication."
+msgstr ""
+
+#: lib/smsprovider/HttpSMSProvider.py:237
+msgid "Password in case of basic authentication."
+msgstr ""
+
+#: lib/smsprovider/HttpSMSProvider.py:241
+msgid "Should the SSL certificate be verified."
+msgstr ""
+
+#: lib/smsprovider/HttpSMSProvider.py:245
+msgid ""
+"An optional proxy string. DEPRECATED. Do not usethis anymore. Rather use "
+"HTTP_PROXY for http connections andHTTPS_PROXY for https connection. The "
+"PROXY option will beremoved in future."
+msgstr ""
+
+#: lib/smsprovider/HttpSMSProvider.py:249
+msgid "Proxy setting for HTTP connections."
+msgstr ""
+
+#: lib/smsprovider/HttpSMSProvider.py:250
+msgid "Proxy setting for HTTPS connections."
+msgstr ""
+
+#: lib/smsprovider/HttpSMSProvider.py:251
+msgid "The timeout in seconds."
 msgstr ""
 
 #: lib/tokens/certificatetoken.py:151
@@ -932,6 +1003,10 @@ msgstr ""
 msgid "URL for MOTP token"
 msgstr ""
 
+#: lib/tokens/ocratoken.py:94
+msgid "OCRA: Enroll an OCRA token."
+msgstr ""
+
 #: lib/tokens/papertoken.py:108
 msgid "The number of OTP values, which are printed on the paper."
 msgstr ""
@@ -993,11 +1068,11 @@ msgstr ""
 msgid "SSH Public Key: The public SSH key."
 msgstr ""
 
-#: lib/tokens/tiqrtoken.py:148
+#: lib/tokens/tiqrtoken.py:151
 msgid "TiQR: Enroll a TiQR token."
 msgstr ""
 
-#: lib/tokens/tiqrtoken.py:216
+#: lib/tokens/tiqrtoken.py:219
 msgid "URL for TiQR enrollment"
 msgstr ""
 

@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-08-24 10:43+0200\n"
-"PO-Revision-Date: 2017-08-24 10:44+0200\n"
+"POT-Creation-Date: 2017-11-03 12:20+0100\n"
+"PO-Revision-Date: 2017-11-03 12:26+0100\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language: de\n"
 "Language-Team: de <LL@li.org>\n"
@@ -27,7 +27,7 @@ msgstr "Der Name der Richtlinie darf nur die Zeichen a-zA-Z0-9_ enthalten."
 msgid "T'check' is an invalid policy name."
 msgstr "'check' ist ein ungültiger Name für eine Richtlinie."
 
-#: lib/decorators.py:42
+#: lib/decorators.py:42 lib/token.py:1944
 msgid "This action is not possible, since the token is locked"
 msgstr "Diese Aktion kann nicht durchgeführt werden, weil der Token gesperrt ist."
 
@@ -511,29 +511,29 @@ msgstr "Eine Liste an Realmnamen, die im WebUI-Login in einer Dropdown-Box angez
 msgid "If this checked, the administrator will not see the welcome dialog anymore."
 msgstr "Dem Administrator wird der Willkommen-Dialog nicht mehr angezeigt."
 
-#: lib/radiusserver.py:185
+#: lib/radiusserver.py:200
 msgid "The RADIUS secret is too long"
 msgstr "Das RADIUS Secret ist zu lang"
 
-#: lib/token.py:2181
+#: lib/token.py:2189
 #, python-format
 msgid "Admin is allowed to initalize %s tokens."
 msgstr "Der Administrator kann %s Token ausrollen."
 
-#: lib/token.py:2190
+#: lib/token.py:2198
 #, python-format
 msgid "The user is allowed to enroll a %s token."
 msgstr "Der Benutzer darf einen %s Token ausrollen."
 
-#: lib/token.py:2221
+#: lib/token.py:2229
 msgid "Set the maximum allowed PIN length of the {0!s} token."
 msgstr "Setze die maximal erlaubte PIN-Länge für den {0!s} Token."
 
-#: lib/token.py:2228
+#: lib/token.py:2236
 msgid "Set the minimum required PIN length of the {0!s} token."
 msgstr "Sete die minimal notwendite PIN-Länge für den {0!s} Token."
 
-#: lib/token.py:2234
+#: lib/token.py:2242
 msgid "Specifiy the required PIN contents of the {0!s} token. (c)haracters, (n)umeric, (s)pecial, (o)thers. [+/-]!"
 msgstr "Definiere den notwendigen Inhalte der OTP PIN für den {0!s} Token. (c) Buchstaben, (n) Ziffern, (s) Sonderzeichen, (o) Andere [+/-]!"
 
@@ -613,6 +613,22 @@ msgstr "Hier können Sie einen regulären Ausdruck eingeben. Die Bedingung greif
 msgid "Here you can enter a regular expression. The condition only applies if the regular expression matches the detail->message in the response."
 msgstr "Hier können Sie einen regulären Ausdruck eingeben. Die Bedingung greift nur, wenn der reguläre Ausdruck auf das Feld detail->message im HTTP Response passt."
 
+#: lib/eventhandler/federationhandler.py:73
+msgid "The remote/child privacyIDEA Server."
+msgstr "Der entfernte privacyIDEA Server."
+
+#: lib/eventhandler/federationhandler.py:78
+msgid "Change the realm name to a realm on the child privacyIDEA system."
+msgstr "Der Realmname wird auf diesen Realmnamen auf dem entfernenten privacyIDEA Server geändert."
+
+#: lib/eventhandler/federationhandler.py:84
+msgid "Change the resolver name to a resolver on the child privacyIDEA system."
+msgstr "Der Resolvername wird auf diesen Resolvernamen auf dem entfernten privacyIDEA Server geändert."
+
+#: lib/eventhandler/federationhandler.py:90
+msgid "Forward the client IP to the child privacyIDEA server. Otherwise this server will be the client."
+msgstr "Die Client-IP wird an den entfernten privacyIDEA Server durchgereicht. Ansonsten ist der lokale privacyIDEA Server der Client für den entfernten Server."
+
 #: lib/eventhandler/scripthandler.py:77
 msgid "Add '--serial <serial number>' as script parameter."
 msgstr "Nutze '--serial <serial number>' als Skript-Parameter."
@@ -685,36 +701,40 @@ msgstr "Setze diesen Schlüssel in der Tokeninfo-Tabelle."
 msgid "Set the above key the this value."
 msgstr "Setze der oben genannten Schlüssel auf diesen Wert."
 
-#: lib/eventhandler/usernotification.py:101
+#: lib/eventhandler/usernotification.py:105
 msgid "Send notification email via this email server."
 msgstr "Benachrichtigungs-EMaisl über diesen Email-Server versenden."
 
-#: lib/eventhandler/usernotification.py:107
+#: lib/eventhandler/usernotification.py:110
+msgid "Either send email as plain text or HTML."
+msgstr "Sende Email als Text oder HTML."
+
+#: lib/eventhandler/usernotification.py:115
 msgid "The subject of the mail that is sent."
 msgstr "Die Betreffzeile der Email."
 
-#: lib/eventhandler/usernotification.py:115
+#: lib/eventhandler/usernotification.py:120
 msgid "The Reply-To header in the sent email."
 msgstr "Das Antworten-An Feld in der gesendeten EMail."
 
-#: lib/eventhandler/usernotification.py:120
+#: lib/eventhandler/usernotification.py:125
 msgid "The body of the mail that is sent."
 msgstr "Der Textkörper der EMail."
 
-#: lib/eventhandler/usernotification.py:125
-#: lib/eventhandler/usernotification.py:168
+#: lib/eventhandler/usernotification.py:130
+#: lib/eventhandler/usernotification.py:173
 msgid "Send notification to this user."
 msgstr "Benachrichtigung an diesen Benutzer senden."
 
-#: lib/eventhandler/usernotification.py:148
+#: lib/eventhandler/usernotification.py:153
 msgid "Any email address, to which the notification should be sent."
 msgstr "Eine EMail-Adresse, an die die Benachrichtigung gesendet werden soll."
 
-#: lib/eventhandler/usernotification.py:157
+#: lib/eventhandler/usernotification.py:162
 msgid "Send the user notification via a predefined SMS gateway."
 msgstr "Benutzerbenachrichtigung über dieses SMS-Gateway schicken."
 
-#: lib/eventhandler/usernotification.py:164
+#: lib/eventhandler/usernotification.py:169
 msgid "The text of the SMS."
 msgstr "Der Text der SMS."
 
@@ -723,15 +743,59 @@ msgstr "Der Text der SMS."
 msgid "Your LDAP config seems to be OK, %i machine objects found."
 msgstr "Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden %i Maschinen-Objekte gefunden."
 
-#: lib/resolvers/LDAPIdResolver.py:826
+#: lib/resolvers/LDAPIdResolver.py:848
 #, python-format
 msgid "Your LDAP config found %i user objects, but only %i with the specified uidtype"
 msgstr "Es wurden %i Benutzerobjekte gefunden. Aber nur %i mit dem spezifizierten UID-Typ."
 
-#: lib/resolvers/LDAPIdResolver.py:828
+#: lib/resolvers/LDAPIdResolver.py:850
 #, python-format
 msgid "Your LDAP config seems to be OK, %i user objects found."
 msgstr "Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden %i Benutzer-Objekte gefunden."
+
+#: lib/smsprovider/HttpSMSProvider.py:217
+msgid "The base URL of the HTTP Gateway"
+msgstr "Die Basis URL des HTTP Gateways"
+
+#: lib/smsprovider/HttpSMSProvider.py:220
+msgid "Should the HTTP Gateway be connected via an HTTP GET or POST request."
+msgstr "Das Gateway wird mittels GET oder POST-Request angesprochen."
+
+#: lib/smsprovider/HttpSMSProvider.py:225
+msgid "Specify a substring, that indicates, that the SMS was delivered successfully."
+msgstr "Ein Substring in der Antwort, der angibt, ob die SMS erfolgreich zugestellt wurde."
+
+#: lib/smsprovider/HttpSMSProvider.py:229
+msgid "Specify a substring, that indicates, that the SMS failed to be delivered."
+msgstr "Ein Substring in der Antwort, der angibt, ob die SMS nicht zugestellt werden konnte."
+
+#: lib/smsprovider/HttpSMSProvider.py:233
+msgid "Username in case of basic authentication."
+msgstr "Benutzername (Basic Authentication)"
+
+#: lib/smsprovider/HttpSMSProvider.py:237
+msgid "Password in case of basic authentication."
+msgstr "Passwort (Basic Authentication)"
+
+#: lib/smsprovider/HttpSMSProvider.py:241
+msgid "Should the SSL certificate be verified."
+msgstr "Das SSL-Zertifikat wird überprüft."
+
+#: lib/smsprovider/HttpSMSProvider.py:245
+msgid "An optional proxy string. DEPRECATED. Do not usethis anymore. Rather use HTTP_PROXY for http connections andHTTPS_PROXY for https connection. The PROXY option will beremoved in future."
+msgstr "Optional Proxy. VERALTET. Diese Option wird in Zukunft (Version > 2.21) nicht mehr unterstützt werden."
+
+#: lib/smsprovider/HttpSMSProvider.py:249
+msgid "Proxy setting for HTTP connections."
+msgstr "Proxy-Einstellung für HTTP-Verbindungen."
+
+#: lib/smsprovider/HttpSMSProvider.py:250
+msgid "Proxy setting for HTTPS connections."
+msgstr "Proxy-Einstellung für HTTPS-Verbindungen."
+
+#: lib/smsprovider/HttpSMSProvider.py:251
+msgid "The timeout in seconds."
+msgstr "Timeout in Sekunden."
 
 #: lib/tokens/certificatetoken.py:151
 msgid "Certificate: Enroll an x509 Certificate Token."
@@ -797,6 +861,10 @@ msgstr "URL für OATH Token"
 msgid "URL for MOTP token"
 msgstr "URL für MOTP Token"
 
+#: lib/tokens/ocratoken.py:94
+msgid "OCRA: Enroll an OCRA token."
+msgstr "OCRA: Einen OCRA-Token ausrollen."
+
 #: lib/tokens/papertoken.py:108
 msgid "The number of OTP values, which are printed on the paper."
 msgstr "Anzahl der gedruckten OTP-Werte."
@@ -850,11 +918,11 @@ msgstr "SPass: Simple Pass Token. Der zweite Faktor entfällt. Authentisierung n
 msgid "SSH Public Key: The public SSH key."
 msgstr "SSH Public Key: Der öffentliche SSH-Schlüssel."
 
-#: lib/tokens/tiqrtoken.py:148
+#: lib/tokens/tiqrtoken.py:151
 msgid "TiQR: Enroll a TiQR token."
 msgstr "TiQR: Einen TiQR-Token ausrollen."
 
-#: lib/tokens/tiqrtoken.py:216
+#: lib/tokens/tiqrtoken.py:219
 msgid "URL for TiQR enrollment"
 msgstr "URL zum Ausrollen des TiQR Token"
 
@@ -884,7 +952,7 @@ msgstr "Yubikey Cloud Modus: Die Authentifizierungsanfrage wird an die YubiCloud
 
 #: lib/tokens/yubikeytoken.py:159
 msgid "Yubikey AES mode: One Time Passwords with Yubikey."
-msgstr "Yubikey AES Modus: Einmalpasswörter nach Yubicos eigenem OTP-Algorithmus."
+msgstr "Yubikey AES Mode: Einmalpasswort mit dem Yubikey."
 
 #~ msgid "tools"
 #~ msgstr "Tools"
