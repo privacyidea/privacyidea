@@ -131,6 +131,15 @@ class OfflineApplicationTestCase(MyTestCase):
         # 2, because we used the otp value with count = 2 initially
         # 100, because we obtained 100 offline OTPs
         self.assertEqual(tok.token.count, 1 + 2 + 100)
+        # Assert that we cannot authenticate with the last offline OTP we got
+        self.assertEqual(len(auth_item.get("response")), 100)
+        self.assertTrue(passlib.hash.\
+                        pbkdf2_sha512.verify("629694", # count = 102
+                                             auth_item.get("response").get(99)))
+        res = tok.check_otp("629694") # count = 102
+        self.assertEqual(res, -1)
+        res = tok.check_otp("378717")  # count = 103
+        self.assertEqual(res, 103)
 
     def test_03_get_auth_item_unsupported(self):
         # unsupported token type
