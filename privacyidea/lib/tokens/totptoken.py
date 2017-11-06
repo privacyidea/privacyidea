@@ -222,7 +222,7 @@ class TotpTokenClass(HotpTokenClass):
         if inc_counter and res >= 0:
             # As usually the counter is increased in lib.token.checkUserPass,
             # we need to do this manually here:
-            self.inc_otp_counter(res)
+            self.advance_otp_counter(res)
         return res
 
     @staticmethod

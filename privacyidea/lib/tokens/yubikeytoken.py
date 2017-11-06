@@ -187,7 +187,7 @@ class YubikeyTokenClass(TokenClass):
         if res >= 0:
             # As usually the counter is increased in lib.token.checkUserPass, we
             # need to do this manually here:
-            self.inc_otp_counter(res)
+            self.advance_otp_counter(res)
 
         return res
 
@@ -317,7 +317,7 @@ class YubikeyTokenClass(TokenClass):
         if count_int >= self.token.count:
             res = count_int
             # on success we save the used counter
-            self.inc_otp_counter(res)
+            self.advance_otp_counter(res)
 
         return res
 

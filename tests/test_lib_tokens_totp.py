@@ -275,19 +275,28 @@ class TOTPTokenTestCase(MyTestCase):
         token.set_count_auth_success_max(10)
         self.assertFalse(token.check_auth_counter())
 
-    def test_12_inc_otp_counter(self):
+    def test_12_advance_otp_counter(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TotpTokenClass(db_token)
-        
+
         token.set_otp_count(10)
         self.assertTrue(token.token.count == 10, token.token.count)
+        token.set_failcount(3)
         # increase counter by 1
-        token.inc_otp_counter()
+        token.advance_otp_counter(token.token.count)
+        # check correct count and failcount
         self.assertTrue(token.token.count == 11, token.token.count)
+        self.assertEqual(token.token.failcount, 3)
+
         # increase counter to 21
         Config(Key="DefaultResetFailCount", Value=True).save()
-        token.inc_otp_counter(counter=20)
+        token.set_failcount(3)
+        token.advance_otp_counter(20)
         self.assertTrue(token.token.count == 21, token.token.count)
+        self.assertEqual(token.token.failcount, 0)
+        token.set_failcount(3)
+        token.advance_otp_counter(23, False)
+        self.assertEqual(token.token.failcount, 3)
 
     def test_13_check_otp(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

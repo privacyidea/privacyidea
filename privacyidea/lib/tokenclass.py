@@ -1097,23 +1097,20 @@ class TokenClass(object):
 
     @log_with(log)
     @check_token_locked
-    def inc_otp_counter(self, counter=None, reset=True):
+    def advance_otp_counter(self, last_counter, reset=True):
         """
         Increase the otp counter and store the token in the database
-        :param counter: the new counter value. If counter is given, than
-                        the counter is increased by (counter+1)
-                        If the counter is not given, the counter is increased
-                        by +1
-        :type counter: int
+        :param last_counter: the last valid counter value. The OTP counter
+        will be set to `last_counter + 1`.
+        :type last_counter: int
         :param reset: reset the failcounter if set to True
         :type reset: bool
         :return: the new counter value
         """
         reset_counter = False
-        if counter:
-            self.token.count = counter + 1
-        else:
-            self.token.count += 1
+        if last_counter < self.token.count:
+            raise Exception("Can only advance OTP counter")
+        self.token.count = last_counter + 1
 
         if reset is True and get_from_config("DefaultResetFailCount") == "True":
             reset_counter = True
