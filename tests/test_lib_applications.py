@@ -112,17 +112,25 @@ class OfflineApplicationTestCase(MyTestCase):
         # create ssh token
         init_token({"serial": serial, "type": "hotp", "otpkey": OTPKEY},
                    user=user)
+        # authenticate online initially
+        tok = get_tokens(serial=serial)[0]
+        res = tok.check_otp("359152") # count = 2
+        self.assertEqual(res, 2)
+        # check intermediate counter value
+        self.assertEqual(tok.token.count, 3)
 
         auth_item = OfflineApplication.get_authentication_item("hotp", serial)
         self.assertTrue(passlib.hash.\
-                        pbkdf2_sha512.verify("755224",
+                        pbkdf2_sha512.verify("969429", # count = 3
                                              auth_item.get("response").get(0)))
         self.assertTrue(passlib.hash.\
-                        pbkdf2_sha512.verify("254676",
+                        pbkdf2_sha512.verify("399871", # count = 8
                                              auth_item.get("response").get(5)))
         # After calling auth_item the token counter should be increased
-        tok = get_tokens(serial=serial)[0]
-        self.assertEqual(tok.token.count, 101)
+        # 1, because the counter initially points to 1
+        # 2, because we used the otp value with count = 2 initially
+        # 100, because we obtained 100 offline OTPs
+        self.assertEqual(tok.token.count, 1 + 2 + 100)
 
     def test_03_get_auth_item_unsupported(self):
         # unsupported token type
