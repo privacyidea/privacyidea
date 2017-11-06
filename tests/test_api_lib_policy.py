@@ -4,6 +4,9 @@ This test file tests the api.lib.policy.py
 The api.lib.policy.py depends on lib.policy and on flask!
 """
 import json
+
+import passlib
+
 from .base import (MyTestCase, PWFILE)
 
 from privacyidea.lib.policy import (set_policy, delete_policy,
@@ -1554,6 +1557,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                                             "323334353637383930",
                                   "pin": "offline",
                                   "user": "cornelius"})
+        self.assertEqual(tokenobject.token.count, 0)
 
         # Set the Machine and MachineToken
         resolver1 = save_resolver({"name": "reso1",
@@ -1595,8 +1599,16 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         response = auth_items.get("offline")[0].get("response")
         self.assertEqual(len(response), 100)
         # check if the counter of the token was increased to 100
-        tokenobject = get_tokens(serial=serial)[0]
-        self.assertEqual(tokenobject.token.count, 101)
+        self.assertEqual(tokenobject.token.count, 100)
+        # check that we cannot authenticate with an offline value
+        self.assertTrue(passlib.hash.\
+                        pbkdf2_sha512.verify("offline516516",
+                                             response.get('99')))
+        res = tokenobject.check_otp("516516") # count = 99
+        self.assertEqual(res, -1)
+        # check that we can authenticate online with the correct value
+        res = tokenobject.check_otp("295165")  # count = 100
+        self.assertEqual(res, 100)
         delete_policy("pol2")
 
     def test_07_sign_response(self):

@@ -1108,7 +1108,11 @@ class TokenClass(object):
         :return: the new counter value
         """
         reset_counter = False
-        if last_counter < self.token.count:
+        # Sanity check: Check that this function is not used to "rewind" the
+        # counter. If last_counter == self.token.count - 1, calling this
+        # function has no effect on the OTP counter. Everything below
+        # this number would rewind the counter.
+        if last_counter < self.token.count - 1:
             raise Exception("Can only advance OTP counter")
         self.token.count = last_counter + 1
 
