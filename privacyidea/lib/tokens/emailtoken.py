@@ -227,7 +227,7 @@ class EmailTokenClass(HotpTokenClass):
         if self.is_active() is True:
             counter = self.get_otp_count()
             log.debug("counter={0!r}".format(counter))
-            self.advance_otp_counter(counter, reset=False)
+            self.set_otp_counter(counter, reset=False)
             # At this point we must not bail out in case of an
             # Gateway error, since checkPIN is successful. A bail
             # out would cancel the checking of the other tokens
@@ -280,7 +280,7 @@ class EmailTokenClass(HotpTokenClass):
             subject = self._get_email_text_or_subject(options,
                                                       action=EMAILACTION.EMAILSUBJECT,
                                                       default="Your OTP")
-            self.advance_otp_counter(ret, reset=False)
+            self.set_otp_counter(ret, reset=False)
             success, message = self._compose_email(message=message,
                                                 subject=subject)
             log.debug("AutoEmail: send new SMS: {0!s}".format(success))

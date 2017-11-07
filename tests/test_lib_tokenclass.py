@@ -435,7 +435,7 @@ class TokenBaseTestCase(MyTestCase):
         self.assertTrue(token.token.count == 10, token.token.count)
         token.set_failcount(3)
         # increase counter by 1
-        token.advance_otp_counter(token.token.count)
+        token.inc_otp_counter()
         # check correct count and failcount
         self.assertTrue(token.token.count == 11, token.token.count)
         self.assertEqual(token.token.failcount, 3)
@@ -443,11 +443,11 @@ class TokenBaseTestCase(MyTestCase):
         # increase counter to 21
         Config(Key="DefaultResetFailCount", Value=True).save()
         token.set_failcount(3)
-        token.advance_otp_counter(20)
+        token.set_otp_counter(20)
         self.assertTrue(token.token.count == 21, token.token.count)
         self.assertEqual(token.token.failcount, 0)
         token.set_failcount(3)
-        token.advance_otp_counter(23, False)
+        token.set_otp_counter(23, False)
         self.assertEqual(token.token.failcount, 3)
 
     def test_13_check_otp(self):

@@ -273,7 +273,7 @@ class SmsTokenClass(HotpTokenClass):
             counter = self.get_otp_count()
             log.debug("counter={0!r}".format(counter))
             # `advance_otp_counter(get_otp_count())` increases the counter by 1
-            self.advance_otp_counter(counter, reset=False)
+            self.set_otp_counter(counter, reset=False)
             # At this point we must not bail out in case of an
             # Gateway error, since checkPIN is successful. A bail
             # out would cancel the checking of the other tokens
@@ -320,7 +320,7 @@ class SmsTokenClass(HotpTokenClass):
         ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
         if ret >= 0 and self._get_auto_sms(options):
             message = self._get_sms_text(options)
-            self.advance_otp_counter(ret, reset=False)
+            self.set_otp_counter(ret, reset=False)
             success, message = self._send_sms(message=message)
             log.debug("AutoSMS: send new SMS: {0!s}".format(success))
             log.debug("AutoSMS: {0!r}".format(message))

@@ -143,9 +143,7 @@ class MachineApplication(MachineApplicationBase):
                 # We do not disable the token, so if all offline OTP values
                 # are used, the token can be used the authenticate online again.
                 # token_obj.enable(False)
-                # get_otp_count() is the count of the next valid OTP. We need
-                # to increase that by (e.g.) 100.
-                token_obj.advance_otp_counter(token_obj.get_otp_count() + count - 1)
+                token_obj.inc_otp_counter(count)
                 token_obj.add_tokeninfo(key="offline_counter",
                                         value=count)
                 ret["response"] = otps

@@ -1097,13 +1097,14 @@ class TokenClass(object):
 
     @log_with(log)
     @check_token_locked
-    def advance_otp_counter(self, last_counter, reset=True):
+    def set_otp_counter(self, last_counter, reset=True):
         """
-        Increase the otp counter and store the token in the database
-        :param last_counter: the last valid counter value. The OTP counter
-        will be set to `last_counter + 1`.
+        Set the otp counter to a higher value and store the token in the database
+        :param last_counter: the last valid counter value. The OTP counter will be set to `last_counter + 1`.
         :type last_counter: int
-        :param reset: reset the failcounter if set to True
+        :param reset: reset the failcounter if set to True (and DefaultResetFailCount is set to True,
+                      and the token is active and the current fail count is smaller than the
+                      maximum fail count)
         :type reset: bool
         :return: the new counter value
         """
@@ -1126,6 +1127,17 @@ class TokenClass(object):
         # make DB persistent immediately, to avoid the re-usage of the counter
         self.token.save()
         return self.token.count
+
+    def inc_otp_counter(self, step=1, reset=True):
+        """
+        Increase the otp counter by a given step and store the token in the database
+        :param step: the increase step. The otp counter will be set to `token.counter + step`
+        :type step: int
+        :param reset: see `set_otp_counter`
+        :type reset: bool
+        :return: the new counter value
+        """
+        return self.set_otp_counter(self.token.count + step - 1, reset)
 
     def check_otp_exist(self, otp, window=None):
         """

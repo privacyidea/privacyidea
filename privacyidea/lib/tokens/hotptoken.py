@@ -364,7 +364,7 @@ class HotpTokenClass(TokenClass):
         if inc_counter and res >= 0:
             # As usually the counter is increased in lib.token.checkUserPass,
             # we need to do this manually here:
-            self.advance_otp_counter(res)
+            self.set_otp_counter(res)
         if res == -1:
             msg = "otp counter {0!r} was not found".format(otp)
         else:
@@ -495,7 +495,7 @@ class HotpTokenClass(TokenClass):
         ret = True
         # `counter + 1` has been consumed by the sync, so the counter needs
         # to be set to `counter + 2`.
-        self.advance_otp_counter(counter + 1, True)
+        self.set_otp_counter(counter + 1, True)
 
         log.debug("end. resync was successful: ret: {0!r}".format((ret)))
         return ret
