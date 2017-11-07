@@ -445,7 +445,7 @@ class TokenClass(object):
             pin_match = self.check_pin(pin, user=user, options=options)
             if pin_match is True:
                 otp_counter = self.check_otp(otpval, options=options)
-                #self.set_otp_count(otp_counter)
+                #self.set_otp_count_raw(otp_counter)
 
         return pin_match, otp_counter, reply
 
@@ -661,7 +661,7 @@ class TokenClass(object):
         return self.token.otplen
 
     @check_token_locked
-    def set_otp_count(self, otpCount):
+    def set_otp_count_raw(self, otpCount):
         self.token.count = int(otpCount)
         self.token.save()
 

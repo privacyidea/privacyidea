@@ -252,7 +252,7 @@ class EmailTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = EmailTokenClass(db_token)
 
-        token.set_otp_count(10)
+        token.set_otp_count_raw(10)
         self.assertTrue(token.token.count == 10, token.token.count)
         token.set_failcount(3)
         # increase counter by 1

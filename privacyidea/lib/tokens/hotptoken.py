@@ -330,7 +330,7 @@ class HotpTokenClass(TokenClass):
             res = self._autosync(hmac2Otp, anOtpVal)
         if res != -1:
             # on success, we save the counter
-            self.set_otp_count(res + 1)
+            self.set_otp_count_raw(res + 1)
             # We could also store it temporarily
             # self.auth_details["matched_otp_counter"] = res
 

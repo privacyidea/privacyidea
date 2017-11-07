@@ -220,6 +220,6 @@ class MotpTokenClass(TokenClass):
 
         if res != -1:
             # on success, we have to save the last attempt
-            self.set_otp_count(res)
+            self.set_otp_count_raw(res)
 
         return res

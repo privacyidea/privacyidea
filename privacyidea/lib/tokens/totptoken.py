@@ -327,7 +327,7 @@ class TotpTokenClass(HotpTokenClass):
 
         if res != -1:
             # on success, we have to save the last attempt
-            self.set_otp_count(res)
+            self.set_otp_count_raw(res)
             # We could also store it temporarily
             # self.auth_details["matched_otp_counter"] = res
 
@@ -485,7 +485,7 @@ class TotpTokenClass(HotpTokenClass):
             self.add_tokeninfo('timeShift', new_shift)
 
             # The OTP value that was used for resync must not be used again!
-            self.set_otp_count(res2 + 1)
+            self.set_otp_count_raw(res2 + 1)
 
             ret = True
 

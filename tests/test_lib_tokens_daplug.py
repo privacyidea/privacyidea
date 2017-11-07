@@ -151,7 +151,7 @@ class DaplugTokenTestCase(MyTestCase):
         token.set_user_pin("userpin")
         token.set_otpkey(self.otpkey)
         token.set_otplen(8)
-        token.set_otp_count(1000)
+        token.set_otp_count_raw(1000)
         self.assertTrue(len(token.token.so_pin) == 32,
                         token.token.so_pin)
         self.assertTrue(len(token.token.user_pin) == 32,
@@ -316,7 +316,7 @@ class DaplugTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DaplugTokenClass(db_token)
 
-        token.set_otp_count(10)
+        token.set_otp_count_raw(10)
         self.assertTrue(token.token.count == 10, token.token.count)
         token.set_failcount(3)
         # increase counter by 1
@@ -500,7 +500,7 @@ class DaplugTokenTestCase(MyTestCase):
         # This is the OTP value of the counter=8
         self.assertTrue(res == (True, 8, None), res)
 
-        token.set_otp_count(0)
+        token.set_otp_count_raw(0)
         # get the OTP value for counter 0
         res = token.get_otp()
         self.assertTrue(res[0] == 1, res)
