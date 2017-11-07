@@ -117,7 +117,7 @@ class FederationEventHandler(BaseEventHandler):
 
             # the new url is the configured server url and the original path
             url = pi_server.config.url + request.path
-            # We use the originial method
+            # We use the original method
             method = request.method
             tls = pi_server.config.tls
             # We also transfer the original payload
@@ -131,6 +131,9 @@ class FederationEventHandler(BaseEventHandler):
 
             # TODO: We need to pass an authorization header if we forward
             # administrative requests
+            # auth_token = request.headers.get('PI-Authorization')
+            # if not auth_token:
+            #     auth_token = request.headers.get('Authorization')
             log.info(u"Sending {0} request to {1!r}".format(method, url))
             requestor = None
             params = None
