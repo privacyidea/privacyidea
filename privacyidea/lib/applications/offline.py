@@ -145,7 +145,7 @@ class MachineApplication(MachineApplicationBase):
                 # token_obj.enable(False)
                 # increase the counter by the consumed values and
                 # also store it in tokeninfo.
-                token_obj.inc_otp_counter(counter=count)
+                token_obj.inc_otp_counter(increment=count)
                 token_obj.add_tokeninfo(key="offline_counter",
                                         value=count)
                 ret["response"] = otps
