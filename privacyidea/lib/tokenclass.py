@@ -1097,23 +1097,27 @@ class TokenClass(object):
 
     @log_with(log)
     @check_token_locked
-    def inc_otp_counter(self, counter=None, reset=True):
+    def inc_otp_counter(self, counter=None, increment=1, reset=True):
         """
         Increase the otp counter and store the token in the database
-        :param counter: the new counter value. If counter is given, than
-                        the counter is increased by (counter+1)
-                        If the counter is not given, the counter is increased
-                        by +1
+
+        Before increasing the token.count the token.count can be set using the
+        parameter counter.
+
+        :param counter: if given, the token counter is first set to counter and then
+                increased by increment
         :type counter: int
+        :param increment: increase the counter by this amount
+        :type increment: int
         :param reset: reset the failcounter if set to True
         :type reset: bool
         :return: the new counter value
         """
         reset_counter = False
         if counter:
-            self.token.count = counter + 1
-        else:
-            self.token.count += 1
+            self.token.count = counter
+
+        self.token.count += increment
 
         if reset is True and get_from_config("DefaultResetFailCount") == "True":
             reset_counter = True
