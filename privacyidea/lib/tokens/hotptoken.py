@@ -47,7 +47,7 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.lib.apps import create_google_authenticator_url as cr_google
 from privacyidea.lib.apps import create_oathtoken_url as cr_oath
-from privacyidea.lib.utils import create_img
+from privacyidea.lib.utils import create_img, is_true
 from privacyidea.lib.utils import generate_otpkey
 from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.decorators import check_token_locked
@@ -244,7 +244,7 @@ class HotpTokenClass(TokenClass):
             upd_param['keysize'] = keylen.get(hashlibStr)
 
         otpKey = getParam(upd_param, "otpkey", optional)
-        genkey = int(getParam(upd_param, "genkey", optional) or 0)
+        genkey = is_true(getParam(upd_param, "genkey", optional))
         if genkey and otpKey:
             # The Base TokenClass does not allow otpkey and genkey at the
             # same time

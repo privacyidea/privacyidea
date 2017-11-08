@@ -511,11 +511,6 @@ class TokenBaseTestCase(MyTestCase):
     def test_17_update_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
-        # Failed update: genkey wrong
-        self.assertRaises(Exception,
-                          token.update,
-                          {"description": "new desc",
-                           "genkey": "17"})
         # Failed update: genkey and otpkey used at the same time
         self.assertRaises(Exception,
                           token.update,

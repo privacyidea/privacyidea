@@ -99,6 +99,7 @@ from .utils import parse_timedelta, parse_legacy_time
 from policy import ACTION
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal, tzutc
+from privacyidea.lib.utils import is_true
 
 
 #DATE_FORMAT = "%d/%m/%y %H:%M"
@@ -474,7 +475,7 @@ class TokenClass(object):
         #      raise param Exception, that we require an otpkey
         #
         otpKey = getParam(param, "otpkey", optional)
-        genkey = int(getParam(param, "genkey", optional) or 0)
+        genkey = is_true(getParam(param, "genkey", optional))
         two_step_init = int(getParam(param, "2stepinit", optional) or 0)
 
         if two_step_init:
@@ -488,15 +489,15 @@ class TokenClass(object):
             self.token.active = False
 
 
-        if genkey not in [0, 1]:
-            raise ParameterError("TokenClass supports only genkey in  range ["
-                                 "0,1] : %r" % genkey)
+        #if genkey not in [0, 1]:
+        #    raise ParameterError("TokenClass supports only genkey in  range ["
+        #                         "0,1] : %r" % genkey)
 
-        if genkey == 1 and otpKey is not None:
+        if genkey and otpKey is not None:
             raise ParameterError('[ParameterError] You may either specify '
                                  'genkey or otpkey, but not both!', id=344)
 
-        if otpKey is None and genkey == 1:
+        if otpKey is None and genkey:
             otpKey = self._genOtpKey_(key_size)
 
         # otpKey still None?? - raise the exception
