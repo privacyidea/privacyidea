@@ -648,6 +648,61 @@ class FederationEventTestCase(MyTestCase):
         # No Response data, since this method is not supported
         self.assertEqual(options.get("response").data, "")
 
+    @responses.activate
+    def test_02_forward_admin_request(self):
+        # setup realms
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        g.audit_object = audit_object
+
+        # A token init request
+        builder = EnvironBuilder(method='POST',
+                                 data={"genkey": "1", "type": "totp"},
+                                 headers={"Authorization": "myAuthToken"})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"genkey": "1", "type": "totp"}
+        req.path = "/token/init"
+        resp = Response()
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"forward_authorization_token": True,
+                                        "privacyIDEA": "remotePI"}
+                                   }
+                   }
+        f_handler = FederationEventHandler()
+        from privacyidea.lib.eventhandler.federationhandler import ACTION_TYPE
+        from privacyidea.lib.privacyideaserver import add_privacyideaserver
+        responses.add(responses.POST, "https://remote/token/init",
+                      body="""{"jsonrpc": "2.0", 
+                               "detail": {"googleurl": 
+                                              {"value": "otpauth://totp/TOTP0019C11A?secret=5IUZZICQQI7CFA6VZA4HO6L52RA4ZIVC&period=30&digits=6&issuer=privacyIDEA", 
+                                               "description": "URL for google Authenticator", 
+                                               "img": "data:image/png;base64,YII="},
+                               "threadid": 140161650956032}, 
+                               "versionnumber": "2.20.1",
+                               "version": "privacyIDEA 2.20.1",
+                               "result": {"status": true,
+                                          "value": true},
+                               "time": 1510135880.189272,
+                               "id": 1}""",
+                      content_type="application/json",
+                      )
+        add_privacyideaserver("remotePI", url="https://remote", tls=False)
+        res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
+        self.assertTrue(res)
+        response = json.loads(options.get("response").data)
+        self.assertEqual(response.get("detail").get("origin"),
+                         "https://remote/token/init")
+
+
 
 class TokenEventTestCase(MyTestCase):
 

@@ -91,6 +91,13 @@ class FederationEventHandler(BaseEventHandler):
                                               "child privacyIDEA server. "
                                               "Otherwise this server will "
                                               "be the client.")
+                            },
+                        "forward_authorization_token":
+                            {"type": "bool",
+                             "description": _("Forward the authorization header. "
+                                              "This allows to also forward request like "
+                                              "token- and system-requests.")
+
                             }
                         }
                    }
@@ -129,14 +136,17 @@ class FederationEventHandler(BaseEventHandler):
             if handler_options.get("resolver"):
                 data["resolver"] = handler_options.get("resolver")
 
-            # TODO: We need to pass an authorization header if we forward
-            # administrative requests
-            # auth_token = request.headers.get('PI-Authorization')
-            # if not auth_token:
-            #     auth_token = request.headers.get('Authorization')
             log.info(u"Sending {0} request to {1!r}".format(method, url))
             requestor = None
             params = None
+            headers = {}
+
+            # We need to pass an authorization header if we forward administrative requests
+            if handler_options.get("forward_authorization_token"):
+                auth_token = request.headers.get('PI-Authorization')
+                if not auth_token:
+                    auth_token = request.headers.get('Authorization')
+                headers["PI-Authorization"] = auth_token
 
             if method.upper() == "GET":
                 params = data
@@ -148,15 +158,21 @@ class FederationEventHandler(BaseEventHandler):
                 requestor = requests.delete
 
             if requestor:
-                r = requestor(url, params=params, data=data, verify=tls)
+                r = requestor(url, params=params, data=data,
+                              headers=headers, verify=tls)
                 # convert requests Response to werkzeug Response
                 response_dict = json.loads(r.text)
                 if "detail" in response_dict:
-                    response_dict.get("detail", {})["origin"] = url
+                    if response_dict.get("detail") is None:
+                        # In case of exceptions we may not have a detail
+                        response_dict["detail"] = {"origin": url}
+                    else:
+                        response_dict.get("detail")["origin"] = url
                 # We will modify the response!
                 # We can not use flask.jsonify(response_dict) here, since we
                 # would work outside of application context!
                 options["response"] = Response()
+                options["response"].status_code = r.status_code
                 options["response"].content_type = "application/json"
                 options["response"].data = json.dumps(response_dict)
             else:
