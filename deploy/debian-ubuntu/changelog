@@ -1,3 +1,9 @@
+python-privacyidea (2.21~dev0-1trusty) trusty; urgency=low
+
+  * Do it
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 08 Nov 2017 11:30:00 +0200
+
 python-privacyidea (2.20.1-1trusty) trusty; urgency=low
 
   Fixes:
