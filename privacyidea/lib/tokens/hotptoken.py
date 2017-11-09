@@ -493,7 +493,7 @@ class HotpTokenClass(TokenClass):
             return ret
 
         ret = True
-        self.inc_otp_counter(counter + 1, True)
+        self.inc_otp_counter(counter + 1, reset=True)
 
         log.debug("end. resync was successful: ret: {0!r}".format((ret)))
         return ret
