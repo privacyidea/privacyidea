@@ -127,10 +127,9 @@ class OfflineApplicationTestCase(MyTestCase):
                         pbkdf2_sha512.verify("399871", # count = 8
                                              auth_item.get("response").get(5)))
         # After calling auth_item the token counter should be increased
-        # 1, because the counter initially points to 1
-        # 2, because we used the otp value with count = 2 initially
+        # 3, because we used the otp value with count = 2 initially
         # 100, because we obtained 100 offline OTPs
-        self.assertEqual(tok.token.count, 1 + 2 + 100)
+        self.assertEqual(tok.token.count, 3 + 100)
         # Assert that we cannot authenticate with the last offline OTP we got
         self.assertEqual(len(auth_item.get("response")), 100)
         self.assertTrue(passlib.hash.\
