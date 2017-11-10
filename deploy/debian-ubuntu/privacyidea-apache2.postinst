@@ -95,6 +95,7 @@ create_database() {
 }
 
 enable_apache() {
+    if [ ! -h /etc/apache2/sites-enabled/privacyidea.conf ]; then
         rm -f /etc/apache2/sites-enabled/*
         a2enmod wsgi
         a2enmod headers
@@ -102,6 +103,7 @@ enable_apache() {
         a2ensite privacyidea
         ln -s /etc/ssl/certs/privacyideaserver.pem /etc/ssl/certs/privacyidea-bundle.crt || true
         ln -s /etc/ssl/private/privacyideaserver.key /etc/ssl/private/privacyidea.key || true
+    fi
 }
 
 update_db() {
