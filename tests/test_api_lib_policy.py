@@ -1597,9 +1597,15 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         response = auth_items.get("offline")[0].get("response")
         self.assertEqual(len(response), 100)
         # check if the counter of the token was increased to 100
+        # it is only 100, not 102, because the OTP value with counter=1
+        # (287082) has not actually been consumed (because this
+        # test only invoked the policy function)
         tokenobject = get_tokens(serial=serial)[0]
         self.assertEqual(tokenobject.token.count, 100)
         # check that we cannot authenticate with an offline value
+        self.assertTrue(passlib.hash.\
+                        pbkdf2_sha512.verify("offline287082",
+                                             response.get('1')))
         self.assertTrue(passlib.hash.\
                         pbkdf2_sha512.verify("offline516516",
                                              response.get('99')))
