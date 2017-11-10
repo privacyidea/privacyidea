@@ -326,7 +326,7 @@ class APIMachinesTestCase(MyTestCase):
             self.assertEqual(response,
                              "93235fc7d1d444d0ec014ea9eafcc44fc65b73eb")
 
-    def test_01_auth_items_offline(self):
+    def test_12_auth_items_offline(self):
         #create HOTP token for offline usage
         self.setUp_user_realms()
         token_obj = init_token({"serial": self.serial4, "type": "hotp",
