@@ -57,14 +57,14 @@ E.g. this way you can define, that audit entries about token listings can be del
 one month,
 while the audit information about token creation will only deleted after ten years.
 
-The config file is a YAML format and looks like this:
+The config file is a YAML format and looks like this::
 
     # DELETE auth requests of nils after 10 days
     - rotate: 10
       user: nils
       action: .*/validate/check.*
 
-    # DELETE auth requests of friedricha after 7 days
+    # DELETE auth requests of friedrich after 7 days
     - rotate: 7
       user: friedrich
       action: .*/validate/check.*
