@@ -52,6 +52,8 @@ angular.module("privacyideaApp")
     $scope.hsmReady = obj.val();
     obj = angular.element(document.querySelector("#CUSTOMIZATION"));
     $scope.piCustomization = obj.val();
+    obj = angular.element(document.querySelector("#EXTERNAL_LINKS"));
+    $scope.piExternalLinks = obj.val();
     obj = angular.element(document.querySelector('#REALMS'));
     $scope.piRealms = obj.val().mysplit(",");
     console.log($scope.piRealms);
