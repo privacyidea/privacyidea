@@ -592,6 +592,7 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
         with open(config, 'r') as f:
             Config = yaml.load(f)
         auditlogs = session.query(LogEntry).all()
+        delete_list = []
         for log in auditlogs:
             print("investigating log entry {0!s}".format(log.id))
             for rule in Config:
@@ -620,10 +621,15 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
                         # Delete it!
                         print(" + Deleting {0!s} due to rule {1!s}".format(log.id, rule))
                         # Delete it
-                        session.query(LogEntry.id).filter(LogEntry.id == log.id).delete()
+                        delete_list.append(log.id)
                     # skip all other rules and go to the next log entry
                     break
-        session.commit()
+        if dryrun:
+            print("If you only would let me I would clean up {0!s} entries!".format(len(delete_list)))
+        else:
+            print("Cleaning up {0!s} entries.".format(len(delete_list)))
+            engine.execute(LogEntry.__table__.delete().where(LogEntry.id.in_(delete_list)))
+            session.commit()
 
     elif age:
         now = datetime.datetime.now() - datetime.timedelta(days=age)
