@@ -53,28 +53,50 @@ Cleaning based on the config file:
 .. index:: retention time
 
 Using a config file you can define different retention times for the audit data.
-E.g. this way you can define, that audit entries about token listings can be deleted after one month,
+E.g. this way you can define, that audit entries about token listings can be deleted after
+one month,
 while the audit information about token creation will only deleted after ten years.
 
-The config file is a YAML format and looks like this:
+The config file is a YAML format and looks like this::
 
-   - ["POST /token/init.*", "3650"] # Save creation and deletion of tokens for 10 years
-   - ["DELETE /token/.*", "3650"]
-   - ["POST /validate.*", 1825] # Save authentication REQUESTS for 5 years
-   - ["GET /validate.*", 1825] # Save authentication REQUESTS for 5 years
-   - ["POST .*", 750] # Save all POST Reqeusts for 25 months
-   - ["DELETE .*", 1825] # Save all DELETE Requests for 5 years
-   - ["GET .*", "30"]  # Only keep GET requests for 30 days!
-   - [".*", 180] # Everything else for half a year
+    # DELETE auth requests of nils after 10 days
+    - rotate: 10
+      user: nils
+      action: .*/validate/check.*
+
+    # DELETE auth requests of friedrich after 7 days
+    - rotate: 7
+      user: friedrich
+      action: .*/validate/check.*
+
+    # Delete nagios user test auth directly
+    - rotate: 0
+      user: nagiosuser
+      action: POST /validate/check.*
+
+    # Delete token listing after one month
+    - rotate: 30
+      action: ^GET /token
+
+    # Delete audit logs for token creating after 10 years
+    - rotate: 3650
+      action: POST /token/init
+
+    # Delete everything else after 6 months
+    - rotate: 180
+      action: .*
 
 This is a list of rules.
-Each rule has a regular expression for the audit action and an integer, for how many days the specified
-audit log entry should be saved.
+privacyIDEA iterates over *all* audit entries. The first matching rule for an entry wins.
+If the rule matches, the audit entry is deleted if the entry is older than the days
+specified in "rotate".
 
-Note that the order of the list matters. If the action matches an entry, this rule is applied and
-the list is exited.
-In the example the rule in the list is a kind of a catch all entry. If there was no other rule,
-that matched, the entry will be deleted after 5 months.
+If is a good idea to have a *catch-all* rule at the end.
+
+.. note:: The keys "user", "action"... correspond to the column names of the audit table.
+   You can use any column name here like "date", "action", "action_detail", "success", "serial", "administrator",
+   "user", "realm"... for a complete list see the model definition.
+   You may use Python regular expressions for matching.
 
 You can the add a call like
 

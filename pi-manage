@@ -574,12 +574,7 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
         raise Exception("We only rotate SQL audit module. You are using %s" %
                         audit_module)
     if config:
-        actions = Audit.query.with_entities(Audit.action).distinct().all()
-        actions = [x[0] for x in actions if x[0]]
-        print("Actions in the log:")
-        for action in actions:
-            print("- [{0!s}, '']".format(action))
-        print("There are {0!s} different actions in the audit log.".format(len(actions)))
+        print("Cleaning up with config file.")
     elif age:
         age = int(age)
         print("Cleaning up with age: %s. %s" % (age, audit_db_uri))
@@ -596,23 +591,45 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
     if config:
         with open(config, 'r') as f:
             Config = yaml.load(f)
-        # clean up every action
-        for action in actions:
+        auditlogs = session.query(LogEntry).all()
+        delete_list = []
+        for log in auditlogs:
+            print("investigating log entry {0!s}".format(log.id))
             for rule in Config:
-                if re.search(rule[0], action):
-                    age = int(rule[1])
-                    now = datetime.datetime.now() - datetime.timedelta(days=age)
-                    sqlquery = session.query(LogEntry.date).\
-                        filter(LogEntry.action == action).\
-                        filter(LogEntry.date < now)
-                    if dryrun:
-                        r = len(sqlquery.all())
-                    else:
-                        r = sqlquery.delete()
-                        session.commit()
-                    print("{0!s} entries of action {1!s} deleted due to {2!s}.".format(r, action, rule))
-                    # leave the rule set!
+                age = int(rule.get("rotate"))
+                rotate_date = datetime.datetime.now() - datetime.timedelta(days=age)
+
+                match = False
+                for key in rule.keys():
+                    if key not in ["rotate"]:
+                        search_value = rule.get(key)
+                        print(" + searching for {0!r} in {1!s}".format(search_value, getattr(LogEntry, key)))
+                        audit_value = getattr(log, key) or ""
+                        m = re.search(search_value, audit_value)
+                        if m:
+                            # it matches!
+                            print(" + -- found {0!r}".format(audit_value))
+                            match = True
+                        else:
+                            # It does not match, we continue to next rule
+                            print(" + NO MATCH - SKIPPING rest of conditions!")
+                            match = False
+                            break
+
+                if match:
+                    if log.date < rotate_date:
+                        # Delete it!
+                        print(" + Deleting {0!s} due to rule {1!s}".format(log.id, rule))
+                        # Delete it
+                        delete_list.append(log.id)
+                    # skip all other rules and go to the next log entry
                     break
+        if dryrun:
+            print("If you only would let me I would clean up {0!s} entries!".format(len(delete_list)))
+        else:
+            print("Cleaning up {0!s} entries.".format(len(delete_list)))
+            engine.execute(LogEntry.__table__.delete().where(LogEntry.id.in_(delete_list)))
+            session.commit()
 
     elif age:
         now = datetime.datetime.now() - datetime.timedelta(days=age)
