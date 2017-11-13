@@ -4,7 +4,7 @@ import binascii
 
 from passlib.utils.pbkdf2 import pbkdf2
 
-from privacyidea.lib.policy import set_policy, SCOPE
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from .base import MyTestCase
 from privacyidea.lib.tokens.HMAC import HmacOtp
 
@@ -20,6 +20,11 @@ class TwoStepInitTestCase(MyTestCase):
     """
 
     def test_01_init_token(self):
+        set_policy(
+            name="allow_2step",
+            action=["hotp_twostep=allow", "enrollHOTP=1", "delete"],
+            scope=SCOPE.ADMIN,
+        )
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "hotp",
@@ -35,8 +40,9 @@ class TwoStepInitTestCase(MyTestCase):
             serial = detail.get("serial")
             otpkey_url = detail.get("otpkey", {}).get("value")
             server_component = binascii.unhexlify(otpkey_url.split("/")[2])
+            self.assertEqual(detail['2step'], '8,20,10000')
 
-        client_component = "VERYSECRET"
+        client_component = "VRYSECRT"
         hex_client_component = binascii.hexlify(client_component)
         # Try to do a 2stepinit on a second step will raise an error
         with self.app.test_request_context('/token/init',
@@ -47,11 +53,10 @@ class TwoStepInitTestCase(MyTestCase):
                                                  "otpkey": hex_client_component},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(res.status_code, 403)
             result = json.loads(res.data).get("result")
-            self.assertEqual(result.get("error").get("message"),
-                             u'ERR905: 2stepinit is only to be used '
-                             u'in the first initialization step.')
+            self.assertIn('2stepinit is only to be used in the first initialization step',
+                          result.get("error").get("message"))
 
         # Authentication does not work yet!
         wrong_otp_value = HmacOtp().generate(key=server_component, counter=1)
@@ -82,6 +87,7 @@ class TwoStepInitTestCase(MyTestCase):
             detail = json.loads(res.data).get("detail")
             otpkey_url = detail.get("otpkey", {}).get("value")
             otpkey = otpkey_url.split("/")[2]
+            self.assertNotIn('2step', detail)
 
         # Now try to authenticate
         otpkey_bin = binascii.unhexlify(otpkey)
@@ -105,7 +111,7 @@ class TwoStepInitTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-
+        delete_policy("allow_2step")
 
     def test_02_force_parameters(self):
         set_policy(

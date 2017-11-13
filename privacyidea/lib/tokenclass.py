@@ -82,7 +82,7 @@ from .error import (TokenAdminError,
                     ParameterError)
 
 from ..api.lib.utils import getParam
-from .utils import generate_otpkey
+from .utils import generate_otpkey, is_true
 from .log import log_with
 
 from .config import (get_from_config, get_prepend_pin)
@@ -477,7 +477,7 @@ class TokenClass(object):
         #
         otpKey = getParam(param, "otpkey", optional)
         genkey = int(getParam(param, "genkey", optional) or 0)
-        two_step_init = int(getParam(param, "2stepinit", optional) or 0)
+        two_step_init = is_true(getParam(param, "2stepinit", optional))
 
         if two_step_init:
             if self.token.rollout_state == "clientwait":
