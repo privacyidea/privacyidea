@@ -2,7 +2,7 @@
 
 <!-- Include menu -->
 
-<ng-include src="'{{ instance }}/static/templates/menu.html'">
+<ng-include src="'{{ instance }}/static/{{ customization_menu_file }}'">
 </ng-include>
 <div class="container">
     <div ui-view class="slide"></div>
@@ -18,7 +18,7 @@
 
 <!-- Include baseline -->
 
-<ng-include src="'{{ instance }}/static/templates/baseline.html'">
+<ng-include src="'{{ instance }}/static/{{ customization_baseline_file }}'">
 </ng-include>
 
 {% include 'footer.html' %}

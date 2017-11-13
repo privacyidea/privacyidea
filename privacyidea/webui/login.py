@@ -107,6 +107,11 @@ def single_page_application():
     except HSMException:
         hsm_ready = False
 
+    # Customization
+    customization_menu_file = "templates/menu.html"
+    customization_baseline_file = "templates/baseline.html"
+    # TODO: Use policies to determine the customization
+
     return render_template("index.html", instance=instance,
                            backendUrl=backend_url,
                            browser_lang=browser_lang,
@@ -115,6 +120,8 @@ def single_page_application():
                            password_reset=password_reset,
                            hsm_ready=hsm_ready,
                            customization=customization,
+                           customization_menu_file=customization_menu_file,
+                           customization_baseline_file=customization_baseline_file,
                            realms=realms,
                            external_links=external_links,
                            logo=logo)
