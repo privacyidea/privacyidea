@@ -208,12 +208,14 @@ def raise_exception_probability(subscription=None):
     return False
 
 
-def check_subscription(application):
+def check_subscription(application, max_free_subscriptions=None):
     """
     This checks if the subscription for the given application is valid.
     In case of a failure an Exception is raised.
 
     :param application: the name of the application to check
+    :param max_free_subscriptions: the maximum number of subscriptions
+        without a subscription file. If not given, the default is used.
     :return: bool
     """
     if application.lower() in APPLICATIONS.keys():
@@ -221,8 +223,9 @@ def check_subscription(application):
             application.lower())
         # get the number of active assigned tokens
         active_tokens = get_tokens(assigned=True, active=True, count=True)
+        free_subscriptions = max_free_subscriptions or APPLICATIONS.get(application.lower())
         if len(subscriptions) == 0:
-            if active_tokens > APPLICATIONS.get(application.lower()):
+            if active_tokens > free_subscriptions:
                 raise SubscriptionError(description="No subscription for your client.",
                                         application=application)
         else:
