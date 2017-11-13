@@ -7,7 +7,6 @@ info:
 	@echo "make debianzie    - prepare the debian build environment in DEBUILD"
 	@echo "make builddeb     - build .deb file locally on ubuntu 14.04LTS!"
 	@echo "make centos       - build .rpm file to be used with CentOS 7"
-	@echo "make jessie	 - build .deb file for Debian Jessie"
 	@echo "make venvdeb      - build .deb file, that contains the whole setup in a virtualenv."
 	@echo "make linitian     - run lintian on debian package"
 	@echo "make translate    - translate WebUI"
@@ -129,11 +128,6 @@ builddeb:
 	cp -r deploy/debian-ubuntu/* DEBUILD/privacyidea.org/debian/
 	sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
 	################# Build
-	(cd DEBUILD/privacyidea.org; debuild --no-lintian)
-
-jessie:
-	make debianize
-	cp -r deploy/debian-jessie/* DEBUILD/privacyidea.org/debian/
 	(cd DEBUILD/privacyidea.org; debuild --no-lintian)
 
 venvdeb:
