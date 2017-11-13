@@ -66,6 +66,11 @@ angular.module("privacyideaApp")
     });
     $scope.welcomeStep = 0;
 
+    // customization
+    $scope.piCustomMenuFile = angular.element(document.querySelector('#CUSTOM_MENU')).val();
+    $scope.piCustomBaselineFile = angular.element(document.querySelector('#CUSTOM_BASELINE')).val();
+    // TODO: We can change this after login, if there is a user dependent customization!
+
     hotkeys.add({
         combo: 'alt+e',
         description: gettextCatalog.getString('Enroll a new token'),
