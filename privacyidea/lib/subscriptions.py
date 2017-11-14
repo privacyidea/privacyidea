@@ -158,8 +158,8 @@ def save_subscription(subscription):
 
 def get_subscription(application=None):
     """
-    Return a list of subscriptions for a certai application
-    If application is ommitted, all applications are returned.
+    Return a list of subscriptions for a certain application
+    If application is omitted, all applications are returned.
 
     :param application: Name of the application
     :return: list of subscription dictionaries

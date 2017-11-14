@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2017-11-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add custom baseline and menu
 # 2016-01-07 Cornelius Kölbel <cornelius@privacyidea.org>
 #            Add password reset
 # 2015-11-04 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -26,7 +28,7 @@ __doc__ = """This is the starting point for the single web application.
 Other html code is dynamically loaded via angularJS and located in
 /static/views/...
 """
-__author__ = "Cornelius Kölbel, <cornelius@privacyidea.org>"
+__author__ = "Cornelius Kölbel <cornelius@privacyidea.org>"
 
 from flask import (Blueprint, render_template, request,
                    current_app)
@@ -35,6 +37,7 @@ from privacyidea.lib.passwordreset import is_password_reset
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.policy import PolicyClass, ACTION, SCOPE
+from privacyidea.lib.subscriptions import subscription_status
 
 DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
 
@@ -107,10 +110,29 @@ def single_page_application():
     except HSMException:
         hsm_ready = False
 
-    # Customization
-    customization_menu_file = "templates/menu.html"
-    customization_baseline_file = "templates/baseline.html"
-    # TODO: Use policies to determine the customization
+    # Use policies to determine the customization of menu
+    # and baseline. get_action_values returns an array!
+    sub_state  = subscription_status()
+    customization_menu_file = policy_object.get_action_values(
+        allow_white_space_in_action=True,
+        action=ACTION.CUSTOM_MENU,
+        scope=SCOPE.WEBUI,
+        client=client_ip, unique=True)
+    if len(customization_menu_file) and customization_menu_file[0] \
+            and sub_state not in [1, 2]:
+        customization_menu_file = customization_menu_file[0]
+    else:
+        customization_menu_file = "templates/menu.html"
+    customization_baseline_file = policy_object.get_action_values(
+        allow_white_space_in_action=True,
+        action=ACTION.CUSTOM_BASELINE,
+        scope=SCOPE.WEBUI,
+        client=client_ip, unique=True)
+    if len(customization_baseline_file) and customization_baseline_file[0] \
+            and sub_state not in [1, 2]:
+        customization_baseline_file = customization_baseline_file[0]
+    else:
+        customization_baseline_file = "templates/baseline.html"
 
     return render_template("index.html", instance=instance,
                            backendUrl=backend_url,
