@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-11-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add policy action for customization of menu and baseline
 #  2017-01-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add policy action groups
 #  2016-12-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -296,6 +298,8 @@ class ACTION(object):
     TIMEOUT_ACTION = "timeout_action"
     AUTH_CACHE = "auth_cache"
     HIDE_WELCOME = "hide_welcome_info"
+    CUSTOM_MENU = "custom_menu"
+    CUSTOM_BASELINE = "custom_baseline"
 
 
 class GROUP(object):
@@ -594,7 +598,6 @@ class PolicyClass(object):
         would return a list of allowed serials
 
         :param unique: if set, the function will raise an exception if more
-
             than one value is returned
         :param allow_white_space_in_action: Some policies like emailtext
             would allow entering text with whitespaces. These whitespaces
@@ -1623,6 +1626,14 @@ def get_static_policy_definitions(scope=None):
                 'type': 'int',
                 'desc': _("Set how many users should be displayed in the user "
                           "view on one page.")
+            },
+            ACTION.CUSTOM_MENU: {
+                'type': 'str',
+                'desc': _("Use your own html template for the web UI menu.")
+            },
+            ACTION.CUSTOM_BASELINE: {
+                'type': 'str',
+                'desc': _("Use your own html template for the web UI baseline/footer.")
             },
             ACTION.USERDETAILS: {
                 'type': 'bool',

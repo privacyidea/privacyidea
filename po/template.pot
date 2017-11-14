@@ -307,7 +307,7 @@ msgstr ""
 msgid "Authentication Server URI"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:279
+#: privacyidea/static/components/login/controllers/loginControllers.js:286
 msgid "Authentication failed."
 msgstr ""
 
@@ -428,11 +428,11 @@ msgstr ""
 msgid "Certificates Templates file"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:202
+#: privacyidea/static/components/login/controllers/loginControllers.js:209
 msgid "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:261
+#: privacyidea/static/components/login/controllers/loginControllers.js:268
 msgid "Challenge Response Authentication. Your response was not valid!"
 msgstr ""
 
@@ -932,7 +932,7 @@ msgstr ""
 msgid "Enroll Token"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:69
+#: privacyidea/static/components/login/controllers/loginControllers.js:76
 #: privacyidea/static/components/token/controllers/tokenControllers.js:154
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:157
@@ -1350,7 +1350,7 @@ msgid ""
 "                        definitions"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:77
+#: privacyidea/static/components/login/controllers/loginControllers.js:84
 msgid "List tokens"
 msgstr ""
 
@@ -1382,7 +1382,7 @@ msgstr ""
 msgid "Log In"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:84
+#: privacyidea/static/components/login/controllers/loginControllers.js:91
 msgid "Log out"
 msgstr ""
 
@@ -1635,7 +1635,7 @@ msgid ""
 "          default realm for you from the machines /etc/passwd?"
 msgstr ""
 
-#: privacyidea/static/templates/index.html:43
+#: privacyidea/static/templates/baseline.html:26
 #: privacyidea/static/templates/menu.html:126
 msgid "Online Documentation"
 msgstr ""
@@ -1697,7 +1697,7 @@ msgstr ""
 msgid "PIN"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:482
+#: privacyidea/static/components/login/controllers/loginControllers.js:489
 msgid "PIN changed successfully."
 msgstr ""
 
@@ -1756,7 +1756,7 @@ msgstr ""
 msgid "Please answer at least {{ num_answers }} of the following questions."
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:213
+#: privacyidea/static/components/login/controllers/loginControllers.js:220
 msgid "Please confirm with one of these tokens:"
 msgstr ""
 
@@ -1914,7 +1914,7 @@ msgstr ""
 msgid "Realm"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:430
+#: privacyidea/static/components/login/controllers/loginControllers.js:437
 msgid "Realm defrealm created."
 msgstr ""
 
@@ -2367,7 +2367,7 @@ msgstr ""
 msgid "Successfully authenticated."
 msgstr ""
 
-#: privacyidea/static/templates/index.html:31
+#: privacyidea/static/templates/baseline.html:14
 #: privacyidea/static/templates/menu.html:131
 msgid "Support"
 msgstr ""
@@ -3504,7 +3504,7 @@ msgstr ""
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:322
+#: privacyidea/static/components/login/controllers/loginControllers.js:329
 msgid "Your OTP pin expires on"
 msgstr ""
 

@@ -234,3 +234,39 @@ the bahaviour that the administrator needs to press *enter* to trigger the
 search.
 
 (Since privacyIDEA 2.17)
+
+custom_baseline
+~~~~~~~~~~~~~~~
+
+.. index:: Customize baseline, customize footer
+
+type: str
+
+The administrator can replace the file ``templates/baseline.html`` with another template.
+This way he can change the links to e.g. internal documentation or ticketing systems.
+The new file could be called ``mytemplates/mybase.html``.
+
+This will only work with a valid subscription of privacyIDEA Enterprise Edition.
+
+.. note:: This policy is evaluated before login. So any realm or user setting will have no
+   effect. But you can specify different baselines for different client IP addresses.
+
+(Since privacyIDEA 2.21)
+
+custom_menu
+~~~~~~~~~~~
+
+.. index:: Customize menu
+
+type: str
+
+The administrator can replace the file ``templates/menu.html`` with another template.
+This way he can change the links to e.g. internal documentation or ticketing systems.
+The new file could be called ``mytemplates/mymenu.html``.
+
+This will only work with a valid subscription of privacyIDEA Enterprise Edition.
+
+.. note:: This policy is evaluated before login. So any realm or user setting will have no
+   effect. But you can specify different menus for different client IP addresses.
+
+(Since privacyIDEA 2.21)
