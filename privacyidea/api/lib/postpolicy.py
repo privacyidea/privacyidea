@@ -204,14 +204,8 @@ def check_tokentype(request, response):
         resolver=user_object.resolver,
         realm=user_object.realm,
         client=g.client_ip)
-    log.error("CKO user   : {0!s}".format(user_object))
-    log.error("CKO client : {0!s}".format(g.client_ip))
-    log.error("CKO allowed: {0!s}".format(allowed_tokentypes))
-    log.error("CKO type   : {0!s}".format(tokentype))
     if allowed_tokentypes:
-        log.error("CKO allowed tokentypes")
         if not tokentype or (tokentype not in allowed_tokentypes):
-            log.error("CKO not allowed")
             # If we have tokentype policies, but either no tokentypes
             # or the tokentype is not allowed, we raise an exception
             g.audit_object.log({"success": False,
