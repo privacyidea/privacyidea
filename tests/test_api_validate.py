@@ -1770,3 +1770,105 @@ class ValidateAPITestCase(MyTestCase):
         delete_policy("test48")
         remove_token("CR2A")
         remove_token("CR2B")
+
+    def test_30_return_different_tokentypes(self):
+        """
+        Return different tokentypes
+
+        If there are more than one matching tokens, the check_token_list in lib/token.py
+        returns a tokentype:
+        1. a specific tokentype if all matching tokens are of the same type
+        2. an "undetermined" tokentype, if the matching tokens are of
+           different type.
+        """
+        self.setUp_user_realms()
+        user = User("cornelius", self.realm1)
+
+        # two different token types
+        init_token({"serial": "SPASS1",
+                    "type": "spass",
+                    "pin": "hallo123"}, user)
+        init_token({"serial": "PW1",
+                    "type": "pw",
+                    "otpkey": "123",
+                    "pin": "hallo"}, user)
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "hallo123"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(detail.get("type"), "undetermined")
+
+        # two same token types.
+        remove_token("PW1")
+        init_token({"serial": "SPASS2",
+                    "type": "spass",
+                    "pin": "hallo123"}, user)
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "hallo123"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(detail.get("type"), "spass")
+
+        # A user has one HOTP token and two spass tokens.
+        init_token({"serial": "HOTP1",
+                    "type": "hotp",
+                    "otpkey": self.otpkey,
+                    "pin": "hallo"}, user)
+        # Without policy he can authenticate with the spass token
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "hallo123"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(detail.get("type"), "spass")
+
+        # policy only allows HOTP.
+        set_policy("onlyHOTP", scope=SCOPE.AUTHZ,
+                   action="{0!s}=hotp".format(ACTION.TOKENTYPE))
+
+        # He can not authenticate with the spass token!
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "hallo123"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 403, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("status"), False)
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(detail, None)
+
+        # Define a passthru policy
+        set_policy("passthru", scope=SCOPE.AUTH,
+                   action="{0!s}=userstore".format(ACTION.PASSTHRU))
+
+        # A user with a passthru policy can authenticate, since he has not tokentype
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "passthru",
+                                                 "pass": "pthru"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+
+        delete_policy("onlyHOTP")
+        delete_policy("passthru")
+        remove_token("SPASS1")
+        remove_token("SPASS2")
+        remove_token("HOTP1")

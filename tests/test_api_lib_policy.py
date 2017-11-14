@@ -1227,7 +1227,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         jresult = json.loads(r.data)
         self.assertTrue(jresult.get("result").get("value"))
 
-    def test_01_check_tokentype_no_type(self):
+    def test_01_check_undetermined_tokentype(self):
         # If there is a tokentype policy but the type can not be
         # determined, authentication fails.
         builder = EnvironBuilder(method='POST',
@@ -1245,7 +1245,8 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                           "value": True},
                "version": "privacyIDEA test",
                "id": 1,
-               "detail": {"message": "matching 2 tokens"}}
+               "detail": {"message": "matching 2 tokens",
+                          "type": "undetermined"}}
         resp = Response(json.dumps(res))
 
         # Set a policy, that does not allow the tokentype
