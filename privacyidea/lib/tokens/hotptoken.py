@@ -199,9 +199,6 @@ class HotpTokenClass(TokenClass):
         params = params or {}
         tokenlabel = params.get("tokenlabel", "<s>")
         tokenissuer = params.get("tokenissuer", "privacyIDEA")
-        # In case of a two-step initialization, add the parameters to the response
-        if is_true(params.get("2stepinit")):
-            response_detail["2step"] = self._construct_2step_parameters()
         # If the init_details contain an OTP key the OTP key
         # should be displayed as an enrollment URL
         otpkey = self.init_details.get('otpkey')
@@ -211,8 +208,8 @@ class HotpTokenClass(TokenClass):
                 try:
                     extra_data = {}
                     # Add two-step initialization parameters to QR codes
-                    if "2step" in response_detail:
-                        extra_data["2step"] = response_detail["2step"]
+                    if is_true(params.get("2stepinit")):
+                        extra_data.update(self._get_twostep_parameters())
                     goo_url = cr_google(key=otpkey,
                                         user=user.login,
                                         realm=user.realm,
@@ -253,18 +250,15 @@ class HotpTokenClass(TokenClass):
                     
         return response_detail
 
-    def _construct_2step_parameters(self):
+    def _get_twostep_parameters(self):
         """
-        Construct a string that sums up the 2-step initialization parameters
-        for the client. They are retrieved from the token info.
-        :return: A string consisting of "clientsize,keysize,difficulty".
+        :return: A dictionary with the keys ``2step_salt``,
+        ``2step_difficulty``, ``2step_output``, mapping each
+        key to a string.
         """
-        return u'{clientsize},{keysize},{difficulty}'.format(
-            clientsize=self.get_tokeninfo('2step_clientsize'),
-            keysize=keylen[self.hashlib],
-            difficulty=self.get_tokeninfo('2step_difficulty'),
-        )
-
+        return {'2step_salt': str(self.get_tokeninfo('2step_clientsize')),
+                '2step_output': str(keylen[self.hashlib]),
+                '2step_difficulty': str(self.get_tokeninfo('2step_difficulty'))}
 
     @log_with(log)
     def update(self, param, reset_failcount=True):

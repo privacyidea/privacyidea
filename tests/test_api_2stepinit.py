@@ -40,7 +40,10 @@ class TwoStepInitTestCase(MyTestCase):
             serial = detail.get("serial")
             otpkey_url = detail.get("otpkey", {}).get("value")
             server_component = binascii.unhexlify(otpkey_url.split("/")[2])
-            self.assertEqual(detail['2step'], '8,20,10000')
+            google_url = detail["googleurl"]["value"]
+            self.assertIn('2step_difficulty=10000', google_url)
+            self.assertIn('2step_salt=8', google_url)
+            self.assertIn('2step_output=20', google_url)
 
         client_component = "VRYSECRT"
         hex_client_component = binascii.hexlify(client_component)
@@ -216,6 +219,100 @@ class TwoStepInitTestCase(MyTestCase):
         self.assertEqual(len(server_component), 33)
         # Check that the OTP key is what we expected it to be
         expected_secret = pbkdf2(server_component, client_component, 12345, 20)
+        self.assertEqual(otpkey_bin, expected_secret)
+
+        with self.app.test_request_context('/token/'+ serial,
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        delete_policy("force_twostep")
+        delete_policy("twostep_params")
+
+    def test_02_custom_parameters(self):
+        set_policy(
+            name="force_2step",
+            action=["enrollHOTP=1", "delete"], # no twostep policy at all
+            scope=SCOPE.ADMIN,
+        )
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp",
+                                                 "genkey": "1",
+                                                 "2stepinit": "1",
+                                                 "2step_serversize": "5",
+                                                 "2step_clientsize": "16",
+                                                 "2step_difficulty": "17898",
+                                                 "hashlib": "sha512" # force 64-byte secret
+                                                 },
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("status") is True, result)
+            self.assertTrue(result.get("value") is True, result)
+            detail = json.loads(res.data).get("detail")
+            serial = detail.get("serial")
+            otpkey_url = detail.get("otpkey", {}).get("value")
+            server_component = binascii.unhexlify(otpkey_url.split("/")[2])
+
+        client_component = "wrongsize0" # 10 bytes
+        hex_client_component = binascii.hexlify(client_component)
+
+        # Supply a client secret of incorrect size
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp",
+                                                 "serial": serial,
+                                                 "otpkey": hex_client_component,
+                                                 },
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = json.loads(res.data).get("result")
+            self.assertFalse(result.get("status"))
+
+        client_component = "correctsizeABCDE" # 16 bytes
+        hex_client_component = binascii.hexlify(client_component)
+
+        # Now doing the correct 2nd step
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp",
+                                                 "serial": serial,
+                                                 "otpkey": hex_client_component,
+                                                 "2step_serversize": "3", # will have no effect
+                                                 "2step_clientsize": "4",
+                                                 "2step_difficulty": "33333"
+                                                 },
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("status") is True, result)
+            self.assertTrue(result.get("value") is True, result)
+            detail = json.loads(res.data).get("detail")
+            otpkey_url = detail.get("otpkey", {}).get("value")
+            otpkey = otpkey_url.split("/")[2]
+
+        # Now try to authenticate
+        otpkey_bin = binascii.unhexlify(otpkey)
+        otp_value = HmacOtp().generate(key=otpkey_bin, counter=1)
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "pass": otp_value}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("status"), True)
+            self.assertEqual(result.get("value"), True)
+
+        # Check serversize
+        self.assertEqual(len(server_component), 5)
+        # Check that the OTP key is what we expected it to be
+        expected_secret = pbkdf2(server_component, client_component, 17898, 64)
         self.assertEqual(otpkey_bin, expected_secret)
 
         with self.app.test_request_context('/token/'+ serial,
