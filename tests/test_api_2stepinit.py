@@ -131,9 +131,9 @@ class TwoStepInitTestCase(MyTestCase):
                                            data={"type": "hotp",
                                                  "genkey": "1",
                                                  "2stepinit": "0", # will be forced nevertheless
-                                                 "twostep_serversize": "3",
-                                                 "twostep_clientsize": "4",
-                                                 "twostep_difficulty": "33333"
+                                                 "2step_serversize": "3",
+                                                 "2step_clientsize": "4",
+                                                 "2step_difficulty": "33333"
                                                  },
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -185,9 +185,9 @@ class TwoStepInitTestCase(MyTestCase):
                                            data={"type": "hotp",
                                                  "serial": serial,
                                                  "otpkey": hex_client_component,
-                                                 "twostep_serversize": "3", # will have no effect
-                                                 "twostep_clientsize": "4",
-                                                 "twostep_difficulty": "33333"
+                                                 "2step_serversize": "3", # will have no effect
+                                                 "2step_clientsize": "4",
+                                                 "2step_difficulty": "33333"
                                                  },
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()

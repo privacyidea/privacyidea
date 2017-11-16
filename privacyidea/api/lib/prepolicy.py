@@ -467,14 +467,16 @@ def init_tokenlabel(request=None, action=None):
 
     return True
 
-def twostep_enrollment(request=None, action=None):
+def twostep_enrollment_activation(request=None, action=None):
     """
-    This policy enables and configures the two-step enrollment process via
-    the privacyIDEA authenticator app.
+    This policy enables the two-step enrollment process according
+    to the configured policies.
+    If a ``<type>_twostep`` policy matches, the ``2stepinit``
+    parameter is set according to the policy.
+    If no such policy matches, the user can pass a value freely.
     """
-    params = request.all_data
     policy_object = g.policy_object
-    user_object = get_user_from_param(params)
+    user_object = get_user_from_param(request.all_data)
     serial = getParam(request.all_data, "serial", optional)
     token_type = request.all_data.get("type")
     token_exists = False
@@ -490,27 +492,23 @@ def twostep_enrollment(request=None, action=None):
     if role == ROLE.ADMIN:
         scope = SCOPE.ADMIN
         adminrealm = g.logged_in_user.get("realm")
-        realm = user_object.realm
     else:
         scope = SCOPE.USER
         adminrealm = None
-        realm = user_object.realm
+    realm = user_object.realm
     # In any case, the policy's user attribute is matched against the
     # currently logged-in user (which may be the admin or the
     # self-enrolling user). TODO: is that correct?
     user = g.logged_in_user.get("username")
     # Tokentypes have separate twostep actions
     action = "{}_twostep".format(token_type)
-    filter_values = {
-        'user': user,
-        'realm': realm,
-        'client': g.client_ip,
-        'adminrealm': adminrealm,
-    }
     twostep_enabled_pols = policy_object.get_action_values(action=action,
                                                            scope=scope,
                                                            unique=True,
-                                                           **filter_values)
+                                                           user=user,
+                                                           realm=realm,
+                                                           client=g.client_ip,
+                                                           adminrealm=adminrealm)
     if twostep_enabled_pols:
         enabled_setting = twostep_enabled_pols[0]
         if enabled_setting == "none":
@@ -526,10 +524,46 @@ def twostep_enrollment(request=None, action=None):
         else:
             raise PolicyError("Unknown 2step policy setting: {}".format(enabled_setting))
     else:
-        # Do not allow two-step initialization if no policy is set
-        request.all_data["2stepinit"] = 0
+        # If no policy matches, allow the user to pass 2stepinit.
+        # TODO: What if there are twostep policies, but none matches?
+        pass
+    return True
+
+def twostep_enrollment_parameters(request=None, action=None):
+    """
+    If the ``2stepinit`` parameter is set to true, this policy
+    reads additional configuration from policies and adds it
+    to ``request.all_data``, that is:
+
+     * ``{type}_twostep_serversize`` is written to ``2step_serversize``
+     * ``{type}_twostep_clientsize`` is written to ``2step_clientsize`
+     * ``{type}_twostep_difficulty`` is written to ``2step_difficulty``
+
+    If no policy is set, the user is free to pass the parameters.
+    """
+    policy_object = g.policy_object
+    user_object = get_user_from_param(request.all_data)
+    serial = getParam(request.all_data, "serial", optional)
+    token_type = request.all_data.get("type")
+    if serial:
+        tokensobject_list = get_tokens(serial=serial)
+        if len(tokensobject_list) == 1:
+            token_type = tokensobject_list[0].token.tokentype
+    token_type = (token_type or "hotp").lower()
+    role = g.logged_in_user.get("role")
+    # Differentiate between an admin enrolling a token for the
+    # user and a user self-enrolling a token.
+    if role == ROLE.ADMIN:
+        adminrealm = g.logged_in_user.get("realm")
+    else:
+        adminrealm = None
+    realm = user_object.realm
+    # In any case, the policy's user attribute is matched against the
+    # currently logged-in user (which may be the admin or the
+    # self-enrolling user). TODO: is that correct?
+    user = g.logged_in_user.get("username")
+    # Tokentypes have separate twostep actions
     if is_true(getParam(request.all_data, "2stepinit", optional)):
-        # Retrieve the parameters
         parameters = [("{}_twostep_serversize", "2step_serversize"),
                       ("{}_twostep_clientsize", "2step_clientsize"),
                       ("{}_twostep_difficulty", "2step_difficulty")]
@@ -537,10 +571,12 @@ def twostep_enrollment(request=None, action=None):
             action_values = policy_object.get_action_values(action=action_template.format(token_type),
                                                             scope=SCOPE.ENROLL,
                                                             unique=True,
-                                                            **filter_values)
+                                                            user=user,
+                                                            realm=realm,
+                                                            client=g.client_ip,
+                                                            adminrealm=adminrealm)
             if action_values:
                 request.all_data[parameter] = int(action_values[0])
-    return True
 
 def check_max_token_user(request=None, action=None):
     """
