@@ -53,7 +53,7 @@ class TwoStepInitTestCase(MyTestCase):
                                                  "otpkey": hex_client_component},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 403)
+            self.assertEqual(res.status_code, 400)
             result = json.loads(res.data).get("result")
             self.assertIn('2stepinit is only to be used in the first initialization step',
                           result.get("error").get("message"))
@@ -223,3 +223,5 @@ class TwoStepInitTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
+
+        delete_policy("force_twostep")

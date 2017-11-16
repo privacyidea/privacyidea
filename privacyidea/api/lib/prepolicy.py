@@ -476,15 +476,13 @@ def twostep_enrollment(request=None, action=None):
     policy_object = g.policy_object
     user_object = get_user_from_param(params)
     serial = getParam(request.all_data, "serial", optional)
-    second_step = False
     token_type = request.all_data.get("type")
+    token_exists = False
     if serial:
         tokensobject_list = get_tokens(serial=serial)
         if len(tokensobject_list) == 1:
-            token_obj = tokensobject_list[0].token
-            token_type = token_obj.tokentype
-            if token_obj.rollout_state == "clientwait":
-                second_step = True
+            token_type = tokensobject_list[0].token.tokentype
+            token_exists = True
     token_type = (token_type or "hotp").lower()
     role = g.logged_in_user.get("role")
     # Differentiate between an admin enrolling a token for the
@@ -517,35 +515,31 @@ def twostep_enrollment(request=None, action=None):
         enabled_setting = twostep_enabled_pols[0]
         if enabled_setting == "none":
             # Force two-step initialization to be None
-            use_twostep = False
+            request.all_data["2stepinit"] = 0
         elif enabled_setting == "allow":
             # The user is allowed to pass 2stepinit=1
-            use_twostep = is_true(getParam(request.all_data, "2stepinit", optional)) or second_step
+            pass
         elif enabled_setting == "force":
-            # We force 2stepinit to be 1
-            # TODO: Throw an error?
-            use_twostep = True
+            # We force 2stepinit to be 1 (if the token does not exist yet)
+            if not token_exists:
+                request.all_data["2stepinit"] = 1
+        else:
+            raise PolicyError("Unknown 2step policy setting: {}".format(enabled_setting))
     else:
         # Do not allow two-step initialization if no policy is set
-        use_twostep = False
-    if use_twostep:
+        request.all_data["2stepinit"] = 0
+    if is_true(getParam(request.all_data, "2stepinit", optional)):
         # Retrieve the parameters
-        parameters = [("{}_twostep_serversize", "2step_serversize", twostep.DEFAULT_SERVERSIZE),
-                      ("{}_twostep_clientsize", "2step_clientsize", twostep.DEFAULT_CLIENTSIZE),
-                      ("{}_twostep_difficulty", "2step_difficulty", twostep.DEFAULT_DIFFICULTY)]
-        for action_template, parameter, default_value in parameters:
+        parameters = [("{}_twostep_serversize", "2step_serversize"),
+                      ("{}_twostep_clientsize", "2step_clientsize"),
+                      ("{}_twostep_difficulty", "2step_difficulty")]
+        for action_template, parameter in parameters:
             action_values = policy_object.get_action_values(action=action_template.format(token_type),
                                                             scope=SCOPE.ENROLL,
                                                             unique=True,
                                                             **filter_values)
-            request.all_data[parameter] = int(action_values[0]) if action_values else default_value
-        # Finally, if we are in the second step, remove the 2stepinit parameter
-        if second_step and "2stepinit" in request.all_data:
-            raise PolicyError("2stepinit is only to be used in the first initialization step.")
-        elif not second_step:
-            request.all_data["2stepinit"] = 1
-    else:
-        request.all_data["2stepinit"] = 0
+            if action_values:
+                request.all_data[parameter] = int(action_values[0])
     return True
 
 def check_max_token_user(request=None, action=None):

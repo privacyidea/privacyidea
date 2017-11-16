@@ -709,15 +709,15 @@ class HOTPTokenTestCase(MyTestCase):
         token.update({"2stepinit": "1"})
         # fetch the server component for later tests
         server_component = binascii.unhexlify(token.token.get_otpkey().getKey())
-        # generate a 10-byte client component
-        client_component = b'abcdefghij'
+        # generate a 8-byte client component
+        client_component = b'abcdefgh'
         # construct a secret
         token.update({"otpkey": binascii.hexlify(client_component)})
         # check the generated secret
         secret = binascii.unhexlify(token.token.get_otpkey().getKey())
         # check the correct lengths
         self.assertEqual(len(server_component), 20)
-        self.assertEqual(len(client_component), 10)
+        self.assertEqual(len(client_component), 8)
         self.assertEqual(len(secret), 20)
         # check the secret has been generated according to the specification
         expected_secret = pbkdf2(server_component, client_component, 10000, 20)
@@ -731,6 +731,8 @@ class HOTPTokenTestCase(MyTestCase):
         token.update({
             "2stepinit": "1",
             "2step_serversize": "40",
+            "2step_difficulty": "12345",
+            "2step_clientsize": "12",
             "hashlib": "sha512",
         })
         # fetch the server component for later tests
@@ -740,7 +742,6 @@ class HOTPTokenTestCase(MyTestCase):
         # construct a secret
         token.update({
             "otpkey": binascii.hexlify(client_component),
-            "2step_difficulty": 12345,
             })
         # check the generated secret
         secret = binascii.unhexlify(token.token.get_otpkey().getKey())

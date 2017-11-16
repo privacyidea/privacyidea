@@ -78,6 +78,7 @@ import logging
 import hashlib
 import datetime
 
+from privacyidea.lib import twostep
 from .error import (TokenAdminError,
                     ParameterError)
 
@@ -491,7 +492,11 @@ class TokenClass(object):
             # Use the 2step_serversize setting for the size of the server secret
             # (if it is set)
             key_size = int(getParam(param, "2step_serversize", optional, key_size))
-
+            # Add twostep settings to the tokeninfo
+            for key, default in [
+                ("2step_difficulty", twostep.DEFAULT_DIFFICULTY),
+                ("2step_clientsize", twostep.DEFAULT_CLIENTSIZE)]:
+                self.add_tokeninfo(key, getParam(param, key, optional, default))
 
         if genkey not in [0, 1]:
             raise ParameterError("TokenClass supports only genkey in  range ["
