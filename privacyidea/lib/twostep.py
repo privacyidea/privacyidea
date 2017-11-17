@@ -17,6 +17,5 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-DEFAULT_SERVERSIZE = 20
 DEFAULT_CLIENTSIZE = 8
 DEFAULT_DIFFICULTY = 10000

@@ -3,6 +3,7 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
+from privacyidea.lib.error import ParameterError
 
 PWFILE = "tests/testdata/passwords"
 
@@ -723,7 +724,7 @@ class HOTPTokenTestCase(MyTestCase):
         expected_secret = pbkdf2(server_component, client_component, 10000, 20)
         self.assertEqual(secret, expected_secret)
 
-    def test_29_2step_generation_custom(self):
+    def test_01_2step_generation_custom(self):
         serial = "2step2"
         db_token = Token(serial, tokentype="hotp")
         db_token.save()
@@ -735,13 +736,24 @@ class HOTPTokenTestCase(MyTestCase):
             "2step_clientsize": "12",
             "hashlib": "sha512",
         })
+        self.assertEqual(token.token.rollout_state, "clientwait")
+        self.assertEqual(token.get_tokeninfo("2step_clientsize"), "12")
+        self.assertEqual(token.get_tokeninfo("2step_difficulty"), "12345")
         # fetch the server component for later tests
         server_component = binascii.unhexlify(token.token.get_otpkey().getKey())
+        # too short
+        self.assertRaises(ParameterError, token.update, {
+            "otpkey": binascii.hexlify("="*8)
+        })
         # generate a 12-byte client component
         client_component = b'abcdefghijkl'
         # construct a secret
         token.update({
             "otpkey": binascii.hexlify(client_component),
+            # the following values are ignored
+            "2step_serversize": "23",
+            "2step_difficulty": "666666",
+            "2step_clientsize": "13"
             })
         # check the generated secret
         secret = binascii.unhexlify(token.token.get_otpkey().getKey())
@@ -752,3 +764,4 @@ class HOTPTokenTestCase(MyTestCase):
         # check the secret has been generated according to the specification
         expected_secret = pbkdf2(server_component, client_component, 12345, len(secret))
         self.assertEqual(secret, expected_secret)
+        self.assertTrue(token.token.active)

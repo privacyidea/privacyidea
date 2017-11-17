@@ -118,7 +118,7 @@ class TwoStepInitTestCase(MyTestCase):
 
     def test_02_force_parameters(self):
         set_policy(
-            name="force_2step",
+            name="force_twostep",
             action=["hotp_twostep=force", "enrollHOTP=1", "delete"],
             scope=SCOPE.ADMIN,
         )
@@ -232,7 +232,7 @@ class TwoStepInitTestCase(MyTestCase):
 
     def test_02_custom_parameters(self):
         set_policy(
-            name="force_2step",
+            name="enrollhotp",
             action=["enrollHOTP=1", "delete"], # no twostep policy at all
             scope=SCOPE.ADMIN,
         )
@@ -321,4 +321,45 @@ class TwoStepInitTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
 
-        delete_policy("force_twostep")
+        delete_policy("enrollhotp")
+
+    def test_03_no_2stepinit(self):
+        set_policy(
+            name="disallow_twostep",
+            action=["enrollHOTP=1", "delete", "hotp_twostep=none"],
+            scope=SCOPE.ADMIN,
+        )
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp",
+                                                 "genkey": "1",
+                                                 "2stepinit": "1",
+                                                 # will be ignored
+                                                 "2step_serversize": "5",
+                                                 "2step_clientsize": "16",
+                                                 "2step_difficulty": "17898",
+                                                 },
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("status") is True, result)
+            self.assertTrue(result.get("value") is True, result)
+            detail = json.loads(res.data).get("detail")
+            serial = detail.get("serial")
+            otpkey_url = detail.get("otpkey", {}).get("value")
+            otpkey_bin = binascii.unhexlify(otpkey_url.split("/")[2])
+
+        # Now try to authenticate
+        otp_value = HmacOtp().generate(key=otpkey_bin, counter=1)
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "pass": otp_value}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("status"), True)
+            self.assertEqual(result.get("value"), True)
+
+        delete_policy("disallow_twostep")

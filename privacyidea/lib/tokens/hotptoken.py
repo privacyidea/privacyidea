@@ -46,6 +46,7 @@ import binascii
 
 from .HMAC import HmacOtp
 from privacyidea.api.lib.utils import getParam
+from privacyidea.lib import twostep
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
@@ -277,6 +278,12 @@ class HotpTokenClass(TokenClass):
         for k, v in param.items():
             upd_param[k] = v
 
+        twostep_init = is_true(getParam(param, "2stepinit", optional))
+        if twostep_init and "2step_serversize" in upd_param:
+            # Use the 2step_serversize setting for the size of the server secret
+            # (if it is set)
+            upd_param["keysize"] = int(getParam(upd_param, "2step_serversize", required))
+
         val = getParam(upd_param, "hashlib", optional)
         if val is not None:
             hashlibStr = val
@@ -309,7 +316,12 @@ class HotpTokenClass(TokenClass):
         else:
             self.set_otplen(get_from_config("DefaultOtpLen", 6))
 
-
+        # Add twostep settings to the tokeninfo
+        if twostep_init:
+            for key, default in [
+                ("2step_difficulty", twostep.DEFAULT_DIFFICULTY),
+                ("2step_clientsize", twostep.DEFAULT_CLIENTSIZE)]:
+                self.add_tokeninfo(key, getParam(param, key, optional, default))
 
     @property
     def hashlib(self):

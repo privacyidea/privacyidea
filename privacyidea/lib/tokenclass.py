@@ -78,7 +78,6 @@ import logging
 import hashlib
 import datetime
 
-from privacyidea.lib import twostep
 from .error import (TokenAdminError,
                     ParameterError)
 
@@ -478,9 +477,9 @@ class TokenClass(object):
         #
         otpKey = getParam(param, "otpkey", optional)
         genkey = int(getParam(param, "genkey", optional) or 0)
-        two_step_init = is_true(getParam(param, "2stepinit", optional))
+        twostep_init = is_true(getParam(param, "2stepinit", optional))
 
-        if two_step_init:
+        if twostep_init:
             if self.token.rollout_state == "clientwait":
                 # We do not do 2stepinit in the second step
                 raise ParameterError("2stepinit is only to be used in the "
@@ -489,14 +488,7 @@ class TokenClass(object):
             genkey = 1
             # The token is disabled
             self.token.active = False
-            # Use the 2step_serversize setting for the size of the server secret
-            # (if it is set)
-            key_size = int(getParam(param, "2step_serversize", optional, key_size))
-            # Add twostep settings to the tokeninfo
-            for key, default in [
-                ("2step_difficulty", twostep.DEFAULT_DIFFICULTY),
-                ("2step_clientsize", twostep.DEFAULT_CLIENTSIZE)]:
-                self.add_tokeninfo(key, getParam(param, key, optional, default))
+
 
         if genkey not in [0, 1]:
             raise ParameterError("TokenClass supports only genkey in  range ["
@@ -527,7 +519,7 @@ class TokenClass(object):
             self.add_init_details('otpkey', otpKey)
             self.token.set_otpkey(otpKey, reset_failcount=reset_failcount)
 
-        if two_step_init:
+        if twostep_init:
             # After the key is generated, we set "waiting for the client".
             self.token.rollout_state = "clientwait"
 
