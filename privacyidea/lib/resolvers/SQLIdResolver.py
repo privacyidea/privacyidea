@@ -190,7 +190,7 @@ class IdResolver (UserIdResolver):
         try:
             conditions = []
             column = self.map.get("userid")
-            conditions.append(getattr(self.TABLE, column).like(userId))
+            conditions.append(getattr(self.TABLE, column) == userId)
             conditions = self._append_where_filter(conditions, self.TABLE,
                                                    self.where)
             filter_condition = and_(*conditions)
@@ -547,7 +547,7 @@ class IdResolver (UserIdResolver):
         try:
             conditions = []
             column = self.map.get("userid")
-            conditions.append(getattr(self.TABLE, column).like(uid))
+            conditions.append(getattr(self.TABLE, column) == uid)
             conditions = self._append_where_filter(conditions, self.TABLE,
                                                    self.where)
             filter_condition = and_(*conditions)
