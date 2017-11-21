@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# 2017-11-21 Cornelius Kölbel <corenlius.koelbel@netknights.it>
+#            export to CSV including usernames
 # 2017-10-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add token export (HOTP and TOTP) to PSKC
 # 2017-05-02 Friedrich Weber <friedrich.weber@netknights.it>
@@ -133,6 +135,7 @@ def _compare_less_than(key, given_value_string):
         except ValueError:
             return False
     return comparator
+
 
 def _parse_datetime(key, value):
     if key == ACTION.LASTAUTH:
@@ -268,6 +271,22 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
     return tlist
 
 
+def export_csv(token_list):
+    outstring = u""
+    for token_obj in token_list:
+        outstring += u"{0!s},".format(token_obj.token.serial)
+        outstring += u"{0!s},".format(token_obj.token.tokentype)
+        #outstring += u"{0!s},".format(token_obj.token.description)
+        if token_obj.user:
+            outstring += u"{0!s},".format(token_obj.user.info.get("username",""))
+            outstring += u"{0!s},".format(token_obj.user.info.get("givenname",""))
+            outstring += u"{0!s},".format(token_obj.user.info.get("surname",""))
+            #outstring += u"{0!s},".format(token_obj.user.info.get("userid"))
+            #outstring += u"{0!s},".format(token_obj.token.resolver)
+        outstring += "\n"
+    return outstring
+
+
 @manager.option('--last_auth', help='Can be something like 10h, 7d, or 2y')
 @manager.option('--assigned', help='True|False|None')
 @manager.option('--active', help='True|False|None')
@@ -293,11 +312,13 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
 @manager.option('--set-description', help='')
 @manager.option('--set-tokeninfo-key', help='')
 @manager.option('--set-tokeninfo-value', help='')
+@manager.option('--outform', help='The output format of the action "export". The default'
+                                  'is "pskc". Other format "csv".')
 def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
          tokeninfo_value_greater_than, tokeninfo_value_less_than,
          tokeninfo_value_after, tokeninfo_value_before,
          orphaned, tokentype, serial, description, action, set_description,
-         set_tokeninfo_key, set_tokeninfo_value):
+         set_tokeninfo_key, set_tokeninfo_value, outform):
     """
     finds all tokens which match the conditions
     """
@@ -327,11 +348,14 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                 token_obj.get_tokeninfo()))
 
     elif action == "export":
-        key, soup = export_pskc(tlist)
-        sys.stderr.write("\n{0!s} tokens exported.\n".format(len(tlist)))
-        sys.stderr.write("\nThis is the AES encryption key of the token seeds.\n"
-                         "You need this key to import the tokens again:\n\n\t{0!s}\n\n".format(key))
-        print("{0!s}".format(soup))
+        if outform.lower() == "csv":
+            print(u"{0!s}".format(export_csv(tlist)))
+        else:
+            key, soup = export_pskc(tlist)
+            sys.stderr.write("\n{0!s} tokens exported.\n".format(len(tlist)))
+            sys.stderr.write("\nThis is the AES encryption key of the token seeds.\n"
+                             "You need this key to import the tokens again:\n\n\t{0!s}\n\n".format(key))
+            print("{0!s}".format(soup))
     else:
         for token_obj in tlist:
             try:
@@ -363,4 +387,5 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
 
 if __name__ == '__main__':
     manager.run()
+
 
