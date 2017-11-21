@@ -203,6 +203,9 @@ class HotpTokenClass(TokenClass):
         # If the init_details contain an OTP key the OTP key
         # should be displayed as an enrollment URL
         otpkey = self.init_details.get('otpkey')
+        # Add two-step initialization parameters to response
+        if is_true(params.get("2stepinit")):
+            response_detail.update(self._get_twostep_parameters())
         if otpkey:
             tok_type = self.type.lower()
             if user is not None:
@@ -254,12 +257,11 @@ class HotpTokenClass(TokenClass):
     def _get_twostep_parameters(self):
         """
         :return: A dictionary with the keys ``2step_salt``,
-        ``2step_difficulty``, ``2step_output``, mapping each
-        key to a string.
+        ``2step_difficulty``, ``2step_output``, mapping each key to an integer.
         """
-        return {'2step_salt': str(self.get_tokeninfo('2step_clientsize')),
-                '2step_output': str(keylen[self.hashlib]),
-                '2step_difficulty': str(self.get_tokeninfo('2step_difficulty'))}
+        return {'2step_salt': int(self.get_tokeninfo('2step_clientsize')),
+                '2step_output': int(keylen[self.hashlib]),
+                '2step_difficulty': int(self.get_tokeninfo('2step_difficulty'))}
 
     @log_with(log)
     def update(self, param, reset_failcount=True):

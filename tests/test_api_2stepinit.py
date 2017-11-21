@@ -46,6 +46,9 @@ class TwoStepInitTestCase(MyTestCase):
             self.assertIn('2step_difficulty=10000', google_url)
             self.assertIn('2step_salt=8', google_url)
             self.assertIn('2step_output=20', google_url)
+            self.assertEqual(detail['2step_difficulty'], 10000)
+            self.assertEqual(detail['2step_salt'], 8)
+            self.assertEqual(detail['2step_output'], 20)
 
         client_component = "VRYSECRT"
         checksum = hashlib.sha1(client_component).digest()[:4]
@@ -78,7 +81,6 @@ class TwoStepInitTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
             result = json.loads(res.data).get("result")
-            # TODO: Returns URL nonetheless?
             self.assertIn('Malformed base32check OTP key: Incorrect checksum',
                           result.get("error").get("message"))
 

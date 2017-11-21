@@ -57,7 +57,7 @@ def _construct_extra_parameters(extra_data):
     """
     Given a dictionary of extra key-value pairs (all unicode strings),
     return a string that may be appended to a google authenticator / oathtoken URL.
-    Keys and values are urlquoted. Unicodes are converted to UTF-8.
+    Keys and values are converted to strings and urlquoted. Unicodes are converted to UTF-8.
     :return: a string (may be empty if ``extra_data`` is empty
     """
     extra_data_list = []
@@ -66,8 +66,8 @@ def _construct_extra_parameters(extra_data):
             key = key.encode('utf-8')
         if isinstance(value, unicode):
             value = value.encode('utf-8')
-        extra_data_list.append('{key}={value}'.format(key=quote(key),
-                                                      value=quote(value)))
+        extra_data_list.append('{key}={value}'.format(key=quote(str(key)),
+                                                      value=quote(str(value))))
     return ('&' if extra_data_list else '') + '&'.join(extra_data_list)
 
 @log_with(log)
