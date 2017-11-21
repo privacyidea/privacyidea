@@ -2016,6 +2016,10 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
             if token_obj.check_all(message_list):
                 # The token is active and the auth counters are ok.
                 res = True
+                if not reply_dict.get("type"):
+                    reply_dict["type"] = token_obj.token.tokentype
+                if reply_dict["type"] != token_obj.token.tokentype:
+                    reply_dict["type"] = "undetermined"
                 # reset the failcounter of valid token
                 try:
                     token_obj.reset()
