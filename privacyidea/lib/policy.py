@@ -698,7 +698,11 @@ class PolicyClass(object):
         for pol in pols:
             for action, action_value in pol.get("action").items():
                 if action_value:
-                    rights.append(action)
+                    # if the action has an actual non-boolean value, return it
+                    if isinstance(action_value, basestring):
+                        rights.append(u"{}={}".format(action, action_value))
+                    else:
+                        rights.append(action)
         # check if we have policies at all:
         pols = self.get_policies(scope=scope, active=True)
         if not pols:
