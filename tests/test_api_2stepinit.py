@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+import hashlib
 import json
 import binascii
+import base64
 
 from passlib.utils.pbkdf2 import pbkdf2
 
@@ -46,19 +48,38 @@ class TwoStepInitTestCase(MyTestCase):
             self.assertIn('2step_output=20', google_url)
 
         client_component = "VRYSECRT"
-        hex_client_component = binascii.hexlify(client_component)
+        checksum = hashlib.sha1(client_component).digest()[:4]
+        base32check_client_component = base64.b32encode(checksum + client_component).strip("=")
+
         # Try to do a 2stepinit on a second step will raise an error
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "hotp",
                                                  "2stepinit": "1",
                                                  "serial": serial,
-                                                 "otpkey": hex_client_component},
+                                                 "otpkey": base32check_client_component,
+                                                 "otpkeyformat": "base32check"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
             result = json.loads(res.data).get("result")
             self.assertIn('2stepinit is only to be used in the first initialization step',
+                          result.get("error").get("message"))
+
+        # Invalid base32check will raise an error
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp",
+                                                 "2stepinit": "1",
+                                                 "serial": serial,
+                                                 "otpkey": "A" + base32check_client_component[1:],
+                                                 "otpkeyformat": "base32check"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400)
+            result = json.loads(res.data).get("result")
+            # TODO: Returns URL nonetheless?
+            self.assertIn('Malformed base32check OTP key: Incorrect checksum',
                           result.get("error").get("message"))
 
         # Authentication does not work yet!
@@ -80,7 +101,8 @@ class TwoStepInitTestCase(MyTestCase):
                                            method='POST',
                                            data={"type": "hotp",
                                                  "serial": serial,
-                                                 "otpkey": hex_client_component},
+                                                 "otpkey": base32check_client_component,
+                                                 "otpkeyformat": "base32check"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -148,7 +170,10 @@ class TwoStepInitTestCase(MyTestCase):
             serial = detail.get("serial")
             otpkey_url = detail.get("otpkey", {}).get("value")
             server_component = binascii.unhexlify(otpkey_url.split("/")[2])
-
+            google_url = detail["googleurl"]["value"]
+            self.assertIn('2step_difficulty=12345', google_url)
+            self.assertIn('2step_salt=11', google_url)
+            self.assertIn('2step_output=20', google_url)
         # Authentication does not work yet!
         wrong_otp_value = HmacOtp().generate(key=server_component, counter=1)
         with self.app.test_request_context('/validate/check',
