@@ -215,10 +215,6 @@ angular.module("TokenModule", ["privacyideaAuth"])
                     params.genkey = 1;
                     params.otpkey = null;
                 }
-                if (formdata.twostep_enrollment === true) {
-                    params["2stepinit"] = 1;
-                    params.twostep_enrollment = null;
-                }
                 params.pin = userObject.pin;
                 if (username) {
                     params.user = username;

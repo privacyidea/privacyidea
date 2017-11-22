@@ -240,32 +240,9 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         $scope.setTwostepEnrollmentDefault();
     };
 
-    // Check if twostep enrollment is allowed / forced
-    // Possible return values:
-    // "none" => do not display twostep checkbox
-    // "allow" => display checkbox (this is also the case if no twostep policy is set)
-    // "force" => display checked disabled checkbox
-    $scope.getTwostepEnrollment = function () {
-        var actionPrefix = $scope.form.type + "_twostep=";
-        // retrieve action from rights
-        if ($scope.checkRight(actionPrefix + "force")) {
-            return "force";
-        } else if ($scope.checkRight(actionPrefix + "none")) {
-            return "none";
-        } else {
-            // either _twostep=allow or unset
-            return "allow";
-        }
-    }
-
-    // Set the default value of the "twostep_enrollment" field accordingly
+    // Set the default value of the "2stepinit" field if twostep enrollment should be forced
     $scope.setTwostepEnrollmentDefault = function () {
-        if ($scope.getTwostepEnrollment() === 'force') {
-            $scope.form.twostep_enrollment = true;
-        } else {
-            // with "allow", we do not enable twostep enrollment by default
-            $scope.form.twostep_enrollment = false;
-        }
+        $scope.form["2stepinit"] = $scope.checkRight($scope.form.type + "_twostep=force");
     }
 
     // Initially set the default value
