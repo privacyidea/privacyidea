@@ -1397,4 +1397,3 @@ class TokenFailCounterTestCase(MyTestCase):
         # Clean up
         remove_token(pin1)
         remove_token(pin2)
-

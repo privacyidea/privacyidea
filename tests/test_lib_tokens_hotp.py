@@ -3,7 +3,6 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
-
 PWFILE = "tests/testdata/passwords"
 
 from .base import MyTestCase

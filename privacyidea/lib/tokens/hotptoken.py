@@ -32,8 +32,6 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from privacyidea.lib.error import ParameterError
-
 __doc__ = """
 This is the HOTP implementation.
 It is inherited from lib.tokenclass and is thus dependent on models.py
@@ -51,6 +49,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.lib.apps import create_google_authenticator_url as cr_google
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import create_img, is_true
 from privacyidea.lib.utils import generate_otpkey
