@@ -1,4 +1,4 @@
-privacyidea-venv (2.20.1-1trusty) jessie; urgency=low
+privacyidea-venv (2.20.1-1) jessie; urgency=low
 
   Fixes:
    * /token/init allows to pass otpkey AND genkey=false (#793)
