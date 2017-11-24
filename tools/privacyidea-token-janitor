@@ -44,6 +44,8 @@ from privacyidea.lib.policy import ACTION
 from privacyidea.lib.utils import parse_legacy_time
 from privacyidea.lib.importotp import export_pskc
 
+ALLOWED_ACTIONS = ["disable", "delete", "unassign", "mark", "export", "listuser"]
+
 __doc__ = """
 This script can be used to clean up the token database.
 
@@ -80,14 +82,20 @@ Actions:
         --serial=<regexp>
         --description=<regexp>
         
-        --action=delete|unassign|disable|mark|export
+        --action={0!s}
         
         --set-description="new description"
         --set-tokeninfo-key=<key>
         --set-tokeninfo-value=<value>    
     
+.. note:: If you fail to redirect the output of this command at the commandline
+   to e.g. a file with a UnicodeEncodeError, you need to set the environment
+   variable like this:
+       export PYTHONIOENCODING=UTF-8
+   Here is a good read about it:
+   https://stackoverflow.com/questions/4545661/unicodedecodeerror-when-redirecting-to-file
 
-"""
+""".format("|".join(ALLOWED_ACTIONS))
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
                                    unassign_token)
 from privacyidea.app import create_app
@@ -96,6 +104,8 @@ import re
 import sys
 
 __version__ = "0.1"
+
+
 
 app = create_app(config_name='production', silent=True)
 manager = Manager(app)
@@ -271,20 +281,55 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
     return tlist
 
 
-def export_csv(token_list):
-    outstring = u""
+def export_token_data(token_list):
+    """
+    Returns a list of tokens. Each token again is a simple list of data
+
+    :param token_list:
+    :return:
+    """
+    tokens = []
     for token_obj in token_list:
-        outstring += u"{0!s},".format(token_obj.token.serial)
-        outstring += u"{0!s},".format(token_obj.token.tokentype)
-        #outstring += u"{0!s},".format(token_obj.token.description)
+        token_data = []
+        token_data.append(u"{0!s}".format(token_obj.token.serial))
+        token_data.append(u"{0!s}".format(token_obj.token.tokentype))
         if token_obj.user:
-            outstring += u"{0!s},".format(token_obj.user.info.get("username",""))
-            outstring += u"{0!s},".format(token_obj.user.info.get("givenname",""))
-            outstring += u"{0!s},".format(token_obj.user.info.get("surname",""))
-            #outstring += u"{0!s},".format(token_obj.user.info.get("userid"))
-            #outstring += u"{0!s},".format(token_obj.token.resolver)
-        outstring += "\n"
-    return outstring
+            token_data.append(u"{0!s}".format(token_obj.user.info.get("username", "")))
+            token_data.append(u"{0!s}".format(token_obj.user.info.get("givenname", "")))
+            token_data.append(u"{0!s}".format(token_obj.user.info.get("surname", "")))
+            token_data.append(u"{0!s}".format(token_obj.user.info.get("userid")))
+            token_data.append(u"{0!s}".format(token_obj.token.resolver))
+        tokens.append(token_data)
+    return tokens
+
+
+def export_user_data(token_list):
+    """
+    Returns a list of users with the information how many tokens this user has assigned
+
+    :param token_list:
+    :return:
+    """
+    users = {}
+    userlist = {}
+    for token_obj in token_list:
+        if token_obj.user:
+            uid = u"{0!s}|{1!s}|{2!s}|{3!s}|{4!s}".format(
+                token_obj.user.info.get("username", ""),
+                token_obj.user.info.get("givenname", ""),
+                token_obj.user.info.get("surname", ""),
+                token_obj.user.info.get("userid", ""),
+                token_obj.token.resolver
+            )
+        else:
+            uid = u"N/A"
+
+        if uid in users.keys():
+            users[uid].append(token_obj.token.serial)
+        else:
+            users[uid] = [token_obj.token.serial]
+
+    return users
 
 
 @manager.option('--last_auth', help='Can be something like 10h, 7d, or 2y')
@@ -308,23 +353,25 @@ def export_csv(token_list):
 @manager.option('--serial', help='A regular expression on the serial')
 @manager.option('--description', help='A regular expression on the description')
 @manager.option('--action', help='Which action should be performed on the '
-                                 'found tokens')
+                                 'found tokens. {0!s}'.format("|".join(ALLOWED_ACTIONS)))
 @manager.option('--set-description', help='')
 @manager.option('--set-tokeninfo-key', help='')
 @manager.option('--set-tokeninfo-value', help='')
-@manager.option('--outform', help='The output format of the action "export". The default'
-                                  'is "pskc". Other format "csv".')
+@manager.option('--sum', help='In case of the action "listuser", this switch specifies if the output'
+                              ' should only contain the number of tokens owned by the user.',
+                dest='sum', action='store_true')
 def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
          tokeninfo_value_greater_than, tokeninfo_value_less_than,
          tokeninfo_value_after, tokeninfo_value_before,
          orphaned, tokentype, serial, description, action, set_description,
-         set_tokeninfo_key, set_tokeninfo_value, outform):
+         set_tokeninfo_key, set_tokeninfo_value, sum):
     """
     finds all tokens which match the conditions
     """
-    if action and action not in ["disable", "delete", "unassign", "mark", "export"]:
-            sys.stderr.write("Unknown action. Allowed actions are 'disable', "
-                             "'delete', 'unassign', 'mark', 'export'\n")
+    if action and action not in ALLOWED_ACTIONS:
+            sys.stderr.write("Unknown action. Allowed actions are {0!s}\n".format(
+                ", ".join(["'{0!s}'".format(x) for x in ALLOWED_ACTIONS])
+            ))
             sys.exit(1)
     filter = build_tokenvalue_filter(tokeninfo_key,
                                      tokeninfo_value,
@@ -347,15 +394,22 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                 token_obj.token.description,
                 token_obj.get_tokeninfo()))
 
-    elif action == "export":
-        if outform.lower() == "csv":
-            print(u"{0!s}".format(export_csv(tlist)))
+    elif action == "listuser":
+        if not sum:
+            tokens = export_token_data(tlist)
+            for token in tokens:
+                print(u",".join([u"'{0!s}'".format(x) for x in token]))
         else:
-            key, soup = export_pskc(tlist)
-            sys.stderr.write("\n{0!s} tokens exported.\n".format(len(tlist)))
-            sys.stderr.write("\nThis is the AES encryption key of the token seeds.\n"
-                             "You need this key to import the tokens again:\n\n\t{0!s}\n\n".format(key))
-            print("{0!s}".format(soup))
+            users = export_user_data(tlist)
+            for user, tokens in users.iteritems():
+                print(u"{0!s},{1!s}".format(user, len(tokens)))
+
+    elif action == "export":
+        key, soup = export_pskc(tlist)
+        sys.stderr.write("\n{0!s} tokens exported.\n".format(len(tlist)))
+        sys.stderr.write("\nThis is the AES encryption key of the token seeds.\n"
+                         "You need this key to import the tokens again:\n\n\t{0!s}\n\n".format(key))
+        print("{0!s}".format(soup))
     else:
         for token_obj in tlist:
             try:
