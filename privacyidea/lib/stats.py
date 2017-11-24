@@ -36,8 +36,8 @@ try:
     matplotlib.use('Agg')
 except Exception as exx:
     MATPLOT_READY = False
-    log.warning("If you want to see statistics you need to install python "
-                "matplotlib.")
+    #log.warning("If you want to see statistics you need to install python "
+    #            "matplotlib.")
 
 customcmap = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]
 
@@ -74,6 +74,7 @@ def get_statistics(auditobject, start_time=datetime.datetime.now()
 
     return result
 
+
 def _get_success_fail(df, key):
 
     try:
@@ -95,6 +96,7 @@ def _get_success_fail(df, key):
         log.info(exx)
         image_uri = "{0!s}".format(exx)
     return image_uri
+
 
 def _get_fail(df, key):
 
@@ -123,7 +125,6 @@ def _get_fail(df, key):
         log.info(exx)
         image_uri = "{0!s}".format(exx)
     return image_uri
-
 
 
 def _get_number_of(df, key, nums=5):
