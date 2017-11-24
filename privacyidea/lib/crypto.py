@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Use HSM for iv in aes_encrypt
 #  2017-10-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add encryption/decryption for PSKC containers.
 #  2016-04-08 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -462,7 +464,7 @@ def aes_encrypt_b64(key, data):
     :param data: Data to encrypt
     :return: base64 encrypted output, containing IV
     """
-    iv = os.urandom(16)
+    iv = geturandom(16)
     encdata = aes_encrypt(key, iv, data)
     return base64.b64encode(iv + encdata)
 

@@ -5,6 +5,8 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Generate the nonce on an HSM
 #  2016-04-04 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Use central yubico_api_signature function
 #  2015-01-28 Rewrite during flask migration
@@ -42,6 +44,7 @@ from privacyidea.lib.decorators import check_token_locked
 import traceback
 import requests
 from privacyidea.api.lib.utils import getParam
+from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
@@ -146,7 +149,7 @@ class YubicoTokenClass(TokenClass):
             log.warning("The tokenid in the OTP value does not match "
                         "the assigned token!")
         else:
-            nonce = binascii.hexlify(os.urandom(20))
+            nonce = geturandom(20, hex=True)
             p = {'nonce': nonce,
                  'otp': anOtpVal,
                  'id': apiId}
