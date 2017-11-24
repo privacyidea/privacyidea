@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Use HSM to generate Salt for PasswordHash
 #  2017-07-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add time offset parsing
 #  2015-04-05 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -881,9 +883,9 @@ class PasswordHash(object):
     def get_random_bytes(self, count):
         outp = ''
         try:
-            outp = os.urandom(count)
+            outp = geturandom(count)
         except Exception as exx:  # pragma: no cover
-            log.debug("problem getting os.urandom: {0!s}".format(exx))
+            log.debug("problem getting urandom: {0!s}".format(exx))
         if len(outp) < count:  # pragma: no cover
             outp = ''
             rem = count

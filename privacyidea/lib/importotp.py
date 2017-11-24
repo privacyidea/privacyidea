@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Generate the encryption key for PSKC export
+#             in the HSM
 #  2017-10-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Allow export to pskc file
 #  2017-01-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -49,7 +52,7 @@ import base64
 from privacyidea.lib.utils import modhex_decode
 from privacyidea.lib.utils import modhex_encode
 from privacyidea.lib.log import log_with
-from privacyidea.lib.crypto import (aes_decrypt_b64, aes_encrypt_b64)
+from privacyidea.lib.crypto import (aes_decrypt_b64, aes_encrypt_b64, geturandom)
 from Crypto.Cipher import AES
 from bs4 import BeautifulSoup
 import traceback
@@ -572,9 +575,9 @@ def export_pskc(tokenobj_list, psk=None):
     if psk:
         psk = binascii.unhexlify(psk)
     else:
-        psk = os.urandom(16)
+        psk = geturandom(16)
 
-    mackey = os.urandom(20)
+    mackey = geturandom(20)
     encrypted_mackey = aes_encrypt_b64(psk, mackey)
 
     # define the header
