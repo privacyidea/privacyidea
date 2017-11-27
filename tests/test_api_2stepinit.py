@@ -24,7 +24,7 @@ class TwoStepInitTestCase(MyTestCase):
     def test_01_init_token(self):
         set_policy(
             name="allow_2step",
-            action=["hotp_twostep=allow", "enrollHOTP=1", "delete"],
+            action=["hotp_2step=allow", "enrollHOTP=1", "delete"],
             scope=SCOPE.ADMIN,
         )
         with self.app.test_request_context('/token/init',
@@ -143,14 +143,14 @@ class TwoStepInitTestCase(MyTestCase):
     def test_02_force_parameters(self):
         set_policy(
             name="force_twostep",
-            action=["hotp_twostep=force", "enrollHOTP=1", "delete"],
+            action=["hotp_2step=force", "enrollHOTP=1", "delete"],
             scope=SCOPE.ADMIN,
         )
         set_policy(
             name="2step_params",
-            action=["hotp_twostep_difficulty=12345",
-                    "hotp_twostep_serversize=33",
-                    "hotp_twostep_clientsize=11"],
+            action=["hotp_2step_difficulty=12345",
+                    "hotp_2step_serversize=33",
+                    "hotp_2step_clientsize=11"],
             scope=SCOPE.ENROLL,
         )
         with self.app.test_request_context('/token/init',
@@ -353,7 +353,7 @@ class TwoStepInitTestCase(MyTestCase):
     def test_03_no_2stepinit(self):
         set_policy(
             name="disallow_twostep",
-            action=["enrollHOTP=1", "delete", "hotp_twostep=none"],
+            action=["enrollHOTP=1", "delete", "hotp_2step=none"],
             scope=SCOPE.ADMIN,
         )
         with self.app.test_request_context('/token/init',

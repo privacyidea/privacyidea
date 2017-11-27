@@ -242,7 +242,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
 
     // Set the default value of the "2stepinit" field if twostep enrollment should be forced
     $scope.setTwostepEnrollmentDefault = function () {
-        $scope.form["2stepinit"] = $scope.checkRight($scope.form.type + "_twostep=force");
+        $scope.form["2stepinit"] = $scope.checkRight($scope.form.type + "_2step=force");
     }
 
     // Initially set the default value

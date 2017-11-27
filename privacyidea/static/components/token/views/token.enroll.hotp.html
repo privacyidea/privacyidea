@@ -25,9 +25,9 @@ The HOTP token is an event based token. You can paste a secret key or
     </div>
 </div>
 <div class="form-group"
-     ng-hide="checkRight('hotp_twostep=none')">
+     ng-hide="checkRight('hotp_2step=none')">
     <input type="checkbox" ng-model="form['2stepinit']"
-           ng-disabled="checkRight('hotp_twostep=force')"
+           ng-disabled="checkRight('hotp_2step=force')"
            name="twostep_enrollment" id="twostep_enrollment">
     <label for="twostep_enrollment" translate>Use two-step enrollment with the privacyIDEA Authenticator App</label>
 </div>

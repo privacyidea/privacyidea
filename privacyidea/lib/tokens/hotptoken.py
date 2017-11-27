@@ -129,15 +129,15 @@ class HotpTokenClass(TokenClass):
                            'type': 'str',
                            'desc': _("The Yubikey access code used to initialize Yubikeys.")
                        },
-                       'hotp_twostep_clientsize': {
+                       'hotp_2step_clientsize': {
                            'type': 'int',
-                           'desc': _("The size of the OTP seed part contributed by the client (in bytes")
+                           'desc': _("The size of the OTP seed part contributed by the client (in bytes)")
                        },
-                       'hotp_twostep_serversize': {
+                       'hotp_2step_serversize': {
                            'type': 'int',
-                           'desc': _("The size of the OTP seed part contributed by the server (in bytes")
+                           'desc': _("The size of the OTP seed part contributed by the server (in bytes)")
                        },
-                       'hotp_twostep_difficulty': {
+                       'hotp_2step_difficulty': {
                            'type': 'int',
                            'dewsc': _("The difficulty factor used for the OTP seed generation "
                                       "(should be at least 10000)")
@@ -156,12 +156,12 @@ class HotpTokenClass(TokenClass):
                                                       'desc': _("Force the key to "
                                                                 "be generated on "
                                                                 "the server.")},
-                       'hotp_twostep': {'type': 'str',
+                       'hotp_2step': {'type': 'str',
                                         'value': ['allow', 'force', 'none'],
                                         'desc': desc_two_step_user}
                    },
                    SCOPE.ADMIN: {
-                       'hotp_twostep': {'type': 'str',
+                       'hotp_2step': {'type': 'str',
                                          'value': ['allow', 'force', 'none'],
                                          'desc': desc_two_step_admin}
                    }

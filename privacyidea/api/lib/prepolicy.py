@@ -470,7 +470,7 @@ def twostep_enrollment_activation(request=None, action=None):
     """
     This policy enables the two-step enrollment process according
     to the configured policies.
-    If a ``<type>_twostep`` policy matches, the ``2stepinit``
+    If a ``<type>_2step`` policy matches, the ``2stepinit``
     parameter is set according to the policy.
     If no such policy matches, the user can pass a value freely.
     """
@@ -500,7 +500,7 @@ def twostep_enrollment_activation(request=None, action=None):
     # self-enrolling user). TODO: is that correct?
     user = g.logged_in_user.get("username")
     # Tokentypes have separate twostep actions
-    action = "{}_twostep".format(token_type)
+    action = "{}_2step".format(token_type)
     twostep_enabled_pols = policy_object.get_action_values(action=action,
                                                            scope=scope,
                                                            unique=True,
@@ -534,9 +534,9 @@ def twostep_enrollment_parameters(request=None, action=None):
     reads additional configuration from policies and adds it
     to ``request.all_data``, that is:
 
-     * ``{type}_twostep_serversize`` is written to ``2step_serversize``
-     * ``{type}_twostep_clientsize`` is written to ``2step_clientsize`
-     * ``{type}_twostep_difficulty`` is written to ``2step_difficulty``
+     * ``{type}_2step_serversize`` is written to ``2step_serversize``
+     * ``{type}_2step_clientsize`` is written to ``2step_clientsize`
+     * ``{type}_2step_difficulty`` is written to ``2step_difficulty``
 
     If no policy is set, the user is free to pass the parameters.
     """
@@ -563,11 +563,10 @@ def twostep_enrollment_parameters(request=None, action=None):
     user = g.logged_in_user.get("username")
     # Tokentypes have separate twostep actions
     if is_true(getParam(request.all_data, "2stepinit", optional)):
-        parameters = [("{}_twostep_serversize", "2step_serversize"),
-                      ("{}_twostep_clientsize", "2step_clientsize"),
-                      ("{}_twostep_difficulty", "2step_difficulty")]
-        for action_template, parameter in parameters:
-            action_values = policy_object.get_action_values(action=action_template.format(token_type),
+        parameters = ("2step_serversize", "2step_clientsize", "2step_difficulty")
+        for parameter in parameters:
+            action = u"{}_{}".format(token_type, parameter)
+            action_values = policy_object.get_action_values(action=action,
                                                             scope=SCOPE.ENROLL,
                                                             unique=True,
                                                             user=user,
@@ -575,7 +574,7 @@ def twostep_enrollment_parameters(request=None, action=None):
                                                             client=g.client_ip,
                                                             adminrealm=adminrealm)
             if action_values:
-                request.all_data[parameter] = int(action_values[0])
+                request.all_data[parameter] = action_values[0]
 
 def check_max_token_user(request=None, action=None):
     """
