@@ -260,7 +260,7 @@ class TwoStepInitTestCase(MyTestCase):
     def test_02_custom_parameters(self):
         set_policy(
             name="enrollhotp",
-            action=["enrollHOTP=1", "delete"], # no twostep policy at all
+            action=["enrollHOTP=1", "delete", "hotp_2step=allow"],
             scope=SCOPE.ADMIN,
         )
         with self.app.test_request_context('/token/init',
@@ -353,7 +353,7 @@ class TwoStepInitTestCase(MyTestCase):
     def test_03_no_2stepinit(self):
         set_policy(
             name="disallow_twostep",
-            action=["enrollHOTP=1", "delete", "hotp_2step=none"],
+            action=["enrollHOTP=1", "delete"], # no 2step policy => disallow by default
             scope=SCOPE.ADMIN,
         )
         with self.app.test_request_context('/token/init',
