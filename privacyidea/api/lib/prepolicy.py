@@ -467,11 +467,12 @@ def init_tokenlabel(request=None, action=None):
 
 def twostep_enrollment_activation(request=None, action=None):
     """
-    This policy enables the two-step enrollment process according
+    This policy function enables the two-step enrollment process according
     to the configured policies.
-    If a ``<type>_2step`` policy matches, the ``2stepinit``
-    parameter is set according to the policy.
-    If no such policy matches, the user can pass a value freely.
+    It is used to decorate the ``/token/init`` endpoint.
+
+    If a ``<type>_2step`` policy matches, the ``2stepinit`` parameter is handled according to the policy.
+    If no policy matches, the ``2stepinit`` parameter is removed from the request data.
     """
     policy_object = g.policy_object
     user_object = get_user_from_param(request.all_data)
@@ -527,7 +528,7 @@ def twostep_enrollment_activation(request=None, action=None):
 
 def twostep_enrollment_parameters(request=None, action=None):
     """
-    If the ``2stepinit`` parameter is set to true, this policy
+    If the ``2stepinit`` parameter is set to true, this policy function
     reads additional configuration from policies and adds it
     to ``request.all_data``, that is:
 
@@ -535,17 +536,19 @@ def twostep_enrollment_parameters(request=None, action=None):
      * ``{type}_2step_clientsize`` is written to ``2step_clientsize`
      * ``{type}_2step_difficulty`` is written to ``2step_difficulty``
 
-    If no policy is set, the user is free to pass the parameters.
+    If no policy matches, the value passed by the user is kept.
+
+    This policy function is used to decorate the ``/token/init`` endpoint.
     """
     policy_object = g.policy_object
     user_object = get_user_from_param(request.all_data)
     serial = getParam(request.all_data, "serial", optional)
-    token_type = request.all_data.get("type")
+    token_type = getParam(request.all_data, "type", optional, "hotp")
     if serial:
         tokensobject_list = get_tokens(serial=serial)
         if len(tokensobject_list) == 1:
             token_type = tokensobject_list[0].token.tokentype
-    token_type = (token_type or "hotp").lower()
+    token_type = token_type.lower()
     role = g.logged_in_user.get("role")
     # Differentiate between an admin enrolling a token for the
     # user and a user self-enrolling a token.
