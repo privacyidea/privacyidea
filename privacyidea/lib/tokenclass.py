@@ -77,14 +77,12 @@ This method is supposed to be overwritten by the corresponding token classes.
 import logging
 import hashlib
 import datetime
-import base64
-import binascii
 
 from .error import (TokenAdminError,
                     ParameterError)
 
 from ..api.lib.utils import getParam
-from .utils import generate_otpkey, is_true
+from .utils import generate_otpkey, is_true, decode_base32check
 from .log import log_with
 
 from .config import (get_from_config, get_prepend_pin)
@@ -451,34 +449,6 @@ class TokenClass(object):
 
         return pin_match, otp_counter, reply
 
-    @staticmethod
-    def decode_base32check(encoded_otpkey):
-        """
-        Decode the OTP key which is given in the following format:
-
-            strip_padding(base32(sha1(otpkey)[:4] + otpkey))
-
-        Raise a ParameterError if the OTP key is malformed.
-        :return: hex-encoded otpkey
-        """
-        # First, add the padding to have a multiple of 8 bytes
-        encoded_length = len(encoded_otpkey)
-        if encoded_length % 8 != 0:
-            encoded_otpkey += "=" * (8 - (encoded_length % 8))
-        assert len(encoded_otpkey) % 8 == 0
-        # Decode as base32
-        try:
-            decoded_otpkey = base64.b32decode(encoded_otpkey)
-        except TypeError:
-            raise ParameterError("Malformed base32check OTP key: Invalid base32")
-        # Extract checksum and otpkey
-        if len(decoded_otpkey) < 4:
-            raise ParameterError("Malformed base32check OTP key: Too short")
-        checksum, otpkey = decoded_otpkey[:4], decoded_otpkey[4:]
-        otpkey_hash = hashlib.sha1(otpkey).digest()
-        if otpkey_hash[:4] != checksum:
-            raise ParameterError("Malformed base32check OTP key: Incorrect checksum")
-        return binascii.hexlify(otpkey)
 
     @staticmethod
     def decode_otpkey(otpkey, otpkeyformat):
@@ -499,7 +469,7 @@ class TokenClass(object):
         if otpkeyformat == "hex":
             return otpkey
         elif otpkeyformat == "base32check":
-            return TokenClass.decode_base32check(otpkey)
+            return decode_base32check(otpkey)
         else:
             raise ParameterError("Unknown OTP key format: {!r}".format(otpkeyformat))
 
