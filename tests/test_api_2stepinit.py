@@ -81,7 +81,7 @@ class TwoStepInitTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
             result = json.loads(res.data).get("result")
-            self.assertIn('Malformed base32check OTP key: Incorrect checksum',
+            self.assertIn('Malformed base32check data: Incorrect checksum',
                           result.get("error").get("message"))
 
         # Authentication does not work yet!
