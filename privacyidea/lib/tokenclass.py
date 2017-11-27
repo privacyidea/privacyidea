@@ -82,7 +82,7 @@ from .error import (TokenAdminError,
                     ParameterError)
 
 from ..api.lib.utils import getParam
-from .utils import generate_otpkey
+from .utils import generate_otpkey, is_true, decode_base32check
 from .log import log_with
 
 from .config import (get_from_config, get_prepend_pin)
@@ -110,6 +110,9 @@ optional = True
 required = False
 FAILCOUNTER_EXCEEDED = "failcounter_exceeded"
 FAILCOUNTER_CLEAR_TIMEOUT = "failcounter_clear_timeout"
+
+TWOSTEP_DEFAULT_CLIENTSIZE = 8
+TWOSTEP_DEFAULT_DIFFICULTY = 10000
 
 log = logging.getLogger(__name__)
 
@@ -450,6 +453,31 @@ class TokenClass(object):
 
         return pin_match, otp_counter, reply
 
+
+    @staticmethod
+    def decode_otpkey(otpkey, otpkeyformat):
+        """
+        Decode the otp key which is given in a specific format.
+
+        Supported formats:
+         * ``hex``, in which the otpkey is returned verbatim
+         * ``base32check``, which is specified in ``decode_base32check``
+
+        In case the OTP key is malformed or if the format is unknown,
+        a ParameterError is raised.
+
+        :param otpkey: OTP key passed by the user
+        :param otpkeyformat: "hex" or "base32check"
+        :return: hex-encoded otpkey
+        """
+        if otpkeyformat == "hex":
+            return otpkey
+        elif otpkeyformat == "base32check":
+            return decode_base32check(otpkey)
+        else:
+            raise ParameterError("Unknown OTP key format: {!r}".format(otpkeyformat))
+
+
     def update(self, param, reset_failcount=True):
         """
         Update the token object
@@ -476,9 +504,14 @@ class TokenClass(object):
         #
         otpKey = getParam(param, "otpkey", optional)
         genkey = is_true(getParam(param, "genkey", optional))
-        two_step_init = int(getParam(param, "2stepinit", optional) or 0)
+        twostep_init = is_true(getParam(param, "2stepinit", optional))
+        otpkeyformat = getParam(param, "otpkeyformat", optional)
 
-        if two_step_init:
+        if otpKey is not None and otpkeyformat is not None:
+            # have to decode OTP key
+            otpKey = self.decode_otpkey(otpKey, otpkeyformat)
+
+        if twostep_init:
             if self.token.rollout_state == "clientwait":
                 # We do not do 2stepinit in the second step
                 raise ParameterError("2stepinit is only to be used in the "
@@ -511,13 +544,14 @@ class TokenClass(object):
                 server_component = self.token.get_otpkey().getKey()
                 client_component = otpKey
                 otpKey = self.generate_symmetric_key(server_component,
-                                                     client_component)
+                                                     client_component,
+                                                     param)
                 self.token.rollout_state = ""
                 self.token.active = True
             self.add_init_details('otpkey', otpKey)
             self.token.set_otpkey(otpKey, reset_failcount=reset_failcount)
 
-        if two_step_init:
+        if twostep_init:
             # After the key is generated, we set "waiting for the client".
             self.token.rollout_state = "clientwait"
 
