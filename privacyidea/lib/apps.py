@@ -107,8 +107,7 @@ def create_google_authenticator_url(key=None, user=None,
 
     We expect the key to be hexlified!
     """
-    if extra_data is None:
-        extra_data = {}
+    extra_data = extra_data or {}
 
     # policy depends on some lib.util
 
@@ -179,8 +178,7 @@ def create_oathtoken_url(otpkey=None, user=None, realm=None,
     # We need realm und user to be a string
     realm = realm or ""
     user = user or ""
-    if extra_data is None:
-        extra_data = {}
+    extra_data = extra_data or {}
 
     label = tokenlabel.replace("<s>",
                                serial).replace("<u>",

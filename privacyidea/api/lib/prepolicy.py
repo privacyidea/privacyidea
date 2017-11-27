@@ -59,7 +59,6 @@ import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.error import PolicyError, RegistrationError
 from flask import g, current_app
-from privacyidea.lib import twostep
 from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user)
@@ -477,14 +476,14 @@ def twostep_enrollment_activation(request=None, action=None):
     policy_object = g.policy_object
     user_object = get_user_from_param(request.all_data)
     serial = getParam(request.all_data, "serial", optional)
-    token_type = request.all_data.get("type")
+    token_type = getParam(request.all_data, "type", optional, "hotp")
     token_exists = False
     if serial:
         tokensobject_list = get_tokens(serial=serial)
         if len(tokensobject_list) == 1:
             token_type = tokensobject_list[0].token.tokentype
             token_exists = True
-    token_type = (token_type or "hotp").lower()
+    token_type = token_type.lower()
     role = g.logged_in_user.get("role")
     # Differentiate between an admin enrolling a token for the
     # user and a user self-enrolling a token.
@@ -497,7 +496,7 @@ def twostep_enrollment_activation(request=None, action=None):
     realm = user_object.realm
     # In any case, the policy's user attribute is matched against the
     # currently logged-in user (which may be the admin or the
-    # self-enrolling user). TODO: is that correct?
+    # self-enrolling user).
     user = g.logged_in_user.get("username")
     # Tokentypes have separate twostep actions
     action = "{}_2step".format(token_type)
@@ -557,7 +556,7 @@ def twostep_enrollment_parameters(request=None, action=None):
     realm = user_object.realm
     # In any case, the policy's user attribute is matched against the
     # currently logged-in user (which may be the admin or the
-    # self-enrolling user). TODO: is that correct?
+    # self-enrolling user).
     user = g.logged_in_user.get("username")
     # Tokentypes have separate twostep actions
     if is_true(getParam(request.all_data, "2stepinit", optional)):

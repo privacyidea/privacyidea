@@ -44,9 +44,8 @@ import binascii
 
 from .HMAC import HmacOtp
 from privacyidea.api.lib.utils import getParam
-from privacyidea.lib import twostep
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, TWOSTEP_DEFAULT_DIFFICULTY, TWOSTEP_DEFAULT_CLIENTSIZE
 from privacyidea.lib.log import log_with
 from privacyidea.lib.apps import create_google_authenticator_url as cr_google
 from privacyidea.lib.error import ParameterError
@@ -202,17 +201,16 @@ class HotpTokenClass(TokenClass):
         # If the init_details contain an OTP key the OTP key
         # should be displayed as an enrollment URL
         otpkey = self.init_details.get('otpkey')
-        # Add two-step initialization parameters to response
+        # Add two-step initialization parameters to response and QR code
+        extra_data = {}
         if is_true(params.get("2stepinit")):
-            response_detail.update(self._get_twostep_parameters())
+            twostep_parameters = self._get_twostep_parameters()
+            extra_data.update(twostep_parameters)
+            response_detail.update(twostep_parameters)
         if otpkey:
             tok_type = self.type.lower()
             if user is not None:
                 try:
-                    extra_data = {}
-                    # Add two-step initialization parameters to QR codes
-                    if is_true(params.get("2stepinit")):
-                        extra_data.update(self._get_twostep_parameters())
                     goo_url = cr_google(key=otpkey,
                                         user=user.login,
                                         realm=user.realm,
@@ -279,11 +277,17 @@ class HotpTokenClass(TokenClass):
         for k, v in param.items():
             upd_param[k] = v
 
-        twostep_init = is_true(getParam(param, "2stepinit", optional))
-        if twostep_init and "2step_serversize" in upd_param:
+        # Special handling of 2-step enrollment
+        if is_true(getParam(param, "2stepinit", optional)):
             # Use the 2step_serversize setting for the size of the server secret
             # (if it is set)
-            upd_param["keysize"] = int(getParam(upd_param, "2step_serversize", required))
+            if "2step_serversize" in upd_param:
+                upd_param["keysize"] = int(getParam(upd_param, "2step_serversize", required))
+            # Add twostep settings to the tokeninfo
+            for key, default in [
+                ("2step_difficulty", TWOSTEP_DEFAULT_DIFFICULTY),
+                ("2step_clientsize", TWOSTEP_DEFAULT_CLIENTSIZE)]:
+                self.add_tokeninfo(key, getParam(param, key, optional, default))
 
         val = getParam(upd_param, "hashlib", optional)
         if val is not None:
@@ -316,13 +320,6 @@ class HotpTokenClass(TokenClass):
             self.set_otplen(int(val))
         else:
             self.set_otplen(get_from_config("DefaultOtpLen", 6))
-
-        # Add twostep settings to the tokeninfo
-        if twostep_init:
-            for key, default in [
-                ("2step_difficulty", twostep.DEFAULT_DIFFICULTY),
-                ("2step_clientsize", twostep.DEFAULT_CLIENTSIZE)]:
-                self.add_tokeninfo(key, getParam(param, key, optional, default))
 
     @property
     def hashlib(self):

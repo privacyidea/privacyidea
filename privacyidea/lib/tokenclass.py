@@ -110,6 +110,9 @@ required = False
 FAILCOUNTER_EXCEEDED = "failcounter_exceeded"
 FAILCOUNTER_CLEAR_TIMEOUT = "failcounter_clear_timeout"
 
+TWOSTEP_DEFAULT_CLIENTSIZE = 8
+TWOSTEP_DEFAULT_DIFFICULTY = 10000
+
 log = logging.getLogger(__name__)
 
 
