@@ -64,7 +64,7 @@ from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token)
 from privacyidea.lib.utils import (generate_password, get_client_ip,
-                                   parse_timedelta)
+                                   parse_timedelta, is_true)
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.clientapplication import save_clientapplication
@@ -466,6 +466,119 @@ def init_tokenlabel(request=None, action=None):
 
     return True
 
+
+def twostep_enrollment_activation(request=None, action=None):
+    """
+    This policy function enables the two-step enrollment process according
+    to the configured policies.
+    It is used to decorate the ``/token/init`` endpoint.
+
+    If a ``<type>_2step`` policy matches, the ``2stepinit`` parameter is handled according to the policy.
+    If no policy matches, the ``2stepinit`` parameter is removed from the request data.
+    """
+    policy_object = g.policy_object
+    user_object = get_user_from_param(request.all_data)
+    serial = getParam(request.all_data, "serial", optional)
+    token_type = getParam(request.all_data, "type", optional, "hotp")
+    token_exists = False
+    if serial:
+        tokensobject_list = get_tokens(serial=serial)
+        if len(tokensobject_list) == 1:
+            token_type = tokensobject_list[0].token.tokentype
+            token_exists = True
+    token_type = token_type.lower()
+    role = g.logged_in_user.get("role")
+    # Differentiate between an admin enrolling a token for the
+    # user and a user self-enrolling a token.
+    if role == ROLE.ADMIN:
+        scope = SCOPE.ADMIN
+        adminrealm = g.logged_in_user.get("realm")
+    else:
+        scope = SCOPE.USER
+        adminrealm = None
+    realm = user_object.realm
+    # In any case, the policy's user attribute is matched against the
+    # currently logged-in user (which may be the admin or the
+    # self-enrolling user).
+    user = g.logged_in_user.get("username")
+    # Tokentypes have separate twostep actions
+    action = "{}_2step".format(token_type)
+    twostep_enabled_pols = policy_object.get_action_values(action=action,
+                                                           scope=scope,
+                                                           unique=True,
+                                                           user=user,
+                                                           realm=realm,
+                                                           client=g.client_ip,
+                                                           adminrealm=adminrealm)
+    if twostep_enabled_pols:
+        enabled_setting = twostep_enabled_pols[0]
+        if enabled_setting == "allow":
+            # The user is allowed to pass 2stepinit=1
+            pass
+        elif enabled_setting == "force":
+            # We force 2stepinit to be 1 (if the token does not exist yet)
+            if not token_exists:
+                request.all_data["2stepinit"] = 1
+        else:
+            raise PolicyError("Unknown 2step policy setting: {}".format(enabled_setting))
+    else:
+        # If no policy matches, the user is not allowed
+        # to pass 2stepinit
+        # Force two-step initialization to be None
+        if "2stepinit" in request.all_data:
+            del request.all_data["2stepinit"]
+    return True
+
+
+def twostep_enrollment_parameters(request=None, action=None):
+    """
+    If the ``2stepinit`` parameter is set to true, this policy function
+    reads additional configuration from policies and adds it
+    to ``request.all_data``, that is:
+
+     * ``{type}_2step_serversize`` is written to ``2step_serversize``
+     * ``{type}_2step_clientsize`` is written to ``2step_clientsize`
+     * ``{type}_2step_difficulty`` is written to ``2step_difficulty``
+
+    If no policy matches, the value passed by the user is kept.
+
+    This policy function is used to decorate the ``/token/init`` endpoint.
+    """
+    policy_object = g.policy_object
+    user_object = get_user_from_param(request.all_data)
+    serial = getParam(request.all_data, "serial", optional)
+    token_type = getParam(request.all_data, "type", optional, "hotp")
+    if serial:
+        tokensobject_list = get_tokens(serial=serial)
+        if len(tokensobject_list) == 1:
+            token_type = tokensobject_list[0].token.tokentype
+    token_type = token_type.lower()
+    role = g.logged_in_user.get("role")
+    # Differentiate between an admin enrolling a token for the
+    # user and a user self-enrolling a token.
+    if role == ROLE.ADMIN:
+        adminrealm = g.logged_in_user.get("realm")
+    else:
+        adminrealm = None
+    realm = user_object.realm
+    # In any case, the policy's user attribute is matched against the
+    # currently logged-in user (which may be the admin or the
+    # self-enrolling user).
+    user = g.logged_in_user.get("username")
+    # Tokentypes have separate twostep actions
+    if is_true(getParam(request.all_data, "2stepinit", optional)):
+        parameters = ("2step_serversize", "2step_clientsize", "2step_difficulty")
+        for parameter in parameters:
+            action = u"{}_{}".format(token_type, parameter)
+            action_values = policy_object.get_action_values(action=action,
+                                                            scope=SCOPE.ENROLL,
+                                                            unique=True,
+                                                            user=user,
+                                                            realm=realm,
+                                                            client=g.client_ip,
+                                                            adminrealm=adminrealm)
+            if action_values:
+                request.all_data[parameter] = action_values[0]
 
 def check_max_token_user(request=None, action=None):
     """

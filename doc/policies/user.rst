@@ -247,3 +247,21 @@ Introduced in version 2.10.
 If the user is located in an editable user store, this policy can define, if
 the user is allowed to perform a password reset. During the password reset an
 email with a link to reset the password is sent to the user.
+
+
+.. _user_policy_2step:
+
+hotp_2step and totp_2step
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This allows or forces the user to enroll a smartphone based token in two steps.
+In the second step the smartphone generates a part of the OTP secret, which the user
+needs to enter. (see :ref:`2step_enrollment`).
+Possible values are *allow* and *force*.
+This works in conjunction with the enrollment parameters :ref:`2step_parameters`.
+
+Such a policy can also be set for the administrator. See :ref:`admin_policy_2step`.
+
+New in version 2.21

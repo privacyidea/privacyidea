@@ -797,7 +797,6 @@ class TokenBaseTestCase(MyTestCase):
         self.assertEqual(db_token.active, False)
         serial = db_token.serial
         details = token_obj.init_details
-        server_component = details.get("otpkey")
 
         # 2. step
         client_component = "AAAAAA"
@@ -806,6 +805,15 @@ class TokenBaseTestCase(MyTestCase):
                           })
         self.assertEqual(db_token.rollout_state, "")
         self.assertEqual(db_token.active, True)
+
+        # Given a client component of K bytes, the base algorithm
+        # simply replaces the last K bytes of the server component
+        # with the client component.
+        server_component = details.get("otpkey")[:-len(client_component)]
+        expected_otpkey = server_component + client_component
+
+        self.assertEqual(db_token.get_otpkey().getKey(),
+                         expected_otpkey)
 
         token_obj.delete_token()
 

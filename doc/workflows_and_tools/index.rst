@@ -7,4 +7,5 @@ Workflows and Tools
    import/index
    enrollment_wizard/index
    tools/index
+   2step/index
 

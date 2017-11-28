@@ -256,3 +256,21 @@ regular expression. During registration of the U2F device the information
 is fetched from the attestation certificate.
 Only if the attribute in the attestation certificate matches accordingly the
 token can be registered.
+
+.. _2step_parameters:
+
+{type}_2step_clientsize, {type}_2step_serversize, {type}_2step_difficulty
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+These are token type specific parameters. They control the key generation during the
+2step token enrollment (see :ref:`2step_enrollment`).
+
+The ``serversize`` is the optional size (in bytes) of the server's key part.
+The ``clientsize`` is the size (in bytes) of the smartphone's key part.
+The ``difficulty`` is a parameter for the key generation.
+In the implementation in version 2.21 PBKDF2 is used. In this case the ``difficulty``
+specifies the number of rounds.
+
+This is new in version 2.21

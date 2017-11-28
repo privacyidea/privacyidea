@@ -239,7 +239,17 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             // preset TOTP hashlib
             $scope.form.hashlib = $scope.form['totp.hashlib'];
         }
+        // preset twostep enrollment
+        $scope.setTwostepEnrollmentDefault();
     };
+
+    // Set the default value of the "2stepinit" field if twostep enrollment should be forced
+    $scope.setTwostepEnrollmentDefault = function () {
+        $scope.form["2stepinit"] = $scope.checkRight($scope.form.type + "_2step=force");
+    }
+
+    // Initially set the default value
+    $scope.setTwostepEnrollmentDefault();
 
     // A watch function to change the form data in case another user is selected
     $scope.$watch(function(scope) {return scope.newUser.email;},

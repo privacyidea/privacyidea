@@ -53,6 +53,25 @@ from privacyidea.lib.user import User
 
 MAX_QRCODE_LEN = 180
 
+
+def _construct_extra_parameters(extra_data):
+    """
+    Given a dictionary of extra key-value pairs (all unicode strings),
+    return a string that may be appended to a google authenticator / oathtoken URL.
+    Keys and values are converted to strings and urlquoted. Unicodes are converted to UTF-8.
+    :return: a string (may be empty if ``extra_data`` is empty
+    """
+    extra_data_list = []
+    for key, value in extra_data.iteritems():
+        if isinstance(key, unicode):
+            key = key.encode('utf-8')
+        if isinstance(value, unicode):
+            value = value.encode('utf-8')
+        extra_data_list.append('{key}={value}'.format(key=quote(str(key)),
+                                                      value=quote(str(value))))
+    return ('&' if extra_data_list else '') + '&'.join(extra_data_list)
+
+
 @log_with(log)
 def create_motp_url(key, user=None, realm=None, serial=""):
     """
@@ -81,7 +100,8 @@ def create_google_authenticator_url(key=None, user=None,
                                     realm=None, tokentype="hotp", period=30,
                                     serial="mylabel", tokenlabel="<s>",
                                     hash_algo="SHA1", digits="6",
-                                    issuer="privacyIDEA", user_obj=None):
+                                    issuer="privacyIDEA", user_obj=None,
+                                    extra_data=None):
     """
     This creates the google authenticator URL.
     This url may only be 119 characters long.
@@ -89,6 +109,8 @@ def create_google_authenticator_url(key=None, user=None,
 
     We expect the key to be hexlified!
     """
+    extra_data = extra_data or {}
+
     # policy depends on some lib.util
 
     user_obj = user_obj or User()
@@ -141,31 +163,36 @@ def create_google_authenticator_url(key=None, user=None,
     return ("otpauth://{tokentype!s}/{label!s}?secret={secret!s}&"
             "{counter!s}{hash!s}{period!s}"
             "digits={digits!s}&"
-            "issuer={issuer!s}".format(tokentype=tokentype,
+            "issuer={issuer!s}{extra}".format(tokentype=tokentype,
                                        label=url_label, secret=otpkey,
                                        hash=hash_algo, period=period,
                                        digits=digits, issuer=url_issuer,
-                                       counter=counter))
+                                       counter=counter,
+                                       extra=_construct_extra_parameters(extra_data)))
 
 @log_with(log)
 def create_oathtoken_url(otpkey=None, user=None, realm=None,
-                         type="hotp", serial="mylabel", tokenlabel="<s>"):
+                         type="hotp", serial="mylabel", tokenlabel="<s>",
+                         extra_data=None):
     timebased = ""
     if "totp" == type.lower():
         timebased = "&timeBased=true"
     # We need realm und user to be a string
     realm = realm or ""
     user = user or ""
+    extra_data = extra_data or {}
 
     label = tokenlabel.replace("<s>",
                                serial).replace("<u>",
                                                user).replace("<r>", realm)
     url_label = quote(label)
 
-    url = "oathtoken:///addToken?name={0!s}&lockdown=true&key={1!s}{2!s}".format(
+    extra_parameters = _construct_extra_parameters(extra_data)
+    url = "oathtoken:///addToken?name={0!s}&lockdown=true&key={1!s}{2!s}{3!s}".format(
                                                                   url_label,
                                                                   otpkey,
-                                                                  timebased
+                                                                  timebased,
+                                                                  extra_parameters
                                                                   )
     return url
 

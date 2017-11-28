@@ -29,10 +29,12 @@ This module is tested in tests/test_lib_utils.py
 import logging
 log = logging.getLogger(__name__)
 import binascii
+import base64
 import qrcode
 import StringIO
 import urllib
 from privacyidea.lib.crypto import urandom, geturandom
+from privacyidea.lib.error import ParameterError
 import string
 import re
 from datetime import timedelta, datetime
@@ -271,6 +273,33 @@ def checksum(msg):
                 crc = crc ^ 0x8408
     return crc
 
+def decode_base32check(encoded_data):
+    """
+    Decode arbitrary data which is given in the following format::
+
+        strip_padding(base32(sha1(payload)[:4] + payload))
+
+    Raise a ParameterError if the encoded payload is malformed.
+    :return: hex-encoded payload
+    """
+    # First, add the padding to have a multiple of 8 bytes
+    encoded_length = len(encoded_data)
+    if encoded_length % 8 != 0:
+        encoded_data += "=" * (8 - (encoded_length % 8))
+    assert len(encoded_data) % 8 == 0
+    # Decode as base32
+    try:
+        decoded_data = base64.b32decode(encoded_data)
+    except TypeError:
+        raise ParameterError("Malformed base32check data: Invalid base32")
+    # Extract checksum and payload
+    if len(decoded_data) < 4:
+        raise ParameterError("Malformed base32check data: Too short")
+    checksum, payload = decoded_data[:4], decoded_data[4:]
+    payload_hash = hashlib.sha1(payload).digest()
+    if payload_hash[:4] != checksum:
+        raise ParameterError("Malformed base32check data: Incorrect checksum")
+    return binascii.hexlify(payload)
 
 def sanity_name_check(name, name_exp="^[A-Za-z0-9_\-\.]+$"):
     """
