@@ -149,6 +149,8 @@ def init():
     :jsonparam 2stepinit: set to =1 in conjunction with genkey=1 if you want
                     a 2 step initialization process. Additional policies have to be set
                     see :ref:`2step_enrollment`.
+    :jsonparam otpkeyformat: used to supply the OTP key in alternate formats, currently
+                            hex or base32check (see :ref:`2step_enrollment`)
 
     :return: a json result with a boolean "result": true
 

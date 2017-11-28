@@ -70,21 +70,59 @@ Google Play Store supports the two step enrollment.
 Specification
 -------------
 
-The two step enrollment simply adds some parameters to the originial Key URI.
+The two step enrollment simply adds some parameters to the original Key URI.
 
 **2step_output**
 
-This is the resulting key size, which the smartphone should generate.
+This is the resulting key size, which the smartphone should generate (in bytes).
 
 **2step_salt**
 
-This is the length of the client component that the smartphone should generate.
+This is the length of the client component that the smartphone should generate (in bytes).
 
 **2step_difficulty**
 
 This is the number of rounds for the PBKDF2 that the smartphone should use
 to generate the OTP secret.
 
+The ``secret` parameter of the Key URI contains the server component.
+
+The smartphone app then generates the client component, which is ``2step_salt`` random bytes.
+It is then displayed in a human-readable format called ``base32check``::
+
+    b32encode(sha1(client_component).digest()[0:4] + client_component).strip("=")
+
+In other words, the first four bytes of the client component's SHA-1 hash are concatenated
+with the actual client component. The result is encoded using base32, whereas
+trailing padding characters are removed.
+
+The second step of the enrollment process is realized as another request to the ``/token/init``
+endpoint::
+
+    POST /token/init
+
+    serial=<token serial>
+    otpkey=<base32check(client_component)>
+    otpkeyformat=base32check
+
+Server and smartphone app then use PBKDF2 to generate the final secret (see [#rfc2898]_ for parameter names)::
+
+    secret = PBKDF2(P=<server component>,
+                    S=<client component>,
+                    c=<2step_difficulty>
+                    dkLen=<2step_output>)
+
+.. note::
+
+    Please note that the two-step enrollment process is currently *not* designed to protect
+    against malicious attackers. Depending on the choice of iteration count and salt size,
+    an attacker who knows the server component and an OTP value may be able
+    to obtain the client component with a brute-force approach.
+    However, two-step enrollment is still an improvement to the status quo, as a simple copy
+    of the QR code does not immediately leak the OTP secret and obtaining the OTP secret
+    using brute-force is not trivial.
+
 .. [#keyuri] https://github.com/google/google-authenticator/wiki/Key-Uri-Format
 .. [#problem] https://netknights.it/en/the-problem-with-the-google-authenticator/
 .. [#authenticator] https://play.google.com/store/apps/details?id=it.netknights.piauthenticator
+.. [#rfc2898] https://www.ietf.org/rfc/rfc2898.txt
