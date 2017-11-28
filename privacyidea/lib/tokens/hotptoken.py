@@ -201,6 +201,8 @@ class HotpTokenClass(TokenClass):
         # If the init_details contain an OTP key the OTP key
         # should be displayed as an enrollment URL
         otpkey = self.init_details.get('otpkey')
+        # Add rollout state the response
+        response_detail['rollout_state'] = self.token.rollout_state
         # Add two-step initialization parameters to response and QR code
         extra_data = {}
         if is_true(params.get("2stepinit")):

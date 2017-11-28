@@ -120,9 +120,9 @@
 
 </div>
 
-<!-- Show this information after the token was enrolled -->
+<!-- Show this information after the token was enrolled completely -->
 <div ng-show="enrolledToken">
-    <p>
+    <p ng-hide="enrolledToken.rollout_state === 'clientwait'">
         <span ng-show="newUser.user && loggedInUser.role == 'admin'" translate>
             The token was successfully enrolled with serial number
             <a ui-sref="token.details({tokenSerial:enrolledToken.serial})">
@@ -153,8 +153,8 @@
          ng-include="instanceUrl+'/'+piCustomization+
          '/views/includes/token.enroll.post.bottom.html'"></div>
 
-    <div class="text-center" ng-hide="click_wait">
-        <button ng-click="enrolledToken = null;"
+    <div class="text-center" ng-hide="click_wait || enrolledToken.rollout_state === 'clientwait'">
+        <button ng-click="enrolledToken = null"
                 ng-hide="$state.includes('token.wizard')"
                 class="btn btn-primary" translate>Enroll a new token
         </button>
