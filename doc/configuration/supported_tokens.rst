@@ -56,7 +56,7 @@ Smartphone Apps
 
 .. _privacyidea_authenticator:
 
-**privacyIDEA Authenticator**. Our own privacyIDEA Authentictor is based
+**privacyIDEA Authenticator**. Our own privacyIDEA Authenticator is based
 on the concept of the Google Authenticator and works with the usual QR Code key URI
 enrollment. But on top it also allows for a more secure
 enrollment process (See :ref:`2step_enrollment`).

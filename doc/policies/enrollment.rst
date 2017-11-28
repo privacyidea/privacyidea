@@ -259,8 +259,8 @@ token can be registered.
 
 .. _2step_parameters:
 
-2step_clientsize, 2step_serversize, 2step_difficulty
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+{type}_2step_clientsize, {type}_2step_serversize, {type}_2step_difficulty
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: string
 

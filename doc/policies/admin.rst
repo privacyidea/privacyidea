@@ -461,7 +461,4 @@ This works in conjunction with the enrollment parameters :ref:`2step_parameters`
 
 Such a policy can also be set for the user. See :ref:`user_policy_2step`.
 
-.. note:: 2step enrollment avoids shoulder surfing during the enrollment
-   process an
-
 New in version 2.21

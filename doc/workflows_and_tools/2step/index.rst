@@ -47,7 +47,7 @@ Thus the administrator can *allow* or *force* a user (or other administrators) t
 do a two step enrollment. This way it is possible to avoid the enrollment of insecure
 Google Authenticator QR codes in the complete installation. (:ref:`user_policy_2step`).
 
-The default behaviour is to now allow a two step enrollment. Only if a corresponding
+The default behaviour is to not allow a two step enrollment. Only if a corresponding
 ``admin`` or ``user`` policy is defined, two step enrollment is possible.
 
 Key generation
@@ -58,7 +58,7 @@ necessary parameters for the key generation.
 
 Two step enrollment is possible for HOTP and TOTP tokens. Thus the administrator
 can define token type specific policies in the scope ``enrollment``:
-``hotp_clientsize``, ``totp_clientsize``, ``hotp_difficulty``...
+``hotp_2step_clientsize``, ``totp_2step_clientsize``, ``hotp_2step_difficulty``...
 see :ref:`2step_parameters`.
 
 privacyIDEA Authenticator
@@ -83,7 +83,7 @@ This is the length of the client component that the smartphone should generate.
 **2step_difficulty**
 
 This is the number of rounds for the PBKDF2 that the smartphone should use
-to generated the OTP secret.
+to generate the OTP secret.
 
 .. [#keyuri] https://github.com/google/google-authenticator/wiki/Key-Uri-Format
 .. [#problem] https://netknights.it/en/the-problem-with-the-google-authenticator/
