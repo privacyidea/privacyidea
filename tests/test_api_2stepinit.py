@@ -130,7 +130,7 @@ class TwoStepInitTestCase(MyTestCase):
             self.assertEqual(result.get("value"), True)
 
         # Check that the OTP key is what we expected it to be
-        expected_secret = pbkdf2(server_component, client_component, 10000, 20)
+        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 10000, 20)
         self.assertEqual(otpkey_bin, expected_secret)
 
         with self.app.test_request_context('/token/'+ serial,
@@ -245,7 +245,7 @@ class TwoStepInitTestCase(MyTestCase):
         # Check serversize
         self.assertEqual(len(server_component), 33)
         # Check that the OTP key is what we expected it to be
-        expected_secret = pbkdf2(server_component, client_component, 12345, 20)
+        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 12345, 20)
         self.assertEqual(otpkey_bin, expected_secret)
 
         with self.app.test_request_context('/token/'+ serial,
@@ -339,7 +339,7 @@ class TwoStepInitTestCase(MyTestCase):
         # Check serversize
         self.assertEqual(len(server_component), 5)
         # Check that the OTP key is what we expected it to be
-        expected_secret = pbkdf2(server_component, client_component, 17898, 64)
+        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 17898, 64)
         self.assertEqual(otpkey_bin, expected_secret)
 
         with self.app.test_request_context('/token/'+ serial,

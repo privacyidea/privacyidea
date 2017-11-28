@@ -722,7 +722,7 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertEqual(len(client_component), 8)
         self.assertEqual(len(secret), 20)
         # check the secret has been generated according to the specification
-        expected_secret = pbkdf2(server_component, client_component, 10000, 20)
+        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 10000, 20)
         self.assertEqual(secret, expected_secret)
 
     def test_29_2step_generation_custom(self):
@@ -763,7 +763,7 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertEqual(len(client_component), 12)
         self.assertEqual(len(secret), 64) # because of SHA-512
         # check the secret has been generated according to the specification
-        expected_secret = pbkdf2(server_component, client_component, 12345, len(secret))
+        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 12345, len(secret))
         self.assertEqual(secret, expected_secret)
         self.assertTrue(token.token.active)
 
@@ -809,6 +809,6 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertEqual(len(client_component), 12)
         self.assertEqual(len(secret), 64) # because of SHA-512
         # check the secret has been generated according to the specification
-        expected_secret = pbkdf2(server_component, client_component, 10000, len(secret))
+        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 10000, len(secret))
         self.assertEqual(secret, expected_secret)
         self.assertTrue(token.token.active)

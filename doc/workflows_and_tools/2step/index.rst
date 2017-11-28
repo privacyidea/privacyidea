@@ -107,10 +107,13 @@ endpoint::
 
 Server and smartphone app then use PBKDF2 to generate the final secret (see [#rfc2898]_ for parameter names)::
 
-    secret = PBKDF2(P=<server component>,
+    secret = PBKDF2(P=hexlify(<server component>),
                     S=<client component>,
                     c=<2step_difficulty>
                     dkLen=<2step_output>)
+
+whereas ``hexlify(<server component>)`` denotes a hex-encoding (using lowercase letters)
+of the byte array which comprises the server component.
 
 .. note::
 
