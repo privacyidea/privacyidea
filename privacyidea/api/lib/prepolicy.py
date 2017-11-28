@@ -466,6 +466,7 @@ def init_tokenlabel(request=None, action=None):
 
     return True
 
+
 def twostep_enrollment_activation(request=None, action=None):
     """
     This policy function enables the two-step enrollment process according
@@ -521,11 +522,13 @@ def twostep_enrollment_activation(request=None, action=None):
         else:
             raise PolicyError("Unknown 2step policy setting: {}".format(enabled_setting))
     else:
-        # If no policy matches, the user cannot pass 2stepinit
+        # If no policy matches, the user is not allowed
+        # to pass 2stepinit
         # Force two-step initialization to be None
         if "2stepinit" in request.all_data:
             del request.all_data["2stepinit"]
     return True
+
 
 def twostep_enrollment_parameters(request=None, action=None):
     """

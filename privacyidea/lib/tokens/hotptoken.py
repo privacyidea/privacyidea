@@ -156,13 +156,13 @@ class HotpTokenClass(TokenClass):
                                                                 "be generated on "
                                                                 "the server.")},
                        'hotp_2step': {'type': 'str',
-                                        'value': ['allow', 'force'],
-                                        'desc': desc_two_step_user}
+                                      'value': ['allow', 'force'],
+                                      'desc': desc_two_step_user}
                    },
                    SCOPE.ADMIN: {
                        'hotp_2step': {'type': 'str',
-                                         'value': ['allow', 'force'],
-                                         'desc': desc_two_step_admin}
+                                      'value': ['allow', 'force'],
+                                      'desc': desc_two_step_admin}
                    }
                }
                }

@@ -147,7 +147,8 @@ def init():
     :jsonparam validity_period_start: The beginning of the validity period
     :jsonparam validity_period_end: The end of the validity period
     :jsonparam 2stepinit: set to =1 in conjunction with genkey=1 if you want
-                    a 2 step initialization process. 
+                    a 2 step initialization process. Additional policies have to be set
+                    see :ref:`2step_enrollment`.
 
     :return: a json result with a boolean "result": true
 
