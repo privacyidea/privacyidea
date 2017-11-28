@@ -1137,7 +1137,7 @@ msgstr ""
 msgid "Handlermodule"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:50
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:57
 #: privacyidea/static/components/token/views/token.enroll.totp.html:58
 msgid "Hash algorithm"
 msgstr ""
@@ -1581,7 +1581,7 @@ msgstr ""
 msgid "OK"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:28
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:35
 #: privacyidea/static/components/token/views/token.enroll.motp.html:23
 #: privacyidea/static/components/token/views/token.enroll.totp.html:27
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:40
@@ -1601,7 +1601,7 @@ msgstr ""
 msgid "OTP Value"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:37
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:44
 #: privacyidea/static/components/token/views/token.enroll.totp.html:36
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:50
 msgid "OTP length"
@@ -2499,12 +2499,12 @@ msgstr ""
 msgid "The Enrollment URL"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:43
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:50
 #: privacyidea/static/components/token/views/token.enroll.totp.html:42
 msgid "The Google Authenticator only supports an OTP length of 6."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:56
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:63
 #: privacyidea/static/components/token/views/token.enroll.totp.html:64
 msgid "The Google Authenticator only supports the SHA1 algorithm."
 msgstr ""
@@ -3309,6 +3309,10 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:100
 msgid "Use TLS"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:32
+msgid "Use two-step enrollment with the privacyIDEA Authenticator App"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.details.html:288

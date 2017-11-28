@@ -1270,7 +1270,7 @@ msgstr "HOTP: Ereignisbasiertes Einmal-Passwort"
 msgid "Handlermodule"
 msgstr "Handlermodul"
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:50
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:57
 #: privacyidea/static/components/token/views/token.enroll.totp.html:58
 msgid "Hash algorithm"
 msgstr "Hash-Algorithmus"
@@ -1752,7 +1752,7 @@ msgstr "OCRA Suite"
 msgid "OK"
 msgstr "OK"
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:28
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:35
 #: privacyidea/static/components/token/views/token.enroll.motp.html:23
 #: privacyidea/static/components/token/views/token.enroll.totp.html:27
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:40
@@ -1772,7 +1772,7 @@ msgstr "Die OTP-PINs sind nicht gleich!"
 msgid "OTP Value"
 msgstr "OTP-Wert"
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:37
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:44
 #: privacyidea/static/components/token/views/token.enroll.totp.html:36
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:50
 msgid "OTP length"
@@ -2711,12 +2711,12 @@ msgstr ""
 msgid "The Enrollment URL"
 msgstr "Registrierungs-URL"
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:43
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:50
 #: privacyidea/static/components/token/views/token.enroll.totp.html:42
 msgid "The Google Authenticator only supports an OTP length of 6."
 msgstr "Der Google Authenticator unterstützt lediglich OTP Länge 6."
 
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:56
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:63
 #: privacyidea/static/components/token/views/token.enroll.totp.html:64
 msgid "The Google Authenticator only supports the SHA1 algorithm."
 msgstr "Der Google Authenticator unterstützt lediglich den SHA1-Algorithmus."
@@ -3751,6 +3751,10 @@ msgstr "STARTTLS mit einer LDAP-Verbindung auf Port 389 benutzen."
 #: privacyidea/static/components/config/views/config.smtp.edit.html:100
 msgid "Use TLS"
 msgstr "TLS verwenden"
+
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:32
+msgid "Use two-step enrollment with the privacyIDEA Authenticator App"
+msgstr "Ausrollen mit Zwei-Schritt und der privacyIDEA Authenticator App"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:288
 #: privacyidea/static/components/config/views/config.policies.list.html:10
