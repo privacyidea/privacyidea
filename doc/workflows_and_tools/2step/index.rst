@@ -85,7 +85,7 @@ This is the length of the client component that the smartphone should generate (
 This is the number of rounds for the PBKDF2 that the smartphone should use
 to generate the OTP secret.
 
-The ``secret` parameter of the Key URI contains the server component.
+The ``secret`` parameter of the Key URI contains the server component.
 
 The smartphone app then generates the client component, which is ``2step_salt`` random bytes.
 It is then displayed in a human-readable format called ``base32check``::
