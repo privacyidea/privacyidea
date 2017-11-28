@@ -53,6 +53,7 @@ from privacyidea.lib.user import User
 
 MAX_QRCODE_LEN = 180
 
+
 def _construct_extra_parameters(extra_data):
     """
     Given a dictionary of extra key-value pairs (all unicode strings),
@@ -69,6 +70,7 @@ def _construct_extra_parameters(extra_data):
         extra_data_list.append('{key}={value}'.format(key=quote(str(key)),
                                                       value=quote(str(value))))
     return ('&' if extra_data_list else '') + '&'.join(extra_data_list)
+
 
 @log_with(log)
 def create_motp_url(key, user=None, realm=None, serial=""):
