@@ -28,6 +28,7 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
     $scope.reverse = false;
     $scope.loggedInUser = AuthFactory.getUser();
     $scope.selectedToken = {serial: null};
+    $scope.clientpart = "";
 
     // Change the pagination
     $scope.pageChanged = function () {
@@ -382,6 +383,18 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         var params = $scope.form;
         params.serial = $scope.enrolledToken.serial;
         TokenFactory.enroll($scope.newUser, params, $scope.callback);
+    };
+
+    $scope.sendClientPart = function () {
+        var params = {
+            "otpkey": $scope.clientpart,
+            "otpkeyformat": "base32check",
+            "serial": $scope.enrolledToken.serial,
+        };
+        TokenFactory.enroll($scope.newUser, params, function (data) {
+            $scope.clientpart = "";
+            $scope.callback(data);
+        });
     };
 
     // Special Token functions

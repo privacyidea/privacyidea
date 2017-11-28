@@ -1,9 +1,9 @@
 <div class="row">
-    <div class="col-sm-6">
+    <div class="col-sm-6" ng-hide="form['2stepinit'] && enrolledToken.rollout_state !== 'clientwait'">
         <img width="{{ qrCodeWidth }}"
              src="{{ enrolledToken.googleurl.img }}"/>
     </div>
-    <div class="col-sm-6" ng-hide="$state.includes('token.wizard')">
+    <div class="col-sm-6" ng-hide="$state.includes('token.wizard') || form['2stepinit']">
         <accordion close-others="oneAtATime">
             <accordion-group heading="{{ 'The OTP key'|translate }}">
                 {{ enrolledToken.otpkey.value }}
@@ -23,6 +23,21 @@
         <button ng-click="regenerateToken()" class="btn btn-warning" translate>
             Regenerate QR Code
         </button>
+    </div>
+    <div class="col-sm-6" ng-show="form['2stepinit'] && enrolledToken.rollout_state === 'clientwait'">
+        <p translate>
+            Please scan the QR code with the privacyIDEA authenticator app and enter
+            the generated code below.
+        </p>
+        <div class="form-group">
+            <label for="clientpart" translate>Client Part</label>
+            <input type="text" ng-model="$parent.clientpart"
+                   autofocus
+                   class="form-control"
+                   name="clientpart">
+            <button type="button" ng-click="sendClientPart()"
+                    class="btn btn-primary" translate>Submit</button>
+        </div>
     </div>
 </div>
 
