@@ -25,7 +25,7 @@ The HOTP token is an event based token. You can paste a secret key or
     </div>
 </div>
 <div class="form-group"
-     ng-show="checkRight('hotp_2step=allow') || checkRight('hotp_2step=force')">
+     ng-show="checkRight('hotp_2step=allow') || (!$state.includes('token.wizard') && checkRight('hotp_2step=force'))">
     <input type="checkbox" ng-model="form['2stepinit']"
            ng-disabled="checkRight('hotp_2step=force')"
            name="twostep_enrollment" id="twostep_enrollment">
