@@ -387,7 +387,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
 
     $scope.sendClientPart = function () {
         var params = {
-            "otpkey": $scope.clientpart,
+            "otpkey": $scope.clientpart.replace(/ /g, ""),
             "otpkeyformat": "base32check",
             "serial": $scope.enrolledToken.serial,
         };
