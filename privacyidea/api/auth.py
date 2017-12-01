@@ -356,4 +356,6 @@ def get_rights():
     """
     enroll_types = g.policy_object.ui_get_enroll_tokentypes(g.client_ip,
                                                             g.logged_in_user)
+
+    g.audit_object.log({"success": True})
     return send_result(enroll_types)
