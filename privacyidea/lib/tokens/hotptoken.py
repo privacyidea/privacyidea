@@ -115,7 +115,7 @@ class HotpTokenClass(TokenClass):
         desc_two_step_user =_('Specify whether users are allowed or forced to use '
                               'two-step enrollment.')
         desc_two_step_admin = _('Specify whether admins are allowed or forced to use '
-                               'two-step enrollment.')
+                                'two-step enrollment.')
         res = {'type': 'hotp',
                'title': 'HOTP Event Token',
                'description': _('HOTP: Event based One Time Passwords.'),
@@ -138,8 +138,8 @@ class HotpTokenClass(TokenClass):
                        },
                        'hotp_2step_difficulty': {
                            'type': 'int',
-                           'dewsc': _("The difficulty factor used for the OTP seed generation "
-                                      "(should be at least 10000)")
+                           'desc': _("The difficulty factor used for the OTP seed generation "
+                                     "(should be at least 10000)")
                        }
                    },
                    SCOPE.USER: {

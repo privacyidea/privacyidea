@@ -2,6 +2,8 @@
 #
 #  (c) 2015 Cornelius Kölbel - cornelius@privacyidea.org
 #
+#  2017-12-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add policy for 2step
 #  2016-04-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add get_default_settings to change the parameters before
 #             the token is created
@@ -56,6 +58,7 @@ keylen = {'sha1': 20,
           }
 
 log = logging.getLogger(__name__)
+
 
 class TotpTokenClass(HotpTokenClass):
 
@@ -112,29 +115,51 @@ class TotpTokenClass(HotpTokenClass):
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {'user': {
-                   'totp_timestep': {'type': 'int',
-                                     'value': [30, 60],
-                                     'desc': 'Specify the time step of '
-                                             'the timebased OTP token.'},
-                   'totp_hashlib': {'type': 'str',
-                                    'value': ["sha1",
-                                              "sha256",
-                                              "sha512"],
-                                    'desc': 'Specify the hashlib to be used. '
-                                            'Can be SHA1, SHA256 or SHA512.'},
-                   'totp_otplen': {'type': 'int',
-                                   'value': [6, 8],
-                                   'desc': "Specify the OTP length to be "
-                                           "used."},
-                   'totp_force_server_generate': {'type': 'bool',
-                                                  'desc': _("Force the key to "
-                                                            "be generated on "
-                                                            "the server.")}
-                                          },
-                          },
+               'policy': {
+                   SCOPE.USER: {
+                       'totp_timestep': {'type': 'int',
+                                         'value': [30, 60],
+                                         'desc': 'Specify the time step of '
+                                                 'the timebased OTP token.'},
+                       'totp_hashlib': {'type': 'str',
+                                        'value': ["sha1",
+                                                  "sha256",
+                                                  "sha512"],
+                                        'desc': 'Specify the hashlib to be used. '
+                                                'Can be SHA1, SHA256 or SHA512.'},
+                       'totp_otplen': {'type': 'int',
+                                       'value': [6, 8],
+                                       'desc': "Specify the OTP length to be "
+                                               "used."},
+                       'totp_force_server_generate': {'type': 'bool',
+                                                      'desc': _("Force the key to "
+                                                                "be generated on "
+                                                                "the server.")},
+                       '2step': {'type': 'str',
+                                 'value': ['allow', 'force'],
+                                 'desc': _('Specify whether users are allowed or '
+                                           'forced to use two-step enrollment.')}
+                   },
+                   SCOPE.ADMIN: {
+                       '2step': {'type': 'str',
+                                 'value': ['allow', 'force'],
+                                 'desc': _('Specify whether admins are allowed or '
+                                           'forced to use two-step enrollment.')
+                                 }
+                   },
+                   SCOPE.ENROLL: {
+                       '2step_clientsize': {'type': 'int',
+                                            'desc': _("The size of the OTP seed part contributed "
+                                                      "by the client (in bytes)")},
+                       '2step_serversize': {'type': 'int',
+                                            'desc': _("The size of the OTP seed part "
+                                                      "contributed by the server (in bytes)")},
+                       '2step_difficulty': {'type': 'int',
+                                            'desc': _("The difficulty factor used for the "
+                                                      "OTP seed generation ""(should be at least 10000)")}
+                   }
+               },
                }
-
         if key:
             ret = res.get(key, {})
         else:
@@ -146,7 +171,7 @@ class TotpTokenClass(HotpTokenClass):
     @log_with(log)
     def update(self, param, reset_failcount=True):
         """
-        This is called during initializaton of the token
+        This is called during initialization of the token
         to add additional attributes to the token object.
 
         :param param: dict of initialization parameters
