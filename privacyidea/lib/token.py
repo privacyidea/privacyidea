@@ -811,10 +811,12 @@ def gen_serial(tokentype=None, prefix=None):
     :return: serial number
     :rtype: string
     """
+    serial_len = int(get_from_config("SerialLength") or 8)
+
     def _gen_serial(_prefix, _tokennum):
         h_serial = ''
         num_str = '{:04d}'.format(_tokennum)
-        h_len = 8 - len(num_str)
+        h_len = serial_len - len(num_str)
         if h_len > 0:
             h_serial = binascii.hexlify(os.urandom(h_len)).upper()[0:h_len]
         return "{0!s}{1!s}{2!s}".format(_prefix, num_str, h_serial)

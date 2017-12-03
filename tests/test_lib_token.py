@@ -289,6 +289,12 @@ class TokenTestCase(MyTestCase):
         # check the beginning of the serial
         self.assertTrue("PIUN0000" in serial, serial)
 
+        set_privacyidea_config("SerialLength", 12)
+        serial = gen_serial(tokentype="hotp")
+        self.assertTrue("OATH0001" in serial, serial)
+        self.assertEqual(len(serial), len("OATH") + 12)
+        set_privacyidea_config("SerialLength", 8)
+
     def test_15_init_token(self):
         count = get_tokens(count=True)
         self.assertTrue(count == 4, count)

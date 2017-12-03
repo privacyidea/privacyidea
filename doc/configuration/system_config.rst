@@ -210,3 +210,9 @@ Challenge Validity Time
 authentication. If the response is set after the ChallengeValidityTime, the
 response is not accepted anymore.
 
+SerialLength
+~~~~~~~~~~~~
+
+The default length of generated serial numbers is an 8 digit hex string.
+If you need another length, it can be configured in the database table ``Config``
+with the key word ``SerialLength``.
