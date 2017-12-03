@@ -1,8 +1,8 @@
-python-privacyidea (2.21~dev0-1trusty) trusty; urgency=low
+python-privacyidea (2.21~dev1-1trusty) trusty; urgency=low
 
-  * Do it
+  * 2step totp missing 
 
- -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 08 Nov 2017 11:30:00 +0200
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Sat, 02 Dec 2017 08:30:00 +0200
 
 python-privacyidea (2.20.1-1trusty) trusty; urgency=low
 
