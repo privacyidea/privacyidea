@@ -321,6 +321,8 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             for (var tkey in $scope.formInit.tokenTypes) {
                 // set the first key to be the default tokentype
                 $scope.form.type = tkey;
+                // Set the 2step enrollment value
+                $scope.setTwostepEnrollmentDefault();
                 break;
             }
         }
