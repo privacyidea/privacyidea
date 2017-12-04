@@ -457,7 +457,8 @@ class TOTPTokenTestCase(MyTestCase):
         res = token.get_multi_otp()
         self.assertTrue(res[0] is False, res)
         token.update({"otpkey": self.otpkey,
-                      "otplen": 6})
+                      "otplen": 6,
+                      "timeShift": 0})
         token.token.count = 0
         res = token.get_multi_otp(count=5)
         self.assertTrue(res[0], res)
