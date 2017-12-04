@@ -390,6 +390,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             "otpkey": $scope.clientpart.replace(/ /g, ""),
             "otpkeyformat": "base32check",
             "serial": $scope.enrolledToken.serial,
+            "type": $scope.form.type
         };
         TokenFactory.enroll($scope.newUser, params, function (data) {
             $scope.clientpart = "";
