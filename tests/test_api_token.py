@@ -10,6 +10,7 @@ from privacyidea.lib.caconnector import save_caconnector
 from urllib import urlencode
 from privacyidea.lib.token import check_serial_pass
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from dateutil.tz import tzlocal
 
 PWFILE = "tests/testdata/passwords"
@@ -1358,8 +1359,59 @@ class APITokenTestCase(MyTestCase):
             serial = detail.get("serial")
             token = get_tokens(serial=serial)[0]
             self.assertEqual(token.hashlib, "sha256")
+            self.assertEqual(token.token.otplen, 8)
 
         delete_policy("init_details")
+        remove_token(serial)
+
+        # Set OTP len using the system wide default
+        set_privacyidea_config("DefaultOtpLen", 8)
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={
+                                               "type": "totp",
+                                               "totp.hashlib": "sha1",
+                                               "hashlib": "sha1",
+                                               "genkey": 1,
+                                               "user": "selfservice",
+                                               "realm": "realm1"},
+                                           headers={'Authorization':
+                                                        self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value"))
+            detail = json.loads(res.data).get("detail")
+            serial = detail.get("serial")
+            token = get_tokens(serial=serial)[0]
+            self.assertEqual(token.token.otplen, 8)
+
+        remove_token(serial)
+
+        # override the DefaultOtpLen
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={
+                                               "type": "totp",
+                                               "otplen": 6,
+                                               "totp.hashlib": "sha1",
+                                               "hashlib": "sha1",
+                                               "genkey": 1,
+                                               "user": "selfservice",
+                                               "realm": "realm1"},
+                                           headers={'Authorization':
+                                                        self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value"))
+            detail = json.loads(res.data).get("detail")
+            serial = detail.get("serial")
+            token = get_tokens(serial=serial)[0]
+            self.assertEqual(token.token.otplen, 6)
+
+        remove_token(serial)
+        delete_privacyidea_config("DefaultOtpLen")
 
     def test_26_supply_key_size(self):
         with self.app.test_request_context('/token/init',
