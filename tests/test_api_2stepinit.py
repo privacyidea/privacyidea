@@ -143,7 +143,7 @@ class TwoStepInitTestCase(MyTestCase):
 
     def test_02_force_parameters(self):
         set_policy(
-            name="force_twostep",
+            name="force_2step",
             action=["hotp_2step=force", "enrollHOTP=1", "delete"],
             scope=SCOPE.ADMIN,
         )
@@ -255,10 +255,10 @@ class TwoStepInitTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
 
-        delete_policy("force_twostep")
-        delete_policy("twostep_params")
+        delete_policy("force_2step")
+        delete_policy("2step_params")
 
-    def test_02_custom_parameters(self):
+    def test_03_custom_parameters(self):
         set_policy(
             name="enrollhotp",
             action=["enrollHOTP=1", "delete", "hotp_2step=allow"],
@@ -351,9 +351,9 @@ class TwoStepInitTestCase(MyTestCase):
 
         delete_policy("enrollhotp")
 
-    def test_03_no_2stepinit(self):
+    def test_04_no_2stepinit(self):
         set_policy(
-            name="disallow_twostep",
+            name="disallow_2step",
             action=["enrollHOTP=1", "delete"], # no 2step policy => disallow by default
             scope=SCOPE.ADMIN,
         )
@@ -377,6 +377,7 @@ class TwoStepInitTestCase(MyTestCase):
             serial = detail.get("serial")
             otpkey_url = detail.get("otpkey", {}).get("value")
             otpkey_bin = binascii.unhexlify(otpkey_url.split("/")[2])
+            self.assertEqual(detail.get("rollout_state"), "")
 
         # Now try to authenticate
         otp_value = HmacOtp().generate(key=otpkey_bin, counter=1)
@@ -390,9 +391,9 @@ class TwoStepInitTestCase(MyTestCase):
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
-        delete_policy("disallow_twostep")
+        delete_policy("disallow_2step")
 
-    def test_04_init_totp_token(self):
+    def test_05_init_totp_token(self):
         set_policy(
             name="allow_2step",
             action=["totp_2step=allow", "enrollTOTP=1", "delete"],
@@ -511,9 +512,9 @@ class TwoStepInitTestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
         delete_policy("allow_2step")
 
-    def test_05_force_totp_parameters(self):
+    def test_06_force_totp_parameters(self):
         set_policy(
-            name="force_twostep",
+            name="force_2step",
             action=["totp_2step=force", "enrollTOTP=1", "delete"],
             scope=SCOPE.ADMIN,
         )
@@ -625,5 +626,5 @@ class TwoStepInitTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
 
-        delete_policy("force_twostep")
-        delete_policy("twostep_params")
+        delete_policy("force_2step")
+        delete_policy("2step_params")
