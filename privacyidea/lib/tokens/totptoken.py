@@ -181,18 +181,12 @@ class TotpTokenClass(HotpTokenClass):
         """
         HotpTokenClass.update(self, param, reset_failcount=reset_failcount)
 
-        timeStep = param.get("timeStep",
-                             get_from_config("totp.timeStep") or 30)
-
-        timeWindow = param.get("timeWindow",
-                               get_from_config("totp.timeWindow") or 180)
-
-        timeShift = param.get("timeShift",
-                              get_from_config("totp.timeShift") or 0)
+        timeStep = param.get("timeStep", self.timestep)
+        timeWindow = param.get("timeWindow", self.timewindow)
+        timeShift = param.get("timeShift", self.timeshift)
         # we support various hashlib methods, but only on create
         # which is effectively set in the update
-        hashlibStr = param.get("hashlib", get_from_config("totp.hashlib",
-                                                          u'sha1'))
+        hashlibStr = param.get("hashlib", self.hashlib)
 
         self.add_tokeninfo("timeWindow", timeWindow)
         self.add_tokeninfo("timeShift", timeShift)

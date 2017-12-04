@@ -272,7 +272,8 @@ class TwoStepInitTestCase(MyTestCase):
                                                  "2step_serversize": "5",
                                                  "2step_clientsize": "16",
                                                  "2step_difficulty": "17898",
-                                                 "hashlib": "sha512" # force 64-byte secret
+                                                 "hashlib": "sha512", # force 64-byte secret
+                                                 "otplen": "8",
                                                  },
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -326,7 +327,7 @@ class TwoStepInitTestCase(MyTestCase):
 
         # Now try to authenticate
         otpkey_bin = binascii.unhexlify(otpkey)
-        otp_value = HmacOtp().generate(key=otpkey_bin, counter=1)
+        otp_value = HmacOtp(digits=8, hashfunc=hashlib.sha512).generate(key=otpkey_bin, counter=1)
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"serial": serial,
@@ -532,7 +533,10 @@ class TwoStepInitTestCase(MyTestCase):
                                                  "2stepinit": "0", # will be forced nevertheless
                                                  "2step_serversize": "3",
                                                  "2step_clientsize": "4",
-                                                 "2step_difficulty": "33333"
+                                                 "2step_difficulty": "33333",
+                                                 "timeStep": "60",
+                                                 "hashlib": "sha512",
+                                                 "otplen": "8",
                                                  },
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -547,9 +551,9 @@ class TwoStepInitTestCase(MyTestCase):
             google_url = detail["googleurl"]["value"]
             self.assertIn('2step_difficulty=12345', google_url)
             self.assertIn('2step_salt=11', google_url)
-            self.assertIn('2step_output=20', google_url)
+            self.assertIn('2step_output=64', google_url)
         # Authentication does not work yet!
-        wrong_otp_value = HmacOtp().generate(key=server_component, counter=int(time.time()/30))
+        wrong_otp_value = HmacOtp(digits=8, hashfunc=hashlib.sha512).generate(key=server_component, counter=int(time.time() / 60))
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"serial": serial,
@@ -603,7 +607,7 @@ class TwoStepInitTestCase(MyTestCase):
 
         # Now try to authenticate
         otpkey_bin = binascii.unhexlify(otpkey)
-        otp_value = HmacOtp().generate(key=otpkey_bin, counter=int(time.time()/30))
+        otp_value = HmacOtp(digits=8, hashfunc=hashlib.sha512).generate(key=otpkey_bin, counter=int(time.time()/60))
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"serial": serial,
@@ -617,7 +621,7 @@ class TwoStepInitTestCase(MyTestCase):
         # Check serversize
         self.assertEqual(len(server_component), 33)
         # Check that the OTP key is what we expected it to be
-        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 12345, 20)
+        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 12345, 64)
         self.assertEqual(otpkey_bin, expected_secret)
 
         with self.app.test_request_context('/token/'+ serial,

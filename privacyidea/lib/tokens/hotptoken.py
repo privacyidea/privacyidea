@@ -295,7 +295,7 @@ class HotpTokenClass(TokenClass):
         if val is not None:
             hashlibStr = val
         else:
-            hashlibStr = 'sha1'
+            hashlibStr = self.hashlib
 
         # check if the key_size is provided
         # if not, we could derive it from the hashlib
@@ -315,13 +315,7 @@ class HotpTokenClass(TokenClass):
         # raised here.
         TokenClass.update(self, upd_param, reset_failcount)
 
-        # add_tokeninfo and set_otplen save the token object to the database.
         self.add_tokeninfo("hashlib", hashlibStr)
-        val = getParam(upd_param, "otplen", optional)
-        if val is not None:
-            self.set_otplen(int(val))
-        else:
-            self.set_otplen(get_from_config("DefaultOtpLen", 6))
 
     @property
     def hashlib(self):
