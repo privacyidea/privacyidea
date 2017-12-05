@@ -933,6 +933,8 @@ msgid "Enroll New Token"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.html:109
+#: privacyidea/static/components/token/views/token.enrolled.hotp.html:41
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:41
 #: privacyidea/static/components/token/views/token.html:25
 msgid "Enroll Token"
 msgstr ""
@@ -2357,11 +2359,6 @@ msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.html:26
 msgid "Statistics"
-msgstr ""
-
-#: privacyidea/static/components/token/views/token.enrolled.hotp.html:41
-#: privacyidea/static/components/token/views/token.enrolled.totp.html:41
-msgid "Submit"
 msgstr ""
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:19
