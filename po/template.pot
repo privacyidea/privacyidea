@@ -471,7 +471,7 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:13
-#: privacyidea/static/components/token/views/token.enrolled.totp.html:12
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:13
 msgid ""
 "Click <a href=\"{{ enrolledToken.googleurl.value }}\">here</a> or scan\n"
 "            the QR Code, if you\n"
@@ -513,7 +513,8 @@ msgstr ""
 msgid "Client ID"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enrolled.hotp.html:33
+#: privacyidea/static/components/token/views/token.enrolled.hotp.html:36
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:36
 msgid "Client Part"
 msgstr ""
 
@@ -947,7 +948,7 @@ msgstr ""
 msgid "Enter OTP + PIN to check the token."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.totp.html:31
+#: privacyidea/static/components/token/views/token.enroll.totp.html:38
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:45
 msgid "Enter OTP key..."
 msgstr ""
@@ -1142,7 +1143,7 @@ msgid "Handlermodule"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:57
-#: privacyidea/static/components/token/views/token.enroll.totp.html:58
+#: privacyidea/static/components/token/views/token.enroll.totp.html:65
 msgid "Hash algorithm"
 msgstr ""
 
@@ -1587,7 +1588,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:35
 #: privacyidea/static/components/token/views/token.enroll.motp.html:23
-#: privacyidea/static/components/token/views/token.enroll.totp.html:27
+#: privacyidea/static/components/token/views/token.enroll.totp.html:34
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:40
 msgid "OTP Key"
 msgstr ""
@@ -1606,7 +1607,7 @@ msgid "OTP Value"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:44
-#: privacyidea/static/components/token/views/token.enroll.totp.html:36
+#: privacyidea/static/components/token/views/token.enroll.totp.html:43
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:50
 msgid "OTP length"
 msgstr ""
@@ -1774,7 +1775,8 @@ msgstr ""
 msgid "Please provide the base URL of the privacyIDEA server."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enrolled.hotp.html:28
+#: privacyidea/static/components/token/views/token.enrolled.hotp.html:31
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:31
 msgid ""
 "Please scan the QR code with the privacyIDEA authenticator app and enter\n"
 "            the generated code below."
@@ -1950,7 +1952,7 @@ msgid "Refresh"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:23
-#: privacyidea/static/components/token/views/token.enrolled.totp.html:22
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:23
 msgid "Regenerate QR Code"
 msgstr ""
 
@@ -2357,7 +2359,8 @@ msgstr ""
 msgid "Statistics"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enrolled.hotp.html:38
+#: privacyidea/static/components/token/views/token.enrolled.hotp.html:41
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:41
 msgid "Submit"
 msgstr ""
 
@@ -2514,12 +2517,12 @@ msgid "The Enrollment URL"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:50
-#: privacyidea/static/components/token/views/token.enroll.totp.html:42
+#: privacyidea/static/components/token/views/token.enroll.totp.html:49
 msgid "The Google Authenticator only supports an OTP length of 6."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:63
-#: privacyidea/static/components/token/views/token.enroll.totp.html:64
+#: privacyidea/static/components/token/views/token.enroll.totp.html:71
 msgid "The Google Authenticator only supports the SHA1 algorithm."
 msgstr ""
 
@@ -2546,7 +2549,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:8
 #: privacyidea/static/components/token/views/token.enrolled.motp.html:8
-#: privacyidea/static/components/token/views/token.enrolled.totp.html:7
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:8
 msgid "The OTP key"
 msgstr ""
 
@@ -2562,7 +2565,7 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:18
-#: privacyidea/static/components/token/views/token.enrolled.totp.html:17
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:18
 msgid ""
 "The QR Code contains the secret key of your token. You need to\n"
 "            protect it. <b>If you are in doubt, that someone else saw it, please\n"
@@ -3159,7 +3162,7 @@ msgstr ""
 msgid "Timeout while waiting for signing response."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.totp.html:48
+#: privacyidea/static/components/token/views/token.enroll.totp.html:55
 msgid "Timestep"
 msgstr ""
 
@@ -3326,6 +3329,7 @@ msgid "Use TLS"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:32
+#: privacyidea/static/components/token/views/token.enroll.totp.html:31
 msgid "Use two-step enrollment with the privacyIDEA Authenticator App"
 msgstr ""
 
@@ -3546,6 +3550,11 @@ msgstr ""
 msgid ""
 "Your token PIN has expired. You need to set a new PIN\n"
 "                for token {{ pin_change_serial }}."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.hotp.html:28
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:28
+msgid "Your token {{ enrolledToken.serial }} is not completely enrolled, yet."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:1
