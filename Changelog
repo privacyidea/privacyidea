@@ -34,7 +34,7 @@ Version 2.21, TODO
    * Properly reset tab tile after session has been locked (#850)
    * Fix handling of fixed key size during enrollment (#820)
    * Make sure that only active policies are honored (#825)
-   * Fix various bugs with non-ASCII data (#754,
+   * Fix various bugs with non-ASCII data (#754)
    * Fix failcounter_clear_timeout (#831)
    * Only remove apache host definitions on first installation (#834)
 
