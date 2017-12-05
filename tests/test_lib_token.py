@@ -1190,6 +1190,21 @@ class TokenTestCase(MyTestCase):
         self.assertEqual(tokenobject.token.get_otpkey().getKey(),
                          binascii.hexlify(otpkey))
         remove_token("NEW002")
+
+        # successful base32check encoding, but lower case
+        base32check_encoding = base64.b32encode(checksum + otpkey).strip("=")
+        base32check_encoding = base32check_encoding.lower()
+        tokenobject = init_token({"serial": "NEW002", "type": "hotp",
+                                  "otpkey": base32check_encoding,
+                                  "otpkeyformat": "base32check"},
+                                 user=User(login="cornelius",
+                                           realm=self.realm1))
+        self.assertTrue(tokenobject.token.tokentype == "hotp",
+                        tokenobject.token)
+        self.assertEqual(tokenobject.token.get_otpkey().getKey(),
+                         binascii.hexlify(otpkey))
+        remove_token("NEW002")
+
         # base32check encoding with padding
         base32check_encoding = base64.b32encode(checksum + otpkey)
         tokenobject = init_token({"serial": "NEW003", "type": "hotp",
