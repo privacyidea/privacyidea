@@ -273,16 +273,23 @@ def checksum(msg):
                 crc = crc ^ 0x8408
     return crc
 
-def decode_base32check(encoded_data):
+
+def decode_base32check(encoded_data, always_upper=True):
     """
     Decode arbitrary data which is given in the following format::
 
         strip_padding(base32(sha1(payload)[:4] + payload))
 
     Raise a ParameterError if the encoded payload is malformed.
+    :param encoded_data: The base32 encoded data.
+    :type encoded_data: basestring
+    :param always_upper: If we should convert lowercase to uppercase
+    :type always_upper: bool
     :return: hex-encoded payload
     """
     # First, add the padding to have a multiple of 8 bytes
+    if always_upper:
+        encoded_data = encoded_data.upper()
     encoded_length = len(encoded_data)
     if encoded_length % 8 != 0:
         encoded_data += "=" * (8 - (encoded_length % 8))
@@ -300,6 +307,7 @@ def decode_base32check(encoded_data):
     if payload_hash[:4] != checksum:
         raise ParameterError("Malformed base32check data: Incorrect checksum")
     return binascii.hexlify(payload)
+
 
 def sanity_name_check(name, name_exp="^[A-Za-z0-9_\-\.]+$"):
     """
