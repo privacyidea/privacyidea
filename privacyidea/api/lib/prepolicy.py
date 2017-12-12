@@ -712,7 +712,7 @@ def required_email(request=None, action=None):
 
     :param request: The Request Object
     :param action: An optional Action
-    :return: Modifies the request paramters or raises an Exception
+    :return: Modifies the request parameters or raises an Exception
     """
     email = getParam(request.all_data, "email")
     email_found = False
@@ -735,7 +735,7 @@ def required_email(request=None, action=None):
 def auditlog_age(request=None, action=None):
     """
     This pre condition checks for the policy auditlog_age and set the
-    "timelimit" paramter of the audit search API.
+    "timelimit" parameter of the audit search API.
 
     Check ACTION.AUDIT_AGE
 
