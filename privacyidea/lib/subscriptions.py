@@ -65,7 +65,7 @@ SIGN_FORMAT = """{application}
 
 APPLICATIONS = {"demo_application": 0,
                 "owncloud": 50,
-                "privacyidea ldap proxy": 50,
+                "privacyidea-ldap-proxy": 50,
                 "privacyidea-cp": 0,
                 "privacyidea": 50}
 
