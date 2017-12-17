@@ -1,9 +1,10 @@
-Version 2.21, 2017-12-xx
+Version 2.21, 2017-12-20
 
   Features:
 
    * Allow export of tokens to PKSC file (#790)
    * Implement two-step enrollment of HOTP/TOTP tokens (#797, #863, #865, #866)
+   * Allow WebUI customization via policies (#795)
 
   Enhancements:
 
@@ -19,7 +20,6 @@ Version 2.21, 2017-12-xx
    * Add number of users to the subscription view (#800)
    * Add HTTP/HTTPS proxy settings to HTTP SMS Provider (#835)
    * Federation Handler allows to forward the authorization token (#838)
-   * Allow WebUI customization via policies (#795)
    * Use token janitor to export a user list (#852)
    * Use HSM for random key generation if possible (#783)
    * HTTP SMS Provider now takes TIMEOUT parameter into account
