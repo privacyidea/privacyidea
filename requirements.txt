@@ -36,7 +36,7 @@ numpy==1.13.1
 pandas==0.16.2
 passlib==1.6.2
 Pillow==2.6.1
-psycopg2==2.6
+psycopg2>=2.6
 py==1.4.30
 pyasn1>=0.1.9
 pycparser>=2.14
