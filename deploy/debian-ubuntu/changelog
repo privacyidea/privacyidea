@@ -35,7 +35,7 @@ python-privacyidea (2.21-1trusty) trusty; urgency=low
    * Fix failcounter_clear_timeout (#831)
    * Only remove apache host definitions on first installation (#834)
 
- -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 20 Dec 2017 10:30:00 +0200
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 20 Dec 2017 00:30:00 +0200
 
 python-privacyidea (2.20.1-1trusty) trusty; urgency=low
 
