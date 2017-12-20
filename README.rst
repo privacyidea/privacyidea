@@ -36,14 +36,6 @@ privacyIDEA
     :alt: Codacy Badge
     :target: https://www.codacy.com/app/cornelius-koelbel/privacyidea
     
-.. image:: https://img.shields.io/issuestats/i/github/privacyidea/privacyidea.svg
-    :alt: Issue stats
-    :target: http://issuestats.com/github/privacyidea/privacyidea
-
-.. image:: https://img.shields.io/issuestats/p/github/privacyidea/privacyidea.svg
-    :alt: Issue stats
-    :target: http://issuestats.com/github/privacyidea/privacyidea
-
 .. image:: https://img.shields.io/twitter/follow/privacyidea.svg?style=social&label=Follow
     :alt: privacyIDEA on twitter
     
