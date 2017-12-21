@@ -70,6 +70,17 @@
                        class="form-control"
                        ng-show="params.TLS_VERIFY"
                        placeholder="/etc/privacyidea/ldap-ca.crt"/>
+                
+                <label for="tls_version" class="control-label" translate>
+                    TLS protocol version
+                </label>
+                <select class="form-control"
+                        name="tls_version" id="tls_version"
+                    ng-model="params.TLS_VERSION">
+                        <option value="3">TLSv1</option>
+                        <option value="4">TLSv1.1</option>
+                        <option value="5">TLSv1.2</option>
+                </select>
             </div>
         </div>
     </div>

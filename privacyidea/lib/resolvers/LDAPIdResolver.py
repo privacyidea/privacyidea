@@ -634,11 +634,14 @@ class IdResolver (UserIdResolver):
         self.resolverId = self.uri
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
         self.tls_verify = is_true(config.get("TLS_VERIFY", False))
+        # Fallback to TLSv1. (int: 3, TLSv1.1: 4, v1.2: 5)
+        self.tls_version = int(config.get("TLS_VERSION") or ssl.PROTOCOL_TLSv1)
+
         self.tls_ca_file = config.get("TLS_CA_FILE") or DEFAULT_CA_FILE
         if self.tls_verify and (self.uri.lower().startswith("ldaps") or
                                     self.start_tls):
             self.tls_context = Tls(validate=ssl.CERT_REQUIRED,
-                                   version=ssl.PROTOCOL_TLSv1,
+                                   version=self.tls_version,
                                    ca_certs_file=self.tls_ca_file)
         else:
             self.tls_context = None
@@ -753,6 +756,7 @@ class IdResolver (UserIdResolver):
                                 'SCOPE': 'string',
                                 'AUTHTYPE': 'string',
                                 'TLS_VERIFY': 'bool',
+                                'TLS_VERSION': 'int',
                                 'TLS_CA_FILE': 'string',
                                 'START_TLS': 'bool',
                                 'CACHE_TIMEOUT': 'int',
@@ -779,7 +783,7 @@ class IdResolver (UserIdResolver):
         Parameters are:
             BINDDN, BINDPW, LDAPURI, TIMEOUT, LDAPBASE, LOGINNAMEATTRIBUTE,
             LDAPSEARCHFILTER, USERINFO, SIZELIMIT, NOREFERRALS, CACERTIFICATE,
-            AUTHTYPE, TLS_VERIFY, TLS_CA_FILE, SERVERPOOL_ROUNDS, SERVERPOOL_SKIP
+            AUTHTYPE, TLS_VERIFY, TLS_VERSION, TLS_CA_FILE, SERVERPOOL_ROUNDS, SERVERPOOL_SKIP
         """
         success = False
         uidtype = param.get("UIDTYPE")
@@ -791,9 +795,10 @@ class IdResolver (UserIdResolver):
         if is_true(param.get("TLS_VERIFY")) \
                 and (ldap_uri.lower().startswith("ldaps") or
                                     param.get("START_TLS")):
+            tls_version = int(param.get("TLS_VERSION") or ssl.PROTOCOL_TLSv1)
             tls_ca_file = param.get("TLS_CA_FILE") or DEFAULT_CA_FILE
             tls_context = Tls(validate=ssl.CERT_REQUIRED,
-                              version=ssl.PROTOCOL_TLSv1,
+                              version=tls_version,
                               ca_certs_file=tls_ca_file)
         else:
             tls_context = None
