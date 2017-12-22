@@ -197,6 +197,7 @@ class IdResolver (UserIdResolver):
         self.loginname_attribute = [""]
         self.searchfilter = u""
         self.userinfo = {}
+        self.multivalueattributes = []
         self.uidtype = ""
         self.noreferrals = False
         self._editable = False
@@ -624,6 +625,8 @@ class IdResolver (UserIdResolver):
         userinfo = config.get("USERINFO", "{}")
         self.userinfo = yaml.safe_load(userinfo)
         self.userinfo["username"] = self.loginname_attribute[0]
+        multivalueattributes = config.get("MULTIVALUEATTRIBUTES", '["mobile"]')
+        self.multivalueattributes = yaml.safe_load(multivalueattributes)
         self.map = yaml.safe_load(userinfo)
         self.uidtype = config.get("UIDTYPE", "DN")
         self.noreferrals = is_true(config.get("NOREFERRALS", False))
