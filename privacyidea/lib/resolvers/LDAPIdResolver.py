@@ -2,6 +2,9 @@
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
+#  2017-12-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add configurable multi-value-attributes
+#             with the help of Nomen Nescio
 #  2017-07-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Fix unicode usernames
 #  2017-01-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -434,14 +437,13 @@ class IdResolver (UserIdResolver):
         :return: dict with privacyIDEA users.
         """
         ret = {}
-        MULTI_VALUE_ATTRIBUTE = ["mobile", "memberOf"]
         for ldap_k, ldap_v in attributes.items():
             for map_k, map_v in self.userinfo.items():
                 if ldap_k == map_v:
                     if ldap_k == "objectGUID":
                         ret[map_k] = ldap_v[0]
-                    elif type(ldap_v) == list and map_k not in MULTI_VALUE_ATTRIBUTE:
-                        # lists that are not in MULTI_VALUE_ATTRIBUTE return first value
+                    elif type(ldap_v) == list and map_k not in self.multivalueattributes:
+                        # lists that are not in self.multivalueattributes return first value
                         # as a string. Multi-value-attributes are returned as a list
                         if ldap_v:
                             ret[map_k] = ldap_v[0]
