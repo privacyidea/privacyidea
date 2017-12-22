@@ -181,13 +181,15 @@ class APISmsGatewayTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             value = json.loads(res.data).get("result").get("value")
-            self.assertEqual(len(value), 3)
+            self.assertEqual(len(value), 4)
             self.assertTrue('privacyidea.lib.smsprovider.HttpSMSProvider'
                             '.HttpSMSProvider' in value)
             self.assertTrue('privacyidea.lib.smsprovider.SmtpSMSProvider'
                             '.SmtpSMSProvider' in value)
             self.assertTrue('privacyidea.lib.smsprovider.SipgateSMSProvider'
                             '.SipgateSMSProvider' in value)
+            self.assertTrue('privacyidea.lib.smsprovider.SmppSMSProvider'
+                            '.SmppSMSProvider' in value)
             http_parameters = value.get('privacyidea.lib.smsprovider.'
                                         'HttpSMSProvider.HttpSMSProvider')
             smtp_parameters = value.get('privacyidea.lib.smsprovider.'
