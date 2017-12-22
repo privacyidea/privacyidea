@@ -11,6 +11,7 @@ from privacyidea.lib.smsprovider.HttpSMSProvider import HttpSMSProvider
 from privacyidea.lib.smsprovider.SipgateSMSProvider import SipgateSMSProvider
 from privacyidea.lib.smsprovider.SipgateSMSProvider import URL
 from privacyidea.lib.smsprovider.SmtpSMSProvider import SmtpSMSProvider
+from privacyidea.lib.smsprovider.SmppSMSProvider import SmppSMSProvider
 from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      get_sms_provider_class,
                                                      set_smsgateway,
@@ -46,6 +47,10 @@ class SMSTestCase(MyTestCase):
         _provider =get_sms_provider_class(
             "privacyidea.lib.smsprovider.SmtpSMSProvider",
             "SmtpSMSProvider")
+        
+        _provider =get_sms_provider_class(
+            "privacyidea.lib.smsprovider.SmppSMSProvider",
+            "SmppSMSProvider")
 
         # A non-existing module will raise an error
         self.assertRaises(Exception,
@@ -441,4 +446,45 @@ class HttpSMSTestCase(MyTestCase):
                       body=self.success_body)
         # Here we need to send the SMS
         r = self.post_provider.submit_message("123456", u"Hallöle Smørrebrød")
+        self.assertTrue(r)
+
+class SmppSMSTestCase(MyTestCase):
+
+    config = {'SMSC_HOST': "192.168.1.1",
+              'SMSC_PORT': "1234",
+              'SYSTEM_ID': "privacyIDEA",
+              'PASSWORD': "secret",
+              'SYSTEM_ID': "privacyIDEA",
+              'S_ADDR_TON': "0x5",
+              'S_ADDR_NPI': "0x1",
+              'S_ADDR': "privacyIDEA",
+              'D_ADDR_TON': "0x5",
+              'D_ADDR_NPI': "0x1"}
+
+    def setUp(self):
+        self.provider = SmppSMSProvider()
+        self.provider.load_config(self.config)
+
+    @responses.activate
+    def test_01_success(self):
+        # Here we need to send the SMS
+        r = self.provider.submit_message("123456", "Hello")
+        self.assertTrue(r)
+
+    @responses.activate
+    def test_02_fail(self):
+        # Here we need to send the SMS
+        self.assertRaises(SMSError, self.provider.submit_message,
+                          "123456", "Hello")
+
+    @responses.activate
+    def test_08_smsgateway_success(self):
+        identifier = "mySMS"
+        provider_module = "privacyidea.lib.smsprovider.SmppSMSProvider" \
+                          ".SmppSMSProvider"
+        id = set_smsgateway(identifier, provider_module, description="test",
+                            options=self.config)
+        self.assertTrue(id > 0)
+        sms = create_sms_instance(identifier)
+        r = sms.submit_message("123456", "Hello")
         self.assertTrue(r)
