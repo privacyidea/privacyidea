@@ -4,24 +4,7 @@
 #
 #    2017-12-22 Alexander Yurlov <yurlov.alexandr@gmail.com>
 #               Add new SMPP SMS provider
-#
-#
-#    Copyright (C) LinOTP: 2010 - 2014 LSE Leading Security Experts GmbH
-#
-#    This program is free software: you can redistribute it and/or
-#    modify it under the terms of the GNU Affero General Public
-#    License, version 3, as published by the Free Software Foundation.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
-#
-#    You should have received a copy of the
-#               GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-#
+
 
 __doc__="""This is the SMSClass to send SMS via SMPP protocol to SMS center
 It requires smpplib installation, this lib works with ascii only, but message support unicode 
@@ -29,6 +12,7 @@ It requires smpplib installation, this lib works with ascii only, but message su
 """
 
 from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
+from privacyidea.lib import _
 import requests
 from urlparse import urlparse
 
@@ -83,11 +67,19 @@ class SmppSMSProvider(ISMSProvider):
         client = None
         error_key = None 
         try:
-            client = smpplib.client.Client(smsc_host.encode("ascii"), smsc_port.encode("ascii"))
+            client = smpplib.client.Client(smsc_host.encode("ascii"),
+					   smsc_port.encode("ascii"))
             client.connect()
             try:
-                client.bind_transmitter(system_id=sys_id.encode("ascii"), password=passwd.encode("ascii"))
-                client.send_message(source_addr_ton=s_addr_ton,source_addr_npi=s_addr_npi,source_addr=s_addr.encode("ascii"),dest_addr_ton=d_addr_ton,dest_addr_npi=d_addr_npi,destination_addr=phone.encode("ascii"),short_message=message.encode("ascii"))
+                client.bind_transmitter(system_id=sys_id.encode("ascii"), 
+					password=passwd.encode("ascii"))
+                client.send_message(source_addr_ton=s_addr_ton,
+				    source_addr_npi=s_addr_npi,
+				    source_addr=s_addr.encode("ascii"),
+				    dest_addr_ton=d_addr_ton,
+				    dest_addr_npi=d_addr_npi,
+				    destination_addr=phone.encode("ascii"),
+				    short_message=message.encode("ascii"))
             except KeyError as inst:
                 error_key = inst.args[0]
             finally:
@@ -118,22 +110,22 @@ class SmppSMSProvider(ISMSProvider):
                     "parameters": {
                         "SMSC_HOST": {
                             "required": True,
-                            "description": "SMSC Host IP"},
+                            "description": _("SMSC Host IP")},
                         "SMSC_PORT": {
                             "required": True,
-                            "description": "SMSC Port"},
+                            "description": _("SMSC Port")},
                         "SYSTEM_ID": {
-                            "description": "SMSC Service ID"},
+                            "description": _("SMSC Service ID")},
                         "PASSWORD": {
-                            "description": "Password for authentication on SMSC"},
+                            "description": _("Password for authentication on SMSC")},
                         "S_ADDR_TON": {
-                            "description": "SOURCE_ADDR_TON Special Flag"},
+                            "description": _("SOURCE_ADDR_TON Special Flag")},
                         "S_ADDR_NPI": {
-                            "description": "S_ADDR_NPI Special Flag"},
+                            "description": _("S_ADDR_NPI Special Flag")},
                         "S_ADDR": {
-                            "description": "Source address (SMS sender)"},
-                        "D_ADDR_TON": {"description": "DESTINATION_ADDR_TON Special Flag"},
-                        "D_ADDR_NPI": {"description": "D_ADDR_NPI Special Flag"}
+                            "description": _("Source address (SMS sender)")},
+                        "D_ADDR_TON": {"description": _("DESTINATION_ADDR_TON Special Flag")},
+                        "D_ADDR_NPI": {"description": _("D_ADDR_NPI Special Flag")}
                     }
                     }
         return params
