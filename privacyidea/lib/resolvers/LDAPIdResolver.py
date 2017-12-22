@@ -433,12 +433,13 @@ class IdResolver (UserIdResolver):
         :return: dict with privacyIDEA users.
         """
         ret = {}
+        MULTI_VALUE_ATTRIBUTE = ["mobile", "memberOf"]
         for ldap_k, ldap_v in attributes.items():
             for map_k, map_v in self.userinfo.items():
                 if ldap_k == map_v:
                     if ldap_k == "objectGUID":
                         ret[map_k] = ldap_v[0]
-                    elif type(ldap_v) == list and map_k not in ["mobile"] and map_k not in ["memberOf"]:
+                    elif type(ldap_v) == list and map_k not in MULTI_VALUE_ATTRIBUTE:
                         # All lists (except) mobile and memberOf return the first value as
                         #  a string. Mobile and memberOf are returned as a list
                         if ldap_v:
