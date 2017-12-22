@@ -144,6 +144,12 @@ attribute mapping with a key, you make up and the LDAP attribute like:
 "homeDirectory" and "objectGUID" being the attributes in the LDAP directory
 and "homedir" and "studentID" the keys returned in a SAML authentication
 request.
+
+The ``MULTIVALUEATTRIBUTES`` config value can be used to specify a list of
+LDAP user attributes, that should return a list of values. The setting is the
+"mobile" attribute, i.e. privacyIDEA will return a list of mobile telephone numbers.
+E.g. you can set this to ``["mobile", "memberOf"]`` and then it would also return the
+list of groups of the user user.
   
 The ``UID Type`` is the unique identifier for the LDAP object. If it is left
 blank, the distinguished name will be used. In case of OpenLDAP this can be
