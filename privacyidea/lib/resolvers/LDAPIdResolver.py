@@ -438,9 +438,9 @@ class IdResolver (UserIdResolver):
                 if ldap_k == map_v:
                     if ldap_k == "objectGUID":
                         ret[map_k] = ldap_v[0]
-                    elif type(ldap_v) == list and map_k not in ["mobile"]:
-                        # All lists (except) mobile return the first value as
-                        #  a string. Mobile is returned as a list
+                    elif type(ldap_v) == list and map_k not in ["mobile"] and map_k not in ["memberOf"]:
+                        # All lists (except) mobile and memberOf return the first value as
+                        #  a string. Mobile and memberOf are returned as a list
                         if ldap_v:
                             ret[map_k] = ldap_v[0]
                         else:
