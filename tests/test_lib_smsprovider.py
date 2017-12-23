@@ -465,20 +465,17 @@ class SmppSMSTestCase(MyTestCase):
         self.provider = SmppSMSProvider()
         self.provider.load_config(self.config)
 
-    @responses.activate
     def test_01_success(self):
         # Here we need to send the SMS
         try:
             r = self.provider.submit_message("123456", "Hello")
             self.assertTrue(r)
  
-    @responses.activate
     def test_02_fail(self):
         # Here we need to send the SMS
         self.assertRaises(SMSError, self.provider.submit_message,
                           "123456", "Hello")
 
-    @responses.activate
     def test_08_smsgateway_success(self):
         identifier = "mySMS"
         provider_module = "privacyidea.lib.smsprovider.SmppSMSProvider" \
