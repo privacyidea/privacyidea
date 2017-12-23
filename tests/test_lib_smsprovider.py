@@ -469,7 +469,9 @@ class SmppSMSTestCase(MyTestCase):
         # Here we need to send the SMS
         try:
             r = self.provider.submit_message("123456", "Hello")
-            self.assertTrue(r)
+        except:
+            r = False
+        self.assertTrue(r)
  
     def test_02_fail(self):
         # Here we need to send the SMS
@@ -486,4 +488,6 @@ class SmppSMSTestCase(MyTestCase):
         sms = create_sms_instance(identifier)
         try:
             r = sms.submit_message("123456", "Hello")
-            self.assertTrue(r)
+        except:
+            r = False
+        self.assertTrue(r)
