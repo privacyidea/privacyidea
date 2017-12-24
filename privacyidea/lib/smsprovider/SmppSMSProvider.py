@@ -65,34 +65,31 @@ class SmppSMSProvider(ISMSProvider):
 
         #SMPP Part
         client = None
-        error_key = None 
+        error_message = None 
         try:
             client = smpplib.client.Client(smsc_host.encode("ascii"),
 					   smsc_port.encode("ascii"))
             client.connect()
-            try:
-                client.bind_transmitter(system_id=sys_id.encode("ascii"), 
-					password=passwd.encode("ascii"))
-                client.send_message(source_addr_ton=s_addr_ton,
-				    source_addr_npi=s_addr_npi,
-				    source_addr=s_addr.encode("ascii"),
-				    dest_addr_ton=d_addr_ton,
-				    dest_addr_npi=d_addr_npi,
-				    destination_addr=phone.encode("ascii"),
-				    short_message=message.encode("ascii"))
-            except KeyError as inst:
-                error_key = inst.args[0]
-            finally:
-                pass
-        except:
-            error_key = "Bad connection string" 
+            client.bind_transmitter(system_id=sys_id.encode("ascii"),
+				    password=passwd.encode("ascii"))
+            client.send_message(source_addr_ton=s_addr_ton,
+				source_addr_npi=s_addr_npi,
+				source_addr=s_addr.encode("ascii"),
+				dest_addr_ton=d_addr_ton,
+				dest_addr_npi=d_addr_npi,
+				destination_addr=phone.encode("ascii"),
+				short_message=message.encode("ascii"))
+        except KeyError as inst:
+            error_message = inst.args[0]
+	except:
+            error_message = "Bad connection string"
         finally:
             if client:    
                 client.disconnect()
 		
-        if error_key is not None:
-            raise SMSError(error_key, "SMS could not be "
-                                          "sent: %s" % error_key)
+        if error_message is not None:
+            raise SMSError(error_message, "SMS could not be "
+                                          "sent: %s" % error_message)
         return True
 
 
