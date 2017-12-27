@@ -77,7 +77,7 @@ class SmppSMSProvider(ISMSProvider):
 				source_addr=s_addr.encode("ascii"),
 				dest_addr_ton=d_addr_ton,
 				dest_addr_npi=d_addr_npi,
-				destination_addr=phone.encode("ascii"),
+				destination_addr=phone.strip().strip("+").encode("ascii"),
 				short_message=message.encode("ascii"))
         except KeyError as inst:
             error_message = inst.args[0]
