@@ -1,10 +1,25 @@
 # -*- coding: utf-8 -*-
 #
+#    2017-12-27 Cornelius Kölbel <cornelius.koelbel@netknights.i>
+#               Restructuring Code.
+#
 #    E-mail: yurlov.alexandr@gmail.com
 #
 #    2017-12-22 Alexander Yurlov <yurlov.alexandr@gmail.com>
 #               Add new SMPP SMS provider
-
+#
+#    This program is free software: you can redistribute it and/or
+#    modify it under the terms of the GNU Affero General Public
+#    License, version 3, as published by the Free Software Foundation.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the
+#               GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 __doc__="""This is the SMSClass to send SMS via SMPP protocol to SMS center
 It requires smpplib installation, this lib works with ascii only, but message support unicode 
@@ -13,13 +28,17 @@ It requires smpplib installation, this lib works with ascii only, but message su
 
 from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
 from privacyidea.lib import _
-import requests
-from urlparse import urlparse
-
+from privacyidea.lib.utils import parse_int
 import logging
 log = logging.getLogger(__name__)
 
-import smpplib
+try:
+    import smpplib
+    import_successful = True
+except ImportError:     # pragma: no cover
+    log.warning("Failed to import smpplib.")
+    import_successful = False
+
 
 class SmppSMSProvider(ISMSProvider):
 
@@ -31,67 +50,62 @@ class SmppSMSProvider(ISMSProvider):
         :param message: the message to submit to the phone
         :return:
         """
+        if not import_successful:  # pragma: no cover
+            log.error("smpplib can not be found!")
+            raise SMSError(404, "smpplib can not be found!")
+
         log.debug("submitting message {0!s} to {1!s}".format(message, phone))
-        parameter = {}
-        if self.smsgateway:
-            smsc_host = self.smsgateway.option_dict.get("SMSC_HOST")
-            smsc_port = self.smsgateway.option_dict.get("SMSC_PORT")
-            sys_id = self.smsgateway.option_dict.get("SYSTEM_ID")
-            passwd = self.smsgateway.option_dict.get("PASSWORD")
-            s_addr_ton = int(self.smsgateway.option_dict.get("S_ADDR_TON"),16)
-            s_addr_npi = int(self.smsgateway.option_dict.get("S_ADDR_NPI"),16)
-            s_addr = self.smsgateway.option_dict.get("S_ADDR")
-            d_addr_ton = int(self.smsgateway.option_dict.get("D_ADDR_TON"),16)
-            d_addr_npi = int(self.smsgateway.option_dict.get("D_ADDR_NPI"),16)
-			
-        else:
-            smsc_host = self.config.get('SMSC_HOST')
-            smsc_port = self.config.get('SMSC_PORT')
-            sys_id = self.config.get('SYSTEM_ID')
-            passwd = self.config.get('PASSWORD')
-            s_addr_ton = int(self.config.get('S_ADDR_TON'),16)
-            s_addr_npi = int(self.config.get('S_ADDR_NPI'),16)
-            s_addr = self.config.get('S_ADDR')
-            d_addr_ton = int(self.config.get('D_ADDR_TON'),16)
-            d_addr_npi = int(self.config.get('D_ADDR_NPI'),16)
+        if not self.smsgateway:
+            # this should not happen. We now always use sms gateway definitions.
+            log.warning("Missing smsgateway definition!")
+            raise SMSError(-1, "Missing smsgateway definition!")
 
-        if smsc_host is None:
-            log.warning("can not submit message. SMSC_HOST is missing.")
+        smsc_host = self.smsgateway.option_dict.get("SMSC_HOST")
+        smsc_port = self.smsgateway.option_dict.get("SMSC_PORT")
+        sys_id = self.smsgateway.option_dict.get("SYSTEM_ID")
+        passwd = self.smsgateway.option_dict.get("PASSWORD")
+        s_addr_ton = parse_int(self.smsgateway.option_dict.get("S_ADDR_TON"))
+        s_addr_npi = parse_int(self.smsgateway.option_dict.get("S_ADDR_NPI"))
+        s_addr = self.smsgateway.option_dict.get("S_ADDR")
+        d_addr_ton = parse_int(self.smsgateway.option_dict.get("D_ADDR_TON"))
+        d_addr_npi = parse_int(self.smsgateway.option_dict.get("D_ADDR_NPI"))
+
+        if not smsc_host:
+            log.warning("Can not submit message. SMSC_HOST is missing.")
             raise SMSError(-1, "No SMSC_HOST specified in the provider config.")
-        else:
-            if smsc_port is None:
-                log.warning("can not submit message. SMSC_PORT is missing.")
-                raise SMSError(-1, "No SMSC_PORT specified in the provider config.")
 
-        #SMPP Part
+        if not smsc_port:
+            log.warning("Can not submit message. SMSC_PORT is missing.")
+            raise SMSError(-1, "No SMSC_PORT specified in the provider config.")
+
+        # Initialize the SMPP Client
         client = None
         error_message = None 
         try:
             client = smpplib.client.Client(smsc_host.encode("ascii"),
-					   smsc_port.encode("ascii"))
+                                           smsc_port.encode("ascii"))
             client.connect()
             client.bind_transmitter(system_id=sys_id.encode("ascii"),
-				    password=passwd.encode("ascii"))
+                                    password=passwd.encode("ascii"))
             client.send_message(source_addr_ton=s_addr_ton,
-				source_addr_npi=s_addr_npi,
-				source_addr=s_addr.encode("ascii"),
-				dest_addr_ton=d_addr_ton,
-				dest_addr_npi=d_addr_npi,
-				destination_addr=phone.encode("ascii"),
-				short_message=message.encode("ascii"))
+                                source_addr_npi=s_addr_npi,
+                                source_addr=s_addr.encode("ascii"),
+                                dest_addr_ton=d_addr_ton,
+                                dest_addr_npi=d_addr_npi,
+                                destination_addr=phone.encode("ascii"),
+                                short_message=message.encode("ascii"))
         except KeyError as inst:
             error_message = inst.args[0]
-	except:
+        except:
             error_message = "Bad connection string"
         finally:
-            if client:    
+            if client:
                 client.disconnect()
-		
-        if error_message is not None:
+
+        if error_message:
             raise SMSError(error_message, "SMS could not be "
                                           "sent: %s" % error_message)
         return True
-
 
     @classmethod
     def parameters(cls):
@@ -102,7 +116,6 @@ class SmppSMSProvider(ISMSProvider):
 
         :return: dict
         """
-		
         params = {"options_allowed": False,
                     "parameters": {
                         "SMSC_HOST": {

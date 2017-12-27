@@ -1075,3 +1075,26 @@ class PasswordHash(object):
             hx = self.crypt_private(pw, stored_hash)
         return stored_hash == hx
 
+
+def parse_int(s, default=0):
+    """
+    Returns an integer either to base10 or base16.
+    :param s: A possible string given.
+    :param default: If the value can not be parsed or is None, return this
+        default value
+    :return: An integer
+    """
+    i = default
+    try:
+        i = int(s)
+        return i
+    except (ValueError, TypeError):
+        pass
+
+    try:
+        i = int(s, 16)
+        return i
+    except (ValueError, TypeError):
+        pass
+
+    return i
