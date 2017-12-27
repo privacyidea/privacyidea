@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-11-28 11:19+0100\n"
-"PO-Revision-Date: 2017-11-28 11:21+0100\n"
+"POT-Creation-Date: 2017-12-27 14:12+0100\n"
+"PO-Revision-Date: 2017-12-27 14:16+0100\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language: de\n"
 "Language-Team: de <LL@li.org>\n"
@@ -27,7 +27,7 @@ msgstr "Der Name der Richtlinie darf nur die Zeichen a-zA-Z0-9_ enthalten."
 msgid "T'check' is an invalid policy name."
 msgstr "'check' ist ein ungültiger Name für eine Richtlinie."
 
-#: lib/decorators.py:42 lib/token.py:1944
+#: lib/decorators.py:42 lib/token.py:1946
 msgid "This action is not possible, since the token is locked"
 msgstr "Diese Aktion kann nicht durchgeführt werden, weil der Token gesperrt ist."
 
@@ -523,25 +523,25 @@ msgstr "Dem Administrator wird der Willkommen-Dialog nicht mehr angezeigt."
 msgid "The RADIUS secret is too long"
 msgstr "Das RADIUS Secret ist zu lang"
 
-#: lib/token.py:2193
+#: lib/token.py:2195
 #, python-format
 msgid "Admin is allowed to initalize %s tokens."
 msgstr "Der Administrator kann %s Token ausrollen."
 
-#: lib/token.py:2202
+#: lib/token.py:2204
 #, python-format
 msgid "The user is allowed to enroll a %s token."
 msgstr "Der Benutzer darf einen %s Token ausrollen."
 
-#: lib/token.py:2233
+#: lib/token.py:2235
 msgid "Set the maximum allowed PIN length of the {0!s} token."
 msgstr "Setze die maximal erlaubte PIN-Länge für den {0!s} Token."
 
-#: lib/token.py:2240
+#: lib/token.py:2242
 msgid "Set the minimum required PIN length of the {0!s} token."
 msgstr "Sete die minimal notwendite PIN-Länge für den {0!s} Token."
 
-#: lib/token.py:2246
+#: lib/token.py:2248
 msgid "Specifiy the required PIN contents of the {0!s} token. (c)haracters, (n)umeric, (s)pecial, (o)thers. [+/-]!"
 msgstr "Definiere den notwendigen Inhalte der OTP PIN für den {0!s} Token. (c) Buchstaben, (n) Ziffern, (s) Sonderzeichen, (o) Andere [+/-]!"
 
@@ -755,12 +755,12 @@ msgstr "Der Text der SMS."
 msgid "Your LDAP config seems to be OK, %i machine objects found."
 msgstr "Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden %i Maschinen-Objekte gefunden."
 
-#: lib/resolvers/LDAPIdResolver.py:848
+#: lib/resolvers/LDAPIdResolver.py:854
 #, python-format
 msgid "Your LDAP config found %i user objects, but only %i with the specified uidtype"
 msgstr "Es wurden %i Benutzerobjekte gefunden. Aber nur %i mit dem spezifizierten UID-Typ."
 
-#: lib/resolvers/LDAPIdResolver.py:850
+#: lib/resolvers/LDAPIdResolver.py:856
 #, python-format
 msgid "Your LDAP config seems to be OK, %i user objects found."
 msgstr "Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden %i Benutzer-Objekte gefunden."
@@ -809,6 +809,42 @@ msgstr "Proxy-Einstellung für HTTPS-Verbindungen."
 msgid "The timeout in seconds."
 msgstr "Timeout in Sekunden."
 
+#: lib/smsprovider/SmppSMSProvider.py:125
+msgid "SMSC Host IP"
+msgstr "SMSC IP Adresse"
+
+#: lib/smsprovider/SmppSMSProvider.py:128
+msgid "SMSC Port"
+msgstr "SMSC Port"
+
+#: lib/smsprovider/SmppSMSProvider.py:130
+msgid "SMSC Service ID"
+msgstr "Service ID, mit dem sich privacyIDEA beim SMSC meldet."
+
+#: lib/smsprovider/SmppSMSProvider.py:132
+msgid "Password for authentication on SMSC"
+msgstr "Das Passwort, mit dem sich privacyIDEA am SMSC authentisiert."
+
+#: lib/smsprovider/SmppSMSProvider.py:134
+msgid "SOURCE_ADDR_TON Special Flag"
+msgstr "Code des Nummerntyps des Senders. Wird vom SMSC Operator mitgeteilt."
+
+#: lib/smsprovider/SmppSMSProvider.py:136
+msgid "S_ADDR_NPI Special Flag"
+msgstr "Code des Nummernplans des Senders. Wird vom SMSC Operator mitgeteilt."
+
+#: lib/smsprovider/SmppSMSProvider.py:138
+msgid "Source address (SMS sender)"
+msgstr "Absender-Telefonnummer"
+
+#: lib/smsprovider/SmppSMSProvider.py:139
+msgid "DESTINATION_ADDR_TON Special Flag"
+msgstr "Code des Nummertyps des Empfängers. Wird vom SMSC Operator mitgeteilt."
+
+#: lib/smsprovider/SmppSMSProvider.py:140
+msgid "D_ADDR_NPI Special Flag"
+msgstr "Code des Nummernplans des Empfängers. Wird vom SMSC Operator mitgeteilt."
+
 #: lib/tokens/certificatetoken.py:151
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr "Certificate: Ein x509 Zertifikats-Token ausrollen."
@@ -849,11 +885,11 @@ msgstr "Der zu verwendende Hash-Algorithmus. SHA1 (1) oder SHA2-256 (2)."
 msgid "Specify the otplen to be used. Can be 6 or 8 digits."
 msgstr "Die OTP-Länge. Entweder 6 oder 8 Zeichen."
 
-#: lib/tokens/hotptoken.py:115
+#: lib/tokens/hotptoken.py:115 lib/tokens/totptoken.py:140
 msgid "Specify whether users are allowed or forced to use two-step enrollment."
 msgstr "Benutzer dürfen oder müssen den Zwei-Schritt-Rollout verwenden."
 
-#: lib/tokens/hotptoken.py:117
+#: lib/tokens/hotptoken.py:117 lib/tokens/totptoken.py:146
 msgid "Specify whether admins are allowed or forced to use two-step enrollment."
 msgstr "Administratoren dürfen oder müssen den Zwei-Schritt-Rollout verwenden."
 
@@ -865,27 +901,27 @@ msgstr "HOTP: Ereignisbasiertes Einmalpasswort."
 msgid "The Yubikey access code used to initialize Yubikeys."
 msgstr "Yubikey Access Code, der benötigt wird, um Yubikeys zu initialisieren."
 
-#: lib/tokens/hotptoken.py:133
+#: lib/tokens/hotptoken.py:133 lib/tokens/totptoken.py:152
 msgid "The size of the OTP seed part contributed by the client (in bytes)"
 msgstr "Die Größe des Smartphone-Anteils (in Byte)"
 
-#: lib/tokens/hotptoken.py:137
+#: lib/tokens/hotptoken.py:137 lib/tokens/totptoken.py:155
 msgid "The size of the OTP seed part contributed by the server (in bytes)"
 msgstr "Die Große des Server-Anteils (in Byte)"
 
-#: lib/tokens/hotptoken.py:141
+#: lib/tokens/hotptoken.py:141 lib/tokens/totptoken.py:158
 msgid "The difficulty factor used for the OTP seed generation (should be at least 10000)"
 msgstr "Die Schweregrad zur Generierung des OTP Seeds. (Sollte wenigstens 10000 sein)"
 
-#: lib/tokens/hotptoken.py:155 lib/tokens/totptoken.py:131
+#: lib/tokens/hotptoken.py:155 lib/tokens/totptoken.py:135
 msgid "Force the key to be generated on the server."
 msgstr "Den Key auf dem Server generieren."
 
-#: lib/tokens/hotptoken.py:227
+#: lib/tokens/hotptoken.py:229
 msgid "URL for google Authenticator"
 msgstr "URL für Google Authenticator und vergleichbare Apps"
 
-#: lib/tokens/hotptoken.py:241
+#: lib/tokens/hotptoken.py:243
 msgid "URL for OATH token"
 msgstr "URL für OATH Token"
 
@@ -958,7 +994,7 @@ msgstr "TiQR: Einen TiQR-Token ausrollen."
 msgid "URL for TiQR enrollment"
 msgstr "URL zum Ausrollen des TiQR Token"
 
-#: lib/tokens/totptoken.py:111
+#: lib/tokens/totptoken.py:114
 msgid "TOTP: Time based One Time Passwords."
 msgstr "TOTP: Zeitbasiertes Einmalpasswort."
 
