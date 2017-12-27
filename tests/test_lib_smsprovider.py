@@ -4,6 +4,7 @@ This test file tests the modules:
  lib.smsprovider.httpsmsprovider
  lib.smsprovider.sipgateprovider
  lib.smsprovider.smtpsmsprovider
+ lib.smsprovider.smppsmsprovider
 """
 
 from .base import MyTestCase
@@ -448,6 +449,7 @@ class HttpSMSTestCase(MyTestCase):
         r = self.post_provider.submit_message("123456", u"Hallöle Smørrebrød")
         self.assertTrue(r)
 
+
 class SmppSMSTestCase(MyTestCase):
 
     config = {'SMSC_HOST': "192.168.1.1",
@@ -460,10 +462,43 @@ class SmppSMSTestCase(MyTestCase):
               'S_ADDR': "privacyIDEA",
               'D_ADDR_TON': "0x5",
               'D_ADDR_NPI': "0x1"}
+    provider_module = "privacyidea.lib.smsprovider.SmppSMSProvider" \
+                      ".SmppSMSProvider"
 
     def setUp(self):
-        self.provider = SmppSMSProvider()
-        self.provider.load_config(self.config)
+
+        # Use a the gateway definition for configuring the provider
+        identifier = "mySmppGW"
+        id = set_smsgateway(identifier, self.provider_module, description="test",
+                            options=self.config)
+        self.assertTrue(id > 0)
+        self.provider = create_sms_instance(identifier=identifier)
+        self.assertEqual(type(self.provider), SmppSMSProvider)
+
+    def test_00_config(self):
+        r = SmppSMSProvider.parameters()
+        self.assertEqual(r.get("options_allowed"), False)
+        params = r.get("parameters")
+        self.assertEqual(params.get("SMSC_HOST").get("required"), True)
+
+    def test_00_errors(self):
+        # No smsgateway defined
+        s = SmppSMSProvider()
+        self.assertRaises(SMSError, s.submit_message, "phone", "message")
+
+        # No host defined
+        set_smsgateway("missing_host", self.provider_module,
+                       options={"SMSC_PORT": "1234"})
+        p = create_sms_instance(identifier="missing_host")
+        self.assertRaises(SMSError, p.submit_message, "phone", "message")
+        delete_smsgateway("missing_host")
+
+        # No port defined
+        set_smsgateway("missing_port", self.provider_module,
+                       options={"SMSC_HOST": "1.1.1.1"})
+        p = create_sms_instance(identifier="missing_port")
+        self.assertRaises(SMSError, p.submit_message, "phone", "message")
+        delete_smsgateway("missing_port")
 
     def test_01_success(self):
         # Here we need to send the SMS
