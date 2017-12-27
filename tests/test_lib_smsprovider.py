@@ -23,6 +23,7 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
 from privacyidea.lib.smtpserver import add_smtpserver
 import responses
 import smtpmock
+import smmpmock
 
 
 class SMSTestCase(MyTestCase):
@@ -500,31 +501,25 @@ class SmppSMSTestCase(MyTestCase):
         self.assertRaises(SMSError, p.submit_message, "phone", "message")
         delete_smsgateway("missing_port")
 
+    @smmpmock.activate
     def test_01_success(self):
         # Here we need to send the SMS
-        try:
-            r = self.provider.submit_message("123456", "Hello")
-            self.assertTrue(r)
-        except:
-            r = False
-            self.assertFalse(r)
- 
-    def test_02_fail(self):
-        # Here we need to send the SMS
-        self.assertRaises(SMSError, self.provider.submit_message,
-                          "123456", "Hello")
+        smmpmock.setdata(connection_success=True,
+                         systemid="privacyIDEA",
+                         password="secret")
+        r = self.provider.submit_message("123456", "Hello")
+        self.assertTrue(r)
 
-    def test_08_smsgateway_success(self):
-        identifier = "mySMS"
-        provider_module = "privacyidea.lib.smsprovider.SmppSMSProvider" \
-                          ".SmppSMSProvider"
-        id = set_smsgateway(identifier, provider_module, description="test",
-                            options=self.config)
-        self.assertTrue(id > 0)
-        sms = create_sms_instance(identifier)
-        try:
-            r = sms.submit_message("123456", "Hello")
-            self.assertTrue(r)
-        except:
-            r = False
-            self.assertFalse(r)
+    @smmpmock.activate
+    def test_02_fail_connection(self):
+        smmpmock.setdata(connection_success=False,
+                         systemid="privacyIDEA",
+                         password="secret")
+        self.assertRaises(SMSError, self.provider.submit_message, "123456", "hello")
+
+    @smmpmock.activate
+    def test_03_fail_wrong_credentials(self):
+        smmpmock.setdata(connection_success=True,
+                         systemid="privacyIDEA",
+                         password="wrong")
+        self.assertRaises(SMSError, self.provider.submit_message, "123456", "hello")

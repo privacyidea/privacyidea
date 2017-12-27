@@ -30,6 +30,7 @@ from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
 from privacyidea.lib import _
 from privacyidea.lib.utils import parse_int
 import logging
+import traceback
 log = logging.getLogger(__name__)
 
 try:
@@ -94,17 +95,18 @@ class SmppSMSProvider(ISMSProvider):
                                 dest_addr_npi=d_addr_npi,
                                 destination_addr=phone.encode("ascii"),
                                 short_message=message.encode("ascii"))
-        except KeyError as inst:
-            error_message = inst.args[0]
-        except:
-            error_message = "Bad connection string"
+        except Exception as err:
+            error_message = "{0!r}".format(err)
+            log.warning("Failed to send message: {0!r}".format(error_message))
+            log.debug("{0!s}".format(traceback.format_exc()))
+
         finally:
             if client:
                 client.disconnect()
 
         if error_message:
             raise SMSError(error_message, "SMS could not be "
-                                          "sent: %s" % error_message)
+                                          "sent: {0!r}".format(error_message))
         return True
 
     @classmethod
