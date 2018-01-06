@@ -146,10 +146,18 @@ and "homedir" and "studentID" the keys returned in a SAML authentication
 request.
 
 The ``MULTIVALUEATTRIBUTES`` config value can be used to specify a list of
-LDAP user attributes, that should return a list of values. The setting is the
-"mobile" attribute, i.e. privacyIDEA will return a list of mobile telephone numbers.
-E.g. you can set this to ``["mobile", "memberOf"]`` and then it would also return the
-list of groups of the user user.
+user attributes, that should return a list of values. Imagine you have a user mapping like
+``{ "phone" : "telephoneNumber", "email" : "mail", "surname" : "sn", "group": "memberOf"}``.
+Then you could specify ``["email", "group"]`` as the multi value attribute and the user object
+would return the emails and the group memberships of the user from the LDAP server as a list.
+
+.. note:: If the ``MULTIVALUEATTRIBUTES`` is left blank the default setting is "mobile". I.e. the
+   mobile number will be returned as a list.
+
+The ``MULTIVALUEATTRIBUTES`` can be well used with the ``samlcheck`` endpoint (see :ref:`rest_validate`)
+or with the policy
+:ref:`policy_add_user_in_response`.
+
   
 The ``UID Type`` is the unique identifier for the LDAP object. If it is left
 blank, the distinguished name will be used. In case of OpenLDAP this can be
@@ -157,7 +165,7 @@ blank, the distinguished name will be used. In case of OpenLDAP this can be
 can use *ipaUniqueID*.
 
 .. note:: The attributes *entryUUID*, *objectGUID*, and *ipaUniqueID*
-are case sensitive!
+   are case sensitive!
 
 The option ``No retrieval of schema information`` can be used to
 disable the retrieval of schema information [#ldapschema]_ in
