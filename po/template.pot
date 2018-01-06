@@ -1484,7 +1484,7 @@ msgid "Mobile"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:268
-msgid "Mutlivalue Attributes"
+msgid "Multivalue Attributes"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:13
