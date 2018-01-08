@@ -215,10 +215,10 @@ The default *SUBJECT* is set to *{phone}* and the default *BODY* to *{otp}*.
 You may change the *SUBJECT* and the *BODY* accordingly.
 
 
-SMMP Provider
+SMPP Provider
 ~~~~~~~~~~~~~
 
-The SMMP provider was added in privacyIDEA 2.22. It uses an SMS Center via the SMMP protocol to
+The SMPP provider was added in privacyIDEA 2.22. It uses an SMS Center via the SMPP protocol to
 deliver SMS to the users.
 
 You need to specify the **SMSC_HOST** and **SMSC_PORT** to talk to the SMS center.

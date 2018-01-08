@@ -23,7 +23,7 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
 from privacyidea.lib.smtpserver import add_smtpserver
 import responses
 import smtpmock
-import smmpmock
+import smppmock
 
 
 class SMSTestCase(MyTestCase):
@@ -501,25 +501,25 @@ class SmppSMSTestCase(MyTestCase):
         self.assertRaises(SMSError, p.submit_message, "phone", "message")
         delete_smsgateway("missing_port")
 
-    @smmpmock.activate
+    @smppmock.activate
     def test_01_success(self):
         # Here we need to send the SMS
-        smmpmock.setdata(connection_success=True,
+        smppmock.setdata(connection_success=True,
                          systemid="privacyIDEA",
                          password="secret")
         r = self.provider.submit_message("123456", "Hello")
         self.assertTrue(r)
 
-    @smmpmock.activate
+    @smppmock.activate
     def test_02_fail_connection(self):
-        smmpmock.setdata(connection_success=False,
+        smppmock.setdata(connection_success=False,
                          systemid="privacyIDEA",
                          password="secret")
         self.assertRaises(SMSError, self.provider.submit_message, "123456", "hello")
 
-    @smmpmock.activate
+    @smppmock.activate
     def test_03_fail_wrong_credentials(self):
-        smmpmock.setdata(connection_success=True,
+        smppmock.setdata(connection_success=True,
                          systemid="privacyIDEA",
                          password="wrong")
         self.assertRaises(SMSError, self.provider.submit_message, "123456", "hello")
