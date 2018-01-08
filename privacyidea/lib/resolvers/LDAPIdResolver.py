@@ -628,7 +628,7 @@ class IdResolver (UserIdResolver):
         userinfo = config.get("USERINFO", "{}")
         self.userinfo = yaml.safe_load(userinfo)
         self.userinfo["username"] = self.loginname_attribute[0]
-        multivalueattributes = config.get("MULTIVALUEATTRIBUTES", '["mobile"]')
+        multivalueattributes = config.get("MULTIVALUEATTRIBUTES") or '["mobile"]'
         self.multivalueattributes = yaml.safe_load(multivalueattributes)
         self.map = yaml.safe_load(userinfo)
         self.uidtype = config.get("UIDTYPE", "DN")
