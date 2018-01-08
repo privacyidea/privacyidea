@@ -76,6 +76,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                  "userPassword": "mySecret",
                                  "accoutnExpires": 9223372036854775807,
                                  "objectGUID": objectGUIDs[3],
+                                 "someAttr": ["value1", "value2"],
                                  "oid": "4"}}]
 
 LDAPDirectory_small = [{"dn": 'cn=bob,ou=example,o=test',
@@ -1407,6 +1408,37 @@ class LDAPResolverTestCase(MyTestCase):
         username = "cko@o"
         user_id = y.getUserId(username)
         self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
+
+    @ldap3mock.activate
+    def test_28_LDAP_multivalues(self):
+        # This tests usernames are entered in the LDAPresolver as unicode.
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn, email',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "email", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName",'
+                                  '"piAttr": "someAttr"}',
+                      'UIDTYPE': 'DN',
+                      'MULTIVALUEATTRIBUTES': "['piAttr']"
+                      })
+
+        result = y.getUserList({'username': '*'})
+        self.assertEqual(len(result), len(LDAPDirectory))
+
+        user = u"kölbel"
+        user_id = y.getUserId(user)
+        self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
+        info = y.getUserInfo(user_id)
+        self.assertTrue("value1" in info.get("piAttr"))
+        self.assertTrue("value2" in info.get("piAttr"))
 
 
 class BaseResolverTestCase(MyTestCase):
