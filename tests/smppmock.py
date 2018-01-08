@@ -123,27 +123,27 @@ class SmppMock(object):
         evaldict = {'smppmock': self, 'func': func}
         return get_wrapped(func, _wrapper_template, evaldict)
 
-    def _on_connect(self, SMMP):
+    def _on_connect(self, SMPP):
         if self.connect_successful:
             return None
         else:
             raise ConnectionError()
 
-    def _on_disconnect(self, SMMP):
+    def _on_disconnect(self, SMPP):
         self.host = None
         self.port = None
 
-    def _on_init(self, SMMP, host, port):
+    def _on_init(self, SMPP, host, port):
         self.host = host
         self.port = port
         return None
 
-    def _on_transmitter(self, SMMP, systemid, password):
+    def _on_transmitter(self, SMPP, systemid, password):
         if systemid != self.systemid or password != self.password:
             raise Exception("Wrong credentials")
         return None
 
-    def _on_send_message(self, SMMP, source_addr_ton=None, source_addr_npi=None,
+    def _on_send_message(self, SMPP, source_addr_ton=None, source_addr_npi=None,
                          source_addr=None, dest_addr_ton=None,
                          dest_addr_npi=None, destination_addr=None,
                          short_message=None):
@@ -152,36 +152,36 @@ class SmppMock(object):
     def start(self):
         import mock
 
-        def unbound_on_init(SMMP, host, port):
-            return self._on_init(SMMP, host, port)
+        def unbound_on_init(SMPP, host, port):
+            return self._on_init(SMPP, host, port)
 
         self._patcher1 = mock.patch('smpplib.client.Client.__init__',
                                    unbound_on_init)
         self._patcher1.start()
 
-        def unbound_on_connect(SMMP):
-            return self._on_connect(SMMP)
+        def unbound_on_connect(SMPP):
+            return self._on_connect(SMPP)
 
         self._patcher2 = mock.patch('smpplib.client.Client.connect',
                                     unbound_on_connect)
         self._patcher2.start()
 
-        def unbound_on_transmitter(SMMP, system_id, password):
-            return self._on_transmitter(SMMP, system_id, password)
+        def unbound_on_transmitter(SMPP, system_id, password):
+            return self._on_transmitter(SMPP, system_id, password)
 
         self._patcher3 = mock.patch('smpplib.client.Client.bind_transmitter',
                                     unbound_on_transmitter)
         self._patcher3.start()
 
-        def unbound_on_send_message(SMMP, *a, **kwargs):
-            return self._on_send_message(SMMP, *a, **kwargs)
+        def unbound_on_send_message(SMPP, *a, **kwargs):
+            return self._on_send_message(SMPP, *a, **kwargs)
 
         self._patcher4 = mock.patch('smpplib.client.Client.send_message',
                                     unbound_on_send_message)
         self._patcher4.start()
 
-        def unbound_on_disconnect(SMMP):
-            return self._on_disconnect(SMMP)
+        def unbound_on_disconnect(SMPP):
+            return self._on_disconnect(SMPP)
 
         self._patcher5 = mock.patch('smpplib.client.Client.disconnect',
                                     unbound_on_disconnect)
