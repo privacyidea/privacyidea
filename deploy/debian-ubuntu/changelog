@@ -1,3 +1,10 @@
+python-privacyidea (2.21.1-1trusty) trusty; urgency=low
+
+  Fixes:
+  * Allow to use TLS1.1 and TLS1.2 for LDAP Resolver (#876)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Tue, 09 Jan 2018 12:30:00 +0200
+
 python-privacyidea (2.21-1trusty) trusty; urgency=low
 
   Features:
