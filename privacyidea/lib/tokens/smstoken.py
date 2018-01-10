@@ -293,6 +293,7 @@ class SmsTokenClass(HotpTokenClass):
                 info = ("The PIN was correct, but the "
                         "SMS could not be sent: %r" % e)
                 log.warning(info)
+                log.debug("{0!s}".format(traceback.format_exc()))
                 return_message = info
 
         validity = self._get_sms_timeout()
