@@ -3,6 +3,8 @@
 #    E-mail: info@privacyidea.org
 #    Contact: www.privacyidea.org
 #
+#    2018-01-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#               Fix type cast for timeout
 #    2016-06-14 Cornelius Kölbel <cornelius@privacyidea.org>
 #               Add properties for new SMS provider model
 #    2016-04-08 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -132,7 +134,7 @@ class HttpSMSProvider(ISMSProvider):
                       data=data,
                       verify=ssl_verify,
                       auth=basic_auth,
-                      timeout = timeout,
+                      timeout=float(timeout),
                       proxies=proxies)
         log.debug("queued SMS on the HTTP gateway. status code returned: {0!s}".format(
                   r.status_code))
