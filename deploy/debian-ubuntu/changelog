@@ -1,3 +1,10 @@
+python-privacyidea (2.22~dev0-1trusty) trusty; urgency=low
+
+  * SMPP Provider
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Fri, 12 Jan 2017 00:30:00 +0200
+
+
 python-privacyidea (2.21-1trusty) trusty; urgency=low
 
   Features:
