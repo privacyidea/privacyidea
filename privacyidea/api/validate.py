@@ -80,6 +80,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            check_base_action)
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
+                                            check_tokeninfo,
                                             no_detail_on_fail,
                                             no_detail_on_success, autoassign,
                                             offline_info,
@@ -164,6 +165,7 @@ def after_request(response):
 @postpolicy(no_detail_on_success, request=request)
 @postpolicy(add_user_detail_to_response, request=request)
 @postpolicy(offline_info, request=request)
+@postpolicy(check_tokeninfo, request=request)
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)
@@ -309,6 +311,7 @@ def check():
 @postpolicy(no_detail_on_fail, request=request)
 @postpolicy(no_detail_on_success, request=request)
 @postpolicy(add_user_detail_to_response, request=request)
+@postpolicy(check_tokeninfo, request=request)
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)

@@ -198,7 +198,7 @@ def check_tokentype(request, response):
     policy_object = g.policy_object
     user_object = request.User
     allowed_tokentypes = policy_object.get_action_values(
-        "tokentype",
+        ACTION.TOKENTYPE,
         scope=SCOPE.AUTHZ,
         user=user_object.login,
         resolver=user_object.resolver,
@@ -230,7 +230,7 @@ def check_serial(request, response):
     policy_object = g.policy_object
     serial = content.get("detail", {}).get("serial")
     # get the serials from a policy definition
-    allowed_serials = policy_object.get_action_values("serial",
+    allowed_serials = policy_object.get_action_values(ACTION.SERIAL,
                                                     scope=SCOPE.AUTHZ,
                                                     client=g.client_ip)
 
@@ -245,6 +245,47 @@ def check_serial(request, response):
             g.audit_object.log({"action_detail": "Serial is not allowed for "
                                                  "authentication!"})
             raise PolicyError("Serial is not allowed for authentication!")
+    return response
+
+
+def check_tokeninfo(request, response):
+    """
+    This policy function is used as a decorator for the validate API.
+    It checks after a successful authentication if the token has a matching
+    tokeninfo field. If it does not match, authorization is denied. Then
+    a PolicyException is raised.
+
+    :param response: The response of the decorated function
+    :type response: Response object
+    :return: A new modified response
+    """
+    content = json.loads(response.data)
+    policy_object = g.policy_object
+    serial = content.get("detail", {}).get("serial")
+    if serial:
+        tokens = get_tokens(serial=serial)
+        if len(tokens) == 1:
+            token_obj = tokens[0]
+            tokeninfos_pol = policy_object.get_action_values(
+                ACTION.TOKENINFO,
+                scope=SCOPE.AUTHZ,
+                client=g.client_ip,
+                allow_white_space_in_action=True)
+            for tokeninfo_pol in tokeninfos_pol:
+                try:
+                    key, regex, _r = tokeninfo_pol.split("/")
+                    value = token_obj.get_tokeninfo(key, "")
+                    if re.search(regex, value):
+                        log.debug("Regular expression {0!s} "
+                                  "matches the tokeninfo field {1!s}.".format(regex, key))
+                    else:
+                        log.info("Tokeninfo field {0!s} with contents {1!s} "
+                                 "does not match {2!s}".format(key, value, regex))
+                        raise PolicyError("Tokeninfo field {0!s} with contents does not"
+                                          " match regular expression.".format(key))
+                except ValueError:
+                    log.warning("invalid tokeinfo policy: {0!s}".format(tokeninfo_pol))
+
     return response
 
 

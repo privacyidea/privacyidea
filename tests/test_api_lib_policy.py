@@ -24,6 +24,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            required_email, auditlog_age,
                                            papertoken_count, allowed_audit_realm)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
+                                            check_tokeninfo,
                                             no_detail_on_success,
                                             no_detail_on_fail, autoassign,
                                             offline_info, sign_response,
@@ -1260,6 +1261,67 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         self.assertRaises(PolicyError,
                           check_tokentype,
                           req, resp)
+
+    def test_03_check_tokeninfo(self):
+        token_obj = init_token({"type": "SPASS", "serial": "PISP0001"})
+        token_obj.set_tokeninfo({"testkey": "testvalue"})
+
+        # http://werkzeug.pocoo.org/docs/0.10/test/#environment-building
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "PISP0001"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        # The response contains the token type SPASS
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": True},
+               "version": "privacyIDEA test",
+               "id": 1,
+               "detail": {"message": "matching 1 tokens",
+                          "serial": "PISP0001",
+                          "type": "spass"}}
+        resp = Response(json.dumps(res))
+
+        # Set a policy, that does match
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTHZ,
+                   action="tokeninfo=testkey/test.*/", client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+        r = check_tokeninfo(req, resp)
+        jresult = json.loads(r.data)
+        self.assertTrue(jresult.get("result").get("value"))
+
+        # Set a policy that does NOT match
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTHZ,
+                   action="tokeninfo=testkey/NO.*/", client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+        self.assertRaises(PolicyError,
+                          check_tokeninfo,
+                          req, resp)
+
+        # Set a policy, but the token has no tokeninfo!
+        # Thus the authorization will fail
+        token_obj.del_tokeninfo("testkey")
+        self.assertRaises(PolicyError,
+                          check_tokeninfo,
+                          req, resp)
+
+        # If we set an invalid policy, authorization will succeed
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTHZ,
+                   action="tokeninfo=testkey/missingslash", client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+        r = check_tokeninfo(req, resp)
+        jresult = json.loads(r.data)
+        self.assertTrue(jresult.get("result").get("value"))
+
+        delete_policy("pol1")
+        remove_token("PISP0001")
 
     def test_02_check_serial(self):
         # http://werkzeug.pocoo.org/docs/0.10/test/#environment-building
