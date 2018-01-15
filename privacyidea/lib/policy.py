@@ -233,6 +233,7 @@ class ACTION(object):
     MAXTOKENUSER = "max_token_per_user"
     NODETAILSUCCESS = "no_detail_on_success"
     ADDUSERINRESPONSE = "add_user_in_response"
+    ADDRESOLVERINRESPONSE = "add_resolver_in_response"
     NODETAILFAIL = "no_detail_on_fail"
     OTPPIN = "otppin"
     OTPPINRANDOM = "otp_pin_random"
@@ -1577,6 +1578,11 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _('In case of successful authentication user data '
                           'will be added in the detail branch of the '
+                          'authentication response.')},
+            ACTION.ADDRESOLVERINRESPONSE: {
+                'type': 'bool',
+                'desc': _('In case of successful authentication the user resolver and '
+                          'realm will be added in the detail branch of the '
                           'authentication response.')},
             ACTION.APIKEY: {
                 'type': 'bool',

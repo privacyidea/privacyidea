@@ -1415,7 +1415,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         self.assertTrue("user" not in jresult.get("detail"), jresult)
 
         # A successful get a user added
-        # Set a policy, that does not allow the detail on success
+        # Set a policy, that adds user info to detail
         set_policy(name="pol_add_user",
                    scope=SCOPE.AUTHZ,
                    action=ACTION.ADDUSERINRESPONSE, client="10.0.0.0/8")
@@ -1424,7 +1424,24 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         new_response = add_user_detail_to_response(req, resp)
         jresult = json.loads(new_response.data)
         self.assertTrue("user" in jresult.get("detail"), jresult)
+        self.assertFalse("user-resolver" in jresult.get("detail"), jresult)
+        self.assertFalse("user-realm" in jresult.get("detail"), jresult)
+
+        # set a policy that adds user resolver to detail
+        set_policy(name="pol_add_resolver",
+                   scope=SCOPE.AUTHZ,
+                   action=ACTION.ADDRESOLVERINRESPONSE, client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+
+        new_response = add_user_detail_to_response(req, resp)
+        jresult = json.loads(new_response.data)
+        self.assertTrue("user-resolver" in jresult.get("detail"), jresult)
+        self.assertEqual(jresult.get("detail").get("user-resolver"), self.resolvername1)
+        self.assertTrue("user-realm" in jresult.get("detail"), jresult)
+        self.assertEqual(jresult.get("detail").get("user-realm"), self.realm1)
+
         delete_policy("pol_add_user")
+        delete_policy("pol_add_resolver")
 
     def test_05_autoassign_any_pin(self):
         # init a token, that does has no uwser
