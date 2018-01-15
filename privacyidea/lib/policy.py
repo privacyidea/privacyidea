@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-01-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add tokeninfo field policy
+#             Add add_resolver_in_result
 #  2017-11-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add policy action for customization of menu and baseline
 #  2017-01-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -270,6 +273,7 @@ class ACTION(object):
     TOKENPAGESIZE = "token_page_size"
     TOKENREALMS = "tokenrealms"
     TOKENTYPE = "tokentype"
+    TOKENINFO = "tokeninfo"
     TOKENWIZARD = "tokenwizard"
     TOKENWIZARD2ND = "tokenwizard_2nd_token"
     TRIGGERCHALLENGE = "triggerchallenge"
@@ -1560,6 +1564,10 @@ def get_static_policy_definitions(scope=None):
                 'type': 'str',
                 'desc': _('The user will only be authenticated if the serial '
                           'number of the token matches this regexp.')},
+            ACTION.TOKENINFO: {
+                'type': 'str',
+                'desc': _("The user will only be authenticated if the tokeninfo "
+                          "field matches the regexp. key/<regexp>/")},
             ACTION.SETREALM: {
                 'type': 'str',
                 'value': realms,
