@@ -75,7 +75,7 @@ Users will only be authorized if the tokeninfo field
 of the token matches this regular expression.
 
 This is checked after the authentication request, so that a valid
-OTP value can not be used anymore, even if authorization if forbidden.
+OTP value can not be used anymore, even if authorization is forbidden.
 
 A valid action could look like
 
@@ -83,7 +83,7 @@ A valid action could look like
 
 Example:
 
-   action = last_auth/ 2018.*/
+   action = last_auth/^2018.*/
 
 This would mean the tokeninfo field needs to start with "2018".
 
