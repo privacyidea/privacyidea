@@ -214,3 +214,14 @@ type: bool
 In case of a successful authentication additional user information is added
 to the response. A dictionary containing user information is added in
 ``detail->user``.
+
+.. _policy_add_resolver_in_response:
+
+add_resolver_in_response
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+In case of a successful authentication the resolver and realm of the user are added
+to the response. The names are added in
+``detail->user-resolver`` and ``detail->user-realm``.
