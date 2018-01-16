@@ -20,6 +20,8 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
+import binascii
+
 __doc__ = """This is the implementation of the VASCO token"""
 
 import logging
@@ -105,9 +107,15 @@ class VascoTokenClass(TokenClass):
         if is_true(getParam(param, 'genkey', optional)):
             raise ParameterError("Generating OTP keys is not supported")
 
-        TokenClass.update(self, param, reset_failcount)
+        upd_param = param.copy()
 
-        return
+        # If the OTP key is given, it is given as a 496-character hex string which
+        # encodes a 248-byte blob. As we want to set a 248-byte OTPKey (= Blob),
+        # we unhexlify the OTP key
+        if 'otpkey' in param:
+            upd_param['otpkey'] = binascii.unhexlify(upd_param['otpkey'])
+
+        TokenClass.update(self, upd_param, reset_failcount)
 
     @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):
@@ -116,6 +124,7 @@ class VascoTokenClass(TokenClass):
         secret = self.token.get_otpkey().getKey()
         result, new_secret = vasco_otp_check(secret, otpval)
         self.token.set_otpkey(new_secret)
+        self.save()
 
         if result == 0:
             # Successful authentication

@@ -3,6 +3,7 @@ This test file tests the lib.tokens.vascotoken
 This depends on lib.tokenclass
 """
 import functools
+from binascii import hexlify
 
 import mock
 
@@ -31,6 +32,16 @@ def mock_failure(data, params, password, challenge):
     data._obj.Blob = "Y"*224
     return 42
 
+def mock_missing_dll(replacement):
+    def decorator(f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            with mock.patch('privacyidea.lib.tokens.vasco.vasco_dll') as mock_dll:
+                mock_dll.return_value = None
+                return f(*args, **kwargs)
+        return wrapper
+    return decorator
+
 
 class VascoTokenTest(MyTestCase):
     otppin = "topsecret"
@@ -46,7 +57,7 @@ class VascoTokenTest(MyTestCase):
         db_token = Token(self.serial1, tokentype="vasco")
         db_token.save()
         token = VascoTokenClass(db_token)
-        token.update({"otpkey": "X" * 248,
+        token.update({"otpkey": hexlify("X" * 248),
                       "pin": self.otppin})
         self.assertTrue(token.token.serial == self.serial1, token)
         self.assertTrue(token.token.tokentype == "vasco", token.token.tokentype)
@@ -62,11 +73,12 @@ class VascoTokenTest(MyTestCase):
         self.assertRaises(ParameterError, token.update, {"genkey": "1"})
         token.delete_token()
 
+    @mock_missing_dll
     def test_03_no_vasco_library(self):
         db_token = Token(self.serial2, tokentype="vasco")
         db_token.save()
         token = VascoTokenClass(db_token)
-        token.update({"otpkey": "X"*248,
+        token.update({"otpkey": hexlify("X"*248),
                       "pin": self.otppin})
         self.assertRaises(RuntimeError, token.authenticate, "{}123456".format(self.otppin))
         token.delete_token()
@@ -76,7 +88,7 @@ class VascoTokenTest(MyTestCase):
         db_token = Token(self.serial2, tokentype="vasco")
         db_token.save()
         token = VascoTokenClass(db_token)
-        token.update({"otpkey": "X"*248,
+        token.update({"otpkey": hexlify("X"*248),
                       "pin": self.otppin})
         r = token.authenticate("{}123456".format(self.otppin))
         self.assertEqual(r[0], True)
@@ -91,7 +103,7 @@ class VascoTokenTest(MyTestCase):
         db_token = Token(self.serial2, tokentype="vasco")
         db_token.save()
         token = VascoTokenClass(db_token)
-        token.update({"otpkey": "X"*248,
+        token.update({"otpkey": hexlify("X"*248),
                       "pin": self.otppin})
         r = token.authenticate("{}123456".format(self.otppin))
         self.assertEqual(r[0], True)
