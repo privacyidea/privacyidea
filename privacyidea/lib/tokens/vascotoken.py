@@ -130,6 +130,9 @@ class VascoTokenClass(TokenClass):
         if result == 0:
             # Successful authentication
             return 0
+        elif result == 201:
+            log.warning("A previous OTP value was used again!")
+            return -1
         else:
             log.warning("VASCO token failed to authenticate, result: {!r}".format(result))
             return -1
