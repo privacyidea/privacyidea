@@ -42,7 +42,9 @@ log = logging.getLogger(__name__)
 
 class VascoTokenClass(TokenClass):
     """
-    TODO
+    Token class for VASCO Digipass tokens. Relies on vendor-specific
+    shared library, whose location needs to be set in the VASCO_LIBRARY
+    config option.
     """
 
     def __init__(self, db_token):
