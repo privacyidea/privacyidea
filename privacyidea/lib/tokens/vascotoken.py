@@ -31,6 +31,7 @@ from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokens.vasco import vasco_otp_check
 from privacyidea.lib import _
 
 optional = True
@@ -119,8 +120,6 @@ class VascoTokenClass(TokenClass):
 
     @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):
-        from .vasco import vasco_otp_check
-
         secret = self.token.get_otpkey().getKey()
         result, new_secret = vasco_otp_check(secret, otpval)
         self.token.set_otpkey(new_secret)
