@@ -22,15 +22,24 @@ def mock_verification(replacement):
         return wrapper
     return decorator
 
+def _set_next_blob(data):
+    """
+    update ``data._obj.Blob``: Increment the contents by 1.
+    i.e. "XXX...X" is replaced with "YYY...Y".
+    """
+    data._obj.Blob = "".join(chr(ord(x) + 1) for x in data._obj.Blob)
+
 def mock_success(data, params, password, challenge):
     # fake a new blob
-    data._obj.Blob = "Y" * 224
+    _set_next_blob(data)
     return 0
 
-def mock_failure(data, params, password, challenge):
-    # fake a new blob
-    data._obj.Blob = "Y"*224
-    return 42
+def create_mock_failure(return_value):
+    def mock_failure(data, params, password, challenge):
+        # fake a new blob
+        _set_next_blob(data)
+        return return_value
+    return mock_failure
 
 def mock_missing_dll(replacement):
     def decorator(f):
@@ -83,7 +92,7 @@ class VascoTokenTest(MyTestCase):
         self.assertRaises(RuntimeError, token.authenticate, "{}123456".format(self.otppin))
         token.delete_token()
 
-    @mock_verification(mock_failure)
+    @mock_verification(create_mock_failure(1))
     def test_04_failure(self):
         db_token = Token(self.serial2, tokentype="vasco")
         db_token.save()
@@ -96,6 +105,18 @@ class VascoTokenTest(MyTestCase):
         # failure, but the token secret has been updated nonetheless
         key = token.token.get_otpkey().getKey()
         self.assertEqual(key, "X"*24 + "Y"*224)
+        # wrong PIN, the token secret has not been updated
+        r = token.authenticate("WRONG123456".format(self.otppin))
+        self.assertEqual(r[0], False)
+        self.assertEqual(r[1], -1)
+        key = token.token.get_otpkey().getKey()
+        self.assertEqual(key, "X"*24 + "Y"*224)
+        # another failure, but the token secret has been updated again!
+        r = token.authenticate("{}234567".format(self.otppin))
+        self.assertEqual(r[0], True)
+        self.assertEqual(r[1], -1)
+        key = token.token.get_otpkey().getKey()
+        self.assertEqual(key, "X"*24 + "Z"*224)
         token.delete_token()
 
     @mock_verification(mock_success)
@@ -105,10 +126,69 @@ class VascoTokenTest(MyTestCase):
         token = VascoTokenClass(db_token)
         token.update({"otpkey": hexlify("X"*248),
                       "pin": self.otppin})
+        # wrong PIN, the token secret has not been updated
+        r = token.authenticate("WRONG123456".format(self.otppin))
+        self.assertEqual(r[0], False)
+        self.assertEqual(r[1], -1)
+        key = token.token.get_otpkey().getKey()
+        self.assertEqual(key, "X"*24 + "X"*224)
+        # correct PIN + OTP
         r = token.authenticate("{}123456".format(self.otppin))
         self.assertEqual(r[0], True)
         self.assertEqual(r[1], 0) # TODO: that is success?
-        # failure, but the token secret has been updated nonetheless
         key = token.token.get_otpkey().getKey()
         self.assertEqual(key, "X"*24 + "Y"*224)
+        # another success
+        r = token.authenticate("{}234567".format(self.otppin))
+        self.assertEqual(r[0], True)
+        self.assertEqual(r[1], 0)  # TODO: that is success?
+        key = token.token.get_otpkey().getKey()
+        self.assertEqual(key, "X"*24 + "Z"*224)
+        token.delete_token()
+
+    def test_06_reuse(self):
+        db_token = Token(self.serial2, tokentype="vasco")
+        db_token.save()
+        token = VascoTokenClass(db_token)
+        token.update({"otpkey": hexlify("X" * 248),
+                      "pin": self.otppin})
+
+        @mock_verification(mock_success)
+        def _step1():
+            # correct PIN + OTP
+            return token.authenticate("{}123456".format(self.otppin))
+
+        r = _step1()
+        self.assertEqual(r[0], True)
+        self.assertEqual(r[1], 0)  # TODO: that is success?
+        key = token.token.get_otpkey().getKey()
+        self.assertEqual(key, "X" * 24 + "Y" * 224)
+
+        # set another pin
+        token.set_pin("anotherpin")
+
+        @mock_verification(create_mock_failure(201))
+        def _step2():
+            # correct PIN, wrong OTP
+            return token.authenticate("anotherpin123456")
+
+        # reuse
+        r = _step2()
+        self.assertEqual(r[0], True)
+        self.assertEqual(r[1], -1)
+        key = token.token.get_otpkey().getKey()
+        self.assertEqual(key, "X" * 24 + "Z" * 224)
+
+        # correct PIN + OTP
+        @mock_verification(mock_success)
+        def _step3():
+            # correct PIN + OTP
+            return token.authenticate("anotherpin234567")
+
+        r = _step3()
+        self.assertEqual(r[0], True)
+        self.assertEqual(r[1], 0)
+        key = token.token.get_otpkey().getKey()
+        self.assertEqual(key, "X" * 24 + "[" * 224)
+
         token.delete_token()
