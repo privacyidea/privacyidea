@@ -26,7 +26,6 @@
 #    Support: www.keyidentity.com
 """ VASCO library binding """
 
-import os
 import logging
 
 # from ctypes import *
@@ -38,6 +37,8 @@ from ctypes import c_ulong
 from ctypes import c_char
 from ctypes import c_byte
 
+from flask import current_app
+
 from privacyidea.lib.error import ParameterError
 
 __all__ = ["vasco_otp_check"]
@@ -46,23 +47,16 @@ __all__ = ["vasco_otp_check"]
 log = logging.getLogger(__name__)
 
 vasco_dll = None
-vasco_libs = []
 
-# get the Vacman Controller lib
-fallbacks = ["/opt/vasco/Vacman_Controller/lib/libaal2sdk.so"]
-
-vasco_libs.extend(fallbacks)
-for vasco_lib in vasco_libs:
-    try:
-        if os.path.isfile(vasco_lib):
-            log.debug(u"Trying to load VASCO library from {!s}".format(vasco_lib))
-            vasco_dll = CDLL(vasco_lib)
-            break
-    except Exception as exx:
-        log.warning(u"Could not load VASCO library: {!r}".format(exx))
-else:
-    log.info(u"No suitable VASCO library could be found, functionality is disabled")
-
+try:
+    vasco_library_path = current_app.config.get("VASCO_LIBRARY")
+    if vasco_library_path is not None:
+        log.info(u"Loading VASCO library from {!s} ...".format(vasco_library_path))
+        vasco_dll = CDLL(vasco_library_path)
+    else:
+        log.info(u"VASCO_LIBRARY option is not set, functionality disabled")
+except Exception as exx:
+    log.warning(u"Could not load VASCO library: {!r}".format(exx))
 
 def check_vasco(fn):
     '''
