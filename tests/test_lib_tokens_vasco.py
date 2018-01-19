@@ -190,19 +190,34 @@ class VascoTokenTest(MyTestCase):
 
         token.delete_token()
 
-    @mock_verification(create_mock_failure(123))
-    def test_07_unknown_failure(self):
+    def test_07_failures(self):
         db_token = Token(self.serial2, tokentype="vasco")
         db_token.save()
         token = VascoTokenClass(db_token)
         token.update({"otpkey": hexlify("X"*248),
                       "pin": self.otppin})
-        r = token.authenticate("{}123456".format(self.otppin))
+
+        @mock_verification(create_mock_failure(123))
+        def _step1():
+            return token.authenticate("{}123456".format(self.otppin))
+
+        r = _step1()
         self.assertEqual(r[0], True)
         self.assertEqual(r[1], -1)
         # failure, but the token secret has been updated nonetheless
         key = token.token.get_otpkey().getKey()
         self.assertEqual(key, "X"*24 + "Y"*224)
+
+        @mock_verification(create_mock_failure(202))
+        def _step2():
+            return token.authenticate("{}123456".format(self.otppin))
+        r = _step2()
+        self.assertEqual(r[0], True)
+        self.assertEqual(r[1], -1)
+        # failure, but the token secret has been updated nonetheless
+        key = token.token.get_otpkey().getKey()
+        self.assertEqual(key, "X"*24 + "Z"*224)
+
         token.delete_token()
 
     def test_08_invalid_otpkey(self):
@@ -212,7 +227,7 @@ class VascoTokenTest(MyTestCase):
         self.assertRaises(ParameterError,
                           token.update,
                           {"otpkey": hexlify("X"*250)}) # wrong length
-        self.assertRaises(ParameterError,
+        self.assertRaises(TypeError,
                           token.update,
                           {"otpkey": "X"*496}) # not a hex-string
         token.delete_token()
