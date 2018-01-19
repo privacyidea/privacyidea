@@ -9,6 +9,7 @@ import mock
 from flask import current_app
 
 from privacyidea.lib.error import ParameterError
+from privacyidea.lib.token import check_serial_pass
 from privacyidea.lib.tokens.vascotoken import VascoTokenClass
 from privacyidea.models import Token
 from tests.base import MyTestCase
@@ -230,4 +231,53 @@ class VascoTokenTest(MyTestCase):
         self.assertRaises(TypeError,
                           token.update,
                           {"otpkey": "X"*496}) # not a hex-string
+        token.delete_token()
+
+    def test_09_failcount(self):
+        db_token = Token(self.serial2, tokentype="vasco")
+        db_token.save()
+        token = VascoTokenClass(db_token)
+        token.update({"otpkey": hexlify("A" * 248),
+                      "pin": self.otppin})
+
+        @mock_verification(create_mock_failure(1))
+        def _step1():
+            # correct PIN, wrong OTP
+            return check_serial_pass(self.serial2, "{}123456".format(self.otppin))
+
+        self.assertTrue(token.check_failcount())
+        # fail 10 times
+        for _ in xrange(10 + 1):
+            r = _step1()
+            self.assertEqual(r[0], False)
+            self.assertEqual(r[1].get('message'), 'wrong otp value')
+
+        key = token.token.get_otpkey().getKey()
+        self.assertEqual(key, "A" * 24 + "L" * 224)
+        # fail counter has been exceeded
+        self.assertFalse(token.check_failcount())
+
+        @mock_verification(mock_success)
+        def _step2():
+            # correct PIN, wrong OTP
+            return check_serial_pass(self.serial2, "{}123456".format(self.otppin))
+
+        # subsequent authentication attempt fails due to fail counter
+        r = _step2()
+        self.assertEqual(r[0], False)
+        self.assertEqual(r[1].get('message'), 'matching 1 tokens, Failcounter exceeded')
+        # this actually does update the OTP key
+        key = token.token.get_otpkey().getKey()
+        self.assertEqual(key, "A" * 24 + "M" * 224)
+
+        # reset the failcounter
+        token.reset()
+
+        # now, authentication works again
+        r = _step2()
+        self.assertEqual(r[0], True)
+        self.assertEqual(r[1].get('message'), 'matching 1 tokens')
+        key = token.token.get_otpkey().getKey()
+        self.assertEqual(key, "A" * 24 + "N" * 224)
+
         token.delete_token()

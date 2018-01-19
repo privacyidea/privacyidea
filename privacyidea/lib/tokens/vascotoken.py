@@ -140,7 +140,10 @@ class VascoTokenClass(TokenClass):
     def check_otp(self, otpval, counter=None, window=None, options=None):
         secret = self.token.get_otpkey().getKey()
         result, new_secret = vasco_otp_check(secret, otpval)
-        self.token.set_otpkey(new_secret)
+        # By default, setting a new OTP key resets the failcounter. In case of the VASCO token,
+        # this would mean that the failcounter is reset at every authentication attempt
+        # (regardless of success or failure), which must be avoided.
+        self.token.set_otpkey(new_secret, reset_failcount=False)
         self.save()
 
         if result == 0:
