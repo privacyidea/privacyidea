@@ -6,6 +6,7 @@ import functools
 from binascii import hexlify
 
 import mock
+from flask import current_app
 
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.tokens.vascotoken import VascoTokenClass
@@ -41,16 +42,12 @@ def create_mock_failure(return_value):
         return return_value
     return mock_failure
 
-def mock_missing_dll(replacement):
-    def decorator(f):
-        @functools.wraps(f)
-        def wrapper(*args, **kwargs):
-            with mock.patch('privacyidea.lib.tokens.vasco.vasco_dll') as mock_dll:
-                mock_dll.return_value = None
-                return f(*args, **kwargs)
-        return wrapper
-    return decorator
-
+def mock_missing_dll(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        with mock.patch('privacyidea.lib.tokens.vasco.vasco_dll', None):
+            return f(*args, **kwargs)
+    return wrapper
 
 class VascoTokenTest(MyTestCase):
     otppin = "topsecret"
@@ -191,4 +188,19 @@ class VascoTokenTest(MyTestCase):
         key = token.token.get_otpkey().getKey()
         self.assertEqual(key, "X" * 24 + "[" * 224)
 
+        token.delete_token()
+
+    @mock_verification(create_mock_failure(123))
+    def test_07_unknown_failure(self):
+        db_token = Token(self.serial2, tokentype="vasco")
+        db_token.save()
+        token = VascoTokenClass(db_token)
+        token.update({"otpkey": hexlify("X"*248),
+                      "pin": self.otppin})
+        r = token.authenticate("{}123456".format(self.otppin))
+        self.assertEqual(r[0], True)
+        self.assertEqual(r[1], -1)
+        # failure, but the token secret has been updated nonetheless
+        key = token.token.get_otpkey().getKey()
+        self.assertEqual(key, "X"*24 + "Y"*224)
         token.delete_token()

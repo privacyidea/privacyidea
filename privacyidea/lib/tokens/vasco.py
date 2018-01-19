@@ -50,7 +50,7 @@ vasco_dll = None
 
 try:
     vasco_library_path = current_app.config.get("VASCO_LIBRARY")
-    if vasco_library_path is not None:
+    if vasco_library_path is not None: # pragma: no cover
         log.info(u"Loading VASCO library from {!s} ...".format(vasco_library_path))
         vasco_dll = CDLL(vasco_library_path)
     else:
