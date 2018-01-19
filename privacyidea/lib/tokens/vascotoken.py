@@ -43,7 +43,7 @@ log = logging.getLogger(__name__)
 class VascoTokenClass(TokenClass):
     """
     Token class for VASCO Digipass tokens. Relies on vendor-specific
-    shared library, whose location needs to be set in the VASCO_LIBRARY
+    shared library, whose location needs to be set in the PI_VASCO_LIBRARY
     config option.
 
     VASCO Tokens can be read from a CSV file which is structured as follows::
@@ -81,6 +81,7 @@ class VascoTokenClass(TokenClass):
         """
         return the token type prefix
         """
+        # TODO: Revisit token type?
         return "VASC"
 
     @staticmethod
@@ -98,7 +99,6 @@ class VascoTokenClass(TokenClass):
                'title': 'VASCO Token',
                'description': _('VASCO Token: Authentication using VASCO tokens'),
                'user': ["enroll"],
-               'ui_enroll': ["admin", "user"],
                'policy': {},
                }
 
