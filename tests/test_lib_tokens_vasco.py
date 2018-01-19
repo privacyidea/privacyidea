@@ -204,3 +204,15 @@ class VascoTokenTest(MyTestCase):
         key = token.token.get_otpkey().getKey()
         self.assertEqual(key, "X"*24 + "Y"*224)
         token.delete_token()
+
+    def test_08_invalid_otpkey(self):
+        db_token = Token(self.serial2, tokentype="vasco")
+        db_token.save()
+        token = VascoTokenClass(db_token)
+        self.assertRaises(ParameterError,
+                          token.update,
+                          {"otpkey": hexlify("X"*250)}) # wrong length
+        self.assertRaises(ParameterError,
+                          token.update,
+                          {"otpkey": "X"*496}) # not a hex-string
+        token.delete_token()

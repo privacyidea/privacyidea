@@ -45,6 +45,18 @@ class VascoTokenClass(TokenClass):
     Token class for VASCO Digipass tokens. Relies on vendor-specific
     shared library, whose location needs to be set in the VASCO_LIBRARY
     config option.
+
+    VASCO Tokens can be read from a CSV file which is structured as follows::
+
+        <serial1>,<hexlify(blob1)>,vasco
+        <serial2>,<hexlify(blob2)>,vasco
+        ...
+
+    whereas blobX is the 248-byte blob holding the token information.
+    Consequently, hexlify(blobX) is a 496-character hex string.
+
+    The CSV file can be imported by using the "Import Tokens" feature of the Web UI,
+    where "OATH CSV" needs to be chosen as the file type.
     """
 
     def __init__(self, db_token):
@@ -116,6 +128,10 @@ class VascoTokenClass(TokenClass):
         # encodes a 248-byte blob. As we want to set a 248-byte OTPKey (= Blob),
         # we unhexlify the OTP key
         if 'otpkey' in param:
+            if len(param['otpkey']) != 496:
+                raise ParameterError('Expected OTP key as 496-character hex string, but length is {!s}'.format(
+                    len(param['otpkey'])
+                ))
             upd_param['otpkey'] = binascii.unhexlify(upd_param['otpkey'])
 
         TokenClass.update(self, upd_param, reset_failcount)
