@@ -21,7 +21,7 @@ class Config(object):
     # PI_GNUPG_HOME = "gpg"
     # PI_LOGO = "otherlogo.png"
     # PI_AUDIT_SQL_URI = sqlite://
-    VASCO_LIBRARY = None
+    PI_VASCO_LIBRARY = None
 
 
 class DevelopmentConfig(Config):
