@@ -2697,6 +2697,12 @@ msgstr ""
 msgid "The URL that contains the logo of the service."
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.enroll.vasco.html:1
+msgid ""
+"The VASCO token is a proprietary OTP token. You can paste the VASCO token blob\n"
+"    in a hexlified format."
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:1
 msgid ""
 "The Yubico Cloud mode forwards the authentication request to the\n"
@@ -3200,6 +3206,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.sms.html:5
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:6
 #: privacyidea/static/components/token/views/token.enroll.totp.html:8
+#: privacyidea/static/components/token/views/token.enroll.vasco.html:6
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:6
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:12
 msgid "Token data"
@@ -3405,6 +3412,10 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.html:47
 #: privacyidea/static/templates/menu.html:43
 msgid "Users"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.vasco.html:9
+msgid "VASCO Token blob"
 msgstr ""
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:16

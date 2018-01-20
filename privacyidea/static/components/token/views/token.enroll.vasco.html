@@ -1,0 +1,17 @@
+<p class="help-block" translate>
+The VASCO token is a proprietary OTP token. You can paste the VASCO token blob
+    in a hexlified format.
+</p>
+
+<h4 translate>Token data</h4>
+
+<div class="form-group">
+    <label for="otpkey" translate>VASCO Token blob</label>
+    <textarea ng-pattern="/^[0-9a-fA-F]*$/"
+              autofocus
+              row="5"
+              class="form-control"
+              placeholder="blob..."
+              ng-model="form.otpkey" name="otpkey" id="otpkey">
+    </textarea>
+</div>

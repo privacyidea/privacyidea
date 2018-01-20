@@ -98,7 +98,10 @@ class VascoTokenClass(TokenClass):
         res = {'type': 'vasco',
                'title': 'VASCO Token',
                'description': _('VASCO Token: Authentication using VASCO tokens'),
-               'user': ["enroll"],
+               # If this was set, the user could enroll a Vasco token via the API
+               #'user': ["enroll"],
+               # only administrators can enroll the token in the UI
+               'ui_enroll': ["admin"],
                'policy': {},
                }
 
