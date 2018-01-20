@@ -53,6 +53,7 @@ At the moment the following tokentypes are supported:
 * :ref:`ocra` - A basic OATH Challenge Response token.
 * :ref:`u2f` - A U2F device as specified by the FIDO Alliance. This is a USB
   device to be used for challenge response authentication.
+* :ref:`vasco` - The proprietary VASCO token.
 * :ref:`yubico` - A Yubikey hardware that authenticates against the Yubico
   Cloud service.
 * :ref:`yubikey` - A Yubikey hardware initialized in the AES mode, that

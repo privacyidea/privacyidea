@@ -240,6 +240,11 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             // preset TOTP hashlib
             $scope.form.hashlib = $scope.form['totp.hashlib'];
         }
+        if ($scope.form.type === "vasco") {
+            $scope.form.genkey = false;
+        } else {
+            $scope.form.genkey = true;
+        }
         // preset twostep enrollment
         $scope.setTwostepEnrollmentDefault();
     };
