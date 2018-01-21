@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-01-15 23:33+0100\n"
+"POT-Creation-Date: 2018-01-21 21:48+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1003,27 +1003,28 @@ msgstr ""
 msgid "event based OTP token using the HOTP algorithm"
 msgstr ""
 
-#: lib/tokens/emailtoken.py:134
+#: lib/tokens/emailtoken.py:135
 msgid "EMail Token"
 msgstr ""
 
-#: lib/tokens/emailtoken.py:136
+#: lib/tokens/emailtoken.py:137
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:144
+#: lib/tokens/emailtoken.py:145
 msgid ""
-"The text that will be send via EMail for an EMail token. Use <otp> and "
-"<serial> as parameters."
+"The text that will be sent via EMail for an EMail token. Use <otp> and "
+"<serial> as parameters. You may also specify a filename as email template"
+" starting with \"file:\"."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:149
+#: lib/tokens/emailtoken.py:151
 msgid ""
 "The subject of the EMail for an EMail token. Use <otp> and <serial> as "
 "parameters."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:154
+#: lib/tokens/emailtoken.py:156
 msgid ""
 "If set, a new EMail OTP will be sent after successful authentication with"
 " one EMail OTP."
@@ -1178,6 +1179,10 @@ msgstr ""
 
 #: lib/tokens/u2ftoken.py:331
 msgid "You need to define the appId in the token config!"
+msgstr ""
+
+#: lib/tokens/vascotoken.py:100
+msgid "VASCO Token: Authentication using VASCO tokens"
 msgstr ""
 
 #: lib/tokens/yubicotoken.py:97

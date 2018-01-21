@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-01-15 23:33+0100\n"
-"PO-Revision-Date: 2018-01-15 23:34+0100\n"
+"POT-Creation-Date: 2018-01-21 21:48+0100\n"
+"PO-Revision-Date: 2018-01-21 21:49+0100\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language: de\n"
 "Language-Team: de <LL@li.org>\n"
@@ -861,23 +861,23 @@ msgstr "Certificate: Ein x509 Zertifikats-Token ausrollen."
 msgid "event based OTP token using the HOTP algorithm"
 msgstr "Ereignisbasiertes Einmalpasswort auf Basis des HOTP Algorithmus."
 
-#: lib/tokens/emailtoken.py:134
+#: lib/tokens/emailtoken.py:135
 msgid "EMail Token"
 msgstr "EMail Token"
 
-#: lib/tokens/emailtoken.py:136
+#: lib/tokens/emailtoken.py:137
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr "EMail: Ein Einmalpasswort über Email an die Mail-Adresse des Benutzers versenden."
 
-#: lib/tokens/emailtoken.py:144
-msgid "The text that will be send via EMail for an EMail token. Use <otp> and <serial> as parameters."
-msgstr "Der Textkörper der Email. Es können die Tags <otp> und <serial> verwendet werden."
+#: lib/tokens/emailtoken.py:145
+msgid "The text that will be sent via EMail for an EMail token. Use <otp> and <serial> as parameters. You may also specify a filename as email template starting with \"file:\"."
+msgstr "Dieser Text wird beim Email-Token via Email versendet. Sie können <otp> und <serial> als Tags verwenden. Alternativ können Sie einen Dateinamen einer Email-Template-Datei angeben. Dies muss dann mit \"file:\" beginnen."
 
-#: lib/tokens/emailtoken.py:149
+#: lib/tokens/emailtoken.py:151
 msgid "The subject of the EMail for an EMail token. Use <otp> and <serial> as parameters."
 msgstr "Die Betreff-Zeile der Email. Es können die Tags <otp> und <serial> verwendet werden."
 
-#: lib/tokens/emailtoken.py:154
+#: lib/tokens/emailtoken.py:156
 msgid "If set, a new EMail OTP will be sent after successful authentication with one EMail OTP."
 msgstr "Ein neues Einmalpasswort wird per Email versendet, direkt nachdem sich der Benutzer mit dem Einmalpasswort aus der letzten Email angemeldet hat."
 
@@ -1022,6 +1022,10 @@ msgstr "Nur die angegebenen U2F Geräte dürfen registriert werden."
 msgid "You need to define the appId in the token config!"
 msgstr "Sie müssen in der Token-Konfiguration die AppId definieren!"
 
+#: lib/tokens/vascotoken.py:100
+msgid "VASCO Token: Authentication using VASCO tokens"
+msgstr ""
+
 #: lib/tokens/yubicotoken.py:97
 msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud."
 msgstr "Yubikey Cloud Modus: Die Authentifizierungsanfrage wird an die YubiCloud weitergeleitet."
@@ -1049,7 +1053,9 @@ msgstr "Yubikey AES Mode: Einmalpasswort mit dem Yubikey."
 #~ msgstr ""
 
 #~ msgid ""
-#~ "The user will only be authenticated "
-#~ "if the tokeninfo field matches the "
-#~ "regexp. key=/<regexp>/"
+#~ "The text that will be send via "
+#~ "EMail for an EMail token. Use "
+#~ "<otp> and <serial> as parameters. You"
+#~ " may also specify a filename as "
+#~ "email template starting with \"file:\"."
 #~ msgstr ""
