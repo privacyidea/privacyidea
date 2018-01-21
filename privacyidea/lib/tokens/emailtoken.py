@@ -142,7 +142,7 @@ class EmailTokenClass(HotpTokenClass):
                'policy': {SCOPE.AUTH: {
                    EMAILACTION.EMAILTEXT: {
                        'type': 'str',
-                       'desc': _('The text that will be send via EMail for'
+                       'desc': _('The text that will be sent via EMail for'
                                  ' an EMail token. Use <otp> and <serial> '
                                  'as parameters. You may also specify a filename '
                                  'as email template starting with "file:".')},
