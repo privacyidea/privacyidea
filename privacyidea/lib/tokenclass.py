@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-#  privacyIDEA is a fork of LinOTP
 #
+#  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Implement tokenkind. Token can be hardware, software or virtual
 #  2017-07-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Failcount unlock
 #  2017-04-27 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -115,6 +116,12 @@ TWOSTEP_DEFAULT_CLIENTSIZE = 8
 TWOSTEP_DEFAULT_DIFFICULTY = 10000
 
 log = logging.getLogger(__name__)
+
+
+class TOKENKIND(object):
+    SOFTWARE = "software"
+    HARDWARE = "hardware"
+    VIRTUAL = "virtual"
 
 
 class TokenClass(object):
@@ -571,6 +578,9 @@ class TokenClass(object):
         for p in param.keys():
             if p.startswith(self.type + "."):
                 self.add_tokeninfo(p, getParam(param, p))
+
+        # The base class will be a software tokenkind
+        self.add_tokeninfo("tokenkind", TOKENKIND.SOFTWARE)
 
         return
 

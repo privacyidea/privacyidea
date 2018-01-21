@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add tokenkind
 #  2016-02-22 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Add the RADIUS identifier, which points to the system wide list
 #             of RADIUS servers.
@@ -43,7 +45,7 @@ import logging
 
 import traceback
 import binascii
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
 from privacyidea.lib.tokens.remotetoken import RemoteTokenClass
 from privacyidea.api.lib.utils import getParam, ParameterError
 from privacyidea.lib.log import log_with
@@ -138,6 +140,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
         val = getParam(param, "radius.user", required)
         self.add_tokeninfo("radius.user", val)
+        self.add_tokeninfo("tokenkind", TOKENKIND.VIRTUAL)
 
     @property
     def check_pin_local(self):

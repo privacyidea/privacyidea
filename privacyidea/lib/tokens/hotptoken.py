@@ -5,6 +5,8 @@
 #  License: AGPLv3
 #  contact: http://www.privacyidea.org
 #
+#  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Set Yubikeys to be hardware tokenkind
 #  2017-07-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add period to key uri for TOTP token
 #
@@ -45,7 +47,10 @@ import binascii
 from .HMAC import HmacOtp
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.tokenclass import TokenClass, TWOSTEP_DEFAULT_DIFFICULTY, TWOSTEP_DEFAULT_CLIENTSIZE
+from privacyidea.lib.tokenclass import (TokenClass,
+                                        TWOSTEP_DEFAULT_DIFFICULTY,
+                                        TWOSTEP_DEFAULT_CLIENTSIZE,
+                                        TOKENKIND)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.apps import create_google_authenticator_url as cr_google
 from privacyidea.lib.error import ParameterError
@@ -316,6 +321,10 @@ class HotpTokenClass(TokenClass):
         TokenClass.update(self, upd_param, reset_failcount)
 
         self.add_tokeninfo("hashlib", hashlibStr)
+
+        # check the tokenkind
+        if self.token.serial.startswith("UB"):
+            self.add_tokeninfo("tokenkind", TOKENKIND.HARDWARE)
 
     @property
     def hashlib(self):

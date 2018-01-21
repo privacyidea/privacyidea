@@ -860,5 +860,3 @@ class TokenBaseTestCase(MyTestCase):
         self.assertEqual(token_obj.get_failcount(), 0)
 
         token_obj.delete_token()
-
-
