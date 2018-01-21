@@ -90,6 +90,7 @@ from privacyidea.api.lib.postpolicy import (save_pin_change,
 from privacyidea.lib.event import event
 from privacyidea.api.auth import admin_required
 from privacyidea.lib.subscriptions import CheckSubscription
+from privacyidea.lib.tokenclass import TOKENKIND
 
 
 token_blueprint = Blueprint('token_blueprint', __name__)
@@ -899,7 +900,8 @@ def loadtokens_api(filename=None):
         #    self.Policy.checkPolicyPre('admin', 'loadtokens',
         #                   {'tokenrealm': tokenrealm })
 
-        token = init_token(init_param, tokenrealms=tokenrealms)
+        token = init_token(init_param, tokenrealms=tokenrealms,
+                           tokenkind=TOKENKIND.HARDWARE)
         if TOKENS[serial].get("counter"):
             token.set_otp_count(TOKENS[serial].get("counter"))
 
