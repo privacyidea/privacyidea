@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-#
+#  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add email templates
 #  2015-12-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Use privacyidea.lib.smtpserver instead of smtplib
 #  2015-10-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -143,7 +144,8 @@ class EmailTokenClass(HotpTokenClass):
                        'type': 'str',
                        'desc': _('The text that will be send via EMail for'
                                  ' an EMail token. Use <otp> and <serial> '
-                                 'as parameters.')},
+                                 'as parameters. You may also specify a filename '
+                                 'as email template starting with "file:".')},
                    EMAILACTION.EMAILSUBJECT: {
                        'type': 'str',
                        'desc': _('The subject of the EMail for'
@@ -255,7 +257,7 @@ class EmailTokenClass(HotpTokenClass):
                 info = ("The PIN was correct, but the "
                         "EMail could not be sent: %r" % e)
                 log.warning(info)
-                log.debug("{0!s}".format(traceback.format_exc(e)))
+                log.debug(u"{0!s}".format(traceback.format_exc(e)))
                 return_message = info
 
         return success, return_message, transactionid, attributes
@@ -326,6 +328,16 @@ class EmailTokenClass(HotpTokenClass):
                 message = messages[0]
 
         message = message.format(challenge=options.get("challenge"))
+        if message.startswith("file:"):
+            # We read the template from the file.
+            try:
+                f = open(message[5:], "r")
+                message = f.read()
+                f.close()
+            except Exception as e:  # pragma: no cover
+                log.warning(u"Failed to read email template: {0!r}".format(e))
+                log.debug(u"{0!s}".format(traceback.format_exc()))
+
         return message
 
     @staticmethod
@@ -380,15 +392,20 @@ class EmailTokenClass(HotpTokenClass):
         message = message.replace("<otp>", otp)
         message = message.replace("<serial>", serial)
 
+        message = message.format(otp=otp, serial=serial)
+
         subject = subject.replace("<otp>", otp)
         subject = subject.replace("<serial>", serial)
+
+        subject = subject.format(otp=otp, serial=serial)
 
         log.debug("sending Email to {0!r} ".format(recipient))
 
         identifier = get_from_config("email.identifier")
         if identifier:
             # New way to send email
-            ret = send_email_identifier(identifier, recipient, subject, message)
+            ret = send_email_identifier(identifier, recipient, subject, message,
+                                        mimetype="text/html")
         else:
             # old way to send email / DEPRECATED
             mailserver = get_from_config("email.mailserver", "localhost")

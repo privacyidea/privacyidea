@@ -2,6 +2,7 @@
 This test file tests the lib.tokens.smstoken
 """
 PWFILE = "tests/testdata/passwords"
+TEMPLATE_FILE = "tests/testdata/emailtemplate.html"
 
 from .base import MyTestCase, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver)
@@ -367,6 +368,28 @@ class EmailTokenTestCase(MyTestCase):
 
         r = token.check_otp("287922", options=options)
         self.assertTrue(r > 0, r)
+
+        # create a EMAILTEXT policy with template
+        p = set_policy(name="emailtext",
+                       action="{0!s}=file:{1!s}".format(EMAILACTION.EMAILTEXT, TEMPLATE_FILE),
+                       scope=SCOPE.AUTH)
+        self.assertTrue(p > 0)
+
+        g = FakeFlaskG()
+        P = PolicyClass()
+        g.policy_object = P
+        options = {"g": g}
+        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, "OK")})
+        transactionid = "123456098714"
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = EmailTokenClass(db_token)
+        email_text = token._get_email_text_or_subject(options, EMAILACTION.EMAILTEXT)
+        self.assertTrue("<p>Hello,</p>" in email_text)
+        c = token.create_challenge(transactionid, options=options)
+        self.assertTrue(c[0], c)
+        display_message = c[1]
+        self.assertTrue(c[3].get("state"), transactionid)
+        self.assertEqual(display_message, "Enter the OTP from the Email:")
 
     @smtpmock.activate
     def test_20_sending_email_exception(self):
