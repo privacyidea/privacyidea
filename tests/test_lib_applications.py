@@ -125,10 +125,10 @@ class OfflineApplicationTestCase(MyTestCase):
         self.assertEqual(len(refilltoken), REFILLTOKEN_LENGTH * 2)
         self.assertTrue(passlib.hash.\
                         pbkdf2_sha512.verify("969429", # count = 3
-                                             auth_item.get("response").get(0)))
+                                             auth_item.get("response").get(3)))
         self.assertTrue(passlib.hash.\
                         pbkdf2_sha512.verify("399871", # count = 8
-                                             auth_item.get("response").get(5)))
+                                             auth_item.get("response").get(8)))
         # The token now contains the refill token information:
         self.assertEqual(refilltoken, tok.get_tokeninfo("refilltoken"))
 
@@ -140,7 +140,7 @@ class OfflineApplicationTestCase(MyTestCase):
         self.assertEqual(len(auth_item.get("response")), 100)
         self.assertTrue(passlib.hash.\
                         pbkdf2_sha512.verify("629694", # count = 102
-                                             auth_item.get("response").get(99)))
+                                             auth_item.get("response").get(102)))
         res = tok.check_otp("629694") # count = 102
         self.assertEqual(res, -1)
         res = tok.check_otp("378717")  # count = 103
