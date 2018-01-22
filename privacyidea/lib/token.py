@@ -941,7 +941,9 @@ def init_token(param, user=None, tokenrealms=None,
         log.debug("{0!s}".format(traceback.format_exc()))
         raise TokenAdminError("token create failed {0!r}".format(e), id=1112)
 
-    # Set the tokenkind
+    # We only set the tokenkind here, if it was explicitly set in the
+    # init_token call.
+    # In all other cases it is set in the update method of the tokenclass.
     if tokenkind:
         tokenobject.add_tokeninfo("tokenkind", tokenkind)
 
