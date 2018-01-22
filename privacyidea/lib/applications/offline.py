@@ -65,22 +65,27 @@ class MachineApplication(MachineApplicationBase):
         :return: tuple of refilltoken and auth_items
         """
         otps = []
+        otppin = ""
+        otpval = ""
+        matching_count = 0
         count = int(options.get("count", 100))
         rounds = int(options.get("rounds", ROUNDS))
         new_refilltoken = geturandom(REFILLTOKEN_LENGTH, hex=True)
         toks = get_tokens(serial=serial)
         if len(toks) == 1:
             token_obj = toks[0]
-            _r, otppin, otpval = token_obj.split_pin_pass(password)
+            if password:
+                _r, otppin, otpval = token_obj.split_pin_pass(password)
             current_token_counter = token_obj.token.count
             first_old_counter = current_token_counter - count
             if first_old_counter < 0:
                 first_old_counter = 0
-            # find the value in the old OTP values! This resets the token.count!
-            matching_count = token_obj.check_otp(otpval, first_old_counter, count)
+            if otpval:
+                # find the value in the old OTP values! This resets the token.count!
+                matching_count = token_obj.check_otp(otpval, first_old_counter, count)
             token_obj.set_otp_count(current_token_counter)
             if first_fill:
-                counter_diff = 100
+                counter_diff = count
             else:
                 counter_diff = matching_count - first_old_counter
             (res, err, otp_dict) = token_obj.get_multi_otp(count=counter_diff, counter_index=True)
