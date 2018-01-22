@@ -900,6 +900,7 @@ def loadtokens_api(filename=None):
         #    self.Policy.checkPolicyPre('admin', 'loadtokens',
         #                   {'tokenrealm': tokenrealm })
 
+        # Imported tokens are usually hardware tokens
         token = init_token(init_param, tokenrealms=tokenrealms,
                            tokenkind=TOKENKIND.HARDWARE)
         if TOKENS[serial].get("counter"):
