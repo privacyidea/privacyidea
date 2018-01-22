@@ -11,8 +11,10 @@ from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.emailtoken import EmailTokenClass, EMAILACTION
 from privacyidea.models import (Token, Config, Challenge)
-from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
+from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin,
+                                    delete_privacyidea_config)
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
+from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 import datetime
 from dateutil.tz import tzlocal
 import smtpmock
@@ -317,6 +319,7 @@ class EmailTokenTestCase(MyTestCase):
     def test_18_challenge_request(self):
         smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, 'OK')})
         transactionid = "123456098712"
+        # send the email with the old configuration
         set_privacyidea_config("email.mailserver", "localhost")
         set_privacyidea_config("email.username", "user")
         set_privacyidea_config("email.username", "password")
@@ -411,3 +414,24 @@ class EmailTokenTestCase(MyTestCase):
                                          "email.recipient": "user@example.com"})
         self.assertEqual(r[0], True)
         self.assertEqual(r[1], TEST_SUCCESSFUL)
+
+    @smtpmock.activate
+    def test_22_new_email_config(self):
+        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, 'OK')})
+        transactionid = "123456098717"
+        # send the email with the new configuration
+        r = add_smtpserver(identifier="myServer", server="1.2.3.4")
+        set_privacyidea_config("email.identifier", "myServer")
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = EmailTokenClass(db_token)
+        self.assertTrue(token.check_otp("123456", 1, 10) == -1)
+        c = token.create_challenge(transactionid)
+        self.assertTrue(c[0], c)
+        otp = c[1]
+        self.assertTrue(c[3].get("state"), transactionid)
+
+        # check for the challenges response
+        r = token.check_challenge_response(passw=otp)
+        self.assertTrue(r, r)
+        delete_smtpserver("myServer")
+        delete_privacyidea_config("email.identifier")
