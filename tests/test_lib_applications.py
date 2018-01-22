@@ -10,7 +10,8 @@ from privacyidea.lib.applications.ssh import (MachineApplication as
 from privacyidea.lib.applications.luks import (MachineApplication as
                                                LUKSApplication)
 from privacyidea.lib.applications.offline import (MachineApplication as
-                                                  OfflineApplication)
+                                                  OfflineApplication,
+                                                  REFILLTOKEN_LENGTH)
 from privacyidea.lib.applications import (get_auth_item,
                                           is_application_allow_bulk_call,
                                           get_application_types)
@@ -120,12 +121,17 @@ class OfflineApplicationTestCase(MyTestCase):
         self.assertEqual(tok.token.count, 3)
 
         auth_item = OfflineApplication.get_authentication_item("hotp", serial)
+        refilltoken = auth_item.get("refilltoken")
+        self.assertEqual(len(refilltoken), REFILLTOKEN_LENGTH * 2)
         self.assertTrue(passlib.hash.\
                         pbkdf2_sha512.verify("969429", # count = 3
                                              auth_item.get("response").get(0)))
         self.assertTrue(passlib.hash.\
                         pbkdf2_sha512.verify("399871", # count = 8
                                              auth_item.get("response").get(5)))
+        # The token now contains the refill token information:
+        self.assertEqual(refilltoken, tok.get_tokeninfo("refilltoken"))
+
         # After calling auth_item the token counter should be increased
         # 3, because we used the otp value with count = 2 initially
         # 100, because we obtained 100 offline OTPs
