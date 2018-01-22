@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2018-01-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add offline refill
 # 2016-12-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add triggerchallenge endpoint
 # 2016-10-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -99,7 +101,9 @@ from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.api.auth import admin_required
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import get_tokens
-
+from privacyidea.lib.machine import list_token_machines
+from privacyidea.lib.applications.offline import MachineApplication
+import json
 
 log = logging.getLogger(__name__)
 
@@ -155,6 +159,43 @@ def after_request(response):
 
     # No caching!
     response.headers['Cache-Control'] = 'no-cache'
+    return response
+
+
+@validate_blueprint.route('/offlinerefill', methods=['POST'])
+@event("validate_offlinerefill", request, g)
+def offlinerefill():
+    """
+    This endpoint allows to fetch new offline OTP values for a token,
+    that is already offline.
+    According to the definition it will send the missing OTP values, so that
+    the client will have as much otp values as defined.
+
+    :param serial: The serial number of the token, that should be refilled.
+    :param refilltoken: The authorization token, that allows refilling.
+    :param pass: the last password (maybe password+OTP) entered by the user
+    :return:
+    """
+    refilltoken = None
+    otps = {}
+    serial = getParam(request.all_data, "serial", required)
+    refilltoken = getParam(request.all_data, "refilltoken", required)
+    password = getParam(request.all_data, "pass", required)
+    machine_defs = list_token_machines(serial)
+    # check if is still an offline token:
+    for mdef in machine_defs:
+        if mdef.get("application") == "offline":
+            # check refill token:
+            tokenobj = get_tokens(serial=serial)[0]
+            if tokenobj.get_tokeninfo("refilltoken") == refilltoken:
+                # refill
+                refilltoken, otps = MachineApplication.get_refill(serial, password, mdef.get("options"))
+
+    response = send_result(True)
+    content = json.loads(response.data)
+    content["auth_items"] = {"offline": [{"refilltoken": refilltoken,
+                                          "response": otps}]}
+    response.data = json.dumps(content)
     return response
 
 

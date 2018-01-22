@@ -604,7 +604,8 @@ class HotpTokenClass(TokenClass):
 
     @log_with(log)
     def get_multi_otp(self, count=0, epoch_start=0, epoch_end=0,
-                        curTime=None, timestamp=None):
+                      curTime=None, timestamp=None,
+                      counter_index=False):
         """
         return a dictionary of multiple future OTP values of the
         HOTP/HMAC token
@@ -614,10 +615,11 @@ class HotpTokenClass(TokenClass):
 
         :param count: how many otp values should be returned
         :type count: int
-        :epoch_start: Not used in HOTP
-        :epoch_end: Not used in HOTP
-        :curTime: Not used in HOTP
-        :timestamp: not used in HOTP
+        :param epoch_start: Not used in HOTP
+        :param epoch_end: Not used in HOTP
+        :param curTime: Not used in HOTP
+        :param timestamp: not used in HOTP
+        :param counter_index: whether the counter should be used as index
         :return: tuple of status: boolean, error: text and the OTP dictionary
         """
         otp_dict = {"type": "hotp", "otp": {}}
@@ -635,7 +637,10 @@ class HotpTokenClass(TokenClass):
             for i in range(count):
                 otpval = hmac2Otp.generate(self.token.count + i,
                                            inc_counter=False)
-                otp_dict["otp"][i] = otpval
+                if counter_index:
+                    otp_dict["otp"][self.token.count + i] = otpval
+                else:
+                    otp_dict["otp"][i] = otpval
             ret = True
 
         return ret, error, otp_dict

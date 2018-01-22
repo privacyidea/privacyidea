@@ -19,6 +19,7 @@ import smtpmock, ldap3mock, responses
 
 
 PWFILE = "tests/testdata/passwords"
+HOSTSFILE = "tests/testdata/hosts"
 
 LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                  "attributes": {'cn': 'alice',
@@ -310,6 +311,128 @@ class DisplayTANTestCase(MyTestCase):
             self.assertEqual(len(hex_challenge), 40)
 
         remove_token("ocra1234")
+
+
+class AAValidateOfflineTestCase(MyTestCase):
+    """
+    Test api.validate endpoints that are responsible for offline auth.
+    """
+    def test_00_create_realms(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
+        # create a  token and assign it to the user
+        db_token = Token(self.serials[0], tokentype="hotp")
+        db_token.update_otpkey(self.otpkey)
+        db_token.save()
+        token = HotpTokenClass(db_token)
+        self.assertTrue(token.token.serial == self.serials[0], token)
+        token.set_user(User("cornelius", self.realm1))
+        token.set_pin("pin")
+        self.assertTrue(token.token.user_id == "1000", token.token.user_id)
+
+    def test_01_validate_offline(self):
+        pass
+        # create offline app
+        #tokenobj = get_tokens(self.serials[0])[0]
+        from privacyidea.lib.applications.offline import REFILLTOKEN_LENGTH
+        from privacyidea.lib.machine import attach_token
+        from privacyidea.lib.machineresolver import save_resolver, delete_resolver
+        mr_obj = save_resolver({"name": "testresolver",
+                                "type": "hosts",
+                                "filename": HOSTSFILE,
+                                "type.filename": "string",
+                                "desc.filename": "the filename with the "
+                                                 "hosts",
+                                "pw": "secret",
+                                "type.pw": "password"})
+        self.assertTrue(mr_obj > 0)
+        # Attach the offline app to pippin
+        r = attach_token(self.serials[0], "offline", hostname="pippin",
+                         resolver_name="testresolver")
+
+        # first online validation
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "pin287082"},
+                                           environ_base={'REMOTE_ADDR': '192.168.0.2'}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            result = data.get("result")
+            self.assertTrue(result.get("status") is True, result)
+            self.assertTrue(result.get("value") is True, result)
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(detail.get("otplen"), 6)
+            auth_items = json.loads(res.data).get("auth_items")
+            offline = auth_items.get("offline")[0]
+            # Check the number of OTP values
+            self.assertEqual(len(offline.get("response")), 100)
+            self.assertEqual(offline.get("username"), "cornelius")
+            refilltoken_1 = offline.get("refilltoken")
+            self.assertEqual(len(refilltoken_1), 2 * REFILLTOKEN_LENGTH)
+            # check the token counter
+            tok = get_tokens(serial=self.serials[0])[0]
+            self.assertEqual(tok.token.count, 102)
+
+        # first refill with the 5th value
+        with self.app.test_request_context('/validate/offlinerefill',
+                                           method='POST',
+                                           data={"serial": self.serials[0],
+                                                 "pass": "pin338314",
+                                                 "refilltoken": refilltoken_1},
+                                           environ_base={'REMOTE_ADDR': '192.168.0.2'}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("status") is True, result)
+            self.assertTrue(result.get("value") is True, result)
+            auth_items = json.loads(res.data).get("auth_items")
+            offline = auth_items.get("offline")[0]
+            # Check the number of OTP values
+            self.assertEqual(len(offline.get("response")), 2)
+            self.assertTrue("102" in offline.get("response"))
+            self.assertTrue("103" in offline.get("response"))
+            refilltoken_2 = offline.get("refilltoken")
+            self.assertEqual(len(refilltoken_2), 2 * REFILLTOKEN_LENGTH)
+            # check the token counter
+            tok = get_tokens(serial=self.serials[0])[0]
+            self.assertEqual(tok.token.count, 104)
+            # The refilltoken changes each time
+            self.assertNotEqual(refilltoken_1, refilltoken_2)
+
+        # 2nd refill with 10th value
+        with self.app.test_request_context('/validate/offlinerefill',
+                                           method='POST',
+                                           data={"serial": self.serials[0],
+                                                 "pass": "pin520489",
+                                                 "refilltoken": refilltoken_2},
+                                           environ_base={'REMOTE_ADDR': '192.168.0.2'}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("status") is True, result)
+            self.assertTrue(result.get("value") is True, result)
+            auth_items = json.loads(res.data).get("auth_items")
+            offline = auth_items.get("offline")[0]
+            # Check the number of OTP values
+            self.assertEqual(len(offline.get("response")), 5)
+            self.assertTrue("104" in offline.get("response"))
+            self.assertTrue("105" in offline.get("response"))
+            self.assertTrue("106" in offline.get("response"))
+            self.assertTrue("107" in offline.get("response"))
+            self.assertTrue("108" in offline.get("response"))
+            refilltoken_3 = offline.get("refilltoken")
+            self.assertEqual(len(refilltoken_3), 2 * REFILLTOKEN_LENGTH)
+            # check the token counter
+            tok = get_tokens(serial=self.serials[0])[0]
+            self.assertEqual(tok.token.count, 109)
+            # The refilltoken changes each time
+            self.assertNotEqual(refilltoken_2, refilltoken_3)
+            self.assertNotEqual(refilltoken_1, refilltoken_3)
 
 
 class ValidateAPITestCase(MyTestCase):
