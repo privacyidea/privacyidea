@@ -331,10 +331,10 @@ class EmailTokenClass(HotpTokenClass):
         if message.startswith("file:"):
             # We read the template from the file.
             try:
-                f = open(message[5:], "r")
-                message = f.read()
-                f.close()
+                with open(message[5:], "r") as f:
+                    message = f.read()
             except Exception as e:  # pragma: no cover
+                message = default
                 log.warning(u"Failed to read email template: {0!r}".format(e))
                 log.debug(u"{0!s}".format(traceback.format_exc()))
 
